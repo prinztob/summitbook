@@ -1,0 +1,30 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <org.osmdroid.views.MapView
+        android:id="@+id/osmap"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+
+    <ImageButton
+        android:id="@+id/change_map"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/osmap"
+        android:layout_toStartOf="@id/show_all_tracks"
+        android:contentDescription="@string/map_type"
+        android:src="@drawable/ic_more_vert_black_24dp" />
+
+    <ImageButton
+        android:id="@+id/show_all_tracks"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/osmap"
+        android:layout_alignParentEnd="true"
+        android:contentDescription="@string/show_all_tracks"
+        android:src="@drawable/ic_baseline_select_all_24" />
+
+
+</RelativeLayout>

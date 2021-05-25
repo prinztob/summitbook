@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".SummitEntryDetailsActivity">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fadeScrollbars="false"
+        android:scrollbarFadeDuration="50000"
+        android:scrollbarSize="10dp"
+        android:scrollbarThumbVertical="@color/colorPrimaryDark"
+        android:layout_weight="2">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/sport_type_image"
+                    android:layout_width="50dp"
+                    android:layout_height="40dp"
+                    android:layout_margin="5dp"
+                    android:contentDescription="@string/sport_type_image"
+                    android:paddingTop="5dp"
+                    android:tag="image_tag" />
+
+                <TextView
+                    android:id="@+id/summit_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="10dp"
+                    android:layout_toEndOf="@id/sport_type_image"
+                    android:textAppearance="?android:attr/textAppearanceLarge" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingEnd="10dp"
+                    android:id="@+id/osmapLayout"
+                    android:orientation="vertical">
+
+                    <de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowSrolling
+                        android:id="@+id/osmap"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <ImageButton
+                        android:id="@+id/change_map_type"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignTop="@id/osmap"
+                        android:layout_toStartOf="@id/gps_share"
+                        android:contentDescription="@string/map_type"
+                        android:src="@drawable/ic_more_vert_black_24dp" />
+
+                    <ImageButton
+                        android:id="@+id/gps_share"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignTop="@id/osmap"
+                        android:layout_toStartOf="@id/gps_open_with"
+                        android:contentDescription="@string/action_share"
+                        android:src="@drawable/ic_share_black_24dp" />
+
+                    <ImageButton
+                        android:id="@+id/gps_open_with"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignTop="@id/osmap"
+                        android:layout_toStartOf="@id/osm_with_milage"
+                        android:contentDescription="@string/open_with"
+                        android:src="@drawable/ic_open_in_new_black_24dp" />
+
+                    <ImageButton
+                        android:id="@+id/osm_with_milage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignTop="@id/osmap"
+                        android:layout_alignParentEnd="true"
+                        android:contentDescription="@string/show_milage"
+                        android:src="@drawable/moreinfo_arrow" />
+                </RelativeLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/osmapLayout"
+                    android:id="@+id/lineChartLayout"
+                    android:background="#fff"
+                    android:orientation="horizontal"
+                    android:padding="3dp">
+
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/lineChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+                </LinearLayout>
+
+            </RelativeLayout>
+        </LinearLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

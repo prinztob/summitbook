@@ -1,0 +1,627 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:background="#fff"
+        android:orientation="horizontal"
+        android:padding="3dp">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/set_date"
+            android:src="@drawable/ic_today_black_24dp" />
+
+        <Spinner
+            android:id="@+id/spinner_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/date_start_end_selector"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:background="#fff"
+        android:orientation="horizontal"
+        android:padding="3dp"
+        android:visibility="gone">
+
+        <EditText
+            android:id="@+id/date_start"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:drawableStart="@drawable/ic_today_black_24dp"
+            android:drawablePadding="10dp"
+            android:ems="6"
+            android:hint="@string/from"
+            android:importantForAutofill="no"
+            android:inputType="date" />
+
+
+        <EditText
+            android:id="@+id/date_end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:drawableStart="@drawable/ic_today_black_24dp"
+            android:drawablePadding="10dp"
+            android:ems="6"
+            android:hint="@string/until"
+            android:importantForAutofill="no"
+            android:inputType="date" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:background="#fff"
+        android:orientation="horizontal"
+        android:padding="3dp">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/set_activity"
+            android:src="@drawable/ic_directions_walk_black_24dp" />
+
+        <Spinner
+            android:id="@+id/spinner_sports_type"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:background="#fff"
+        android:orientation="horizontal"
+        android:padding="3dp">
+        <com.hootsuite.nachos.NachoTextView
+            android:id="@+id/participants"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawableStart="@drawable/ic_baseline_people_24"
+            android:drawablePadding="10dp"
+            android:hint="@string/participants"
+            android:importantForAutofill="no"
+            android:inputType="text" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sort_by" />
+    </LinearLayout>
+
+    <co.ceryle.segmentedbutton.SegmentedButtonGroup
+        android:id="@+id/group_sort_asc_desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_margin="10dp"
+        android:elevation="2dp"
+        app:sbg_animateSelector="fastOutSlowIn"
+        app:sbg_animateSelectorDuration="1000"
+        app:sbg_backgroundColor="@android:color/transparent"
+        app:sbg_backgroundDrawable="@drawable/gradient_drawable"
+        app:sbg_dividerBackgroundDrawable="@drawable/gradient_drawable_divider"
+        app:sbg_dividerColor="@color/grey_500"
+        app:sbg_dividerPadding="50dp"
+        app:sbg_dividerRadius="50dp"
+        app:sbg_dividerSize="4dp"
+        app:sbg_position="0"
+        app:sbg_radius="20dp"
+        app:sbg_ripple="true"
+        app:sbg_rippleColor="@color/blue_300"
+        app:sbg_selectorColor="@color/colorPrimary">
+
+        <co.ceryle.segmentedbutton.SegmentedButton
+
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="15sp"
+            app:sb_text="@string/ascending"
+            app:sb_textColor="@color/colorAccent"
+            app:sb_textColor_onSelection="@android:color/white" />
+
+        <co.ceryle.segmentedbutton.SegmentedButton
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="15sp"
+            app:sb_text="@string/descending"
+            app:sb_textColor="@color/colorAccent"
+            app:sb_textColor_onSelection="@android:color/white" />
+    </co.ceryle.segmentedbutton.SegmentedButtonGroup>
+
+
+    <co.ceryle.segmentedbutton.SegmentedButtonGroup
+        android:id="@+id/group_sort_by"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_margin="10dp"
+        android:elevation="2dp"
+        app:sbg_animateSelector="fastOutSlowIn"
+        app:sbg_animateSelectorDuration="1000"
+        app:sbg_backgroundColor="@android:color/transparent"
+        app:sbg_backgroundDrawable="@drawable/gradient_drawable"
+        app:sbg_dividerBackgroundDrawable="@drawable/gradient_drawable_divider"
+        app:sbg_dividerColor="@color/grey_500"
+        app:sbg_dividerPadding="50dp"
+        app:sbg_dividerRadius="50dp"
+        app:sbg_dividerSize="4dp"
+        app:sbg_position="0"
+        app:sbg_radius="20dp"
+        app:sbg_ripple="true"
+        app:sbg_rippleColor="@color/blue_300"
+        app:sbg_selectorColor="@color/colorPrimary">
+
+        <co.ceryle.segmentedbutton.SegmentedButton
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="15sp"
+            app:sb_text="@string/by_date"
+            app:sb_textColor="@color/colorAccent"
+            app:sb_textColor_onSelection="@android:color/white" />
+
+        <co.ceryle.segmentedbutton.SegmentedButton
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="15sp"
+            app:sb_text="@string/by_name"
+            app:sb_textColor="@color/colorAccent"
+            app:sb_textColor_onSelection="@android:color/white" />
+
+        <co.ceryle.segmentedbutton.SegmentedButton
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="15sp"
+            app:sb_text="@string/by_height_meter"
+            app:sb_textColor="@color/colorAccent"
+            app:sb_textColor_onSelection="@android:color/white" />
+
+        <co.ceryle.segmentedbutton.SegmentedButton
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="15sp"
+            app:sb_text="@string/by_km"
+            app:sb_textColor="@color/colorAccent"
+            app:sb_textColor_onSelection="@android:color/white" />
+
+        <co.ceryle.segmentedbutton.SegmentedButton
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="15sp"
+            app:sb_text="@string/by_elevation"
+            app:sb_textColor="@color/colorAccent"
+            app:sb_textColor_onSelection="@android:color/white" />
+    </co.ceryle.segmentedbutton.SegmentedButtonGroup>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/with_gpx" />
+
+        <co.ceryle.segmentedbutton.SegmentedButtonGroup
+            android:id="@+id/group_gpx"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_margin="10dp"
+            android:elevation="2dp"
+            app:sbg_animateSelector="fastOutSlowIn"
+            app:sbg_animateSelectorDuration="1000"
+            app:sbg_backgroundColor="@android:color/transparent"
+            app:sbg_backgroundDrawable="@drawable/gradient_drawable"
+            app:sbg_dividerBackgroundDrawable="@drawable/gradient_drawable_divider"
+            app:sbg_dividerColor="@color/grey_500"
+            app:sbg_dividerPadding="50dp"
+            app:sbg_dividerRadius="50dp"
+            app:sbg_dividerSize="4dp"
+            app:sbg_position="1"
+            app:sbg_radius="20dp"
+            app:sbg_ripple="true"
+            app:sbg_rippleColor="@color/blue_300"
+            app:sbg_selectorColor="@color/colorPrimary">
+
+            <co.ceryle.segmentedbutton.SegmentedButton
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                app:sb_text="@string/yes"
+                app:sb_textColor="@color/colorAccent"
+                app:sb_textColor_onSelection="@android:color/white" />
+
+
+            <co.ceryle.segmentedbutton.SegmentedButton
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                app:sb_text="@string/all"
+                app:sb_textColor="@color/colorAccent"
+                app:sb_textColor_onSelection="@android:color/white" />
+
+            <co.ceryle.segmentedbutton.SegmentedButton
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                app:sb_text="@string/no"
+                app:sb_textColor="@color/colorAccent"
+                app:sb_textColor_onSelection="@android:color/white" />
+        </co.ceryle.segmentedbutton.SegmentedButtonGroup>
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/with_position" />
+
+        <co.ceryle.segmentedbutton.SegmentedButtonGroup
+            android:id="@+id/group_position"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_margin="10dp"
+            android:elevation="2dp"
+            app:sbg_animateSelector="fastOutSlowIn"
+            app:sbg_animateSelectorDuration="1000"
+            app:sbg_backgroundColor="@android:color/transparent"
+            app:sbg_backgroundDrawable="@drawable/gradient_drawable"
+            app:sbg_dividerBackgroundDrawable="@drawable/gradient_drawable_divider"
+            app:sbg_dividerColor="@color/grey_500"
+            app:sbg_dividerPadding="50dp"
+            app:sbg_dividerRadius="50dp"
+            app:sbg_dividerSize="4dp"
+            app:sbg_position="1"
+            app:sbg_radius="20dp"
+            app:sbg_ripple="true"
+            app:sbg_rippleColor="@color/blue_300"
+            app:sbg_selectorColor="@color/colorPrimary">
+
+            <co.ceryle.segmentedbutton.SegmentedButton
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                app:sb_text="@string/yes"
+                app:sb_textColor="@color/colorAccent"
+                app:sb_textColor_onSelection="@android:color/white" />
+
+
+            <co.ceryle.segmentedbutton.SegmentedButton
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                app:sb_text="@string/all"
+                app:sb_textColor="@color/colorAccent"
+                app:sb_textColor_onSelection="@android:color/white" />
+
+            <co.ceryle.segmentedbutton.SegmentedButton
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                app:sb_text="@string/no"
+                app:sb_textColor="@color/colorAccent"
+                app:sb_textColor_onSelection="@android:color/white" />
+        </co.ceryle.segmentedbutton.SegmentedButtonGroup>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/with_image" />
+
+        <co.ceryle.segmentedbutton.SegmentedButtonGroup
+            android:id="@+id/group_image"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_margin="10dp"
+            android:elevation="2dp"
+            app:sbg_animateSelector="fastOutSlowIn"
+            app:sbg_animateSelectorDuration="1000"
+            app:sbg_backgroundColor="@android:color/transparent"
+            app:sbg_backgroundDrawable="@drawable/gradient_drawable"
+            app:sbg_dividerBackgroundDrawable="@drawable/gradient_drawable_divider"
+            app:sbg_dividerColor="@color/grey_500"
+            app:sbg_dividerPadding="50dp"
+            app:sbg_dividerRadius="50dp"
+            app:sbg_dividerSize="4dp"
+            app:sbg_position="1"
+            app:sbg_radius="20dp"
+            app:sbg_ripple="true"
+            app:sbg_rippleColor="@color/blue_300"
+            app:sbg_selectorColor="@color/colorPrimary">
+
+            <co.ceryle.segmentedbutton.SegmentedButton
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                app:sb_text="@string/yes"
+                app:sb_textColor="@color/colorAccent"
+                app:sb_textColor_onSelection="@android:color/white" />
+
+
+            <co.ceryle.segmentedbutton.SegmentedButton
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                app:sb_text="@string/all"
+                app:sb_textColor="@color/colorAccent"
+                app:sb_textColor_onSelection="@android:color/white" />
+
+            <co.ceryle.segmentedbutton.SegmentedButton
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                app:sb_text="@string/no"
+                app:sb_textColor="@color/colorAccent"
+                app:sb_textColor_onSelection="@android:color/white" />
+        </co.ceryle.segmentedbutton.SegmentedButtonGroup>
+
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filterByHm" />
+
+            <TextView
+                android:id="@+id/minValueHm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/seperator" />
+
+            <TextView
+                android:id="@+id/maxValueHm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <io.apptik.widget.MultiSlider
+            android:id="@+id/range_slider_height_meter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:range1="@drawable/multislider_primary_mtrl_alpha" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filter_by_kilometer" />
+
+            <TextView
+                android:id="@+id/minValueKm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/seperator" />
+
+            <TextView
+                android:id="@+id/maxValueKm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <io.apptik.widget.MultiSlider
+            android:id="@+id/range_slider_kilometers"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:range1="@drawable/multislider_primary_mtrl_alpha" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filterByTopElevation" />
+
+            <TextView
+                android:id="@+id/minValueTopElevation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/seperator" />
+
+            <TextView
+                android:id="@+id/maxValueTopElevation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <io.apptik.widget.MultiSlider
+            android:id="@+id/range_slider_topElevation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:range1="@drawable/multislider_primary_mtrl_alpha" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filterByTopSpeed" />
+
+            <TextView
+                android:id="@+id/minValueTopSpeed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/seperator" />
+
+            <TextView
+                android:id="@+id/maxValueTopSpeed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <io.apptik.widget.MultiSlider
+            android:id="@+id/range_slider_topSpeed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:range1="@drawable/multislider_primary_mtrl_alpha" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filter_by_average_speed" />
+
+            <TextView
+                android:id="@+id/minValueAverageSpeed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/seperator" />
+
+            <TextView
+                android:id="@+id/maxValueAverageSpeed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <io.apptik.widget.MultiSlider
+            android:id="@+id/range_slider_averageSpeed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:range1="@drawable/multislider_primary_mtrl_alpha" />
+    </LinearLayout>
+    </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

@@ -1,0 +1,262 @@
+<resources>
+    <string name="app_name">Gipfelbuch</string>
+    <string name="user_name">spot@prinz.de</string>
+    <string name="nav_summits">Gipfel</string>
+    <string name="nav_statistics">Statistik</string>
+    <string name="nav_diagrams">Diagramme</string>
+    <string name="nav_osmap">Zeige Gipfel auf Karte</string>
+    <string name="nav_import">Importiere backup</string>
+    <string name="nav_export">Exportiere backup</string>
+    <string name="nav_open_drawer">Öffne Navigation</string>
+    <string name="nav_close_drawer">Schließe Navigation</string>
+    <string name="activity">Aktivitäten</string>
+    <string name="name">Name</string>
+    <string name="type">Sportart</string>
+    <string name="accept">Akzeptiere</string>
+    <string name="summit_name_hint">Name des Gipfel</string>
+    <string name="height_meter_hint">Höhenmeter</string>
+    <string name="action_share">Teilen</string>
+    <string name="capricorn_caption">Steinbock in den Alpen</string>
+    <string name="tour_date">Gipfel Datum</string>
+    <string name="date_format">%3$s-%2$s-%1$s</string>
+    <string name="saveButtonText">Speichern</string>
+    <string name="cancelButtonText">Abbrechen</string>
+    <string name="updateButtonText">Aktualisieren</string>
+    <string name="place_hint">Besuchte Orte</string>
+    <string name="country_hint">Land</string>
+    <string name="comment_hint">Kommentare</string>
+    <string name="kilometers_hint">Entfernung</string>
+    <string name="pace_hint">Durchschn. Geschw.</string>
+    <string name="top_speed_hint">Max. Geschw.</string>
+    <string name="top_elevation_hint">Maximale Höhe</string>
+
+    <string name="action_search">Suche</string>
+    <string name="km">km</string>
+    <string name="kmh">km/h</string>
+    <string name="hm">hm</string>
+    <string name="total_height_meters">Gesammte Höhenmeter</string>
+    <string name="total_kilometers">Gesammte Kilometer</string>
+    <string name="total_summits">Anzahl Gipfel</string>
+    <string name="achievement">Zielerreichung im gewählten Jahr</string>
+    <string name="sport_type_image">Sportart Bild</string>
+    <string name="delete_icon">Löschicon</string>
+    <string name="edit_icon">Modifiziericon</string>
+    <string name="add_coordinate">Füge Koordinaten hinzu</string>
+    <string name="is_favorite">Markiere diesen Gipfel als Favorit</string>
+    <string name="choose_data_source">Wähle Datenquelle</string>
+    <string name="addGpsTrack">Füge GPS Track hinzu</string>
+    <string name="useGpsTrack">Benütze GPS track</string>
+    <string name="add_activity">Füge Garminaktivität hinzu</string>
+    <string name="sort_entries">Sortiere Gipfel</string>
+    <string name="descending">Absteigend</string>
+    <string name="ascending">Aufsteigend</string>
+    <string name="by_name">Name</string>
+    <string name="by_date">Datum</string>
+    <string name="by_height_meter">hm</string>
+    <string name="by_km">km</string>
+    <string name="seperator">- </string>
+    <string name="filter_by_kilometer">Kilometern</string>
+    <string name="filterByHm">Höhenmetern</string>
+    <string name="filterByTopSpeed">Höchstgeschw.</string>
+    <string name="filterByTopElevation">Höchster Punkt</string>
+    <string name="filter_by_average_speed">Durschnittsgeschw.</string>
+    <string name="highest_peak">Höchster Gipfel</string>
+    <string name="top_speed">Höchstgeschw.</string>
+    <string name="highest_average_speed">Höchste Durschnittsgeschw.</string>
+    <string name="longest_distance">Längste Strecke</string>
+    <string name="height_meter_done">Meisten Höhenmeter</string>
+    <string name="by_elevation">Höhe</string>
+    <string name="sort_by">Sortierung</string>
+    <string name="yes">Ja</string>
+    <string name="no">Nein</string>
+    <string name="all">Alle</string>
+    <string name="with_gpx"> Mit GPX Track </string>
+    <string name="with_position"> Mit GPS Position </string>
+    <string name="until">bis</string>
+    <string name="from">von</string>
+    <string name="highest_power">Höchste normalisierte Leistung</string>
+    <string name="highest_power_20min">Höchste Leistung in 20 Min.</string>
+    <string name="highest_power_1h">Höchste Leistung in 1 St.</string>
+    <string name="heightest_hr">Höchste durchschn. Herzfreq</string>
+    <string name="heightest_grit">Höchster grit</string>
+    <string name="heightest_flow">Höchster flow</string>
+    <string name="heightest_trainig_load">Höchste Trainingsbelastung</string>
+    <string name="open_with">Öffne mit</string>
+    <string name="average_hr">Durchschn. Herzfreq</string>
+    <string name="sensor_data">Sensordaten</string>
+    <string name="max_hr">Max. Herzfreq.</string>
+    <string name="calories">Kalorien</string>
+    <string name="aerobic_te">Aerob. Trainingseffekt</string>
+    <string name="anaerobic_te">Anaerob. Trainingseffekt</string>
+    <string name="flow">Flow (Halten der Geschw.)</string>
+    <string name="grit">Grit (Schwierigkeit)</string>
+    <string name="trainingLoad">Traingbelastung</string>
+    <string name="add_image">Füge Bild hinzu</string>
+    <string name="with_image">Mit Bild</string>
+    <string name="set_date">Setzte Datum</string>
+    <string name="set_activity">Setzte Aktivität</string>
+    <string name="end_of">Ende von</string>
+von
+    <string-array name="date_array">
+        <item>Gesamt</item>
+        <item>Benutzerdefiniert</item>
+    </string-array>
+    <string-array name="data_array">
+        <item>Höhenmeter</item>
+        <item>Höhenmeter aufsummiert</item>
+        <item>Kilometer</item>
+        <item>Kilometer aufsummiert</item>
+        <item>Höhe</item>
+        <item>Duchschn. Geschwindigkeit</item>
+        <item>Maximale Geschwindigkeit</item>
+        <item>Duchschn. HR</item>
+        <item>Norm Leistung</item>
+        <item>Duchschn. Leistung 20 min</item>
+        <item>Duchschn. Leistung 1 Stunde</item>
+    </string-array>
+
+    <string-array name="bar_chart_spinner">
+        <item>Anzahl</item>
+        <item>Kilometer</item>
+        <item>Höhenmeter</item>
+    </string-array>
+
+    <string-array name="bar_chart_spinner_x_axis">
+        <item>Datum</item>
+        <item>Kilometer</item>
+        <item>Höhenmeter</item>
+        <item>Höchster Punkt</item>
+    </string-array>
+
+    <string name="tab_text_1">Daten</string>
+    <string name="tab_text_2">Bilder</string>
+    <string name="tab_text_3">Karte und Höhenprofile</string>
+
+    <string name="bar_charts">Balkendiagramm</string>
+    <string name="summit_image">Gipfelbild</string>
+    <string name="overview">Überblick</string>
+    <string name="action_settings">Einstellungen</string>
+    <string name="vs">vs</string>
+    <string name="show_milage">Zeige Entfernung</string>
+    <string name="map_type">Wechsle Kartentyp</string>
+    <string name="bookmarks">Bookmarks</string>
+    <string name="search">Suche</string>
+    <string name="my_position">Location</string>
+    <string name="participants">Teilnehmer</string>
+
+    <string name="shared_gpx_subject">"Teile GPX Track"</string>
+    <string name="shared_gpx_text">"Teile GPX Track für Bookmark %1$s.\nHöhenmeter: %2$s hm\nEntfernung: %3$s km"</string>
+    <string name="shared_summit_gpx_text">"Teile GPX Track for %1$s.\nDatum: %2$s\nHöhenmeter: %3$s hm\nEntfernung: %4$s km",</string>
+    <string name="base_info">"%1$s Gipfel mit %2$s km und %3$s m Höhenmeter."</string>
+    <string name="import_string_titel">"Import erfolgreich"</string>
+    <string name="import_string">"Der Import der Zip Datei ist abgeschlossen mit Zeilen in CSV Datei: %1$s\nImportierte Gipfel: %2$s\nInvalide Gipfel: %3$s\nDuplizierte Gipfel: %4$s"</string>
+    <string name="current_estimate">"Aktuelle Hochrechnung für Jahresziel: %1$s hm."</string>
+    <string name="found_adress">"Adresse für %1$s gefunden."</string>
+    <string name="delete_gps">"Koordinaten and GPX track des Gipfels %1$s wurden gelöscht."</string>
+    <string name="delete_cancel">"Löschen wurde abgebrochen."</string>
+    <string name="not_found">"Konnte %1$s nicht finden."</string>
+    <string name="delete_entry">"Gipfel %1$s wurde gelöscht."</string>
+    <string name="delete_entry_text">"Sind Sie sicher, dass sie den Gipfel löschen möchten?"</string>
+    <string name="select_gps">"Bitte wähle einen GPX Track aus"</string>
+    <string name="download_gps_failed">"Der GPX Track konnte nicht heruntergeladen werden. Fehler: %1$s."</string>
+    <string name="try_again">"Ein Fehler ist aufgetreten, bitte versuchen Sie es erneut."</string>
+    <string name="add_gpx_successful">"Das Hinzufügen eines neuen GPX Track zu Gipfel %1$s war erfolgreich."</string>
+    <string name="add_gpx_failed">"Das Hinzufügen eines neuen GPX Track zu Gipfel %1$s ist fehlgeschlagen."</string>
+    <string name="garmin_add_cancel">"Hinzufügen einer Garmin Connect Aktivität wurde abgebrochen."</string>
+    <string name="garmin_add_successful">"Erfolgreich Gipfel %1$s von Garmin Connect abgefragt"</string>
+    <string name="choose_item">"Wähle ein Item aus"</string>
+    <string name="download_complete">"Download der GPX Datei ist komplett."</string>
+    <string name="update_summit_cancel">"Aktualisierung des Gipfels wurde abgebrochen."</string>
+    <string name="add_new_summit_cancel">"Das Hinzufügen eines neuen Gipfels wure abgebrochen."</string>
+    <string name="height_profile_label">"Höhenprofil"</string>
+    <string name="power_profile_label">"Aktueller Gipfel"</string>
+    <string name="power_profile_all_label">"Rekord"</string>
+    <string name="delete_image">"Lösche Bild von Gipfel %1$s."</string>
+    <string name="delete_image_text">"Sind Sie sicher, dass sie das Bild löschen möchten?"</string>
+    <string name="delete_image_done">"Bild wurde gelöscht."</string>
+
+    <string name="garmin_pwd_summary">Füge dein Garmin Passwort hinzu um GPX Tracks von Garmin connect abzufragen</string>
+    <string name="garmin_pwd_title">Garmin Passwort</string>
+    <string name="garmin_user_summary">Füge deinen Garmin Benützername hinzu um GPX Tracks von Garmin connect abzufragen</string>
+    <string name="garmin_user_title">Garmin Benutzername</string>
+    <string name="current_year_summary">Aktiviere diese Option um das Standardverhalten nach dem Starten zu verändern</string>
+    <string name="current_year_title">Zeige nur Gipfel des aktuellen Jahres</string>
+    <string name="annual_target_height_meter_summary">Bitte trege dein Jahresziel an zurückgelegten Höhenmeter ein</string>
+    <string name="annual_target_height_meter_title">Jahresziel an zurückgelegten Höhenmeter</string>
+    <string name="annual_target_kilometer_summary">Bitte trege dein Jahresziel an zurückgelegten Kilometern ein</string>
+    <string name="annual_target_kilometer_title">Jahresziel an zurückgelegten Kilometern</string>
+    <string name="annual_target_activities_summary">Bitte trege dein Jahresziel an absolvierten Aktivitäten ein</string>
+    <string name="annual_target_activities_title">Jahresziel an Aktivitäten</string>
+    <string name="export_csv_dialog">Export von Gipfel?</string>
+    <string name="export_csv_dialog_text">Export alle oder gerade gefilterte summits?</string>
+    <string name="export_csv_dialog_positiv">Alle Gipfel</string>
+    <string name="export_csv_dialog_neutral">Gefilterte Gipfel</string>
+    <string name="export_csv_dialog_negative_text">Export ist agebrochen worden</string>
+    <string name="export_csv_summary_titel">"Export war erfolgreich"</string>
+    <string name="export_csv_summary_text">"Anzahl an Gipfel exportiert in Datei: %1$s\nGipfel mit gps Datei: %2$s\nGipfel mit Bildern: %3$s"</string>
+
+    <string name="bicycle">Fahrrad</string>
+    <string name="bicycle_short">Rad</string>
+    <string name="mountainbike">Mountainbike</string>
+    <string name="mountainbike_short">MTB</string>
+    <string name="bikeAndHike">Bike&amp;Hike</string>
+    <string name="bikeAndHike_short">B&amp;H</string>
+    <string name="climb">Klettern</string>
+    <string name="climb_short">Klettern</string>
+    <string name="hike">Wandern</string>
+    <string name="hike_short">Wandern</string>
+    <string name="skitour">Skitour</string>
+    <string name="skitour_short">Ski</string>
+    <string name="racer">Rennrad</string>
+    <string name="racer_short">RR</string>
+    <string name="running">Laufen</string>
+    <string name="running_short">Laufen</string>
+    <string name="other">Andere</string>
+    <string name="other_short">Andere</string>
+    <string name="of">von</string>
+    <string name="show_all_tracks">Show all tracks</string>
+    <string name="heighest_VO2MAX">Höchstes Vo2max</string>
+    <string name="heighest_FTP">Höchste FTP</string>
+    <string name="highest_power_5h">Höchste Leitung 5h</string>
+    <string name="highest_power_2h">Höchste Leistung 2h</string>
+    <string name="highest_power_30min">Höchste Leitung 30min</string>
+    <string name="highest_power_10min">Höchste Leitung 10min</string>
+    <string name="highest_power_5min">Höchste Leitung 5min</string>
+    <string name="highest_power_2min">Höchste Leitung 2min</string>
+    <string name="highest_power_1min">Höchste Leitung 1min</string>
+    <string name="highest_power_30sec">Höchste Leitung 30s</string>
+    <string name="highest_power_20sec">Höchste Leitung 20s</string>
+    <string name="highest_power_10sec">Höchste Leitung 10s</string>
+    <string name="highest_power_5sec">Höchste Leitung 5s</string>
+    <string name="highest_power_2sec">Höchste Leitung 2s</string>
+    <string name="highest_power_1sec">Höchste Leitung 1s</string>
+
+    <string name="average_power">Durchschn. Leistung</string>
+    <string name="max_power">Maximale Leistung</string>
+    <string name="normalized_power">Normalisiert Leistung</string>
+    <string name="power_1sec">Leistung 1s</string>
+    <string name="power_2sec">Leistung 2s</string>
+    <string name="power_5sec">Leistung 5s</string>
+    <string name="power_10sec">Leistung 10s</string>
+    <string name="power_20sec">Leistung 20s</string>
+    <string name="power_30sec">Leistung 30s</string>
+    <string name="power_1min">Leistung 1min</string>
+    <string name="power_2min">Leistung 2min</string>
+    <string name="power_5min">Leistung 5min</string>
+    <string name="power_10min">Leistung 10min</string>
+    <string name="power_20min">Leistung 20min</string>
+    <string name="power_30min">Leistung 30min</string>
+    <string name="power_1h">Leistung 1h</string>
+    <string name="power_2h">Leistung 2h</string>
+    <string name="power_5h">Leistung 5h</string>
+    <string name="vo2Max">Vo2max</string>
+    <string name="ftp">FTP</string>
+    <string name="tab_text_4">Leistungsprofil</string>
+    <string name="more">Mehr Datenfelder</string>
+    <string name="less">Weniger Datenfelder</string>
+    <string name="more_performance">Update Leistunsgdaten</string>
+    <string name="less_performance">Close Leistunsgdaten</string>
+    <string name="watt">W</string>
+    <string name="bpm">bpm</string>
+
+</resources>

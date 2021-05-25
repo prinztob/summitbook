@@ -1,0 +1,33 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:title="@string/annual_target_height_meter_title"
+        android:key="annual_target"
+        android:defaultValue="50000"
+        android:summary="@string/annual_target_height_meter_summary"/>
+    <EditTextPreference
+        android:title="@string/annual_target_kilometer_title"
+        android:key="annual_target_km"
+        android:defaultValue="1200"
+        android:summary="@string/annual_target_kilometer_summary"/>
+    <EditTextPreference
+        android:title="@string/annual_target_activities_title"
+        android:key="annual_target_activities"
+        android:defaultValue="52"
+        android:summary="@string/annual_target_activities_summary"/>
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="current_year_switch"
+        android:summary="@string/current_year_summary"
+        android:title="@string/current_year_title" />
+    <EditTextPreference
+        android:key="garmin_username"
+        android:title="@string/garmin_user_title"
+        android:summary="@string/garmin_user_summary"
+        android:inputType="text" />
+    <de.drtobiasprinz.summitbook.ui.utils.PasswordPreference
+        android:key="garmin_password"
+        android:title="@string/garmin_pwd_title"
+        android:summary="@string/garmin_pwd_summary"
+        android:inputType="textPassword" />
+</PreferenceScreen>
