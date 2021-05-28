@@ -30,4 +30,8 @@
         android:title="@string/garmin_pwd_title"
         android:summary="@string/garmin_pwd_summary"
         android:inputType="textPassword" />
+    <de.drtobiasprinz.summitbook.ui.utils.DatePreference
+        android:title="Start date for syncing Garmin Activities"
+        android:key="garmin_start_date"
+        android:defaultValue="2020-01-01"/>
 </PreferenceScreen>

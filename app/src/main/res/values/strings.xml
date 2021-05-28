@@ -9,7 +9,6 @@
     <string name="nav_export">Export backup</string>
     <string name="nav_open_drawer">Open navigation drawer</string>
     <string name="nav_close_drawer">Close navigation drawer</string>
-    <string name="activity">Activity</string>
     <string name="name">Name</string>
     <string name="type">Type</string>
     <string name="accept">Accept</string>
@@ -154,7 +153,6 @@
     <string name="not_found">"Could not find %1$s."</string>
     <string name="delete_entry">"Deleted entry %1$s."</string>
     <string name="delete_entry_text">"Are you sure you want to delete this entry?"</string>
-    <string name="select_gps">"Select a GPS track"</string>
     <string name="download_gps_failed">"Cold not download gpx file. Error: %1$s."</string>
     <string name="try_again">"An error occurred, please try again."</string>
     <string name="add_gpx_successful">"Adding a new gps track to summit %1$s was successful."</string>
@@ -257,5 +255,11 @@
     <string name="less_performance">Close Performance Data</string>
     <string name="watt">W</string>
     <string name="bpm">bpm</string>
+    <string name="show_new_summits">Show new summits from Garmin</string>
+    <string name="update_new_summits">Update summits from Garmin</string>
+    <string name="merge">Merge</string>
+    <string name="ignore">Ignore</string>
+    <string name="back">Back</string>
+    <string name="revert_ignored_summits">Clean ignored summits</string>
 
 </resources>

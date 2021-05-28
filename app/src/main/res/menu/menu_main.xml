@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    >
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_search"
         android:icon="@drawable/ic_search_black_24dp"
         android:orderInCategory="99"
         android:title="@string/action_search"
-        app:showAsAction="always"
-        app:actionViewClass="androidx.appcompat.widget.SearchView" />
+        app:actionViewClass="androidx.appcompat.widget.SearchView"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_show_new_summits"
+        android:icon="@drawable/ic_baseline_filter_none_grey_24"
+        android:orderInCategory="50"
+        android:title="@string/show_new_summits"
+        app:showAsAction="always" />
     <item
         android:id="@+id/action_sort"
-        android:icon="@android:drawable/ic_menu_sort_by_size"
+        android:icon="@drawable/ic_baseline_filter_list_24"
         android:orderInCategory="1"
         android:title="@string/sort_entries"
-        app:showAsAction="ifRoom"
-        />
+        app:showAsAction="always" />
 </menu>

@@ -108,7 +108,7 @@ class GarminConnectAccess {
                 mutableListOf()
         )
         val activityData = GarminActivityData(
-                jsonObject["activityId"].asString,
+                mutableListOf(jsonObject["activityId"].asString),
                 getJsonObjectEntryNotNull(jsonObject, "calories"),
                 getJsonObjectEntryNotNull(jsonObject, "averageHR"),
                 getJsonObjectEntryNotNull(jsonObject, "maxHR"),
@@ -259,7 +259,7 @@ class GarminConnectAccess {
 
     private fun downloadMultiSportGpx(entry: SummitEntry, index: Int) {
         val gcActivityServiceUrl = "https://connect.garmin.com/modern/proxy/activity-service/activity/" // get chirldren for multi sport
-        val activityServiceUrl = gcActivityServiceUrl + entry.activityData?.activityId
+        val activityServiceUrl = gcActivityServiceUrl + entry.activityData?.activityIds
 
         val jsonRequest: JsonObjectRequest = object : JsonObjectRequest(Method.GET, activityServiceUrl, null, Response.Listener
         { response -> //now handle the response
@@ -422,6 +422,7 @@ class GarminConnectAccess {
                 val activityDataOnI = entries[i].activityData
                 val activityDataEntry1 = entry1.activityData
                 if (activityDataEntry1 != null && activityDataOnI != null) {
+                    activityDataEntry1.activityIds.addAll(activityDataOnI.activityIds)
                     activityDataEntry1.calories += activityDataOnI.calories
                     activityDataEntry1.averageHR = ((activityDataEntry1.averageHR * timeInHouroldEntry + activityDataOnI.averageHR * timeInHourNewEntry) / (timeInHourNewEntry + timeInHouroldEntry)).toFloat()
                     if (activityDataEntry1.maxHR < activityDataOnI.maxHR) activityDataEntry1.maxHR = activityDataOnI.maxHR

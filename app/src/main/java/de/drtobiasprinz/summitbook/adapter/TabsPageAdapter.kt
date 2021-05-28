@@ -2,6 +2,7 @@ package de.drtobiasprinz.summitbook.adapter
 
 import SummitEntryDataFragment
 import SummitEntryImagesFragment
+import SummitEntryPowerFragment
 import SummitEntryTrackFragment
 import android.content.Context
 import androidx.fragment.app.Fragment

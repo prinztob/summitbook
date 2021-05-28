@@ -30,6 +30,12 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
         return _id
     }
 
+    fun insertIgnoredActivityId(db: SQLiteDatabase, activityId: String): Long {
+        val values = ContentValues()
+        values.put("ACTIVITY_ID", activityId)
+        return db.insert(IGNORED_ACTIVITIES, null, values)
+    }
+
     private fun insertTrackBoundingBox(db: SQLiteDatabase, id: Int, trackBoundingBox: TrackBoundingBox): Long {
         val values = setContentValues(id, trackBoundingBox)
         return db.insert(TRACK_BOUNDING_BOX_DB_TABLE_NAME, null, values)
@@ -105,7 +111,7 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
         }
         summitValues.put("PARTICIPANTS", entry.participants.joinToString(","))
         if (entry.activityData != null) {
-            summitValues.put("GARMIN_ACTIVITY_ID", entry.activityData?.activityId)
+            summitValues.put("GARMIN_ACTIVITY_ID", entry.activityData?.activityIds?.joinToString(","))
             summitValues.put("CALORIES", entry.activityData?.calories)
             summitValues.put("AVERAGE_HR", entry.activityData?.averageHR)
             summitValues.put("MAX_HR", entry.activityData?.maxHR)
@@ -139,6 +145,10 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
         } catch (exception: SQLiteException) {
             false
         }
+    }
+
+    fun dropIgnoredActivities(db: SQLiteDatabase?) {
+        db?.execSQL("DELETE FROM $IGNORED_ACTIVITIES;")
     }
 
     fun getSummitsWithId(id: Int, db: SQLiteDatabase?): SummitEntry? {
@@ -222,6 +232,21 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
         return bookmarks
     }
 
+    fun getAllIgnoredActivities(db: SQLiteDatabase?): ArrayList<String> {
+        val activityIds = ArrayList<String>()
+        val cursor = db?.query(IGNORED_ACTIVITIES,
+                arrayOf("ACTIVITY_ID"),
+                null, null,
+                null, null, "ACTIVITY_ID DESC")
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                activityIds.add(cursor.getString(0))
+            }
+            cursor.close()
+        }
+        return activityIds
+    }
+
     fun getAllSummits(db: SQLiteDatabase?, maxEntries: Int = -1): ArrayList<SummitEntry> {
         val summitEntries = ArrayList<SummitEntry>()
         val cursor = db?.query(SUMMITS_DB_TABLE_NAME,
@@ -284,7 +309,7 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
                 entry.isFavorite = cursor.getInt(28) == 1
                 if (cursor.getFloat(16) != 0f) {
                     val activityData = GarminActivityData(
-                            cursor.getString(16),
+                            cursor.getString(16).split(",") as MutableList<String>,
                             cursor.getFloat(17),
                             cursor.getFloat(18),
                             cursor.getFloat(19),
@@ -414,6 +439,8 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
                     "LON_EAST REAL " +
                     ");")
         }
+        db.execSQL("CREATE TABLE $IGNORED_ACTIVITIES (_id INTEGER NOT NULL PRIMARY KEY, " +
+                "ACTIVITY_ID INTEGER NOT NULL);")
     }
 
     fun updatePositionOfSummit(db: SQLiteDatabase?, summitEntryId: Int, latLng: LatLng) {
@@ -439,7 +466,8 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
         private const val DB_NAME: String = "summitbook"
         private const val SUMMITS_DB_TABLE_NAME: String = "SUMMITS"
         private const val TRACK_BOUNDING_BOX_DB_TABLE_NAME: String = "BOUNDINGBOX"
+        private const val IGNORED_ACTIVITIES: String = "IGNOREDACTIVITIES"
         private const val BOOKMARKS_DB_TABLE_NAME: String = "BOOKMARKS"
-        private const val DB_VERSION = 6
+        private const val DB_VERSION = 1
     }
 }

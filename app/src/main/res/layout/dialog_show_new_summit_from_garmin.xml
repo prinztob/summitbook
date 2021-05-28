@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/invoices_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <ScrollView
+        android:id="@+id/viewTableSummits"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <TableLayout
+            android:id="@+id/tableSummits"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="0dp"
+            android:stretchColumns="*" />
+    </ScrollView>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageButton
+            android:id="@+id/update_new_summits"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="5dp"
+            android:layout_alignParentStart="true"
+            android:contentDescription="@string/update_new_summits"
+            android:paddingStart="15dp"
+            android:paddingEnd="5dp"
+            android:src="@drawable/ic_baseline_sync_24" />
+        <ImageButton
+            android:id="@+id/revert_ignored_summits"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="5dp"
+            android:layout_alignParentStart="true"
+            android:layout_below="@id/update_new_summits"
+            android:contentDescription="@string/revert_ignored_summits"
+            android:paddingStart="15dp"
+            android:paddingEnd="5dp"
+            android:src="@drawable/ic_baseline_delete_24" />
+
+        <Button
+            android:id="@+id/add_summit_single"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="5dp"
+            android:layout_toStartOf="@id/add_summit_merge"
+            android:backgroundTint="@color/green_500"
+            android:text="@string/saveButtonText" />
+
+        <Button
+            android:id="@+id/add_summit_merge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="5dp"
+            android:backgroundTint="@color/green_500"
+            android:text="@string/merge" />
+
+        <Button
+            android:id="@+id/ignore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/add_summit_single"
+            android:layout_marginEnd="5dp"
+            android:layout_toStartOf="@id/back"
+            android:backgroundTint="@color/red_500"
+            android:text="@string/ignore" />
+
+        <Button
+            android:id="@+id/back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/add_summit_merge"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="5dp"
+            android:backgroundTint="@color/grey_500"
+            android:text="@string/back" />
+    </RelativeLayout>
+</LinearLayout>

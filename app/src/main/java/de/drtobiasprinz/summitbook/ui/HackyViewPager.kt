@@ -1,26 +1,19 @@
-package de.drtobiasprinz.summitbook.ui;
-import android.content.Context;
-import android.util.AttributeSet;
-import android.view.MotionEvent;
+package de.drtobiasprinz.summitbook.ui
 
-import androidx.viewpager.widget.ViewPager;
+import android.content.Context
+import android.util.AttributeSet
+import android.view.MotionEvent
+import androidx.viewpager.widget.ViewPager
 
-public class HackyViewPager extends ViewPager {
+class HackyViewPager : ViewPager {
+    constructor(context: Context?) : super(context!!) {}
+    constructor(context: Context?, attrs: AttributeSet?) : super(context!!, attrs) {}
 
-    public HackyViewPager(Context context) {
-        super(context);
-    }
-
-    public HackyViewPager(Context context, AttributeSet attrs) {
-        super(context, attrs);
-    }
-
-    @Override
-    public boolean onInterceptTouchEvent(MotionEvent ev) {
-        try {
-            return super.onInterceptTouchEvent(ev);
-        } catch (IllegalArgumentException e) {
-            return false;
+    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
+        return try {
+            super.onInterceptTouchEvent(ev)
+        } catch (e: IllegalArgumentException) {
+            false
         }
     }
 }

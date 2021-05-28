@@ -19,8 +19,8 @@ android {
             buildPython "/usr/bin/python3.8"
             pip {
                 install "requests==2.24.0"
-                install "cloudscraper"
-                install "garminconnect"
+                install "cloudscraper==1.2.58"
+                install "garminconnect==0.1.22"
             }
         }
 

@@ -26,6 +26,7 @@ class SummitEntry @JvmOverloads constructor(
     var latLng: LatLng? = null
     var activityData: GarminActivityData? = null
     var isFavorite = false
+    var isSelected = false
     var gpsTrack: GpsTrack? = null
     var trackBoundingBox: TrackBoundingBox? = null
     private var rootDirectoryImages = File(MainActivity.storage, "${subDirForImages}/${activityId}")
@@ -239,6 +240,17 @@ class SummitEntry @JvmOverloads constructor(
         return that.kilometers == kilometers && that.getDateAsString() == getDateAsString() && name == that.name && sportType == that.sportType && heightMeter == that.heightMeter
     }
 
+    fun equalsInAllProperties(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || javaClass != other.javaClass) return false
+        val that = other as SummitEntry
+        return that.kilometers == kilometers && that.getDateAsString() == getDateAsString()
+                && name == that.name && sportType == that.sportType
+                && heightMeter == that.heightMeter && pace == that.pace
+                && topElevation == that.topElevation && topSpeed == that.topSpeed
+                && comments == that.comments
+    }
+
     override fun hashCode(): Int {
         return Objects.hash(date, name, sportType, heightMeter, kilometers)
     }
@@ -288,14 +300,14 @@ class SummitEntry @JvmOverloads constructor(
 
         private fun getGarminActivityData(splitLine: Array<String>): GarminActivityData {
             if (splitLine.size == 30) {
-                return GarminActivityData(splitLine[15], splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
+                return GarminActivityData(splitLine[15].split(",") as MutableList<String>, splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
                         PowerData(splitLine[19].toFloat(), splitLine[20].toFloat(), splitLine[21].toFloat(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                 splitLine[22].toInt(), 0, splitLine[23].toInt(), 0, 0),
                         0, 0,
                         splitLine[24].toFloat(), splitLine[25].toFloat(),
                         splitLine[26].toFloat(), splitLine[27].toFloat(), splitLine[28].toFloat())
             } else {
-                return GarminActivityData(splitLine[15], splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
+                return GarminActivityData(splitLine[15].split(",") as MutableList<String>, splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
                         PowerData.parse(splitLine[19].split(",")),
                         splitLine[20].toInt(), splitLine[21].toInt(),
                         splitLine[22].toFloat(), splitLine[23].toFloat(),
