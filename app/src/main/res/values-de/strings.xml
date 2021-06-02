@@ -177,6 +177,8 @@ von
     <string name="garmin_pwd_title">Garmin Passwort</string>
     <string name="garmin_user_summary">Füge deinen Garmin Benützername hinzu um GPX Tracks von Garmin connect abzufragen</string>
     <string name="garmin_user_title">Garmin Benutzername</string>
+    <string name="tcx_switch">Aktiviere diese Option um tcx Datein anstatt gpx herunterzuladen</string>
+    <string name="tcx_switch_title">Lade tcx anstatt gpx herunter</string>
     <string name="current_year_summary">Aktiviere diese Option um das Standardverhalten nach dem Starten zu verändern</string>
     <string name="current_year_title">Zeige nur Gipfel des aktuellen Jahres</string>
     <string name="annual_target_height_meter_summary">Bitte trege dein Jahresziel an zurückgelegten Höhenmeter ein</string>

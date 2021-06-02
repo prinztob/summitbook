@@ -49,6 +49,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         val username = sharedPreferences.getString("garmin_username", null) ?: ""
         val password = sharedPreferences.getString("garmin_password", null) ?: ""
+        val useTcx = sharedPreferences.getBoolean("download_tcx", false)
         pythonExecutor = GarminPythonExecutor(username, password)
         helper = SummitBookDatabaseHelper(view.context)
         database = helper.writableDatabase
@@ -77,7 +78,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
         addSummitsButton.setOnClickListener {
             if (areEntriesChecked()) {
                 entriesWithoutIgnored.filter { summit -> summit.isSelected }.forEach { entry ->
-                    AsyncDownloadGpxViaPython(pythonExecutor, listOf(entry), sortFilterHelper).execute()
+                    AsyncDownloadGpxViaPython(pythonExecutor, listOf(entry), sortFilterHelper, useTcx).execute()
                 }
             }
             Objects.requireNonNull(dialog)?.cancel()
@@ -86,8 +87,9 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
         mergeSummitsButton.isEnabled = false
         mergeSummitsButton.setOnClickListener {
             if (canSelectedSummitsBeMerged()) {
-                entriesWithoutIgnored.filter { summit -> summit.isSelected }.forEach { Log.i("TAG", "merge summit ${it}") }
+                AsyncDownloadGpxViaPython(pythonExecutor, entriesWithoutIgnored.filter { summit -> summit.isSelected }, sortFilterHelper, useTcx).execute()
             }
+            Objects.requireNonNull(dialog)?.cancel()
         }
         ignoreSummitsButton = view.findViewById(R.id.ignore)
         ignoreSummitsButton.isEnabled = false
@@ -199,8 +201,8 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
     }
 
     companion object {
-        class AsyncDownloadGpxViaPython(garminPythonExecutor: GarminPythonExecutor, entries: List<SummitEntry>, private val sortFilterHelper: SortFilterHelper) : AsyncTask<Void?, Void?, Void?>() {
-            private val downloader = GarminTrackAndDataDownloader(entries, garminPythonExecutor)
+        class AsyncDownloadGpxViaPython(garminPythonExecutor: GarminPythonExecutor, entries: List<SummitEntry>, private val sortFilterHelper: SortFilterHelper, val useTcs: Boolean = false) : AsyncTask<Void?, Void?, Void?>() {
+            private val downloader = GarminTrackAndDataDownloader(entries, garminPythonExecutor, useTcs)
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
                     downloader.downloadTracks()

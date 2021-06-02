@@ -36,6 +36,21 @@ def get_activity_json_for_date(client, date):
     except Exception as err:
         return "return code: 1Unknown error occurred during Garmin Connect Client get activities %s" % err
 
+def download_tcx(client, activity_id, output_file):
+    try:
+        gpx_data = client.download_activity(activity_id, dl_fmt=client.ActivityDownloadFormat.TCX)
+        with open(output_file, "wb") as fb:
+            fb.write(gpx_data)
+        return "return code: 0"
+    except (
+            GarminConnectConnectionError,
+            GarminConnectAuthenticationError,
+            GarminConnectTooManyRequestsError,
+    ) as err:
+        return "return code: 1Error occurred during Garmin Connect Client get activities: %s" % err
+    except Exception as err:
+        return "return code: 1Unknown error occurred during Garmin Connect Client get activities %s" % err
+
 
 def download_gpx(client, activity_id, output_file):
     try:

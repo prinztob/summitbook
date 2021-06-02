@@ -41,6 +41,15 @@ class GarminPythonExecutor(val username: String, val password: String) {
         checkOutput(result)
     }
 
+    fun downloadTcxFile(garminActivityId: String, downloadPath: String) {
+        if (client == null) {
+            login()
+        }
+        val result = pythonModule.callAttr("download_tcx", client, garminActivityId, downloadPath)
+        checkOutput(result)
+    }
+
+
     fun downloadActivitiesByDate(activitiesDir: File, startDate: String, endDate: String) {
         if (client == null) {
             login()

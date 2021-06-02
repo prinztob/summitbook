@@ -13,7 +13,7 @@ import java.nio.file.Paths
 import java.util.*
 
 
-class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPythonExecutor: GarminPythonExecutor) {
+class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPythonExecutor: GarminPythonExecutor, var useTcx: Boolean = false) {
 
     private val downloadedTracks: MutableList<File> = mutableListOf()
     var finalEntry: SummitEntry? = null
@@ -25,8 +25,12 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
             if (activityData != null) {
                 val idsWithoutParentId = if (activityData.activityIds.size > 1) activityData.activityIds.subList(1, activityData.activityIds.size) else activityData.activityIds
                 for (activityId in idsWithoutParentId) {
-                    val file = getTempGpsFilePath(activityId).toFile()
-                    garminPythonExecutor.downloadGpxFile(activityId, file.absolutePath)
+                    val file = getTempGpsFilePath(activityId, useTcx).toFile()
+                    if (useTcx) {
+                        garminPythonExecutor.downloadTcxFile(activityId, file.absolutePath)
+                    } else {
+                        garminPythonExecutor.downloadGpxFile(activityId, file.absolutePath)
+                    }
                     downloadedTracks.add(file)
                 }
             }
@@ -34,8 +38,9 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
     }
 
 
-    private fun getTempGpsFilePath(activityId: String): Path {
-        val fileName = String.format(Locale.ENGLISH, "id_%s.gpx", activityId)
+    private fun getTempGpsFilePath(activityId: String, useTcx: Boolean = false): Path {
+        val fileEnding = if (useTcx) "tcx" else "gpx"
+        val fileName = String.format(Locale.ENGLISH, "id_${activityId}.${fileEnding}", activityId)
         return Paths.get(MainActivity.cache.toString(), fileName)
     }
 
@@ -55,7 +60,7 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
         if (finalEntryLocal != null) {
             val gpsUtils = GpsUtils()
             val name = "${finalEntryLocal.getDateAsString()}_${finalEntryLocal.name.replace(" ", "_")}"
-            val tracks = gpsUtils.composeGpxFile(downloadedTracks as ArrayList<File>)
+            val tracks = if (useTcx) gpsUtils.composeTcxFile(downloadedTracks as ArrayList<File>) else gpsUtils.composeGpxFile(downloadedTracks as ArrayList<File>)
             finalEntryLocal.getGpsTrackPath()?.toFile()?.let { gpsUtils.write(it, tracks, name) }
             if (finalEntryLocal.latLng == null || finalEntryLocal.latLng?.latitude == 0.0) {
                 val points = tracks.map { it.segments.toList().blockingGet() }.flatten().map { it.points.toList().blockingGet() }.flatten()

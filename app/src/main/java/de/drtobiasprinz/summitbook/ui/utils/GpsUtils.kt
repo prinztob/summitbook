@@ -21,7 +21,28 @@ class GpsUtils {
         gpxWriter.subscribe()
 
     }
+    fun composeTcxFile(files: ArrayList<File>): List<Track> {
+        val tcxToGPXParser = TCXToGPXParser()
+        files.sortBy { it.name }
+        val composedTrack: MutableList<Track> = ArrayList()
+        for (file in files) {
+            var parsedTcx: Gpx? = null
+            try {
+                val inputStream: InputStream = FileInputStream(file)
+                parsedTcx = tcxToGPXParser.parse(inputStream)
+            } catch (e: IOException) {
+                e.printStackTrace()
+            } catch (e: XmlPullParserException) {
+                e.printStackTrace()
+            }
+            if (parsedTcx != null) {
+                val tracks = parsedTcx.tracks
+                composedTrack.addAll(tracks.toList().blockingGet())
 
+            }
+        }
+        return composedTrack
+    }
     fun composeGpxFile(files: ArrayList<File>): List<Track> {
         val gpxParser = GPXParser()
         files.sortBy { it.name }

@@ -173,6 +173,8 @@
     <string name="garmin_pwd_title">Enter Garmin password</string>
     <string name="garmin_user_summary">Enter Garmin user name to retrieve gpx from Garmin connect</string>
     <string name="garmin_user_title">Enter Garmin user name</string>
+    <string name="tcx_switch">Turn this option to download tcx instead of gpx files</string>
+    <string name="tcx_switch_title">Download tcx instead of gpx</string>
     <string name="current_year_summary">Turn this option to change the default behaviour at startup</string>
     <string name="current_year_title">Show entries of current year</string>
     <string name="annual_target_height_meter_summary">Please provide your annual target for elevation gain</string>
