@@ -55,7 +55,7 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
         if (finalEntryLocal != null) {
             val gpsUtils = GpsUtils()
             val name = "${finalEntryLocal.getDateAsString()}_${finalEntryLocal.name.replace(" ", "_")}"
-            val tracks = gpsUtils.composeGpxFile(downloadedTracks as ArrayList<File>, name)
+            val tracks = gpsUtils.composeGpxFile(downloadedTracks as ArrayList<File>)
             finalEntryLocal.getGpsTrackPath()?.toFile()?.let { gpsUtils.write(it, tracks, name) }
             if (finalEntryLocal.latLng == null || finalEntryLocal.latLng?.latitude == 0.0) {
                 val points = tracks.map { it.segments.toList().blockingGet() }.flatten().map { it.points.toList().blockingGet() }.flatten()

@@ -1,0 +1,82 @@
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ns3="http://www.garmin.com/xmlschemas/ActivityExtension/v2" xsi:schemaLocation="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 https://www.garmin.com">
+  <Activities>
+    <Activity Sport="Running">
+      <Id>2018-09-22T13:24:20Z</Id>
+      <Lap StartTime="2018-09-22T13:24:20Z">
+        <TotalTimeSeconds>7025</TotalTimeSeconds>
+        <DistanceMeters>21073.33</DistanceMeters>
+        <Calories>1867</Calories>
+        <Intensity>Active</Intensity>
+        <TriggerMethod>Manual</TriggerMethod>
+        <Track>
+          <Trackpoint>
+            <Time>2018-09-22T13:24:20Z</Time>
+            <Position><LatitudeDegrees>47.347682</LatitudeDegrees><LongitudeDegrees>8.695347</LongitudeDegrees></Position>
+            <AltitudeMeters>443.4</AltitudeMeters>
+            <DistanceMeters>0.0</DistanceMeters>
+            <HeartRateBpm>
+              <Value>80</Value>
+            </HeartRateBpm>
+            <Extensions><ns3:TPX><ns3:Speed>0.0</ns3:Speed></ns3:TPX></Extensions>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2018-09-22T13:24:21Z</Time>
+            <Position><LatitudeDegrees>47.347702</LatitudeDegrees><LongitudeDegrees>8.695333</LongitudeDegrees></Position>
+            <AltitudeMeters>443.4</AltitudeMeters>
+            <DistanceMeters>2.7</DistanceMeters>
+            <HeartRateBpm>
+              <Value>81</Value>
+            </HeartRateBpm>
+            <Extensions><ns3:TPX><ns3:Speed>2.7</ns3:Speed></ns3:TPX></Extensions>
+          </Trackpoint>
+          <Trackpoint>
+            <Time>2018-09-22T15:21:24Z</Time>
+            <Position><LatitudeDegrees>47.349364</LatitudeDegrees><LongitudeDegrees>8.715714</LongitudeDegrees></Position>
+            <AltitudeMeters>464.4</AltitudeMeters>
+            <DistanceMeters>21073.33</DistanceMeters>
+            <HeartRateBpm>
+              <Value>185</Value>
+            </HeartRateBpm>
+            <Extensions><ns3:TPX><ns3:Speed>3.0</ns3:Speed></ns3:TPX></Extensions>
+          </Trackpoint>
+        </Track>
+      </Lap>
+      <Notes>Activity e586569cb7f75b21db2f2e84fffc309a</Notes>
+      <Creator xsi:type="Device_t">
+        <Name>TomTom GPS Sports Watch with barometer</Name>
+        <UnitId>0</UnitId>
+        <ProductID>1004</ProductID>
+        <Version>
+          <VersionMajor>2</VersionMajor>
+          <VersionMinor>2</VersionMinor>
+          <BuildMajor>355</BuildMajor>
+          <BuildMinor>0</BuildMinor>
+        </Version>
+      </Creator>
+      <Extensions xsi:type="Extensions_t">
+        <ns3:LX>
+          <ActiveSeconds>7025</ActiveSeconds>
+          <ElapsedSeconds>7025</ElapsedSeconds>
+          <DistanceMeters>21073</DistanceMeters>
+          <Speed>3</Speed>
+          <KiloCalories>1867</KiloCalories>
+          <StepCount>18376</StepCount>
+          <ClimbMeters>154</ClimbMeters>
+        </ns3:LX>
+      </Extensions>
+    </Activity>
+  </Activities>
+  <Author xsi:type="Application_t">
+    <Name>TomTom MySports Service</Name>
+    <Build>
+      <Version>
+        <VersionMajor>2</VersionMajor>
+        <VersionMinor>2</VersionMinor>
+        <BuildMajor>355</BuildMajor>
+        <BuildMinor>0</BuildMinor>
+      </Version>
+    </Build>
+    <LangID>en</LangID>
+    <PartNumber>000-00000-00</PartNumber>
+  </Author>
+</TrainingCenterDatabase>

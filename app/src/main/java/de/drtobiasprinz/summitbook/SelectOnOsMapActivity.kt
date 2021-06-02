@@ -28,7 +28,7 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSetting
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addTrackAndMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
-import io.ticofab.androidgpxparser.parser.GPXParser
+import de.drtobiasprinz.gpx.GPXParser
 import org.osmdroid.bonuspack.location.GeocoderNominatim
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
@@ -268,8 +268,8 @@ class SelectOnOsMapActivity : FragmentActivity() {
         val gpsTrack = prepareGpxTrack()
         val highestTrackPoint = gpsTrack?.getHighestElevation()
         if (highestTrackPoint != null) {
-            latLngSelectedPosition = LatLng(highestTrackPoint.latitude, highestTrackPoint.longitude)
-            addSelectedPositionAndTrack(LatLng(highestTrackPoint.latitude, highestTrackPoint.longitude), gpsTrack, osMap)
+            latLngSelectedPosition = LatLng(highestTrackPoint.lat, highestTrackPoint.lon)
+            addSelectedPositionAndTrack(LatLng(highestTrackPoint.lat, highestTrackPoint.lon), gpsTrack, osMap)
             updateSavePositionButton(true)
         }
     }

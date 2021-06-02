@@ -216,14 +216,14 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
                                     gpsTrack.parseTrack()
                                     val highestTrackPoint = gpsTrack.getHighestElevation()
                                     if (highestTrackPoint != null) {
-                                        entry.latLng = LatLng(highestTrackPoint.latitude, highestTrackPoint.longitude)
+                                        entry.latLng = LatLng(highestTrackPoint.lat, highestTrackPoint.lon)
                                     }
                                 }
                             } else {
                                 files.add(gpxFile)
                             }
                             val name = "${currentSummitEntry?.getDateAsString()}_${currentSummitEntry?.name?.replace(" ", "_")}"
-                            gpsUtils.write(gpxFile, gpsUtils.composeGpxFile(files, name), name)
+                            gpsUtils.write(gpxFile, gpsUtils.composeGpxFile(files), name)
                         }
                     }
                 } catch (e: IOException) {
@@ -313,7 +313,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
                     val gpsUtils = GpsUtils()
                     val activityData = entry?.activityData
                     if (entry != null && activityData != null) {
-                        gpsUtils.write(getTempGpsFilePath(activityData.activityId).toFile(), gpsUtils.composeGpxFile(files, entry.name), entry.name)
+                        gpsUtils.write(getTempGpsFilePath(activityData.activityId).toFile(), gpsUtils.composeGpxFile(files), entry.name)
                         updateDialogFields(entry, !isUpdate)
                         Toast.makeText(context, context?.getString(R.string.garmin_add_successful, entry.name), Toast.LENGTH_LONG).show()
                         progressBar.visibility = View.GONE
@@ -838,7 +838,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
                     val areAllFilesDownloaded = gpxFilesToDownload.count { !it.exists() } == 0
                     if (areAllFilesDownloaded) {
                         val gpsUtils = GpsUtils()
-                        gpsUtils.write(finalGpxFileName, gpsUtils.composeGpxFile(gpxFilesToDownload, "MultiSportMerge"), "MultiSportMerge")
+                        gpsUtils.write(finalGpxFileName, gpsUtils.composeGpxFile(gpxFilesToDownload), "MultiSportMerge")
                     }
                     dialog.listItemsGpsDownloadSuccessful?.set(index, areAllFilesDownloaded)
                 } else {

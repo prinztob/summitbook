@@ -32,7 +32,7 @@ import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowSrolling
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
-import io.ticofab.androidgpxparser.parser.domain.TrackPoint
+import de.drtobiasprinz.gpx.TrackPoint
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
@@ -168,7 +168,7 @@ class SummitEntryTrackFragment : Fragment() {
                     override fun onValueSelected(e: Entry, h: Highlight?) {
                         val trackPoint = e.data as TrackPoint
                         osMap.overlays.remove(marker)
-                        marker = OpenStreetMapUtils.addMarker(osMap, requireContext(), GeoPoint(trackPoint.latitude, trackPoint.longitude), localSummitEntry)
+                        marker = OpenStreetMapUtils.addMarker(osMap, requireContext(), GeoPoint(trackPoint.lat, trackPoint.lon), localSummitEntry)
                     }
 
                     override fun onNothingSelected() {}

@@ -304,7 +304,7 @@ class GarminConnectAccess {
                                     val areAllFilesDownloaded = gpxFilesToDownload.count { !it.exists() } == 0
                                     if (areAllFilesDownloaded) {
                                         val gpsUtils = GpsUtils()
-                                        gpsUtils.write(finalGpxFileName, gpsUtils.composeGpxFile(gpxFilesToDownload, "MultiSportMerge"), "MultiSportMerge")
+                                        gpsUtils.write(finalGpxFileName, gpsUtils.composeGpxFile(gpxFilesToDownload), "MultiSportMerge")
                                     }
                                     listItemsGpsDownloadSuccessful?.set(index, areAllFilesDownloaded)
                                 } else {
@@ -370,7 +370,7 @@ class GarminConnectAccess {
                                 val gpsUtils = GpsUtils()
                                 val activityData = entry?.activityData
                                 if (entry != null && activityData != null) {
-                                    gpsUtils.write(getTempGpsFilePath(activityData.activityId).toFile(), gpsUtils.composeGpxFile(files, entry.name), entry.name)
+                                    gpsUtils.write(getTempGpsFilePath(activityData.activityId).toFile(), gpsUtils.composeGpxFile(files), entry.name)
                                     addSummitDialog.updateDialogFields(entry, !addSummitDialog.isUpdate)
                                     Toast.makeText(context, context.getString(R.string.garmin_add_successful, entry.name), Toast.LENGTH_LONG).show()
                                     progressBar.visibility = View.GONE
