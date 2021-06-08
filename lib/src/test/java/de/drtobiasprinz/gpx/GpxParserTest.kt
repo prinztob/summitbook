@@ -69,6 +69,26 @@ class GpxParserTest {
     ))
 
     @Test
+    fun tomTom() = assertGpxEquals(GPXParser().parse(fixtureInputStream("TomTom.gpx")), Gpx(
+            creator = "TomTom.1004 with Barometer",
+            metadata = Metadata(name = "Activity"),
+            tracks = Observable.just(
+                    Track(
+                            name = "Running",
+                            segments = Observable.just(
+                                    TrackSegment(Observable.fromArray(
+                                            TrackPoint(47.347682, 8.695347, ele = 443.4, time = Time.parse("2018-09-22T13:24:20Z").date,
+                                                    extension = PointExtension(heartRate = 80)),
+                                            TrackPoint(47.347702, 8.695333, ele = 443.4, time = Time.parse("2018-09-22T13:24:21Z").date,
+                                                    extension = PointExtension(heartRate = 81)),
+                                            TrackPoint(47.349364, 8.715714, ele = 464.4, time = Time.parse("2018-09-22T15:21:24Z").date,
+                                                    extension = PointExtension(heartRate = 185))
+
+                                    )))
+                    ))
+    ))
+
+    @Test
     fun route() = assertGpxEquals(GPXParser().parse(fixtureInputStream("route.gpx")), Gpx(
             creator = "RouteConverter",
             metadata = Metadata(name = "Test file by Patrick"),

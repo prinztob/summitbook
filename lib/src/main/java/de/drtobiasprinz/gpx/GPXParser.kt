@@ -254,7 +254,7 @@ class GPXParser {
             }
             val name = parser.name
             when (name) {
-                TAG_TRACK_POINT_EXTENSIONS -> readTrackPointExtensions(parser, extensionBuilder)
+                TAG_TRACK_POINT_EXTENSIONS -> readTrackPointExtensions(parser, extensionBuilder, parser.prefix)
                 else -> skip(parser)
             }
         }
@@ -262,13 +262,13 @@ class GPXParser {
         return extensionBuilder.build()
     }
 
-    private fun readTrackPointExtensions(parser: XmlPullParser, extensionBuilder: PointExtension.Builder) {
+    private fun readTrackPointExtensions(parser: XmlPullParser, extensionBuilder: PointExtension.Builder, extensionNamespace: String) {
         parser.require(XmlPullParser.START_TAG, namespace, TAG_TRACK_POINT_EXTENSIONS)
         while (loopMustContinue(parser.next())) {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            if (parser.prefix != "ns3") {
+            if (parser.prefix != extensionNamespace) {
                 continue
             }
             val name = parser.name

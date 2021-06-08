@@ -7,13 +7,13 @@
         android:orderInCategory="99"
         android:title="@string/action_search"
         app:actionViewClass="androidx.appcompat.widget.SearchView"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
     <item
         android:id="@+id/action_show_new_summits"
         android:icon="@drawable/ic_baseline_filter_none_grey_24"
         android:orderInCategory="50"
         android:title="@string/show_new_summits"
-        app:showAsAction="always" />
+        app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_sort"
         android:icon="@drawable/ic_baseline_filter_list_24"
