@@ -40,7 +40,13 @@
                 android:visibility="gone"
                 style="@style/Widget.AppCompat.ProgressBar.Horizontal">
             </ProgressBar>
-
+            <ProgressBar
+                android:id="@+id/progressBarDownload"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                android:indeterminate="true" />
             <FrameLayout
                 android:id="@+id/content_frame"
                 android:layout_width="match_parent"

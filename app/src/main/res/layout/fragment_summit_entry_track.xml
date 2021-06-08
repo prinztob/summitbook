@@ -3,9 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".SummitEntryDetailsActivity">
 
     <ScrollView
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fadeScrollbars="false"
@@ -95,10 +99,18 @@
                         android:contentDescription="@string/show_milage"
                         android:src="@drawable/moreinfo_arrow" />
                 </RelativeLayout>
+
+                <Spinner
+                    android:id="@+id/spinner_data"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="10dp"
+                    android:layout_below="@+id/osmapLayout"
+                    android:layout_gravity="center_horizontal" />
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_below="@+id/osmapLayout"
+                    android:layout_below="@+id/spinner_data"
                     android:id="@+id/lineChartLayout"
                     android:background="#fff"
                     android:orientation="horizontal"

@@ -73,7 +73,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val factory = LayoutInflater.from(this)
         val filterAndSortView = factory.inflate(R.layout.dialog_filter_and_sort, null)
         sortFilterHelper = SortFilterHelper(filterAndSortView, this, entries, helper, database)
-        summitViewFragment = SummitViewFragment(sortFilterHelper)
+        summitViewFragment = SummitViewFragment(sortFilterHelper, findViewById(R.id.progressBarDownload))
         sortFilterHelper.setFragment(summitViewFragment)
         val toolbar = findViewById<Toolbar?>(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -179,7 +179,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
             }
-            else -> commitFragment(SummitViewFragment(sortFilterHelper))
+            else -> commitFragment(SummitViewFragment(sortFilterHelper, findViewById(R.id.progressBarDownload)))
         }
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
         drawer.closeDrawer(GravityCompat.START)

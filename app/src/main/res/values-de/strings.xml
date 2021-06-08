@@ -63,6 +63,10 @@
     <string name="top_speed">Höchstgeschw.</string>
     <string name="highest_average_speed">Höchste Durschnittsgeschw.</string>
     <string name="longest_distance">Längste Strecke</string>
+    <string name="height_meter">Höhenmeter</string>
+    <string name="power">Leistung</string>
+    <string name="cadence">Kadenz</string>
+    <string name="heart_rate">Herzfrequenz</string>
     <string name="height_meter_done">Meisten Höhenmeter</string>
     <string name="by_elevation">Höhe</string>
     <string name="sort_by">Sortierung</string>

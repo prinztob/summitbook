@@ -6,10 +6,7 @@ import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
@@ -22,6 +19,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
+import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
@@ -32,16 +30,18 @@ import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowSrolling
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
-import de.drtobiasprinz.gpx.TrackPoint
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
 import java.io.IOException
 import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 import kotlin.math.roundToLong
 
 class SummitEntryTrackFragment : Fragment() {
     private var pageViewModel: PageViewModel? = null
+    private var dataSpinner: Spinner? = null
     private var summitEntry: SummitEntry? = null
     private lateinit var root: View
     private lateinit var osMap: CustomMapViewToAllowSrolling
@@ -50,6 +50,7 @@ class SummitEntryTrackFragment : Fragment() {
     private var isMilageButtonShown: Boolean = false
     private lateinit var helper: SummitBookDatabaseHelper
     private lateinit var database: SQLiteDatabase
+    private val activeSpinnerFields: MutableMap<String, Pair<Boolean, Int>> = HashMap()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
@@ -79,6 +80,7 @@ class SummitEntryTrackFragment : Fragment() {
             val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
             imageViewSportType.setImageResource(localSummitEntry.sportType.imageId)
             setOpenStreetMap(localSummitEntry)
+            fillDateSpinner(localSummitEntry)
             drawChart(localSummitEntry)
             val openWithButton = root.findViewById<ImageButton>(R.id.gps_open_with)
             openWithButton.setOnClickListener { _: View? ->
@@ -136,11 +138,52 @@ class SummitEntryTrackFragment : Fragment() {
                     }
                 }
             }
+            dataSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
+                    drawChart(localSummitEntry, i)
+                }
+
+                override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+            }
         }
         return root
     }
 
-    private fun drawChart(localSummitEntry: SummitEntry) {
+    private fun fillDateSpinner(summitEntry: SummitEntry) {
+        var moreThanOneActive = false
+        activeSpinnerFields["height_meter"] = Pair(true, 0)
+
+        val entries = mutableListOf(resources.getString(R.string.height_meter))
+        if (summitEntry.gpsTrack?.trackPoints?.firstOrNull { it?.extension?.power != null } != null) {
+            entries.add(resources.getString(R.string.power))
+            activeSpinnerFields["power"] = Pair(true, 1)
+            moreThanOneActive = true
+        } else {
+            activeSpinnerFields["power"] = Pair(false, 0)
+        }
+        if (summitEntry.gpsTrack?.trackPoints?.firstOrNull { it?.extension?.cadence != null } != null) {
+            entries.add(resources.getString(R.string.cadence))
+            activeSpinnerFields["cadence"] = Pair(true, (activeSpinnerFields["power"]?.second?: 0) + 1)
+            moreThanOneActive = true
+        } else {
+            activeSpinnerFields["cadence"] = Pair(false, 0)
+        }
+        if (summitEntry.gpsTrack?.trackPoints?.firstOrNull { it?.extension?.heartRate != null } != null) {
+            entries.add(resources.getString(R.string.heart_rate))
+            activeSpinnerFields["heartRate"] = Pair(true, maxOf(activeSpinnerFields["cadence"]?.second?: 0, activeSpinnerFields["power"]?.second?: 0) + 1)
+            moreThanOneActive = true
+        } else {
+            activeSpinnerFields["heartRate"] = Pair(false, 0)
+        }
+        val dateAdapter = ArrayAdapter(requireContext(),
+                android.R.layout.simple_spinner_item, java.util.ArrayList(entries))
+        dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        dataSpinner = root.findViewById(R.id.spinner_data)
+        dataSpinner?.adapter = dateAdapter
+        dataSpinner?.visibility = if (moreThanOneActive) View.VISIBLE else View.GONE
+    }
+
+    private fun drawChart(localSummitEntry: SummitEntry, selectedSpinner: Int = 0) {
         if (localSummitEntry.hasGpsTrack()) {
             localSummitEntry.setGpsTrack()
             val gpsTrack: GpsTrack? = localSummitEntry.gpsTrack
@@ -148,19 +191,19 @@ class SummitEntryTrackFragment : Fragment() {
                 if (gpsTrack.hasNoTrackPoints()) {
                     gpsTrack.parseTrack()
                 }
-                val lineChartEntries: MutableList<Entry?> = ArrayList()
-                val entries = gpsTrack.getTrackGraph()
-                for (entry in entries) {
-                    lineChartEntries.add(entry)
-                }
                 val lineChart = root.findViewById<LineChart>(R.id.lineChart)
                 setXAxis(lineChart)
                 val params = lineChart.layoutParams
                 params.height = (metrics.heightPixels * 0.3).toInt()
                 lineChart.layoutParams = params
-
-                val dataSets: MutableList<ILineDataSet?> = ArrayList() // for adding multiple plots
-                val dataSet = LineDataSet(lineChartEntries, getString(R.string.height_profile_label))
+                val dataSets: MutableList<ILineDataSet?> = ArrayList()
+                val (lineChartEntries, label) = when {
+                    selectedSpinner == activeSpinnerFields["power"]?.second && activeSpinnerFields["power"]?.first == true -> Pair(gpsTrack.getTrackGraph{ e -> e.extension?.power?.toFloat() }, getString(R.string.power_profile_label))
+                    selectedSpinner == activeSpinnerFields["cadence"]?.second && activeSpinnerFields["cadence"]?.first == true -> Pair(gpsTrack.getTrackGraph{ e -> e.extension?.cadence?.toFloat() }, getString(R.string.power_profile_label))
+                    selectedSpinner == activeSpinnerFields["heartRate"]?.second && activeSpinnerFields["heartRate"]?.first == true -> Pair(gpsTrack.getTrackGraph{ e -> e.extension?.heartRate?.toFloat() }, getString(R.string.power_profile_label))
+                    else -> Pair(gpsTrack.getTrackGraph{ e -> e.ele?.toFloat() }, getString(R.string.height_profile_label))
+                }
+                val dataSet = LineDataSet(lineChartEntries, label)
                 setGraphView(dataSet)
                 dataSets.add(dataSet)
                 lineChart.data = LineData(dataSets)

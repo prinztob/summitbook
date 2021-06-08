@@ -25,7 +25,7 @@ class GpsTrack(private val gpsTrackPath: Path) {
     var osMapRoute: Polyline? = null
     var isShownOnMap: Boolean = false
     val trackGeoPoints: ArrayList<GeoPoint?> = ArrayList()
-    private val trackPoints: ArrayList<TrackPoint?> = ArrayList()
+    val trackPoints: ArrayList<TrackPoint?> = ArrayList()
     private val COLOR_POLYLINE_STATIC = Color.BLUE
     private val COLOR_POLYLINE_ANIMATED = Color.GREEN
     private val COLOR_BACKGROUND = Color.WHITE
@@ -161,21 +161,25 @@ class GpsTrack(private val gpsTrackPath: Path) {
         }
         return positions
     }
-
-    fun getTrackGraph(): ArrayList<Entry> {
-        val graph = ArrayList<Entry>()
+    fun getTrackGraph(f: (TrackPoint) -> Float?): MutableList<Entry> {
+        val graph = mutableListOf<Entry>()
         var lastTrackPoint: TrackPoint? = null
-        var distance = 0f
+        var cumulativeDistance = 0f
         for (trackPoint in trackPoints) {
             if (trackPoint != null) {
-                if (lastTrackPoint == null) {
+                val value = f(trackPoint)
+                val distance = trackPoint.extension?.distance?.toFloat()
+                if (value != null) {
+                    if (lastTrackPoint == null) {
+                        lastTrackPoint = trackPoint
+                    }
+                    if (distance != null) {
+                        cumulativeDistance = distance
+                    } else {
+                        cumulativeDistance += abs(getDistance(trackPoint, lastTrackPoint))
+                    }
                     lastTrackPoint = trackPoint
-                } else {
-                    distance += abs(getDistance(trackPoint, lastTrackPoint))
-                    lastTrackPoint = trackPoint
-                }
-                if ((trackPoint.ele ?: 0.0) >= 0) {
-                    graph.add(Entry(distance, (trackPoint.ele ?: 0.0).toFloat(), trackPoint))
+                    graph.add(Entry(cumulativeDistance, value, trackPoint))
                 }
             }
         }

@@ -9,6 +9,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.os.AsyncTask
 import android.os.Bundle
 import android.view.*
+import android.widget.ProgressBar
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -31,7 +32,7 @@ import java.io.File
 import java.util.*
 
 
-class SummitViewFragment(private val sortFilterHelper: SortFilterHelper) : Fragment(), SummationFragment, OnSharedPreferenceChangeListener {
+class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private val progressBar: ProgressBar? = null) : Fragment(), SummationFragment, OnSharedPreferenceChangeListener {
     private lateinit var summitEntries: ArrayList<SummitEntry>
     private lateinit var myContext: FragmentActivity
     private var filteredEntries: ArrayList<SummitEntry>? = null
@@ -74,7 +75,7 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
             return true
         }
         if (id == R.id.action_show_new_summits) {
-            ShowNewSummitsFromGarminDialog(allEntriesFromGarmin, sortFilterHelper).show(myContext.supportFragmentManager, "Show new summits from Garmin")
+            ShowNewSummitsFromGarminDialog(allEntriesFromGarmin, sortFilterHelper, progressBar).show(myContext.supportFragmentManager, "Show new summits from Garmin")
         }
         if (id == R.id.action_sort) {
             sortFilterHelper.setFragment(this)
@@ -160,7 +161,7 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
     }
 
     @SuppressLint("StaticFieldLeak")
-    inner class AsyncSummitTask(val fragement: SummitViewFragment) : AsyncTask<Void?, Void?, Void?>() {
+    inner class AsyncSummitTask(private val fragement: SummitViewFragment) : AsyncTask<Void?, Void?, Void?>() {
         var allEntries = arrayListOf<SummitEntry>()
         val helper: SummitBookDatabaseHelper = SummitBookDatabaseHelper(context)
         val database: SQLiteDatabase = helper.readableDatabase

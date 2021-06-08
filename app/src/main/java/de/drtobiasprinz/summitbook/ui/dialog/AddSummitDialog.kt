@@ -679,7 +679,8 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
         }
 
         private fun setTextIfNotAlreadySet(editText: EditText, setValue: String) {
-            if (editText.text.toString() == "") {
+            val textValue = editText.text.toString()
+            if (textValue == "" || textValue == "0" || textValue == "0.0" || textValue == "null") {
                 editText.setText(setValue)
             }
         }
@@ -698,7 +699,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
                     round(convertMeterToKm(getJsonObjectEntryNotNull(jsonObject, "distance").toDouble()), 2),
                     round(averageSpeed, 2),
                     if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0,
-                    if (jsonObject["maxElevation"] != JsonNull.INSTANCE) convertCmToMeter(jsonObject["maxElevation"].asInt) else 0,
+                    if (jsonObject["maxElevation"] != JsonNull.INSTANCE) round(jsonObject["maxElevation"].asDouble, 2).toInt() else 0,
                     emptyList(),
                     mutableListOf()
             )
@@ -789,8 +790,8 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
             var powerData: JsonObject? = null
 
             override fun doInBackground(vararg params: Void?): Void? {
-                pythonExecutor.login()
                 try {
+                    pythonExecutor.login()
                     val gsonLocal = pythonExecutor.getActivityJson(dateAsString)
                     gson = gsonLocal
                     powerData = getPowerData(gsonLocal)

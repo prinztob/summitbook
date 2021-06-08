@@ -64,6 +64,10 @@
     <string name="highest_average_speed">Highest average speed</string>
     <string name="longest_distance">Longest Distance</string>
     <string name="height_meter_done">Most height meter done</string>
+    <string name="height_meter">Height meter</string>
+    <string name="power">Power</string>
+    <string name="cadence">Cadence</string>
+    <string name="heart_rate">Heart Rate</string>
     <string name="by_elevation">height</string>
     <string name="sort_by">Sort by</string>
     <string name="yes">Yes</string>
