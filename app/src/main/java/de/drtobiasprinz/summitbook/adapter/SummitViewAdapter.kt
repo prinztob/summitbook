@@ -19,13 +19,14 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog.Companion.updateInstance
 import de.drtobiasprinz.summitbook.ui.utils.ImagePickerListner
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.util.*
 
 
-class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper) : RecyclerView.Adapter<SummitViewAdapter.ViewHolder?>(), Filterable {
+class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : RecyclerView.Adapter<SummitViewAdapter.ViewHolder?>(), Filterable {
     var cardView: CardView? = null
     val summitEntries = sortFilterHelper.entries
     lateinit var context: Context
@@ -106,7 +107,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper) : Recycl
         }
         val editButton = cardView.findViewById<ImageButton?>(R.id.entry_edit)
         editButton?.setOnClickListener { _: View? ->
-            val updateDialog = sortFilterHelper.let { updateInstance(entry, it) }
+            val updateDialog = sortFilterHelper.let { updateInstance(entry, it, pythonExecutor) }
             MainActivity.mainActivity?.supportFragmentManager?.let { updateDialog.show(it, "Summits") }
         }
         val addPosition = cardView.findViewById<ImageButton?>(R.id.entry_add_coordinate)

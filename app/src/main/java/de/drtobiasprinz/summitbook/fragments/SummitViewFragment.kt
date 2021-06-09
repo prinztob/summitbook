@@ -17,22 +17,21 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter
 import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
 import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
 import de.drtobiasprinz.summitbook.ui.SwipeToDeleteCallback
-import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.io.File
 import java.util.*
 
 
-class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private val progressBar: ProgressBar? = null) : Fragment(), SummationFragment, OnSharedPreferenceChangeListener {
+class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?, private val progressBar: ProgressBar? = null) : Fragment(), SummationFragment, OnSharedPreferenceChangeListener {
     private lateinit var summitEntries: ArrayList<SummitEntry>
     private lateinit var myContext: FragmentActivity
     private var filteredEntries: ArrayList<SummitEntry>? = null
@@ -45,7 +44,7 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
         setHasOptionsMenu(true)
         sortFilterHelper.setFragment(this)
         summitEntries = sortFilterHelper.entries
-        adapter = SummitViewAdapter(sortFilterHelper)
+        adapter = SummitViewAdapter(sortFilterHelper, pythonExecutor)
         filteredEntries = sortFilterHelper.filteredEntries
         update(filteredEntries)
         summitRecycler.adapter = adapter
@@ -60,8 +59,8 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
     }
 
     override fun onAttach(activity: Activity) {
-        myContext = activity as FragmentActivity
         super.onAttach(activity)
+        myContext = activity as FragmentActivity
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -75,7 +74,7 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
             return true
         }
         if (id == R.id.action_show_new_summits) {
-            ShowNewSummitsFromGarminDialog(allEntriesFromGarmin, sortFilterHelper, progressBar).show(myContext.supportFragmentManager, "Show new summits from Garmin")
+            ShowNewSummitsFromGarminDialog(allEntriesFromGarmin, sortFilterHelper, pythonExecutor, progressBar).show(myContext.supportFragmentManager, "Show new summits from Garmin")
         }
         if (id == R.id.action_sort) {
             sortFilterHelper.setFragment(this)
@@ -125,38 +124,27 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
         lateinit var adapter: SummitViewAdapter
 
         fun updateNewSummits(activitiesDir: File, summits: List<SummitEntry>, context: Context?) {
-            if (activitiesDir.exists() && activitiesDir.isDirectory) {
-                val files = activitiesDir.listFiles()
-                if (files.isNotEmpty()) {
-                    allEntriesFromGarmin.clear()
-                    val activitiesIdOfAllSummits = summits.filter { it.activityData != null && it.activityData?.activityIds?.isNotEmpty() == true }.map { it.activityData?.activityIds as List<String> }.flatten().toMutableList()
-                    if (files != null && files.isNotEmpty()) {
-                        files.forEach {
-                            if (it.name.startsWith("activity_")) {
-                                val gson = JsonParser().parse(it.readText()) as JsonObject
-                                allEntriesFromGarmin.add(AddSummitDialog.parseJsonObject(gson))
-
-                            }
-                        }
-                    }
-                    val newEntriesFromGarmin = allEntriesFromGarmin.filter { !(it.activityData?.activityId in activitiesIdOfAllSummits) }
-                    when (newEntriesFromGarmin.size) {
-                        0 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_none_24, null) }
-                        1 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_1_24, null) }
-                        2 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_2_24, null) }
-                        3 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_3_24, null) }
-                        4 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_4_24, null) }
-                        5 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_5_24, null) }
-                        6 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_6_24, null) }
-                        7 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_7_24, null) }
-                        8 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_8_24, null) }
-                        9 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_9_24, null) }
-                        else -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_9_plus_24, null) }
-                    }
-
+            allEntriesFromGarmin.clear()
+            val activitiesIdOfAllSummits = summits.filter { it.activityData != null && it.activityData?.activityIds?.isNotEmpty() == true }.map { it.activityData?.activityIds as List<String> }.flatten().toMutableList()
+            allEntriesFromGarmin.addAll(getAllDownloadedSummitsFromGarmin(activitiesDir))
+            if (allEntriesFromGarmin.isNotEmpty()) {
+                val newEntriesFromGarmin = allEntriesFromGarmin.filter { !(it.activityData?.activityId in activitiesIdOfAllSummits) }
+                when (newEntriesFromGarmin.size) {
+                    0 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_none_24, null) }
+                    1 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_1_24, null) }
+                    2 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_2_24, null) }
+                    3 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_3_24, null) }
+                    4 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_4_24, null) }
+                    5 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_5_24, null) }
+                    6 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_6_24, null) }
+                    7 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_7_24, null) }
+                    8 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_8_24, null) }
+                    9 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_9_24, null) }
+                    else -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_9_plus_24, null) }
                 }
             }
         }
+
 
     }
 

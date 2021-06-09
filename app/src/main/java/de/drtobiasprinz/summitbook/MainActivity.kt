@@ -29,16 +29,17 @@ import androidx.core.app.ActivityCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.preference.PreferenceManager
 import com.google.android.material.navigation.NavigationView
 import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
 import de.drtobiasprinz.summitbook.fragments.*
 import de.drtobiasprinz.summitbook.models.BookmarkEntry
 import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
-import net.danlew.android.joda.JodaTimeAndroid
 import java.io.*
 import java.time.LocalDate
 import java.util.*
@@ -55,11 +56,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     lateinit var summitViewFragment: SummitViewFragment
     private var searchView: SearchView? = null
     private lateinit var sortFilterHelper: SortFilterHelper
+    private var pythonExecutor: GarminPythonExecutor? = null
     private var entriesToExcludeForBoundingboxCalculation: MutableList<SummitEntry> = mutableListOf()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         verifyStoragePermissions(this)
-        JodaTimeAndroid.init(this)
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        val username = sharedPreferences.getString("garmin_username", null) ?: ""
+        val password = sharedPreferences.getString("garmin_password", null) ?: ""
+        if (username != "" && password != "") {
+            pythonExecutor = GarminPythonExecutor(username, password)
+        }
         mainActivity = this
         setContentView(R.layout.activity_main)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_NOSENSOR
@@ -73,7 +81,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val factory = LayoutInflater.from(this)
         val filterAndSortView = factory.inflate(R.layout.dialog_filter_and_sort, null)
         sortFilterHelper = SortFilterHelper(filterAndSortView, this, entries, helper, database)
-        summitViewFragment = SummitViewFragment(sortFilterHelper, findViewById(R.id.progressBarDownload))
+        summitViewFragment = SummitViewFragment(sortFilterHelper, pythonExecutor, findViewById(R.id.progressBarDownload))
         sortFilterHelper.setFragment(summitViewFragment)
         val toolbar = findViewById<Toolbar?>(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -179,7 +187,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
             }
-            else -> commitFragment(SummitViewFragment(sortFilterHelper, findViewById(R.id.progressBarDownload)))
+            else -> commitFragment(SummitViewFragment(sortFilterHelper, pythonExecutor, findViewById(R.id.progressBarDownload)))
         }
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
         drawer.closeDrawer(GravityCompat.START)
@@ -240,7 +248,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     fun onAddSummit(view: View?) {
-        val addSummit = AddSummitDialog(sortFilterHelper)
+        val addSummit = AddSummitDialog(sortFilterHelper, pythonExecutor)
         addSummit.show(this.supportFragmentManager, "Summits")
     }
 

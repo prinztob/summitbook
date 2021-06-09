@@ -88,11 +88,11 @@ class AddBookmarkDialog : DialogFragment() {
                     adapter?.bookmarks?.add(bookmark)
                 }
                 adapter?.notifyDataSetChanged()
-                Objects.requireNonNull(dialog)?.cancel()
+                dialog?.cancel()
             }
         }
         closeDialogButton.setOnClickListener { v: View ->
-            Objects.requireNonNull(dialog)?.cancel()
+            dialog?.cancel()
             val text = if (currentBookmark != null) "Updating an existing summit was canceled." else "Adding a new summit was canceled."
             Toast.makeText(v.context, text, Toast.LENGTH_SHORT).show()
         }

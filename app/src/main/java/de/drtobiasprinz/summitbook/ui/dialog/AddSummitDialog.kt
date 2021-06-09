@@ -15,10 +15,8 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
-import androidx.preference.PreferenceManager
 import com.google.android.gms.maps.model.LatLng
 import com.google.gson.JsonArray
-import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.hootsuite.nachos.NachoTextView
 import com.hootsuite.nachos.terminator.ChipTerminatorHandler
@@ -41,11 +39,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
-import kotlin.math.pow
-import kotlin.math.roundToLong
 
 
-class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFragment() {
+class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : DialogFragment() {
     var isUpdate = false
     private lateinit var helper: SummitBookDatabaseHelper
     private lateinit var database: SQLiteDatabase
@@ -109,7 +105,6 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
         super.onViewCreated(view, savedInstanceState)
         helper = SummitBookDatabaseHelper(view.context)
         database = helper.writableDatabase
-        //input elements
         saveEntryButton = view.findViewById(R.id.add_summit_save)
         saveEntryButton.isEnabled = false
         val closeDialogButton = view.findViewById<Button>(R.id.add_summit_cancel)
@@ -240,11 +235,11 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
                     sortFilterHelper.update(sortFilterHelper.entries)
                 }
                 adapter.notifyDataSetChanged()
-                Objects.requireNonNull(dialog)?.cancel()
+                dialog?.cancel()
             }
         }
         closeDialogButton.setOnClickListener { v: View ->
-            Objects.requireNonNull(dialog)?.cancel()
+            dialog?.cancel()
             val text = if (currentSummitEntry != null) getString(R.string.update_summit_cancel) else getString(R.string.add_new_summit_cancel)
             Toast.makeText(v.context, text, Toast.LENGTH_SHORT).show()
         }
@@ -254,14 +249,8 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
             val dateAsString = date.text.toString()
             val contextLocal = context
             if (dateAsString != "" && contextLocal != null) {
-
-                val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-                val username = sharedPreferences.getString("garmin_username", null) ?: ""
-                val password = sharedPreferences.getString("garmin_password", null) ?: ""
-                val progressBar = view.findViewById<RelativeLayout>(R.id.loadingPanel)
-                if (username != "" && password != "") {
-                    val pythonExecutor = GarminPythonExecutor(username, password)
-                    progressBar.visibility = View.VISIBLE
+                if (pythonExecutor != null) {
+                    view.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
                     AsyncDownloadJsonViaPython(pythonExecutor, dateAsString, this).execute()
                 } else {
                     Toast.makeText(context,
@@ -274,8 +263,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
         }
     }
 
-    fun showSummitsDialog(pythonExecutor: GarminPythonExecutor, gson: JsonArray, progressBar: RelativeLayout, powerData: JsonObject? = null) {
-        val entries = getSummitsAtDate(gson)
+    fun showSummitsDialog(pythonExecutor: GarminPythonExecutor, entries: ArrayList<SummitEntry>, progressBar: RelativeLayout, powerData: JsonObject? = null) {
         val mBuilder = AlertDialog.Builder(requireContext())
         mBuilder.setTitle(requireContext().getString(R.string.choose_item))
         val listItems = arrayOfNulls<String>(entries.size)
@@ -555,18 +543,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
         picker.show()
     }
 
-    fun getSummitsAtDate(activities: JsonArray): ArrayList<SummitEntry> {
-        val entries = ArrayList<SummitEntry>()
-        for (i in 0 until activities.size()) {
-            val row = activities[i] as JsonObject
-            try {
-                entries.add(parseJsonObject(row))
-            } catch (e: ParseException) {
-                e.printStackTrace()
-            }
-        }
-        return entries
-    }
+
 
     private fun extractSummitEntry(entries: ArrayList<SummitEntry>, i: Int, files: ArrayList<File>, entry: SummitEntry?): SummitEntry {
         var entry1 = entry
@@ -630,9 +607,13 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
 
 
     private fun downloadGpxForSummitEntry(pythonExecutor: GarminPythonExecutor, entry: SummitEntry, index: Int) {
-        val garminId = entry.activityData?.activityId
-        if (garminId != null) {
-            AsyncDownloadGpxViaPython(pythonExecutor, garminId, getTempGpsFilePath(entry.date).toFile(), index, this).execute()
+        try {
+            val garminId = entry.activityData?.activityId
+            if (garminId != null) {
+                AsyncDownloadGpxViaPython(pythonExecutor, garminId, getTempGpsFilePath(entry.date).toFile(), index, this).execute()
+            }
+        } catch (e: java.lang.RuntimeException) {
+            Log.e("AsyncDownloadActivities", e.message ?: "")
         }
     }
 
@@ -671,8 +652,8 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
     companion object {
 
         @JvmStatic
-        fun updateInstance(entry: SummitEntry?, sortFilterHelper: SortFilterHelper): AddSummitDialog {
-            val add = AddSummitDialog(sortFilterHelper)
+        fun updateInstance(entry: SummitEntry?, sortFilterHelper: SortFilterHelper, pythonExecutor: GarminPythonExecutor?): AddSummitDialog {
+            val add = AddSummitDialog(sortFilterHelper, pythonExecutor)
             add.isUpdate = true
             add.currentSummitEntry = entry
             return add
@@ -685,118 +666,22 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
             }
         }
 
-        @Throws(ParseException::class)
-        fun parseJsonObject(jsonObject: JsonObject): SummitEntry {
-            val date = SimpleDateFormat(SummitEntry.DATETIME_FORMAT, Locale.ENGLISH)
-                    .parse(jsonObject.getAsJsonPrimitive("startTimeLocal").asString) ?: Date()
-            val duration: Double = if (jsonObject["movingDuration"] != JsonNull.INSTANCE) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
-            val averageSpeed = convertMphToKmh(jsonObject["distance"].asDouble / duration)
-            val entry = SummitEntry(date,
-                    jsonObject["activityName"].asString,
-                    parseSportType(jsonObject["activityType"].asJsonObject),
-                    emptyList(), emptyList(), "",
-                    getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt(),
-                    round(convertMeterToKm(getJsonObjectEntryNotNull(jsonObject, "distance").toDouble()), 2),
-                    round(averageSpeed, 2),
-                    if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0,
-                    if (jsonObject["maxElevation"] != JsonNull.INSTANCE) round(jsonObject["maxElevation"].asDouble, 2).toInt() else 0,
-                    emptyList(),
-                    mutableListOf()
-            )
-            val activityIds: MutableList<String> = mutableListOf(jsonObject["activityId"].asString)
-            if (jsonObject.has("childIds")) {
-                activityIds.addAll(jsonObject["childIds"].asJsonArray.map { it.asString })
-            }
-            val activityData = GarminActivityData(
-                    activityIds,
-                    getJsonObjectEntryNotNull(jsonObject, "calories"),
-                    getJsonObjectEntryNotNull(jsonObject, "averageHR"),
-                    getJsonObjectEntryNotNull(jsonObject, "maxHR"),
-                    getPower(jsonObject),
-                    getJsonObjectEntryNotNull(jsonObject, "maxFtp").toInt(),
-                    getJsonObjectEntryNotNull(jsonObject, "vO2MaxValue").toInt(),
-                    getJsonObjectEntryNotNull(jsonObject, "aerobicTrainingEffect"),
-                    getJsonObjectEntryNotNull(jsonObject, "anaerobicTrainingEffect"),
-                    getJsonObjectEntryNotNull(jsonObject, "grit"),
-                    getJsonObjectEntryNotNull(jsonObject, "avgFlow"),
-                    getJsonObjectEntryNotNull(jsonObject, "activityTrainingLoad")
-            )
-            entry.activityData = activityData
-            return entry
-        }
-
-        private fun getPower(jsonObject: JsonObject) =
-                PowerData(
-                        getJsonObjectEntryNotNull(jsonObject, "avgPower"),
-                        getJsonObjectEntryNotNull(jsonObject, "maxPower"),
-                        getJsonObjectEntryNotNull(jsonObject, "normPower"),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_1").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_2").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_5").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_10").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_20").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_30").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_60").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_120").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_300").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_600").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_1200").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_1800").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_3600").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_7200").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_18000").toInt()
-                )
-
-        private fun getJsonObjectEntryNotNull(jsonObject: JsonObject, key: String): Float {
-            return if (jsonObject[key].isJsonNull) 0.0f else jsonObject[key].asFloat
-        }
-
         private fun getJsonObjectEntryNotNone(jsonObject: JsonObject, key: String): Float {
             return if (jsonObject[key].toString().toLowerCase(Locale.ROOT).contains("none")) 0.0f else jsonObject[key].asFloat
         }
 
-        private fun convertMphToKmh(mph: Double): Double {
-            return mph * 3.6
-        }
+        class AsyncDownloadJsonViaPython(private val pythonExecutor: GarminPythonExecutor, private val dateAsString: String, private val dialog: AddSummitDialog) : AsyncTask<Void?, Void?, Void?>() {
 
-        private fun convertMeterToKm(meter: Double): Double {
-            return meter / 1000.0
-        }
-
-        private fun convertCmToMeter(cm: Int): Int {
-            return (cm / 100.0).roundToLong().toInt()
-        }
-
-        fun parseSportType(jsonObject: JsonObject): SportType {
-            return when (jsonObject["typeId"].asInt) {
-                1 -> SportType.Running
-                2 -> SportType.Bicycle
-                5 -> SportType.Mountainbike
-                89 -> SportType.BikeAndHike
-                169 -> SportType.Skitour
-                else -> SportType.Hike
-            }
-        }
-
-
-        private fun round(value: Double, precision: Int): Double {
-            val scale = 10.0.pow(precision.toDouble()).toInt()
-            return (value * scale).roundToLong().toDouble() / scale
-        }
-
-        class AsyncDownloadJsonViaPython(val pythonExecutor: GarminPythonExecutor, val dateAsString: String, private val dialog: AddSummitDialog) : AsyncTask<Void?, Void?, Void?>() {
-
-            var gson: JsonArray? = null
+            var entries: ArrayList<SummitEntry>? = null
             var powerData: JsonObject? = null
 
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
-                    pythonExecutor.login()
-                    val gsonLocal = pythonExecutor.getActivityJson(dateAsString)
-                    gson = gsonLocal
+                    val gsonLocal = pythonExecutor.getActivityJsonAtDate(dateAsString)
+                    entries = GarminPythonExecutor.getSummitsAtDate(gsonLocal)
                     powerData = getPowerData(gsonLocal)
                 } catch (e: RuntimeException) {
-                    Log.e("AsyncDownloadJsonViaPython", e.message)
+                    Log.e("AsyncDownloadJsonViaPython", e.message ?: "")
                 }
                 return null
             }
@@ -812,11 +697,11 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
             }
 
             override fun onPostExecute(param: Void?) {
-                val gsonLocal = gson
+                val entriesLocal = entries
                 val progressBar = dialog.view?.findViewById<RelativeLayout>(R.id.loadingPanel)
-                if (gsonLocal != null) {
+                if (entriesLocal != null) {
                     if (progressBar != null) {
-                        dialog.showSummitsDialog(pythonExecutor, gsonLocal, progressBar, powerData)
+                        dialog.showSummitsDialog(pythonExecutor, entriesLocal, progressBar, powerData)
                     }
                 } else {
                     progressBar?.visibility = View.GONE
@@ -827,8 +712,12 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper) : DialogFr
         class AsyncDownloadGpxViaPython(val pythonExecutor: GarminPythonExecutor, val garminActivityId: String?, val gpxFile: File, val index: Int, private val dialog: AddSummitDialog, val gpxFilesToDownload: ArrayList<File>? = null, val finalGpxFileName: File? = null) : AsyncTask<Void?, Void?, Void?>() {
 
             override fun doInBackground(vararg params: Void?): Void? {
-                if (garminActivityId != null) {
-                    pythonExecutor.downloadGpxFile(garminActivityId, gpxFile.absolutePath)
+                try {
+                    if (garminActivityId != null) {
+                        pythonExecutor.downloadGpxFile(garminActivityId, gpxFile.absolutePath)
+                    }
+                } catch (e: java.lang.RuntimeException) {
+                    Log.e("AsyncDownloadActivities", e.message ?: "")
                 }
                 return null
             }
