@@ -15,34 +15,39 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
+import androidx.preference.PreferenceManager
 import com.google.android.gms.maps.model.LatLng
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.hootsuite.nachos.NachoTextView
 import com.hootsuite.nachos.terminator.ChipTerminatorHandler
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
-import de.drtobiasprinz.summitbook.models.*
+import de.drtobiasprinz.summitbook.models.GarminActivityData
+import de.drtobiasprinz.summitbook.models.PowerData
+import de.drtobiasprinz.summitbook.models.SportType
+import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
-import de.drtobiasprinz.summitbook.ui.utils.GarminConnectAccess
-import de.drtobiasprinz.summitbook.ui.utils.GpsUtils
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
+import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
+import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
-import java.io.IOException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
 
-class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : DialogFragment() {
+class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : DialogFragment(), BaseDialog {
     var isUpdate = false
+    var temporaryGpxFile: File? = null
+    var latlngHightestPoint: LatLng? = null
     private lateinit var helper: SummitBookDatabaseHelper
     private lateinit var database: SQLiteDatabase
     private lateinit var sportTypeAdapter: ArrayAdapter<SportType>
@@ -195,34 +200,15 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             parseSummitEntry(sportType)
             val entry = currentSummitEntry
             if (entry != null) {
-                try {
-                    val activityDataLocal = entry.activityData
-                    val gpsTrackPath = entry.getGpsTrackPath()
-                    if (activityDataLocal != null) {
-                        val files = ArrayList<File>()
-                        val tempGpsFilePath: Path = getTempGpsFilePath(activityDataLocal.activityId)
-                        val gpsUtils = GpsUtils()
-                        if (gpsTrackPath != null) {
-                            val gpxFile: File = gpsTrackPath.toFile()
-                            if (tempGpsFilePath.toFile().exists()) {
-                                files.add(tempGpsFilePath.toFile())
-                                if (entry.latLng == null || entry.latLng?.latitude == 0.0) {
-                                    val gpsTrack = GpsTrack(tempGpsFilePath)
-                                    gpsTrack.parseTrack()
-                                    val highestTrackPoint = gpsTrack.getHighestElevation()
-                                    if (highestTrackPoint != null) {
-                                        entry.latLng = LatLng(highestTrackPoint.lat, highestTrackPoint.lon)
-                                    }
-                                }
-                            } else {
-                                files.add(gpxFile)
-                            }
-                            val name = "${currentSummitEntry?.getDateAsString()}_${currentSummitEntry?.name?.replace(" ", "_")}"
-                            gpsUtils.write(gpxFile, gpsUtils.composeGpxFile(files), name)
-                        }
-                    }
-                } catch (e: IOException) {
-                    e.printStackTrace()
+                val activityDataLocal = entry.activityData
+                val gpsTrackPath = entry.getGpsTrackPath()?.toFile()
+                val temporaryGpxFileLocal = temporaryGpxFile
+                if (activityDataLocal != null && temporaryGpxFileLocal != null && temporaryGpxFileLocal.exists() && gpsTrackPath != null) {
+                    temporaryGpxFileLocal.copyTo(gpsTrackPath, overwrite = true)
+                }
+                val latlngHighestPointLocal = latlngHightestPoint
+                if (entry.latLng == null && latlngHighestPointLocal != null) {
+                    entry.latLng = latlngHighestPointLocal
                 }
                 entry.setBoundingBoxFromTrack()
                 val adapter = SummitViewFragment.adapter
@@ -263,7 +249,10 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         }
     }
 
-    fun showSummitsDialog(pythonExecutor: GarminPythonExecutor, entries: ArrayList<SummitEntry>, progressBar: RelativeLayout, powerData: JsonObject? = null) {
+    fun showSummitsDialog(pythonExecutor: GarminPythonExecutor, entries: List<SummitEntry>, progressBar: RelativeLayout, powerData: JsonObject? = null) {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val useTcx = sharedPreferences.getBoolean("download_tcx", false)
+
         val mBuilder = AlertDialog.Builder(requireContext())
         mBuilder.setTitle(requireContext().getString(R.string.choose_item))
         val listItems = arrayOfNulls<String>(entries.size)
@@ -280,32 +269,29 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                     listItemsGpsDownloadSuccessful?.set(which, false)
                     listItemsChecked[which] = isChecked
                     mDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = listItemsGpsDownloadSuccessful?.contains(false) == false
-                    if (entry.sportType == SportType.BikeAndHike) {
-                        val power = entry.activityData?.power
-                        if (powerData != null && power != null) {
-                            updatePower(powerData, power)
-                        }
-                        downloadMultiSportGpx(pythonExecutor, entry, which)
-                    } else {
-                        downloadGpxForSummitEntry(pythonExecutor, entry, which)
+                    if (isChecked) {
+                        downloadGpxForSummitEntry(pythonExecutor, entry, which, useTcx, powerData)
                     }
                 }
                 .setPositiveButton(R.string.saveButtonText) { _: DialogInterface?, _: Int ->
-                    var entry: SummitEntry? = null
-                    val files: ArrayList<File> = ArrayList()
+                    val selectedEntries: MutableList<SummitEntry> = mutableListOf()
                     for (i in entries.indices) {
                         if (listItemsChecked[i]) {
-                            entry = extractSummitEntry(entries, i, files, entry)
+                            selectedEntries.add(entries[i])
                         }
                     }
-                    val gpsUtils = GpsUtils()
-                    val activityData = entry?.activityData
-                    if (entry != null && activityData != null) {
-                        gpsUtils.write(getTempGpsFilePath(activityData.activityId).toFile(), gpsUtils.composeGpxFile(files), entry.name)
+                    val downloader = GarminTrackAndDataDownloader(selectedEntries, pythonExecutor)
+                    downloader.downloadTracks(true)
+                    downloader.extractFinalSummitEntry()
+                    val entry = downloader.finalEntry
+                    if (entry != null) {
+                        temporaryGpxFile = getTempGpsFilePath(entry.date).toFile()
+                        downloader.composeFinalTrack(temporaryGpxFile)
+                        latlngHightestPoint = entry.latLng
                         updateDialogFields(entry, !isUpdate)
                         Toast.makeText(context, context?.getString(R.string.garmin_add_successful, entry.name), Toast.LENGTH_LONG).show()
-                        progressBar.visibility = View.GONE
                     }
+                    progressBar.visibility = View.GONE
                 }
                 .setNegativeButton(R.string.cancelButtonText) { _: DialogInterface?, _: Int ->
                     Toast.makeText(context, context?.getString(R.string.garmin_add_cancel), Toast.LENGTH_SHORT).show()
@@ -543,103 +529,43 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         picker.show()
     }
 
-
-
-    private fun extractSummitEntry(entries: ArrayList<SummitEntry>, i: Int, files: ArrayList<File>, entry: SummitEntry?): SummitEntry {
-        var entry1 = entry
-        val tempFileName = getTempGpsFilePath(entries[i].date).toFile()
-        if (tempFileName.exists()) {
-            files.add(tempFileName)
-        }
-        if (entry1 == null) {
-            entry1 = entries[i]
-        } else {
-            entry1.heightMeter += entries[i].heightMeter
-            val timeInHouroldEntry: Double = entry1.kilometers / entry1.pace
-            val timeInHourNewEntry: Double = entries[i].kilometers / entries[i].pace
-            entry1.kilometers += entries[i].kilometers
-            entry1.pace = entry1.kilometers / (timeInHourNewEntry + timeInHouroldEntry)
-            if (entry1.topSpeed < entries[i].topSpeed) entry1.topSpeed = entries[i].topSpeed
-            if (entry1.topElevation < entries[i].topElevation) entry1.topElevation = entries[i].topElevation
-            if (entry1.activityData == null) {
-                if (entries[i].activityData != null) entry1.activityData = entries[i].activityData
-            } else {
-                val activityDataOnI = entries[i].activityData
-                val activityDataEntry1 = entry1.activityData
-                if (activityDataEntry1 != null && activityDataOnI != null) {
-                    activityDataEntry1.activityIds.addAll(activityDataOnI.activityIds)
-                    activityDataEntry1.calories += activityDataOnI.calories
-                    activityDataEntry1.averageHR = ((activityDataEntry1.averageHR * timeInHouroldEntry + activityDataOnI.averageHR * timeInHourNewEntry) / (timeInHourNewEntry + timeInHouroldEntry)).toFloat()
-                    if (activityDataEntry1.maxHR < activityDataOnI.maxHR) activityDataEntry1.maxHR = activityDataOnI.maxHR
-                    if (activityDataEntry1.ftp < activityDataOnI.ftp) activityDataEntry1.ftp = activityDataOnI.ftp
-                    if (activityDataEntry1.vo2max < activityDataOnI.vo2max) activityDataEntry1.vo2max = activityDataOnI.vo2max
-                    if (activityDataEntry1.grit < activityDataOnI.grit) activityDataEntry1.grit = activityDataOnI.grit
-                    if (activityDataEntry1.flow < activityDataOnI.flow) activityDataEntry1.flow = activityDataOnI.flow
-                    if (activityDataEntry1.power.oneSec > 0 && activityDataOnI.power.oneSec > 0) {
-                        if (activityDataEntry1.power.maxPower < activityDataOnI.power.maxPower) activityDataEntry1.power.maxPower = activityDataOnI.power.maxPower
-                        activityDataEntry1.power.avgPower = ((activityDataEntry1.power.avgPower * timeInHouroldEntry + activityDataOnI.power.avgPower * timeInHourNewEntry) / (timeInHourNewEntry + timeInHouroldEntry)).toFloat()
-                        if (activityDataEntry1.power.normPower < activityDataOnI.power.normPower) activityDataEntry1.power.normPower = activityDataOnI.power.normPower
-                        if (activityDataEntry1.power.oneSec < activityDataOnI.power.oneSec) activityDataEntry1.power.oneSec = activityDataOnI.power.oneSec
-                        if (activityDataEntry1.power.twoSec < activityDataOnI.power.twoSec) activityDataEntry1.power.twoSec = activityDataOnI.power.twoSec
-                        if (activityDataEntry1.power.fiveSec < activityDataOnI.power.fiveSec) activityDataEntry1.power.fiveSec = activityDataOnI.power.fiveSec
-                        if (activityDataEntry1.power.tenSec < activityDataOnI.power.tenSec) activityDataEntry1.power.tenSec = activityDataOnI.power.tenSec
-                        if (activityDataEntry1.power.twentySec < activityDataOnI.power.twentySec) activityDataEntry1.power.twentySec = activityDataOnI.power.twentySec
-                        if (activityDataEntry1.power.thirtySec < activityDataOnI.power.thirtySec) activityDataEntry1.power.thirtySec = activityDataOnI.power.thirtySec
-                        if (activityDataEntry1.power.oneMin < activityDataOnI.power.oneMin) activityDataEntry1.power.oneMin = activityDataOnI.power.oneMin
-                        if (activityDataEntry1.power.twoMin < activityDataOnI.power.twoMin) activityDataEntry1.power.twoMin = activityDataOnI.power.twoMin
-                        if (activityDataEntry1.power.fiveMin < activityDataOnI.power.fiveMin) activityDataEntry1.power.fiveMin = activityDataOnI.power.fiveMin
-                        if (activityDataEntry1.power.tenMin < activityDataOnI.power.tenMin) activityDataEntry1.power.tenMin = activityDataOnI.power.tenMin
-                        if (activityDataEntry1.power.twentyMin < activityDataOnI.power.twentyMin) activityDataEntry1.power.twentyMin = activityDataOnI.power.twentyMin
-                        if (activityDataEntry1.power.thirtyMin < activityDataOnI.power.thirtyMin) activityDataEntry1.power.thirtyMin = activityDataOnI.power.thirtyMin
-                        if (activityDataEntry1.power.oneHour < activityDataOnI.power.oneHour) activityDataEntry1.power.oneHour = activityDataOnI.power.oneHour
-                        if (activityDataEntry1.power.twoHours < activityDataOnI.power.twoHours) activityDataEntry1.power.twoHours = activityDataOnI.power.twoHours
-                        if (activityDataEntry1.power.fiveHours < activityDataOnI.power.fiveHours) activityDataEntry1.power.fiveHours = activityDataOnI.power.fiveHours
-                    } else if (activityDataOnI.power.oneSec > 0) {
-                        activityDataEntry1.power = activityDataOnI.power
-                    }
-                    if (activityDataEntry1.anaerobicTrainingEffect < activityDataOnI.anaerobicTrainingEffect) activityDataEntry1.anaerobicTrainingEffect = activityDataOnI.anaerobicTrainingEffect
-                    if (activityDataEntry1.aerobicTrainingEffect < activityDataOnI.aerobicTrainingEffect) activityDataEntry1.aerobicTrainingEffect = activityDataOnI.aerobicTrainingEffect
-                }
-            }
-        }
-        return entry1
-    }
-
-
-    private fun downloadGpxForSummitEntry(pythonExecutor: GarminPythonExecutor, entry: SummitEntry, index: Int) {
+    private fun downloadGpxForSummitEntry(pythonExecutor: GarminPythonExecutor, entry: SummitEntry, index: Int, useTcx: Boolean, powerData: JsonObject? = null) {
         try {
-            val garminId = entry.activityData?.activityId
-            if (garminId != null) {
-                AsyncDownloadGpxViaPython(pythonExecutor, garminId, getTempGpsFilePath(entry.date).toFile(), index, this).execute()
+            if (entry.sportType == SportType.BikeAndHike) {
+                val power = entry.activityData?.power
+                if (powerData != null && power != null) {
+                    updatePower(powerData, power)
+                }
+                updateMultiSpotActivityIds(pythonExecutor, entry)
             }
+            GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(pythonExecutor, listOf(entry), sortFilterHelper, useTcx, this, index).execute()
         } catch (e: java.lang.RuntimeException) {
             Log.e("AsyncDownloadActivities", e.message ?: "")
         }
     }
 
-    private fun downloadMultiSportGpx(pythonExecutor: GarminPythonExecutor, entry: SummitEntry, index: Int) {
+    private fun updateMultiSpotActivityIds(pythonExecutor: GarminPythonExecutor, entry: SummitEntry) {
         val activityId = entry.activityData?.activityId
         if (activityId != null) {
-            val gson = pythonExecutor.getMultiSportData(activityId)
-            val ids = gson.get("metadataDTO").asJsonObject.get("childIds").asJsonArray
-            val numberOfGpxTracks = ids.size()
-            val gpxFiles = ArrayList<File>()
-            for (i in 0 until numberOfGpxTracks) {
-                gpxFiles.add(GarminConnectAccess.getTempGpsFilePath(ids.get(i).toString()).toFile())
-                AsyncDownloadGpxViaPython(pythonExecutor, ids.get(i).toString(), gpxFiles[i], index, this, gpxFiles, getTempGpsFilePath(entry.date).toFile()).execute()
+            val activityJsonFile = File(SummitViewFragment.activitiesDir, "acivity_${activityId}.json")
+            if (activityJsonFile.exists()) {
+                val gson = JsonParser().parse(activityJsonFile.readText()) as JsonObject
+                val parsedEntry = GarminPythonExecutor.parseJsonObject(gson)
+                val ids = parsedEntry.activityData?.activityIds
+                if (ids != null) {
+                    entry.activityData?.activityIds = ids
+                }
+            } else {
+                val gson = pythonExecutor.getMultiSportData(activityId)
+                val ids = gson.get("metadataDTO").asJsonObject.get("childIds").asJsonArray
+                entry.activityData?.activityIds?.addAll(ids.map { it.asString })
             }
-
         }
     }
 
     fun getTempGpsFilePath(date: Date): Path {
         val tag = SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(date)
         val fileName = String.format(Locale.ENGLISH, "track_from_%s.gpx", tag)
-        return Paths.get(MainActivity.cache.toString(), fileName)
-    }
-
-    fun getTempGpsFilePath(activityId: String): Path {
-        val fileName = String.format(Locale.ENGLISH, "id_%s.gpx", activityId)
         return Paths.get(MainActivity.cache.toString(), fileName)
     }
 
@@ -672,25 +598,33 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
 
         class AsyncDownloadJsonViaPython(private val pythonExecutor: GarminPythonExecutor, private val dateAsString: String, private val dialog: AddSummitDialog) : AsyncTask<Void?, Void?, Void?>() {
 
-            var entries: ArrayList<SummitEntry>? = null
+            var entries: List<SummitEntry>? = null
             var powerData: JsonObject? = null
 
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
-                    val gsonLocal = pythonExecutor.getActivityJsonAtDate(dateAsString)
-                    entries = GarminPythonExecutor.getSummitsAtDate(gsonLocal)
-                    powerData = getPowerData(gsonLocal)
+                    val allKnownEntries = getAllDownloadedSummitsFromGarmin(SummitViewFragment.activitiesDir)
+                    val firstDate = allKnownEntries.minBy { it.getDateAsFloat() }?.getDateAsString()
+                    val lastDate = allKnownEntries.maxBy { it.getDateAsFloat() }?.getDateAsString()
+                    val knownEntriesOnDate = allKnownEntries.filter { it.getDateAsString() == dateAsString}
+                    if (dateAsString != firstDate && dateAsString != lastDate && knownEntriesOnDate.isNotEmpty()) {
+                        entries = knownEntriesOnDate
+                    } else {
+                        entries = pythonExecutor.getActivityJsonAtDate(dateAsString)
+                    }
+                    powerData = getPowerDataFromEntries(entries)
                 } catch (e: RuntimeException) {
                     Log.e("AsyncDownloadJsonViaPython", e.message ?: "")
                 }
                 return null
             }
 
-            private fun getPowerData(gsonLocal: JsonArray): JsonObject? {
-                for (i in 0 until gsonLocal.size()) {
-                    val row = gsonLocal[i] as JsonObject
-                    if (row["activityType"].asJsonObject["typeId"].asInt == 89) {
-                        return pythonExecutor.getMultiSportPowerData(dateAsString)
+            private fun getPowerDataFromEntries(entries: List<SummitEntry>?): JsonObject? {
+                if (entries != null) {
+                    for (entry in entries) {
+                        if (entry.sportType == SportType.BikeAndHike) {
+                            return pythonExecutor.getMultiSportPowerData(dateAsString)
+                        }
                     }
                 }
                 return null
@@ -709,36 +643,19 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             }
         }
 
-        class AsyncDownloadGpxViaPython(val pythonExecutor: GarminPythonExecutor, val garminActivityId: String?, val gpxFile: File, val index: Int, private val dialog: AddSummitDialog, val gpxFilesToDownload: ArrayList<File>? = null, val finalGpxFileName: File? = null) : AsyncTask<Void?, Void?, Void?>() {
+    }
 
-            override fun doInBackground(vararg params: Void?): Void? {
-                try {
-                    if (garminActivityId != null) {
-                        pythonExecutor.downloadGpxFile(garminActivityId, gpxFile.absolutePath)
-                    }
-                } catch (e: java.lang.RuntimeException) {
-                    Log.e("AsyncDownloadActivities", e.message ?: "")
-                }
-                return null
-            }
+    override fun getProgressBarForAsyncTask(): ProgressBar? {
+        return progressBarDownload
+    }
 
-            override fun onPostExecute(param: Void?) {
-                Toast.makeText(dialog.context, "${dialog.context?.getString(R.string.download_complete)} for activity id ${garminActivityId}", Toast.LENGTH_LONG).show()
-                if (gpxFilesToDownload != null && finalGpxFileName != null) {
-                    val areAllFilesDownloaded = gpxFilesToDownload.count { !it.exists() } == 0
-                    if (areAllFilesDownloaded) {
-                        val gpsUtils = GpsUtils()
-                        gpsUtils.write(finalGpxFileName, gpsUtils.composeGpxFile(gpxFilesToDownload), "MultiSportMerge")
-                    }
-                    dialog.listItemsGpsDownloadSuccessful?.set(index, areAllFilesDownloaded)
-                } else {
-                    dialog.listItemsGpsDownloadSuccessful?.set(index, true)
-                }
-                dialog.mDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = dialog.listItemsGpsDownloadSuccessful?.contains(false) == false
-            }
-        }
+    override fun isStepByStepDownload(): Boolean {
+        return true
+    }
 
-
+    override fun doInPostExecute(index: Int, successfulDownloaded: Boolean) {
+        listItemsGpsDownloadSuccessful?.set(index, successfulDownloaded)
+        mDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = listItemsGpsDownloadSuccessful?.contains(false) == false
     }
 
 }

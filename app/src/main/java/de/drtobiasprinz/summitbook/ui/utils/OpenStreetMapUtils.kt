@@ -57,7 +57,9 @@ object OpenStreetMapUtils {
             calculateBondingBox: Boolean = false, mGeoPoints: ArrayList<GeoPoint> = arrayListOf(), color: Int = Color.BLUE
     ) {
         if (summitEntry.hasGpsTrack()) {
-            summitEntry.setGpsTrack()
+            if (summitEntry.gpsTrack == null) {
+                summitEntry.setGpsTrack()
+            }
             val gpsTrack: GpsTrack? = summitEntry.gpsTrack
             if (gpsTrack != null) {
                 if (gpsTrack.hasNoTrackPoints()) {
@@ -98,7 +100,7 @@ object OpenStreetMapUtils {
     private fun addTrackPoints(gpsTrack: GpsTrack, mGeoPoints: ArrayList<GeoPoint>) {
         val positions = gpsTrack.getTrackPositions()
         for (entry in positions) {
-            if (entry != null) {
+            if (entry != null && entry.longitude != 0.0 && entry.latitude != 0.0) {
                 mGeoPoints.add(GeoPoint(entry.latitude, entry.longitude))
             }
         }

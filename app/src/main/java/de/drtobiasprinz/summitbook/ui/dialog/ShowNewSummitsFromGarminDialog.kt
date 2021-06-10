@@ -19,14 +19,14 @@ import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.activi
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.updateNewSummits
 import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
-import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
+import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
 
-class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitEntry>, val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?, private val progressBar: ProgressBar? = null) : DialogFragment() {
+class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitEntry>, val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?, val progressBar: ProgressBar? = null) : DialogFragment(), BaseDialog {
 
     private lateinit var addSummitsButton: Button
     private lateinit var entriesWithoutIgnored: MutableList<SummitEntry>
@@ -76,7 +76,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
                 progressBar?.visibility = View.VISIBLE
                 progressBar?.tooltipText = "Add summits ${entriesWithoutIgnored.filter { summit -> summit.isSelected }.map { it.name }.joinToString(", ")} and download its tracks. This may take a while."
                 entriesWithoutIgnored.filter { summit -> summit.isSelected }.forEach { entry ->
-                    AsyncDownloadGpxViaPython(pythonExecutor, listOf(entry), sortFilterHelper, useTcx, this).execute()
+                    GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(pythonExecutor, listOf(entry), sortFilterHelper, useTcx, this).execute()
                 }
             }
             dialog?.cancel()
@@ -87,7 +87,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
             if (pythonExecutor != null && canSelectedSummitsBeMerged()) {
                 progressBar?.visibility = View.VISIBLE
                 progressBar?.tooltipText = "Merge summits ${entriesWithoutIgnored.filter { summit -> summit.isSelected }.map { it.name }.joinToString(", ")} and downloaded tracks. This may take a while."
-                AsyncDownloadGpxViaPython(pythonExecutor, entriesWithoutIgnored.filter { summit -> summit.isSelected }, sortFilterHelper, useTcx, this).execute()
+                GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(pythonExecutor, entriesWithoutIgnored.filter { summit -> summit.isSelected }, sortFilterHelper, useTcx, this).execute()
             }
             dialog?.cancel()
         }
@@ -201,32 +201,6 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
     }
 
     companion object {
-        class AsyncDownloadGpxViaPython(garminPythonExecutor: GarminPythonExecutor, entries: List<SummitEntry>, private val sortFilterHelper: SortFilterHelper, useTcx: Boolean = false, private val dialog: ShowNewSummitsFromGarminDialog) : AsyncTask<Void?, Void?, Void?>() {
-            private val downloader = GarminTrackAndDataDownloader(entries, garminPythonExecutor, useTcx)
-            override fun doInBackground(vararg params: Void?): Void? {
-                try {
-                    downloader.downloadTracks()
-                } catch (e: RuntimeException) {
-                    Log.e("AsyncDownloadGpxViaPython", e.message ?: "")
-                }
-                return null
-            }
-
-            override fun onPostExecute(param: Void?) {
-                try {
-                    downloader.extractFinalSummitEntry()
-                    downloader.composeFinalTrack()
-                    downloader.updateFinalEntry(sortFilterHelper)
-                } catch (e: RuntimeException) {
-                    Log.e("AsyncDownloadGpxViaPython", e.message ?: "")
-                } finally {
-                    if (dialog.progressBar != null) {
-                        dialog.progressBar.visibility = View.GONE
-                        dialog.progressBar.tooltipText = ""
-                    }
-                }
-            }
-        }
 
         class AsyncDownloadActivities(private val summits: List<SummitEntry>, private val pythonExecutor: GarminPythonExecutor, private val startDate: String, private val endDate: String, val dialog: ShowNewSummitsFromGarminDialog) : AsyncTask<Void?, Void?, Void?>() {
 
@@ -258,5 +232,17 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
         }
 
 
+    }
+
+    override fun getProgressBarForAsyncTask(): ProgressBar? {
+        return progressBar
+    }
+
+    override fun isStepByStepDownload(): Boolean {
+        return false
+    }
+
+    override fun doInPostExecute(index: Int, successfulDownloaded: Boolean) {
+        //do nothing
     }
 }

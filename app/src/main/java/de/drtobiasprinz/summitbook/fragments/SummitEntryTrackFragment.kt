@@ -232,6 +232,10 @@ class SummitEntryTrackFragment : Fragment() {
     }
 
     private fun setOpenStreetMap(localSummitEntry: SummitEntry) {
+        if (localSummitEntry.gpsTrack == null) {
+            localSummitEntry.setGpsTrack()
+        }
+        val hasPoints = localSummitEntry.gpsTrack?.hasOnlyZeroCoordinates() == false || localSummitEntry.latLng != null
         osMap = root.findViewById(R.id.osmap)
         OpenStreetMapUtils.setTileSource(OpenStreetMapUtils.selectedItem, osMap)
         val changeMapTypeFab: ImageButton = root.findViewById(R.id.change_map_type)
@@ -239,15 +243,20 @@ class SummitEntryTrackFragment : Fragment() {
         changeMapTypeFab.setOnClickListener { OpenStreetMapUtils.showMapTypeSelectorDialog(requireContext(), osMap) }
         OpenStreetMapUtils.addDefaultSettings(requireContext(), osMap, requireActivity())
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
+        val height = if (hasPoints) 0.75 else 0.0
         val params = osMap.layoutParams
-        params?.height = (metrics.heightPixels * 0.75).toInt()
+        params?.height = (metrics.heightPixels * height).toInt()
         osMap.layoutParams = params
-        val connectedEntries = mutableListOf<SummitEntry>()
-        localSummitEntry.setConnectedEntries(connectedEntries, database, helper)
-        for (entry in connectedEntries) {
-            OpenStreetMapUtils.drawTrack(entry, false, osMap, false, color = Color.BLACK)
+        if (hasPoints) {
+            val connectedEntries = mutableListOf<SummitEntry>()
+            localSummitEntry.setConnectedEntries(connectedEntries, database, helper)
+            for (entry in connectedEntries) {
+                OpenStreetMapUtils.drawTrack(entry, false, osMap, false, color = Color.BLACK)
+            }
+            marker = OpenStreetMapUtils.addTrackAndMarker(localSummitEntry, osMap, requireContext(), false, isMilageButtonShown, true)
+        } else {
+            root.findViewById<RelativeLayout>(R.id.osmapLayout).visibility = View.GONE
         }
-        marker = OpenStreetMapUtils.addTrackAndMarker(localSummitEntry, osMap, requireContext(), false, isMilageButtonShown, true)
     }
 
     private fun setGraphView(set1: LineDataSet?) {

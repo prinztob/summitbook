@@ -12,24 +12,25 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 
-
 class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPythonExecutor: GarminPythonExecutor, var useTcx: Boolean = false) {
 
-    private val downloadedTracks: MutableList<File> = mutableListOf()
+    val downloadedTracks: MutableList<File> = mutableListOf()
     var finalEntry: SummitEntry? = null
     private val activityDuration = entries.map { it.kilometers / it.pace }
 
-    fun downloadTracks() {
+    fun downloadTracks(isAlreadyDownloaded: Boolean = false) {
         for (entry in entries) {
             val activityData = entry.activityData
             if (activityData != null) {
-                val idsWithoutParentId = if (activityData.activityIds.size > 1) activityData.activityIds.subList(1, activityData.activityIds.size) else activityData.activityIds
+                val idsWithoutParentId = getIds(activityData, isAlreadyDownloaded)
                 for (activityId in idsWithoutParentId) {
                     val file = getTempGpsFilePath(activityId, useTcx).toFile()
-                    if (useTcx) {
-                        garminPythonExecutor.downloadTcxFile(activityId, file.absolutePath)
-                    } else {
-                        garminPythonExecutor.downloadGpxFile(activityId, file.absolutePath)
+                    if (!(isAlreadyDownloaded || file.exists())) {
+                        if (useTcx) {
+                            garminPythonExecutor.downloadTcxFile(activityId, file.absolutePath)
+                        } else {
+                            garminPythonExecutor.downloadGpxFile(activityId, file.absolutePath)
+                        }
                     }
                     downloadedTracks.add(file)
                 }
@@ -37,12 +38,14 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
         }
     }
 
-
-    private fun getTempGpsFilePath(activityId: String, useTcx: Boolean = false): Path {
-        val fileEnding = if (useTcx) "tcx" else "gpx"
-        val fileName = String.format(Locale.ENGLISH, "id_${activityId}.${fileEnding}", activityId)
-        return Paths.get(MainActivity.cache.toString(), fileName)
+    private fun getIds(activityData: GarminActivityData, isAlreadyDownloaded: Boolean): MutableList<String> {
+        if (activityData.activityIds.size > 1) {
+            return if (isAlreadyDownloaded) mutableListOf(activityData.activityId) else activityData.activityIds.subList(1, activityData.activityIds.size)
+        } else {
+            return activityData.activityIds
+        }
     }
+
 
     fun updateFinalEntry(sortFilterHelper: SortFilterHelper) {
         val finalEntryLocal = finalEntry
@@ -55,13 +58,14 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
         }
     }
 
-    fun composeFinalTrack() {
+    fun composeFinalTrack(fileDestination: File? = null) {
         val finalEntryLocal = finalEntry
         if (finalEntryLocal != null) {
             val gpsUtils = GpsUtils()
             val name = "${finalEntryLocal.getDateAsString()}_${finalEntryLocal.name.replace(" ", "_")}"
             val tracks = if (useTcx) gpsUtils.composeTcxFile(downloadedTracks as ArrayList<File>) else gpsUtils.composeGpxFile(downloadedTracks as ArrayList<File>)
-            finalEntryLocal.getGpsTrackPath()?.toFile()?.let { gpsUtils.write(it, tracks, name) }
+            val gpxTrackFile = fileDestination ?: finalEntryLocal.getGpsTrackPath()?.toFile()
+            gpxTrackFile?.let { gpsUtils.write(fileDestination ?: it, tracks, name) }
             if (finalEntryLocal.latLng == null || finalEntryLocal.latLng?.latitude == 0.0) {
                 val points = tracks.map { it.segments.toList().blockingGet() }.flatten().map { it.points.toList().blockingGet() }.flatten()
                 if (points.isNotEmpty()) {
@@ -157,5 +161,13 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
         ) else PowerData(0f, 0f, 0f, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
     }
 
+    companion object {
+        fun getTempGpsFilePath(activityId: String, useTcx: Boolean = false): Path {
+            val fileEnding = if (useTcx) "tcx" else "gpx"
+            val fileName = String.format(Locale.ENGLISH, "id_${activityId}.${fileEnding}", activityId)
+            return Paths.get(MainActivity.cache.toString(), fileName)
+        }
+    }
 
 }
+

@@ -145,7 +145,9 @@ class GpsTrack(private val gpsTrackPath: Path) {
                     val points = segment.points.toList().blockingGet()
                     trackPoints.addAll(points)
                     for (point in points) {
-                        trackGeoPoints.add(GeoPoint(point.lat, point.lon))
+                        if (point.lat != 0.0 && point.lon != 0.0) {
+                            trackGeoPoints.add(GeoPoint(point.lat, point.lon))
+                        }
                     }
                 }
             }
@@ -187,17 +189,25 @@ class GpsTrack(private val gpsTrackPath: Path) {
     }
 
     fun getHighestElevation(): TrackPoint? {
-        var highestPoint = trackPoints[0]
-        for (trackPoint in trackPoints) {
-            if (trackPoint != null && highestPoint != null && trackPoint.ele?:0.0 > highestPoint.ele?:0.0) {
-                highestPoint = trackPoint
+        if (trackPoints.isNotEmpty()) {
+            var highestPoint = trackPoints[0]
+            for (trackPoint in trackPoints) {
+                if (trackPoint != null && highestPoint != null && trackPoint.ele ?: 0.0 > highestPoint.ele ?: 0.0) {
+                    highestPoint = trackPoint
+                }
             }
+            return highestPoint
+        } else {
+            return null
         }
-        return highestPoint
     }
 
     fun hasNoTrackPoints(): Boolean {
         return trackPoints.size <= 0
+    }
+
+    fun hasOnlyZeroCoordinates(): Boolean {
+        return trackPoints.none { it?.lat != 0.0 && it?.lon != 0.0 }
     }
 
     private fun getDistance(trackPoint1: TrackPoint, trackPoint2: TrackPoint): Float {

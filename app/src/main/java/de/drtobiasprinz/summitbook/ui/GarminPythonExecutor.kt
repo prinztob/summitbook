@@ -1,6 +1,8 @@
 package de.drtobiasprinz.summitbook.ui
 
+import android.os.AsyncTask
 import android.util.Log
+import android.view.View
 import com.chaquo.python.PyObject
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
@@ -13,6 +15,10 @@ import de.drtobiasprinz.summitbook.models.GarminActivityData
 import de.drtobiasprinz.summitbook.models.PowerData
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.ui.dialog.BaseDialog
+import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
+import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader.Companion.getTempGpsFilePath
+import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.io.File
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -38,13 +44,14 @@ class GarminPythonExecutor(val username: String, val password: String) {
         }
     }
 
-    fun getActivityJsonAtDate(dateAsString: String): JsonArray {
+    fun getActivityJsonAtDate(dateAsString: String): ArrayList<SummitEntry> {
         if (client == null) {
             login()
         }
         val result = pythonModule.callAttr("get_activity_json_for_date", client, dateAsString)
         checkOutput(result)
-        return JsonParser().parse(result.toString()) as JsonArray
+        val jsonResponse = JsonParser().parse(result.toString()) as JsonArray
+        return getSummitsAtDate(jsonResponse)
     }
 
     fun downloadGpxFile(garminActivityId: String, downloadPath: String) {
@@ -103,6 +110,44 @@ class GarminPythonExecutor(val username: String, val password: String) {
 
     companion object {
 
+        class AsyncDownloadGpxViaPython(garminPythonExecutor: GarminPythonExecutor, entries: List<SummitEntry>, private val sortFilterHelper: SortFilterHelper, useTcx: Boolean = false, private val dialog: BaseDialog, private val index: Int = -1) : AsyncTask<Void?, Void?, Void?>() {
+            private val downloader = GarminTrackAndDataDownloader(entries, garminPythonExecutor, useTcx)
+            override fun doInBackground(vararg params: Void?): Void? {
+                try {
+                    downloader.downloadTracks()
+                } catch (e: RuntimeException) {
+                    Log.e("AsyncDownloadGpxViaPython", e.message ?: "")
+                }
+                return null
+            }
+
+            override fun onPostExecute(param: Void?) {
+                try {
+                    downloader.extractFinalSummitEntry()
+                    if (dialog.isStepByStepDownload()) {
+                        val activityId = downloader.finalEntry?.activityData?.activityId
+                        if (activityId != null) {
+                            downloader.composeFinalTrack(getTempGpsFilePath(activityId).toFile())
+                        }
+                    } else {
+                        downloader.composeFinalTrack()
+                        downloader.updateFinalEntry(sortFilterHelper)
+                    }
+                    if (index != -1) {
+                        dialog.doInPostExecute(index, downloader.downloadedTracks.none { !it.exists() })
+                    }
+            } catch (e: RuntimeException) {
+                    Log.e("AsyncDownloadGpxViaPython", e.message ?: "")
+                } finally {
+                    val progressBar = dialog.getProgressBarForAsyncTask()
+                    if (progressBar != null) {
+                        progressBar.visibility = View.GONE
+                        progressBar.tooltipText = ""
+                    }
+                }
+            }
+        }
+
         fun getSummitsAtDate(activities: JsonArray): ArrayList<SummitEntry> {
             val entries = ArrayList<SummitEntry>()
             for (i in 0 until activities.size()) {
@@ -133,7 +178,7 @@ class GarminPythonExecutor(val username: String, val password: String) {
         }
 
         @Throws(ParseException::class)
-        private fun parseJsonObject(jsonObject: JsonObject): SummitEntry {
+        fun parseJsonObject(jsonObject: JsonObject): SummitEntry {
             val date = SimpleDateFormat(SummitEntry.DATETIME_FORMAT, Locale.ENGLISH)
                     .parse(jsonObject.getAsJsonPrimitive("startTimeLocal").asString) ?: Date()
             val duration: Double = if (jsonObject["movingDuration"] != JsonNull.INSTANCE) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
