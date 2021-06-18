@@ -188,6 +188,21 @@ class GpsTrack(private val gpsTrackPath: Path) {
         return graph
     }
 
+    fun getTrackTiltGraph(): MutableList<Entry> {
+        val graph = mutableListOf<Entry>()
+        for ((i, trackPoint) in trackPoints.withIndex()) {
+            if (trackPoint != null) {
+                val value = (trackPoints[if (i+1 < trackPoints.size) i+1 else trackPoints.size - 1]?.ele ?: 0.0) - (trackPoint.ele ?: 0.0)
+                val deltaDistance = (trackPoints[if (i+1 < trackPoints.size) i+1 else trackPoints.size - 1]?.extension?.distance ?: 0.0) - (trackPoint.extension?.distance ?: 0.0)
+                val tilt = if (deltaDistance != 0.0) value/deltaDistance*100 else 0.0
+                if (abs(tilt) < 50) {
+                    graph.add(Entry(trackPoint.extension?.distance?.toFloat() ?: 0f, tilt.toFloat(), trackPoint))
+                }
+            }
+        }
+        return graph
+    }
+
     fun getHighestElevation(): TrackPoint? {
         if (trackPoints.isNotEmpty()) {
             var highestPoint = trackPoints[0]

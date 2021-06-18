@@ -167,6 +167,9 @@
     <string name="download_complete">"Download of gpx file complete."</string>
     <string name="update_summit_cancel">"Updating an existing summit was canceled."</string>
     <string name="add_new_summit_cancel">"Adding a new summit was canceled."</string>
+    <string name="heart_rate_profile_label">"Heart rate profile"</string>
+    <string name="tilt_profile_label">"Tilt profile"</string>
+    <string name="cadence_profile_label">"Cadence profile"</string>
     <string name="height_profile_label">"Height profile"</string>
     <string name="power_profile_label">"Current summit"</string>
     <string name="power_profile_all_label">"Record"</string>
