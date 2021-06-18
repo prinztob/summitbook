@@ -8,8 +8,8 @@ import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import com.google.android.material.tabs.TabLayout
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
 import de.drtobiasprinz.summitbook.adapter.TabsPagerAdapter
+import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
 import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.ui.HackyViewPager
 

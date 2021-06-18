@@ -9,7 +9,6 @@
     <string name="nav_export">Exportiere backup</string>
     <string name="nav_open_drawer">Öffne Navigation</string>
     <string name="nav_close_drawer">Schließe Navigation</string>
-    <string name="activity">Aktivitäten</string>
     <string name="name">Name</string>
     <string name="type">Sportart</string>
     <string name="accept">Akzeptiere</string>
@@ -64,6 +63,10 @@
     <string name="top_speed">Höchstgeschw.</string>
     <string name="highest_average_speed">Höchste Durschnittsgeschw.</string>
     <string name="longest_distance">Längste Strecke</string>
+    <string name="height_meter">Höhenmeter</string>
+    <string name="power">Leistung</string>
+    <string name="cadence">Kadenz</string>
+    <string name="heart_rate">Herzfrequenz</string>
     <string name="height_meter_done">Meisten Höhenmeter</string>
     <string name="by_elevation">Höhe</string>
     <string name="sort_by">Sortierung</string>
@@ -157,7 +160,6 @@ von
     <string name="not_found">"Konnte %1$s nicht finden."</string>
     <string name="delete_entry">"Gipfel %1$s wurde gelöscht."</string>
     <string name="delete_entry_text">"Sind Sie sicher, dass sie den Gipfel löschen möchten?"</string>
-    <string name="select_gps">"Bitte wähle einen GPX Track aus"</string>
     <string name="download_gps_failed">"Der GPX Track konnte nicht heruntergeladen werden. Fehler: %1$s."</string>
     <string name="try_again">"Ein Fehler ist aufgetreten, bitte versuchen Sie es erneut."</string>
     <string name="add_gpx_successful">"Das Hinzufügen eines neuen GPX Track zu Gipfel %1$s war erfolgreich."</string>
@@ -168,6 +170,9 @@ von
     <string name="download_complete">"Download der GPX Datei ist komplett."</string>
     <string name="update_summit_cancel">"Aktualisierung des Gipfels wurde abgebrochen."</string>
     <string name="add_new_summit_cancel">"Das Hinzufügen eines neuen Gipfels wure abgebrochen."</string>
+    <string name="heart_rate_profile_label">"Herzfrequenzprofil"</string>
+    <string name="tilt_profile_label">"Neigung"</string>
+    <string name="cadence_profile_label">"Kadenceprofil"</string>
     <string name="height_profile_label">"Höhenprofil"</string>
     <string name="power_profile_label">"Aktueller Gipfel"</string>
     <string name="power_profile_all_label">"Rekord"</string>
@@ -179,6 +184,8 @@ von
     <string name="garmin_pwd_title">Garmin Passwort</string>
     <string name="garmin_user_summary">Füge deinen Garmin Benützername hinzu um GPX Tracks von Garmin connect abzufragen</string>
     <string name="garmin_user_title">Garmin Benutzername</string>
+    <string name="tcx_switch">Aktiviere diese Option um tcx Datein anstatt gpx herunterzuladen</string>
+    <string name="tcx_switch_title">Lade tcx anstatt gpx herunter</string>
     <string name="current_year_summary">Aktiviere diese Option um das Standardverhalten nach dem Starten zu verändern</string>
     <string name="current_year_title">Zeige nur Gipfel des aktuellen Jahres</string>
     <string name="annual_target_height_meter_summary">Bitte trege dein Jahresziel an zurückgelegten Höhenmeter ein</string>
@@ -258,5 +265,11 @@ von
     <string name="less_performance">Close Leistunsgdaten</string>
     <string name="watt">W</string>
     <string name="bpm">bpm</string>
+    <string name="show_new_summits">Zeige neue Gipfel von Garmin</string>
+    <string name="update_new_summits">Aktualisiere Gipfel von Garmin</string>
+    <string name="merge">Merge</string>
+    <string name="ignore">Ignorieren</string>
+    <string name="back">Zurück</string>
+    <string name="revert_ignored_summits">Lösche ignorierte Gipfel</string>
 
 </resources>

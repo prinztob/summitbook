@@ -9,7 +9,6 @@
     <string name="nav_export">Export backup</string>
     <string name="nav_open_drawer">Open navigation drawer</string>
     <string name="nav_close_drawer">Close navigation drawer</string>
-    <string name="activity">Activity</string>
     <string name="name">Name</string>
     <string name="type">Type</string>
     <string name="accept">Accept</string>
@@ -65,6 +64,10 @@
     <string name="highest_average_speed">Highest average speed</string>
     <string name="longest_distance">Longest Distance</string>
     <string name="height_meter_done">Most height meter done</string>
+    <string name="height_meter">Height meter</string>
+    <string name="power">Power</string>
+    <string name="cadence">Cadence</string>
+    <string name="heart_rate">Heart Rate</string>
     <string name="by_elevation">height</string>
     <string name="sort_by">Sort by</string>
     <string name="yes">Yes</string>
@@ -154,7 +157,6 @@
     <string name="not_found">"Could not find %1$s."</string>
     <string name="delete_entry">"Deleted entry %1$s."</string>
     <string name="delete_entry_text">"Are you sure you want to delete this entry?"</string>
-    <string name="select_gps">"Select a GPS track"</string>
     <string name="download_gps_failed">"Cold not download gpx file. Error: %1$s."</string>
     <string name="try_again">"An error occurred, please try again."</string>
     <string name="add_gpx_successful">"Adding a new gps track to summit %1$s was successful."</string>
@@ -165,6 +167,9 @@
     <string name="download_complete">"Download of gpx file complete."</string>
     <string name="update_summit_cancel">"Updating an existing summit was canceled."</string>
     <string name="add_new_summit_cancel">"Adding a new summit was canceled."</string>
+    <string name="heart_rate_profile_label">"Heart rate profile"</string>
+    <string name="tilt_profile_label">"Tilt profile"</string>
+    <string name="cadence_profile_label">"Cadence profile"</string>
     <string name="height_profile_label">"Height profile"</string>
     <string name="power_profile_label">"Current summit"</string>
     <string name="power_profile_all_label">"Record"</string>
@@ -175,6 +180,8 @@
     <string name="garmin_pwd_title">Enter Garmin password</string>
     <string name="garmin_user_summary">Enter Garmin user name to retrieve gpx from Garmin connect</string>
     <string name="garmin_user_title">Enter Garmin user name</string>
+    <string name="tcx_switch">Turn this option to download tcx instead of gpx files</string>
+    <string name="tcx_switch_title">Download tcx instead of gpx</string>
     <string name="current_year_summary">Turn this option to change the default behaviour at startup</string>
     <string name="current_year_title">Show entries of current year</string>
     <string name="annual_target_height_meter_summary">Please provide your annual target for elevation gain</string>
@@ -257,5 +264,11 @@
     <string name="less_performance">Close Performance Data</string>
     <string name="watt">W</string>
     <string name="bpm">bpm</string>
+    <string name="show_new_summits">Show new summits from Garmin</string>
+    <string name="update_new_summits">Update summits from Garmin</string>
+    <string name="merge">Merge</string>
+    <string name="ignore">Ignore</string>
+    <string name="back">Back</string>
+    <string name="revert_ignored_summits">Clean ignored summits</string>
 
 </resources>

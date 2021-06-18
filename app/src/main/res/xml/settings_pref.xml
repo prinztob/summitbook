@@ -20,6 +20,11 @@
         android:key="current_year_switch"
         android:summary="@string/current_year_summary"
         android:title="@string/current_year_title" />
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="download_tcx"
+        android:summary="@string/tcx_switch"
+        android:title="@string/tcx_switch_title" />
     <EditTextPreference
         android:key="garmin_username"
         android:title="@string/garmin_user_title"
@@ -30,4 +35,8 @@
         android:title="@string/garmin_pwd_title"
         android:summary="@string/garmin_pwd_summary"
         android:inputType="textPassword" />
+    <de.drtobiasprinz.summitbook.ui.utils.DatePreference
+        android:title="Start date for syncing Garmin Activities"
+        android:key="garmin_start_date"
+        android:defaultValue="2020-01-01"/>
 </PreferenceScreen>

@@ -69,72 +69,71 @@ class SummitEntryDataFragment : Fragment() {
             setChipsText(R.id.places, localSummitEntry.getPlacesWithConnectedEntryString(requireContext(), database, helper), R.drawable.ic_place_black_24dp)
             setChipsText(R.id.countries, localSummitEntry.countries, R.drawable.ic_baseline_flag_24)
             setChipsText(R.id.participants, localSummitEntry.participants, R.drawable.ic_baseline_people_24)
-            if (localSummitEntry.activityData != null) {
-                val url = "https://connect.garmin.com/modern/activity/" + localSummitEntry.activityData?.activityId
+            val activityData = localSummitEntry.activityData
+            if (activityData != null) {
                 val textView = root.findViewById(R.id.link) as TextView
                 textView.isClickable = true
                 textView.movementMethod = LinkMovementMethod.getInstance()
-                val text = "<a href=\"$url\">${requireContext().getString(R.string.sensor_data)}</a>"
+                val text = "<a href=\"${activityData.url}\">${requireContext().getString(R.string.sensor_data)}</a>"
                 textView.text = Html.fromHtml(text, 0)
-                val activityData = localSummitEntry.activityData
                 root.findViewById<View>(R.id.garminData).visibility = View.VISIBLE
-                activityData?.averageHR?.toInt()?.let { setText(it, "bpm", root.findViewById(R.id.averageHrText), root.findViewById(R.id.averageHr),
+                activityData.averageHR?.toInt()?.let { setText(it, "bpm", root.findViewById(R.id.averageHrText), root.findViewById(R.id.averageHr),
                         Pair(extrema?.averageHRMinMax?.first?.activityData?.averageHR ?: 0f, extrema?.averageHRMinMax?.second?.activityData?.averageHR ?: 0f), true) }
-                activityData?.maxHR?.toInt()?.let { setText(it, "bpm", root.findViewById(R.id.maxHrText), root.findViewById(R.id.maxHr),
+                activityData.maxHR?.toInt()?.let { setText(it, "bpm", root.findViewById(R.id.maxHrText), root.findViewById(R.id.maxHr),
                         Pair(extrema?.maxHRMinMax?.first?.activityData?.maxHR ?: 0f, extrema?.maxHRMinMax?.second?.activityData?.maxHR ?: 0f), true) }
-                activityData?.power?.maxPower?.toInt()?.let { setText(it, "W", root.findViewById(R.id.maxPowerText), root.findViewById(R.id.maxPower),
+                activityData.power?.maxPower?.toInt()?.let { setText(it, "W", root.findViewById(R.id.maxPowerText), root.findViewById(R.id.maxPower),
                         Pair(extrema?.maxPowerMinMax?.first?.activityData?.power?.maxPower ?: 0f, extrema?.maxPowerMinMax?.second?.activityData?.power?.maxPower ?: 0f)) }
-                activityData?.calories?.toInt()?.let { setText(it, "kcal", root.findViewById(R.id.caloriesText), root.findViewById(R.id.calories),
+                activityData.calories?.toInt()?.let { setText(it, "kcal", root.findViewById(R.id.caloriesText), root.findViewById(R.id.calories),
                         Pair(extrema?.caloriesMinMax?.first?.activityData?.calories ?: 0f, extrema?.caloriesMinMax?.second?.activityData?.calories ?: 0f)) }
-                activityData?.power?.avgPower?.toInt()?.let { setText(it, "W", root.findViewById(R.id.averagePowerText), root.findViewById(R.id.averagePower),
+                activityData.power?.avgPower?.toInt()?.let { setText(it, "W", root.findViewById(R.id.averagePowerText), root.findViewById(R.id.averagePower),
                         Pair(extrema?.averagePowerMinMax?.first?.activityData?.power?.avgPower ?: 0f, extrema?.averagePowerMinMax?.second?.activityData?.power?.avgPower ?: 0f)) }
-                activityData?.power?.normPower?.toInt()?.let { setText(it, "W", root.findViewById(R.id.normPowerText), root.findViewById(R.id.normPower),
+                activityData.power?.normPower?.toInt()?.let { setText(it, "W", root.findViewById(R.id.normPowerText), root.findViewById(R.id.normPower),
                         Pair(extrema?.normPowerMinMax?.first?.activityData?.power?.normPower ?: 0f, extrema?.normPowerMinMax?.second?.activityData?.power?.normPower ?: 0f)) }
 
-                activityData?.power?.oneSec?.let { setText(it, "W", root.findViewById(R.id.power1secText), root.findViewById(R.id.power1sec),
+                activityData.power?.oneSec?.let { setText(it, "W", root.findViewById(R.id.power1secText), root.findViewById(R.id.power1sec),
                         Pair(extrema?.power1sMinMax?.first?.activityData?.power?.oneSec ?: 0, extrema?.power1sMinMax?.second?.activityData?.power?.oneSec ?: 0)) }
-                activityData?.power?.twoSec?.let { setText(it, "W", root.findViewById(R.id.power2secText), root.findViewById(R.id.power2sec),
+                activityData.power?.twoSec?.let { setText(it, "W", root.findViewById(R.id.power2secText), root.findViewById(R.id.power2sec),
                         Pair(extrema?.power2sMinMax?.first?.activityData?.power?.twoSec ?: 0, extrema?.power2sMinMax?.second?.activityData?.power?.twoSec ?: 0)) }
-                activityData?.power?.fiveSec?.let { setText(it, "W", root.findViewById(R.id.power5secText), root.findViewById(R.id.power5sec),
+                activityData.power?.fiveSec?.let { setText(it, "W", root.findViewById(R.id.power5secText), root.findViewById(R.id.power5sec),
                         Pair(extrema?.power5sMinMax?.first?.activityData?.power?.fiveSec ?: 0, extrema?.power5sMinMax?.second?.activityData?.power?.fiveSec ?: 0)) }
-                activityData?.power?.tenSec?.let { setText(it, "W", root.findViewById(R.id.power10secText), root.findViewById(R.id.power10sec),
+                activityData.power?.tenSec?.let { setText(it, "W", root.findViewById(R.id.power10secText), root.findViewById(R.id.power10sec),
                         Pair(extrema?.power10sMinMax?.first?.activityData?.power?.tenSec ?: 0, extrema?.power10sMinMax?.second?.activityData?.power?.tenSec ?: 0)) }
-                activityData?.power?.twentySec?.let { setText(it, "W", root.findViewById(R.id.power20secText), root.findViewById(R.id.power20sec),
+                activityData.power?.twentySec?.let { setText(it, "W", root.findViewById(R.id.power20secText), root.findViewById(R.id.power20sec),
                         Pair(extrema?.power20sMinMax?.first?.activityData?.power?.twentySec ?: 0, extrema?.power20sMinMax?.second?.activityData?.power?.twentySec ?: 0)) }
-                activityData?.power?.thirtySec?.let { setText(it, "W", root.findViewById(R.id.power30secText), root.findViewById(R.id.power30sec),
+                activityData.power?.thirtySec?.let { setText(it, "W", root.findViewById(R.id.power30secText), root.findViewById(R.id.power30sec),
                         Pair(extrema?.power30sMinMax?.first?.activityData?.power?.thirtySec ?: 0, extrema?.power30sMinMax?.second?.activityData?.power?.thirtySec ?: 0)) }
 
-                activityData?.power?.oneMin?.let { setText(it, "W", root.findViewById(R.id.power1minText), root.findViewById(R.id.power1min),
+                activityData.power?.oneMin?.let { setText(it, "W", root.findViewById(R.id.power1minText), root.findViewById(R.id.power1min),
                         Pair(extrema?.power1minMinMax?.first?.activityData?.power?.oneMin ?: 0, extrema?.power1minMinMax?.second?.activityData?.power?.oneMin ?: 0)) }
-                activityData?.power?.twoMin?.let { setText(it, "W", root.findViewById(R.id.power2minText), root.findViewById(R.id.power2min),
+                activityData.power?.twoMin?.let { setText(it, "W", root.findViewById(R.id.power2minText), root.findViewById(R.id.power2min),
                         Pair(extrema?.power2minMinMax?.first?.activityData?.power?.twoMin ?: 0, extrema?.power2minMinMax?.second?.activityData?.power?.twoMin ?: 0)) }
-                activityData?.power?.fiveMin?.let { setText(it, "W", root.findViewById(R.id.power5minText), root.findViewById(R.id.power5min),
+                activityData.power?.fiveMin?.let { setText(it, "W", root.findViewById(R.id.power5minText), root.findViewById(R.id.power5min),
                         Pair(extrema?.power5minMinMax?.first?.activityData?.power?.fiveMin ?: 0, extrema?.power5minMinMax?.second?.activityData?.power?.fiveMin ?: 0)) }
-                activityData?.power?.tenMin?.let { setText(it, "W", root.findViewById(R.id.power10minText), root.findViewById(R.id.power10min),
+                activityData.power?.tenMin?.let { setText(it, "W", root.findViewById(R.id.power10minText), root.findViewById(R.id.power10min),
                         Pair(extrema?.power10minMinMax?.first?.activityData?.power?.tenMin ?: 0, extrema?.power10minMinMax?.second?.activityData?.power?.tenMin ?: 0)) }
-                activityData?.power?.twentyMin?.let { setText(it, "W", root.findViewById(R.id.power20minText), root.findViewById(R.id.power20min),
+                activityData.power?.twentyMin?.let { setText(it, "W", root.findViewById(R.id.power20minText), root.findViewById(R.id.power20min),
                         Pair(extrema?.power20minMinMax?.first?.activityData?.power?.twentyMin ?: 0, extrema?.power20minMinMax?.second?.activityData?.power?.twentyMin ?: 0)) }
-                activityData?.power?.thirtyMin?.let { setText(it, "W", root.findViewById(R.id.power30minText), root.findViewById(R.id.power30min),
+                activityData.power?.thirtyMin?.let { setText(it, "W", root.findViewById(R.id.power30minText), root.findViewById(R.id.power30min),
                         Pair(extrema?.power30minMinMax?.first?.activityData?.power?.thirtyMin ?: 0, extrema?.power30minMinMax?.second?.activityData?.power?.thirtyMin ?: 0)) }
 
-                activityData?.power?.oneHour?.let { setText(it, "W", root.findViewById(R.id.power1hText), root.findViewById(R.id.power1h),
+                activityData.power?.oneHour?.let { setText(it, "W", root.findViewById(R.id.power1hText), root.findViewById(R.id.power1h),
                         Pair(extrema?.power1hMinMax?.first?.activityData?.power?.oneHour ?: 0, extrema?.power1hMinMax?.second?.activityData?.power?.oneHour ?: 0)) }
-                activityData?.power?.twoHours?.let { setText(it, "W", root.findViewById(R.id.power2hText), root.findViewById(R.id.power2h),
+                activityData.power?.twoHours?.let { setText(it, "W", root.findViewById(R.id.power2hText), root.findViewById(R.id.power2h),
                         Pair(extrema?.power2hMinMax?.first?.activityData?.power?.twoHours ?: 0, extrema?.power2hMinMax?.second?.activityData?.power?.twoHours ?: 0)) }
-                activityData?.power?.fiveHours?.let { setText(it, "W", root.findViewById(R.id.power5hText), root.findViewById(R.id.power5h),
+                activityData.power?.fiveHours?.let { setText(it, "W", root.findViewById(R.id.power5hText), root.findViewById(R.id.power5h),
                         Pair(extrema?.power5hMinMax?.first?.activityData?.power?.fiveHours ?: 0, extrema?.power5hMinMax?.second?.activityData?.power?.fiveHours ?: 0)) }
 
-                activityData?.aerobicTrainingEffect?.toDouble()?.let { setText(it, "", root.findViewById(R.id.aerobicTrainingEffectText), root.findViewById(R.id.aerobicTrainingEffect), Pair(0,5)) }
-                activityData?.anaerobicTrainingEffect?.toDouble()?.let { setText(it, "", root.findViewById(R.id.anaerobicTrainingEffectText), root.findViewById(R.id.anaerobicTrainingEffect), Pair(0,5)) }
-                activityData?.grit?.toDouble()?.let { setText(it, "", root.findViewById(R.id.gritText), root.findViewById(R.id.grit),
+                activityData.aerobicTrainingEffect?.toDouble()?.let { setText(it, "", root.findViewById(R.id.aerobicTrainingEffectText), root.findViewById(R.id.aerobicTrainingEffect), Pair(0,5)) }
+                activityData.anaerobicTrainingEffect?.toDouble()?.let { setText(it, "", root.findViewById(R.id.anaerobicTrainingEffectText), root.findViewById(R.id.anaerobicTrainingEffect), Pair(0,5)) }
+                activityData.grit?.toDouble()?.let { setText(it, "", root.findViewById(R.id.gritText), root.findViewById(R.id.grit),
                         Pair(extrema?.gritMinMax?.first?.activityData?.grit ?: 0f, extrema?.gritMinMax?.second?.activityData?.grit ?: 0f)) }
-                activityData?.flow?.toDouble()?.let { setText(it, "", root.findViewById(R.id.flowText), root.findViewById(R.id.flow),
+                activityData.flow?.toDouble()?.let { setText(it, "", root.findViewById(R.id.flowText), root.findViewById(R.id.flow),
                         Pair(extrema?.flowMinMax?.first?.activityData?.flow ?: 0f, extrema?.flowMinMax?.second?.activityData?.flow ?: 0f)) }
-                activityData?.trainingLoad?.toDouble()?.let { setText(it, "", root.findViewById(R.id.trainingLoadText), root.findViewById(R.id.trainingLoad),
+                activityData.trainingLoad?.toDouble()?.let { setText(it, "", root.findViewById(R.id.trainingLoadText), root.findViewById(R.id.trainingLoad),
                         Pair(extrema?.trainingsLoadMinMax?.first?.activityData?.trainingLoad ?: 0f, extrema?.trainingsLoadMinMax?.second?.activityData?.trainingLoad ?: 0f)) }
-                activityData?.vo2max?.toDouble()?.let { setText(it, "", root.findViewById(R.id.vo2MaxText), root.findViewById(R.id.vo2Max),
+                activityData.vo2max?.toDouble()?.let { setText(it, "", root.findViewById(R.id.vo2MaxText), root.findViewById(R.id.vo2Max),
                         Pair(extrema?.vo2maxMinMax?.first?.activityData?.vo2max ?: 0, extrema?.vo2maxMinMax?.second?.activityData?.vo2max ?: 0)) }
-                activityData?.ftp?.toDouble()?.let { setText(it, "", root.findViewById(R.id.FTPText), root.findViewById(R.id.FTP),
+                activityData.ftp?.toDouble()?.let { setText(it, "", root.findViewById(R.id.FTPText), root.findViewById(R.id.FTP),
                         Pair(extrema?.ftpMinMax?.first?.activityData?.ftp ?: 0, extrema?.ftpMinMax?.second?.activityData?.ftp ?: 0)) }
             } else {
                 root.findViewById<View>(R.id.garminData).visibility = View.GONE

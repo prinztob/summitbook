@@ -4,9 +4,9 @@ import android.graphics.*
 import android.location.Location
 import com.github.mikephil.charting.data.Entry
 import com.google.android.gms.maps.model.LatLng
-import io.ticofab.androidgpxparser.parser.GPXParser
-import io.ticofab.androidgpxparser.parser.domain.Gpx
-import io.ticofab.androidgpxparser.parser.domain.TrackPoint
+import de.drtobiasprinz.gpx.GPXParser
+import de.drtobiasprinz.gpx.Gpx
+import de.drtobiasprinz.gpx.TrackPoint
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Polyline
@@ -25,7 +25,7 @@ class GpsTrack(private val gpsTrackPath: Path) {
     var osMapRoute: Polyline? = null
     var isShownOnMap: Boolean = false
     val trackGeoPoints: ArrayList<GeoPoint?> = ArrayList()
-    private val trackPoints: ArrayList<TrackPoint?> = ArrayList()
+    val trackPoints: ArrayList<TrackPoint?> = ArrayList()
     private val COLOR_POLYLINE_STATIC = Color.BLUE
     private val COLOR_POLYLINE_ANIMATED = Color.GREEN
     private val COLOR_BACKGROUND = Color.WHITE
@@ -140,11 +140,14 @@ class GpsTrack(private val gpsTrackPath: Path) {
         }
         if (parsedGpx != null) {
             val tracks = parsedGpx.tracks
-            for (track in tracks) {
-                for (segment in track.trackSegments) {
-                    trackPoints.addAll(segment.trackPoints)
-                    for (point in segment.trackPoints) {
-                        trackGeoPoints.add(GeoPoint(point.latitude, point.longitude))
+            for (track in tracks.toList().blockingGet()) {
+                for (segment in track.segments.toList().blockingGet()) {
+                    val points = segment.points.toList().blockingGet()
+                    trackPoints.addAll(points)
+                    for (point in points) {
+                        if (point.lat != 0.0 && point.lon != 0.0) {
+                            trackGeoPoints.add(GeoPoint(point.lat, point.lon))
+                        }
                     }
                 }
             }
@@ -155,26 +158,45 @@ class GpsTrack(private val gpsTrackPath: Path) {
         val positions = ArrayList<LatLng?>()
         for (trackPoint in trackPoints) {
             if (trackPoint != null) {
-                positions.add(LatLng(trackPoint.latitude, trackPoint.longitude))
+                positions.add(LatLng(trackPoint.lat, trackPoint.lon))
             }
         }
         return positions
     }
-
-    fun getTrackGraph(): ArrayList<Entry> {
-        val graph = ArrayList<Entry>()
+    fun getTrackGraph(f: (TrackPoint) -> Float?): MutableList<Entry> {
+        val graph = mutableListOf<Entry>()
         var lastTrackPoint: TrackPoint? = null
-        var distance = 0f
+        var cumulativeDistance = 0f
         for (trackPoint in trackPoints) {
             if (trackPoint != null) {
-                if (lastTrackPoint == null) {
+                val value = f(trackPoint)
+                val distance = trackPoint.extension?.distance?.toFloat()
+                if (value != null) {
+                    if (lastTrackPoint == null) {
+                        lastTrackPoint = trackPoint
+                    }
+                    if (distance != null) {
+                        cumulativeDistance = distance
+                    } else {
+                        cumulativeDistance += abs(getDistance(trackPoint, lastTrackPoint))
+                    }
                     lastTrackPoint = trackPoint
-                } else {
-                    distance += abs(getDistance(trackPoint, lastTrackPoint))
-                    lastTrackPoint = trackPoint
+                    graph.add(Entry(cumulativeDistance, value, trackPoint))
                 }
-                if (trackPoint.elevation >= 0) {
-                    graph.add(Entry(distance, trackPoint.elevation.toFloat(), trackPoint))
+            }
+        }
+        return graph
+    }
+
+    fun getTrackTiltGraph(): MutableList<Entry> {
+        val graph = mutableListOf<Entry>()
+        for ((i, trackPoint) in trackPoints.withIndex()) {
+            if (trackPoint != null) {
+                val value = (trackPoints[if (i+1 < trackPoints.size) i+1 else trackPoints.size - 1]?.ele ?: 0.0) - (trackPoint.ele ?: 0.0)
+                val deltaDistance = (trackPoints[if (i+1 < trackPoints.size) i+1 else trackPoints.size - 1]?.extension?.distance ?: 0.0) - (trackPoint.extension?.distance ?: 0.0)
+                val tilt = if (deltaDistance != 0.0) value/deltaDistance*100 else 0.0
+                if (abs(tilt) < 50) {
+                    graph.add(Entry(trackPoint.extension?.distance?.toFloat() ?: 0f, tilt.toFloat(), trackPoint))
                 }
             }
         }
@@ -182,17 +204,25 @@ class GpsTrack(private val gpsTrackPath: Path) {
     }
 
     fun getHighestElevation(): TrackPoint? {
-        var highestPoint = trackPoints[0]
-        for (trackPoint in trackPoints) {
-            if (trackPoint != null && highestPoint != null && trackPoint.elevation > highestPoint.elevation) {
-                highestPoint = trackPoint
+        if (trackPoints.isNotEmpty()) {
+            var highestPoint = trackPoints[0]
+            for (trackPoint in trackPoints) {
+                if (trackPoint != null && highestPoint != null && trackPoint.ele ?: 0.0 > highestPoint.ele ?: 0.0) {
+                    highestPoint = trackPoint
+                }
             }
+            return highestPoint
+        } else {
+            return null
         }
-        return highestPoint
     }
 
     fun hasNoTrackPoints(): Boolean {
         return trackPoints.size <= 0
+    }
+
+    fun hasOnlyZeroCoordinates(): Boolean {
+        return trackPoints.none { it?.lat != 0.0 && it?.lon != 0.0 }
     }
 
     private fun getDistance(trackPoint1: TrackPoint, trackPoint2: TrackPoint): Float {
@@ -203,9 +233,9 @@ class GpsTrack(private val gpsTrackPath: Path) {
 
     private fun getLocationFromFrackPoint(trackPoint: TrackPoint): Location {
         val location = Location(trackPoint.name)
-        location.latitude = trackPoint.latitude
-        location.longitude = trackPoint.longitude
-        location.altitude = trackPoint.elevation
+        location.latitude = trackPoint.lat
+        location.longitude = trackPoint.lon
+        location.altitude = trackPoint.ele ?: 0.0
         return location
     }
 

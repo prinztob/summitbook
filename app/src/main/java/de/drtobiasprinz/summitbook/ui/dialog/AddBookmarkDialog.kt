@@ -2,7 +2,10 @@ package de.drtobiasprinz.summitbook.ui.dialog
 
 import android.database.sqlite.SQLiteDatabase
 import android.os.Bundle
-import android.text.*
+import android.text.Editable
+import android.text.InputFilter
+import android.text.TextUtils
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,7 +14,8 @@ import androidx.fragment.app.DialogFragment
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
 import de.drtobiasprinz.summitbook.fragments.BookmarkViewFragment
-import de.drtobiasprinz.summitbook.models.*
+import de.drtobiasprinz.summitbook.models.BookmarkEntry
+import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
 import java.text.ParseException
 import java.util.*
@@ -84,11 +88,11 @@ class AddBookmarkDialog : DialogFragment() {
                     adapter?.bookmarks?.add(bookmark)
                 }
                 adapter?.notifyDataSetChanged()
-                Objects.requireNonNull(dialog)?.cancel()
+                dialog?.cancel()
             }
         }
         closeDialogButton.setOnClickListener { v: View ->
-            Objects.requireNonNull(dialog)?.cancel()
+            dialog?.cancel()
             val text = if (currentBookmark != null) "Updating an existing summit was canceled." else "Adding a new summit was canceled."
             Toast.makeText(v.context, text, Toast.LENGTH_SHORT).show()
         }

@@ -108,7 +108,7 @@ class GarminConnectAccess {
                 mutableListOf()
         )
         val activityData = GarminActivityData(
-                jsonObject["activityId"].asString,
+                mutableListOf(jsonObject["activityId"].asString),
                 getJsonObjectEntryNotNull(jsonObject, "calories"),
                 getJsonObjectEntryNotNull(jsonObject, "averageHR"),
                 getJsonObjectEntryNotNull(jsonObject, "maxHR"),
@@ -259,7 +259,7 @@ class GarminConnectAccess {
 
     private fun downloadMultiSportGpx(entry: SummitEntry, index: Int) {
         val gcActivityServiceUrl = "https://connect.garmin.com/modern/proxy/activity-service/activity/" // get chirldren for multi sport
-        val activityServiceUrl = gcActivityServiceUrl + entry.activityData?.activityId
+        val activityServiceUrl = gcActivityServiceUrl + entry.activityData?.activityIds
 
         val jsonRequest: JsonObjectRequest = object : JsonObjectRequest(Method.GET, activityServiceUrl, null, Response.Listener
         { response -> //now handle the response
@@ -304,7 +304,7 @@ class GarminConnectAccess {
                                     val areAllFilesDownloaded = gpxFilesToDownload.count { !it.exists() } == 0
                                     if (areAllFilesDownloaded) {
                                         val gpsUtils = GpsUtils()
-                                        gpsUtils.write(finalGpxFileName, gpsUtils.composeGpxFile(gpxFilesToDownload, "MultiSportMerge"), "MultiSportMerge")
+                                        gpsUtils.write(finalGpxFileName, gpsUtils.composeGpxFile(gpxFilesToDownload), "MultiSportMerge")
                                     }
                                     listItemsGpsDownloadSuccessful?.set(index, areAllFilesDownloaded)
                                 } else {
@@ -370,7 +370,7 @@ class GarminConnectAccess {
                                 val gpsUtils = GpsUtils()
                                 val activityData = entry?.activityData
                                 if (entry != null && activityData != null) {
-                                    gpsUtils.write(getTempGpsFilePath(activityData.activityId).toFile(), gpsUtils.composeGpxFile(files, entry.name), entry.name)
+                                    gpsUtils.write(getTempGpsFilePath(activityData.activityId).toFile(), gpsUtils.composeGpxFile(files), entry.name)
                                     addSummitDialog.updateDialogFields(entry, !addSummitDialog.isUpdate)
                                     Toast.makeText(context, context.getString(R.string.garmin_add_successful, entry.name), Toast.LENGTH_LONG).show()
                                     progressBar.visibility = View.GONE
@@ -422,6 +422,7 @@ class GarminConnectAccess {
                 val activityDataOnI = entries[i].activityData
                 val activityDataEntry1 = entry1.activityData
                 if (activityDataEntry1 != null && activityDataOnI != null) {
+                    activityDataEntry1.activityIds.addAll(activityDataOnI.activityIds)
                     activityDataEntry1.calories += activityDataOnI.calories
                     activityDataEntry1.averageHR = ((activityDataEntry1.averageHR * timeInHouroldEntry + activityDataOnI.averageHR * timeInHourNewEntry) / (timeInHourNewEntry + timeInHouroldEntry)).toFloat()
                     if (activityDataEntry1.maxHR < activityDataOnI.maxHR) activityDataEntry1.maxHR = activityDataOnI.maxHR
