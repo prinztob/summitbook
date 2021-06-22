@@ -48,6 +48,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     var isUpdate = false
     var temporaryGpxFile: File? = null
     var latlngHightestPoint: LatLng? = null
+    private lateinit var currentContext: Context
     private lateinit var helper: SummitBookDatabaseHelper
     private lateinit var database: SQLiteDatabase
     private lateinit var sportTypeAdapter: ArrayAdapter<SportType>
@@ -108,6 +109,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        currentContext = requireContext()
         helper = SummitBookDatabaseHelper(view.context)
         database = helper.writableDatabase
         saveEntryButton = view.findViewById(R.id.add_summit_save)
@@ -658,4 +660,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         mDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = listItemsGpsDownloadSuccessful?.contains(false) == false
     }
 
+    override fun getDialogContext(): Context {
+        return currentContext
+    }
 }

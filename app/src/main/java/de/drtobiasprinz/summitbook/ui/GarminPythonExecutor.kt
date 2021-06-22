@@ -11,6 +11,7 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.MainActivity
+import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.GarminActivityData
 import de.drtobiasprinz.summitbook.models.PowerData
 import de.drtobiasprinz.summitbook.models.SportType
@@ -113,10 +114,13 @@ class GarminPythonExecutor(val username: String, val password: String) {
         class AsyncDownloadGpxViaPython(garminPythonExecutor: GarminPythonExecutor, entries: List<SummitEntry>, private val sortFilterHelper: SortFilterHelper, useTcx: Boolean = false, private val dialog: BaseDialog, private val index: Int = -1) : AsyncTask<Void?, Void?, Void?>() {
             private val downloader = GarminTrackAndDataDownloader(entries, garminPythonExecutor, useTcx)
             override fun doInBackground(vararg params: Void?): Void? {
+                val progressBar = dialog.getProgressBarForAsyncTask()
                 try {
+                    progressBar?.visibility = View.VISIBLE
                     downloader.downloadTracks()
                 } catch (e: RuntimeException) {
                     Log.e("AsyncDownloadGpxViaPython", e.message ?: "")
+                    progressBar?.visibility = View.GONE
                 }
                 return null
             }
@@ -136,9 +140,10 @@ class GarminPythonExecutor(val username: String, val password: String) {
                     if (index != -1) {
                         dialog.doInPostExecute(index, downloader.downloadedTracks.none { !it.exists() })
                     }
-            } catch (e: RuntimeException) {
+                } catch (e: RuntimeException) {
                     Log.e("AsyncDownloadGpxViaPython", e.message ?: "")
                 } finally {
+                    SummitViewFragment.updateNewSummits(SummitViewFragment.activitiesDir, sortFilterHelper.entries, dialog.getDialogContext())
                     val progressBar = dialog.getProgressBarForAsyncTask()
                     if (progressBar != null) {
                         progressBar.visibility = View.GONE

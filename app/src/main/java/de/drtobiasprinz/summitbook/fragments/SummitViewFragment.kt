@@ -64,7 +64,11 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        AsyncSummitTask(this).execute()
+        if (!sortFilterHelper.allEntriesRequested) {
+            AsyncSummitTask(this).execute()
+        } else {
+            sortFilterHelper.apply()
+        }
         optionMenu = menu
     }
 
@@ -166,6 +170,7 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
             sortFilterHelper.setAllToDefault()
             adapter.notifyDataSetChanged()
             updateNewSummits(activitiesDir, summitEntries, fragement.context)
+            sortFilterHelper.allEntriesRequested = true
         }
     }
 

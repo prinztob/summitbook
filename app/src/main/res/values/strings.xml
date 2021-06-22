@@ -270,5 +270,6 @@
     <string name="ignore">Ignore</string>
     <string name="back">Back</string>
     <string name="revert_ignored_summits">Clean ignored summits</string>
+    <string name="will_be_updated_soon">Will be updated soon</string>
 
 </resources>

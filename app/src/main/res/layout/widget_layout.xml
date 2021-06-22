@@ -11,23 +11,28 @@
     <ImageView
         android:id="@+id/activity_image"
         android:paddingStart="5dp"
+        android:paddingEnd="5dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_baseline_directions_run_24_green" />
+        android:src="@drawable/ic_baseline_directions_run_24_green"
+        android:contentDescription="@string/set_activity"  />
     <TextView
         android:id="@+id/activity"
         android:layout_height="wrap_content"
         android:layout_gravity="start"
         android:layout_marginStart="10dp"
         android:padding="5dp"
+        android:text="@string/will_be_updated_soon"
         android:textAppearance="?android:attr/textAppearanceSmall" />
 
     <ImageView
         android:id="@+id/height_meter_image"
         android:paddingStart="5dp"
+        android:paddingEnd="5dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_baseline_trending_up_24_green"/>
+        android:src="@drawable/ic_baseline_trending_up_24_green"
+        android:contentDescription="@string/height_meter_hint" />
     <TextView
         android:id="@+id/height_meter"
         android:layout_gravity="start"
@@ -35,16 +40,18 @@
         android:layout_marginStart="10dp"
         android:layout_width="wrap_content"
         android:padding="5dp"
-        android:text="50000 (5%)"
+        android:text="@string/will_be_updated_soon"
         android:textAppearance="?android:attr/textAppearanceSmall" />
 
 
     <ImageView
         android:id="@+id/kilometers_image"
         android:paddingStart="5dp"
+        android:paddingEnd="5dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_baseline_compare_arrows_24_green"/>
+        android:src="@drawable/ic_baseline_compare_arrows_24_green"
+        android:contentDescription="@string/kilometers_hint" />
     <TextView
         android:id="@+id/kilometers"
         android:layout_gravity="start"
@@ -52,5 +59,6 @@
         android:layout_marginStart="10dp"
         android:layout_width="wrap_content"
         android:padding="5dp"
+        android:text="@string/will_be_updated_soon"
         android:textAppearance="?android:attr/textAppearanceSmall" />
 </GridLayout>

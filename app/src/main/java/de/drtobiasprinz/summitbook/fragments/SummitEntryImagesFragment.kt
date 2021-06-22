@@ -21,8 +21,8 @@ import de.drtobiasprinz.summitbook.ui.PageViewModel
 
 class SummitEntryImagesFragment : Fragment() {
     private var pageViewModel: PageViewModel? = null
-    private lateinit var helper: SummitBookDatabaseHelper
-    private lateinit var database: SQLiteDatabase
+    private var helper: SummitBookDatabaseHelper? = null
+    private var database: SQLiteDatabase? = null
     private var summitEntry: SummitEntry? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,11 +36,11 @@ class SummitEntryImagesFragment : Fragment() {
     ): View {
         val root: View = inflater.inflate(R.layout.fragment_summit_entry_images, container, false)
         helper = SummitBookDatabaseHelper(requireContext())
-        database = helper.writableDatabase
+        database = helper?.writableDatabase
         if (summitEntry == null && savedInstanceState != null) {
             val summitEntryId = savedInstanceState.getInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
             if (summitEntryId != 0) {
-                summitEntry = helper.getSummitsWithId(summitEntryId, database)
+                summitEntry = helper?.getSummitsWithId(summitEntryId, database)
             }
         }
         val localSummitEntry = summitEntry
@@ -144,7 +144,7 @@ class SummitEntryImagesFragment : Fragment() {
     private fun updateAdapterAndDatabase(localSummitEntry: SummitEntry) {
         updateImageIds(localSummitEntry, SummitViewFragment.adapter.summitEntries)
         SummitViewFragment.adapter.summitEntriesFiltered?.let { updateImageIds(localSummitEntry, it) }
-        helper.updateImageIdsSummit(database, localSummitEntry._id, localSummitEntry.imageIds)
+        helper?.updateImageIdsSummit(database, localSummitEntry._id, localSummitEntry.imageIds)
         SummitViewFragment.adapter.notifyDataSetChanged()
     }
 
@@ -171,8 +171,8 @@ class SummitEntryImagesFragment : Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-        database.close()
-        helper.close()
+        database?.close()
+        helper?.close()
     }
 
     companion object {

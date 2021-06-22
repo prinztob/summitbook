@@ -40,6 +40,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private lateinit var uniqueYearsOfSummit: ArrayList<String>
     private var startDate: Date? = null
     private var endDate: Date? = null
+    var allEntriesRequested: Boolean = false
     private lateinit var overview: TextView
     private lateinit var startDateText: EditText
     private lateinit var endDateText: EditText

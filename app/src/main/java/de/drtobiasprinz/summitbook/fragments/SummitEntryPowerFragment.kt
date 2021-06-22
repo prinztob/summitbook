@@ -33,8 +33,8 @@ class SummitEntryPowerFragment : Fragment() {
     private var summitEntry: SummitEntry? = null
     private lateinit var root: View
     private lateinit var metrics: DisplayMetrics
-    private lateinit var helper: SummitBookDatabaseHelper
-    private lateinit var database: SQLiteDatabase
+    private var helper: SummitBookDatabaseHelper? = null
+    private var database: SQLiteDatabase? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
@@ -47,14 +47,14 @@ class SummitEntryPowerFragment : Fragment() {
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_power, container, false)
         helper = SummitBookDatabaseHelper(requireContext())
-        database = helper.writableDatabase
+        database = helper?.writableDatabase
         metrics = DisplayMetrics()
         val mainActivity = MainActivity.mainActivity
         mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
         if (summitEntry == null && savedInstanceState != null) {
             val summitEntryId = savedInstanceState.getInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
             if (summitEntryId != 0) {
-                summitEntry = helper.getSummitsWithId(summitEntryId, database)
+                summitEntry = helper?.getSummitsWithId(summitEntryId, database)
             }
         }
         val localSummitEntry = summitEntry
@@ -205,8 +205,8 @@ class SummitEntryPowerFragment : Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-        database.close()
-        helper.close()
+        database?.close()
+        helper?.close()
     }
 
 

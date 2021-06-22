@@ -23,8 +23,8 @@ import java.util.*
 
 class SummitEntryDataFragment : Fragment() {
     private var pageViewModel: PageViewModel? = null
-    private lateinit var helper: SummitBookDatabaseHelper
-    private lateinit var database: SQLiteDatabase
+    private var helper: SummitBookDatabaseHelper? = null
+    private var database: SQLiteDatabase? = null
     private lateinit var root: View
     private var summitEntry: SummitEntry? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,11 +39,11 @@ class SummitEntryDataFragment : Fragment() {
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_data, container, false)
         helper = SummitBookDatabaseHelper(requireContext())
-        database = helper.writableDatabase
+        database = helper?.writableDatabase
         if (summitEntry == null && savedInstanceState != null) {
             val summitEntryId = savedInstanceState.getInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
             if (summitEntryId != 0) {
-                summitEntry = helper.getSummitsWithId(summitEntryId, database)
+                summitEntry = helper?.getSummitsWithId(summitEntryId, database)
             }
         }
         val localSummitEntry = summitEntry
@@ -66,7 +66,7 @@ class SummitEntryDataFragment : Fragment() {
             setText(localSummitEntry.topSpeed, "km/h", root.findViewById(R.id.top_speedText), root.findViewById(R.id.top_speed),
                     Pair(extrema?.topSpeedMinMax?.first?.topSpeed?.toInt() ?: 0, extrema?.topSpeedMinMax?.second?.topSpeed?.toInt() ?: 0))
             setText(localSummitEntry.comments, root.findViewById(R.id.comments), root.findViewById(R.id.comments))
-            setChipsText(R.id.places, localSummitEntry.getPlacesWithConnectedEntryString(requireContext(), database, helper), R.drawable.ic_place_black_24dp)
+            setChipsText(R.id.places, localSummitEntry.getPlacesWithConnectedEntryString(requireContext(), database!!, helper!!), R.drawable.ic_place_black_24dp)
             setChipsText(R.id.countries, localSummitEntry.countries, R.drawable.ic_baseline_flag_24)
             setChipsText(R.id.participants, localSummitEntry.participants, R.drawable.ic_baseline_people_24)
             val activityData = localSummitEntry.activityData
@@ -212,8 +212,8 @@ class SummitEntryDataFragment : Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-        database.close()
-        helper.close()
+        database?.close()
+        helper?.close()
     }
 
     override fun onSaveInstanceState(savedInstanceState: Bundle) {

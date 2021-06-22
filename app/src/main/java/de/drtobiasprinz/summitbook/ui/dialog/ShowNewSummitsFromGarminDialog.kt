@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.ui.dialog
 
+import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.graphics.Color
 import android.os.AsyncTask
@@ -20,7 +21,6 @@ import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.update
 import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
-import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -29,6 +29,7 @@ import java.util.*
 class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitEntry>, val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?, val progressBar: ProgressBar? = null) : DialogFragment(), BaseDialog {
 
     private lateinit var addSummitsButton: Button
+    private lateinit var currentContext: Context
     private lateinit var entriesWithoutIgnored: MutableList<SummitEntry>
     private lateinit var mergeSummitsButton: Button
     private lateinit var ignoreSummitsButton: Button
@@ -45,6 +46,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        currentContext = requireContext()
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         val useTcx = sharedPreferences.getBoolean("download_tcx", false)
         helper = SummitBookDatabaseHelper(view.context)
@@ -206,9 +208,11 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
 
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
+                    dialog.view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility = View.VISIBLE
                     pythonExecutor.downloadActivitiesByDate(activitiesDir, startDate, endDate)
                 } catch (e: java.lang.RuntimeException) {
                     Log.e("AsyncDownloadActivities", e.message ?: "")
+                    dialog.view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility = View.GONE
                 }
                 return null
             }
@@ -232,6 +236,10 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
         }
 
 
+    }
+
+    override fun getDialogContext(): Context {
+        return currentContext
     }
 
     override fun getProgressBarForAsyncTask(): ProgressBar? {

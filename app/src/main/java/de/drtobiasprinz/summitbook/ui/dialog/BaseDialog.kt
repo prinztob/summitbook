@@ -1,10 +1,10 @@
 package de.drtobiasprinz.summitbook.ui.dialog
 
+import android.content.Context
 import android.widget.ProgressBar
-import de.drtobiasprinz.summitbook.models.SummitEntry
-import java.io.File
 
 interface BaseDialog {
+    fun getDialogContext(): Context
     fun getProgressBarForAsyncTask(): ProgressBar?
     fun isStepByStepDownload(): Boolean
     fun doInPostExecute(index: Int, successfulDownloaded: Boolean)

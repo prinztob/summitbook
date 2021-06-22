@@ -54,8 +54,8 @@ class SummitEntryTrackFragment : Fragment() {
     private lateinit var metrics: DisplayMetrics
     private var marker: Marker? = null
     private var isMilageButtonShown: Boolean = false
-    private lateinit var helper: SummitBookDatabaseHelper
-    private lateinit var database: SQLiteDatabase
+    private var helper: SummitBookDatabaseHelper? = null
+    private var database: SQLiteDatabase? = null
     private val activeSpinnerFields: MutableMap<String, Pair<Boolean, Int>> = HashMap()
     private var selectedDataSpinner = 0
     private var selectedBinSpinner = 0
@@ -71,14 +71,14 @@ class SummitEntryTrackFragment : Fragment() {
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_track, container, false)
         helper = SummitBookDatabaseHelper(requireContext())
-        database = helper.writableDatabase
+        database = helper?.writableDatabase
         metrics = DisplayMetrics()
         val mainActivity = MainActivity.mainActivity
         mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
         if (summitEntry == null && savedInstanceState != null) {
             val summitEntryId = savedInstanceState.getInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
             if (summitEntryId != 0) {
-                summitEntry = helper.getSummitsWithId(summitEntryId, database)
+                summitEntry = helper?.getSummitsWithId(summitEntryId, database)
             }
         }
         val localSummitEntry = summitEntry
@@ -324,7 +324,7 @@ class SummitEntryTrackFragment : Fragment() {
         osMap.layoutParams = params
         if (hasPoints) {
             val connectedEntries = mutableListOf<SummitEntry>()
-            localSummitEntry.setConnectedEntries(connectedEntries, database, helper)
+            localSummitEntry.setConnectedEntries(connectedEntries, database!!, helper!!)
             for (entry in connectedEntries) {
                 OpenStreetMapUtils.drawTrack(entry, false, osMap, false, color = Color.BLACK)
             }
@@ -371,8 +371,8 @@ class SummitEntryTrackFragment : Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-        database.close()
-        helper.close()
+        database?.close()
+        helper?.close()
     }
 
 
