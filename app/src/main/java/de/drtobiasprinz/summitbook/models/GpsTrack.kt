@@ -163,25 +163,36 @@ class GpsTrack(private val gpsTrackPath: Path) {
         }
         return positions
     }
-    fun getTrackGraph(f: (TrackPoint) -> Float?): MutableList<Entry> {
-        val graph = mutableListOf<Entry>()
+
+    private fun setDistance() {
         var lastTrackPoint: TrackPoint? = null
-        var cumulativeDistance = 0f
+        for (trackPoint in trackPoints) {
+            if (trackPoint != null) {
+                if (lastTrackPoint == null) {
+                    trackPoint.extension?.distance = 0.0
+                    lastTrackPoint = trackPoint
+                } else {
+                    val distance = lastTrackPoint.extension?.distance
+                    if (distance != null) {
+                        trackPoint.extension?.distance = distance + abs(getDistance(trackPoint, lastTrackPoint)).toDouble()
+                        lastTrackPoint = trackPoint
+                    }
+                }
+            }
+        }
+    }
+
+    fun getTrackGraph(f: (TrackPoint) -> Float?): MutableList<Entry> {
+        if (trackPoints.first()?.extension?.distance == null) {
+            setDistance()
+        }
+        val graph = mutableListOf<Entry>()
         for (trackPoint in trackPoints) {
             if (trackPoint != null) {
                 val value = f(trackPoint)
                 val distance = trackPoint.extension?.distance?.toFloat()
-                if (value != null) {
-                    if (lastTrackPoint == null) {
-                        lastTrackPoint = trackPoint
-                    }
-                    if (distance != null) {
-                        cumulativeDistance = distance
-                    } else {
-                        cumulativeDistance += abs(getDistance(trackPoint, lastTrackPoint))
-                    }
-                    lastTrackPoint = trackPoint
-                    graph.add(Entry(cumulativeDistance, value, trackPoint))
+                if (value != null && distance != null) {
+                    graph.add(Entry(distance, value, trackPoint))
                 }
             }
         }
@@ -189,14 +200,20 @@ class GpsTrack(private val gpsTrackPath: Path) {
     }
 
     fun getTrackTiltGraph(): MutableList<Entry> {
+        if (trackPoints.first()?.extension?.distance == null) {
+            setDistance()
+        }
         val graph = mutableListOf<Entry>()
         for ((i, trackPoint) in trackPoints.withIndex()) {
             if (trackPoint != null) {
-                val value = (trackPoints[if (i+1 < trackPoints.size) i+1 else trackPoints.size - 1]?.ele ?: 0.0) - (trackPoint.ele ?: 0.0)
-                val deltaDistance = (trackPoints[if (i+1 < trackPoints.size) i+1 else trackPoints.size - 1]?.extension?.distance ?: 0.0) - (trackPoint.extension?.distance ?: 0.0)
-                val tilt = if (deltaDistance != 0.0) value/deltaDistance*100 else 0.0
+                val value = (trackPoints[if (i + 1 < trackPoints.size) i + 1 else trackPoints.size - 1]?.ele
+                        ?: 0.0) - (trackPoint.ele ?: 0.0)
+                val deltaDistance = (trackPoints[if (i + 1 < trackPoints.size) i + 1 else trackPoints.size - 1]?.extension?.distance
+                        ?: 0.0) - (trackPoint.extension?.distance ?: 0.0)
+                val tilt = if (deltaDistance != 0.0) value / deltaDistance * 100 else 0.0
                 if (abs(tilt) < 50) {
-                    graph.add(Entry(trackPoint.extension?.distance?.toFloat() ?: 0f, tilt.toFloat(), trackPoint))
+                    graph.add(Entry(trackPoint.extension?.distance?.toFloat()
+                            ?: 0f, tilt.toFloat(), trackPoint))
                 }
             }
         }

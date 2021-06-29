@@ -271,5 +271,7 @@
     <string name="back">Back</string>
     <string name="revert_ignored_summits">Clean ignored summits</string>
     <string name="will_be_updated_soon">Will be updated soon</string>
+    <string name="duration">Duration</string>
+    <string name="longest_duration">Longest duration</string>
 
 </resources>

@@ -71,6 +71,8 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
                     getValueOrNull(extremaValuesSummits?.kilometersMinMax?.second) { e -> e.kilometers}, 1)
             setTextViewData(extremaValuesSummits?.averageSpeedMinMax?.second, R.id.layoutHighestAverageSpeed, R.id.textHeighestAverageSpeed, R.id.textHeighestAverageSpeedInfo, "km/h",
                     getValueOrNull(extremaValuesSummits?.averageSpeedMinMax?.second) { e -> e.pace}, 1)
+            setTextViewData(extremaValuesSummits?.durationMinMax?.second, R.id.layoutLongestDuration, R.id.textLongestDuration, R.id.textLongestDurationInfo, "h",
+                    getValueOrNull(extremaValuesSummits?.durationMinMax?.second) { e -> e.duration}, 1)
             setTextViewData(extremaValuesSummits?.topSpeedMinMax?.second, R.id.layoutTopSpeed, R.id.textTopSpeed, R.id.textTopSpeedInfo, "km/h",
                     getValueOrNull(extremaValuesSummits?.topSpeedMinMax?.second) { e -> e.topSpeed}, 1)
             setTextViewData(extremaValuesSummits?.heightMetersMinMax?.second, R.id.layoutMostHeightMeter, R.id.textMostHeightMeter, R.id.textMostHeightMeterInfo, "m",

@@ -284,9 +284,11 @@ class SummitEntryTrackFragment : Fragment() {
                 lineChart.data = LineData(dataSets)
                 lineChart.setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
                     override fun onValueSelected(e: Entry, h: Highlight?) {
-                        val trackPoint = e.data as TrackPoint
-                        osMap.overlays.remove(marker)
-                        marker = OpenStreetMapUtils.addMarker(osMap, requireContext(), GeoPoint(trackPoint.lat, trackPoint.lon), localSummitEntry)
+                        if (e.data is TrackPoint) {
+                            val trackPoint = e.data as TrackPoint
+                            osMap.overlays.remove(marker)
+                            marker = OpenStreetMapUtils.addMarker(osMap, requireContext(), GeoPoint(trackPoint.lat, trackPoint.lon), localSummitEntry)
+                        }
                     }
 
                     override fun onNothingSelected() {}

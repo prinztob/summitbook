@@ -27,6 +27,7 @@ class SummitEntry @JvmOverloads constructor(
     var activityData: GarminActivityData? = null
     var isFavorite = false
     var isSelected = false
+    var duration = if (pace > 0) kilometers / pace else 0.0
     var gpsTrack: GpsTrack? = null
     var trackBoundingBox: TrackBoundingBox? = null
     private var rootDirectoryImages = File(MainActivity.storage, "${subDirForImages}/${activityId}")

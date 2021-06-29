@@ -10,6 +10,7 @@ class ExtremaValuesSummits(private val entries: ArrayList<SummitEntry>) {
     var maxAverageSpeed = averageSpeedMinMax?.second?.pace ?: 0.0
     val maxAverageSpeedCeil = ceil(averageSpeedMinMax?.second?.pace ?: 0.0).toInt()
 
+    var durationMinMax = getMinMax { e -> if (e.duration < 24.0) e.duration else 0.0 }
     var topSpeedMinMax = getMinMax { e -> e.topSpeed }
     var minTopSpeed = topSpeedMinMax?.first?.topSpeed ?: 0.0
     var maxTopSpeed = topSpeedMinMax?.second?.topSpeed ?: 0.0

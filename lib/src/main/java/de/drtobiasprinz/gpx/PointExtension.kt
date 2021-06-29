@@ -6,7 +6,7 @@ import io.reactivex.Observable
 
 data class PointExtension(
         val cadence: Int? = null,
-        val distance: Double? = null,
+        var distance: Double? = null,
         val heartRate: Int? = null,
         val power: Int? = null,
         val speed: Double? = null,
