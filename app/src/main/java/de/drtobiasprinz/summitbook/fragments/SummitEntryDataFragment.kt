@@ -68,7 +68,7 @@ class SummitEntryDataFragment : Fragment() {
                     Pair(floor(extrema?.averageSpeedMinMax?.first?.pace ?: 0.0).toInt(), ceil(extrema?.averageSpeedMinMax?.second?.pace ?: 0.0).toInt()))
             setText(localSummitEntry.topSpeed, "km/h", root.findViewById(R.id.top_speedText), root.findViewById(R.id.top_speed),
                     Pair(floor(extrema?.topSpeedMinMax?.first?.topSpeed ?: 0.0).toInt(), ceil(extrema?.topSpeedMinMax?.second?.topSpeed ?: 0.0).toInt()))
-            setText(localSummitEntry.kilometers / localSummitEntry.pace, "h", root.findViewById(R.id.durationText), root.findViewById(R.id.duration),
+            setText(localSummitEntry.duration, "h", root.findViewById(R.id.durationText), root.findViewById(R.id.duration),
                     Pair(floor(extrema?.durationMinMax?.first?.duration ?: 0.0).toInt(), ceil(extrema?.durationMinMax?.second?.duration ?: 0.0).toInt()), toHHms = true)
             setText(localSummitEntry.comments, root.findViewById(R.id.comments), root.findViewById(R.id.comments))
             setChipsText(R.id.places, localSummitEntry.getPlacesWithConnectedEntryString(requireContext(), database!!, helper!!), R.drawable.ic_place_black_24dp)

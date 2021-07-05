@@ -27,7 +27,7 @@ class SummitEntry @JvmOverloads constructor(
     var activityData: GarminActivityData? = null
     var isFavorite = false
     var isSelected = false
-    var duration = if (pace > 0) kilometers / pace else 0.0
+    var duration = getWellDefinedDuration()
     var gpsTrack: GpsTrack? = null
     var trackBoundingBox: TrackBoundingBox? = null
     private var rootDirectoryImages = File(MainActivity.storage, "${subDirForImages}/${activityId}")
@@ -40,6 +40,15 @@ class SummitEntry @JvmOverloads constructor(
     constructor(_id: Int, date: Date, name: String, sportType: SportType, place: List<String>, country: List<String>, comments: String, heightMeter: Int, kilometers: Double, pace: Double, topSpeed: Double, topElevation: Int, participants: List<String>, imageIds: MutableList<Int>, activityId: Int) :
             this(date, name, sportType, place, country, comments, heightMeter, kilometers, pace, topSpeed, topElevation, participants, imageIds, activityId) {
         this._id = _id
+    }
+
+    private fun getWellDefinedDuration(): Double {
+        val dur = if (pace > 0) kilometers / pace else 0.0
+        if (dur < 24) {
+            return dur
+        } else {
+            return 0.0
+        }
     }
 
     fun getImagePath(id: Int): Path {

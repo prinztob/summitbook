@@ -29,6 +29,7 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addTrackAndMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
 import de.drtobiasprinz.gpx.GPXParser
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.drawBoundingBox
 import org.osmdroid.bonuspack.location.GeocoderNominatim
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
@@ -93,6 +94,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
             val entry = summitEntry
             if (entry != null) {
                 addTrackAndMarker(entry, localOsMap, this, false, isMilageButtonShown = false, alwaysShowTrackOnMap = false)
+                entry.trackBoundingBox?.let { drawBoundingBox(osMap, it) }
             }
             addDefaultSettings(this, localOsMap, this)
             val mReceive: MapEventsReceiver = object : MapEventsReceiver {

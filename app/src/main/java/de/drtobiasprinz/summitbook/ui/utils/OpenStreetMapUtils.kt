@@ -9,6 +9,7 @@ import androidx.fragment.app.FragmentActivity
 import de.drtobiasprinz.summitbook.models.BookmarkEntry
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.TrackBoundingBox
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import org.osmdroid.tileprovider.tilesource.ITileSource
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -17,6 +18,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.ScaleBarOverlay
 import org.osmdroid.views.overlay.compass.CompassOverlay
 import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider
@@ -49,6 +51,18 @@ object OpenStreetMapUtils {
             osMap.overlays.add(marker)
         }
         return marker
+    }
+
+    @JvmStatic
+    fun drawBoundingBox(mMapView: MapView?, trackBoundingBox: TrackBoundingBox) {
+        val polyline = Polyline(mMapView)
+        polyline.setOnClickListener { _, _, _ ->
+            true // DO NOTHING
+        }
+        polyline.outlinePaint?.color = Color.BLACK
+        polyline.outlinePaint?.strokeWidth = 6f
+        polyline.setPoints(trackBoundingBox.getGeoPoints())
+        mMapView?.overlayManager?.add(polyline)
     }
 
     @JvmStatic
