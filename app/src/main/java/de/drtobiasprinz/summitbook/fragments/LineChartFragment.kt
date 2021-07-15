@@ -194,8 +194,8 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
                 label = "Average Speed"
                 if (sortedEntries != null) {
                     for (summitEntry in sortedEntries) {
-                        if (summitEntry.pace > 0) {
-                            lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.pace.toFloat(), summitEntry))
+                        if (summitEntry.velocityData.avgVelocity > 0) {
+                            lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.velocityData.avgVelocity.toFloat(), summitEntry))
                         }
                     }
                 }
@@ -205,8 +205,8 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
                 label = "Top Speed"
                 if (sortedEntries != null) {
                     for (summitEntry in sortedEntries) {
-                        if (summitEntry.topSpeed > 0) {
-                            lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.topSpeed.toFloat(), summitEntry))
+                        if (summitEntry.velocityData.maxVelocity > 0) {
+                            lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.velocityData.maxVelocity.toFloat(), summitEntry))
                         }
                     }
                 }

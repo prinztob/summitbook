@@ -27,6 +27,16 @@
     <string name="kilometers_hint">Distance</string>
     <string name="pace_hint">Average moving speed</string>
     <string name="top_speed_hint">Max speed</string>
+    <string name="top_speed_1km_hint">Max speed 1 km</string>
+    <string name="top_speed_5km_hint">Max speed 5 km</string>
+    <string name="top_speed_10km_hint">Max speed 10 km</string>
+    <string name="top_speed_15km_hint">Max speed 15 km</string>
+    <string name="top_speed_20km_hint">Max speed 20 km</string>
+    <string name="top_speed_30km_hint">Max speed 30 km</string>
+    <string name="top_speed_40km_hint">Max speed 40 km</string>
+    <string name="top_speed_50km_hint">Max speed 50 km</string>
+    <string name="top_speed_75km_hint">Max speed 75 km</string>
+    <string name="top_speed_100km_hint">Max speed 100 km</string>
     <string name="top_elevation_hint">Max elevation</string>
 
     <string name="action_search">Search</string>
@@ -154,6 +164,7 @@
     <string name="found_adress">"Fond address for %1$s."</string>
     <string name="delete_gps">"Coordinates and GPS track of summit entry %1$s has been deleted."</string>
     <string name="delete_cancel">"Deletion was canceled."</string>
+    <string name="speed_data_failed">"Speed data could not be downloaded because activity is not connected with Garmin."</string>
     <string name="not_found">"Could not find %1$s."</string>
     <string name="delete_entry">"Deleted entry %1$s."</string>
     <string name="delete_entry_text">"Are you sure you want to delete this entry?"</string>

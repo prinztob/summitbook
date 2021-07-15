@@ -27,6 +27,16 @@
     <string name="kilometers_hint">Entfernung</string>
     <string name="pace_hint">Durchschn. Geschw.</string>
     <string name="top_speed_hint">Max. Geschw.</string>
+    <string name="top_speed_1km_hint">Max. Geschw. 1 km</string>
+    <string name="top_speed_5km_hint">Max. Geschw. 5 km</string>
+    <string name="top_speed_10km_hint">Max. Geschw. 10 km</string>
+    <string name="top_speed_15km_hint">Max. Geschw. 15 km</string>
+    <string name="top_speed_20km_hint">Max. Geschw. 20 km</string>
+    <string name="top_speed_30km_hint">Max. Geschw. 30 km</string>
+    <string name="top_speed_40km_hint">Max. Geschw. 40 km</string>
+    <string name="top_speed_50km_hint">Max. Geschw. 50 km</string>
+    <string name="top_speed_75km_hint">Max. Geschw. 75 km</string>
+    <string name="top_speed_100km_hint">Max. Geschw. 100 km</string>
     <string name="top_elevation_hint">Maximale Höhe</string>
 
     <string name="action_search">Suche</string>
@@ -157,6 +167,7 @@ von
     <string name="found_adress">"Adresse für %1$s gefunden."</string>
     <string name="delete_gps">"Koordinaten and GPX track des Gipfels %1$s wurden gelöscht."</string>
     <string name="delete_cancel">"Löschen wurde abgebrochen."</string>
+    <string name="speed_data_failed">"Geschwindigkeitsdaten könenn nicht heruntergeladen werden, da der Gipfel nicht mit Garmin verbunden ist."</string>
     <string name="not_found">"Konnte %1$s nicht finden."</string>
     <string name="delete_entry">"Gipfel %1$s wurde gelöscht."</string>
     <string name="delete_entry_text">"Sind Sie sicher, dass sie den Gipfel löschen möchten?"</string>

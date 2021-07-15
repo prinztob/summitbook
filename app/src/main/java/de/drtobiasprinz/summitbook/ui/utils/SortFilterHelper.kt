@@ -533,7 +533,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         val extremaValues = extremaValuesFilteredSummits
         if (extremaValues != null) {
             for (entry in filteredEntries) {
-                if (entry.topSpeed >= extremaValues.minTopSpeed && entry.topSpeed <= extremaValues.maxTopSpeedCeil || extremaValues.minTopSpeed == 0.0 && entry.topSpeed == -1.0) {
+                if (entry.velocityData.maxVelocity >= extremaValues.minTopSpeed && entry.velocityData.maxVelocity <= extremaValues.maxTopSpeedCeil || extremaValues.minTopSpeed == 0.0 && entry.velocityData.maxVelocity == -1.0) {
                     entries.add(entry)
                 }
             }
@@ -546,7 +546,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         val extremaValues = extremaValuesFilteredSummits
         if (extremaValues != null) {
             for (entry in filteredEntries) {
-                if (entry.pace >= extremaValues.minAverageSpeed && entry.pace <= extremaValues.maxAverageSpeedCeil || extremaValues.minAverageSpeed == 0.0 && entry.pace == -1.0) {
+                if (entry.velocityData.avgVelocity >= extremaValues.minAverageSpeed && entry.velocityData.avgVelocity <= extremaValues.maxAverageSpeedCeil || extremaValues.minAverageSpeed == 0.0 && entry.velocityData.avgVelocity == -1.0) {
                     entries.add(entry)
                 }
             }

@@ -5,16 +5,26 @@ import java.util.*
 import kotlin.math.ceil
 
 class ExtremaValuesSummits(private val entries: ArrayList<SummitEntry>) {
-    var averageSpeedMinMax = getMinMax { e -> e.pace }
-    var minAverageSpeed = averageSpeedMinMax?.first?.pace ?: 0.0
-    var maxAverageSpeed = averageSpeedMinMax?.second?.pace ?: 0.0
-    val maxAverageSpeedCeil = ceil(averageSpeedMinMax?.second?.pace ?: 0.0).toInt()
+    var averageSpeedMinMax = getMinMax { e -> e.velocityData.avgVelocity }
+    var minAverageSpeed = averageSpeedMinMax?.first?.velocityData?.avgVelocity ?: 0.0
+    var maxAverageSpeed = averageSpeedMinMax?.second?.velocityData?.avgVelocity ?: 0.0
+    val maxAverageSpeedCeil = ceil(averageSpeedMinMax?.second?.velocityData?.avgVelocity ?: 0.0).toInt()
 
     var durationMinMax = getMinMax { e -> if (e.duration < 24.0) e.duration else 0.0 }
-    var topSpeedMinMax = getMinMax { e -> e.topSpeed }
-    var minTopSpeed = topSpeedMinMax?.first?.topSpeed ?: 0.0
-    var maxTopSpeed = topSpeedMinMax?.second?.topSpeed ?: 0.0
-    val maxTopSpeedCeil = ceil(topSpeedMinMax?.second?.topSpeed ?: 0.0).toInt()
+    var topSpeedMinMax = getMinMax { e -> e.velocityData.maxVelocity }
+    var minTopSpeed = topSpeedMinMax?.first?.velocityData?.maxVelocity ?: 0.0
+    var maxTopSpeed = topSpeedMinMax?.second?.velocityData?.maxVelocity ?: 0.0
+    val maxTopSpeedCeil = ceil(topSpeedMinMax?.second?.velocityData?.maxVelocity ?: 0.0).toInt()
+    var oneKmMinMax = getMinMax { e -> e.velocityData.oneKilometer }
+    var fiveKmMinMax = getMinMax { e -> e.velocityData.fiveKilometer }
+    var tenKmMinMax = getMinMax { e -> e.velocityData.tenKilometers }
+    var fifteenKmMinMax = getMinMax { e -> e.velocityData.fifteenKilometers }
+    var twentyKmMinMax = getMinMax { e -> e.velocityData.twentyKilometers }
+    var thirtyKmMinMax = getMinMax { e -> e.velocityData.thirtyKilometers }
+    var fortyKmMinMax = getMinMax { e -> e.velocityData.fortyKilometers }
+    var fiftyKmMinMax = getMinMax { e -> e.velocityData.fiftyKilometers }
+    var seventyFiveKmMinMax = getMinMax { e -> e.velocityData.seventyFiveKilometers }
+    var hundredKmMinMax = getMinMax { e -> e.velocityData.hundredKilometers }
 
     var kilometersMinMax = getMinMax { e -> e.kilometers }
     var minKilometers = kilometersMinMax?.first?.kilometers ?: 0.0

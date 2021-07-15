@@ -70,11 +70,33 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
             setTextViewData(extremaValuesSummits?.kilometersMinMax?.second, R.id.layoutLongestDistance, R.id.textLongestDistance, R.id.textLongestDistanceInfo, "km",
                     getValueOrNull(extremaValuesSummits?.kilometersMinMax?.second) { e -> e.kilometers}, 1)
             setTextViewData(extremaValuesSummits?.averageSpeedMinMax?.second, R.id.layoutHighestAverageSpeed, R.id.textHeighestAverageSpeed, R.id.textHeighestAverageSpeedInfo, "km/h",
-                    getValueOrNull(extremaValuesSummits?.averageSpeedMinMax?.second) { e -> e.pace}, 1)
+                    getValueOrNull(extremaValuesSummits?.averageSpeedMinMax?.second) { e -> e.velocityData.avgVelocity}, 1)
             setTextViewData(extremaValuesSummits?.durationMinMax?.second, R.id.layoutLongestDuration, R.id.textLongestDuration, R.id.textLongestDurationInfo, "h",
                     getValueOrNull(extremaValuesSummits?.durationMinMax?.second) { e -> e.duration}, 1)
             setTextViewData(extremaValuesSummits?.topSpeedMinMax?.second, R.id.layoutTopSpeed, R.id.textTopSpeed, R.id.textTopSpeedInfo, "km/h",
-                    getValueOrNull(extremaValuesSummits?.topSpeedMinMax?.second) { e -> e.topSpeed}, 1)
+                    getValueOrNull(extremaValuesSummits?.topSpeedMinMax?.second) { e -> e.velocityData.maxVelocity}, 1)
+
+            setTextViewData(extremaValuesSummits?.oneKmMinMax?.second, R.id.layoutTopSpeed1Km, R.id.textTopSpeed1Km, R.id.textTopSpeed1KmInfo, "km/h",
+                    getValueOrNull(extremaValuesSummits?.oneKmMinMax?.second) { e -> e.velocityData.oneKilometer}, 1)
+            setTextViewData(extremaValuesSummits?.fiveKmMinMax?.second, R.id.layoutTopSpeed5Km, R.id.textTopSpeed5Km, R.id.textTopSpeed5KmInfo, "km/h",
+                    getValueOrNull(extremaValuesSummits?.fiveKmMinMax?.second) { e -> e.velocityData.fiveKilometer}, 1)
+            setTextViewData(extremaValuesSummits?.tenKmMinMax?.second, R.id.layoutTopSpeed10Km, R.id.textTopSpeed10Km, R.id.textTopSpeed10KmInfo, "km/h",
+                    getValueOrNull(extremaValuesSummits?.tenKmMinMax?.second) { e -> e.velocityData.tenKilometers}, 1)
+            setTextViewData(extremaValuesSummits?.fifteenKmMinMax?.second, R.id.layoutTopSpeed15Km, R.id.textTopSpeed15Km, R.id.textTopSpeed15KmInfo, "km/h",
+                    getValueOrNull(extremaValuesSummits?.fifteenKmMinMax?.second) { e -> e.velocityData.fifteenKilometers}, 1)
+            setTextViewData(extremaValuesSummits?.twentyKmMinMax?.second, R.id.layoutTopSpeed20Km, R.id.textTopSpeed20Km, R.id.textTopSpeed20KmInfo, "km/h",
+                    getValueOrNull(extremaValuesSummits?.twentyKmMinMax?.second) { e -> e.velocityData.twentyKilometers}, 1)
+            setTextViewData(extremaValuesSummits?.thirtyKmMinMax?.second, R.id.layoutTopSpeed30Km, R.id.textTopSpeed30Km, R.id.textTopSpeed30KmInfo, "km/h",
+                    getValueOrNull(extremaValuesSummits?.thirtyKmMinMax?.second) { e -> e.velocityData.thirtyKilometers}, 1)
+            setTextViewData(extremaValuesSummits?.fortyKmMinMax?.second, R.id.layoutTopSpeed40Km, R.id.textTopSpeed40Km, R.id.textTopSpeed40KmInfo, "km/h",
+                    getValueOrNull(extremaValuesSummits?.fortyKmMinMax?.second) { e -> e.velocityData.fortyKilometers}, 1)
+            setTextViewData(extremaValuesSummits?.fiftyKmMinMax?.second, R.id.layoutTopSpeed50Km, R.id.textTopSpeed50Km, R.id.textTopSpeed50KmInfo, "km/h",
+                    getValueOrNull(extremaValuesSummits?.fiftyKmMinMax?.second) { e -> e.velocityData.fiftyKilometers}, 1)
+            setTextViewData(extremaValuesSummits?.seventyFiveKmMinMax?.second, R.id.layoutTopSpeed75Km, R.id.textTopSpeed75Km, R.id.textTopSpeed75KmInfo, "km/h",
+                    getValueOrNull(extremaValuesSummits?.seventyFiveKmMinMax?.second) { e -> e.velocityData.seventyFiveKilometers}, 1)
+            setTextViewData(extremaValuesSummits?.hundredKmMinMax?.second, R.id.layoutTopSpeed100Km, R.id.textTopSpeed100Km, R.id.textTopSpeed100KmInfo, "km/h",
+                    getValueOrNull(extremaValuesSummits?.hundredKmMinMax?.second) { e -> e.velocityData.hundredKilometers}, 1)
+
             setTextViewData(extremaValuesSummits?.heightMetersMinMax?.second, R.id.layoutMostHeightMeter, R.id.textMostHeightMeter, R.id.textMostHeightMeterInfo, "m",
                     getValueOrNull(extremaValuesSummits?.heightMetersMinMax?.second) { e -> e.heightMeter.toDouble()})
             setTextViewData(extremaValuesSummits?.topElevationMinMax?.second, R.id.layoutHighestPeak, R.id.textHighestPeak, R.id.textHighestPeakInfo, "m.a.s.l.",

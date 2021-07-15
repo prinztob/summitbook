@@ -20,7 +20,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class SummitEntry @JvmOverloads constructor(
-        var date: Date, var name: String, var sportType: SportType, var places: List<String>, var countries: List<String>, var comments: String, var heightMeter: Int, var kilometers: Double, var pace: Double, var topSpeed: Double, var topElevation: Int, var participants: List<String>, var imageIds: MutableList<Int>, var activityId: Int =
+        var date: Date, var name: String, var sportType: SportType, var places: List<String>, var countries: List<String>, var comments: String, var heightMeter: Int, var kilometers: Double, var velocityData: VelocityData, var topElevation: Int, var participants: List<String>, var imageIds: MutableList<Int>, var activityId: Int =
                 this.getActivityId(date, name, sportType, heightMeter, kilometers)) {
     var _id = -1
     var latLng: LatLng? = null
@@ -32,18 +32,18 @@ class SummitEntry @JvmOverloads constructor(
     var trackBoundingBox: TrackBoundingBox? = null
     private var rootDirectoryImages = File(MainActivity.storage, "${subDirForImages}/${activityId}")
 
-    private constructor(date: Date, name: String, sportType: SportType, place: List<String>, country: List<String>, comments: String, heightMeter: Int, kilometers: Double, pace: Double, topSpeed: Double, topElevation: Int, latLng: LatLng?, participants: List<String>, imageIds: MutableList<Int>, activityId: Int) :
-            this(date, name, sportType, place, country, comments, heightMeter, kilometers, pace, topSpeed, topElevation, participants, imageIds, activityId) {
+    private constructor(date: Date, name: String, sportType: SportType, place: List<String>, country: List<String>, comments: String, heightMeter: Int, kilometers: Double, velocityData1: VelocityData, topElevation: Int, latLng: LatLng?, participants: List<String>, imageIds: MutableList<Int>, activityId: Int) :
+            this(date, name, sportType, place, country, comments, heightMeter, kilometers, velocityData1, topElevation, participants, imageIds, activityId) {
         this.latLng = latLng
     }
 
-    constructor(_id: Int, date: Date, name: String, sportType: SportType, place: List<String>, country: List<String>, comments: String, heightMeter: Int, kilometers: Double, pace: Double, topSpeed: Double, topElevation: Int, participants: List<String>, imageIds: MutableList<Int>, activityId: Int) :
-            this(date, name, sportType, place, country, comments, heightMeter, kilometers, pace, topSpeed, topElevation, participants, imageIds, activityId) {
+    constructor(_id: Int, date: Date, name: String, sportType: SportType, place: List<String>, country: List<String>, comments: String, heightMeter: Int, kilometers: Double, velocityData1: VelocityData, topElevation: Int, participants: List<String>, imageIds: MutableList<Int>, activityId: Int) :
+            this(date, name, sportType, place, country, comments, heightMeter, kilometers, velocityData1, topElevation, participants, imageIds, activityId) {
         this._id = _id
     }
 
     private fun getWellDefinedDuration(): Double {
-        val dur = if (pace > 0) kilometers / pace else 0.0
+        val dur = if (velocityData.avgVelocity > 0) kilometers / velocityData.avgVelocity else 0.0
         if (dur < 24) {
             return dur
         } else {
@@ -155,8 +155,7 @@ class SummitEntry @JvmOverloads constructor(
                 comments + ';' +
                 heightMeter + ';' +
                 kilometers + ';' +
-                pace + ';' +
-                topSpeed + ';' +
+                velocityData.toString() + ';' +
                 topElevation + ';' +
                 lat + ';' +
                 lng + ';' +
@@ -256,9 +255,8 @@ class SummitEntry @JvmOverloads constructor(
         val that = other as SummitEntry
         return that.kilometers == kilometers && that.getDateAsString() == getDateAsString()
                 && name == that.name && sportType == that.sportType
-                && heightMeter == that.heightMeter && pace == that.pace
-                && topElevation == that.topElevation && topSpeed == that.topSpeed
-                && comments == that.comments
+                && heightMeter == that.heightMeter && velocityData == that.velocityData
+                && topElevation == that.topElevation && comments == that.comments
     }
 
     override fun hashCode(): Int {
@@ -296,9 +294,9 @@ class SummitEntry @JvmOverloads constructor(
             val activityId = if (splitLine[14].trim { it <= ' ' } != "") splitLine[14].toInt() else getActivityId(date, splitLine[1], sportType, heightsMeter, km)
             entry = if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") {
                 val latLng = splitLine[11].toDouble().let { LatLng(it, splitLine[12].toDouble()) }
-                SummitEntry(date, splitLine[1], sportType, countries, places, splitLine[5], heightsMeter, km, pace, topSpeed, elevation, latLng, participants, mutableListOf(), activityId)
+                SummitEntry(date, splitLine[1], sportType, countries, places, splitLine[5], heightsMeter, km, VelocityData.parse(splitLine[8].split(","), topSpeed), elevation, latLng, participants, mutableListOf(), activityId)
             } else {
-                SummitEntry(date, splitLine[1], sportType, countries, places, splitLine[5], heightsMeter, km, pace, topSpeed, elevation, participants, mutableListOf(), activityId)
+                SummitEntry(date, splitLine[1], sportType, countries, places, splitLine[5], heightsMeter, km, VelocityData.parse(splitLine[8].split(","), topSpeed), elevation, participants, mutableListOf(), activityId)
             }
             val isFavorite = if (splitLine.size == NUMBER_OF_ELEMENTS) splitLine[27] else splitLine[29]
             entry.isFavorite = isFavorite == "1"
@@ -310,14 +308,17 @@ class SummitEntry @JvmOverloads constructor(
 
         private fun getGarminActivityData(splitLine: Array<String>): GarminActivityData {
             if (splitLine.size == 30) {
-                return GarminActivityData(splitLine[15].split(",") as MutableList<String>, splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
-                        PowerData(splitLine[19].toFloat(), splitLine[20].toFloat(), splitLine[21].toFloat(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                return GarminActivityData(splitLine[15].split(",") as MutableList<String>,
+                        splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
+                        PowerData(splitLine[19].toFloat(), splitLine[20].toFloat(), splitLine[21].toFloat(),
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                 splitLine[22].toInt(), 0, splitLine[23].toInt(), 0, 0),
                         0, 0,
                         splitLine[24].toFloat(), splitLine[25].toFloat(),
                         splitLine[26].toFloat(), splitLine[27].toFloat(), splitLine[28].toFloat())
             } else {
-                return GarminActivityData(splitLine[15].split(",") as MutableList<String>, splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
+                return GarminActivityData(splitLine[15].split(",") as MutableList<String>,
+                        splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
                         PowerData.parse(splitLine[19].split(",")),
                         splitLine[20].toInt(), splitLine[21].toInt(),
                         splitLine[22].toFloat(), splitLine[23].toFloat(),

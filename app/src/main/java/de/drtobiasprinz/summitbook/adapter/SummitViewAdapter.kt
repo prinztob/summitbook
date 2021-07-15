@@ -5,6 +5,8 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.graphics.Color
+import android.os.AsyncTask
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,14 +16,17 @@ import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.google.gson.JsonObject
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.VelocityData
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog.Companion.updateInstance
 import de.drtobiasprinz.summitbook.ui.utils.ImagePickerListner
+import de.drtobiasprinz.summitbook.ui.utils.MaxVelocitySummit
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.util.*
 
@@ -98,6 +103,29 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         val addImageButton = cardView.findViewById<ImageButton?>(R.id.entry_add_image)
         val listener = ImagePickerListner()
         addImageButton?.let { listener.setListener(it, entry, this, db, sortFilterHelper.databaseHelper) }
+        val addVelocityData = cardView.findViewById<ImageButton?>(R.id.entry_add_velocity_data)
+        if (entry.velocityData.oneKilometer > 0) {
+            addVelocityData?.setImageResource(R.drawable.ic_baseline_speed_24)
+        } else {
+            addVelocityData?.setImageResource(R.drawable.ic_baseline_more_time_24)
+        }
+        if (entry.activityData == null || entry.activityData?.activityId == null) {
+            addVelocityData?.visibility = View.GONE
+        }
+        addVelocityData?.setOnClickListener { v: View? ->
+            if (pythonExecutor != null && entry.activityData != null && entry.activityData?.activityId != null) {
+                if (entry.velocityData.oneKilometer > 0) {
+                    entry.velocityData = VelocityData(entry.velocityData.avgVelocity, entry.velocityData.maxVelocity, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+                    sortFilterHelper.databaseHelper.updateVelocityDataSummit(sortFilterHelper.database, entry._id, entry.velocityData)
+                    addVelocityData.setImageResource(R.drawable.ic_baseline_more_time_24)
+                } else {
+                    AsyncDownloadSpeedDataForActivity(entry, pythonExecutor, sortFilterHelper, addVelocityData).execute()
+                }
+            } else {
+                Toast.makeText(v?.context, v?.context?.getString(R.string.speed_data_failed),
+                        Toast.LENGTH_SHORT).show()
+            }
+        }
         val removeButton = cardView.findViewById<ImageButton?>(R.id.entry_delete)
         //delete a summit entry
         removeButton?.setOnClickListener { v: View? ->
@@ -231,6 +259,39 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
                 addPosition?.setImageResource(R.drawable.ic_edit_location_black_24dp)
             }
         }
+
+        class AsyncDownloadSpeedDataForActivity(private val summit: SummitEntry, private val pythonExecutor: GarminPythonExecutor, var sortFilterHelper: SortFilterHelper, val addVelocityData: ImageButton) : AsyncTask<Void?, Void?, Void?>() {
+            var json: JsonObject? = null
+            override fun doInBackground(vararg params: Void?): Void? {
+                try {
+                    summit.activityData?.activityId?.let { json = pythonExecutor.downloadSpeedDataForActivity(it) }
+                } catch (e: java.lang.RuntimeException) {
+                    Log.e("AsyncDownloadActivities", e.message ?: "")
+                }
+                return null
+            }
+
+            override fun onPostExecute(param: Void?) {
+                val jsonLocal = json
+                if (jsonLocal != null) {
+                    val maxVelocitySummit = MaxVelocitySummit()
+                    val velocityEntries = maxVelocitySummit.parseFomGarmin(jsonLocal)
+                    summit.velocityData.oneKilometer = maxVelocitySummit.getAverageVelocityForKilometers(1.0, velocityEntries)
+                    if (summit.velocityData.oneKilometer > 0) summit.velocityData.fiveKilometer = maxVelocitySummit.getAverageVelocityForKilometers(5.0, velocityEntries)
+                    if (summit.velocityData.fiveKilometer > 0) summit.velocityData.tenKilometers = maxVelocitySummit.getAverageVelocityForKilometers(10.0, velocityEntries)
+                    if (summit.velocityData.tenKilometers > 0) summit.velocityData.fifteenKilometers = maxVelocitySummit.getAverageVelocityForKilometers(15.0, velocityEntries)
+                    if (summit.velocityData.fifteenKilometers > 0) summit.velocityData.twentyKilometers = maxVelocitySummit.getAverageVelocityForKilometers(20.0, velocityEntries)
+                    if (summit.velocityData.twentyKilometers > 0) summit.velocityData.thirtyKilometers = maxVelocitySummit.getAverageVelocityForKilometers(30.0, velocityEntries)
+                    if (summit.velocityData.thirtyKilometers > 0) summit.velocityData.fortyKilometers = maxVelocitySummit.getAverageVelocityForKilometers(40.0, velocityEntries)
+                    if (summit.velocityData.fortyKilometers > 0) summit.velocityData.fiftyKilometers = maxVelocitySummit.getAverageVelocityForKilometers(50.0, velocityEntries)
+                    if (summit.velocityData.fiftyKilometers > 0) summit.velocityData.seventyFiveKilometers = maxVelocitySummit.getAverageVelocityForKilometers(75.0, velocityEntries)
+                    if (summit.velocityData.seventyFiveKilometers > 0) summit.velocityData.hundredKilometers = maxVelocitySummit.getAverageVelocityForKilometers(100.0, velocityEntries)
+                    sortFilterHelper.databaseHelper.updateVelocityDataSummit(sortFilterHelper.database, summit._id, summit.velocityData)
+                    addVelocityData.setImageResource(R.drawable.ic_baseline_speed_24)
+                }
+            }
+        }
+
     }
 
     init {

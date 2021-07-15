@@ -80,6 +80,19 @@ def get_multi_sport_data(client, activity_id):
     except Exception as err:
         return "return code: 1Unknown error occurred during Garmin Connect Client get activities %s" % err
 
+def get_split_data(client, activity_id):
+    try:
+        return client.get_activity_splits(activity_id)
+    except (
+            GarminConnectConnectionError,
+            GarminConnectAuthenticationError,
+            GarminConnectTooManyRequestsError,
+    ) as err:
+        return "return code: 1Error occurred during Garmin Connect Client get activities: %s" % err
+    except Exception as err:
+        return "return code: 1Unknown error occurred during Garmin Connect Client get activities %s" % err
+
+
 def get_power_data(client, date):
     """
     Get activity splits

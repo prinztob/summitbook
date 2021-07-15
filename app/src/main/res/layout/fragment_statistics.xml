@@ -221,42 +221,415 @@
 
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/layoutTopSpeed"
+            <HorizontalScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="5dp"
-                android:layout_marginTop="2dp"
-                android:layout_marginRight="5dp"
-                android:background="@drawable/selector_box"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="2">
+                <LinearLayout
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="@string/top_speed"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:orientation="horizontal">
+                    <LinearLayout
+                        android:id="@+id/layoutTopSpeed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
 
-                <TextView
-                    android:id="@+id/textTopSpeed"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:textColor="#333"
-                    android:textSize="35sp" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/top_speed"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
 
-                <TextView
-                    android:id="@+id/textTopSpeedInfo"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:textColor="#333"
-                    android:textSize="20sp" />
+                        <TextView
+                            android:id="@+id/textTopSpeed"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
 
-            </LinearLayout>
+                        <TextView
+                            android:id="@+id/textTopSpeedInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layoutTopSpeed1Km"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/top_speed_1km_hint"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed1Km"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed1KmInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layoutTopSpeed5Km"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/top_speed_5km_hint"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed5Km"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed5KmInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layoutTopSpeed10Km"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/top_speed_10km_hint"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed10Km"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed10KmInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/layoutTopSpeed15Km"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/top_speed_15km_hint"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed15Km"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed15KmInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/layoutTopSpeed20Km"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/top_speed_20km_hint"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed20Km"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed20KmInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/layoutTopSpeed30Km"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/top_speed_30km_hint"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed30Km"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed30KmInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/layoutTopSpeed40Km"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/top_speed_40km_hint"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed40Km"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed40KmInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/layoutTopSpeed50Km"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/top_speed_50km_hint"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed50Km"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed50KmInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/layoutTopSpeed75Km"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/top_speed_75km_hint"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed75Km"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed75KmInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/layoutTopSpeed100Km"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/top_speed_100km_hint"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed100Km"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textTopSpeed100KmInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+                </LinearLayout>
+            </HorizontalScrollView>
 
             <LinearLayout
                 android:id="@+id/layoutHighestAverageSpeed"
@@ -453,6 +826,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower1sec"
                         android:layout_width="match_parent"
@@ -489,6 +863,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower2sec"
                         android:layout_width="match_parent"
@@ -525,6 +900,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower5sec"
                         android:layout_width="match_parent"
@@ -561,6 +937,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower10sec"
                         android:layout_width="match_parent"
@@ -597,6 +974,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower20sec"
                         android:layout_width="match_parent"
@@ -633,6 +1011,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower30sec"
                         android:layout_width="match_parent"
@@ -669,6 +1048,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower1min"
                         android:layout_width="match_parent"
@@ -705,6 +1085,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower2min"
                         android:layout_width="match_parent"
@@ -741,6 +1122,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower5min"
                         android:layout_width="match_parent"
@@ -777,6 +1159,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower10min"
                         android:layout_width="match_parent"
@@ -813,6 +1196,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower20min"
                         android:layout_width="match_parent"
@@ -849,6 +1233,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower30min"
                         android:layout_width="match_parent"
@@ -885,6 +1270,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower1h"
                         android:layout_width="match_parent"
@@ -921,6 +1307,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutHighestPower2h"
                         android:layout_width="match_parent"

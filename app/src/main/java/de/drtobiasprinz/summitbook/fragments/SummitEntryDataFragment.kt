@@ -64,10 +64,32 @@ class SummitEntryDataFragment : Fragment() {
                     Pair(floor(extrema?.kilometersMinMax?.first?.kilometers ?: 0.0).toInt(), ceil(extrema?.kilometersMinMax?.second?.kilometers ?: 0.0).toInt()))
             setText(localSummitEntry.topElevation, "hm", root.findViewById(R.id.top_elevationText), root.findViewById(R.id.top_elevation),
                     Pair(extrema?.topElevationMinMax?.first?.topElevation ?: 0, extrema?.topElevationMinMax?.second?.topElevation ?: 0))
-            setText(localSummitEntry.pace, "km/h", root.findViewById(R.id.paceText), root.findViewById(R.id.pace),
-                    Pair(floor(extrema?.averageSpeedMinMax?.first?.pace ?: 0.0).toInt(), ceil(extrema?.averageSpeedMinMax?.second?.pace ?: 0.0).toInt()))
-            setText(localSummitEntry.topSpeed, "km/h", root.findViewById(R.id.top_speedText), root.findViewById(R.id.top_speed),
-                    Pair(floor(extrema?.topSpeedMinMax?.first?.topSpeed ?: 0.0).toInt(), ceil(extrema?.topSpeedMinMax?.second?.topSpeed ?: 0.0).toInt()))
+            setText(localSummitEntry.velocityData.avgVelocity, "km/h", root.findViewById(R.id.paceText), root.findViewById(R.id.pace),
+                    Pair(floor(extrema?.averageSpeedMinMax?.first?.velocityData?.avgVelocity ?: 0.0).toInt(), ceil(extrema?.averageSpeedMinMax?.second?.velocityData?.avgVelocity ?: 0.0).toInt()))
+            setText(localSummitEntry.velocityData.maxVelocity, "km/h", root.findViewById(R.id.top_speedText), root.findViewById(R.id.top_speed),
+                    Pair(floor(extrema?.topSpeedMinMax?.first?.velocityData?.maxVelocity ?: 0.0).toInt(), ceil(extrema?.topSpeedMinMax?.second?.velocityData?.maxVelocity ?: 0.0).toInt()))
+
+            setText(localSummitEntry.velocityData.oneKilometer, "km/h", root.findViewById(R.id.oneKM_top_speedText), root.findViewById(R.id.oneKM_top_speed),
+                    Pair(floor(extrema?.oneKmMinMax?.first?.velocityData?.oneKilometer ?: 0.0).toInt(), ceil(extrema?.oneKmMinMax?.second?.velocityData?.fiveKilometer ?: 0.0).toInt()))
+            setText(localSummitEntry.velocityData.fiveKilometer, "km/h", root.findViewById(R.id.fiveKM_top_speedText), root.findViewById(R.id.fiveKM_top_speed),
+                    Pair(floor(extrema?.fiveKmMinMax?.first?.velocityData?.fiveKilometer ?: 0.0).toInt(), ceil(extrema?.fiveKmMinMax?.second?.velocityData?.fiveKilometer ?: 0.0).toInt()))
+            setText(localSummitEntry.velocityData.tenKilometers, "km/h", root.findViewById(R.id.tenKM_top_speedText), root.findViewById(R.id.tenKM_top_speed),
+                    Pair(floor(extrema?.tenKmMinMax?.first?.velocityData?.tenKilometers ?: 0.0).toInt(), ceil(extrema?.tenKmMinMax?.second?.velocityData?.tenKilometers ?: 0.0).toInt()))
+            setText(localSummitEntry.velocityData.fifteenKilometers, "km/h", root.findViewById(R.id.fifteenKM_top_speedText), root.findViewById(R.id.fifteenKM_top_speed),
+                    Pair(floor(extrema?.fifteenKmMinMax?.first?.velocityData?.fifteenKilometers ?: 0.0).toInt(), ceil(extrema?.fifteenKmMinMax?.second?.velocityData?.fifteenKilometers ?: 0.0).toInt()))
+            setText(localSummitEntry.velocityData.twentyKilometers, "km/h", root.findViewById(R.id.twentyKM_top_speedText), root.findViewById(R.id.twentyKM_top_speed),
+                    Pair(floor(extrema?.twentyKmMinMax?.first?.velocityData?.twentyKilometers ?: 0.0).toInt(), ceil(extrema?.twentyKmMinMax?.second?.velocityData?.twentyKilometers ?: 0.0).toInt()))
+            setText(localSummitEntry.velocityData.thirtyKilometers, "km/h", root.findViewById(R.id.thirtyKM_top_speedText), root.findViewById(R.id.thirtyKM_top_speed),
+                    Pair(floor(extrema?.thirtyKmMinMax?.first?.velocityData?.thirtyKilometers ?: 0.0).toInt(), ceil(extrema?.thirtyKmMinMax?.second?.velocityData?.thirtyKilometers ?: 0.0).toInt()))
+            setText(localSummitEntry.velocityData.fortyKilometers, "km/h", root.findViewById(R.id.fourtyKM_top_speedText), root.findViewById(R.id.fourtyKM_top_speed),
+                    Pair(floor(extrema?.fortyKmMinMax?.first?.velocityData?.fortyKilometers ?: 0.0).toInt(), ceil(extrema?.fortyKmMinMax?.second?.velocityData?.fortyKilometers ?: 0.0).toInt()))
+            setText(localSummitEntry.velocityData.fiftyKilometers, "km/h", root.findViewById(R.id.fiftyKM_top_speedText), root.findViewById(R.id.fiftyKM_top_speed),
+                    Pair(floor(extrema?.fiftyKmMinMax?.first?.velocityData?.fiftyKilometers ?: 0.0).toInt(), ceil(extrema?.fiftyKmMinMax?.second?.velocityData?.fiftyKilometers ?: 0.0).toInt()))
+            setText(localSummitEntry.velocityData.seventyFiveKilometers, "km/h", root.findViewById(R.id.seventyfiveKM_top_speedText), root.findViewById(R.id.seventyfiveKM_top_speed),
+                    Pair(floor(extrema?.seventyFiveKmMinMax?.first?.velocityData?.seventyFiveKilometers ?: 0.0).toInt(), ceil(extrema?.seventyFiveKmMinMax?.second?.velocityData?.seventyFiveKilometers ?: 0.0).toInt()))
+            setText(localSummitEntry.velocityData.hundredKilometers, "km/h", root.findViewById(R.id.hundretKM_top_speedText), root.findViewById(R.id.hundretKM_top_speed),
+                    Pair(floor(extrema?.hundredKmMinMax?.first?.velocityData?.hundredKilometers ?: 0.0).toInt(), ceil(extrema?.hundredKmMinMax?.second?.velocityData?.hundredKilometers ?: 0.0).toInt()))
+
             setText(localSummitEntry.duration, "h", root.findViewById(R.id.durationText), root.findViewById(R.id.duration),
                     Pair(floor(extrema?.durationMinMax?.first?.duration ?: 0.0).toInt(), ceil(extrema?.durationMinMax?.second?.duration ?: 0.0).toInt()), toHHms = true)
             setText(localSummitEntry.comments, root.findViewById(R.id.comments), root.findViewById(R.id.comments))
@@ -159,7 +181,7 @@ class SummitEntryDataFragment : Fragment() {
     }
 
     private fun setText(value: Double, unit: String, info: TextView, textView: TextView, minMax: Pair<Number?, Number?> = Pair(null, null), reverse: Boolean = false, toHHms: Boolean = false) {
-        if (value == 0.0) {
+        if (value <= 0.0) {
             info.visibility = View.GONE
             textView.visibility = View.GONE
         } else {

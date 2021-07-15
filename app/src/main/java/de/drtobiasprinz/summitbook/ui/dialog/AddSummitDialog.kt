@@ -25,10 +25,7 @@ import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
-import de.drtobiasprinz.summitbook.models.GarminActivityData
-import de.drtobiasprinz.summitbook.models.PowerData
-import de.drtobiasprinz.summitbook.models.SportType
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
@@ -393,8 +390,8 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                 entry.comments = commentText.text.toString()
                 entry.heightMeter = heightMeterText.text.toString().toInt()
                 entry.kilometers = getTextWithDefaultDouble(kmText)
-                entry.pace = getTextWithDefaultDouble(paceText)
-                entry.topSpeed = getTextWithDefaultDouble(topSpeedText)
+                entry.velocityData.avgVelocity = getTextWithDefaultDouble(paceText)
+                entry.velocityData.maxVelocity = getTextWithDefaultDouble(topSpeedText)
                 entry.topElevation = getTextWithDefaultInt(topElevationText)
                 entry.participants = participantsView.chipValues
             } else {
@@ -406,8 +403,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                         countriesView.chipValues,
                         commentText.text.toString(), heightMeterText.text.toString().toInt(),
                         getTextWithDefaultDouble(kmText),
-                        getTextWithDefaultDouble(paceText),
-                        getTextWithDefaultDouble(topSpeedText),
+                        VelocityData.parse(getTextWithDefaultDouble(paceText), getTextWithDefaultDouble(topSpeedText)),
                         getTextWithDefaultInt(topElevationText),
                         participantsView.chipValues,
                         mutableListOf()
@@ -467,8 +463,8 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             setTextIfNotAlreadySet(participantsView, entry.participants.joinToString(",") + ",")
             setTextIfNotAlreadySet(heightMeterText, entry.heightMeter.toString())
             setTextIfNotAlreadySet(kmText, entry.kilometers.toString())
-            setTextIfNotAlreadySet(paceText, entry.pace.toString())
-            setTextIfNotAlreadySet(topSpeedText, entry.topSpeed.toString())
+            setTextIfNotAlreadySet(paceText, entry.velocityData.avgVelocity.toString())
+            setTextIfNotAlreadySet(topSpeedText, entry.velocityData.maxVelocity.toString())
             setTextIfNotAlreadySet(topElevationText, entry.topElevation.toString())
             setTextIfNotAlreadySet(caloriesText, entry.activityData?.calories.toString())
             setTextIfNotAlreadySet(averageHRText, entry.activityData?.averageHR.toString())

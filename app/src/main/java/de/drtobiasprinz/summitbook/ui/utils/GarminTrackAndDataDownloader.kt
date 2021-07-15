@@ -6,6 +6,7 @@ import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.GarminActivityData
 import de.drtobiasprinz.summitbook.models.PowerData
 import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.VelocityData
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import java.io.File
 import java.nio.file.Path
@@ -16,7 +17,7 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
 
     val downloadedTracks: MutableList<File> = mutableListOf()
     var finalEntry: SummitEntry? = null
-    private val activityDuration = entries.map { it.kilometers / it.pace }
+    private val activityDuration = entries.map { it.kilometers / it.velocityData.avgVelocity }
 
     fun downloadTracks(isAlreadyDownloaded: Boolean = false) {
         for (entry in entries) {
@@ -92,8 +93,8 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
                 "merge of " + entries.map { it.name }.joinToString (", "),
                 entries.sumBy { it.heightMeter },
                 entries.sumByDouble { it.kilometers },
-                entries.sumByDouble { it.kilometers } / activityDuration.sum(),
-                entries.maxBy { it.topSpeed }?.topSpeed ?: 0.0,
+                VelocityData.parse( entries.sumByDouble { it.kilometers } / activityDuration.sum(),
+                        entries.maxBy { it.velocityData.maxVelocity }?.velocityData?.maxVelocity ?: 0.0),
                 entries.maxBy { it.topElevation }?.topElevation ?: 0,
                 entries.map { it.participants }.flatten(),
                 mutableListOf()
@@ -105,7 +106,7 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
         val activityDataSets = entries.filter { it.activityData != null }.map { it.activityData }
         entries.forEach {
             if (it.activityData != null) {
-                it.activityData?.duration = it.kilometers / it.pace
+                it.activityData?.duration = it.kilometers / it.velocityData.avgVelocity
             }
         }
         if (activityDataSets.isNotEmpty()) {
@@ -116,7 +117,7 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
                     activityDataSets.sumByDouble { it?.calories?.toDouble() ?: 0.0 }.toFloat(),
                     (activityDataSets.sumByDouble {
                         (it?.averageHR?.toDouble() ?: 0.0) * (it?.duration ?: 0.0)
-                    } / entries.filter { it.activityData?.averageHR != null && (it.activityData?.averageHR ?: 0f) > 0 }.map { it.kilometers / it.pace }.sum()).toFloat(),
+                    } / entries.filter { it.activityData?.averageHR != null && (it.activityData?.averageHR ?: 0f) > 0 }.map { it.kilometers / it.velocityData.avgVelocity }.sum()).toFloat(),
                     activityDataSets.maxBy { it?.maxHR?.toDouble() ?: 0.0 }?.maxHR ?: 0f,
                     getPowerData(),
                     activityDataSets.maxBy { it?.ftp ?: 0 }?.ftp ?: 0,
@@ -140,7 +141,7 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
         return if (powerDataSets.isNotEmpty()) PowerData(
                 (powerDataSets.sumByDouble {
                     (it?.power?.avgPower?.toDouble() ?: 0.0) * (it?.duration ?: 0.0)
-                } / entries.filter { it.activityData?.power?.avgPower != null && (it.activityData?.power?.avgPower ?: 0f) > 0 }.map { it.kilometers / it.pace }.sum()).toFloat(),
+                } / entries.filter { it.activityData?.power?.avgPower != null && (it.activityData?.power?.avgPower ?: 0f) > 0 }.map { it.kilometers / it.velocityData.avgVelocity }.sum()).toFloat(),
                 powerDataSets.maxBy { it?.power?.maxPower ?: 0f }?.power?.maxPower ?: 0f,
                 powerDataSets.maxBy { it?.power?.normPower ?: 0f }?.power?.normPower ?: 0f,
                 powerDataSets.maxBy { it?.power?.oneSec ?: 0 }?.power?.oneSec ?: 0,

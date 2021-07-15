@@ -12,10 +12,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
-import de.drtobiasprinz.summitbook.models.GarminActivityData
-import de.drtobiasprinz.summitbook.models.PowerData
-import de.drtobiasprinz.summitbook.models.SportType
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.dialog.BaseDialog
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader.Companion.getTempGpsFilePath
@@ -80,6 +77,15 @@ class GarminPythonExecutor(val username: String, val password: String) {
         }
         val result = pythonModule.callAttr("download_activities_by_date", client, activitiesDir.absolutePath, startDate, endDate)
         checkOutput(result)
+    }
+
+    fun downloadSpeedDataForActivity(activityId: String): JsonObject {
+        if (client == null) {
+            login()
+        }
+        val result = pythonModule.callAttr("get_split_data", client, activityId)
+        checkOutput(result)
+        return JsonParser().parse(result.toString()) as JsonObject
     }
 
     fun getMultiSportData(activityId: String): JsonObject {
@@ -194,8 +200,8 @@ class GarminPythonExecutor(val username: String, val password: String) {
                     emptyList(), emptyList(), "",
                     getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt(),
                     round(convertMeterToKm(getJsonObjectEntryNotNull(jsonObject, "distance").toDouble()), 2),
-                    round(averageSpeed, 2),
-                    if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0,
+                    VelocityData.Companion.parse(round(averageSpeed, 2),
+                        if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
                     if (jsonObject["maxElevation"] != JsonNull.INSTANCE) round(jsonObject["maxElevation"].asDouble, 2).toInt() else 0,
                     emptyList(),
                     mutableListOf()

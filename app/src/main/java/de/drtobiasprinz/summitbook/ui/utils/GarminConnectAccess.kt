@@ -22,10 +22,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.models.GarminActivityData
-import de.drtobiasprinz.summitbook.models.PowerData
-import de.drtobiasprinz.summitbook.models.SportType
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import org.json.JSONArray
 import java.io.*
@@ -101,8 +98,7 @@ class GarminConnectAccess {
                 emptyList(), emptyList(), "",
                 jsonObject["elevationGain"].asInt,
                 round(convertMeterToKm(jsonObject["distance"].asDouble), 2),
-                round(averageSpeed, 2),
-                if (jsonObject["maxSpeed"] != INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0,
+                VelocityData.parse(round(averageSpeed, 2), if (jsonObject["maxSpeed"] != INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
                 if (jsonObject["maxElevation"] != INSTANCE) convertCmToMeter(jsonObject["maxElevation"].asInt) else 0,
                 emptyList(),
                 mutableListOf()
@@ -410,11 +406,11 @@ class GarminConnectAccess {
             entry1 = entries[i]
         } else {
             entry1.heightMeter += entries[i].heightMeter
-            val timeInHouroldEntry: Double = entry1.kilometers / entry1.pace
-            val timeInHourNewEntry: Double = entries[i].kilometers / entries[i].pace
+            val timeInHouroldEntry: Double = entry1.kilometers / entry1.velocityData.avgVelocity
+            val timeInHourNewEntry: Double = entries[i].kilometers / entries[i].velocityData.avgVelocity
             entry1.kilometers += entries[i].kilometers
-            entry1.pace = entry1.kilometers / (timeInHourNewEntry + timeInHouroldEntry)
-            if (entry1.topSpeed < entries[i].topSpeed) entry1.topSpeed = entries[i].topSpeed
+            entry1.velocityData.avgVelocity = entry1.kilometers / (timeInHourNewEntry + timeInHouroldEntry)
+            if (entry1.velocityData.maxVelocity < entries[i].velocityData.maxVelocity) entry1.velocityData.maxVelocity = entries[i].velocityData.maxVelocity
             if (entry1.topElevation < entries[i].topElevation) entry1.topElevation = entries[i].topElevation
             if (entry1.activityData == null) {
                 if (entries[i].activityData != null) entry1.activityData = entries[i].activityData

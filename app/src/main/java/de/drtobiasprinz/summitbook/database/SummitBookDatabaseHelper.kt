@@ -99,8 +99,8 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
         summitValues.put("COMMENTS", entry.comments)
         summitValues.put("HEIGHT_METERS", entry.heightMeter)
         summitValues.put("KILOMETERS", entry.kilometers)
-        summitValues.put("PACE", entry.pace)
-        summitValues.put("TOP_SPEED", entry.topSpeed)
+        summitValues.put("PACE", entry.velocityData.toString())
+        summitValues.put("TOP_SPEED", entry.velocityData.maxVelocity)
         summitValues.put("TOP_ELEVATION", entry.topElevation)
         summitValues.put("ACTIVITY_ID", entry.activityId)
         summitValues.put("FAVORITE", if (entry.isFavorite) 1 else 0)
@@ -299,8 +299,7 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
                         cursor.getString(6),
                         cursor.getInt(7),
                         cursor.getDouble(8),
-                        cursor.getDouble(9),
-                        cursor.getDouble(10),
+                        VelocityData.parse(cursor.getString(9).split(","), cursor.getDouble(10)),
                         cursor.getInt(11),
                         if (cursor.getString(15) != null && cursor.getString(15) != "") cursor.getString(15).split(",") else emptyList(),
                         imageIds,
@@ -453,6 +452,12 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
     fun updateIsFavoriteSummit(db: SQLiteDatabase?, summitEntryId: Int, isFavorite: Boolean) {
         val summitValues = ContentValues()
         summitValues.put("FAVORITE", if (isFavorite) 1 else 0)
+        db?.update(SUMMITS_DB_TABLE_NAME, summitValues, "_id=$summitEntryId", null)
+    }
+
+    fun updateVelocityDataSummit(db: SQLiteDatabase?, summitEntryId: Int, velocityData: VelocityData) {
+        val summitValues = ContentValues()
+        summitValues.put("PACE", velocityData.toString())
         db?.update(SUMMITS_DB_TABLE_NAME, summitValues, "_id=$summitEntryId", null)
     }
 
