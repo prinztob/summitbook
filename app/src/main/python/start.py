@@ -80,9 +80,9 @@ def get_multi_sport_data(client, activity_id):
     except Exception as err:
         return "return code: 1Unknown error occurred during Garmin Connect Client get activities %s" % err
 
-def get_split_data(client, activity_id):
+def get_split_data(client, activity_id, folder):
     try:
-        return client.get_activity_splits(activity_id)
+        return download_splits(client, activity_id, folder)
     except (
             GarminConnectConnectionError,
             GarminConnectAuthenticationError,
@@ -141,6 +141,7 @@ def download_activities_by_date(client, folder, start_date, end_date=date.today(
                 with open(output_file, "w+") as fb:
                     json.dump(activity, fb)
                     write_index += 1
+            download_splits(client, activity_id, folder)
         return "return code: 0\nDownloaded {} activities, wrote {} to file".format(len(activities), write_index)
     except (
             GarminConnectConnectionError,
@@ -150,6 +151,16 @@ def download_activities_by_date(client, folder, start_date, end_date=date.today(
         return "return code: 1Error occurred during Garmin Connect Client get activities by date: %s" % err
     except Exception as err:  # pylint: disable=broad-except
         return "return code: 1Unknown error occurred during Garmin Connect Client get activities by date %s" % err
+
+
+def download_splits(client, activity_id, folder):
+    splits = client.get_activity_splits(activity_id)
+    output_file = f"{folder}/activity_{str(activity_id)}_splits.json"
+    if not os.path.exists(output_file):
+        with open(output_file, "w+") as fb:
+            json.dump(splits, fb)
+    return splits
+
 
 def update_power_data(activity, client, date):
     power_data = get_power_data(client, date)

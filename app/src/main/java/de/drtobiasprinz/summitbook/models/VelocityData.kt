@@ -16,10 +16,6 @@ class VelocityData constructor(
     }
 
 
-    fun hasVelocityData(): Boolean {
-        return avgVelocity > 0f
-    }
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -60,14 +56,14 @@ class VelocityData constructor(
 
     companion object {
 
-        fun parse(data: List<String>, topSpeed: Double): VelocityData {
-            if (data.size == 11) {
-                return VelocityData(data[0].toDouble(), topSpeed,
-                        data[1].toDouble(), data[2].toDouble(), data[3].toDouble(), data[4].toDouble(),
-                        data[5].toDouble(), data[6].toDouble(), data[7].toDouble(), data[8].toDouble(),
-                        data[9].toDouble(), data[10].toDouble())
+        fun parse(inputData: List<String>, topSpeed: Double): VelocityData {
+            if (inputData.size == 11) {
+                return VelocityData(inputData[0].toDouble(), topSpeed,
+                        inputData[1].toDouble(), inputData[2].toDouble(), inputData[3].toDouble(), inputData[4].toDouble(),
+                        inputData[5].toDouble(), inputData[6].toDouble(), inputData[7].toDouble(), inputData[8].toDouble(),
+                        inputData[9].toDouble(), inputData[10].toDouble())
             } else {
-                val avgVelocity = if (data.size == 1) data.first().toDouble() else 0.0
+                val avgVelocity = if (inputData.size == 1) inputData.first().toDouble() else 0.0
                 return VelocityData(avgVelocity,topSpeed,0.0, 0.0, 0.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0)
             }
         }

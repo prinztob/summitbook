@@ -1,6 +1,7 @@
 import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.graphics.Color
+import android.graphics.Paint
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.view.LayoutInflater
@@ -35,12 +36,11 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polyline
 import java.io.IOException
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
-import kotlin.math.ceil
-import kotlin.math.floor
 import kotlin.math.roundToLong
 
 
@@ -59,6 +59,9 @@ class SummitEntryTrackFragment : Fragment() {
     private val activeSpinnerFields: MutableMap<String, Pair<Boolean, Int>> = HashMap()
     private var selectedDataSpinner = 0
     private var selectedBinSpinner = 0
+    private var trackSlopeGraph: MutableList<Entry> = mutableListOf()
+    private var trackSlopeGraphBinSize: Double = 100.0
+    private var gpsTrack: GpsTrack? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
@@ -83,6 +86,7 @@ class SummitEntryTrackFragment : Fragment() {
         }
         val localSummitEntry = summitEntry
         if (localSummitEntry != null) {
+            setGpsTrack(localSummitEntry)
             val textViewName = root.findViewById<TextView>(R.id.summit_name)
             textViewName.text = localSummitEntry.name
             val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
@@ -133,7 +137,7 @@ class SummitEntryTrackFragment : Fragment() {
                         intentShareFile.putExtra(Intent.EXTRA_STREAM, uri)
                         intentShareFile.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.shared_gpx_subject))
                         intentShareFile.putExtra(Intent.EXTRA_TEXT, getString(R.string.shared_summit_gpx_text,
-                                localSummitEntry.name, localSummitEntry.getDateAsString(), localSummitEntry.heightMeter.toString(), localSummitEntry.kilometers.toString()))
+                                localSummitEntry.name, localSummitEntry.getDateAsString(), localSummitEntry.elevationData.toString(), localSummitEntry.kilometers.toString()))
                         if (intentShareFile.resolveActivity(requireActivity().packageManager) != null) {
                             startActivity(intentShareFile)
                         } else {
@@ -158,6 +162,7 @@ class SummitEntryTrackFragment : Fragment() {
             dataSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                     selectedDataSpinner = i
+                    setBinSpinnerData(selectedBinSpinner == 0)
                     drawChart(localSummitEntry)
                 }
 
@@ -165,6 +170,20 @@ class SummitEntryTrackFragment : Fragment() {
             }
         }
         return root
+    }
+
+    private fun setGpsTrack(localSummitEntry: SummitEntry) {
+        if (localSummitEntry.hasGpsTrack()) {
+            localSummitEntry.setGpsTrack()
+            gpsTrack = localSummitEntry.gpsTrack
+            if (gpsTrack?.hasNoTrackPoints() == true) {
+                gpsTrack?.parseTrack()
+            }
+            val localGpsTrack = gpsTrack
+            if (localGpsTrack != null && trackSlopeGraph.isNullOrEmpty()) {
+                trackSlopeGraph = localGpsTrack.getTrackSlopeGraph(binSizeMeter = trackSlopeGraphBinSize)
+            }
+        }
     }
 
     private fun fillDateSpinner(summitEntry: SummitEntry) {
@@ -202,23 +221,31 @@ class SummitEntryTrackFragment : Fragment() {
         dataSpinner?.adapter = dateAdapter
         dataSpinner?.visibility = if (moreThanOneActive) View.VISIBLE else View.GONE
 
-
-        val binAdapter = ArrayAdapter(requireContext(),
-                android.R.layout.simple_spinner_item, java.util.ArrayList(listOf("None", "3", "10", "30", "100")))
-        binAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binSpinner = root.findViewById(R.id.spinner_bin)
-        binSpinner?.adapter = binAdapter
-        binSpinner?.visibility = if (moreThanOneActive) View.VISIBLE else View.GONE
+        setBinSpinner(moreThanOneActive)
     }
 
-    private fun drawChart(localSummitEntry: SummitEntry) {
-        if (localSummitEntry.hasGpsTrack()) {
-            localSummitEntry.setGpsTrack()
-            val gpsTrack: GpsTrack? = localSummitEntry.gpsTrack
-            if (gpsTrack != null) {
-                if (gpsTrack.hasNoTrackPoints()) {
-                    gpsTrack.parseTrack()
-                }
+    private fun setBinSpinner(moreThanOneActive: Boolean) {
+        setBinSpinnerData(selectedDataSpinner == activeSpinnerFields["height_meter"]?.second)
+        if (moreThanOneActive) {
+            binSpinner?.visibility = View.VISIBLE
+        } else {
+            binSpinner?.visibility = View.GONE
+        }
+    }
+
+    private fun setBinSpinnerData(singleChoice: Boolean) {
+        val array = if (singleChoice)  java.util.ArrayList(listOf("None", "1")) else java.util.ArrayList(listOf("None", "3", "10", "30", "100"))
+        val binAdapter = ArrayAdapter(requireContext(),
+                android.R.layout.simple_spinner_item, array)
+        binAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binSpinner?.adapter = binAdapter
+    }
+
+    private fun drawChart(summitEntry: SummitEntry) {
+        if (summitEntry.hasGpsTrack()) {
+            val localGpsTrack = gpsTrack
+            if (localGpsTrack != null) {
                 val lineChart = root.findViewById<LineChart>(R.id.lineChart)
                 setXAxis(lineChart)
                 val params = lineChart.layoutParams
@@ -231,28 +258,28 @@ class SummitEntryTrackFragment : Fragment() {
                 val secondLabel: String?
                 when {
                     selectedDataSpinner == activeSpinnerFields["power"]?.second && activeSpinnerFields["power"]?.first == true -> {
-                        lineChartEntries = gpsTrack.getTrackGraph{ e -> e.extension?.power?.toFloat() }
+                        lineChartEntries = localGpsTrack.getTrackGraph { e -> e.extension?.power?.toFloat() }
                         label = getString(R.string.power_profile_label)
-                        secondLineChartEntries = gpsTrack.getTrackGraph{ e -> e.extension?.power?.toFloat() }
+                        secondLineChartEntries = localGpsTrack.getTrackGraph { e -> e.extension?.power?.toFloat() }
                         secondLabel = label
                     }
                     selectedDataSpinner == activeSpinnerFields["cadence"]?.second && activeSpinnerFields["cadence"]?.first == true -> {
-                        lineChartEntries = gpsTrack.getTrackGraph{ e -> e.extension?.cadence?.toFloat() }
+                        lineChartEntries = localGpsTrack.getTrackGraph { e -> e.extension?.cadence?.toFloat() }
                         label = getString(R.string.cadence_profile_label)
-                        secondLineChartEntries = gpsTrack.getTrackGraph{ e -> e.extension?.cadence?.toFloat() }
+                        secondLineChartEntries = localGpsTrack.getTrackGraph { e -> e.extension?.cadence?.toFloat() }
                         secondLabel = label
                     }
                     selectedDataSpinner == activeSpinnerFields["heartRate"]?.second && activeSpinnerFields["heartRate"]?.first == true -> {
-                        lineChartEntries = gpsTrack.getTrackGraph{ e -> e.extension?.heartRate?.toFloat() }
+                        lineChartEntries = localGpsTrack.getTrackGraph { e -> e.extension?.heartRate?.toFloat() }
                         label = getString(R.string.heart_rate_profile_label)
-                        secondLineChartEntries = gpsTrack.getTrackGraph{ e -> e.extension?.cadence?.toFloat() }
+                        secondLineChartEntries = localGpsTrack.getTrackGraph { e -> e.extension?.cadence?.toFloat() }
                         secondLabel = label
                     }
                     else -> {
-                        lineChartEntries = gpsTrack.getTrackGraph{ e -> e.ele?.toFloat() }
+                        lineChartEntries = localGpsTrack.getTrackGraph { e -> e.ele?.toFloat() }
                         label = getString(R.string.height_profile_label)
-                        secondLineChartEntries = gpsTrack.getTrackTiltGraph()
-                        secondLabel = getString(R.string.tilt_profile_label)
+                        secondLineChartEntries = trackSlopeGraph
+                        secondLabel = getString(R.string.slope_profile_label)
                     }
                 }
                 val leftAxis: YAxis = lineChart.axisLeft
@@ -270,13 +297,16 @@ class SummitEntryTrackFragment : Fragment() {
                     rightAxis.setDrawGridLines(false)
                     rightAxis.setDrawZeroLine(false)
                     rightAxis.isGranularityEnabled = false
-                    val binSize = when (selectedBinSpinner) {
-                        2 -> 10
-                        3 -> 30
-                        4 -> 100
-                        else -> 3
+                    var binSize = 1
+                    if (selectedDataSpinner != activeSpinnerFields["height_meter"]?.second) {
+                        binSize = when (selectedBinSpinner) {
+                            2 -> 10
+                            3 -> 30
+                            4 -> 100
+                            else -> 3
+                        }
                     }
-                    val secondLineChartEntriesBinned = secondLineChartEntries.chunked(binSize) { Entry((it.sumBy { it.x.toInt() }.toFloat())/it.size, (it.sumBy { it.y.toInt() }.toFloat())/it.size) } as MutableList<Entry>
+                    val secondLineChartEntriesBinned = secondLineChartEntries.chunked(binSize) { Entry((it.sumBy { it.x.toInt() }.toFloat()) / it.size, (it.sumBy { it.y.toInt() }.toFloat()) / it.size) } as MutableList<Entry>
                     val secondDataSet = LineDataSet(secondLineChartEntriesBinned, "${secondLabel} (bin: ${binSize})")
                     setGraphView(secondDataSet, true)
                     dataSets.add(secondDataSet)
@@ -287,7 +317,7 @@ class SummitEntryTrackFragment : Fragment() {
                         if (e.data is TrackPoint) {
                             val trackPoint = e.data as TrackPoint
                             osMap.overlays.remove(marker)
-                            marker = OpenStreetMapUtils.addMarker(osMap, requireContext(), GeoPoint(trackPoint.lat, trackPoint.lon), localSummitEntry)
+                            marker = OpenStreetMapUtils.addMarker(osMap, requireContext(), GeoPoint(trackPoint.lat, trackPoint.lon), summitEntry)
                         }
                     }
 
@@ -309,10 +339,9 @@ class SummitEntryTrackFragment : Fragment() {
     }
 
     private fun setOpenStreetMap(localSummitEntry: SummitEntry) {
-        if (localSummitEntry.gpsTrack == null) {
-            localSummitEntry.setGpsTrack()
-        }
-        val hasPoints = localSummitEntry.gpsTrack?.hasOnlyZeroCoordinates() == false || localSummitEntry.latLng != null
+        setGpsTrack(localSummitEntry)
+        val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || localSummitEntry.latLng != null
+
         osMap = root.findViewById(R.id.osmap)
         OpenStreetMapUtils.setTileSource(OpenStreetMapUtils.selectedItem, osMap)
         val changeMapTypeFab: ImageButton = root.findViewById(R.id.change_map_type)
@@ -324,6 +353,7 @@ class SummitEntryTrackFragment : Fragment() {
         val params = osMap.layoutParams
         params?.height = (metrics.heightPixels * height).toInt()
         osMap.layoutParams = params
+        val maxSlopeButton = root.findViewById<ImageButton>(R.id.gps_max_slope)
         if (hasPoints) {
             val connectedEntries = mutableListOf<SummitEntry>()
             localSummitEntry.setConnectedEntries(connectedEntries, database!!, helper!!)
@@ -331,9 +361,53 @@ class SummitEntryTrackFragment : Fragment() {
                 OpenStreetMapUtils.drawTrack(entry, false, osMap, false, color = Color.BLACK)
             }
             marker = OpenStreetMapUtils.addTrackAndMarker(localSummitEntry, osMap, requireContext(), false, isMilageButtonShown, true)
+            maxSlopeButton.setOnClickListener {
+                addMaxSlopePoints(localSummitEntry)
+            }
         } else {
+            maxSlopeButton.visibility = View.GONE
             root.findViewById<RelativeLayout>(R.id.osmapLayout).visibility = View.GONE
         }
+    }
+
+    private fun addMaxSlopePoints(localSummitEntry: SummitEntry) {
+        val gpsTrack = localSummitEntry.gpsTrack
+        if (gpsTrack != null) {
+            if (trackSlopeGraph.isNullOrEmpty()) {
+                trackSlopeGraph = gpsTrack.getTrackSlopeGraph(binSizeMeter = trackSlopeGraphBinSize)
+            }
+            if (trackSlopeGraph.isNotEmpty()) {
+                val maxSlopeEntry = trackSlopeGraph.maxBy { it.y }
+                if (maxSlopeEntry != null) {
+                    drawSlopeLine(maxSlopeEntry, Color.RED)
+                }
+                val minSlopeEntry = trackSlopeGraph.minBy { it.y }
+                if (minSlopeEntry != null) {
+                    drawSlopeLine(minSlopeEntry, Color.MAGENTA)
+                }
+            }
+        }
+    }
+
+    private fun drawSlopeLine(slopeEntry: Entry, color: Int) {
+        val trackPoints = trackSlopeGraph.filter {
+            it.x in slopeEntry.x - trackSlopeGraphBinSize / 2..slopeEntry.x + trackSlopeGraphBinSize / 2
+        }.map { GeoPoint((it.data as TrackPoint).lat, (it.data as TrackPoint).lon) }
+        val osMapRoute = Polyline(osMap)
+        osMapRoute.setOnClickListener { _, view, _ ->
+            val maxSlope = (slopeEntry.data as TrackPoint).extension?.slope
+            if (maxSlope != null) {
+                Toast.makeText(view.context, "${if (maxSlope > 0.0) "+" else ""}${String.format("%.1f", maxSlope * 100)} %",
+                        Toast.LENGTH_SHORT).show()
+            }
+            true // DO NOTHING
+        }
+        osMapRoute.outlinePaint?.color = color
+        osMapRoute.outlinePaint?.strokeWidth = 12f
+        osMapRoute.setPoints(trackPoints)
+        osMapRoute.outlinePaint?.strokeCap = Paint.Cap.ROUND
+
+        osMap.overlayManager?.add(osMapRoute)
     }
 
     private fun setGraphView(set1: LineDataSet?, secondView: Boolean = false) {

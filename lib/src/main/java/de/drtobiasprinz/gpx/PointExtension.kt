@@ -10,7 +10,8 @@ data class PointExtension(
         val heartRate: Int? = null,
         val power: Int? = null,
         val speed: Double? = null,
-        val atemp: Double? = null
+        val atemp: Double? = null,
+        var slope: Double? = null
 ) : XmlWritable {
 
     override val writeOperations: Observable<XmlWrite>
@@ -21,7 +22,8 @@ data class PointExtension(
                         optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_DISTANCE}", distance?.toString()),
                         optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_HR}", heartRate?.toString()),
                         optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_POWER}", power?.toString()),
-                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_SPEED}", speed?.toString())
+                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_SPEED}", speed?.toString()),
+                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_SLOPE}", slope?.toString())
                 )
         )
 
@@ -32,9 +34,10 @@ data class PointExtension(
         var power: Int? = null
         var cadence: Int? = null
         var temp: Double? = null
+        var slope: Double? = null
 
         fun build(): PointExtension {
-            return PointExtension(heartRate = heartRate, atemp = temp, cadence = cadence, power = power, speed = speed, distance = distanceMeters)
+            return PointExtension(heartRate = heartRate, atemp = temp, cadence = cadence, power = power, speed = speed, distance = distanceMeters, slope = slope)
         }
     }
 
@@ -48,5 +51,6 @@ data class PointExtension(
         const val TAG_ATEMP = "atemp"
         const val TAG_SPEED = "speed"
         const val TAG_POWER = "power"
+        const val TAG_SLOPE = "slope"
     }
 }

@@ -3,10 +3,7 @@ package de.drtobiasprinz.summitbook.ui.utils
 import com.google.android.gms.maps.model.LatLng
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
-import de.drtobiasprinz.summitbook.models.GarminActivityData
-import de.drtobiasprinz.summitbook.models.PowerData
-import de.drtobiasprinz.summitbook.models.SummitEntry
-import de.drtobiasprinz.summitbook.models.VelocityData
+import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import java.io.File
 import java.nio.file.Path
@@ -90,12 +87,11 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
                 entries.first().sportType,
                 entries.map { it.places }.flatten(),
                 entries.map { it.countries }.flatten(),
-                "merge of " + entries.map { it.name }.joinToString (", "),
-                entries.sumBy { it.heightMeter },
+                if (entries.size > 1) "merge of " + entries.map { it.name }.joinToString (", ") else "",
+                ElevationData.parse(entries.sumBy { it.elevationData.elevationGain },entries.maxBy { it.elevationData.maxElevation }?.elevationData?.maxElevation ?: 0),
                 entries.sumByDouble { it.kilometers },
                 VelocityData.parse( entries.sumByDouble { it.kilometers } / activityDuration.sum(),
                         entries.maxBy { it.velocityData.maxVelocity }?.velocityData?.maxVelocity ?: 0.0),
-                entries.maxBy { it.topElevation }?.topElevation ?: 0,
                 entries.map { it.participants }.flatten(),
                 mutableListOf()
         )

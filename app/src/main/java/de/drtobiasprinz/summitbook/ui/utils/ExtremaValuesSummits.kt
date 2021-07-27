@@ -31,13 +31,14 @@ class ExtremaValuesSummits(private val entries: ArrayList<SummitEntry>) {
     var maxKilometers = kilometersMinMax?.second?.kilometers ?: 0.0
     val maxKilometersCeil = ceil(kilometersMinMax?.second?.kilometers ?: 0.0).toInt()
 
-    var heightMetersMinMax = getMinMax { e -> e.heightMeter }
-    var minHeightMeters = heightMetersMinMax?.first?.heightMeter ?: 0
-    var maxHeightMeters = heightMetersMinMax?.second?.heightMeter ?: 0
+    var heightMetersMinMax = getMinMax { e -> e.elevationData.elevationGain }
+    var minHeightMeters = heightMetersMinMax?.first?.elevationData?.elevationGain ?: 0
+    var maxHeightMeters = heightMetersMinMax?.second?.elevationData?.elevationGain ?: 0
 
-    var topElevationMinMax = getMinMax { e -> e.topElevation }
-    var minTopElevation = topElevationMinMax?.first?.topElevation ?: 0
-    var maxTopElevation = topElevationMinMax?.second?.topElevation ?: 0
+    var topElevationMinMax = getMinMax { e -> e.elevationData.maxElevation }
+    var minTopElevation = topElevationMinMax?.first?.elevationData?.maxElevation ?: 0
+    var maxTopElevation = topElevationMinMax?.second?.elevationData?.maxElevation ?: 0
+    var topSlopeMinMax = getMinMax { e -> e.elevationData.maxSlope }
 
     var averageHRMinMax = getMinMax { e -> e.activityData?.averageHR ?: 0 }
 

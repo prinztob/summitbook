@@ -16,8 +16,10 @@ import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
+import de.drtobiasprinz.summitbook.models.GarminActivityData
 import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.ui.PageViewModel
+import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.ceil
@@ -58,37 +60,38 @@ class SummitEntryDataFragment : Fragment() {
             textViewName.text = localSummitEntry.name
             val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
             imageViewSportType.setImageResource(localSummitEntry.sportType.imageId)
-            setText(localSummitEntry.heightMeter, "hm", root.findViewById(R.id.height_meterText), root.findViewById(R.id.height_meter),
-                    Pair(extrema?.heightMetersMinMax?.first?.heightMeter ?: 0, extrema?.heightMetersMinMax?.second?.heightMeter ?: 0))
+            setText(localSummitEntry.elevationData.elevationGain, "hm", root.findViewById(R.id.height_meterText), root.findViewById(R.id.height_meter),
+                    Pair(extrema?.heightMetersMinMax?.first?.elevationData?.elevationGain ?: 0, extrema?.heightMetersMinMax?.second?.elevationData?.elevationGain ?: 0))
             setText(localSummitEntry.kilometers, "km", root.findViewById(R.id.kilometersText), root.findViewById(R.id.kilometers),
                     Pair(floor(extrema?.kilometersMinMax?.first?.kilometers ?: 0.0).toInt(), ceil(extrema?.kilometersMinMax?.second?.kilometers ?: 0.0).toInt()))
-            setText(localSummitEntry.topElevation, "hm", root.findViewById(R.id.top_elevationText), root.findViewById(R.id.top_elevation),
-                    Pair(extrema?.topElevationMinMax?.first?.topElevation ?: 0, extrema?.topElevationMinMax?.second?.topElevation ?: 0))
+            setText(localSummitEntry.elevationData.maxElevation, "hm", root.findViewById(R.id.top_elevationText), root.findViewById(R.id.top_elevation),
+                    Pair(extrema?.topElevationMinMax?.first?.elevationData?.maxElevation ?: 0, extrema?.topElevationMinMax?.second?.elevationData?.maxElevation ?: 0))
+            setText(localSummitEntry.elevationData.maxSlope, "%", root.findViewById(R.id.top_slopeText), root.findViewById(R.id.top_slope),
+                    Pair(extrema?.topSlopeMinMax?.first?.elevationData?.maxSlope ?: 0.0, extrema?.topSlopeMinMax?.second?.elevationData?.maxSlope ?: 0.0))
             setText(localSummitEntry.velocityData.avgVelocity, "km/h", root.findViewById(R.id.paceText), root.findViewById(R.id.pace),
                     Pair(floor(extrema?.averageSpeedMinMax?.first?.velocityData?.avgVelocity ?: 0.0).toInt(), ceil(extrema?.averageSpeedMinMax?.second?.velocityData?.avgVelocity ?: 0.0).toInt()))
             setText(localSummitEntry.velocityData.maxVelocity, "km/h", root.findViewById(R.id.top_speedText), root.findViewById(R.id.top_speed),
                     Pair(floor(extrema?.topSpeedMinMax?.first?.velocityData?.maxVelocity ?: 0.0).toInt(), ceil(extrema?.topSpeedMinMax?.second?.velocityData?.maxVelocity ?: 0.0).toInt()))
 
-            setText(localSummitEntry.velocityData.oneKilometer, "km/h", root.findViewById(R.id.oneKM_top_speedText), root.findViewById(R.id.oneKM_top_speed),
-                    Pair(floor(extrema?.oneKmMinMax?.first?.velocityData?.oneKilometer ?: 0.0).toInt(), ceil(extrema?.oneKmMinMax?.second?.velocityData?.fiveKilometer ?: 0.0).toInt()))
-            setText(localSummitEntry.velocityData.fiveKilometer, "km/h", root.findViewById(R.id.fiveKM_top_speedText), root.findViewById(R.id.fiveKM_top_speed),
-                    Pair(floor(extrema?.fiveKmMinMax?.first?.velocityData?.fiveKilometer ?: 0.0).toInt(), ceil(extrema?.fiveKmMinMax?.second?.velocityData?.fiveKilometer ?: 0.0).toInt()))
-            setText(localSummitEntry.velocityData.tenKilometers, "km/h", root.findViewById(R.id.tenKM_top_speedText), root.findViewById(R.id.tenKM_top_speed),
-                    Pair(floor(extrema?.tenKmMinMax?.first?.velocityData?.tenKilometers ?: 0.0).toInt(), ceil(extrema?.tenKmMinMax?.second?.velocityData?.tenKilometers ?: 0.0).toInt()))
-            setText(localSummitEntry.velocityData.fifteenKilometers, "km/h", root.findViewById(R.id.fifteenKM_top_speedText), root.findViewById(R.id.fifteenKM_top_speed),
-                    Pair(floor(extrema?.fifteenKmMinMax?.first?.velocityData?.fifteenKilometers ?: 0.0).toInt(), ceil(extrema?.fifteenKmMinMax?.second?.velocityData?.fifteenKilometers ?: 0.0).toInt()))
-            setText(localSummitEntry.velocityData.twentyKilometers, "km/h", root.findViewById(R.id.twentyKM_top_speedText), root.findViewById(R.id.twentyKM_top_speed),
-                    Pair(floor(extrema?.twentyKmMinMax?.first?.velocityData?.twentyKilometers ?: 0.0).toInt(), ceil(extrema?.twentyKmMinMax?.second?.velocityData?.twentyKilometers ?: 0.0).toInt()))
-            setText(localSummitEntry.velocityData.thirtyKilometers, "km/h", root.findViewById(R.id.thirtyKM_top_speedText), root.findViewById(R.id.thirtyKM_top_speed),
-                    Pair(floor(extrema?.thirtyKmMinMax?.first?.velocityData?.thirtyKilometers ?: 0.0).toInt(), ceil(extrema?.thirtyKmMinMax?.second?.velocityData?.thirtyKilometers ?: 0.0).toInt()))
-            setText(localSummitEntry.velocityData.fortyKilometers, "km/h", root.findViewById(R.id.fourtyKM_top_speedText), root.findViewById(R.id.fourtyKM_top_speed),
-                    Pair(floor(extrema?.fortyKmMinMax?.first?.velocityData?.fortyKilometers ?: 0.0).toInt(), ceil(extrema?.fortyKmMinMax?.second?.velocityData?.fortyKilometers ?: 0.0).toInt()))
-            setText(localSummitEntry.velocityData.fiftyKilometers, "km/h", root.findViewById(R.id.fiftyKM_top_speedText), root.findViewById(R.id.fiftyKM_top_speed),
-                    Pair(floor(extrema?.fiftyKmMinMax?.first?.velocityData?.fiftyKilometers ?: 0.0).toInt(), ceil(extrema?.fiftyKmMinMax?.second?.velocityData?.fiftyKilometers ?: 0.0).toInt()))
-            setText(localSummitEntry.velocityData.seventyFiveKilometers, "km/h", root.findViewById(R.id.seventyfiveKM_top_speedText), root.findViewById(R.id.seventyfiveKM_top_speed),
-                    Pair(floor(extrema?.seventyFiveKmMinMax?.first?.velocityData?.seventyFiveKilometers ?: 0.0).toInt(), ceil(extrema?.seventyFiveKmMinMax?.second?.velocityData?.seventyFiveKilometers ?: 0.0).toInt()))
-            setText(localSummitEntry.velocityData.hundredKilometers, "km/h", root.findViewById(R.id.hundretKM_top_speedText), root.findViewById(R.id.hundretKM_top_speed),
-                    Pair(floor(extrema?.hundredKmMinMax?.first?.velocityData?.hundredKilometers ?: 0.0).toInt(), ceil(extrema?.hundredKmMinMax?.second?.velocityData?.hundredKilometers ?: 0.0).toInt()))
+            setAdditionalSpeedData(localSummitEntry, extrema)
+            val expandMoreSpeedData: TextView = root.findViewById(R.id.expand_more_speed_data)
+            if (localSummitEntry.velocityData.oneKilometer > 0.0) {
+                expandMoreSpeedData.visibility = View.VISIBLE
+                expandMoreSpeedData.setOnClickListener {
+                    if (expandMoreSpeedData.text == getString(R.string.more_speed)) {
+                        expandMoreSpeedData.text = getString(R.string.less_speed)
+                        expandMoreSpeedData.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_baseline_expand_less_24, 0, 0, 0)
+                        setAdditionalSpeedData(localSummitEntry, extrema, View.VISIBLE)
+                    } else {
+                        expandMoreSpeedData.text = getString(R.string.more_speed)
+                        expandMoreSpeedData.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_baseline_expand_more_24, 0, 0, 0)
+                        root.findViewById<TextView>(R.id.power1sec).visibility = View.GONE
+                        setAdditionalSpeedData(localSummitEntry, extrema)
+                    }
+                }
+            } else {
+                expandMoreSpeedData.visibility = View.GONE
+            }
 
             setText(localSummitEntry.duration, "h", root.findViewById(R.id.durationText), root.findViewById(R.id.duration),
                     Pair(floor(extrema?.durationMinMax?.first?.duration ?: 0.0).toInt(), ceil(extrema?.durationMinMax?.second?.duration ?: 0.0).toInt()), toHHms = true)
@@ -97,6 +100,7 @@ class SummitEntryDataFragment : Fragment() {
             setChipsText(R.id.countries, localSummitEntry.countries, R.drawable.ic_baseline_flag_24)
             setChipsText(R.id.participants, localSummitEntry.participants, R.drawable.ic_baseline_people_24)
             val activityData = localSummitEntry.activityData
+            val expandMorePowerData: TextView = root.findViewById(R.id.expand_more_power_data)
             if (activityData != null) {
                 val textView = root.findViewById(R.id.link) as TextView
                 textView.isClickable = true
@@ -117,38 +121,24 @@ class SummitEntryDataFragment : Fragment() {
                 setText(activityData.power.normPower.toInt(), "W", root.findViewById(R.id.normPowerText), root.findViewById(R.id.normPower),
                         Pair(extrema?.normPowerMinMax?.first?.activityData?.power?.normPower ?: 0f, extrema?.normPowerMinMax?.second?.activityData?.power?.normPower ?: 0f))
 
-                setText(activityData.power.oneSec, "W", root.findViewById(R.id.power1secText), root.findViewById(R.id.power1sec),
-                        Pair(extrema?.power1sMinMax?.first?.activityData?.power?.oneSec ?: 0, extrema?.power1sMinMax?.second?.activityData?.power?.oneSec ?: 0))
-                setText(activityData.power.twoSec, "W", root.findViewById(R.id.power2secText), root.findViewById(R.id.power2sec),
-                        Pair(extrema?.power2sMinMax?.first?.activityData?.power?.twoSec ?: 0, extrema?.power2sMinMax?.second?.activityData?.power?.twoSec ?: 0))
-                setText(activityData.power.fiveSec, "W", root.findViewById(R.id.power5secText), root.findViewById(R.id.power5sec),
-                        Pair(extrema?.power5sMinMax?.first?.activityData?.power?.fiveSec ?: 0, extrema?.power5sMinMax?.second?.activityData?.power?.fiveSec ?: 0))
-                setText(activityData.power.tenSec, "W", root.findViewById(R.id.power10secText), root.findViewById(R.id.power10sec),
-                        Pair(extrema?.power10sMinMax?.first?.activityData?.power?.tenSec ?: 0, extrema?.power10sMinMax?.second?.activityData?.power?.tenSec ?: 0))
-                setText(activityData.power.twentySec, "W", root.findViewById(R.id.power20secText), root.findViewById(R.id.power20sec),
-                        Pair(extrema?.power20sMinMax?.first?.activityData?.power?.twentySec ?: 0, extrema?.power20sMinMax?.second?.activityData?.power?.twentySec ?: 0))
-                setText(activityData.power.thirtySec, "W", root.findViewById(R.id.power30secText), root.findViewById(R.id.power30sec),
-                        Pair(extrema?.power30sMinMax?.first?.activityData?.power?.thirtySec ?: 0, extrema?.power30sMinMax?.second?.activityData?.power?.thirtySec ?: 0))
-
-                setText(activityData.power.oneMin, "W", root.findViewById(R.id.power1minText), root.findViewById(R.id.power1min),
-                        Pair(extrema?.power1minMinMax?.first?.activityData?.power?.oneMin ?: 0, extrema?.power1minMinMax?.second?.activityData?.power?.oneMin ?: 0))
-                setText(activityData.power.twoMin, "W", root.findViewById(R.id.power2minText), root.findViewById(R.id.power2min),
-                        Pair(extrema?.power2minMinMax?.first?.activityData?.power?.twoMin ?: 0, extrema?.power2minMinMax?.second?.activityData?.power?.twoMin ?: 0))
-                setText(activityData.power.fiveMin, "W", root.findViewById(R.id.power5minText), root.findViewById(R.id.power5min),
-                        Pair(extrema?.power5minMinMax?.first?.activityData?.power?.fiveMin ?: 0, extrema?.power5minMinMax?.second?.activityData?.power?.fiveMin ?: 0))
-                setText(activityData.power.tenMin, "W", root.findViewById(R.id.power10minText), root.findViewById(R.id.power10min),
-                        Pair(extrema?.power10minMinMax?.first?.activityData?.power?.tenMin ?: 0, extrema?.power10minMinMax?.second?.activityData?.power?.tenMin ?: 0))
-                setText(activityData.power.twentyMin, "W", root.findViewById(R.id.power20minText), root.findViewById(R.id.power20min),
-                        Pair(extrema?.power20minMinMax?.first?.activityData?.power?.twentyMin ?: 0, extrema?.power20minMinMax?.second?.activityData?.power?.twentyMin ?: 0))
-                setText(activityData.power.thirtyMin, "W", root.findViewById(R.id.power30minText), root.findViewById(R.id.power30min),
-                        Pair(extrema?.power30minMinMax?.first?.activityData?.power?.thirtyMin ?: 0, extrema?.power30minMinMax?.second?.activityData?.power?.thirtyMin ?: 0))
-
-                setText(activityData.power.oneHour, "W", root.findViewById(R.id.power1hText), root.findViewById(R.id.power1h),
-                        Pair(extrema?.power1hMinMax?.first?.activityData?.power?.oneHour ?: 0, extrema?.power1hMinMax?.second?.activityData?.power?.oneHour ?: 0))
-                setText(activityData.power.twoHours, "W", root.findViewById(R.id.power2hText), root.findViewById(R.id.power2h),
-                        Pair(extrema?.power2hMinMax?.first?.activityData?.power?.twoHours ?: 0, extrema?.power2hMinMax?.second?.activityData?.power?.twoHours ?: 0))
-                setText(activityData.power.fiveHours, "W", root.findViewById(R.id.power5hText), root.findViewById(R.id.power5h),
-                        Pair(extrema?.power5hMinMax?.first?.activityData?.power?.fiveHours ?: 0, extrema?.power5hMinMax?.second?.activityData?.power?.fiveHours ?: 0))
+                setAdditionalPowerData(activityData, extrema)
+                if (localSummitEntry.activityData?.power?.oneSec != null && (localSummitEntry.activityData?.power?.oneSec ?: 0) > 0) {
+                    expandMorePowerData.visibility = View.VISIBLE
+                    expandMorePowerData.setOnClickListener {
+                        if (expandMorePowerData.text == getString(R.string.more_power)) {
+                            expandMorePowerData.text = getString(R.string.less_power)
+                            expandMorePowerData.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_baseline_expand_less_24, 0, 0, 0)
+                            setAdditionalPowerData(activityData, extrema, View.VISIBLE)
+                        } else {
+                            expandMorePowerData.text = getString(R.string.more_power)
+                            expandMorePowerData.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_baseline_expand_more_24, 0, 0, 0)
+                            root.findViewById<TextView>(R.id.power1sec).visibility = View.GONE
+                            setAdditionalPowerData(activityData, extrema)
+                        }
+                    }
+                } else {
+                    expandMorePowerData.visibility = View.GONE
+                }
 
                 setText(activityData.aerobicTrainingEffect.toDouble(), "", root.findViewById(R.id.aerobicTrainingEffectText), root.findViewById(R.id.aerobicTrainingEffect), Pair(0,5))
                 setText(activityData.anaerobicTrainingEffect.toDouble(), "", root.findViewById(R.id.anaerobicTrainingEffectText), root.findViewById(R.id.anaerobicTrainingEffect), Pair(0,5))
@@ -162,11 +152,122 @@ class SummitEntryDataFragment : Fragment() {
                         Pair(extrema?.vo2maxMinMax?.first?.activityData?.vo2max ?: 0, extrema?.vo2maxMinMax?.second?.activityData?.vo2max ?: 0))
                 setText(activityData.ftp.toDouble(), "", root.findViewById(R.id.FTPText), root.findViewById(R.id.FTP),
                         Pair(extrema?.ftpMinMax?.first?.activityData?.ftp ?: 0, extrema?.ftpMinMax?.second?.activityData?.ftp ?: 0))
+
             } else {
                 root.findViewById<View>(R.id.garminData).visibility = View.GONE
+                expandMorePowerData.visibility = View.GONE
             }
+
         }
         return root
+    }
+
+    private fun setAdditionalSpeedData(localSummitEntry: SummitEntry, extrema: ExtremaValuesSummits?, visibility: Int = View.GONE) {
+        setText(localSummitEntry.velocityData.oneKilometer, "km/h", root.findViewById(R.id.oneKM_top_speedText), root.findViewById(R.id.oneKM_top_speed),
+                Pair(floor(extrema?.oneKmMinMax?.first?.velocityData?.oneKilometer
+                        ?: 0.0).toInt(), ceil(extrema?.oneKmMinMax?.second?.velocityData?.fiveKilometer
+                        ?: 0.0).toInt()), visibility = visibility)
+        setText(localSummitEntry.velocityData.fiveKilometer, "km/h", root.findViewById(R.id.fiveKM_top_speedText), root.findViewById(R.id.fiveKM_top_speed),
+                Pair(floor(extrema?.fiveKmMinMax?.first?.velocityData?.fiveKilometer
+                        ?: 0.0).toInt(), ceil(extrema?.fiveKmMinMax?.second?.velocityData?.fiveKilometer
+                        ?: 0.0).toInt()), visibility = visibility)
+        setText(localSummitEntry.velocityData.tenKilometers, "km/h", root.findViewById(R.id.tenKM_top_speedText), root.findViewById(R.id.tenKM_top_speed),
+                Pair(floor(extrema?.tenKmMinMax?.first?.velocityData?.tenKilometers
+                        ?: 0.0).toInt(), ceil(extrema?.tenKmMinMax?.second?.velocityData?.tenKilometers
+                        ?: 0.0).toInt()), visibility = visibility)
+        setText(localSummitEntry.velocityData.fifteenKilometers, "km/h", root.findViewById(R.id.fifteenKM_top_speedText), root.findViewById(R.id.fifteenKM_top_speed),
+                Pair(floor(extrema?.fifteenKmMinMax?.first?.velocityData?.fifteenKilometers
+                        ?: 0.0).toInt(), ceil(extrema?.fifteenKmMinMax?.second?.velocityData?.fifteenKilometers
+                        ?: 0.0).toInt()), visibility = visibility)
+        setText(localSummitEntry.velocityData.twentyKilometers, "km/h", root.findViewById(R.id.twentyKM_top_speedText), root.findViewById(R.id.twentyKM_top_speed),
+                Pair(floor(extrema?.twentyKmMinMax?.first?.velocityData?.twentyKilometers
+                        ?: 0.0).toInt(), ceil(extrema?.twentyKmMinMax?.second?.velocityData?.twentyKilometers
+                        ?: 0.0).toInt()), visibility = visibility)
+        setText(localSummitEntry.velocityData.thirtyKilometers, "km/h", root.findViewById(R.id.thirtyKM_top_speedText), root.findViewById(R.id.thirtyKM_top_speed),
+                Pair(floor(extrema?.thirtyKmMinMax?.first?.velocityData?.thirtyKilometers
+                        ?: 0.0).toInt(), ceil(extrema?.thirtyKmMinMax?.second?.velocityData?.thirtyKilometers
+                        ?: 0.0).toInt()), visibility = visibility)
+        setText(localSummitEntry.velocityData.fortyKilometers, "km/h", root.findViewById(R.id.fourtyKM_top_speedText), root.findViewById(R.id.fourtyKM_top_speed),
+                Pair(floor(extrema?.fortyKmMinMax?.first?.velocityData?.fortyKilometers
+                        ?: 0.0).toInt(), ceil(extrema?.fortyKmMinMax?.second?.velocityData?.fortyKilometers
+                        ?: 0.0).toInt()), visibility = visibility)
+        setText(localSummitEntry.velocityData.fiftyKilometers, "km/h", root.findViewById(R.id.fiftyKM_top_speedText), root.findViewById(R.id.fiftyKM_top_speed),
+                Pair(floor(extrema?.fiftyKmMinMax?.first?.velocityData?.fiftyKilometers
+                        ?: 0.0).toInt(), ceil(extrema?.fiftyKmMinMax?.second?.velocityData?.fiftyKilometers
+                        ?: 0.0).toInt()), visibility = visibility)
+        setText(localSummitEntry.velocityData.seventyFiveKilometers, "km/h", root.findViewById(R.id.seventyfiveKM_top_speedText), root.findViewById(R.id.seventyfiveKM_top_speed),
+                Pair(floor(extrema?.seventyFiveKmMinMax?.first?.velocityData?.seventyFiveKilometers
+                        ?: 0.0).toInt(), ceil(extrema?.seventyFiveKmMinMax?.second?.velocityData?.seventyFiveKilometers
+                        ?: 0.0).toInt()), visibility = visibility)
+        setText(localSummitEntry.velocityData.hundredKilometers, "km/h", root.findViewById(R.id.hundretKM_top_speedText), root.findViewById(R.id.hundretKM_top_speed),
+                Pair(floor(extrema?.hundredKmMinMax?.first?.velocityData?.hundredKilometers
+                        ?: 0.0).toInt(), ceil(extrema?.hundredKmMinMax?.second?.velocityData?.hundredKilometers
+                        ?: 0.0).toInt()), visibility = visibility)
+    }
+
+    private fun setAdditionalPowerData(activityData: GarminActivityData, extrema: ExtremaValuesSummits?, visibility: Int = View.GONE) {
+        setText(activityData.power.oneSec, "W", root.findViewById(R.id.power1secText), root.findViewById(R.id.power1sec),
+                Pair(extrema?.power1sMinMax?.first?.activityData?.power?.oneSec
+                        ?: 0, extrema?.power1sMinMax?.second?.activityData?.power?.oneSec
+                        ?: 0), visibility = visibility)
+        setText(activityData.power.twoSec, "W", root.findViewById(R.id.power2secText), root.findViewById(R.id.power2sec),
+                Pair(extrema?.power2sMinMax?.first?.activityData?.power?.twoSec
+                        ?: 0, extrema?.power2sMinMax?.second?.activityData?.power?.twoSec
+                        ?: 0), visibility = visibility)
+        setText(activityData.power.fiveSec, "W", root.findViewById(R.id.power5secText), root.findViewById(R.id.power5sec),
+                Pair(extrema?.power5sMinMax?.first?.activityData?.power?.fiveSec
+                        ?: 0, extrema?.power5sMinMax?.second?.activityData?.power?.fiveSec
+                        ?: 0), visibility = visibility)
+        setText(activityData.power.tenSec, "W", root.findViewById(R.id.power10secText), root.findViewById(R.id.power10sec),
+                Pair(extrema?.power10sMinMax?.first?.activityData?.power?.tenSec
+                        ?: 0, extrema?.power10sMinMax?.second?.activityData?.power?.tenSec
+                        ?: 0), visibility = visibility)
+        setText(activityData.power.twentySec, "W", root.findViewById(R.id.power20secText), root.findViewById(R.id.power20sec),
+                Pair(extrema?.power20sMinMax?.first?.activityData?.power?.twentySec
+                        ?: 0, extrema?.power20sMinMax?.second?.activityData?.power?.twentySec
+                        ?: 0), visibility = visibility)
+        setText(activityData.power.thirtySec, "W", root.findViewById(R.id.power30secText), root.findViewById(R.id.power30sec),
+                Pair(extrema?.power30sMinMax?.first?.activityData?.power?.thirtySec
+                        ?: 0, extrema?.power30sMinMax?.second?.activityData?.power?.thirtySec
+                        ?: 0), visibility = visibility)
+
+        setText(activityData.power.oneMin, "W", root.findViewById(R.id.power1minText), root.findViewById(R.id.power1min),
+                Pair(extrema?.power1minMinMax?.first?.activityData?.power?.oneMin
+                        ?: 0, extrema?.power1minMinMax?.second?.activityData?.power?.oneMin
+                        ?: 0), visibility = visibility)
+        setText(activityData.power.twoMin, "W", root.findViewById(R.id.power2minText), root.findViewById(R.id.power2min),
+                Pair(extrema?.power2minMinMax?.first?.activityData?.power?.twoMin
+                        ?: 0, extrema?.power2minMinMax?.second?.activityData?.power?.twoMin
+                        ?: 0), visibility = visibility)
+        setText(activityData.power.fiveMin, "W", root.findViewById(R.id.power5minText), root.findViewById(R.id.power5min),
+                Pair(extrema?.power5minMinMax?.first?.activityData?.power?.fiveMin
+                        ?: 0, extrema?.power5minMinMax?.second?.activityData?.power?.fiveMin
+                        ?: 0), visibility = visibility)
+        setText(activityData.power.tenMin, "W", root.findViewById(R.id.power10minText), root.findViewById(R.id.power10min),
+                Pair(extrema?.power10minMinMax?.first?.activityData?.power?.tenMin
+                        ?: 0, extrema?.power10minMinMax?.second?.activityData?.power?.tenMin
+                        ?: 0), visibility = visibility)
+        setText(activityData.power.twentyMin, "W", root.findViewById(R.id.power20minText), root.findViewById(R.id.power20min),
+                Pair(extrema?.power20minMinMax?.first?.activityData?.power?.twentyMin
+                        ?: 0, extrema?.power20minMinMax?.second?.activityData?.power?.twentyMin
+                        ?: 0), visibility = visibility)
+        setText(activityData.power.thirtyMin, "W", root.findViewById(R.id.power30minText), root.findViewById(R.id.power30min),
+                Pair(extrema?.power30minMinMax?.first?.activityData?.power?.thirtyMin
+                        ?: 0, extrema?.power30minMinMax?.second?.activityData?.power?.thirtyMin
+                        ?: 0), visibility = visibility)
+
+        setText(activityData.power.oneHour, "W", root.findViewById(R.id.power1hText), root.findViewById(R.id.power1h),
+                Pair(extrema?.power1hMinMax?.first?.activityData?.power?.oneHour
+                        ?: 0, extrema?.power1hMinMax?.second?.activityData?.power?.oneHour
+                        ?: 0), visibility = visibility)
+        setText(activityData.power.twoHours, "W", root.findViewById(R.id.power2hText), root.findViewById(R.id.power2h),
+                Pair(extrema?.power2hMinMax?.first?.activityData?.power?.twoHours
+                        ?: 0, extrema?.power2hMinMax?.second?.activityData?.power?.twoHours
+                        ?: 0), visibility = visibility)
+        setText(activityData.power.fiveHours, "W", root.findViewById(R.id.power5hText), root.findViewById(R.id.power5h),
+                Pair(extrema?.power5hMinMax?.first?.activityData?.power?.fiveHours
+                        ?: 0, extrema?.power5hMinMax?.second?.activityData?.power?.fiveHours
+                        ?: 0), visibility = visibility)
     }
 
     private fun setText(text: String, info: TextView, textView: TextView) {
@@ -180,13 +281,48 @@ class SummitEntryDataFragment : Fragment() {
         }
     }
 
-    private fun setText(value: Double, unit: String, info: TextView, textView: TextView, minMax: Pair<Number?, Number?> = Pair(null, null), reverse: Boolean = false, toHHms: Boolean = false) {
+    private fun setAdditionalPowerDataVisibility(visibility: Int) {
+        root.findViewById<TextView>(R.id.power1sec).visibility = visibility
+        root.findViewById<TextView>(R.id.power1secText).visibility = visibility
+        root.findViewById<TextView>(R.id.power2sec).visibility = visibility
+        root.findViewById<TextView>(R.id.power2secText).visibility = visibility
+        root.findViewById<TextView>(R.id.power5sec).visibility = visibility
+        root.findViewById<TextView>(R.id.power5secText).visibility = visibility
+        root.findViewById<TextView>(R.id.power10sec).visibility = visibility
+        root.findViewById<TextView>(R.id.power10secText).visibility = visibility
+        root.findViewById<TextView>(R.id.power20sec).visibility = visibility
+        root.findViewById<TextView>(R.id.power20secText).visibility = visibility
+        root.findViewById<TextView>(R.id.power30sec).visibility = visibility
+        root.findViewById<TextView>(R.id.power30secText).visibility = visibility
+
+        root.findViewById<TextView>(R.id.power1min).visibility = visibility
+        root.findViewById<TextView>(R.id.power1minText).visibility = visibility
+        root.findViewById<TextView>(R.id.power2min).visibility = visibility
+        root.findViewById<TextView>(R.id.power2minText).visibility = visibility
+        root.findViewById<TextView>(R.id.power5min).visibility = visibility
+        root.findViewById<TextView>(R.id.power5minText).visibility = visibility
+        root.findViewById<TextView>(R.id.power10min).visibility = visibility
+        root.findViewById<TextView>(R.id.power10minText).visibility = visibility
+        root.findViewById<TextView>(R.id.power20min).visibility = visibility
+        root.findViewById<TextView>(R.id.power20minText).visibility = visibility
+        root.findViewById<TextView>(R.id.power30min).visibility = visibility
+        root.findViewById<TextView>(R.id.power30minText).visibility = visibility
+
+        root.findViewById<TextView>(R.id.power1h).visibility = visibility
+        root.findViewById<TextView>(R.id.power1hText).visibility = visibility
+        root.findViewById<TextView>(R.id.power2h).visibility = visibility
+        root.findViewById<TextView>(R.id.power2hText).visibility = visibility
+        root.findViewById<TextView>(R.id.power5h).visibility = visibility
+        root.findViewById<TextView>(R.id.power5hText).visibility = visibility
+    }
+
+    private fun setText(value: Double, unit: String, info: TextView, textView: TextView, minMax: Pair<Number?, Number?> = Pair(null, null), reverse: Boolean = false, toHHms: Boolean = false, visibility: Int = View.VISIBLE) {
         if (value <= 0.0) {
             info.visibility = View.GONE
             textView.visibility = View.GONE
         } else {
-            info.visibility = View.VISIBLE
-            textView.visibility = View.VISIBLE
+            info.visibility = visibility
+            textView.visibility = visibility
             if (toHHms) {
                 val valueInMs = (value * 3600000).toLong()
                 textView.text = String.format("%02dh %02dm", TimeUnit.MILLISECONDS.toHours(valueInMs),
@@ -198,13 +334,13 @@ class SummitEntryDataFragment : Fragment() {
         }
     }
 
-    private fun setText(value: Int, unit: String, info: TextView, textView: TextView, minMax: Pair<Number?, Number?> = Pair(null, null), reverse: Boolean = false) {
+    private fun setText(value: Int, unit: String, info: TextView, textView: TextView, minMax: Pair<Number?, Number?> = Pair(null, null), reverse: Boolean = false, visibility: Int = View.VISIBLE) {
         if (value == 0) {
             info.visibility = View.GONE
             textView.visibility = View.GONE
         } else {
-            info.visibility = View.VISIBLE
-            textView.visibility = View.VISIBLE
+            info.visibility = visibility
+            textView.visibility = visibility
             textView.text = String.format("%s %s", value, unit)
             drawCircleWithIndication(textView, minMax, value.toDouble(), reverse)
         }

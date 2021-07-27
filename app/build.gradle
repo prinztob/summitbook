@@ -27,7 +27,6 @@ android {
         ndk {
             abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
         }
-
         // Chaquopy generates extra internal-use constructors on static proxy classes.
         lintOptions {
             disable "ValidFragment"
@@ -67,6 +66,7 @@ dependencies {
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
     implementation "com.hootsuite.android:nachos:1.1.1"
     implementation project(path: ':lib')
+    implementation 'org.nield:kotlin-statistics:1.2.1'
 
     implementation 'androidx.preference:preference-ktx:1.1.1'
     testImplementation 'junit:junit:4.13.2'
@@ -75,6 +75,7 @@ dependencies {
     implementation "androidx.core:core-ktx:1.5.0"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.3.1"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    testImplementation "org.robolectric:robolectric:4.2.1"
 }
 repositories {
     mavenCentral()

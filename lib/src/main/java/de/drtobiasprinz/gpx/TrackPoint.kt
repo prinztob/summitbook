@@ -10,7 +10,7 @@ data class TrackPoint(
         val time: Long? = null,
         val ele: Double? = null,
         val name: String? = null,
-        val extension: PointExtension? = null
+        var extension: PointExtension? = null
 ) : XmlWritable, Point(time, ele, name, extension) {
 
     override val writeOperations: Observable<XmlWrite>
@@ -20,7 +20,7 @@ data class TrackPoint(
                 optionalTagWithText(TAG_ELEVATION, ele?.toString()),
                 if (time != null) Time(time).writeOperations else Observable.empty(),
                 optionalTagWithText(TAG_NAME, name),
-                if (extension != null) extension.writeOperations else Observable.empty()
+                if (extension != null) extension!!.writeOperations else Observable.empty()
         )
 
     class Builder(

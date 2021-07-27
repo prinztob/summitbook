@@ -98,9 +98,9 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
                     getValueOrNull(extremaValuesSummits?.hundredKmMinMax?.second) { e -> e.velocityData.hundredKilometers}, 1)
 
             setTextViewData(extremaValuesSummits?.heightMetersMinMax?.second, R.id.layoutMostHeightMeter, R.id.textMostHeightMeter, R.id.textMostHeightMeterInfo, "m",
-                    getValueOrNull(extremaValuesSummits?.heightMetersMinMax?.second) { e -> e.heightMeter.toDouble()})
+                    getValueOrNull(extremaValuesSummits?.heightMetersMinMax?.second) { e -> e.elevationData.elevationGain.toDouble()})
             setTextViewData(extremaValuesSummits?.topElevationMinMax?.second, R.id.layoutHighestPeak, R.id.textHighestPeak, R.id.textHighestPeakInfo, "m.a.s.l.",
-                    getValueOrNull(extremaValuesSummits?.topElevationMinMax?.second) { e -> e.topElevation.toDouble()})
+                    getValueOrNull(extremaValuesSummits?.topElevationMinMax?.second) { e -> e.elevationData.maxElevation.toDouble()})
             setTextViewData(extremaValuesSummits?.normPowerMinMax?.second, R.id.layoutHighestPower, R.id.textHeighestPower, R.id.textHeighestPowerInfo, "W",
                     getValueOrNull(extremaValuesSummits?.normPowerMinMax?.second) { e -> e.activityData?.power?.normPower?.toDouble() ?: 0.0})
             setTextViewData(extremaValuesSummits?.power1sMinMax?.second, R.id.layoutHighestPower1sec, R.id.textHeighestPower1sec, R.id.textHeighestPower1secInfo, "W",

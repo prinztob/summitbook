@@ -97,11 +97,11 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
         summitValues.put("PLACE", entry.places.joinToString(","))
         summitValues.put("COUNTRY", entry.countries.joinToString(","))
         summitValues.put("COMMENTS", entry.comments)
-        summitValues.put("HEIGHT_METERS", entry.heightMeter)
+        summitValues.put("HEIGHT_METERS", entry.elevationData.toString())
         summitValues.put("KILOMETERS", entry.kilometers)
         summitValues.put("PACE", entry.velocityData.toString())
         summitValues.put("TOP_SPEED", entry.velocityData.maxVelocity)
-        summitValues.put("TOP_ELEVATION", entry.topElevation)
+        summitValues.put("TOP_ELEVATION", entry.elevationData.maxElevation)
         summitValues.put("ACTIVITY_ID", entry.activityId)
         summitValues.put("FAVORITE", if (entry.isFavorite) 1 else 0)
         summitValues.put("IMAGE_ORDER", entry.imageIds.joinToString(","))
@@ -297,10 +297,9 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
                         if (cursor.getString(4) != null && cursor.getString(4) != "") cursor.getString(4).split(",") else emptyList(),
                         if (cursor.getString(5) != null && cursor.getString(5) != "") cursor.getString(5).split(",") else emptyList(),
                         cursor.getString(6),
-                        cursor.getInt(7),
+                        ElevationData.parse(cursor.getString(7).split(","), cursor.getInt(11)),
                         cursor.getDouble(8),
                         VelocityData.parse(cursor.getString(9).split(","), cursor.getDouble(10)),
-                        cursor.getInt(11),
                         if (cursor.getString(15) != null && cursor.getString(15) != "") cursor.getString(15).split(",") else emptyList(),
                         imageIds,
                         cursor.getInt(12)
@@ -329,7 +328,7 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
                     entry.latLng = LatLng(cursor.getDouble(13), cursor.getDouble(14))
                 }
                 if (entry.activityId <= 0) {
-                    entry.activityId = SummitEntry.getActivityId(entry.date, entry.name, entry.sportType, entry.heightMeter, entry.kilometers)
+                    entry.activityId = SummitEntry.getActivityId(entry.date, entry.name, entry.sportType, entry.elevationData.elevationGain, entry.kilometers)
                 }
             }
         } catch (e: ParseException) {
@@ -458,6 +457,12 @@ class SummitBookDatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DB
     fun updateVelocityDataSummit(db: SQLiteDatabase?, summitEntryId: Int, velocityData: VelocityData) {
         val summitValues = ContentValues()
         summitValues.put("PACE", velocityData.toString())
+        db?.update(SUMMITS_DB_TABLE_NAME, summitValues, "_id=$summitEntryId", null)
+    }
+
+    fun updateElevationDataSummit(db: SQLiteDatabase?, summitEntryId: Int, elevationData: ElevationData) {
+        val summitValues = ContentValues()
+        summitValues.put("HEIGHT_METERS", elevationData.toString())
         db?.update(SUMMITS_DB_TABLE_NAME, summitValues, "_id=$summitEntryId", null)
     }
 

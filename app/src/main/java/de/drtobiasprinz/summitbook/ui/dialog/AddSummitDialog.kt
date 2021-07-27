@@ -39,6 +39,7 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.round
 
 
 class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : DialogFragment(), BaseDialog {
@@ -360,8 +361,8 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         if (addConnectedEntryString && localSummitEntry != null) {
             for (entry in sortFilterHelper.entries) {
                 val diffInMilliSec: Long = localSummitEntry.date.time - entry.date.time
-                val diffInDays: Long = TimeUnit.MILLISECONDS.toDays(diffInMilliSec)
-                if (diffInDays <= 1 && diffInDays > 0) {
+                val diffInDays: Double = round(TimeUnit.MILLISECONDS.toDays(diffInMilliSec).toDouble())
+                if (diffInDays <= 1.0 && diffInDays > 0.0) {
                     connectedSummits.add(entry)
                     suggestions.add(entry.getConnectedEntryString(requireContext()))
                 }
@@ -388,11 +389,11 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                 entry.places = places
                 entry.countries = countriesView.chipValues
                 entry.comments = commentText.text.toString()
-                entry.heightMeter = heightMeterText.text.toString().toInt()
+                entry.elevationData.elevationGain = heightMeterText.text.toString().toInt()
                 entry.kilometers = getTextWithDefaultDouble(kmText)
                 entry.velocityData.avgVelocity = getTextWithDefaultDouble(paceText)
                 entry.velocityData.maxVelocity = getTextWithDefaultDouble(topSpeedText)
-                entry.topElevation = getTextWithDefaultInt(topElevationText)
+                entry.elevationData.maxElevation = getTextWithDefaultInt(topElevationText)
                 entry.participants = participantsView.chipValues
             } else {
                 currentSummitEntry = SummitEntry(
@@ -401,10 +402,10 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                         sportType,
                         places,
                         countriesView.chipValues,
-                        commentText.text.toString(), heightMeterText.text.toString().toInt(),
+                        commentText.text.toString(),
+                        ElevationData.parse(getTextWithDefaultInt(topElevationText), heightMeterText.text.toString().toInt()),
                         getTextWithDefaultDouble(kmText),
                         VelocityData.parse(getTextWithDefaultDouble(paceText), getTextWithDefaultDouble(topSpeedText)),
-                        getTextWithDefaultInt(topElevationText),
                         participantsView.chipValues,
                         mutableListOf()
                 )
@@ -461,11 +462,11 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             setTextIfNotAlreadySet(countriesView, entry.countries.joinToString(",") + ",")
             setTextIfNotAlreadySet(commentText, entry.comments)
             setTextIfNotAlreadySet(participantsView, entry.participants.joinToString(",") + ",")
-            setTextIfNotAlreadySet(heightMeterText, entry.heightMeter.toString())
+            setTextIfNotAlreadySet(heightMeterText, entry.elevationData.elevationGain.toString())
             setTextIfNotAlreadySet(kmText, entry.kilometers.toString())
             setTextIfNotAlreadySet(paceText, entry.velocityData.avgVelocity.toString())
             setTextIfNotAlreadySet(topSpeedText, entry.velocityData.maxVelocity.toString())
-            setTextIfNotAlreadySet(topElevationText, entry.topElevation.toString())
+            setTextIfNotAlreadySet(topElevationText, entry.elevationData.maxElevation.toString())
             setTextIfNotAlreadySet(caloriesText, entry.activityData?.calories.toString())
             setTextIfNotAlreadySet(averageHRText, entry.activityData?.averageHR.toString())
             setTextIfNotAlreadySet(maxHRText, entry.activityData?.maxHR.toString())

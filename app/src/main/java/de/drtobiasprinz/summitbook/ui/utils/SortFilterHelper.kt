@@ -376,9 +376,9 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private fun sort() {
         when (selectedSegmentedSortBy) {
             1 -> filteredEntries.sortWith(compareBy { it.name })
-            2 -> filteredEntries.sortWith(compareBy { it.heightMeter })
+            2 -> filteredEntries.sortWith(compareBy { it.elevationData.elevationGain })
             3 -> filteredEntries.sortWith(compareBy { it.kilometers })
-            4 -> filteredEntries.sortWith(compareBy { it.topElevation })
+            4 -> filteredEntries.sortWith(compareBy { it.elevationData.maxElevation })
             else -> filteredEntries.sortWith(compareBy { it.date })
         }
         when (selectedSegmentedSortAscDesc) {
@@ -520,7 +520,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         val extremaValues = extremaValuesFilteredSummits
         if (extremaValues != null) {
             for (entry in filteredEntries) {
-                if (entry.heightMeter >= extremaValues.minHeightMeters && entry.heightMeter <= extremaValues.maxHeightMeters || extremaValues.minHeightMeters == 0 && entry.heightMeter == -1) {
+                if (entry.elevationData.elevationGain >= extremaValues.minHeightMeters && entry.elevationData.elevationGain <= extremaValues.maxHeightMeters || extremaValues.minHeightMeters == 0 && entry.elevationData.elevationGain == -1) {
                     entries.add(entry)
                 }
             }
@@ -559,7 +559,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         val extremaValues = extremaValuesFilteredSummits
         if (extremaValues != null) {
             for (entry in filteredEntries) {
-                if (entry.topElevation >= extremaValues.minTopElevation && entry.topElevation <= extremaValues.maxTopElevation || extremaValues.minTopElevation == 0 && entry.topElevation == -1) {
+                if (entry.elevationData.maxElevation >= extremaValues.minTopElevation && entry.elevationData.maxElevation <= extremaValues.maxTopElevation || extremaValues.minTopElevation == 0 && entry.elevationData.maxElevation == -1) {
                     entries.add(entry)
                 }
             }

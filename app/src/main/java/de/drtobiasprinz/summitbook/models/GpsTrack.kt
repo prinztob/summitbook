@@ -6,7 +6,9 @@ import com.github.mikephil.charting.data.Entry
 import com.google.android.gms.maps.model.LatLng
 import de.drtobiasprinz.gpx.GPXParser
 import de.drtobiasprinz.gpx.Gpx
+import de.drtobiasprinz.gpx.PointExtension
 import de.drtobiasprinz.gpx.TrackPoint
+import de.drtobiasprinz.summitbook.ui.utils.SummitSlope
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Polyline
@@ -16,7 +18,7 @@ import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Path
-import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
@@ -26,6 +28,7 @@ class GpsTrack(private val gpsTrackPath: Path) {
     var isShownOnMap: Boolean = false
     val trackGeoPoints: ArrayList<GeoPoint?> = ArrayList()
     val trackPoints: ArrayList<TrackPoint?> = ArrayList()
+    var gpxTrack: Gpx? = null
     private val COLOR_POLYLINE_STATIC = Color.BLUE
     private val COLOR_POLYLINE_ANIMATED = Color.GREEN
     private val COLOR_BACKGROUND = Color.WHITE
@@ -129,17 +132,17 @@ class GpsTrack(private val gpsTrackPath: Path) {
 
     fun parseTrack() {
         val mParser = GPXParser()
-        var parsedGpx: Gpx? = null
         try {
             val inputStream: InputStream = FileInputStream(gpsTrackPath.toFile())
-            parsedGpx = mParser.parse(inputStream)
+            gpxTrack = mParser.parse(inputStream)
         } catch (e: IOException) {
             e.printStackTrace()
         } catch (e: XmlPullParserException) {
             e.printStackTrace()
         }
-        if (parsedGpx != null) {
-            val tracks = parsedGpx.tracks
+        val gpxTrackLocal = gpxTrack
+        if (gpxTrackLocal != null) {
+            val tracks = gpxTrackLocal.tracks
             for (track in tracks.toList().blockingGet()) {
                 for (segment in track.segments.toList().blockingGet()) {
                     val points = segment.points.toList().blockingGet()
@@ -165,22 +168,9 @@ class GpsTrack(private val gpsTrackPath: Path) {
     }
 
     private fun setDistance() {
-        var lastTrackPoint: TrackPoint? = null
-        for (trackPoint in trackPoints) {
-            if (trackPoint != null) {
-                if (lastTrackPoint == null) {
-                    trackPoint.extension?.distance = 0.0
-                    lastTrackPoint = trackPoint
-                } else {
-                    val distance = lastTrackPoint.extension?.distance
-                    if (distance != null) {
-                        trackPoint.extension?.distance = distance + abs(getDistance(trackPoint, lastTrackPoint)).toDouble()
-                        lastTrackPoint = trackPoint
-                    }
-                }
-            }
-        }
+        setDistanceFromPoints(trackPoints)
     }
+
 
     fun getTrackGraph(f: (TrackPoint) -> Float?): MutableList<Entry> {
         if (trackPoints.first()?.extension?.distance == null) {
@@ -199,25 +189,13 @@ class GpsTrack(private val gpsTrackPath: Path) {
         return graph
     }
 
-    fun getTrackTiltGraph(): MutableList<Entry> {
+    fun getTrackSlopeGraph(binSizeMeter: Double = 100.0): MutableList<Entry> {
         if (trackPoints.first()?.extension?.distance == null) {
             setDistance()
         }
-        val graph = mutableListOf<Entry>()
-        for ((i, trackPoint) in trackPoints.withIndex()) {
-            if (trackPoint != null) {
-                val value = (trackPoints[if (i + 1 < trackPoints.size) i + 1 else trackPoints.size - 1]?.ele
-                        ?: 0.0) - (trackPoint.ele ?: 0.0)
-                val deltaDistance = (trackPoints[if (i + 1 < trackPoints.size) i + 1 else trackPoints.size - 1]?.extension?.distance
-                        ?: 0.0) - (trackPoint.extension?.distance ?: 0.0)
-                val tilt = if (deltaDistance != 0.0) value / deltaDistance * 100 else 0.0
-                if (abs(tilt) < 50) {
-                    graph.add(Entry(trackPoint.extension?.distance?.toFloat()
-                            ?: 0f, tilt.toFloat(), trackPoint))
-                }
-            }
-        }
-        return graph
+        val summitSlope = SummitSlope()
+        summitSlope.calculateMaxSlope(gpxTrack, binSizeMeter, requiredR2 = 0.0)
+        return summitSlope.slopeGraph
     }
 
     fun getHighestElevation(): TrackPoint? {
@@ -242,18 +220,47 @@ class GpsTrack(private val gpsTrackPath: Path) {
         return trackPoints.none { it?.lat != 0.0 && it?.lon != 0.0 }
     }
 
-    private fun getDistance(trackPoint1: TrackPoint, trackPoint2: TrackPoint): Float {
-        val location1 = getLocationFromFrackPoint(trackPoint1)
-        val location2 = getLocationFromFrackPoint(trackPoint2)
-        return location1.distanceTo(location2)
-    }
 
-    private fun getLocationFromFrackPoint(trackPoint: TrackPoint): Location {
-        val location = Location(trackPoint.name)
-        location.latitude = trackPoint.lat
-        location.longitude = trackPoint.lon
-        location.altitude = trackPoint.ele ?: 0.0
-        return location
+    companion object {
+        fun setDistanceFromPoints(trackPoints: List<TrackPoint?>) {
+            var lastTrackPoint: TrackPoint? = null
+            for (trackPoint in trackPoints) {
+                if (trackPoint != null) {
+                    if (lastTrackPoint == null) {
+                        setDistance(trackPoint)
+                        lastTrackPoint = trackPoint
+                    } else {
+                        val distance = lastTrackPoint.extension?.distance
+                        if (distance != null) {
+                            setDistance(trackPoint, distance + abs(getDistance(trackPoint, lastTrackPoint)).toDouble())
+                            lastTrackPoint = trackPoint
+                        }
+                    }
+                }
+            }
+        }
+
+        private fun setDistance(trackPoint: TrackPoint, distance: Double = 0.0) {
+            if (trackPoint.extension == null) {
+                trackPoint.extension = PointExtension(distance = distance)
+            } else {
+                trackPoint.extension?.distance = distance
+            }
+        }
+
+        private fun getDistance(trackPoint1: TrackPoint, trackPoint2: TrackPoint): Float {
+            val location1 = getLocationFromFrackPoint(trackPoint1)
+            val location2 = getLocationFromFrackPoint(trackPoint2)
+            return location1.distanceTo(location2)
+        }
+
+        private fun getLocationFromFrackPoint(trackPoint: TrackPoint): Location {
+            val location = Location(trackPoint.name)
+            location.latitude = trackPoint.lat
+            location.longitude = trackPoint.lon
+            location.altitude = trackPoint.ele ?: 0.0
+            return location
+        }
     }
 
 }

@@ -317,13 +317,13 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     private fun getEntriesBetweenTopElevation(entries: ArrayList<SummitEntry>?, start: Float, end: Float): Stream<SummitEntry?>? {
         return entries
                 ?.stream()
-                ?.filter { o: SummitEntry? -> o != null && o.topElevation >= start && o.topElevation < end }
+                ?.filter { o: SummitEntry? -> o != null && o.elevationData.maxElevation >= start && o.elevationData.maxElevation < end }
     }
 
     private fun getEntriesBetweenElevationGains(entries: ArrayList<SummitEntry>?, start: Float, end: Float): Stream<SummitEntry?>? {
         return entries
                 ?.stream()
-                ?.filter { o: SummitEntry? -> o != null && o.heightMeter >= start && o.heightMeter < end }
+                ?.filter { o: SummitEntry? -> o != null && o.elevationData.elevationGain >= start && o.elevationData.elevationGain < end }
     }
 
     private fun getEntriesBetweenKilometers(entries: ArrayList<SummitEntry>?, start: Float, end: Float): Stream<SummitEntry?>? {
@@ -344,7 +344,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     private fun getElevationGainsFromStream(stream: Stream<SummitEntry?>?): Float {
         return stream
-                ?.mapToInt { obj: SummitEntry? -> obj?.heightMeter ?: 0 }
+                ?.mapToInt { obj: SummitEntry? -> obj?.elevationData?.elevationGain ?: 0 }
                 ?.sum()?.toFloat() ?: 0.0f
     }
 

@@ -7,9 +7,9 @@ import java.util.*
 
 class SummitEntryTest {
     companion object {
-        private var entry1 = SummitEntry(SummitEntry.parseDate("2019-11-13"), "summit1", SportType.Bicycle, listOf("place1"), listOf("country1"), "comment1", 1, 1.1, VelocityData.Companion.parse(1.2, 1.3), 11, mutableListOf("participant1"), mutableListOf())
-        private var entry2 = SummitEntry(SummitEntry.parseDate("2018-11-18"), "summit2", SportType.Bicycle, listOf("place2"), listOf("country2"), "comment2", 2, 2.1, VelocityData.Companion.parse(2.2, 2.3), 22, mutableListOf("participant1"), mutableListOf())
-        private var entryNotInList = SummitEntry(SummitEntry.parseDate("2019-10-18"), "summit3", SportType.Bicycle, listOf("place3"), listOf("country3"), "comment3", 3, 3.1, VelocityData.Companion.parse(3.2, 3.3), 32, mutableListOf("participant1"), mutableListOf())
+        private var entry1 = SummitEntry(SummitEntry.parseDate("2019-11-13"), "summit1", SportType.Bicycle, listOf("place1"), listOf("country1"), "comment1", ElevationData.Companion.parse(11, 1), 1.1, VelocityData.Companion.parse(1.2, 1.3), mutableListOf("participant1"), mutableListOf())
+        private var entry2 = SummitEntry(SummitEntry.parseDate("2018-11-18"), "summit2", SportType.Bicycle, listOf("place2"), listOf("country2"), "comment2", ElevationData.Companion.parse(22, 2), 2.1, VelocityData.Companion.parse(2.2, 2.3), mutableListOf("participant1"), mutableListOf())
+        private var entryNotInList = SummitEntry(SummitEntry.parseDate("2019-10-18"), "summit3", SportType.Bicycle, listOf("place3"), listOf("country3"), "comment3", ElevationData.Companion.parse(33, 3), 3.1, VelocityData.Companion.parse(3.2, 3.3), mutableListOf("participant1"), mutableListOf())
         private var summitEntries: ArrayList<SummitEntry>? = ArrayList()
         init {
             try {
@@ -65,7 +65,7 @@ class SummitEntryTest {
     @Throws(ParseException::class)
     fun isDuplicate() {
         Assert.assertTrue(entry1.isDuplicate(summitEntries))
-        Assert.assertTrue(SummitEntry(SummitEntry.parseDate("2019-11-13"), "summit1", SportType.Bicycle, listOf("place1"), listOf("country1"), "comment1", 1, 1.1, VelocityData.Companion.parse(1.2, 1.3), 11, mutableListOf("participant1"), mutableListOf()).isDuplicate(summitEntries))
+        Assert.assertTrue(SummitEntry(SummitEntry.parseDate("2019-11-13"), "summit1", SportType.Bicycle, listOf("place1"), listOf("country1"), "comment1", ElevationData.Companion.parse(11, 1), 1.1, VelocityData.Companion.parse(1.2, 1.3), mutableListOf("participant1"), mutableListOf()).isDuplicate(summitEntries))
         Assert.assertTrue(entry2.isDuplicate(summitEntries))
         Assert.assertFalse(entryNotInList.isDuplicate(summitEntries))
     }

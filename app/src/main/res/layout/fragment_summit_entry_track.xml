@@ -88,9 +88,18 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignTop="@id/osmap"
-                        android:layout_toStartOf="@id/osm_with_milage"
+                        android:layout_toStartOf="@id/gps_max_slope"
                         android:contentDescription="@string/open_with"
                         android:src="@drawable/ic_open_in_new_black_24dp" />
+
+                    <ImageButton
+                        android:id="@+id/gps_max_slope"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignTop="@id/osmap"
+                        android:layout_toStartOf="@id/osm_with_milage"
+                        android:contentDescription="@string/open_with"
+                        android:src="@drawable/ic_trending_up_black_24dp" />
 
                     <ImageButton
                         android:id="@+id/osm_with_milage"

@@ -38,6 +38,7 @@
     <string name="top_speed_75km_hint">Max. Geschw. 75 km</string>
     <string name="top_speed_100km_hint">Max. Geschw. 100 km</string>
     <string name="top_elevation_hint">Maximale Höhe</string>
+    <string name="top_slope_hint">Maximale Steigung</string>
 
     <string name="action_search">Suche</string>
     <string name="km">km</string>
@@ -182,7 +183,7 @@ von
     <string name="update_summit_cancel">"Aktualisierung des Gipfels wurde abgebrochen."</string>
     <string name="add_new_summit_cancel">"Das Hinzufügen eines neuen Gipfels wure abgebrochen."</string>
     <string name="heart_rate_profile_label">"Herzfrequenzprofil"</string>
-    <string name="tilt_profile_label">"Neigung"</string>
+    <string name="slope_profile_label">"Neigung"</string>
     <string name="cadence_profile_label">"Kadenceprofil"</string>
     <string name="height_profile_label">"Höhenprofil"</string>
     <string name="power_profile_label">"Aktueller Gipfel"</string>
@@ -272,6 +273,10 @@ von
     <string name="tab_text_4">Leistungsprofil</string>
     <string name="more">Mehr Datenfelder</string>
     <string name="less">Weniger Datenfelder</string>
+    <string name="more_power">Mehr Leistunsgdaten</string>
+    <string name="less_power">Weniger Leistunsgdaten</string>
+    <string name="more_speed">Mehr Geschw.daten</string>
+    <string name="less_speed">Weniger Geschw.daten</string>
     <string name="more_performance">Update Leistunsgdaten</string>
     <string name="less_performance">Close Leistunsgdaten</string>
     <string name="watt">W</string>
@@ -285,5 +290,6 @@ von
     <string name="will_be_updated_soon">Wird gleich geupdated</string>
     <string name="duration">Dauer</string>
     <string name="longest_duration">Längest Dauer</string>
+    <string name="max_slope">Max. Steigung</string>
 
 </resources>

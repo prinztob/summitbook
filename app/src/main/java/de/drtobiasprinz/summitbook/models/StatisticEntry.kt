@@ -35,7 +35,7 @@ class StatisticEntry {
 
     fun calculate() {
         totalSummits = filteredSummitEntries?.size ?: 0
-        totalHm = filteredSummitEntries?.stream()?.mapToInt { obj: SummitEntry? -> obj?.heightMeter ?: 0 }?.sum() ?: 0
+        totalHm = filteredSummitEntries?.stream()?.mapToInt { obj: SummitEntry? -> obj?.elevationData?.elevationGain ?: 0 }?.sum() ?: 0
         totalKm = filteredSummitEntries?.stream()?.mapToDouble { obj: SummitEntry? -> obj?.kilometers ?: 0.0 }?.sum() ?: 0.0
         achievementActivity = round(totalSummits * 100.0 / activitesPerYear).toDouble()
         achievementKm = totalKm * 100.0 / kilometerPerYear

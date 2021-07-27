@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.ui.utils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import de.drtobiasprinz.summitbook.models.ElevationData
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.models.VelocityData
@@ -31,7 +32,7 @@ class GarminConnectAccessTest {
             val gson = JsonParser().parse(getJsonData(activity)) as JsonArray
             val connectAccess = GarminConnectAccess()
             val actualEntries: ArrayList<SummitEntry> = connectAccess.getSummitsAtDate(gson)
-            val expectedEntry = SummitEntry(SummitEntry.parseDate("2019-12-29"), "summit1", SportType.Hike, emptyList(), emptyList(), "", 122, 4.14, VelocityData.Companion.parse(2.99, 9.31), 218, mutableListOf("participant1"), mutableListOf())
+            val expectedEntry = SummitEntry(SummitEntry.parseDate("2019-12-29"), "summit1", SportType.Hike, emptyList(), emptyList(), "", ElevationData.Companion.parse(122, 218), 4.14, VelocityData.Companion.parse(2.99, 9.31), mutableListOf("participant1"), mutableListOf())
             Assert.assertEquals(1, actualEntries.size.toLong())
             Assert.assertEquals(expectedEntry, actualEntries[0])
         }

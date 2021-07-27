@@ -28,7 +28,8 @@ class GarminPythonExecutor(val username: String, val password: String) {
     lateinit var pythonInstance: Python
     lateinit var pythonModule: PyObject
     var client: PyObject? = null
-    fun login() {
+
+    private fun login() {
         if (client == null) {
             if (!Python.isStarted()) {
                 MainActivity.mainActivity?.let { AndroidPlatform(it) }?.let { Python.start(it) }
@@ -79,11 +80,11 @@ class GarminPythonExecutor(val username: String, val password: String) {
         checkOutput(result)
     }
 
-    fun downloadSpeedDataForActivity(activityId: String): JsonObject {
+    fun downloadSpeedDataForActivity(activitiesDir: File, activityId: String): JsonObject {
         if (client == null) {
             login()
         }
-        val result = pythonModule.callAttr("get_split_data", client, activityId)
+        val result = pythonModule.callAttr("get_split_data", client, activityId, activitiesDir.absolutePath)
         checkOutput(result)
         return JsonParser().parse(result.toString()) as JsonObject
     }
@@ -120,13 +121,10 @@ class GarminPythonExecutor(val username: String, val password: String) {
         class AsyncDownloadGpxViaPython(garminPythonExecutor: GarminPythonExecutor, entries: List<SummitEntry>, private val sortFilterHelper: SortFilterHelper, useTcx: Boolean = false, private val dialog: BaseDialog, private val index: Int = -1) : AsyncTask<Void?, Void?, Void?>() {
             private val downloader = GarminTrackAndDataDownloader(entries, garminPythonExecutor, useTcx)
             override fun doInBackground(vararg params: Void?): Void? {
-                val progressBar = dialog.getProgressBarForAsyncTask()
                 try {
-                    progressBar?.visibility = View.VISIBLE
                     downloader.downloadTracks()
                 } catch (e: RuntimeException) {
-                    Log.e("AsyncDownloadGpxViaPython", e.message ?: "")
-                    progressBar?.visibility = View.GONE
+                    Log.e("AsyncDownloadGpxViaPython.doInBackground", e.message ?: "")
                 }
                 return null
             }
@@ -178,7 +176,7 @@ class GarminPythonExecutor(val username: String, val password: String) {
                 val files = directory.listFiles()
                 if (files?.isNotEmpty() == true) {
                     files.forEach {
-                        if (it.name.startsWith("activity_")) {
+                        if (it.name.startsWith("activity_") && !it.name.endsWith("_splits.json")) {
                             val gson = JsonParser().parse(it.readText()) as JsonObject
                             entries.add(parseJsonObject(gson))
                         }
@@ -198,11 +196,11 @@ class GarminPythonExecutor(val username: String, val password: String) {
                     jsonObject["activityName"].asString,
                     parseSportType(jsonObject["activityType"].asJsonObject),
                     emptyList(), emptyList(), "",
-                    getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt(),
+                    ElevationData.parse(if (jsonObject["maxElevation"] != JsonNull.INSTANCE) round(jsonObject["maxElevation"].asDouble, 2).toInt() else 0,
+                            getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt()),
                     round(convertMeterToKm(getJsonObjectEntryNotNull(jsonObject, "distance").toDouble()), 2),
-                    VelocityData.Companion.parse(round(averageSpeed, 2),
+                    VelocityData.parse(round(averageSpeed, 2),
                         if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
-                    if (jsonObject["maxElevation"] != JsonNull.INSTANCE) round(jsonObject["maxElevation"].asDouble, 2).toInt() else 0,
                     emptyList(),
                     mutableListOf()
             )

@@ -33,7 +33,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
     private lateinit var entriesWithoutIgnored: MutableList<SummitEntry>
     private lateinit var mergeSummitsButton: Button
     private lateinit var ignoreSummitsButton: Button
-    private lateinit var udateSummitsButton: ImageButton
+    private lateinit var updateSummitsButton: ImageButton
     private lateinit var revertIgnoredSummitsButton: ImageButton
     private lateinit var backButton: Button
     private lateinit var tableLayout: TableLayout
@@ -53,8 +53,8 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
         database = helper.writableDatabase
         updateEntriesWithoutIgnored()
 
-        udateSummitsButton = view.findViewById(R.id.update_new_summits)
-        udateSummitsButton.setOnClickListener {
+        updateSummitsButton = view.findViewById(R.id.update_new_summits)
+        updateSummitsButton.setOnClickListener {
             val startDate = sharedPreferences.getString("garmin_start_date", null) ?: ""
             if (pythonExecutor != null) {
                 val current = LocalDateTime.now()
@@ -132,7 +132,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
         val date = "<a href=\"${entry.activityData?.url ?: "unknown"}\">${entry.getDateAsString()}</a>"
         val name: String = entry.name.chunked(10).joinToString("\n")
         val kilometers: Double = entry.kilometers
-        val heightMeters: Int = entry.heightMeter
+        val heightMeters: Int = entry.elevationData.elevationGain
 
         val tr = TableRow(view.context)
         tr.setBackgroundColor(Color.GRAY)

@@ -145,7 +145,7 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
                 label = "Height meters accumulated"
                 if (sortedEntries != null) {
                     for (summitEntry in sortedEntries) {
-                        var accumulatedHm = summitEntry.heightMeter.toFloat()
+                        var accumulatedHm = summitEntry.elevationData.elevationGain.toFloat()
                         if (lineChartEntries.size > 0) {
                             accumulatedHm += lineChartEntries[lineChartEntries.size - 1]?.y ?: 0.0f
                         }
@@ -183,8 +183,8 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
                 label = "Elevation"
                 if (sortedEntries != null) {
                     for (summitEntry in sortedEntries) {
-                        if (summitEntry.topElevation > 0) {
-                            lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.topElevation.toFloat(), summitEntry))
+                        if (summitEntry.elevationData.maxElevation > 0) {
+                            lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.elevationData.maxElevation.toFloat(), summitEntry))
                         }
                     }
                 }
@@ -272,7 +272,7 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
                 label = "Height meters"
                 if (sortedEntries != null) {
                     for (summitEntry in sortedEntries) {
-                        lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.heightMeter.toFloat(), summitEntry))
+                        lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.elevationData.elevationGain.toFloat(), summitEntry))
                     }
                 }
             }
@@ -305,7 +305,7 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
         override fun refreshContent(e: Entry?, highlight: Highlight?) {
             try {
                 val summitEntry = e?.data as SummitEntry
-                tvContent?.text = String.format("%s\n%s\n%s hm", summitEntry.name, summitEntry.getDateAsString(), summitEntry.heightMeter) // set the entry-value as the display text
+                tvContent?.text = String.format("%s\n%s\n%s hm", summitEntry.name, summitEntry.getDateAsString(), summitEntry.elevationData.elevationGain) // set the entry-value as the display text
             } catch (ex: Exception) {
                 ex.printStackTrace()
             }
