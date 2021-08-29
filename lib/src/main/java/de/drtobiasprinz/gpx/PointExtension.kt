@@ -1,5 +1,6 @@
 package de.drtobiasprinz.gpx
 
+import android.view.VelocityTracker
 import de.drtobiasprinz.gpx.xml.XmlWritable
 import de.drtobiasprinz.gpx.xml.XmlWrite
 import io.reactivex.Observable
@@ -11,7 +12,8 @@ data class PointExtension(
         val power: Int? = null,
         val speed: Double? = null,
         val atemp: Double? = null,
-        var slope: Double? = null
+        var slope: Double? = null,
+        var verticalVelocity: Double? = null
 ) : XmlWritable {
 
     override val writeOperations: Observable<XmlWrite>
@@ -23,7 +25,8 @@ data class PointExtension(
                         optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_HR}", heartRate?.toString()),
                         optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_POWER}", power?.toString()),
                         optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_SPEED}", speed?.toString()),
-                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_SLOPE}", slope?.toString())
+                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_SLOPE}", slope?.toString()),
+                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_VERT_VELOCITY}", slope?.toString())
                 )
         )
 
@@ -52,5 +55,6 @@ data class PointExtension(
         const val TAG_SPEED = "speed"
         const val TAG_POWER = "power"
         const val TAG_SLOPE = "slope"
+        const val TAG_VERT_VELOCITY = "vvelocity"
     }
 }

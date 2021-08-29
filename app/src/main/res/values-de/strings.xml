@@ -291,5 +291,8 @@ von
     <string name="duration">Dauer</string>
     <string name="longest_duration">Längest Dauer</string>
     <string name="max_slope">Max. Steigung</string>
+    <string name="max_verticalVelocity_1Min">vert. Geschw. 1Min</string>
+    <string name="max_verticalVelocity_10Min">vert. Geschw. 10min</string>
+    <string name="max_verticalVelocity_1h">vert. Geschw. 1h</string>
 
 </resources>

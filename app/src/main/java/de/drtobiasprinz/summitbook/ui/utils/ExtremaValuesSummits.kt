@@ -39,6 +39,9 @@ class ExtremaValuesSummits(private val entries: ArrayList<SummitEntry>) {
     var minTopElevation = topElevationMinMax?.first?.elevationData?.maxElevation ?: 0
     var maxTopElevation = topElevationMinMax?.second?.elevationData?.maxElevation ?: 0
     var topSlopeMinMax = getMinMax { e -> e.elevationData.maxSlope }
+    var topVerticalVelocity1MinMinMax = getMinMax { e -> e.elevationData.maxVerticalVelocity1Min }
+    var topVerticalVelocity10MinMinMax = getMinMax { e -> e.elevationData.maxVerticalVelocity10Min }
+    var topVerticalVelocity1hMinMax = getMinMax { e -> e.elevationData.maxVerticalVelocity1h }
 
     var averageHRMinMax = getMinMax { e -> e.activityData?.averageHR ?: 0 }
 

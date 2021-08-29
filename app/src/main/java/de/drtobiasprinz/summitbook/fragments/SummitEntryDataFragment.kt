@@ -66,6 +66,12 @@ class SummitEntryDataFragment : Fragment() {
                     Pair(floor(extrema?.kilometersMinMax?.first?.kilometers ?: 0.0).toInt(), ceil(extrema?.kilometersMinMax?.second?.kilometers ?: 0.0).toInt()))
             setText(localSummitEntry.elevationData.maxElevation, "hm", root.findViewById(R.id.top_elevationText), root.findViewById(R.id.top_elevation),
                     Pair(extrema?.topElevationMinMax?.first?.elevationData?.maxElevation ?: 0, extrema?.topElevationMinMax?.second?.elevationData?.maxElevation ?: 0))
+            setText(localSummitEntry.elevationData.maxVerticalVelocity1Min, "m", root.findViewById(R.id.top_verticalVelocity1MinText), root.findViewById(R.id.top_verticalVelocity1Min),
+                    Pair(extrema?.topVerticalVelocity1MinMinMax?.first?.elevationData?.maxVerticalVelocity1Min ?: 0.0, extrema?.topVerticalVelocity1MinMinMax?.second?.elevationData?.maxVerticalVelocity1Min ?: 0.0), factor = 60, digits = 0)
+            setText(localSummitEntry.elevationData.maxVerticalVelocity10Min, "m", root.findViewById(R.id.top_verticalVelocity10MinText), root.findViewById(R.id.top_verticalVelocity10Min),
+                    Pair(extrema?.topVerticalVelocity10MinMinMax?.first?.elevationData?.maxVerticalVelocity10Min ?: 0.0, extrema?.topVerticalVelocity10MinMinMax?.second?.elevationData?.maxVerticalVelocity10Min ?: 0.0), factor = 600, digits = 0)
+            setText(localSummitEntry.elevationData.maxVerticalVelocity1h, "m", root.findViewById(R.id.top_verticalVelocity1hText), root.findViewById(R.id.top_verticalVelocity1h),
+                    Pair(extrema?.topVerticalVelocity1hMinMax?.first?.elevationData?.maxVerticalVelocity1h ?: 0.0, extrema?.topVerticalVelocity1hMinMax?.second?.elevationData?.maxVerticalVelocity1h ?: 0.0), factor = 3600, digits = 0)
             setText(localSummitEntry.elevationData.maxSlope, "%", root.findViewById(R.id.top_slopeText), root.findViewById(R.id.top_slope),
                     Pair(extrema?.topSlopeMinMax?.first?.elevationData?.maxSlope ?: 0.0, extrema?.topSlopeMinMax?.second?.elevationData?.maxSlope ?: 0.0))
             setText(localSummitEntry.velocityData.avgVelocity, "km/h", root.findViewById(R.id.paceText), root.findViewById(R.id.pace),
@@ -316,7 +322,9 @@ class SummitEntryDataFragment : Fragment() {
         root.findViewById<TextView>(R.id.power5hText).visibility = visibility
     }
 
-    private fun setText(value: Double, unit: String, info: TextView, textView: TextView, minMax: Pair<Number?, Number?> = Pair(null, null), reverse: Boolean = false, toHHms: Boolean = false, visibility: Int = View.VISIBLE) {
+    private fun setText(value: Double, unit: String, info: TextView, textView: TextView,
+                        minMax: Pair<Number?, Number?> = Pair(null, null), reverse: Boolean = false,
+                        toHHms: Boolean = false, visibility: Int = View.VISIBLE, digits: Int = 1, factor: Int = 1) {
         if (value <= 0.0) {
             info.visibility = View.GONE
             textView.visibility = View.GONE
@@ -328,7 +336,7 @@ class SummitEntryDataFragment : Fragment() {
                 textView.text = String.format("%02dh %02dm", TimeUnit.MILLISECONDS.toHours(valueInMs),
                         TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1))
             } else {
-                textView.text = String.format(Locale.US, "%.1f %s", value, unit)
+                textView.text = String.format(Locale.US, "%.${digits}f %s", value*factor, unit)
             }
             drawCircleWithIndication(textView, minMax, value, reverse)
         }

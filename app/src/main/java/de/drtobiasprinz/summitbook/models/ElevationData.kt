@@ -1,13 +1,17 @@
 package de.drtobiasprinz.summitbook.models
 
 class ElevationData constructor(
-        var maxElevation: Int, var elevationGain: Int, var maxVerticalVelocity: Double = 0.0,
+        var maxElevation: Int,
+        var elevationGain: Int,
+        var maxVerticalVelocity1Min: Double = 0.0,
+        var maxVerticalVelocity10Min: Double = 0.0,
+        var maxVerticalVelocity1h: Double = 0.0,
         var maxSlope: Double = 0.0
 ) {
 
 
     override fun toString(): String {
-        return "$elevationGain,$maxVerticalVelocity,$maxSlope"
+        return "$elevationGain,$maxVerticalVelocity1Min,$maxVerticalVelocity10Min,$maxVerticalVelocity1h,$maxSlope"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -18,7 +22,9 @@ class ElevationData constructor(
 
         if (maxElevation != other.maxElevation) return false
         if (elevationGain != other.elevationGain) return false
-        if (maxVerticalVelocity != other.maxVerticalVelocity) return false
+        if (maxVerticalVelocity1Min != other.maxVerticalVelocity1Min) return false
+        if (maxVerticalVelocity10Min != other.maxVerticalVelocity10Min) return false
+        if (maxVerticalVelocity1h != other.maxVerticalVelocity1h) return false
         if (maxSlope != other.maxSlope) return false
 
         return true
@@ -27,7 +33,9 @@ class ElevationData constructor(
     override fun hashCode(): Int {
         var result = maxElevation
         result = 31 * result + elevationGain
-        result = 31 * result + maxVerticalVelocity.hashCode()
+        result = 31 * result + maxVerticalVelocity1Min.hashCode()
+        result = 31 * result + maxVerticalVelocity10Min.hashCode()
+        result = 31 * result + maxVerticalVelocity1h.hashCode()
         result = 31 * result + maxSlope.hashCode()
         return result
     }
@@ -39,6 +47,10 @@ class ElevationData constructor(
             if (inputData.size == 3) {
                 return ElevationData(maxElevation, inputData[0].toInt(),
                         inputData[1].toDouble(), inputData[2].toDouble())
+            } else if (inputData.size == 5) {
+                return ElevationData(maxElevation, inputData[0].toInt(),
+                        inputData[1].toDouble(), inputData[2].toDouble(), inputData[3].toDouble(),
+                        inputData[4].toDouble())
             } else {
                 val elevationGain = if (inputData.size == 1) inputData.first().toInt() else 0
                 return ElevationData(maxElevation, elevationGain)

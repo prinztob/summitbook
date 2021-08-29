@@ -221,14 +221,177 @@
 
             </LinearLayout>
 
+
+            <LinearLayout
+                android:id="@+id/layoutMaxSlope"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginRight="5dp"
+                android:background="@drawable/selector_box"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/max_slope"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:textColor="#999" />
+
+                <TextView
+                    android:id="@+id/textMaxSlope"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="#333"
+                    android:textSize="35sp" />
+
+                <TextView
+                    android:id="@+id/textMaxSlopeInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="#333"
+                    android:textSize="20sp" />
+
+            </LinearLayout>
+
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="2">
+
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/layoutMaxVerticalVelocity1Min"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/max_verticalVelocity_1Min"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textMaxVerticalVelocity1Min"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textMaxVerticalVelocity1MinInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layoutMaxVerticalVelocity10Min"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/max_verticalVelocity_10Min"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textMaxVerticalVelocity10Min"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textMaxVerticalVelocity10MinInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layoutMaxVerticalVelocity1h"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/max_verticalVelocity_1h"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#999" />
+
+                        <TextView
+                            android:id="@+id/textMaxVerticalVelocity1h"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="35sp" />
+
+                        <TextView
+                            android:id="@+id/textMaxVerticalVelocity1hInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="#333"
+                            android:textSize="20sp" />
+
+                    </LinearLayout>
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="2">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
                     <LinearLayout
                         android:id="@+id/layoutTopSpeed"
                         android:layout_width="wrap_content"
@@ -376,6 +539,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutTopSpeed15Km"
                         android:layout_width="match_parent"
@@ -412,6 +576,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutTopSpeed20Km"
                         android:layout_width="match_parent"
@@ -448,6 +613,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutTopSpeed30Km"
                         android:layout_width="match_parent"
@@ -484,6 +650,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutTopSpeed40Km"
                         android:layout_width="match_parent"
@@ -520,6 +687,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutTopSpeed50Km"
                         android:layout_width="match_parent"
@@ -556,6 +724,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutTopSpeed75Km"
                         android:layout_width="match_parent"
@@ -592,6 +761,7 @@
                             android:textSize="20sp" />
 
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/layoutTopSpeed100Km"
                         android:layout_width="match_parent"

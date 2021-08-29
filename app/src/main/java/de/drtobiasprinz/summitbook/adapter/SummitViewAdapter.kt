@@ -23,6 +23,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
+import de.drtobiasprinz.summitbook.models.ElevationData
 import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.models.VelocityData
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
@@ -112,6 +113,8 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         }
         if (summitEntry.activityData == null || summitEntry.activityData?.activityId == null) {
             addVelocityData?.visibility = View.GONE
+        } else {
+            addVelocityData?.visibility = View.VISIBLE
         }
         addVelocityData?.setOnClickListener { v: View? ->
             if (pythonExecutor != null && summitEntry.activityData != null && summitEntry.activityData?.activityId != null) {
@@ -127,6 +130,13 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
                         val slopeCalculator = SummitSlope()
                         slopeCalculator.calculateMaxSlope(summitEntry.gpsTrack?.gpxTrack)
                         summitEntry.elevationData.maxSlope = slopeCalculator.maxSlope
+
+                        slopeCalculator.calculateMaxVerticalVelocity(summitEntry.gpsTrack?.gpxTrack, 60.0)
+                        summitEntry.elevationData.maxVerticalVelocity1Min = slopeCalculator.maxVerticalVelocity
+                        slopeCalculator.calculateMaxVerticalVelocity(summitEntry.gpsTrack?.gpxTrack, 600.0)
+                        summitEntry.elevationData.maxVerticalVelocity10Min = slopeCalculator.maxVerticalVelocity
+                        slopeCalculator.calculateMaxVerticalVelocity(summitEntry.gpsTrack?.gpxTrack, 3600.0)
+                        summitEntry.elevationData.maxVerticalVelocity1h = slopeCalculator.maxVerticalVelocity
                         if (summitEntry.elevationData.maxSlope > 0) {
                             sortFilterHelper.databaseHelper.updateElevationDataSummit(sortFilterHelper.database, summitEntry._id, summitEntry.elevationData)
                         }
@@ -135,6 +145,8 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
                 if (summitEntry.velocityData.oneKilometer > 0) {
                     summitEntry.velocityData = VelocityData(summitEntry.velocityData.avgVelocity, summitEntry.velocityData.maxVelocity, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                     sortFilterHelper.databaseHelper.updateVelocityDataSummit(sortFilterHelper.database, summitEntry._id, summitEntry.velocityData)
+                    summitEntry.elevationData = ElevationData(summitEntry.elevationData.maxElevation, summitEntry.elevationData.elevationGain, 0.0, 0.0, 0.0, 0.0)
+                    sortFilterHelper.databaseHelper.updateElevationDataSummit(sortFilterHelper.database, summitEntry._id, summitEntry.elevationData)
                     addVelocityData.setImageResource(R.drawable.ic_baseline_more_time_24)
                 } else {
                     val splitsFile = File("${SummitViewFragment.activitiesDir.absolutePath}/activity_${summitEntry.activityData?.activityId}_splits.json")

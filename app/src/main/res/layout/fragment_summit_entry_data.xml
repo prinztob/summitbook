@@ -157,6 +157,69 @@
                     android:paddingTop="5dp"
                     android:textAppearance="?android:attr/textAppearanceSmall" />
 
+                <TextView
+                    android:id="@+id/top_verticalVelocity1MinText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/max_verticalVelocity_1Min"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/icons8_mountain_20" />
+
+                <TextView
+                    android:id="@+id/top_verticalVelocity1Min"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:paddingTop="5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                <TextView
+                    android:id="@+id/top_verticalVelocity10MinText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/max_verticalVelocity_10Min"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/icons8_mountain_20" />
+
+                <TextView
+                    android:id="@+id/top_verticalVelocity10Min"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:paddingTop="5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                <TextView
+                    android:id="@+id/top_verticalVelocity1hText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/max_verticalVelocity_1h"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/icons8_mountain_20" />
+
+                <TextView
+                    android:id="@+id/top_verticalVelocity1h"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:paddingTop="5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+
 
                 <TextView
                     android:id="@+id/paceText"

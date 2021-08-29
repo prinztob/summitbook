@@ -76,6 +76,16 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
             setTextViewData(extremaValuesSummits?.topSpeedMinMax?.second, R.id.layoutTopSpeed, R.id.textTopSpeed, R.id.textTopSpeedInfo, "km/h",
                     getValueOrNull(extremaValuesSummits?.topSpeedMinMax?.second) { e -> e.velocityData.maxVelocity}, 1)
 
+            setTextViewData(extremaValuesSummits?.topSlopeMinMax?.second, R.id.layoutMaxSlope, R.id.textMaxSlope, R.id.textMaxSlopeInfo, "%",
+                    getValueOrNull(extremaValuesSummits?.topSlopeMinMax?.second) { e -> e.elevationData.maxSlope}, 1)
+
+            setTextViewData(extremaValuesSummits?.topVerticalVelocity1MinMinMax?.second, R.id.layoutMaxVerticalVelocity1Min, R.id.textMaxVerticalVelocity1Min, R.id.textMaxVerticalVelocity1MinInfo, "m",
+                    getValueOrNull(extremaValuesSummits?.topVerticalVelocity1MinMinMax?.second) { e -> e.elevationData.maxVerticalVelocity1Min }, factor = 60, digits = 0)
+            setTextViewData(extremaValuesSummits?.topVerticalVelocity10MinMinMax?.second, R.id.layoutMaxVerticalVelocity10Min, R.id.textMaxVerticalVelocity10Min, R.id.textMaxVerticalVelocity10MinInfo, "m",
+                    getValueOrNull(extremaValuesSummits?.topVerticalVelocity10MinMinMax?.second) { e -> e.elevationData.maxVerticalVelocity10Min }, factor = 600, digits = 0)
+            setTextViewData(extremaValuesSummits?.topVerticalVelocity1hMinMax?.second, R.id.layoutMaxVerticalVelocity1h, R.id.textMaxVerticalVelocity1h, R.id.textMaxVerticalVelocity1hInfo, "m",
+                    getValueOrNull(extremaValuesSummits?.topVerticalVelocity1hMinMax?.second) { e -> e.elevationData.maxVerticalVelocity1h }, factor = 3600, digits = 0)
+
             setTextViewData(extremaValuesSummits?.oneKmMinMax?.second, R.id.layoutTopSpeed1Km, R.id.textTopSpeed1Km, R.id.textTopSpeed1KmInfo, "km/h",
                     getValueOrNull(extremaValuesSummits?.oneKmMinMax?.second) { e -> e.velocityData.oneKilometer}, 1)
             setTextViewData(extremaValuesSummits?.fiveKmMinMax?.second, R.id.layoutTopSpeed5Km, R.id.textTopSpeed5Km, R.id.textTopSpeed5KmInfo, "km/h",
@@ -152,7 +162,8 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
         return if (entry != null) f(entry) else 0.0
     }
 
-    private fun setTextViewData(entry: SummitEntry?, layoutId: Int, dataId: Int, infoId: Int, unit: String?, value: Double, digits:Int=0) {
+    private fun setTextViewData(entry: SummitEntry?, layoutId: Int, dataId: Int, infoId: Int,
+                                unit: String?, value: Double, digits:Int = 0, factor: Int = 1) {
         val layout = statisticFragmentView.findViewById<LinearLayout?>(layoutId)
         val data = statisticFragmentView.findViewById<TextView?>(dataId)
         val info = statisticFragmentView.findViewById<TextView?>(infoId)
@@ -165,9 +176,9 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
             }
             layout?.visibility = View.VISIBLE
             if (digits > 0) {
-                data?.text = String.format(Locale.ENGLISH, "%."+digits+"f %s", value, unit)
+                data?.text = String.format(Locale.ENGLISH, "%."+digits+"f %s", value*factor, unit)
             } else {
-                data?.text = String.format(Locale.ENGLISH, "%s %s", value.roundToLong(), unit)
+                data?.text = String.format(Locale.ENGLISH, "%s %s", (value*factor).roundToLong(), unit)
             }
             info?.text = String.format(Locale.ENGLISH, "%s: %s\n%s: %s", getString(R.string.name), entry.name, getString(R.string.tour_date), entry.getDateAsString())
         } else {

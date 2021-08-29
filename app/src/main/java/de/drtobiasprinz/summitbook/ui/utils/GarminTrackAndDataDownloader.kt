@@ -88,7 +88,7 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
                 entries.map { it.places }.flatten(),
                 entries.map { it.countries }.flatten(),
                 if (entries.size > 1) "merge of " + entries.map { it.name }.joinToString (", ") else "",
-                ElevationData.parse(entries.sumBy { it.elevationData.elevationGain },entries.maxBy { it.elevationData.maxElevation }?.elevationData?.maxElevation ?: 0),
+                ElevationData.parse(entries.maxBy { it.elevationData.maxElevation }?.elevationData?.maxElevation ?: 0, entries.sumBy { it.elevationData.elevationGain }),
                 entries.sumByDouble { it.kilometers },
                 VelocityData.parse( entries.sumByDouble { it.kilometers } / activityDuration.sum(),
                         entries.maxBy { it.velocityData.maxVelocity }?.velocityData?.maxVelocity ?: 0.0),
