@@ -354,9 +354,11 @@ class SummitEntryTrackFragment : Fragment() {
         params?.height = (metrics.heightPixels * height).toInt()
         osMap.layoutParams = params
         val maxSlopeButton = root.findViewById<ImageButton>(R.id.gps_max_slope)
-        if (hasPoints) {
+        val databaseLocal = database
+        val helperLocal = helper
+        if (hasPoints && databaseLocal != null && helperLocal != null) {
             val connectedEntries = mutableListOf<SummitEntry>()
-            localSummitEntry.setConnectedEntries(connectedEntries, database!!, helper!!)
+            localSummitEntry.setConnectedEntries(connectedEntries, databaseLocal, helperLocal)
             for (entry in connectedEntries) {
                 OpenStreetMapUtils.drawTrack(entry, false, osMap, false, color = Color.BLACK)
             }

@@ -359,17 +359,16 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         }
         val localSummitEntry = currentSummitEntry
         if (addConnectedEntryString && localSummitEntry != null) {
-            for (entry in sortFilterHelper.entries) {
-                val diffInMilliSec: Long = localSummitEntry.date.time - entry.date.time
-                val diffInDays: Double = round(TimeUnit.MILLISECONDS.toDays(diffInMilliSec).toDouble())
-                if (diffInDays <= 1.0 && diffInDays > 0.0) {
+            for (entry in sortFilterHelper.entries.filter { it != currentSummitEntry }) {
+                val differenceInMilliSec: Long = localSummitEntry.date.time - entry.date.time
+                val differenceInDays: Double = round(TimeUnit.MILLISECONDS.toDays(differenceInMilliSec).toDouble())
+                if (differenceInDays in 0.0..1.0) {
                     connectedSummits.add(entry)
                     suggestions.add(entry.getConnectedEntryString(requireContext()))
                 }
             }
         }
-        val adapter = ArrayAdapter<String>(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions.distinct())
-        return adapter
+        return ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions.distinct())
     }
 
     private fun addChipWithSuggestions(view: NachoTextView, adapter: ArrayAdapter<String>) {

@@ -71,7 +71,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
             tableLayout.removeAllViews()
             drawTable(view)
         }
-        addSummitsButton = view.findViewById(R.id.add_summit_single)
+        addSummitsButton = view.findViewById(R.id.update_data)
         addSummitsButton.isEnabled = false
         addSummitsButton.setOnClickListener {
             if (pythonExecutor != null && areEntriesChecked()) {

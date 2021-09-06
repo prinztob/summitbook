@@ -15,7 +15,7 @@ class SummitSlope() {
     var slopeGraph: MutableList<Entry> = mutableListOf()
     private val REQUIRED_R2 = 0.9
 
-    fun calculateMaxSlope(gpxTrack: Gpx?, binSizeMeter: Double = 100.0, withRegression: Boolean = true, requiredR2: Double = REQUIRED_R2) {
+    fun calculateMaxSlope(gpxTrack: Gpx?, binSizeMeter: Double = 100.0, withRegression: Boolean = true, requiredR2: Double = REQUIRED_R2): Double {
         if (gpxTrack != null) {
             val trackPoints = getTrackPoints(gpxTrack)
             if (trackPoints.size > 0 && trackPoints.first().extension?.distance == null) {
@@ -29,10 +29,11 @@ class SummitSlope() {
                         ?: 0f, (it.first.extension?.slope?.toFloat() ?: 0f) * 100, it.first)
             } as MutableList
         }
+        return maxSlope
     }
 
 
-    fun calculateMaxVerticalVelocity(gpxTrack: Gpx?, binSizeSeconds: Double = 60.0, minimalDelta: Int = 10) {
+    fun calculateMaxVerticalVelocity(gpxTrack: Gpx?, binSizeSeconds: Double = 60.0, minimalDelta: Int = 10): Double {
         if (gpxTrack != null) {
             val trackPoints = getTrackPoints(gpxTrack)
             if (trackPoints.size > 0 && trackPoints.first().extension?.distance == null) {
@@ -45,6 +46,7 @@ class SummitSlope() {
             maxVerticalVelocity = (maxVerticalVelocityTrackPoint?.first?.extension?.verticalVelocity
                     ?: 0.0)
         }
+        return maxVerticalVelocity
     }
 
     private fun getMaximalValues(
@@ -56,11 +58,11 @@ class SummitSlope() {
         var trackPointsForInterval = mutableListOf<TrackPoint>()
         var i = 0
         val steps = when {
-            trackPoints.size > 50000 -> 25
-            trackPoints.size > 25000 -> 13
-            trackPoints.size > 12500 -> 6
-            trackPoints.size > 6250 -> 3
-            else -> 1
+            trackPoints.size > 50000 -> if (useSecondsForBinning) 75 else 25
+            trackPoints.size > 25000 -> if (useSecondsForBinning) 50 else 13
+            trackPoints.size > 12500 -> if (useSecondsForBinning) 30 else 6
+            trackPoints.size > 6250 -> if (useSecondsForBinning) 15 else 3
+            else -> if (useSecondsForBinning) 5 else 1
         }
         var middleEntry: TrackPoint? = null
         while (i < trackPoints.size) {

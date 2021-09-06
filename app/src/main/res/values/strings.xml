@@ -286,6 +286,7 @@
     <string name="ignore">Ignore</string>
     <string name="back">Back</string>
     <string name="revert_ignored_summits">Clean ignored summits</string>
+    <string name="delete">Delete all</string>
     <string name="will_be_updated_soon">Will be updated soon</string>
     <string name="duration">Duration</string>
     <string name="longest_duration">Longest duration</string>
@@ -293,5 +294,6 @@
     <string name="max_verticalVelocity_1Min">Max vertical velocity in 1min</string>
     <string name="max_verticalVelocity_10Min">Max vertical velocity in 10min</string>
     <string name="max_verticalVelocity_1h">Max vertical velocity in 1h</string>
+    <string name="ok">OK</string>
 
 </resources>

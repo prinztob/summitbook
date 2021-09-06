@@ -287,6 +287,8 @@ von
     <string name="ignore">Ignorieren</string>
     <string name="back">Zurück</string>
     <string name="revert_ignored_summits">Lösche ignorierte Gipfel</string>
+    <string name="delete">Löschen</string>
+    <string name="ok">OK</string>
     <string name="will_be_updated_soon">Wird gleich geupdated</string>
     <string name="duration">Dauer</string>
     <string name="longest_duration">Längest Dauer</string>

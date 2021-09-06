@@ -40,6 +40,13 @@ class ElevationData constructor(
         return result
     }
 
+    fun clone(): ElevationData {
+        return ElevationData(maxElevation, elevationGain, maxVerticalVelocity1Min, maxVerticalVelocity10Min, maxVerticalVelocity1h, maxSlope)
+    }
+
+    fun hasAdditionalData(): Boolean {
+        return maxVerticalVelocity1Min > 0.0 || maxVerticalVelocity10Min > 0.0 || maxVerticalVelocity1h > 0.0 || maxSlope > 0.0
+    }
 
     companion object {
 

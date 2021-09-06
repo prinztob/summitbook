@@ -54,6 +54,15 @@ class VelocityData constructor(
         return result
     }
 
+    fun clone(): VelocityData {
+        return VelocityData(avgVelocity, maxVelocity, oneKilometer, fiveKilometer, tenKilometers, fifteenKilometers, twentyKilometers, thirtyKilometers, fortyKilometers, fiftyKilometers, seventyFiveKilometers, hundredKilometers)
+    }
+
+
+    fun hasAdditionalData(): Boolean {
+        return oneKilometer > 0.0 || fiveKilometer > 0.0 || tenKilometers > 0.0 || fifteenKilometers > 0.0 || twentyKilometers > 0.0 || thirtyKilometers > 0.0 || fortyKilometers > 0.0 || fiftyKilometers > 0.0 || seventyFiveKilometers > 0.0 || hundredKilometers > 0.0
+    }
+
     companion object {
 
         fun parse(inputData: List<String>, topSpeed: Double): VelocityData {

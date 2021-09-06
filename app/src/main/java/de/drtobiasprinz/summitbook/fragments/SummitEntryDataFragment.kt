@@ -81,7 +81,7 @@ class SummitEntryDataFragment : Fragment() {
 
             setAdditionalSpeedData(localSummitEntry, extrema)
             val expandMoreSpeedData: TextView = root.findViewById(R.id.expand_more_speed_data)
-            if (localSummitEntry.velocityData.oneKilometer > 0.0) {
+            if (localSummitEntry.velocityData.hasAdditionalData()) {
                 expandMoreSpeedData.visibility = View.VISIBLE
                 expandMoreSpeedData.setOnClickListener {
                     if (expandMoreSpeedData.text == getString(R.string.more_speed)) {

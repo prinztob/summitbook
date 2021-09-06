@@ -78,6 +78,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         File(storage, BookmarkEntry.subDirForGpsTracks).mkdirs()
         File(storage, SummitEntry.subDirForImages).mkdirs()
         val entries = helper.getAllSummits(database, 10)
+        entries.sortWith(compareBy { it.date })
+        entries.reverse()
         val factory = LayoutInflater.from(this)
         val filterAndSortView = factory.inflate(R.layout.dialog_filter_and_sort, null)
         sortFilterHelper = SortFilterHelper(filterAndSortView, this, entries, helper, database)
