@@ -15,10 +15,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import de.drtobiasprinz.summitbook.MainActivity
-import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
-import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
+import de.drtobiasprinz.summitbook.*
 import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
@@ -97,8 +94,18 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
             sortFilterHelper.databaseHelper.updateIsFavoriteSummit(db, summitEntry._id, summitEntry.isFavorite)
         }
         val addImageButton = cardView.findViewById<ImageButton?>(R.id.entry_add_image)
-        val listener = ImagePickerListner()
-        addImageButton?.let { listener.setListener(it, summitEntry, this, db, sortFilterHelper.databaseHelper) }
+        if (summitEntry.hasImagePath()) {
+            addImageButton.setOnClickListener { v: View? ->
+                val context = v?.context
+                val intent = Intent(context, AddImagesActivity::class.java)
+                intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry._id)
+                intent.putExtra(SelectOnOsMapActivity.SUMMIT_POSITION, position)
+                v?.context?.startActivity(intent)
+            }
+        } else {
+            val listener = ImagePickerListener()
+            listener.setListener(addImageButton, summitEntry, this, db, sortFilterHelper.databaseHelper)
+        }
         val addVelocityData = cardView.findViewById<ImageButton?>(R.id.entry_add_velocity_data)
         if (summitEntry.velocityData.hasAdditionalData() || summitEntry.elevationData.hasAdditionalData()) {
             addVelocityData?.setImageResource(R.drawable.ic_baseline_speed_24)

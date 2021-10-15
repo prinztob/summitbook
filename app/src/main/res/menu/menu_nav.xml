@@ -27,6 +27,10 @@
             android:icon="@drawable/ic_map_black_24dp"
             android:title="@string/nav_osmap" />
         <item
+            android:id="@+id/nav_diashow"
+            android:icon="@drawable/ic_baseline_photo_album_24"
+            android:title="@string/nav_diashow" />
+        <item
             android:id="@+id/export_csv"
             android:icon="@drawable/ic_file_upload_black_24dp"
             android:title="@string/nav_export" />

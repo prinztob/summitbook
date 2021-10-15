@@ -62,6 +62,10 @@ class SummitEntry @JvmOverloads constructor(
         return Paths.get(rootDirectoryImages.toString(), String.format(Locale.ENGLISH, "%s.jpg", id))
     }
 
+    fun getImageUrl(id: Int): String {
+        return "file://" + Paths.get(rootDirectoryImages.toString(), String.format(Locale.ENGLISH, "%s.jpg", id)).toString()
+    }
+
     fun getNextImagePath(addIdToImageIds: Boolean = false): Path {
         var id = 1001
         if (imageIds.isEmpty()) {

@@ -12,8 +12,7 @@ import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
 import de.drtobiasprinz.summitbook.models.SummitEntry
 import java.io.File
 
-class ImagePickerListner {
-
+class ImagePickerListener {
 
     fun setListener(addImageButton: ImageButton, summitEntry: SummitEntry, adapter: SummitViewAdapter, database: SQLiteDatabase, helper: SummitBookDatabaseHelper) {
         val context: AppCompatActivity? = MainActivity.mainActivity

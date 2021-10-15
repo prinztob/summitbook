@@ -30,7 +30,10 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.material.navigation.NavigationView
+import com.stfalcon.imageviewer.StfalconImageViewer
 import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
 import de.drtobiasprinz.summitbook.fragments.*
 import de.drtobiasprinz.summitbook.models.BookmarkEntry
@@ -158,6 +161,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.nav_diagrams -> commitFragment(LineChartFragment(sortFilterHelper))
             R.id.nav_barChart -> commitFragment(BarChartFragment(sortFilterHelper))
             R.id.nav_osmap -> commitFragment(OpenStreetMapFragment(sortFilterHelper))
+            R.id.nav_diashow -> {
+                val imagePathsOfAllImages = sortFilterHelper.filteredEntries.map { entry -> entry.imageIds.map { entry.getImageUrl(it) } }.flatten()
+                StfalconImageViewer.Builder(this, imagePathsOfAllImages) { view, imageUrl ->
+                    Glide.with(this)
+                            .load(imageUrl)
+                            .fitCenter()
+                            .diskCacheStrategy(DiskCacheStrategy.NONE)
+                            .skipMemoryCache(true)
+                            .into(view)
+                }.show()
+            }
             R.id.import_csv -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
