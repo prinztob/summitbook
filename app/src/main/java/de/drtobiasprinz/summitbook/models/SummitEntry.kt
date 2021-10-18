@@ -73,7 +73,7 @@ class SummitEntry @JvmOverloads constructor(
                 rootDirectoryImages.mkdir()
             }
         } else {
-            id = (imageIds.max() ?: id) + 1
+            id = (imageIds.maxOrNull() ?: id) + 1
         }
         if (addIdToImageIds) {
             imageIds.add(id)

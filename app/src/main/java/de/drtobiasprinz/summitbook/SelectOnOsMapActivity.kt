@@ -152,9 +152,11 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     helper.updateTrackBoundingBox(database, entry._id, trackBoundingBox)
                 }
                 val entries = adapter.summitEntries
-                for (i in entries.indices) {
-                    if (entries[i]._id == summitEntryId) {
-                        entries[0] = entry
+                if (entries.isNotEmpty()) {
+                    for (i in entries.indices) {
+                        if (entries[i]._id == summitEntryId) {
+                            entries[0] = entry
+                        }
                     }
                 }
                 val holder = summitRecycler.findViewHolderForAdapterPosition(summitEntryPosition) as SummitViewAdapter.ViewHolder

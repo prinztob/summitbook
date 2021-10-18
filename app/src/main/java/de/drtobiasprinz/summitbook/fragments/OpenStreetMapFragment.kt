@@ -39,6 +39,7 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper) : Fragment()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setRetainInstance(true)
         setHasOptionsMenu(true)
         val ctx = requireContext()
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx))
@@ -132,18 +133,6 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper) : Fragment()
         Log.d(TAG, "onDestroy")
         gotoLocationDialog?.dismiss()
         requireActivity().findViewById<View>(R.id.add_new_summit).visibility = View.VISIBLE
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        if (id == R.id.action_sort) {
-            sortFilterHelper.setFragment(this)
-            sortFilterHelper.setAllEntries(summitEntries)
-            sortFilterHelper.showDialog()
-            sortFilterHelper.apply()
-            return true
-        }
-        return super.onOptionsItemSelected(item)
     }
 
     private fun addOverlays() {

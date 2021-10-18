@@ -308,7 +308,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         sortFilterHelper.entries.forEach {
             suggestions.addAll(it.participants)
         }
-        val adapter = ArrayAdapter<String>(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions.distinct())
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions.distinct())
         participantsView = view.findViewById(R.id.participants)
         addChipWithSuggestions(participantsView, adapter)
     }
@@ -341,7 +341,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         sortFilterHelper.entries.forEach {
             suggestions.addAll(it.countries)
         }
-        val adapter = ArrayAdapter<String>(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions.distinct())
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions.distinct())
         countriesView = view.findViewById(R.id.countries)
         addChipWithSuggestions(countriesView, adapter)
     }
@@ -602,8 +602,8 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
                     val allKnownEntries = getAllDownloadedSummitsFromGarmin(SummitViewFragment.activitiesDir)
-                    val firstDate = allKnownEntries.minBy { it.getDateAsFloat() }?.getDateAsString()
-                    val lastDate = allKnownEntries.maxBy { it.getDateAsFloat() }?.getDateAsString()
+                    val firstDate = allKnownEntries.minByOrNull { it.getDateAsFloat() }?.getDateAsString()
+                    val lastDate = allKnownEntries.maxByOrNull { it.getDateAsFloat() }?.getDateAsString()
                     val knownEntriesOnDate = allKnownEntries.filter { it.getDateAsString() == dateAsString}
                     if (dateAsString != firstDate && dateAsString != lastDate && knownEntriesOnDate.isNotEmpty()) {
                         entries = knownEntriesOnDate

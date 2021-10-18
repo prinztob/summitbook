@@ -25,7 +25,6 @@ import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
 import de.drtobiasprinz.summitbook.ui.SwipeToDeleteCallback
-import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.io.File
 import java.util.*
@@ -35,6 +34,12 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
     private lateinit var summitEntries: ArrayList<SummitEntry>
     private lateinit var myContext: FragmentActivity
     private var filteredEntries: ArrayList<SummitEntry>? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setRetainInstance(true)
+    }
+
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?
@@ -53,7 +58,6 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
         val itemTouchHelper = ItemTouchHelper(SwipeToDeleteCallback(adapter, requireContext(), summitRecycler))
         itemTouchHelper.attachToRecyclerView(summitRecycler)
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        readSharedPreference(sharedPreferences)
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)
         return summitRecycler
     }
@@ -61,31 +65,6 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
     override fun onAttach(activity: Activity) {
         super.onAttach(activity)
         myContext = activity as FragmentActivity
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        if (!sortFilterHelper.allEntriesRequested) {
-            AsyncSummitTask(this).execute()
-        } else {
-            sortFilterHelper.apply()
-        }
-        optionMenu = menu
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        if (id == R.id.action_search) {
-            return true
-        }
-        if (id == R.id.action_show_new_summits) {
-            ShowNewSummitsFromGarminDialog(allEntriesFromGarmin, sortFilterHelper, pythonExecutor, progressBar).show(myContext.supportFragmentManager, "Show new summits from Garmin")
-        }
-        if (id == R.id.action_sort) {
-            sortFilterHelper.setFragment(this)
-            adapter.sort(sortFilterHelper)
-            return true
-        }
-        return super.onOptionsItemSelected(item)
     }
 
     fun getAdapter(): SummitViewAdapter {
@@ -120,7 +99,7 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
     companion object {
         lateinit var summitRecycler: RecyclerView
         private var optionMenu: Menu? = null
-        private val allEntriesFromGarmin = mutableListOf<SummitEntry>()
+        val allEntriesFromGarmin = mutableListOf<SummitEntry>()
 
         val activitiesDir = File(MainActivity.storage, "activities")
 
@@ -147,30 +126,6 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
                     else -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_9_plus_24, null) }
                 }
             }
-        }
-
-
-    }
-
-    @SuppressLint("StaticFieldLeak")
-    inner class AsyncSummitTask(private val fragement: SummitViewFragment) : AsyncTask<Void?, Void?, Void?>() {
-        var allEntries = arrayListOf<SummitEntry>()
-        val helper: SummitBookDatabaseHelper = SummitBookDatabaseHelper(context)
-        val database: SQLiteDatabase = helper.readableDatabase
-
-        override fun doInBackground(vararg params: Void?): Void? {
-            allEntries = helper.getAllSummits(database)
-            return null
-        }
-
-        override fun onPostExecute(param: Void?) {
-            database.close()
-            sortFilterHelper.update(allEntries)
-            sortFilterHelper.prepare()
-            sortFilterHelper.setAllToDefault()
-            adapter.notifyDataSetChanged()
-            updateNewSummits(activitiesDir, summitEntries, fragement.context)
-            sortFilterHelper.allEntriesRequested = true
         }
     }
 

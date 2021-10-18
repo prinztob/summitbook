@@ -34,6 +34,11 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
     private lateinit var statisticEntry: StatisticEntry
     private lateinit var statisticFragmentView: View
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setRetainInstance(true)
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {
         sortFilterHelper.setFragment(this)
@@ -186,17 +191,6 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
         }
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        if (id == R.id.action_sort) {
-            sortFilterHelper.setFragment(this)
-            summitEntries?.let { sortFilterHelper.setAllEntries(it) }
-            sortFilterHelper.showDialog()
-            sortFilterHelper.apply()
-            return true
-        }
-        return super.onOptionsItemSelected(item)
-    }
 
     override fun update(filteredSummitEntries: ArrayList<SummitEntry>?) {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())

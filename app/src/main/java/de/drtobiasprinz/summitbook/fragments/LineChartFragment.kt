@@ -41,6 +41,12 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
     private var unit: String = "hm"
     private var label: String = "Height meters"
     private var lineChart: LineChart? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setRetainInstance(true)
+    }
+
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?
@@ -57,18 +63,6 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
         listenOnDataSpinner()
         drawLineChart()
         return lineChartView
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        if (id == R.id.action_sort) {
-            sortFilterHelper.setFragment(this)
-            summitEntries?.let { sortFilterHelper.setAllEntries(it) }
-            sortFilterHelper.showDialog()
-            sortFilterHelper.apply()
-            return true
-        }
-        return super.onOptionsItemSelected(item)
     }
 
     private fun resizeChart() {

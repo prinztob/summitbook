@@ -56,6 +56,12 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     private lateinit var intervallHelper: IntervalHelper
     private var selectedDataSpinner = 0
     private var selectedXAxisSpinner = 0
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setRetainInstance(true)
+    }
+
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?
@@ -76,18 +82,6 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         listenOnDataSpinner()
         update(filteredEntries)
         return barChartView
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        if (id == R.id.action_sort) {
-            sortFilterHelper.setFragment(this)
-            summitEntries?.let { sortFilterHelper.setAllEntries(it) }
-            sortFilterHelper.showDialog()
-            sortFilterHelper.apply()
-            return true
-        }
-        return super.onOptionsItemSelected(item)
     }
 
     private fun resizeChart() {

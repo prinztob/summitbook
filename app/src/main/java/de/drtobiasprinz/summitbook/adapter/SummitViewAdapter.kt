@@ -33,14 +33,6 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         return summitEntriesFiltered?.size ?: 0
     }
 
-    fun sort(filterHelper: SortFilterHelper) {
-        filterHelper.setAllEntries(sortFilterHelper.entries)
-        if (sortFilterHelper.entries.size > 0) {
-            filterHelper.showDialog()
-            filterHelper.apply()
-        }
-    }
-
     override fun onCreateViewHolder(
             parent: ViewGroup, viewType: Int
     ): ViewHolder {

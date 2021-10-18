@@ -7,7 +7,6 @@ import android.app.SearchManager
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
@@ -40,6 +39,7 @@ import de.drtobiasprinz.summitbook.models.BookmarkEntry
 import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
+import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
@@ -54,6 +54,7 @@ import kotlin.math.round
 
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
+    private var imagePathsOfAllImages: List<String>? = listOf()
     val helper: SummitBookDatabaseHelper = SummitBookDatabaseHelper(this)
     lateinit var database: SQLiteDatabase
     lateinit var summitViewFragment: SummitViewFragment
@@ -62,6 +63,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var pythonExecutor: GarminPythonExecutor? = null
     private var entriesToExcludeForBoundingboxCalculation: MutableList<SummitEntry> = mutableListOf()
 
+    private var isDialogShown = false
+    private var currentPosition: Int = 0
+    private var viewer: StfalconImageViewer<String>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         verifyStoragePermissions(this)
@@ -73,7 +77,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
         mainActivity = this
         setContentView(R.layout.activity_main)
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_NOSENSOR
         cache = applicationContext.cacheDir
         storage = applicationContext.filesDir
         database = helper.writableDatabase
@@ -85,8 +88,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         entries.reverse()
         val factory = LayoutInflater.from(this)
         val filterAndSortView = factory.inflate(R.layout.dialog_filter_and_sort, null)
-        sortFilterHelper = SortFilterHelper(filterAndSortView, this, entries, helper, database)
-        summitViewFragment = SummitViewFragment(sortFilterHelper, pythonExecutor, findViewById(R.id.progressBarDownload))
+
+        sortFilterHelper = SortFilterHelper.getInstance(filterAndSortView, this, entries, helper, database, savedInstanceState, sharedPreferences)
+        summitViewFragment = SummitViewFragment(sortFilterHelper, pythonExecutor)
         sortFilterHelper.setFragment(summitViewFragment)
         val toolbar = findViewById<Toolbar?>(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -123,9 +127,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         }, 0, 10, TimeUnit.MINUTES)
 
-        val ft = supportFragmentManager.beginTransaction()
-        ft.add(R.id.content_frame, summitViewFragment)
-        ft.commit()
+        if (!sortFilterHelper.allEntriesRequested) {
+            AsyncSummitTask(this).execute()
+        } else {
+            sortFilterHelper.apply()
+        }
+
+        val f: Fragment? = supportFragmentManager.findFragmentById(R.id.content_frame)
+        if (f == null) {
+            val ft = supportFragmentManager.beginTransaction()
+            ft.add(R.id.content_frame, summitViewFragment)
+            ft.commit()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -154,23 +167,30 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        when (id) {
-            R.id.nav_bookmarks -> commitFragment(BookmarkViewFragment())
-            R.id.nav_statistics -> commitFragment(StatisticsFragment(sortFilterHelper))
-            R.id.nav_diagrams -> commitFragment(LineChartFragment(sortFilterHelper))
-            R.id.nav_barChart -> commitFragment(BarChartFragment(sortFilterHelper))
-            R.id.nav_osmap -> commitFragment(OpenStreetMapFragment(sortFilterHelper))
+        val selectedNavigationMenuItemId = item.itemId
+        startSelectedNavigationMenuItem(selectedNavigationMenuItemId)
+        return true
+    }
+
+    private fun startSelectedNavigationMenuItem(selectedNavigationMenuItemId: Int) {
+        when (selectedNavigationMenuItemId) {
+            R.id.nav_bookmarks -> {
+                commitFragment(BookmarkViewFragment())
+            }
+            R.id.nav_statistics -> {
+                commitFragment(StatisticsFragment(sortFilterHelper))
+            }
+            R.id.nav_diagrams -> {
+                commitFragment(LineChartFragment(sortFilterHelper))
+            }
+            R.id.nav_barChart -> {
+                commitFragment(BarChartFragment(sortFilterHelper))
+            }
+            R.id.nav_osmap -> {
+                commitFragment(OpenStreetMapFragment(sortFilterHelper))
+            }
             R.id.nav_diashow -> {
-                val imagePathsOfAllImages = sortFilterHelper.filteredEntries.map { entry -> entry.imageIds.map { entry.getImageUrl(it) } }.flatten()
-                StfalconImageViewer.Builder(this, imagePathsOfAllImages) { view, imageUrl ->
-                    Glide.with(this)
-                            .load(imageUrl)
-                            .fitCenter()
-                            .diskCacheStrategy(DiskCacheStrategy.NONE)
-                            .skipMemoryCache(true)
-                            .into(view)
-                }.show()
+                openViewer()
             }
             R.id.import_csv -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -203,11 +223,49 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
             }
-            else -> commitFragment(SummitViewFragment(sortFilterHelper, pythonExecutor, findViewById(R.id.progressBarDownload)))
+            else -> {
+                commitFragment(SummitViewFragment(sortFilterHelper, pythonExecutor))
+            }
         }
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
         drawer.closeDrawer(GravityCompat.START)
-        return true
+    }
+
+    private fun openViewer() {
+        setAllImagePaths()
+        var usePositionAfterTransition = -1
+        if (imagePathsOfAllImages?.size?: 0 < currentPosition) {
+            usePositionAfterTransition = currentPosition
+            currentPosition = 0
+        }
+        viewer = StfalconImageViewer.Builder(this, imagePathsOfAllImages) { view, imageUrl ->
+            Glide.with(this)
+                    .load(imageUrl)
+                    .fitCenter()
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .skipMemoryCache(true)
+                    .into(view)
+        }
+                .withStartPosition(currentPosition)
+                .withImageChangeListener {
+                    currentPosition = it
+                    val sizeBefore = imagePathsOfAllImages?.size
+                    setAllImagePaths()
+                    val sizeAfter = imagePathsOfAllImages?.size
+                    if (sizeAfter != sizeBefore) {
+                        viewer?.updateImages(imagePathsOfAllImages)
+                        if (usePositionAfterTransition >= 0) {
+                            viewer?.setCurrentPosition(usePositionAfterTransition)
+                        }
+                    }
+                }
+                .withDismissListener { isDialogShown = false }
+                .show(!isDialogShown)
+        isDialogShown = true
+    }
+
+    private fun setAllImagePaths()  {
+        imagePathsOfAllImages = sortFilterHelper.filteredEntries.map { entry -> entry.imageIds.map { entry.getImageUrl(it) } }.flatten()
     }
 
     private fun startFileSelectorAndExportSummits(filename: String, requestCode: Int) {
@@ -268,6 +326,48 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         addSummit.show(this.supportFragmentManager, "Summits")
     }
 
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val id = item.itemId
+        if (id == R.id.action_search) {
+            return true
+        }
+        if (id == R.id.action_show_new_summits) {
+            ShowNewSummitsFromGarminDialog(SummitViewFragment.allEntriesFromGarmin, sortFilterHelper, pythonExecutor, findViewById(R.id.progressBarDownload)).show(supportFragmentManager, "Show new summits from Garmin")
+        }
+        if (id == R.id.action_sort) {
+            if (sortFilterHelper.entries.size > 0) {
+                sortFilterHelper.showDialog()
+                sortFilterHelper.apply()
+            }
+            return true
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_IS_DIALOG_SHOWN, isDialogShown)
+        outState.putInt(KEY_CURRENT_POSITION, currentPosition)
+        sortFilterHelper.onSaveInstanceState(outState)
+    }
+
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        isDialogShown = savedInstanceState.getBoolean(KEY_IS_DIALOG_SHOWN)
+        currentPosition = savedInstanceState.getInt(KEY_CURRENT_POSITION)
+
+        if (isDialogShown) {
+            openViewer()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        viewer?.dismiss()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         database.close()
@@ -277,10 +377,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     companion object {
         // Storage Permissions
         private const val REQUEST_EXTERNAL_STORAGE = 1
+
         const val CREATE_ZIP_FILE_ALL_SUMMITS = 101
         const val CREATE_ZIP_FILE_FILTERED_SUMMITS = 201
         const val PICK_ZIP_FILE = 102
+        private const val KEY_IS_DIALOG_SHOWN = "IS_DIALOG_SHOWN"
+        private const val KEY_CURRENT_POSITION = "CURRENT_POSITION"
+        private const val SELECTED_NAV_ITEM_ID = "SELECTED_NAV_ITEM_ID"
         var extremaValuesAllSummits: ExtremaValuesSummits? = null
+
         @kotlin.jvm.JvmField
         var CSV_FILE_NAME: String = "de-prinz-summitbook-export.csv"
 
@@ -452,5 +557,30 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
         }
+
+        @SuppressLint("StaticFieldLeak")
+        class AsyncSummitTask(private val mainActivity: MainActivity) : AsyncTask<Void?, Void?, Void?>() {
+            var allEntries = arrayListOf<SummitEntry>()
+            val helper: SummitBookDatabaseHelper = SummitBookDatabaseHelper(mainActivity)
+            val database: SQLiteDatabase = helper.readableDatabase
+
+            override fun doInBackground(vararg params: Void?): Void? {
+                allEntries = helper.getAllSummits(database)
+                return null
+            }
+
+            override fun onPostExecute(param: Void?) {
+                database.close()
+                mainActivity.sortFilterHelper.update(allEntries)
+                mainActivity.sortFilterHelper.prepare()
+                mainActivity.sortFilterHelper.setAllToDefault()
+                SummitViewFragment.adapter.notifyDataSetChanged()
+                SummitViewFragment.updateNewSummits(SummitViewFragment.activitiesDir, mainActivity.sortFilterHelper.entries, mainActivity)
+                mainActivity.sortFilterHelper.allEntriesRequested = true
+                helper.close()
+                database.close()
+            }
+        }
     }
+
 }

@@ -3,7 +3,9 @@ package de.drtobiasprinz.summitbook.ui.utils
 import android.app.DatePickerDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.database.sqlite.SQLiteDatabase
+import android.os.Bundle
 import android.text.InputType
 import android.view.View
 import android.view.ViewGroup
@@ -124,6 +126,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
 
         dateSpinner = filterAndSortView.findViewById(R.id.spinner_date)
         dateSpinner.adapter = dateAdapter
+        dateSpinner.setSelection(selectedDateItem)
         dateSpinner.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View, position: Int, id: Long) {
                 selectedDateItem = position
@@ -335,11 +338,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     fun apply() {
-        segmentedSortAscDesc.position = selectedSegmentedSortAscDesc
-        segmentedSortBy.position = selectedSegmentedSortBy
-        segmentedWithGpx.position = selectedSegmentedWithGpx
-        segmentedWithPosition.position = selectedSegmentedWithPosition
-        segmentedWithImage.position = selectedSegmentedWithImage
+        setSegmentedButtonGroup()
         segmentedSortAscDesc.setOnClickedButtonListener { position: Int ->
             selectedSegmentedSortAscDesc = position
         }
@@ -356,6 +355,14 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
             selectedSegmentedWithImage = position
         }
         sortAndFilter()
+    }
+
+    private fun setSegmentedButtonGroup() {
+        segmentedSortAscDesc.position = selectedSegmentedSortAscDesc
+        segmentedSortBy.position = selectedSegmentedSortBy
+        segmentedWithGpx.position = selectedSegmentedWithGpx
+        segmentedWithPosition.position = selectedSegmentedWithPosition
+        segmentedWithImage.position = selectedSegmentedWithImage
     }
 
     private fun sortAndFilter() {
@@ -571,7 +578,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         this.fragment = fragment
     }
 
-fun setAllEntries(entries: ArrayList<SummitEntry>) {
+private fun setAllEntries(entries: ArrayList<SummitEntry>) {
     this.entries = entries
     this.filteredEntries = entries
 }
@@ -657,5 +664,59 @@ fun update(entries: ArrayList<SummitEntry>) {
         updateDateSpinner()
         overview = MainActivity.mainActivity!!.findViewById(R.id.overview)
         setOverviewText()
+    }
+
+    fun onSaveInstanceState(outState: Bundle) {
+        outState.putInt(SORT_FILTER_HELPER_SELECTED_YEAR, selectedDateItem)
+        outState.putInt(SORT_FILTER_HELPER_SELECTED_SORT_ASC_DESC, selectedSegmentedSortAscDesc)
+        outState.putInt(SORT_FILTER_HELPER_SELECTED_SORT_BY, selectedSegmentedSortBy)
+        outState.putInt(SORT_FILTER_HELPER_SELECTED_SPORT_TYPE, selectedSportTypeItem)
+        outState.putInt(SORT_FILTER_HELPER_POSITION_SELECTED, selectedSegmentedWithPosition)
+        outState.putInt(SORT_FILTER_HELPER_GPX_SELECTED, selectedSegmentedWithGpx)
+        outState.putInt(SORT_FILTER_HELPER_IMAGE_SELECTED, selectedSegmentedWithImage)
+        outState.putString(SORT_FILTER_HELPER_UNIQUE_YEARS, uniqueYearsOfSummit.joinToString(","))
+    }
+
+
+    companion object {
+        fun getInstance(filterAndSortView: View, context: Context, entries: ArrayList<SummitEntry>,
+                        databaseHelper: SummitBookDatabaseHelper, database: SQLiteDatabase,
+                        savedInstanceState: Bundle?, sharedPreferences: SharedPreferences?): SortFilterHelper {
+            val sortFilterHelper =  SortFilterHelper(filterAndSortView, context, entries, databaseHelper, database)
+            if (!sortFilterHelper.areSharedPrefInitialized) {
+                sortFilterHelper.areSharedPrefInitialized = true
+                if (sharedPreferences?.getBoolean("current_year_switch", false) == true) {
+                    sortFilterHelper.setSelectedDateItemDefault(2)
+                } else {
+                    sortFilterHelper.setSelectedDateItemDefault(0)
+                }
+            }
+            if (savedInstanceState != null) {
+                val uniqueYears = savedInstanceState.getString(SORT_FILTER_HELPER_UNIQUE_YEARS)?.split(",")
+                sortFilterHelper.uniqueYearsOfSummit = uniqueYears as ArrayList<String>
+                val selectedDateItem = savedInstanceState.getInt(SORT_FILTER_HELPER_SELECTED_YEAR)
+                sortFilterHelper.selectedDateItem = selectedDateItem
+                sortFilterHelper.dateSpinner.setSelection(selectedDateItem)
+                sortFilterHelper.selectedSegmentedSortAscDesc = savedInstanceState.getInt(SORT_FILTER_HELPER_SELECTED_SORT_ASC_DESC)
+                sortFilterHelper.selectedSegmentedSortBy = savedInstanceState.getInt(SORT_FILTER_HELPER_SELECTED_SORT_BY)
+                sortFilterHelper.selectedSportTypeItem = savedInstanceState.getInt(SORT_FILTER_HELPER_SELECTED_SPORT_TYPE)
+                sortFilterHelper.selectedSegmentedWithPosition = savedInstanceState.getInt(SORT_FILTER_HELPER_POSITION_SELECTED)
+                sortFilterHelper.selectedSegmentedWithGpx = savedInstanceState.getInt(SORT_FILTER_HELPER_GPX_SELECTED)
+                sortFilterHelper.selectedSegmentedWithImage = savedInstanceState.getInt(SORT_FILTER_HELPER_POSITION_SELECTED)
+                sortFilterHelper.setSegmentedButtonGroup()
+            } else {
+                sortFilterHelper.setDataSpinnerToDefault()
+            }
+            return sortFilterHelper
+        }
+        var SORT_FILTER_HELPER_SELECTED_YEAR = "SORT_FILTER_HELPER_SELECTED_YEAR"
+        var SORT_FILTER_HELPER_SELECTED_SORT_ASC_DESC = "SORT_FILTER_HELPER_SELECTED_SORT_ASC_DESC"
+        var SORT_FILTER_HELPER_SELECTED_SORT_BY = "SORT_FILTER_HELPER_SELECTED_SORT_BY"
+        var SORT_FILTER_HELPER_SELECTED_SPORT_TYPE = "SORT_FILTER_HELPER_SELECTED_SPORT_TYPE"
+        var SORT_FILTER_HELPER_POSITION_SELECTED = "SORT_FILTER_HELPER_POSITION_SELECTED"
+        var SORT_FILTER_HELPER_GPX_SELECTED = "SORT_FILTER_HELPER_GPS_SELECTED"
+        var SORT_FILTER_HELPER_IMAGE_SELECTED = "SORT_FILTER_HELPER_IMAGE_SELECTED"
+        var SORT_FILTER_HELPER_UNIQUE_YEARS = "SORT_FILTER_HELPER_UNIQUE_YEARS"
+
     }
 }
