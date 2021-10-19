@@ -36,7 +36,7 @@ import kotlin.math.roundToLong
 class SortFilterHelper(private val filterAndSortView: View, private val context: Context, var entries: ArrayList<SummitEntry>, val databaseHelper: SummitBookDatabaseHelper, val database: SQLiteDatabase) {
     @JvmField
     var selectedYear = ""
-    private lateinit var fragment: SummationFragment
+    lateinit var fragment: SummationFragment
     lateinit var filteredEntries: ArrayList<SummitEntry>
         private set
     private lateinit var uniqueYearsOfSummit: ArrayList<String>
@@ -47,6 +47,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private lateinit var startDateText: EditText
     private lateinit var endDateText: EditText
     private var selectedDateItemDefault = 0
+    private var selectedDateItem = 0
     private val segmentedSortAscDesc: SegmentedButtonGroup = filterAndSortView.findViewById(R.id.group_sort_asc_desc)
     private val segmentedSortBy: SegmentedButtonGroup = filterAndSortView.findViewById(R.id.group_sort_by)
     private val segmentedWithPosition: SegmentedButtonGroup = filterAndSortView.findViewById(R.id.group_position)
@@ -55,7 +56,6 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private var selectedSegmentedSortAscDesc = 1
     private var selectedSegmentedSortBy = 0
     private var selectedSportTypeItem = 0
-    private var selectedDateItem = 0
     private var participantsSize = 0
     private var selectedSegmentedWithPosition = 1
     private var selectedSegmentedWithGpx = 1
@@ -135,7 +135,6 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
                 } else {
                     customDateLayout.visibility = View.GONE
                 }
-                sortAndFilter()
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -201,7 +200,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         alert.show()
     }
 
-    fun setAllToDefault() {
+    private fun setAllToDefault() {
         selectedSegmentedSortAscDesc = 1
         segmentedSortAscDesc.position = selectedSegmentedSortAscDesc
         selectedSegmentedSortBy = 0
@@ -366,8 +365,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     private fun sortAndFilter() {
-        val entriesLocal = entries
-        filteredEntries = entriesLocal
+        filteredEntries = entries
         sort()
         filter()
         fragment.update(filteredEntries)
@@ -574,21 +572,17 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         }
     }
 
-    fun setFragment(fragment: SummationFragment) {
-        this.fragment = fragment
+    private fun setAllEntries(entries: ArrayList<SummitEntry>) {
+        this.entries = entries
+        this.filteredEntries = entries
     }
 
-private fun setAllEntries(entries: ArrayList<SummitEntry>) {
-    this.entries = entries
-    this.filteredEntries = entries
-}
-
-fun update(entries: ArrayList<SummitEntry>) {
-    MainActivity.extremaValuesAllSummits = ExtremaValuesSummits(entries)
-    setAllEntries(entries)
-    setExtremeValues()
-    sortAndFilter()
-}
+    fun update(entries: ArrayList<SummitEntry>) {
+        MainActivity.extremaValuesAllSummits = ExtremaValuesSummits(entries)
+        setAllEntries(entries)
+        setExtremeValues()
+        sortAndFilter()
+    }
 
     private fun selectedDateSpinner(position: Int) {
         try {

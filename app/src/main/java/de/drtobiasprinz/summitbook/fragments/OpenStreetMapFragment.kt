@@ -49,7 +49,7 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper) : Fragment()
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         root = inflater.inflate(R.layout.fragment_open_street_map, container, false)
         setHasOptionsMenu(true)
-        sortFilterHelper.setFragment(this)
+        sortFilterHelper.fragment = this
         summitEntries = sortFilterHelper.entries
         filteredEntries = sortFilterHelper.filteredEntries
         mMapView = root.findViewById(R.id.osmap)

@@ -20,7 +20,8 @@ import de.drtobiasprinz.summitbook.models.SummitEntry
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog.Companion.updateInstance
-import de.drtobiasprinz.summitbook.ui.utils.*
+import de.drtobiasprinz.summitbook.ui.utils.ImagePickerListener
+import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.util.*
 
 

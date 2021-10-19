@@ -68,6 +68,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var viewer: StfalconImageViewer<String>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        database = helper.writableDatabase
+        val entries = helper.getAllSummits(database, 10)
+        val viewedFragment: Fragment? = supportFragmentManager.findFragmentById(R.id.content_frame)
         verifyStoragePermissions(this)
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         val username = sharedPreferences.getString("garmin_username", null) ?: ""
@@ -79,19 +82,21 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setContentView(R.layout.activity_main)
         cache = applicationContext.cacheDir
         storage = applicationContext.filesDir
-        database = helper.writableDatabase
         File(storage, SummitEntry.subDirForGpsTracks).mkdirs()
         File(storage, BookmarkEntry.subDirForGpsTracks).mkdirs()
         File(storage, SummitEntry.subDirForImages).mkdirs()
-        val entries = helper.getAllSummits(database, 10)
         entries.sortWith(compareBy { it.date })
         entries.reverse()
         val factory = LayoutInflater.from(this)
         val filterAndSortView = factory.inflate(R.layout.dialog_filter_and_sort, null)
 
         sortFilterHelper = SortFilterHelper.getInstance(filterAndSortView, this, entries, helper, database, savedInstanceState, sharedPreferences)
-        summitViewFragment = SummitViewFragment(sortFilterHelper, pythonExecutor)
-        sortFilterHelper.setFragment(summitViewFragment)
+        if (viewedFragment != null && viewedFragment is SummationFragment) {
+            sortFilterHelper.fragment = viewedFragment
+        } else {
+            summitViewFragment = SummitViewFragment(sortFilterHelper, pythonExecutor)
+            sortFilterHelper.fragment = summitViewFragment
+        }
         val toolbar = findViewById<Toolbar?>(R.id.toolbar)
         setSupportActionBar(toolbar)
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
@@ -133,8 +138,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             sortFilterHelper.apply()
         }
 
-        val f: Fragment? = supportFragmentManager.findFragmentById(R.id.content_frame)
-        if (f == null) {
+        if (viewedFragment == null) {
             val ft = supportFragmentManager.beginTransaction()
             ft.add(R.id.content_frame, summitViewFragment)
             ft.commit()
@@ -337,7 +341,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (id == R.id.action_sort) {
             if (sortFilterHelper.entries.size > 0) {
                 sortFilterHelper.showDialog()
-                sortFilterHelper.apply()
             }
             return true
         }
@@ -570,10 +573,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             override fun onPostExecute(param: Void?) {
-                database.close()
                 mainActivity.sortFilterHelper.update(allEntries)
                 mainActivity.sortFilterHelper.prepare()
-                mainActivity.sortFilterHelper.setAllToDefault()
+                mainActivity.sortFilterHelper.apply()
                 SummitViewFragment.adapter.notifyDataSetChanged()
                 SummitViewFragment.updateNewSummits(SummitViewFragment.activitiesDir, mainActivity.sortFilterHelper.entries, mainActivity)
                 mainActivity.sortFilterHelper.allEntriesRequested = true

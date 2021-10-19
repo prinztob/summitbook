@@ -68,7 +68,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     ): View? {
         barChartView = inflater.inflate(R.layout.fragment_bar_chart, container, false)
         setHasOptionsMenu(true)
-        sortFilterHelper.setFragment(this)
+        sortFilterHelper.fragment = this
         fillDateSpinner()
         summitEntries = sortFilterHelper.entries
         intervallHelper = IntervalHelper(summitEntries)
@@ -149,8 +149,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         sortedEntries?.sortWith(compareBy { it.date })
         barChartEntries?.clear()
         try {
-            var annualTarget: Float
-            annualTarget = when (selectedDataSpinner) {
+            var annualTarget: Float = when (selectedDataSpinner) {
                 1 -> {
                     sharedPreferences.getString("annual_target_km", "1200")?.toFloat() ?: 1200f
                 }

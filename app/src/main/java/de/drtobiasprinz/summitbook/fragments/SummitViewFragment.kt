@@ -47,7 +47,7 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
         summitRecycler = inflater.inflate(
                 R.layout.fragment_summit_view, container, false) as RecyclerView
         setHasOptionsMenu(true)
-        sortFilterHelper.setFragment(this)
+        sortFilterHelper.fragment = this
         summitEntries = sortFilterHelper.entries
         adapter = SummitViewAdapter(sortFilterHelper, pythonExecutor)
         filteredEntries = sortFilterHelper.filteredEntries
@@ -59,6 +59,7 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
         itemTouchHelper.attachToRecyclerView(summitRecycler)
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)
+        sortFilterHelper.apply()
         return summitRecycler
     }
 

@@ -53,7 +53,7 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
     ): View? {
         lineChartView = inflater.inflate(R.layout.fragment_line_chart, container, false)
         setHasOptionsMenu(true)
-        sortFilterHelper.setFragment(this)
+        sortFilterHelper.fragment = this
         fillDateSpinner()
         summitEntries = sortFilterHelper.entries
         lineChart = lineChartView?.findViewById(R.id.lineChart) // Fragment

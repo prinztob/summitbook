@@ -41,7 +41,7 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {
-        sortFilterHelper.setFragment(this)
+        sortFilterHelper.fragment = this
         statisticFragmentView = inflater.inflate(R.layout.fragment_statistics, container, false)
         setHasOptionsMenu(true)
         textTotalSummits = statisticFragmentView.findViewById(R.id.textTotalSummits)
@@ -55,7 +55,7 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
         return statisticFragmentView
     }
 
-    private fun setTextViews(statisticEntry: StatisticEntry, extremaValuesSummits: ExtremaValuesSummits?) {
+    private fun setTextViews(extremaValuesSummits: ExtremaValuesSummits?) {
         if (statisticEntry.getTotalSummits() > 0) {
             textTotalSummits.text = String.format("%s", statisticEntry.getTotalSummits())
             textTotalKm.text = String.format(Locale.ENGLISH, "%.1f km", statisticEntry.totalKm)
@@ -201,7 +201,7 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
         statisticEntry.calculate()
         setProgressBar()
         val extremaValuesSummits = filteredSummitEntries?.let { ExtremaValuesSummits(it) }
-        setTextViews(statisticEntry, extremaValuesSummits)
+        setTextViews(extremaValuesSummits)
     }
 
     private fun setProgressBar() {
