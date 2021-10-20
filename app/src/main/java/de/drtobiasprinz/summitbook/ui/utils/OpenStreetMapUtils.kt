@@ -6,9 +6,9 @@ import android.graphics.Color
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
-import de.drtobiasprinz.summitbook.models.BookmarkEntry
+import de.drtobiasprinz.summitbook.models.Bookmark
 import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.models.TrackBoundingBox
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import org.osmdroid.tileprovider.tilesource.ITileSource
@@ -32,7 +32,7 @@ object OpenStreetMapUtils {
     var selectedItem = 0
 
     @JvmStatic
-    fun addTrackAndMarker(summitEntry: SummitEntry, osMap: MapView, context: Context, forceAddTrack: Boolean, isMilageButtonShown: Boolean, alwaysShowTrackOnMap: Boolean): Marker? {
+    fun addTrackAndMarker(summitEntry: Summit, osMap: MapView, context: Context, forceAddTrack: Boolean, isMilageButtonShown: Boolean, alwaysShowTrackOnMap: Boolean): Marker? {
         val mGeoPoints = ArrayList<GeoPoint>()
         val latLng = summitEntry.latLng
         var marker: Marker? = null
@@ -67,7 +67,7 @@ object OpenStreetMapUtils {
 
     @JvmStatic
     fun drawTrack(
-            summitEntry: SummitEntry, forceAddTrack: Boolean, osMap: MapView, isMilageButtonShown: Boolean,
+            summitEntry: Summit, forceAddTrack: Boolean, osMap: MapView, isMilageButtonShown: Boolean,
             calculateBondingBox: Boolean = false, mGeoPoints: ArrayList<GeoPoint> = arrayListOf(), color: Int = Color.BLUE
     ) {
         if (summitEntry.hasGpsTrack()) {
@@ -92,11 +92,11 @@ object OpenStreetMapUtils {
     }
 
     @JvmStatic
-    fun addTrackAndMarker(bookmarkEntry: BookmarkEntry, osMap: MapView, forceAddTrack: Boolean, isMilageButtonShown: Boolean) {
+    fun addTrackAndMarker(bookmark: Bookmark, osMap: MapView, forceAddTrack: Boolean, isMilageButtonShown: Boolean) {
         val mGeoPoints = ArrayList<GeoPoint>()
-        if (bookmarkEntry.hasGpsTrack()) {
-            bookmarkEntry.setGpsTrack()
-            val gpsTrack: GpsTrack? = bookmarkEntry.gpsTrack
+        if (bookmark.hasGpsTrack()) {
+            bookmark.setGpsTrack()
+            val gpsTrack: GpsTrack? = bookmark.gpsTrack
             if (gpsTrack != null) {
                 if (gpsTrack.hasNoTrackPoints()) {
                     gpsTrack.parseTrack()
@@ -121,11 +121,11 @@ object OpenStreetMapUtils {
     }
 
     @JvmStatic
-    fun addMarker(mMapView: MapView, context: Context, startPoint: GeoPoint?, entry: SummitEntry, addToOverlay: Boolean = true, alwaysShowTrackOnMap: Boolean = false): Marker {
+    fun addMarker(mMapView: MapView, context: Context, startPoint: GeoPoint?, entry: Summit, addToOverlay: Boolean = true, alwaysShowTrackOnMap: Boolean = false): Marker {
         val marker = Marker(mMapView)
         marker.position = startPoint
         marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-        marker.title = entry._id.toString()
+        marker.title = entry.id.toString()
         if (entry.hasGpsTrack()) {
             marker.icon = ResourcesCompat.getDrawable(context.resources, entry.sportType.markerIdWithGpx, null)
         } else {

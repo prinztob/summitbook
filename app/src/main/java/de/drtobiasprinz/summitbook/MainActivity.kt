@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
@@ -33,10 +32,9 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.material.navigation.NavigationView
 import com.stfalcon.imageviewer.StfalconImageViewer
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
+import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.*
-import de.drtobiasprinz.summitbook.models.BookmarkEntry
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
@@ -55,21 +53,20 @@ import kotlin.math.round
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
     private var imagePathsOfAllImages: List<String>? = listOf()
-    val helper: SummitBookDatabaseHelper = SummitBookDatabaseHelper(this)
-    lateinit var database: SQLiteDatabase
+    private lateinit var database: AppDatabase
     lateinit var summitViewFragment: SummitViewFragment
     private var searchView: SearchView? = null
     private lateinit var sortFilterHelper: SortFilterHelper
     private var pythonExecutor: GarminPythonExecutor? = null
-    private var entriesToExcludeForBoundingboxCalculation: MutableList<SummitEntry> = mutableListOf()
+    private var entriesToExcludeForBoundingboxCalculation: MutableList<Summit> = mutableListOf()
 
     private var isDialogShown = false
     private var currentPosition: Int = 0
     private var viewer: StfalconImageViewer<String>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        database = helper.writableDatabase
-        val entries = helper.getAllSummits(database, 10)
+        database = AppDatabase.getDatabase(applicationContext)
+        val entries = database.summitDao()?.allSummit
         val viewedFragment: Fragment? = supportFragmentManager.findFragmentById(R.id.content_frame)
         verifyStoragePermissions(this)
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
@@ -82,21 +79,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setContentView(R.layout.activity_main)
         cache = applicationContext.cacheDir
         storage = applicationContext.filesDir
-        File(storage, SummitEntry.subDirForGpsTracks).mkdirs()
-        File(storage, BookmarkEntry.subDirForGpsTracks).mkdirs()
-        File(storage, SummitEntry.subDirForImages).mkdirs()
-        entries.sortWith(compareBy { it.date })
-        entries.reverse()
+        File(storage, Summit.subDirForGpsTracks).mkdirs()
+        File(storage, Bookmark.subDirForGpsTracks).mkdirs()
+        File(storage, Summit.subDirForImages).mkdirs()
         val factory = LayoutInflater.from(this)
         val filterAndSortView = factory.inflate(R.layout.dialog_filter_and_sort, null)
 
-        sortFilterHelper = SortFilterHelper.getInstance(filterAndSortView, this, entries, helper, database, savedInstanceState, sharedPreferences)
+        sortFilterHelper = SortFilterHelper.getInstance(filterAndSortView, this, entries as ArrayList<Summit>, database, savedInstanceState, sharedPreferences)
         if (viewedFragment != null && viewedFragment is SummationFragment) {
             sortFilterHelper.fragment = viewedFragment
         } else {
             summitViewFragment = SummitViewFragment(sortFilterHelper, pythonExecutor)
             sortFilterHelper.fragment = summitViewFragment
         }
+
         val toolbar = findViewById<Toolbar?>(R.id.toolbar)
         setSupportActionBar(toolbar)
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
@@ -120,7 +116,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 val entryToCheck = entriesWithoutBoundingBox.first()
                 entryToCheck.setBoundingBoxFromTrack()
                 if (entryToCheck.trackBoundingBox != null) {
-                    helper.updateSummit(database, entryToCheck)
+                    database.summitDao()?.updateSummit(entryToCheck)
                     Log.i("ScheduleAtFixedRate", "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining.")
                 } else {
                     Log.i("ScheduleAtFixedRate", "Updated bounding box for ${entryToCheck.name} failed, remove it from update list.")
@@ -132,17 +128,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         }, 0, 10, TimeUnit.MINUTES)
 
-        if (!sortFilterHelper.allEntriesRequested) {
-            AsyncSummitTask(this).execute()
-        } else {
-            sortFilterHelper.apply()
-        }
-
         if (viewedFragment == null) {
             val ft = supportFragmentManager.beginTransaction()
             ft.add(R.id.content_frame, summitViewFragment)
             ft.commit()
+        } else {
+            sortFilterHelper.entries.let {
+                sortFilterHelper.update(it)
+                sortFilterHelper.prepare()
+                sortFilterHelper.apply()
+                SummitViewFragment.adapter.notifyDataSetChanged()
+                sortFilterHelper.allEntriesRequested = true
+            }
         }
+        SummitViewFragment.updateNewSummits(SummitViewFragment.activitiesDir, sortFilterHelper.entries, mainActivity)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -238,7 +237,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun openViewer() {
         setAllImagePaths()
         var usePositionAfterTransition = -1
-        if (imagePathsOfAllImages?.size?: 0 < currentPosition) {
+        if (imagePathsOfAllImages?.size ?: 0 < currentPosition) {
             usePositionAfterTransition = currentPosition
             currentPosition = 0
         }
@@ -268,7 +267,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         isDialogShown = true
     }
 
-    private fun setAllImagePaths()  {
+    private fun setAllImagePaths() {
         imagePathsOfAllImages = sortFilterHelper.filteredEntries.map { entry -> entry.imageIds.map { entry.getImageUrl(it) } }.flatten()
     }
 
@@ -374,7 +373,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onDestroy() {
         super.onDestroy()
         database.close()
-        helper.close()
     }
 
     companion object {
@@ -424,8 +422,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         @SuppressLint("StaticFieldLeak")
         class AsyncImportZipFile(private val mainActivity: MainActivity) : AsyncTask<Uri, Int?, Void?>() {
 
-            private val reader = ZipFileReader(mainActivity.cacheDir, mainActivity.helper)
-
+            private val reader = ZipFileReader(mainActivity.cacheDir, mainActivity.database)
+            private val database = mainActivity.database
             override fun doInBackground(vararg uri: Uri): Void? {
                 mainActivity.contentResolver.openInputStream(uri[0])?.use { inputStream ->
                     reader.extractZip(inputStream)
@@ -434,6 +432,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 reader.readFromCache()
                 publishProgress(20)
                 reader.newSummits.forEachIndexed { index, it ->
+                    it.id = database.summitDao()?.addSummit(it) ?: 0L
                     reader.readGpxFile(it)
                     reader.readImageFile(it)
                     publishProgress(round(index.toDouble() / reader.newSummits.size * 80.0).toInt() + 20)
@@ -451,12 +450,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
             override fun onPostExecute(param: Void?) {
                 mainActivity.findViewById<ProgressBar>(R.id.progressBarZip).visibility = View.GONE
-                val database = mainActivity.helper.writableDatabase
                 reader.newSummits.forEach {
-                    mainActivity.helper.updateSummit(database, it)
+                    database.summitDao()?.updateSummit(it)
                 }
-                val entries = mainActivity.helper.getAllSummits(database)
+                val entries = database.summitDao()?.allSummit as ArrayList<Summit>
                 mainActivity.sortFilterHelper.update(entries)
+                mainActivity.sortFilterHelper.prepare()
+                mainActivity.sortFilterHelper.apply()
                 SummitViewFragment.adapter.notifyDataSetChanged()
                 AlertDialog.Builder(mainActivity)
                         .setTitle(mainActivity.getString(R.string.import_string_titel))
@@ -465,12 +465,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
                         .setIcon(android.R.drawable.ic_dialog_info)
                         .show()
-                database.close()
             }
         }
 
         @SuppressLint("StaticFieldLeak")
-        class AsyncExportZipFile(val context: Context, val progressBar: ProgressBar, val entries: ArrayList<SummitEntry>, val resultData: Intent?) : AsyncTask<Uri, Int?, Void?>() {
+        class AsyncExportZipFile(val context: Context, val progressBar: ProgressBar, val entries: List<Summit>, val resultData: Intent?) : AsyncTask<Uri, Int?, Void?>() {
             var entryNumber = 0
             var withImages = 0
             var withGpsFile = 0
@@ -499,10 +498,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         .show()
             }
 
-            private fun writeToZipFile(entries: ArrayList<SummitEntry>, resultData: Intent?) {
+            private fun writeToZipFile(entries: List<Summit>, resultData: Intent?) {
                 val sb = StringBuilder()
 
-                sb.append(SummitEntry.getCsvHeadline())
+                sb.append(Summit.getCsvHeadline())
                 for (entry in entries) {
                     sb.append(entry.toString())
                 }
@@ -561,28 +560,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         }
 
-        @SuppressLint("StaticFieldLeak")
-        class AsyncSummitTask(private val mainActivity: MainActivity) : AsyncTask<Void?, Void?, Void?>() {
-            var allEntries = arrayListOf<SummitEntry>()
-            val helper: SummitBookDatabaseHelper = SummitBookDatabaseHelper(mainActivity)
-            val database: SQLiteDatabase = helper.readableDatabase
-
-            override fun doInBackground(vararg params: Void?): Void? {
-                allEntries = helper.getAllSummits(database)
-                return null
-            }
-
-            override fun onPostExecute(param: Void?) {
-                mainActivity.sortFilterHelper.update(allEntries)
-                mainActivity.sortFilterHelper.prepare()
-                mainActivity.sortFilterHelper.apply()
-                SummitViewFragment.adapter.notifyDataSetChanged()
-                SummitViewFragment.updateNewSummits(SummitViewFragment.activitiesDir, mainActivity.sortFilterHelper.entries, mainActivity)
-                mainActivity.sortFilterHelper.allEntriesRequested = true
-                helper.close()
-                database.close()
-            }
-        }
     }
 
 }

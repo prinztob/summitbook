@@ -1,14 +1,14 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import de.drtobiasprinz.summitbook.fragments.StatisticsFragment
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.ceil
 
-class IntervalHelper(summitEntries: ArrayList<SummitEntry>?) {
+class IntervalHelper(summitEntries: List<Summit>?) {
     private var selectedYear: String? = null
     private val allYears: ArrayList<String> = StatisticsFragment.getAllYears(summitEntries)
     private val extremaValuesSummits: ExtremaValuesSummits? = summitEntries?.let { ExtremaValuesSummits(it) }
@@ -71,7 +71,7 @@ class IntervalHelper(summitEntries: ArrayList<SummitEntry>?) {
             val size = allYears.size
             allYears.sort()
             val dates = ArrayList<Date>(size + 1)
-            val df: DateFormat = SimpleDateFormat(SummitEntry.DATETIME_FORMAT, Locale.ENGLISH)
+            val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
             for (i in 0 until size) {
                 allYears[i].toFloat().let { dateAnnotation.add(it) }
             }
@@ -95,7 +95,7 @@ class IntervalHelper(summitEntries: ArrayList<SummitEntry>?) {
             dateAnnotation = ArrayList()
             val size = 12
             val dates = ArrayList<Date>(size + 1)
-            val df: DateFormat = SimpleDateFormat(SummitEntry.DATETIME_FORMAT, Locale.ENGLISH)
+            val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
             for (i in 0 until size) {
                 dateAnnotation.add((i + 1).toFloat())
             }

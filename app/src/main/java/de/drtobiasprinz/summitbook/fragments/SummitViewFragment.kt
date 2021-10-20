@@ -5,10 +5,11 @@ import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
-import android.database.sqlite.SQLiteDatabase
-import android.os.AsyncTask
 import android.os.Bundle
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.View
+import android.view.ViewGroup
 import android.widget.ProgressBar
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
@@ -20,8 +21,7 @@ import androidx.recyclerview.widget.RecyclerView
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
 import de.drtobiasprinz.summitbook.ui.SwipeToDeleteCallback
@@ -30,10 +30,10 @@ import java.io.File
 import java.util.*
 
 
-class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?, private val progressBar: ProgressBar? = null) : Fragment(), SummationFragment, OnSharedPreferenceChangeListener {
-    private lateinit var summitEntries: ArrayList<SummitEntry>
+class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : Fragment(), SummationFragment, OnSharedPreferenceChangeListener {
+    private lateinit var summitEntries: List<Summit>
     private lateinit var myContext: FragmentActivity
-    private var filteredEntries: ArrayList<SummitEntry>? = null
+    private var filteredEntries: List<Summit>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,7 +72,7 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
         return adapter
     }
 
-    override fun update(filteredSummitEntries: ArrayList<SummitEntry>?) {
+    override fun update(filteredSummitEntries: List<Summit>?) {
         adapter.setFilteredSummitEntries(filteredSummitEntries)
     }
 
@@ -100,19 +100,19 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
     companion object {
         lateinit var summitRecycler: RecyclerView
         private var optionMenu: Menu? = null
-        val allEntriesFromGarmin = mutableListOf<SummitEntry>()
+        val allEntriesFromGarmin = mutableListOf<Summit>()
 
         val activitiesDir = File(MainActivity.storage, "activities")
 
         @SuppressLint("StaticFieldLeak")
         lateinit var adapter: SummitViewAdapter
 
-        fun updateNewSummits(activitiesDir: File, summits: List<SummitEntry>, context: Context?) {
+        fun updateNewSummits(activitiesDir: File, summits: List<Summit>, context: Context?) {
             allEntriesFromGarmin.clear()
-            val activitiesIdOfAllSummits = summits.filter { it.activityData != null && it.activityData?.activityIds?.isNotEmpty() == true }.map { it.activityData?.activityIds as List<String> }.flatten().toMutableList()
+            val activitiesIdOfAllSummits = summits.filter { it.garminData != null && it.garminData?.activityIds?.isNotEmpty() == true }.map { it.garminData?.activityIds as List<String> }.flatten().toMutableList()
             allEntriesFromGarmin.addAll(getAllDownloadedSummitsFromGarmin(activitiesDir))
             if (allEntriesFromGarmin.isNotEmpty()) {
-                val newEntriesFromGarmin = allEntriesFromGarmin.filter { !(it.activityData?.activityId in activitiesIdOfAllSummits) }
+                val newEntriesFromGarmin = allEntriesFromGarmin.filter { !(it.garminData?.activityId in activitiesIdOfAllSummits) }
                 when (newEntriesFromGarmin.size) {
                     0 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_none_24, null) }
                     1 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_1_24, null) }

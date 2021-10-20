@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.dialog
 
-import android.database.sqlite.SQLiteDatabase
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputFilter
@@ -12,20 +11,18 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.DialogFragment
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
+import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.BookmarkViewFragment
-import de.drtobiasprinz.summitbook.models.BookmarkEntry
+import de.drtobiasprinz.summitbook.models.Bookmark
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
 import java.text.ParseException
-import java.util.*
 
 class AddBookmarkDialog : DialogFragment() {
     var isUpdate = false
-    private lateinit var helper: SummitBookDatabaseHelper
-    private lateinit var database: SQLiteDatabase
+    private var database: AppDatabase? = null
     private var sportTypeAdapter: ArrayAdapter<SportType>? = null
-    private var currentBookmark: BookmarkEntry? = null
+    private var currentBookmark: Bookmark? = null
     private lateinit var bookmarkName: EditText
     private lateinit var commentText: EditText
     private lateinit var heightMeterText: EditText
@@ -49,8 +46,7 @@ class AddBookmarkDialog : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        helper = SummitBookDatabaseHelper(view.context)
-        database = helper.writableDatabase
+        database = context?.let { AppDatabase.getDatabase(it) }
         //input elements
         saveEntryButton = view.findViewById(R.id.add_bookmark_save)
         saveEntryButton.isEnabled = false
@@ -77,14 +73,13 @@ class AddBookmarkDialog : DialogFragment() {
         saveEntryButton.setOnClickListener {
             val sportType = SportType.valueOf(sportTypeSpinner?.selectedItem.toString())
             parseSummitEntry(sportType)
-            database = helper.writableDatabase
             val adapter = BookmarkViewFragment.adapter
             val bookmark = currentBookmark
             if (bookmark != null) {
                 if (isUpdate) {
-                    helper.updateBookmark(database, bookmark)
+                    database?.bookmarkDao()?.updateBookmark(bookmark)
                 } else {
-                    bookmark._id = helper.insertBookmark(database, bookmark).toInt()
+                    bookmark.id = database?.bookmarkDao()?.addBookmark(bookmark) ?: 0L
                     adapter?.bookmarks?.add(bookmark)
                 }
                 adapter?.notifyDataSetChanged()
@@ -108,7 +103,7 @@ class AddBookmarkDialog : DialogFragment() {
                 bookmark.heightMeter = heightMeterText.text.toString().toInt()
                 bookmark.kilometers = getTextWithDefault(kmText, 0.0)
             } else {
-                currentBookmark = BookmarkEntry(
+                currentBookmark = Bookmark(
                         bookmarkName.text.toString(),
                         sportType,
                         commentText.text.toString(), heightMeterText.text.toString().toInt(),
@@ -120,7 +115,7 @@ class AddBookmarkDialog : DialogFragment() {
         }
     }
 
-    private fun updateDialogFields(entry: BookmarkEntry?, updateSpinner: Boolean) {
+    private fun updateDialogFields(entry: Bookmark?, updateSpinner: Boolean) {
         if (updateSpinner) {
             val sportTypeString = SportType.valueOf(entry?.sportType.toString())
             val spinnerPosition = sportTypeAdapter?.getPosition(sportTypeString)
@@ -144,13 +139,12 @@ class AddBookmarkDialog : DialogFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        database.close()
-        helper.close()
+        database?.close()
     }
 
     companion object {
         @JvmStatic
-        fun updateInstance(entry: BookmarkEntry?): AddBookmarkDialog {
+        fun updateInstance(entry: Bookmark?): AddBookmarkDialog {
             val add = AddBookmarkDialog()
             add.isUpdate = true
             add.currentBookmark = entry

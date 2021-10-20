@@ -5,7 +5,6 @@ import android.graphics.Color
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.view.LayoutInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
@@ -31,7 +30,7 @@ import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.models.SportType
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.utils.BarChartCustomRenderer
 import de.drtobiasprinz.summitbook.ui.utils.CustomBarChart
 import de.drtobiasprinz.summitbook.ui.utils.IntervalHelper
@@ -41,11 +40,12 @@ import java.time.Month
 import java.util.*
 import java.util.function.Supplier
 import java.util.stream.Stream
+import kotlin.collections.ArrayList
 
 
 class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragment(), SummationFragment {
-    private var summitEntries: ArrayList<SummitEntry>? = null
-    private var filteredEntries: ArrayList<SummitEntry>? = null
+    private var summitEntries: ArrayList<Summit>? = null
+    private var filteredEntries: ArrayList<Summit>? = null
     private var dataSpinner: Spinner? = null
     private var xAxisSpinner: Spinner? = null
     private var barChartView: View? = null
@@ -64,7 +64,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
-            savedInstanceState: Bundle?
+            savedInstanceState: Bundle?,
     ): View? {
         barChartView = inflater.inflate(R.layout.fragment_bar_chart, container, false)
         setHasOptionsMenu(true)
@@ -129,8 +129,8 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         }
     }
 
-    override fun update(filteredSummitEntries: ArrayList<SummitEntry>?) {
-        filteredEntries = filteredSummitEntries
+    override fun update(filteredSummitEntries: List<Summit>?) {
+        filteredEntries = filteredSummitEntries as ArrayList<Summit>
         selectedDataSpinner()
         drawLineChart()
     }
@@ -183,7 +183,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         intervallHelper.setSelectedYear(sortFilterHelper.selectedYear)
         intervallHelper.calculate()
         for (i in 0 until intervallHelper.dates.size - 1) {
-            val streamSupplier: Supplier<Stream<SummitEntry?>?> = Supplier { getEntriesBetweenDates(filteredEntries, intervallHelper.dates[i], intervallHelper.dates[i + 1]) }
+            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenDates(filteredEntries, intervallHelper.dates[i], intervallHelper.dates[i + 1]) }
             val xValue = intervallHelper.dateAnnotation[i]
             when (selectedDataSpinner) {
                 1 -> {
@@ -209,7 +209,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     private fun updateBarChartWithElevationGainAsXAxis() {
         intervallHelper.calculate()
         for (i in 0 until intervallHelper.elevationGains.size - 1) {
-            val streamSupplier: Supplier<Stream<SummitEntry?>?> = Supplier { getEntriesBetweenElevationGains(filteredEntries, intervallHelper.elevationGains[i], intervallHelper.elevationGains[i + 1]) }
+            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenElevationGains(filteredEntries, intervallHelper.elevationGains[i], intervallHelper.elevationGains[i + 1]) }
             val xValue = intervallHelper.elevationGainAnnotation[i]
             when (selectedDataSpinner) {
                 1 -> {
@@ -235,7 +235,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     private fun updateBarChartWithKilometersAsXAxis() {
         intervallHelper.calculate()
         for (i in 0 until intervallHelper.kilometers.size - 1) {
-            val streamSupplier: Supplier<Stream<SummitEntry?>?> = Supplier { getEntriesBetweenKilometers(filteredEntries, intervallHelper.kilometers[i], intervallHelper.kilometers[i + 1]) }
+            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenKilometers(filteredEntries, intervallHelper.kilometers[i], intervallHelper.kilometers[i + 1]) }
             val xValue = intervallHelper.kilometerAnnotation[i]
             when (selectedDataSpinner) {
                 1 -> {
@@ -261,7 +261,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     private fun updateBarChartWithTopElevationAsXAxis() {
         intervallHelper.calculate()
         for (i in 0 until intervallHelper.topElevations.size - 1) {
-            val streamSupplier: Supplier<Stream<SummitEntry?>?> = Supplier { getEntriesBetweenTopElevation(filteredEntries, intervallHelper.topElevations[i], intervallHelper.topElevations[i + 1]) }
+            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenTopElevation(filteredEntries, intervallHelper.topElevations[i], intervallHelper.topElevations[i + 1]) }
             val xValue = intervallHelper.topElevationAnnotation[i]
             when (selectedDataSpinner) {
                 1 -> {
@@ -283,61 +283,61 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         }
     }
 
-    private fun getCountsPerSportType(entriesSupplier: Supplier<Stream<SummitEntry?>?>): FloatArray {
+    private fun getCountsPerSportType(entriesSupplier: Supplier<Stream<Summit?>?>): FloatArray {
         val list: MutableList<Float> = mutableListOf()
         SportType.values().forEach { sportType -> list.add(getCountsFromStream(entriesSupplier.get()?.filter { it?.sportType == sportType })) }
         return list.toFloatArray()
     }
 
-    private fun getKilometerPerSportType(entriesSupplier: Supplier<Stream<SummitEntry?>?>): FloatArray {
+    private fun getKilometerPerSportType(entriesSupplier: Supplier<Stream<Summit?>?>): FloatArray {
         val list: MutableList<Float> = mutableListOf()
         SportType.values().forEach { sportType -> list.add(getKilometersFromStream(entriesSupplier.get()?.filter { it?.sportType == sportType })) }
         return list.toFloatArray()
     }
 
-    private fun getElevationGainsPerSportType(entriesSupplier: Supplier<Stream<SummitEntry?>?>): FloatArray {
+    private fun getElevationGainsPerSportType(entriesSupplier: Supplier<Stream<Summit?>?>): FloatArray {
         val list: MutableList<Float> = mutableListOf()
         SportType.values().forEach { sportType -> list.add(getElevationGainsFromStream(entriesSupplier.get()?.filter { it?.sportType == sportType })) }
         return list.toFloatArray()
     }
 
-    private fun getEntriesBetweenDates(entries: ArrayList<SummitEntry>?, start: Date?, end: Date?): Stream<SummitEntry?>? {
+    private fun getEntriesBetweenDates(entries: List<Summit>?, start: Date?, end: Date?): Stream<Summit?>? {
         return entries
                 ?.stream()
-                ?.filter { o: SummitEntry? -> o?.date?.after(start) ?: false && o?.date?.before(end) ?: false }
+                ?.filter { o: Summit? -> o?.date?.after(start) ?: false && o?.date?.before(end) ?: false }
     }
 
-    private fun getEntriesBetweenTopElevation(entries: ArrayList<SummitEntry>?, start: Float, end: Float): Stream<SummitEntry?>? {
+    private fun getEntriesBetweenTopElevation(entries: List<Summit>?, start: Float, end: Float): Stream<Summit?>? {
         return entries
                 ?.stream()
-                ?.filter { o: SummitEntry? -> o != null && o.elevationData.maxElevation >= start && o.elevationData.maxElevation < end }
+                ?.filter { o: Summit? -> o != null && o.elevationData.maxElevation >= start && o.elevationData.maxElevation < end }
     }
 
-    private fun getEntriesBetweenElevationGains(entries: ArrayList<SummitEntry>?, start: Float, end: Float): Stream<SummitEntry?>? {
+    private fun getEntriesBetweenElevationGains(entries: List<Summit>?, start: Float, end: Float): Stream<Summit?>? {
         return entries
                 ?.stream()
-                ?.filter { o: SummitEntry? -> o != null && o.elevationData.elevationGain >= start && o.elevationData.elevationGain < end }
+                ?.filter { o: Summit? -> o != null && o.elevationData.elevationGain >= start && o.elevationData.elevationGain < end }
     }
 
-    private fun getEntriesBetweenKilometers(entries: ArrayList<SummitEntry>?, start: Float, end: Float): Stream<SummitEntry?>? {
+    private fun getEntriesBetweenKilometers(entries: List<Summit>?, start: Float, end: Float): Stream<Summit?>? {
         return entries
                 ?.stream()
-                ?.filter { o: SummitEntry? -> o != null && o.kilometers >= start && o.kilometers < end }
+                ?.filter { o: Summit? -> o != null && o.kilometers >= start && o.kilometers < end }
     }
 
-    private fun getCountsFromStream(stream: Stream<SummitEntry?>?): Float {
+    private fun getCountsFromStream(stream: Stream<Summit?>?): Float {
         return stream?.count()?.toFloat() ?: 0.0f
     }
 
-    private fun getKilometersFromStream(stream: Stream<SummitEntry?>?): Float {
+    private fun getKilometersFromStream(stream: Stream<Summit?>?): Float {
         return stream
-                ?.mapToInt { o: SummitEntry? -> o?.kilometers?.toInt() ?: 0 }
+                ?.mapToInt { o: Summit? -> o?.kilometers?.toInt() ?: 0 }
                 ?.sum()?.toFloat() ?: 0.0f
     }
 
-    private fun getElevationGainsFromStream(stream: Stream<SummitEntry?>?): Float {
+    private fun getElevationGainsFromStream(stream: Stream<Summit?>?): Float {
         return stream
-                ?.mapToInt { obj: SummitEntry? -> obj?.elevationData?.elevationGain ?: 0 }
+                ?.mapToInt { obj: Summit? -> obj?.elevationData?.elevationGain ?: 0 }
                 ?.sum()?.toFloat() ?: 0.0f
     }
 

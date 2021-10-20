@@ -15,14 +15,14 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.BookmarkViewAdapter
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
-import de.drtobiasprinz.summitbook.models.BookmarkEntry
+import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.models.Bookmark
 import de.drtobiasprinz.summitbook.ui.dialog.AddBookmarkDialog
 import java.util.*
 
 
 class BookmarkViewFragment : Fragment() {
-    private lateinit var bookmarks: ArrayList<BookmarkEntry>
+    private lateinit var bookmarks: ArrayList<Bookmark>
     private var addBookmarkFab: FloatingActionButton? = null
 
     override fun onCreateView(
@@ -32,9 +32,8 @@ class BookmarkViewFragment : Fragment() {
         summitRecycler = inflater.inflate(
                 R.layout.fragment_summit_view, container, false) as RecyclerView
         setHasOptionsMenu(true)
-        val helper = SummitBookDatabaseHelper(activity)
-        val db = helper.readableDatabase
-        bookmarks = helper.getAllBookmarks(db)
+        val database = context?.let { AppDatabase.getDatabase(it) }
+        bookmarks = database?.bookmarkDao()?.allBookmark as ArrayList<Bookmark>
         adapter = BookmarkViewAdapter(bookmarks)
         summitRecycler?.adapter = adapter
         val layoutManager = LinearLayoutManager(activity)

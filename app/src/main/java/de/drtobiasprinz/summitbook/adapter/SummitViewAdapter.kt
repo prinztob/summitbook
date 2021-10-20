@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import de.drtobiasprinz.summitbook.*
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog.Companion.updateInstance
@@ -29,7 +29,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
     var cardView: CardView? = null
     val summitEntries = sortFilterHelper.entries
     lateinit var context: Context
-    var summitEntriesFiltered: ArrayList<SummitEntry>?
+    var summitEntriesFiltered: ArrayList<Summit>?
     override fun getItemCount(): Int {
         return summitEntriesFiltered?.size ?: 0
     }
@@ -48,71 +48,71 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
             context = cardView.context
             val entry = summitEntriesFiltered?.get(position)
             if (entry != null) {
-                fillCardView(cardView, entry, sortFilterHelper.database, position)
+                fillCardView(cardView, entry, position)
             }
         }
     }
 
-    fun getItem(position: Int): SummitEntry? {
+    fun getItem(position: Int): Summit? {
         return summitEntriesFiltered?.get(position)
     }
 
-    private fun fillCardView(cardView: CardView, summitEntry: SummitEntry, db: SQLiteDatabase, position: Int) {
+    private fun fillCardView(cardView: CardView, summit: Summit, position: Int) {
         val textViewDate = cardView.findViewById<TextView?>(R.id.tour_date)
-        textViewDate?.text = summitEntry.getDateAsString()
+        textViewDate?.text = summit.getDateAsString()
         val textViewName = cardView.findViewById<TextView?>(R.id.summit_name)
-        textViewName?.text = summitEntry.name
+        textViewName?.text = summit.name
         val textViewHeight = cardView.findViewById<TextView?>(R.id.height_meter)
-        textViewHeight?.text = String.format("%s hm", summitEntry.elevationData.elevationGain)
+        textViewHeight?.text = String.format("%s hm", summit.elevationData.elevationGain)
         val imageViewSportType = cardView.findViewById<ImageView?>(R.id.sport_type_image)
-        summitEntry.sportType.imageId.let { imageViewSportType?.setImageResource(it) }
+        summit.sportType.imageId.let { imageViewSportType?.setImageResource(it) }
         val image = cardView.findViewById<ImageView?>(R.id.card_view_image)
         val imageText = cardView.findViewById<RelativeLayout?>(R.id.card_view_text)
         if (imageText != null) {
-            addImage(summitEntry, imageText, textViewName, image, cardView)
+            addImage(summit, imageText, textViewName, image, cardView)
         }
         val setFavoriteButton = cardView.findViewById<ImageButton?>(R.id.entry_favorite)
-        if (summitEntry.isFavorite) {
+        if (summit.isFavorite) {
             setFavoriteButton?.setImageResource(R.drawable.ic_star_black_24dp)
         } else {
             setFavoriteButton?.setImageResource(R.drawable.ic_star_border_black_24dp)
         }
         setFavoriteButton?.setOnClickListener { _: View? ->
-            if (summitEntry.isFavorite) {
+            if (summit.isFavorite) {
                 setFavoriteButton.setImageResource(R.drawable.ic_star_border_black_24dp)
             } else {
                 setFavoriteButton.setImageResource(R.drawable.ic_star_black_24dp)
             }
-            summitEntry.isFavorite = !summitEntry.isFavorite
-            sortFilterHelper.databaseHelper.updateIsFavoriteSummit(db, summitEntry._id, summitEntry.isFavorite)
+            summit.isFavorite = !summit.isFavorite
+            sortFilterHelper.database.summitDao()?.updateIsFavorite(summit.id, summit.isFavorite)
         }
         val addImageButton = cardView.findViewById<ImageButton?>(R.id.entry_add_image)
-        if (summitEntry.hasImagePath()) {
+        if (summit.hasImagePath()) {
             addImageButton.setOnClickListener { v: View? ->
                 val context = v?.context
                 val intent = Intent(context, AddImagesActivity::class.java)
-                intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry._id)
+                intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
                 intent.putExtra(SelectOnOsMapActivity.SUMMIT_POSITION, position)
                 v?.context?.startActivity(intent)
             }
         } else {
             val listener = ImagePickerListener()
-            listener.setListener(addImageButton, summitEntry, this, db, sortFilterHelper.databaseHelper)
+            listener.setListener(addImageButton, summit, this, sortFilterHelper.database)
         }
         val addVelocityData = cardView.findViewById<ImageButton?>(R.id.entry_add_velocity_data)
-        if (summitEntry.velocityData.hasAdditionalData() || summitEntry.elevationData.hasAdditionalData()) {
+        if (summit.velocityData.hasAdditionalData() || summit.elevationData.hasAdditionalData()) {
             addVelocityData?.setImageResource(R.drawable.ic_baseline_speed_24)
         } else {
             addVelocityData?.setImageResource(R.drawable.ic_baseline_more_time_24)
         }
-        if ((summitEntry.activityData == null || summitEntry.activityData?.activityId == null) && !summitEntry.hasGpsTrack()) {
+        if ((summit.garminData == null || summit.garminData?.activityId == null) && !summit.hasGpsTrack()) {
             addVelocityData?.visibility = View.GONE
         } else {
             addVelocityData?.visibility = View.VISIBLE
         }
         addVelocityData?.setOnClickListener { v: View? ->
             if (pythonExecutor != null) {
-                AddAdditionalDataFromExternalResourcesDialog(summitEntry, pythonExecutor, sortFilterHelper, addVelocityData)
+                AddAdditionalDataFromExternalResourcesDialog(summit, pythonExecutor, sortFilterHelper, addVelocityData)
                         .show((context as FragmentActivity).supportFragmentManager, "Show addition data")
             }
 
@@ -121,37 +121,37 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         //delete a summit entry
         removeButton?.setOnClickListener { v: View? ->
             v?.context?.let {
-                showDeleteEntryDialog(it, summitEntry, v)
+                showDeleteEntryDialog(it, summit, v)
             }
         }
         val editButton = cardView.findViewById<ImageButton?>(R.id.entry_edit)
         editButton?.setOnClickListener { _: View? ->
-            val updateDialog = sortFilterHelper.let { updateInstance(summitEntry, it, pythonExecutor) }
+            val updateDialog = sortFilterHelper.let { updateInstance(summit, it, pythonExecutor) }
             MainActivity.mainActivity?.supportFragmentManager?.let { updateDialog.show(it, "Summits") }
         }
         val addPosition = cardView.findViewById<ImageButton?>(R.id.entry_add_coordinate)
-        setIconForPositionButton(addPosition, summitEntry)
+        setIconForPositionButton(addPosition, summit)
         addPosition?.setOnClickListener { v: View? ->
             val context = v?.context
             val intent = Intent(context, SelectOnOsMapActivity::class.java)
-            intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry._id)
+            intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
             intent.putExtra(SelectOnOsMapActivity.SUMMIT_POSITION, position)
             v?.context?.startActivity(intent)
         }
         cardView.setOnClickListener { v: View? ->
             val context = v?.context
             val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-            intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry._id)
+            intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
             v?.context?.startActivity(intent)
         }
     }
 
-    fun showDeleteEntryDialog(it: Context, entry: SummitEntry, v: View): AlertDialog? {
+    fun showDeleteEntryDialog(it: Context, entry: Summit, v: View): AlertDialog? {
         return AlertDialog.Builder(it)
                 .setTitle("Delete entry")
                 .setMessage("Are you sure you want to delete this entry?")
                 .setPositiveButton(android.R.string.yes) { _: DialogInterface?, _: Int ->
-                    deleteEntry(sortFilterHelper.database, entry, v)
+                    deleteEntry(entry, v)
                 }
                 .setNegativeButton(android.R.string.no
                 ) { _: DialogInterface?, _: Int ->
@@ -162,10 +162,8 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
                 .show()
     }
 
-    private fun deleteEntry(db: SQLiteDatabase?, entry: SummitEntry, v: View) {
-        val taskState = db?.let { sortFilterHelper.databaseHelper.deleteSummit(it, entry) }
-                ?: false
-        if (taskState) {
+    private fun deleteEntry(entry: Summit, v: View) {
+            sortFilterHelper.database.summitDao()?.delete(entry)
             if (entry.hasGpsTrack()) {
                 entry.getGpsTrackPath()?.toFile()?.delete()
             }
@@ -178,13 +176,9 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
             summitEntriesFiltered?.remove(entry)
             notifyDataSetChanged()
             Toast.makeText(v.context, v.context.getString(R.string.delete_entry, entry.name), Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(v.context, "An error occurred, please try again.",
-                    Toast.LENGTH_SHORT).show()
-        }
     }
 
-    private fun addImage(entry: SummitEntry, imageText: RelativeLayout, textViewName: TextView?, image: ImageView?, cardView: CardView?) {
+    private fun addImage(entry: Summit, imageText: RelativeLayout, textViewName: TextView?, image: ImageView?, cardView: CardView?) {
         if (entry.hasImagePath()) {
             imageText.setBackgroundResource(R.color.translucent)
             textViewName?.setTextColor(Color.WHITE)
@@ -213,7 +207,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
                 summitEntriesFiltered = if (charString.isEmpty()) {
                     sortFilterHelper.entries
                 } else {
-                    val filteredList = ArrayList<SummitEntry>()
+                    val filteredList = ArrayList<Summit>()
                     for (entry in sortFilterHelper.entries) {
                         val name: String = entry.name
                         val comments: String = entry.comments
@@ -229,21 +223,21 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
             }
 
             override fun publishResults(charSequence: CharSequence?, filterResults: FilterResults?) {
-                summitEntriesFiltered = filterResults?.values as ArrayList<SummitEntry>
+                summitEntriesFiltered = filterResults?.values as ArrayList<Summit>
                 notifyDataSetChanged()
             }
         }
     }
 
-    fun setFilteredSummitEntries(entries: ArrayList<SummitEntry>?) {
-        summitEntriesFiltered = entries
+    fun setFilteredSummitEntries(entries: List<Summit>?) {
+        summitEntriesFiltered = entries as ArrayList<Summit>?
         notifyDataSetChanged()
     }
 
     class ViewHolder internal constructor(val cardView: CardView?) : RecyclerView.ViewHolder(cardView!!)
 
     companion object {
-        fun setIconForPositionButton(addPosition: ImageButton?, entry: SummitEntry?) {
+        fun setIconForPositionButton(addPosition: ImageButton?, entry: Summit?) {
             if (entry?.latLng == null) {
                 addPosition?.setImageResource(R.drawable.ic_add_location_black_24dp)
             } else {

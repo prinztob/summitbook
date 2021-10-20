@@ -3,7 +3,6 @@ package de.drtobiasprinz.summitbook.ui.dialog
 import android.app.DatePickerDialog
 import android.content.Context
 import android.content.DialogInterface
-import android.database.sqlite.SQLiteDatabase
 import android.os.AsyncTask
 import android.os.Bundle
 import android.text.*
@@ -23,7 +22,6 @@ import com.hootsuite.nachos.NachoTextView
 import com.hootsuite.nachos.terminator.ChipTerminatorHandler
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
@@ -47,11 +45,9 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     var temporaryGpxFile: File? = null
     var latlngHightestPoint: LatLng? = null
     private lateinit var currentContext: Context
-    private lateinit var helper: SummitBookDatabaseHelper
-    private lateinit var database: SQLiteDatabase
     private lateinit var sportTypeAdapter: ArrayAdapter<SportType>
-    private var currentSummitEntry: SummitEntry? = null
-    private var connectedSummits: MutableList<SummitEntry> = mutableListOf()
+    private var currentSummit: Summit? = null
+    private var connectedSummits: MutableList<Summit> = mutableListOf()
     private var mDialog: AlertDialog? = null
     private var listItemsGpsDownloadSuccessful: BooleanArray? = null
     private lateinit var date: EditText
@@ -100,7 +96,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         }
     }
     private lateinit var sportTypeSpinner: Spinner
-    private var activityDataFromGarminConnect: GarminActivityData? = null
+    private var garminDataFromGarminConnect: GarminData? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.dialog_add_summit, container)
     }
@@ -108,8 +104,6 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         currentContext = requireContext()
-        helper = SummitBookDatabaseHelper(view.context)
-        database = helper.writableDatabase
         saveEntryButton = view.findViewById(R.id.add_summit_save)
         saveEntryButton.isEnabled = false
         val closeDialogButton = view.findViewById<Button>(R.id.add_summit_cancel)
@@ -165,7 +159,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         addParticipants(view)
         if (isUpdate) {
             saveEntryButton.setText(R.string.updateButtonText)
-            updateDialogFields(currentSummitEntry, true)
+            updateDialogFields(currentSummit, true)
         }
 
         val expandMore: TextView = view.findViewById(R.id.expand_more)
@@ -197,13 +191,13 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         //save the summit
         saveEntryButton.setOnClickListener {
             val sportType = SportType.valueOf(sportTypeSpinner.selectedItem.toString())
-            parseSummitEntry(sportType)
-            val entry = currentSummitEntry
+            parseSummit(sportType)
+            val entry = currentSummit
             if (entry != null) {
-                val activityDataLocal = entry.activityData
+                val garminDataLocal = entry.garminData
                 val gpsTrackPath = entry.getGpsTrackPath()?.toFile()
                 val temporaryGpxFileLocal = temporaryGpxFile
-                if (activityDataLocal != null && temporaryGpxFileLocal != null && temporaryGpxFileLocal.exists() && gpsTrackPath != null) {
+                if (garminDataLocal != null && temporaryGpxFileLocal != null && temporaryGpxFileLocal.exists() && gpsTrackPath != null) {
                     temporaryGpxFileLocal.copyTo(gpsTrackPath, overwrite = true)
                 }
                 val latlngHighestPointLocal = latlngHightestPoint
@@ -213,10 +207,9 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                 entry.setBoundingBoxFromTrack()
                 val adapter = SummitViewFragment.adapter
                 if (isUpdate) {
-                    helper.updateSummit(database, entry)
+                    sortFilterHelper.database.summitDao()?.updateSummit(entry)
                 } else {
-                    entry._id = helper.insertSummit(database, entry).toInt()
-                    adapter.summitEntries.add(entry)
+                    entry.id = sortFilterHelper.database.summitDao()?.addSummit(entry) ?: 0L
                     sortFilterHelper.entries.add(entry)
                     sortFilterHelper.update(sortFilterHelper.entries)
                 }
@@ -226,7 +219,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         }
         closeDialogButton.setOnClickListener { v: View ->
             dialog?.cancel()
-            val text = if (currentSummitEntry != null) getString(R.string.update_summit_cancel) else getString(R.string.add_new_summit_cancel)
+            val text = if (currentSummit != null) getString(R.string.update_summit_cancel) else getString(R.string.add_new_summit_cancel)
             Toast.makeText(v.context, text, Toast.LENGTH_SHORT).show()
         }
 
@@ -249,7 +242,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         }
     }
 
-    fun showSummitsDialog(pythonExecutor: GarminPythonExecutor, entries: List<SummitEntry>, progressBar: RelativeLayout, powerData: JsonObject? = null) {
+    fun showSummitsDialog(pythonExecutor: GarminPythonExecutor, entries: List<Summit>, progressBar: RelativeLayout, powerData: JsonObject? = null) {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         val useTcx = sharedPreferences.getBoolean("download_tcx", false)
 
@@ -270,11 +263,11 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                     listItemsChecked[which] = isChecked
                     mDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = listItemsGpsDownloadSuccessful?.contains(false) == false
                     if (isChecked) {
-                        downloadGpxForSummitEntry(pythonExecutor, entry, which, useTcx, powerData)
+                        downloadGpxForSummit(pythonExecutor, entry, which, useTcx, powerData)
                     }
                 }
                 .setPositiveButton(R.string.saveButtonText) { _: DialogInterface?, _: Int ->
-                    val selectedEntries: MutableList<SummitEntry> = mutableListOf()
+                    val selectedEntries: MutableList<Summit> = mutableListOf()
                     for (i in entries.indices) {
                         if (listItemsChecked[i]) {
                             selectedEntries.add(entries[i])
@@ -282,7 +275,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                     }
                     val downloader = GarminTrackAndDataDownloader(selectedEntries, pythonExecutor)
                     downloader.downloadTracks(true)
-                    downloader.extractFinalSummitEntry()
+                    downloader.extractFinalSummit()
                     val entry = downloader.finalEntry
                     if (entry != null) {
                         temporaryGpxFile = getTempGpsFilePath(entry.date).toFile()
@@ -357,10 +350,10 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             suggestions.addAll(it.places)
             suggestions.add(it.name)
         }
-        val localSummitEntry = currentSummitEntry
-        if (addConnectedEntryString && localSummitEntry != null) {
-            for (entry in sortFilterHelper.entries.filter { it != currentSummitEntry }) {
-                val differenceInMilliSec: Long = localSummitEntry.date.time - entry.date.time
+        val localSummit = currentSummit
+        if (addConnectedEntryString && localSummit != null) {
+            for (entry in sortFilterHelper.entries.filter { it != currentSummit }) {
+                val differenceInMilliSec: Long = localSummit.date.time - entry.date.time
                 val differenceInDays: Double = round(TimeUnit.MILLISECONDS.toDays(differenceInMilliSec).toDouble())
                 if (differenceInDays in 0.0..1.0) {
                     connectedSummits.add(entry)
@@ -377,12 +370,13 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         view.enableEditChipOnTouch(false, true)
     }
 
-    private fun parseSummitEntry(sportType: SportType) {
+    private fun parseSummit(sportType: SportType) {
         val places = updatePlacesChipValuesWithId()
+        parseGarminData()
         try {
-            val entry = currentSummitEntry
+            val entry = currentSummit
             if (entry != null) {
-                entry.date = SummitEntry.parseDate(date.text.toString())
+                entry.date = Summit.parseDate(date.text.toString())
                 entry.name = summitName.text.toString()
                 entry.sportType = sportType
                 entry.places = places
@@ -394,9 +388,10 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                 entry.velocityData.maxVelocity = getTextWithDefaultDouble(topSpeedText)
                 entry.elevationData.maxElevation = getTextWithDefaultInt(topElevationText)
                 entry.participants = participantsView.chipValues
+                entry.garminData = garminDataFromGarminConnect
             } else {
-                currentSummitEntry = SummitEntry(
-                        SummitEntry.parseDate(date.text.toString()),
+                currentSummit = Summit(
+                        Summit.parseDate(date.text.toString()),
                         summitName.text.toString(),
                         sportType,
                         places,
@@ -405,36 +400,42 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                         ElevationData.parse(getTextWithDefaultInt(topElevationText), heightMeterText.text.toString().toInt()),
                         getTextWithDefaultDouble(kmText),
                         VelocityData.parse(getTextWithDefaultDouble(paceText), getTextWithDefaultDouble(topSpeedText)),
+                        latlngHightestPoint?.latitude, latlngHightestPoint?.longitude,
                         participantsView.chipValues,
-                        mutableListOf()
+                        false,
+                        mutableListOf(),
+                        garminDataFromGarminConnect,
+                        null
                 )
             }
-            activityDataFromGarminConnect?.calories = getTextWithDefaultDouble(caloriesText).toFloat()
-            activityDataFromGarminConnect?.averageHR = getTextWithDefaultDouble(averageHRText).toFloat()
-            activityDataFromGarminConnect?.maxHR = getTextWithDefaultDouble(maxHRText).toFloat()
-            activityDataFromGarminConnect?.ftp = getTextWithDefaultInt(ftpText)
-            activityDataFromGarminConnect?.vo2max = getTextWithDefaultInt(vo2maxText)
-            activityDataFromGarminConnect?.power?.avgPower = getTextWithDefaultDouble(powerAvgText).toFloat()
-            activityDataFromGarminConnect?.power?.normPower = getTextWithDefaultDouble(powerNormText).toFloat()
-            activityDataFromGarminConnect?.power?.oneSec = getTextWithDefaultInt(power1sText)
-            activityDataFromGarminConnect?.power?.twoSec = getTextWithDefaultInt(power2sText)
-            activityDataFromGarminConnect?.power?.fiveSec = getTextWithDefaultInt(power5sText)
-            activityDataFromGarminConnect?.power?.tenSec = getTextWithDefaultInt(power10sText)
-            activityDataFromGarminConnect?.power?.twentySec = getTextWithDefaultInt(power20sText)
-            activityDataFromGarminConnect?.power?.thirtySec = getTextWithDefaultInt(power30sText)
-            activityDataFromGarminConnect?.power?.oneMin = getTextWithDefaultInt(power1minText)
-            activityDataFromGarminConnect?.power?.twoMin = getTextWithDefaultInt(power2minText)
-            activityDataFromGarminConnect?.power?.fiveMin = getTextWithDefaultInt(power5minText)
-            activityDataFromGarminConnect?.power?.tenMin = getTextWithDefaultInt(power10minText)
-            activityDataFromGarminConnect?.power?.twentyMin = getTextWithDefaultInt(power20minText)
-            activityDataFromGarminConnect?.power?.thirtyMin = getTextWithDefaultInt(power30minText)
-            activityDataFromGarminConnect?.power?.oneHour = getTextWithDefaultInt(power1hText)
-            activityDataFromGarminConnect?.power?.twoHours = getTextWithDefaultInt(power2hText)
-            activityDataFromGarminConnect?.power?.fiveHours = getTextWithDefaultInt(power5hText)
-            currentSummitEntry?.activityData = activityDataFromGarminConnect
         } catch (e: ParseException) {
             e.printStackTrace()
         }
+    }
+
+    private fun parseGarminData() {
+        garminDataFromGarminConnect?.calories = getTextWithDefaultDouble(caloriesText).toFloat()
+        garminDataFromGarminConnect?.averageHR = getTextWithDefaultDouble(averageHRText).toFloat()
+        garminDataFromGarminConnect?.maxHR = getTextWithDefaultDouble(maxHRText).toFloat()
+        garminDataFromGarminConnect?.ftp = getTextWithDefaultInt(ftpText)
+        garminDataFromGarminConnect?.vo2max = getTextWithDefaultInt(vo2maxText)
+        garminDataFromGarminConnect?.power?.avgPower = getTextWithDefaultDouble(powerAvgText).toFloat()
+        garminDataFromGarminConnect?.power?.normPower = getTextWithDefaultDouble(powerNormText).toFloat()
+        garminDataFromGarminConnect?.power?.oneSec = getTextWithDefaultInt(power1sText)
+        garminDataFromGarminConnect?.power?.twoSec = getTextWithDefaultInt(power2sText)
+        garminDataFromGarminConnect?.power?.fiveSec = getTextWithDefaultInt(power5sText)
+        garminDataFromGarminConnect?.power?.tenSec = getTextWithDefaultInt(power10sText)
+        garminDataFromGarminConnect?.power?.twentySec = getTextWithDefaultInt(power20sText)
+        garminDataFromGarminConnect?.power?.thirtySec = getTextWithDefaultInt(power30sText)
+        garminDataFromGarminConnect?.power?.oneMin = getTextWithDefaultInt(power1minText)
+        garminDataFromGarminConnect?.power?.twoMin = getTextWithDefaultInt(power2minText)
+        garminDataFromGarminConnect?.power?.fiveMin = getTextWithDefaultInt(power5minText)
+        garminDataFromGarminConnect?.power?.tenMin = getTextWithDefaultInt(power10minText)
+        garminDataFromGarminConnect?.power?.twentyMin = getTextWithDefaultInt(power20minText)
+        garminDataFromGarminConnect?.power?.thirtyMin = getTextWithDefaultInt(power30minText)
+        garminDataFromGarminConnect?.power?.oneHour = getTextWithDefaultInt(power1hText)
+        garminDataFromGarminConnect?.power?.twoHours = getTextWithDefaultInt(power2hText)
+        garminDataFromGarminConnect?.power?.fiveHours = getTextWithDefaultInt(power5hText)
     }
 
     private fun updatePlacesChipValuesWithId(): MutableList<String> {
@@ -442,13 +443,13 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         for ((i, place) in places.withIndex()) {
             for (connectedSummit in connectedSummits)
                 if (place == connectedSummit.getConnectedEntryString(requireContext())) {
-                    places[i] = "${SummitEntry.CONNECTED_ACTIVITY_PREFIX}${connectedSummit.activityId}"
+                    places[i] = "${Summit.CONNECTED_ACTIVITY_PREFIX}${connectedSummit.activityId}"
                 }
         }
         return places
     }
 
-    fun updateDialogFields(entry: SummitEntry?, updateSpinner: Boolean) {
+    fun updateDialogFields(entry: Summit?, updateSpinner: Boolean) {
         if (updateSpinner) {
             val sportTypeString = SportType.valueOf(entry?.sportType.toString())
             val spinnerPosition = sportTypeAdapter.getPosition(sportTypeString)
@@ -457,7 +458,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         if (entry != null) {
             entry.getDateAsString()?.let { setTextIfNotAlreadySet(date, it) }
             setTextIfNotAlreadySet(summitName, entry.name)
-            setTextIfNotAlreadySet(placesView, entry.getPlacesWithConnectedEntryString(requireContext(), sortFilterHelper.database, sortFilterHelper.databaseHelper).joinToString(",") + ",")
+            setTextIfNotAlreadySet(placesView, entry.getPlacesWithConnectedEntryString(requireContext(), sortFilterHelper.database).joinToString(",") + ",")
             setTextIfNotAlreadySet(countriesView, entry.countries.joinToString(",") + ",")
             setTextIfNotAlreadySet(commentText, entry.comments)
             setTextIfNotAlreadySet(participantsView, entry.participants.joinToString(",") + ",")
@@ -466,29 +467,29 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             setTextIfNotAlreadySet(paceText, entry.velocityData.avgVelocity.toString())
             setTextIfNotAlreadySet(topSpeedText, entry.velocityData.maxVelocity.toString())
             setTextIfNotAlreadySet(topElevationText, entry.elevationData.maxElevation.toString())
-            setTextIfNotAlreadySet(caloriesText, entry.activityData?.calories.toString())
-            setTextIfNotAlreadySet(averageHRText, entry.activityData?.averageHR.toString())
-            setTextIfNotAlreadySet(maxHRText, entry.activityData?.maxHR.toString())
-            setTextIfNotAlreadySet(ftpText, entry.activityData?.ftp.toString())
-            setTextIfNotAlreadySet(vo2maxText, entry.activityData?.vo2max.toString())
-            setTextIfNotAlreadySet(powerNormText, entry.activityData?.power?.normPower.toString())
-            setTextIfNotAlreadySet(powerAvgText, entry.activityData?.power?.avgPower.toString())
-            setTextIfNotAlreadySet(power1sText, entry.activityData?.power?.oneSec.toString())
-            setTextIfNotAlreadySet(power2sText, entry.activityData?.power?.twoSec.toString())
-            setTextIfNotAlreadySet(power5sText, entry.activityData?.power?.fiveSec.toString())
-            setTextIfNotAlreadySet(power10sText, entry.activityData?.power?.tenSec.toString())
-            setTextIfNotAlreadySet(power20sText, entry.activityData?.power?.twentySec.toString())
-            setTextIfNotAlreadySet(power30sText, entry.activityData?.power?.thirtySec.toString())
-            setTextIfNotAlreadySet(power1minText, entry.activityData?.power?.oneMin.toString())
-            setTextIfNotAlreadySet(power2minText, entry.activityData?.power?.twoMin.toString())
-            setTextIfNotAlreadySet(power5minText, entry.activityData?.power?.fiveMin.toString())
-            setTextIfNotAlreadySet(power10minText, entry.activityData?.power?.tenMin.toString())
-            setTextIfNotAlreadySet(power20minText, entry.activityData?.power?.twentyMin.toString())
-            setTextIfNotAlreadySet(power30minText, entry.activityData?.power?.thirtyMin.toString())
-            setTextIfNotAlreadySet(power1hText, entry.activityData?.power?.oneHour.toString())
-            setTextIfNotAlreadySet(power2hText, entry.activityData?.power?.twoHours.toString())
-            setTextIfNotAlreadySet(power5hText, entry.activityData?.power?.fiveHours.toString())
-            activityDataFromGarminConnect = entry.activityData
+            setTextIfNotAlreadySet(caloriesText, entry.garminData?.calories.toString())
+            setTextIfNotAlreadySet(averageHRText, entry.garminData?.averageHR.toString())
+            setTextIfNotAlreadySet(maxHRText, entry.garminData?.maxHR.toString())
+            setTextIfNotAlreadySet(ftpText, entry.garminData?.ftp.toString())
+            setTextIfNotAlreadySet(vo2maxText, entry.garminData?.vo2max.toString())
+            setTextIfNotAlreadySet(powerNormText, entry.garminData?.power?.normPower.toString())
+            setTextIfNotAlreadySet(powerAvgText, entry.garminData?.power?.avgPower.toString())
+            setTextIfNotAlreadySet(power1sText, entry.garminData?.power?.oneSec.toString())
+            setTextIfNotAlreadySet(power2sText, entry.garminData?.power?.twoSec.toString())
+            setTextIfNotAlreadySet(power5sText, entry.garminData?.power?.fiveSec.toString())
+            setTextIfNotAlreadySet(power10sText, entry.garminData?.power?.tenSec.toString())
+            setTextIfNotAlreadySet(power20sText, entry.garminData?.power?.twentySec.toString())
+            setTextIfNotAlreadySet(power30sText, entry.garminData?.power?.thirtySec.toString())
+            setTextIfNotAlreadySet(power1minText, entry.garminData?.power?.oneMin.toString())
+            setTextIfNotAlreadySet(power2minText, entry.garminData?.power?.twoMin.toString())
+            setTextIfNotAlreadySet(power5minText, entry.garminData?.power?.fiveMin.toString())
+            setTextIfNotAlreadySet(power10minText, entry.garminData?.power?.tenMin.toString())
+            setTextIfNotAlreadySet(power20minText, entry.garminData?.power?.twentyMin.toString())
+            setTextIfNotAlreadySet(power30minText, entry.garminData?.power?.thirtyMin.toString())
+            setTextIfNotAlreadySet(power1hText, entry.garminData?.power?.oneHour.toString())
+            setTextIfNotAlreadySet(power2hText, entry.garminData?.power?.twoHours.toString())
+            setTextIfNotAlreadySet(power5hText, entry.garminData?.power?.fiveHours.toString())
+            garminDataFromGarminConnect = entry.garminData
         }
     }
 
@@ -527,10 +528,10 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         picker.show()
     }
 
-    private fun downloadGpxForSummitEntry(pythonExecutor: GarminPythonExecutor, entry: SummitEntry, index: Int, useTcx: Boolean, powerData: JsonObject? = null) {
+    private fun downloadGpxForSummit(pythonExecutor: GarminPythonExecutor, entry: Summit, index: Int, useTcx: Boolean, powerData: JsonObject? = null) {
         try {
             if (entry.sportType == SportType.BikeAndHike) {
-                val power = entry.activityData?.power
+                val power = entry.garminData?.power
                 if (powerData != null && power != null) {
                     updatePower(powerData, power)
                 }
@@ -542,21 +543,21 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         }
     }
 
-    private fun updateMultiSpotActivityIds(pythonExecutor: GarminPythonExecutor, entry: SummitEntry) {
-        val activityId = entry.activityData?.activityId
+    private fun updateMultiSpotActivityIds(pythonExecutor: GarminPythonExecutor, entry: Summit) {
+        val activityId = entry.garminData?.activityId
         if (activityId != null) {
             val activityJsonFile = File(SummitViewFragment.activitiesDir, "acivity_${activityId}.json")
             if (activityJsonFile.exists()) {
                 val gson = JsonParser().parse(activityJsonFile.readText()) as JsonObject
                 val parsedEntry = GarminPythonExecutor.parseJsonObject(gson)
-                val ids = parsedEntry.activityData?.activityIds
+                val ids = parsedEntry.garminData?.activityIds
                 if (ids != null) {
-                    entry.activityData?.activityIds = ids
+                    entry.garminData?.activityIds = ids
                 }
             } else {
                 val gson = pythonExecutor.getMultiSportData(activityId)
                 val ids = gson.get("metadataDTO").asJsonObject.get("childIds").asJsonArray
-                entry.activityData?.activityIds?.addAll(ids.map { it.asString })
+                entry.garminData?.activityIds?.addAll(ids.map { it.asString })
             }
         }
     }
@@ -567,19 +568,13 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         return Paths.get(MainActivity.cache.toString(), fileName)
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        database.close()
-        helper.close()
-    }
-
     companion object {
 
         @JvmStatic
-        fun updateInstance(entry: SummitEntry?, sortFilterHelper: SortFilterHelper, pythonExecutor: GarminPythonExecutor?): AddSummitDialog {
+        fun updateInstance(entry: Summit?, sortFilterHelper: SortFilterHelper, pythonExecutor: GarminPythonExecutor?): AddSummitDialog {
             val add = AddSummitDialog(sortFilterHelper, pythonExecutor)
             add.isUpdate = true
-            add.currentSummitEntry = entry
+            add.currentSummit = entry
             return add
         }
 
@@ -596,7 +591,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
 
         class AsyncDownloadJsonViaPython(private val pythonExecutor: GarminPythonExecutor, private val dateAsString: String, private val dialog: AddSummitDialog) : AsyncTask<Void?, Void?, Void?>() {
 
-            var entries: List<SummitEntry>? = null
+            var entries: List<Summit>? = null
             var powerData: JsonObject? = null
 
             override fun doInBackground(vararg params: Void?): Void? {
@@ -604,7 +599,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                     val allKnownEntries = getAllDownloadedSummitsFromGarmin(SummitViewFragment.activitiesDir)
                     val firstDate = allKnownEntries.minByOrNull { it.getDateAsFloat() }?.getDateAsString()
                     val lastDate = allKnownEntries.maxByOrNull { it.getDateAsFloat() }?.getDateAsString()
-                    val knownEntriesOnDate = allKnownEntries.filter { it.getDateAsString() == dateAsString}
+                    val knownEntriesOnDate = allKnownEntries.filter { it.getDateAsString() == dateAsString }
                     if (dateAsString != firstDate && dateAsString != lastDate && knownEntriesOnDate.isNotEmpty()) {
                         entries = knownEntriesOnDate
                     } else {
@@ -617,7 +612,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                 return null
             }
 
-            private fun getPowerDataFromEntries(entries: List<SummitEntry>?): JsonObject? {
+            private fun getPowerDataFromEntries(entries: List<Summit>?): JsonObject? {
                 if (entries != null) {
                     for (entry in entries) {
                         if (entry.sportType == SportType.BikeAndHike) {

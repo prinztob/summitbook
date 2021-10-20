@@ -43,7 +43,7 @@ class GarminPythonExecutor(val username: String, val password: String) {
         }
     }
 
-    fun getActivityJsonAtDate(dateAsString: String): ArrayList<SummitEntry> {
+    fun getActivityJsonAtDate(dateAsString: String): List<Summit> {
         if (client == null) {
             login()
         }
@@ -118,7 +118,7 @@ class GarminPythonExecutor(val username: String, val password: String) {
 
     companion object {
 
-        class AsyncDownloadGpxViaPython(garminPythonExecutor: GarminPythonExecutor, entries: List<SummitEntry>, private val sortFilterHelper: SortFilterHelper, useTcx: Boolean = false, private val dialog: BaseDialog, private val index: Int = -1) : AsyncTask<Void?, Void?, Void?>() {
+        class AsyncDownloadGpxViaPython(garminPythonExecutor: GarminPythonExecutor, entries: List<Summit>, private val sortFilterHelper: SortFilterHelper, useTcx: Boolean = false, private val dialog: BaseDialog, private val index: Int = -1) : AsyncTask<Void?, Void?, Void?>() {
             private val downloader = GarminTrackAndDataDownloader(entries, garminPythonExecutor, useTcx)
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
@@ -131,9 +131,9 @@ class GarminPythonExecutor(val username: String, val password: String) {
 
             override fun onPostExecute(param: Void?) {
                 try {
-                    downloader.extractFinalSummitEntry()
+                    downloader.extractFinalSummit()
                     if (dialog.isStepByStepDownload()) {
-                        val activityId = downloader.finalEntry?.activityData?.activityId
+                        val activityId = downloader.finalEntry?.garminData?.activityId
                         if (activityId != null) {
                             downloader.composeFinalTrack(getTempGpsFilePath(activityId).toFile())
                         }
@@ -157,8 +157,8 @@ class GarminPythonExecutor(val username: String, val password: String) {
             }
         }
 
-        fun getSummitsAtDate(activities: JsonArray): ArrayList<SummitEntry> {
-            val entries = ArrayList<SummitEntry>()
+        fun getSummitsAtDate(activities: JsonArray): List<Summit> {
+            val entries = ArrayList<Summit>()
             for (i in 0 until activities.size()) {
                 val row = activities[i] as JsonObject
                 try {
@@ -170,8 +170,8 @@ class GarminPythonExecutor(val username: String, val password: String) {
             return entries
         }
 
-        fun getAllDownloadedSummitsFromGarmin(directory: File): MutableList<SummitEntry> {
-            val entries = mutableListOf<SummitEntry>()
+        fun getAllDownloadedSummitsFromGarmin(directory: File): MutableList<Summit> {
+            val entries = mutableListOf<Summit>()
             if (directory.exists() && directory.isDirectory) {
                 val files = directory.listFiles()
                 if (files?.isNotEmpty() == true) {
@@ -187,28 +187,16 @@ class GarminPythonExecutor(val username: String, val password: String) {
         }
 
         @Throws(ParseException::class)
-        fun parseJsonObject(jsonObject: JsonObject): SummitEntry {
-            val date = SimpleDateFormat(SummitEntry.DATETIME_FORMAT, Locale.ENGLISH)
+        fun parseJsonObject(jsonObject: JsonObject): Summit {
+            val date = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
                     .parse(jsonObject.getAsJsonPrimitive("startTimeLocal").asString) ?: Date()
             val duration: Double = if (jsonObject["movingDuration"] != JsonNull.INSTANCE) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
             val averageSpeed = convertMphToKmh(jsonObject["distance"].asDouble / duration)
-            val entry = SummitEntry(date,
-                    jsonObject["activityName"].asString,
-                    parseSportType(jsonObject["activityType"].asJsonObject),
-                    emptyList(), emptyList(), "",
-                    ElevationData.parse(if (jsonObject["maxElevation"] != JsonNull.INSTANCE) round(jsonObject["maxElevation"].asDouble, 2).toInt() else 0,
-                            getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt()),
-                    round(convertMeterToKm(getJsonObjectEntryNotNull(jsonObject, "distance").toDouble()), 2),
-                    VelocityData.parse(round(averageSpeed, 2),
-                        if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
-                    emptyList(),
-                    mutableListOf()
-            )
             val activityIds: MutableList<String> = mutableListOf(jsonObject["activityId"].asString)
             if (jsonObject.has("childIds")) {
                 activityIds.addAll(jsonObject["childIds"].asJsonArray.map { it.asString })
             }
-            val activityData = GarminActivityData(
+            val garminData = GarminData(
                     activityIds,
                     getJsonObjectEntryNotNull(jsonObject, "calories"),
                     getJsonObjectEntryNotNull(jsonObject, "averageHR"),
@@ -222,8 +210,22 @@ class GarminPythonExecutor(val username: String, val password: String) {
                     getJsonObjectEntryNotNull(jsonObject, "avgFlow"),
                     getJsonObjectEntryNotNull(jsonObject, "activityTrainingLoad")
             )
-            entry.activityData = activityData
-            return entry
+            return Summit(date,
+                    jsonObject["activityName"].asString,
+                    parseSportType(jsonObject["activityType"].asJsonObject),
+                    emptyList(), emptyList(), "",
+                    ElevationData.parse(if (jsonObject["maxElevation"] != JsonNull.INSTANCE) round(jsonObject["maxElevation"].asDouble, 2).toInt() else 0,
+                            getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt()),
+                    round(convertMeterToKm(getJsonObjectEntryNotNull(jsonObject, "distance").toDouble()), 2),
+                    VelocityData.parse(round(averageSpeed, 2),
+                        if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
+                    null, null,
+                    emptyList(),
+                    false,
+                    mutableListOf(),
+                    garminData,
+                    null
+            )
         }
 
 

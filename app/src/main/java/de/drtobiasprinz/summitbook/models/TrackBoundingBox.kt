@@ -1,15 +1,18 @@
 package de.drtobiasprinz.summitbook.models
 
 import android.graphics.Rect
+import androidx.room.Ignore
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import kotlin.math.ceil
 import kotlin.math.floor
 
-class TrackBoundingBox constructor(
+class TrackBoundingBox(
         var latNorth: Double, var latSouth: Double, var lonWest: Double, var lonEast: Double
 ) {
+    @Ignore
     private var factor = 1000
+    @Ignore
     var trackBoundingRect = Rect(floor(lonWest*factor).toInt(), ceil(latSouth*factor).toInt(), ceil(lonEast*factor).toInt(), floor(latNorth*factor).toInt())
 
     fun intersects(boundingBox: BoundingBox): Boolean {

@@ -3,7 +3,6 @@ package de.drtobiasprinz.summitbook
 import android.app.Activity
 import android.content.DialogInterface
 import android.content.Intent
-import android.database.sqlite.SQLiteDatabase
 import android.graphics.drawable.Drawable
 import android.location.Address
 import android.os.Bundle
@@ -17,18 +16,18 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
 import com.google.android.gms.maps.model.LatLng
+import de.drtobiasprinz.gpx.GPXParser
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter.Companion.setIconForPositionButton
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
+import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.adapter
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.summitRecycler
 import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addTrackAndMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
-import de.drtobiasprinz.gpx.GPXParser
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.drawBoundingBox
 import org.osmdroid.bonuspack.location.GeocoderNominatim
 import org.osmdroid.config.Configuration
@@ -47,9 +46,8 @@ import java.nio.file.StandardCopyOption
 
 class SelectOnOsMapActivity : FragmentActivity() {
     private var latLngSelectedPosition: LatLng? = null
-    private var summitEntry: SummitEntry? = null
-    private lateinit var helper: SummitBookDatabaseHelper
-    private lateinit var database: SQLiteDatabase
+    private var summitEntry: Summit? = null
+    private var database: AppDatabase? = null
     private var selectedGpsPath: Path? = null
     private var osMap: MapView? = null
     private lateinit var savePositionButton: ImageButton
@@ -57,14 +55,13 @@ class SelectOnOsMapActivity : FragmentActivity() {
     private lateinit var addGpsTrackButton: ImageButton
     private lateinit var deletButton: ImageButton
     private lateinit var searchForLocation: EditText
-    private var summitEntryId = 0
+    private var summitEntryId = 0L
     private var summitEntryPosition = 0
     private var wasBoundingBoxCalculated: Boolean = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_select_on_osmap)
-        helper = SummitBookDatabaseHelper(this)
-        database = helper.writableDatabase
+        database = AppDatabase.getDatabase(applicationContext)
         val searchPanel = findViewById<View>(R.id.search_panel)
         val expander = findViewById<View>(R.id.expander)
         expander.setOnClickListener {
@@ -79,9 +76,10 @@ class SelectOnOsMapActivity : FragmentActivity() {
         StrictMode.setThreadPolicy(policy)
         val bundle = intent.extras
         if (bundle != null) {
-            summitEntryId = bundle.getInt(SUMMIT_ID_EXTRA_IDENTIFIER)
+            summitEntryId = bundle.getLong(SUMMIT_ID_EXTRA_IDENTIFIER)
             summitEntryPosition = bundle.getInt(SUMMIT_POSITION)
-            summitEntry = helper.getSummitsWithId(summitEntryId, database)
+            summitEntry = database?.summitDao()?.getSummit(summitEntryId)
+
             searchForLocation = findViewById(R.id.editLocation)
             searchForLocation.setText(summitEntry?.name)
 
@@ -129,7 +127,8 @@ class SelectOnOsMapActivity : FragmentActivity() {
             val position = latLngSelectedPosition
             if (entry != null) {
                 if (position != null) {
-                    helper.updatePositionOfSummit(database, entry._id, position)
+                    database?.summitDao()?.updateLat(entry.id, position.latitude)
+                    database?.summitDao()?.updateLng(entry.id, position.longitude)
                     entry.latLng = latLngSelectedPosition
                     finish()
                     Toast.makeText(v.context, "Adding a new position to summit " +
@@ -147,14 +146,13 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     }
                 }
                 entry.setBoundingBoxFromTrack()
-                val trackBoundingBox = entry.trackBoundingBox
-                if (trackBoundingBox != null) {
-                    helper.updateTrackBoundingBox(database, entry._id, trackBoundingBox)
+                if (entry.trackBoundingBox != null) {
+                    database?.summitDao()?.updateSummit(entry)
                 }
                 val entries = adapter.summitEntries
                 if (entries.isNotEmpty()) {
                     for (i in entries.indices) {
-                        if (entries[i]._id == summitEntryId) {
+                        if (entries[i].id == summitEntryId) {
                             entries[0] = entry
                         }
                     }
@@ -183,7 +181,9 @@ class SelectOnOsMapActivity : FragmentActivity() {
                                 gpsTrackPath?.toFile()?.delete()
                             }
                             entry.latLng = LatLng(0.0, 0.0)
-                            helper.updatePositionOfSummit(database, summitEntryId, LatLng(0.0, 0.0))
+
+                            database?.summitDao()?.updateLat(entry.id, 0.0)
+                            database?.summitDao()?.updateLng(entry.id, 0.0)
                             finish()
                             Toast.makeText(v.context, v.context.getString(R.string.delete_gps, entry.name), Toast.LENGTH_SHORT).show()
                         }
@@ -318,8 +318,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        database.close()
-        helper.close()
+        database?.close()
     }
 
     internal class CustomInfoWindow(mapView: MapView?) : MarkerInfoWindow(org.osmdroid.bonuspack.R.layout.bonuspack_bubble, mapView) {

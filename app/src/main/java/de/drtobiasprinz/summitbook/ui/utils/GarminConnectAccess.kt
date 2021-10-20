@@ -62,8 +62,8 @@ class GarminConnectAccess {
         this.addSummitDialog = addSummitDialog
     }
 
-    fun getSummitsAtDate(activities: JsonArray): ArrayList<SummitEntry> {
-        val entries = ArrayList<SummitEntry>()
+    fun getSummitsAtDate(activities: JsonArray): List<Summit> {
+        val entries = ArrayList<Summit>()
         for (i in 0 until activities.size()) {
             val row = activities[i] as JsonObject
             try {
@@ -87,23 +87,12 @@ class GarminConnectAccess {
     }
 
     @Throws(ParseException::class)
-    private fun parseJsonObject(jsonObject: JsonObject): SummitEntry {
-        val date = SimpleDateFormat(SummitEntry.DATETIME_FORMAT, Locale.ENGLISH)
+    private fun parseJsonObject(jsonObject: JsonObject): Summit {
+        val date = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
                 .parse(jsonObject.getAsJsonPrimitive("startTimeLocal").asString) ?: Date()
         val duration: Double = if (jsonObject["movingDuration"] != INSTANCE) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
         val averageSpeed = convertMphToKmh(jsonObject["distance"].asDouble / duration)
-        val entry = SummitEntry(date,
-                jsonObject["activityName"].asString,
-                parseSportType(jsonObject["activityType"].asJsonObject),
-                emptyList(), emptyList(), "",
-                ElevationData.parse(jsonObject["elevationGain"].asInt,
-                        if (jsonObject["maxElevation"] != INSTANCE) convertCmToMeter(jsonObject["maxElevation"].asInt) else 0),
-                round(convertMeterToKm(jsonObject["distance"].asDouble), 2),
-                VelocityData.parse(round(averageSpeed, 2), if (jsonObject["maxSpeed"] != INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
-                emptyList(),
-                mutableListOf()
-        )
-        val activityData = GarminActivityData(
+        val garminData = GarminData(
                 mutableListOf(jsonObject["activityId"].asString),
                 getJsonObjectEntryNotNull(jsonObject, "calories"),
                 getJsonObjectEntryNotNull(jsonObject, "averageHR"),
@@ -117,7 +106,21 @@ class GarminConnectAccess {
                 getJsonObjectEntryNotNull(jsonObject, "avgFlow"),
                 getJsonObjectEntryNotNull(jsonObject, "activityTrainingLoad")
         )
-        entry.activityData = activityData
+        val entry = Summit(date,
+                jsonObject["activityName"].asString,
+                parseSportType(jsonObject["activityType"].asJsonObject),
+                emptyList(), emptyList(), "",
+                ElevationData.parse(jsonObject["elevationGain"].asInt,
+                        if (jsonObject["maxElevation"] != INSTANCE) convertCmToMeter(jsonObject["maxElevation"].asInt) else 0),
+                round(convertMeterToKm(jsonObject["distance"].asDouble), 2),
+                VelocityData.parse(round(averageSpeed, 2), if (jsonObject["maxSpeed"] != INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
+                null, null,
+                emptyList(),
+                false,
+                mutableListOf(),
+                garminData,
+                null
+        )
         return entry
     }
 
@@ -246,16 +249,16 @@ class GarminConnectAccess {
         }
     }
 
-    private fun downloadGpxForSummitEntry(entry: SummitEntry, index: Int) {
-        val garminId = entry.activityData?.activityId
+    private fun downloadGpxForSummit(entry: Summit, index: Int) {
+        val garminId = entry.garminData?.activityId
         if (garminId != null) {
             downloadGpxFile(garminId, getTempGpsFilePath(entry.date).toFile(), index)
         }
     }
 
-    private fun downloadMultiSportGpx(entry: SummitEntry, index: Int) {
+    private fun downloadMultiSportGpx(entry: Summit, index: Int) {
         val gcActivityServiceUrl = "https://connect.garmin.com/modern/proxy/activity-service/activity/" // get chirldren for multi sport
-        val activityServiceUrl = gcActivityServiceUrl + entry.activityData?.activityIds
+        val activityServiceUrl = gcActivityServiceUrl + entry.garminData?.activityIds
 
         val jsonRequest: JsonObjectRequest = object : JsonObjectRequest(Method.GET, activityServiceUrl, null, Response.Listener
         { response -> //now handle the response
@@ -352,21 +355,21 @@ class GarminConnectAccess {
                                 if (entry.sportType == SportType.BikeAndHike) {
                                     downloadMultiSportGpx(entry, which)
                                 } else {
-                                    downloadGpxForSummitEntry(entry, which)
+                                    downloadGpxForSummit(entry, which)
                                 }
                             }
                             .setPositiveButton(R.string.saveButtonText) { _: DialogInterface?, _: Int ->
-                                var entry: SummitEntry? = null
+                                var entry: Summit? = null
                                 val files: ArrayList<File> = ArrayList()
                                 for (i in entries.indices) {
                                     if (listItemsChecked[i]) {
-                                        entry = extractSummitEntry(entries, i, files, entry)
+                                        entry = extractSummit(entries, i, files, entry)
                                     }
                                 }
                                 val gpsUtils = GpsUtils()
-                                val activityData = entry?.activityData
-                                if (entry != null && activityData != null) {
-                                    gpsUtils.write(getTempGpsFilePath(activityData.activityId).toFile(), gpsUtils.composeGpxFile(files), entry.name)
+                                val garminData = entry?.garminData
+                                if (entry != null && garminData != null) {
+                                    gpsUtils.write(getTempGpsFilePath(garminData.activityId).toFile(), gpsUtils.composeGpxFile(files), entry.name)
                                     addSummitDialog.updateDialogFields(entry, !addSummitDialog.isUpdate)
                                     Toast.makeText(context, context.getString(R.string.garmin_add_successful, entry.name), Toast.LENGTH_LONG).show()
                                     progressBar.visibility = View.GONE
@@ -396,7 +399,7 @@ class GarminConnectAccess {
         })
     }
 
-    private fun extractSummitEntry(entries: ArrayList<SummitEntry>, i: Int, files: ArrayList<File>, entry: SummitEntry?): SummitEntry {
+    private fun extractSummit(entries: List<Summit>, i: Int, files: ArrayList<File>, entry: Summit?): Summit {
         var entry1 = entry
         val tempFileName = getTempGpsFilePath(entries[i].date).toFile()
         if (tempFileName.exists()) {
@@ -412,44 +415,44 @@ class GarminConnectAccess {
             entry1.velocityData.avgVelocity = entry1.kilometers / (timeInHourNewEntry + timeInHouroldEntry)
             if (entry1.velocityData.maxVelocity < entries[i].velocityData.maxVelocity) entry1.velocityData.maxVelocity = entries[i].velocityData.maxVelocity
             if (entry1.elevationData.maxElevation < entries[i].elevationData.maxElevation) entry1.elevationData.maxElevation = entries[i].elevationData.maxElevation
-            if (entry1.activityData == null) {
-                if (entries[i].activityData != null) entry1.activityData = entries[i].activityData
+            if (entry1.garminData == null) {
+                if (entries[i].garminData != null) entry1.garminData = entries[i].garminData
             } else {
-                val activityDataOnI = entries[i].activityData
-                val activityDataEntry1 = entry1.activityData
-                if (activityDataEntry1 != null && activityDataOnI != null) {
-                    activityDataEntry1.activityIds.addAll(activityDataOnI.activityIds)
-                    activityDataEntry1.calories += activityDataOnI.calories
-                    activityDataEntry1.averageHR = ((activityDataEntry1.averageHR * timeInHouroldEntry + activityDataOnI.averageHR * timeInHourNewEntry) / (timeInHourNewEntry + timeInHouroldEntry)).toFloat()
-                    if (activityDataEntry1.maxHR < activityDataOnI.maxHR) activityDataEntry1.maxHR = activityDataOnI.maxHR
-                    if (activityDataEntry1.ftp < activityDataOnI.ftp) activityDataEntry1.ftp = activityDataOnI.ftp
-                    if (activityDataEntry1.vo2max < activityDataOnI.vo2max) activityDataEntry1.vo2max = activityDataOnI.vo2max
-                    if (activityDataEntry1.grit < activityDataOnI.grit) activityDataEntry1.grit = activityDataOnI.grit
-                    if (activityDataEntry1.flow < activityDataOnI.flow) activityDataEntry1.flow = activityDataOnI.flow
-                    if (activityDataEntry1.power.oneSec > 0 && activityDataOnI.power.oneSec > 0) {
-                        if (activityDataEntry1.power.maxPower < activityDataOnI.power.maxPower) activityDataEntry1.power.maxPower = activityDataOnI.power.maxPower
-                        activityDataEntry1.power.avgPower = ((activityDataEntry1.power.avgPower * timeInHouroldEntry + activityDataOnI.power.avgPower * timeInHourNewEntry) / (timeInHourNewEntry + timeInHouroldEntry)).toFloat()
-                        if (activityDataEntry1.power.normPower < activityDataOnI.power.normPower) activityDataEntry1.power.normPower = activityDataOnI.power.normPower
-                        if (activityDataEntry1.power.oneSec < activityDataOnI.power.oneSec) activityDataEntry1.power.oneSec = activityDataOnI.power.oneSec
-                        if (activityDataEntry1.power.twoSec < activityDataOnI.power.twoSec) activityDataEntry1.power.twoSec = activityDataOnI.power.twoSec
-                        if (activityDataEntry1.power.fiveSec < activityDataOnI.power.fiveSec) activityDataEntry1.power.fiveSec = activityDataOnI.power.fiveSec
-                        if (activityDataEntry1.power.tenSec < activityDataOnI.power.tenSec) activityDataEntry1.power.tenSec = activityDataOnI.power.tenSec
-                        if (activityDataEntry1.power.twentySec < activityDataOnI.power.twentySec) activityDataEntry1.power.twentySec = activityDataOnI.power.twentySec
-                        if (activityDataEntry1.power.thirtySec < activityDataOnI.power.thirtySec) activityDataEntry1.power.thirtySec = activityDataOnI.power.thirtySec
-                        if (activityDataEntry1.power.oneMin < activityDataOnI.power.oneMin) activityDataEntry1.power.oneMin = activityDataOnI.power.oneMin
-                        if (activityDataEntry1.power.twoMin < activityDataOnI.power.twoMin) activityDataEntry1.power.twoMin = activityDataOnI.power.twoMin
-                        if (activityDataEntry1.power.fiveMin < activityDataOnI.power.fiveMin) activityDataEntry1.power.fiveMin = activityDataOnI.power.fiveMin
-                        if (activityDataEntry1.power.tenMin < activityDataOnI.power.tenMin) activityDataEntry1.power.tenMin = activityDataOnI.power.tenMin
-                        if (activityDataEntry1.power.twentyMin < activityDataOnI.power.twentyMin) activityDataEntry1.power.twentyMin = activityDataOnI.power.twentyMin
-                        if (activityDataEntry1.power.thirtyMin < activityDataOnI.power.thirtyMin) activityDataEntry1.power.thirtyMin = activityDataOnI.power.thirtyMin
-                        if (activityDataEntry1.power.oneHour < activityDataOnI.power.oneHour) activityDataEntry1.power.oneHour = activityDataOnI.power.oneHour
-                        if (activityDataEntry1.power.twoHours < activityDataOnI.power.twoHours) activityDataEntry1.power.twoHours = activityDataOnI.power.twoHours
-                        if (activityDataEntry1.power.fiveHours < activityDataOnI.power.fiveHours) activityDataEntry1.power.fiveHours = activityDataOnI.power.fiveHours
-                    } else if (activityDataOnI.power.oneSec > 0) {
-                        activityDataEntry1.power = activityDataOnI.power
+                val garminDataOnI = entries[i].garminData
+                val garminDataEntry1 = entry1.garminData
+                if (garminDataEntry1 != null && garminDataOnI != null) {
+                    garminDataEntry1.activityIds.addAll(garminDataOnI.activityIds)
+                    garminDataEntry1.calories += garminDataOnI.calories
+                    garminDataEntry1.averageHR = ((garminDataEntry1.averageHR * timeInHouroldEntry + garminDataOnI.averageHR * timeInHourNewEntry) / (timeInHourNewEntry + timeInHouroldEntry)).toFloat()
+                    if (garminDataEntry1.maxHR < garminDataOnI.maxHR) garminDataEntry1.maxHR = garminDataOnI.maxHR
+                    if (garminDataEntry1.ftp < garminDataOnI.ftp) garminDataEntry1.ftp = garminDataOnI.ftp
+                    if (garminDataEntry1.vo2max < garminDataOnI.vo2max) garminDataEntry1.vo2max = garminDataOnI.vo2max
+                    if (garminDataEntry1.grit < garminDataOnI.grit) garminDataEntry1.grit = garminDataOnI.grit
+                    if (garminDataEntry1.flow < garminDataOnI.flow) garminDataEntry1.flow = garminDataOnI.flow
+                    if (garminDataEntry1.power.oneSec > 0 && garminDataOnI.power.oneSec > 0) {
+                        if (garminDataEntry1.power.maxPower < garminDataOnI.power.maxPower) garminDataEntry1.power.maxPower = garminDataOnI.power.maxPower
+                        garminDataEntry1.power.avgPower = ((garminDataEntry1.power.avgPower * timeInHouroldEntry + garminDataOnI.power.avgPower * timeInHourNewEntry) / (timeInHourNewEntry + timeInHouroldEntry)).toFloat()
+                        if (garminDataEntry1.power.normPower < garminDataOnI.power.normPower) garminDataEntry1.power.normPower = garminDataOnI.power.normPower
+                        if (garminDataEntry1.power.oneSec < garminDataOnI.power.oneSec) garminDataEntry1.power.oneSec = garminDataOnI.power.oneSec
+                        if (garminDataEntry1.power.twoSec < garminDataOnI.power.twoSec) garminDataEntry1.power.twoSec = garminDataOnI.power.twoSec
+                        if (garminDataEntry1.power.fiveSec < garminDataOnI.power.fiveSec) garminDataEntry1.power.fiveSec = garminDataOnI.power.fiveSec
+                        if (garminDataEntry1.power.tenSec < garminDataOnI.power.tenSec) garminDataEntry1.power.tenSec = garminDataOnI.power.tenSec
+                        if (garminDataEntry1.power.twentySec < garminDataOnI.power.twentySec) garminDataEntry1.power.twentySec = garminDataOnI.power.twentySec
+                        if (garminDataEntry1.power.thirtySec < garminDataOnI.power.thirtySec) garminDataEntry1.power.thirtySec = garminDataOnI.power.thirtySec
+                        if (garminDataEntry1.power.oneMin < garminDataOnI.power.oneMin) garminDataEntry1.power.oneMin = garminDataOnI.power.oneMin
+                        if (garminDataEntry1.power.twoMin < garminDataOnI.power.twoMin) garminDataEntry1.power.twoMin = garminDataOnI.power.twoMin
+                        if (garminDataEntry1.power.fiveMin < garminDataOnI.power.fiveMin) garminDataEntry1.power.fiveMin = garminDataOnI.power.fiveMin
+                        if (garminDataEntry1.power.tenMin < garminDataOnI.power.tenMin) garminDataEntry1.power.tenMin = garminDataOnI.power.tenMin
+                        if (garminDataEntry1.power.twentyMin < garminDataOnI.power.twentyMin) garminDataEntry1.power.twentyMin = garminDataOnI.power.twentyMin
+                        if (garminDataEntry1.power.thirtyMin < garminDataOnI.power.thirtyMin) garminDataEntry1.power.thirtyMin = garminDataOnI.power.thirtyMin
+                        if (garminDataEntry1.power.oneHour < garminDataOnI.power.oneHour) garminDataEntry1.power.oneHour = garminDataOnI.power.oneHour
+                        if (garminDataEntry1.power.twoHours < garminDataOnI.power.twoHours) garminDataEntry1.power.twoHours = garminDataOnI.power.twoHours
+                        if (garminDataEntry1.power.fiveHours < garminDataOnI.power.fiveHours) garminDataEntry1.power.fiveHours = garminDataOnI.power.fiveHours
+                    } else if (garminDataOnI.power.oneSec > 0) {
+                        garminDataEntry1.power = garminDataOnI.power
                     }
-                    if (activityDataEntry1.anaerobicTrainingEffect < activityDataOnI.anaerobicTrainingEffect) activityDataEntry1.anaerobicTrainingEffect = activityDataOnI.anaerobicTrainingEffect
-                    if (activityDataEntry1.aerobicTrainingEffect < activityDataOnI.aerobicTrainingEffect) activityDataEntry1.aerobicTrainingEffect = activityDataOnI.aerobicTrainingEffect
+                    if (garminDataEntry1.anaerobicTrainingEffect < garminDataOnI.anaerobicTrainingEffect) garminDataEntry1.anaerobicTrainingEffect = garminDataOnI.anaerobicTrainingEffect
+                    if (garminDataEntry1.aerobicTrainingEffect < garminDataOnI.aerobicTrainingEffect) garminDataEntry1.aerobicTrainingEffect = garminDataOnI.aerobicTrainingEffect
                 }
             }
         }

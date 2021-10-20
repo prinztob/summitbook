@@ -1,5 +1,4 @@
 import android.content.Intent
-import android.database.sqlite.SQLiteDatabase
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.Bundle
@@ -27,9 +26,9 @@ import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
+import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowSrolling
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
@@ -48,14 +47,13 @@ class SummitEntryTrackFragment : Fragment() {
     private var pageViewModel: PageViewModel? = null
     private var dataSpinner: Spinner? = null
     private var binSpinner: Spinner? = null
-    private var summitEntry: SummitEntry? = null
+    private var summitEntry: Summit? = null
     private lateinit var root: View
     private lateinit var osMap: CustomMapViewToAllowSrolling
     private lateinit var metrics: DisplayMetrics
     private var marker: Marker? = null
     private var isMilageButtonShown: Boolean = false
-    private var helper: SummitBookDatabaseHelper? = null
-    private var database: SQLiteDatabase? = null
+    private var database: AppDatabase? = null
     private val activeSpinnerFields: MutableMap<String, Pair<Boolean, Int>> = HashMap()
     private var selectedDataSpinner = 0
     private var selectedBinSpinner = 0
@@ -73,32 +71,31 @@ class SummitEntryTrackFragment : Fragment() {
             savedInstanceState: Bundle?
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_track, container, false)
-        helper = SummitBookDatabaseHelper(requireContext())
-        database = helper?.writableDatabase
+        database = context?.let { AppDatabase.getDatabase(it) }
         metrics = DisplayMetrics()
         val mainActivity = MainActivity.mainActivity
         mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
         if (summitEntry == null && savedInstanceState != null) {
-            val summitEntryId = savedInstanceState.getInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
-            if (summitEntryId != 0) {
-                summitEntry = helper?.getSummitsWithId(summitEntryId, database)
+            val summitEntryId = savedInstanceState.getLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
+            if (summitEntryId != 0L) {
+                summitEntry = database?.summitDao()?.getSummit(summitEntryId)
             }
         }
-        val localSummitEntry = summitEntry
-        if (localSummitEntry != null) {
-            setGpsTrack(localSummitEntry)
+        val localSummit = summitEntry
+        if (localSummit != null) {
+            setGpsTrack(localSummit)
             val textViewName = root.findViewById<TextView>(R.id.summit_name)
-            textViewName.text = localSummitEntry.name
+            textViewName.text = localSummit.name
             val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
-            imageViewSportType.setImageResource(localSummitEntry.sportType.imageId)
-            setOpenStreetMap(localSummitEntry)
-            fillDateSpinner(localSummitEntry)
-            drawChart(localSummitEntry)
+            imageViewSportType.setImageResource(localSummit.sportType.imageId)
+            setOpenStreetMap(localSummit)
+            fillDateSpinner(localSummit)
+            drawChart(localSummit)
             val openWithButton = root.findViewById<ImageButton>(R.id.gps_open_with)
             openWithButton.setOnClickListener { _: View? ->
-                if (localSummitEntry.hasGpsTrack()) {
+                if (localSummit.hasGpsTrack()) {
                     try {
-                        val uri = localSummitEntry.copyGpsTrackToTempFile(requireActivity().externalCacheDir)?.let { FileProvider.getUriForFile(requireContext(), BuildConfig.APPLICATION_ID + ".provider", it) }
+                        val uri = localSummit.copyGpsTrackToTempFile(requireActivity().externalCacheDir)?.let { FileProvider.getUriForFile(requireContext(), BuildConfig.APPLICATION_ID + ".provider", it) }
                         val intent = Intent(Intent.ACTION_VIEW)
                         intent.setDataAndType(uri, "application/gpx")
                         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -125,19 +122,19 @@ class SummitEntryTrackFragment : Fragment() {
                     showMileageButton.setImageResource(R.drawable.moreinfo_arrow_pressed)
                 }
                 osMap.overlays?.clear()
-                localSummitEntry.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, requireContext(), true, isMilageButtonShown, true) }
+                localSummit.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, requireContext(), true, isMilageButtonShown, true) }
             }
             val shareButton = root.findViewById<ImageButton>(R.id.gps_share)
             shareButton.setOnClickListener { _: View? ->
-                if (localSummitEntry.hasGpsTrack()) {
+                if (localSummit.hasGpsTrack()) {
                     try {
-                        val uri = localSummitEntry.copyGpsTrackToTempFile(requireActivity().externalCacheDir)?.let { FileProvider.getUriForFile(requireContext(), BuildConfig.APPLICATION_ID + ".provider", it) }
+                        val uri = localSummit.copyGpsTrackToTempFile(requireActivity().externalCacheDir)?.let { FileProvider.getUriForFile(requireContext(), BuildConfig.APPLICATION_ID + ".provider", it) }
                         val intentShareFile = Intent(Intent.ACTION_SEND)
                         intentShareFile.type = "application/pdf"
                         intentShareFile.putExtra(Intent.EXTRA_STREAM, uri)
                         intentShareFile.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.shared_gpx_subject))
                         intentShareFile.putExtra(Intent.EXTRA_TEXT, getString(R.string.shared_summit_gpx_text,
-                                localSummitEntry.name, localSummitEntry.getDateAsString(), localSummitEntry.elevationData.toString(), localSummitEntry.kilometers.toString()))
+                                localSummit.name, localSummit.getDateAsString(), localSummit.elevationData.toString(), localSummit.kilometers.toString()))
                         if (intentShareFile.resolveActivity(requireActivity().packageManager) != null) {
                             startActivity(intentShareFile)
                         } else {
@@ -154,7 +151,7 @@ class SummitEntryTrackFragment : Fragment() {
             binSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                     selectedBinSpinner = i
-                    drawChart(localSummitEntry)
+                    drawChart(localSummit)
                 }
 
                 override fun onNothingSelected(adapterView: AdapterView<*>?) {}
@@ -163,7 +160,7 @@ class SummitEntryTrackFragment : Fragment() {
                 override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                     selectedDataSpinner = i
                     setBinSpinnerData(selectedBinSpinner == 0)
-                    drawChart(localSummitEntry)
+                    drawChart(localSummit)
                 }
 
                 override fun onNothingSelected(adapterView: AdapterView<*>?) {}
@@ -172,10 +169,10 @@ class SummitEntryTrackFragment : Fragment() {
         return root
     }
 
-    private fun setGpsTrack(localSummitEntry: SummitEntry) {
-        if (localSummitEntry.hasGpsTrack()) {
-            localSummitEntry.setGpsTrack()
-            gpsTrack = localSummitEntry.gpsTrack
+    private fun setGpsTrack(localSummit: Summit) {
+        if (localSummit.hasGpsTrack()) {
+            localSummit.setGpsTrack()
+            gpsTrack = localSummit.gpsTrack
             if (gpsTrack?.hasNoTrackPoints() == true) {
                 gpsTrack?.parseTrack()
             }
@@ -186,7 +183,7 @@ class SummitEntryTrackFragment : Fragment() {
         }
     }
 
-    private fun fillDateSpinner(summitEntry: SummitEntry) {
+    private fun fillDateSpinner(summitEntry: Summit) {
         var moreThanOneActive = false
         activeSpinnerFields["height_meter"] = Pair(true, 0)
 
@@ -242,7 +239,7 @@ class SummitEntryTrackFragment : Fragment() {
         binSpinner?.adapter = binAdapter
     }
 
-    private fun drawChart(summitEntry: SummitEntry) {
+    private fun drawChart(summitEntry: Summit) {
         if (summitEntry.hasGpsTrack()) {
             val localGpsTrack = gpsTrack
             if (localGpsTrack != null) {
@@ -338,9 +335,9 @@ class SummitEntryTrackFragment : Fragment() {
         }
     }
 
-    private fun setOpenStreetMap(localSummitEntry: SummitEntry) {
-        setGpsTrack(localSummitEntry)
-        val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || localSummitEntry.latLng != null
+    private fun setOpenStreetMap(localSummit: Summit) {
+        setGpsTrack(localSummit)
+        val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || localSummit.latLng != null
 
         osMap = root.findViewById(R.id.osmap)
         OpenStreetMapUtils.setTileSource(OpenStreetMapUtils.selectedItem, osMap)
@@ -355,16 +352,15 @@ class SummitEntryTrackFragment : Fragment() {
         osMap.layoutParams = params
         val maxSlopeButton = root.findViewById<ImageButton>(R.id.gps_max_slope)
         val databaseLocal = database
-        val helperLocal = helper
-        if (hasPoints && databaseLocal != null && helperLocal != null) {
-            val connectedEntries = mutableListOf<SummitEntry>()
-            localSummitEntry.setConnectedEntries(connectedEntries, databaseLocal, helperLocal)
+        if (hasPoints && databaseLocal != null) {
+            val connectedEntries = mutableListOf<Summit>()
+            localSummit.setConnectedEntries(connectedEntries, databaseLocal)
             for (entry in connectedEntries) {
                 OpenStreetMapUtils.drawTrack(entry, false, osMap, false, color = Color.BLACK)
             }
-            marker = OpenStreetMapUtils.addTrackAndMarker(localSummitEntry, osMap, requireContext(), false, isMilageButtonShown, true)
+            marker = OpenStreetMapUtils.addTrackAndMarker(localSummit, osMap, requireContext(), false, isMilageButtonShown, true)
             maxSlopeButton.setOnClickListener {
-                addMaxSlopePoints(localSummitEntry)
+                addMaxSlopePoints(localSummit)
             }
         } else {
             maxSlopeButton.visibility = View.GONE
@@ -372,8 +368,8 @@ class SummitEntryTrackFragment : Fragment() {
         }
     }
 
-    private fun addMaxSlopePoints(localSummitEntry: SummitEntry) {
-        val gpsTrack = localSummitEntry.gpsTrack
+    private fun addMaxSlopePoints(localSummit: Summit) {
+        val gpsTrack = localSummit.gpsTrack
         if (gpsTrack != null) {
             if (trackSlopeGraph.isNullOrEmpty()) {
                 trackSlopeGraph = gpsTrack.getTrackSlopeGraph(binSizeMeter = trackSlopeGraphBinSize)
@@ -444,20 +440,19 @@ class SummitEntryTrackFragment : Fragment() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        summitEntry?._id?.let { outState.putInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
+        summitEntry?.id?.let { outState.putLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         database?.close()
-        helper?.close()
     }
 
 
     companion object {
         private const val TAG = "SummitEntryTrackFragement"
 
-        fun newInstance(summitEntry: SummitEntry): SummitEntryTrackFragment {
+        fun newInstance(summitEntry: Summit): SummitEntryTrackFragment {
             val fragment = SummitEntryTrackFragment()
             fragment.summitEntry = summitEntry
             return fragment

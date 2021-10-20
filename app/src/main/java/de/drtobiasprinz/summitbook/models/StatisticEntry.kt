@@ -17,16 +17,16 @@ class StatisticEntry {
     var epectedAchievementActivityAbsolute = 0.0
     var epectedAchievementHmAbsolute = 0.0
     var epectedAchievementKmAbsolute = 0.0
-    private var filteredSummitEntries: ArrayList<SummitEntry>?
+    private var filteredSummitEntries: List<Summit>?
     private var activitesPerYear = 50
     private var kilometerPerYear = 1200
     private var elevationGainPerYear = 50000
 
-    constructor(filteredSummitEntries: ArrayList<SummitEntry>?) {
+    constructor(filteredSummitEntries: List<Summit>?) {
         this.filteredSummitEntries = filteredSummitEntries
     }
 
-    constructor(filteredSummitEntries: ArrayList<SummitEntry>?, activitesPerYear: Int, kilometerPerYear: Int, elevationGainPerYear: Int) {
+    constructor(filteredSummitEntries: List<Summit>?, activitesPerYear: Int, kilometerPerYear: Int, elevationGainPerYear: Int) {
         this.filteredSummitEntries = filteredSummitEntries
         this.elevationGainPerYear = elevationGainPerYear
         this.activitesPerYear = activitesPerYear
@@ -35,8 +35,8 @@ class StatisticEntry {
 
     fun calculate() {
         totalSummits = filteredSummitEntries?.size ?: 0
-        totalHm = filteredSummitEntries?.stream()?.mapToInt { obj: SummitEntry? -> obj?.elevationData?.elevationGain ?: 0 }?.sum() ?: 0
-        totalKm = filteredSummitEntries?.stream()?.mapToDouble { obj: SummitEntry? -> obj?.kilometers ?: 0.0 }?.sum() ?: 0.0
+        totalHm = filteredSummitEntries?.stream()?.mapToInt { obj: Summit? -> obj?.elevationData?.elevationGain ?: 0 }?.sum() ?: 0
+        totalKm = filteredSummitEntries?.stream()?.mapToDouble { obj: Summit? -> obj?.kilometers ?: 0.0 }?.sum() ?: 0.0
         achievementActivity = round(totalSummits * 100.0 / activitesPerYear).toDouble()
         achievementKm = totalKm * 100.0 / kilometerPerYear
         achievementHm = totalHm * 100.0 / elevationGainPerYear
@@ -47,7 +47,7 @@ class StatisticEntry {
         val now = Calendar.getInstance()
         val date = now.time
         val currentYear = now[Calendar.YEAR].toString()
-        val df: DateFormat = SimpleDateFormat(SummitEntry.DATE_FORMAT, Locale.ENGLISH)
+        val df: DateFormat = SimpleDateFormat(Summit.DATE_FORMAT, Locale.ENGLISH)
         val beginOfYear: Date?
         try {
             beginOfYear = df.parse(String.format("%s-01-01", currentYear))

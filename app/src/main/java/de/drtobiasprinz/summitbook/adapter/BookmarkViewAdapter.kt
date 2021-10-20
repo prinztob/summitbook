@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.database.sqlite.SQLiteDatabase
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,8 +18,8 @@ import de.drtobiasprinz.summitbook.BookmarkDetailsActivity
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity.Companion.PICK_GPX_FILE
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
-import de.drtobiasprinz.summitbook.models.BookmarkEntry
+import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.models.Bookmark
 import de.drtobiasprinz.summitbook.ui.dialog.AddBookmarkDialog.Companion.updateInstance
 import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException
@@ -30,17 +29,16 @@ import java.nio.file.StandardCopyOption
 import java.util.*
 
 
-class BookmarkViewAdapter(var bookmarks: ArrayList<BookmarkEntry>) : RecyclerView.Adapter<BookmarkViewAdapter.ViewHolder?>() {
+class BookmarkViewAdapter(var bookmarks: ArrayList<Bookmark>) : RecyclerView.Adapter<BookmarkViewAdapter.ViewHolder?>() {
     private var cardView: CardView? = null
     private var context: Context? = null
-    private var selectedBookmarkEntry: BookmarkEntry? = null
-    private var helper: SummitBookDatabaseHelper? = null
+    private var selectedBookmark: Bookmark? = null
     override fun getItemCount(): Int {
         return bookmarks.size
     }
 
     override fun onCreateViewHolder(
-            parent: ViewGroup, viewType: Int
+            parent: ViewGroup, viewType: Int,
     ): ViewHolder {
         cardView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.card_bookmark, parent, false) as CardView
@@ -50,8 +48,7 @@ class BookmarkViewAdapter(var bookmarks: ArrayList<BookmarkEntry>) : RecyclerVie
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val cardView = holder.cardView
-        helper = SummitBookDatabaseHelper(cardView?.context)
-        val db = helper?.writableDatabase
+        val database = context?.let { AppDatabase.getDatabase(it) }
         val entry = bookmarks[position]
         if (cardView != null) {
             val textViewName = cardView.findViewById<TextView?>(R.id.bookmark_name)
@@ -67,7 +64,7 @@ class BookmarkViewAdapter(var bookmarks: ArrayList<BookmarkEntry>) : RecyclerVie
             //delete a summit entry
             removeButton?.setOnClickListener { v: View? ->
                 v?.context?.let {
-                    showAlertDialog(it, db, entry, v)
+                    showAlertDialog(it, database, entry, v)
                 }
             }
             val editButton = cardView.findViewById<ImageButton?>(R.id.entry_edit)
@@ -83,32 +80,27 @@ class BookmarkViewAdapter(var bookmarks: ArrayList<BookmarkEntry>) : RecyclerVie
                 type = "*/*"
             }
             val origin = v?.context as Activity
-            selectedBookmarkEntry = entry
+            selectedBookmark = entry
             origin.startActivityForResult(intent, PICK_GPX_FILE)
         }
         cardView?.setOnClickListener { v: View? ->
             val context = v?.context
             val intent = Intent(context, BookmarkDetailsActivity::class.java)
-            intent.putExtra(BookmarkDetailsActivity.BOOKMARK_ID_EXTRA_IDENTIFIER, entry._id)
+            intent.putExtra(BookmarkDetailsActivity.BOOKMARK_ID_EXTRA_IDENTIFIER, entry.id)
             v?.context?.startActivity(intent)
         }
     }
 
-    private fun showAlertDialog(it: Context, db: SQLiteDatabase?, entry: BookmarkEntry, v: View): AlertDialog? {
+    private fun showAlertDialog(it: Context, database: AppDatabase?, entry: Bookmark, v: View): AlertDialog? {
         return AlertDialog.Builder(it)
                 .setTitle(v.context.getString(R.string.delete_entry, entry.name))
                 .setMessage(v.context.getString(R.string.delete_entry_text))
                 .setPositiveButton(android.R.string.yes) { _: DialogInterface?, _: Int ->
-                    val taskState = db?.let { helper?.deleteBookmark(it, entry) }
+                    val taskState = database?.let { database.bookmarkDao()?.delete(entry) }
                             ?: false
-                    if (taskState) {
-                        bookmarks.remove(entry)
-                        notifyDataSetChanged()
-                        Toast.makeText(v.context, v.context.getString(R.string.delete_entry, entry.name), Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(v.context, v.context.getString(R.string.try_again),
-                                Toast.LENGTH_SHORT).show()
-                    }
+                    bookmarks.remove(entry)
+                    notifyDataSetChanged()
+                    Toast.makeText(v.context, v.context.getString(R.string.delete_entry, entry.name), Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton(android.R.string.no
                 ) { _: DialogInterface?, _: Int ->
@@ -122,7 +114,7 @@ class BookmarkViewAdapter(var bookmarks: ArrayList<BookmarkEntry>) : RecyclerVie
     fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
         if (requestCode == PICK_GPX_FILE && resultCode == Activity.RESULT_OK) {
             resultData?.data?.also { uri ->
-                val bookmarkLocal = selectedBookmarkEntry
+                val bookmarkLocal = selectedBookmark
                 if (bookmarkLocal != null) {
                     context?.contentResolver?.openInputStream(uri)?.use { inputStream ->
                         uploadGpxFile(inputStream, bookmarkLocal, cardView)
@@ -132,7 +124,7 @@ class BookmarkViewAdapter(var bookmarks: ArrayList<BookmarkEntry>) : RecyclerVie
         }
     }
 
-    private fun uploadGpxFile(inputStream: InputStream, entry: BookmarkEntry, v: View?) {
+    private fun uploadGpxFile(inputStream: InputStream, entry: Bookmark, v: View?) {
         try {
             val fileDest = entry.getGpsTrackPath()
             try {

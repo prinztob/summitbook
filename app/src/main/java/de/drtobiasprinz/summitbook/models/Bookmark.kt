@@ -1,5 +1,8 @@
 package de.drtobiasprinz.summitbook.models
 
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
 import de.drtobiasprinz.summitbook.MainActivity
 import java.io.File
 import java.io.IOException
@@ -9,13 +12,13 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.util.*
 
-class BookmarkEntry @JvmOverloads constructor(var name: String, var sportType: SportType, var comments: String, var heightMeter: Int, var kilometers: Double, var activityId: Int = this.getActivityId(name, sportType, heightMeter, kilometers)) {
-    var _id = -1
-    var gpsTrack: GpsTrack? = null
+@Entity
+class Bookmark (var name: String, var sportType: SportType, var comments: String, var heightMeter: Int, var kilometers: Double, var activityId: Int = this.getActivityId(name, sportType, heightMeter, kilometers)) {
 
-    constructor(_id: Int, name: String, sportType: SportType, comments: String, heightMeter: Int, kilometers: Double, activityId: Int) : this(name, sportType, comments, heightMeter, kilometers, activityId) {
-        this._id = _id
-    }
+    @PrimaryKey(autoGenerate = true)
+    var id: Long = 0
+    @Ignore
+    var gpsTrack: GpsTrack? = null
 
     fun getGpsTrackPath(): Path {
         return Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, String.format(Locale.ENGLISH, "id_%s.gpx", activityId))
@@ -55,7 +58,7 @@ class BookmarkEntry @JvmOverloads constructor(var name: String, var sportType: S
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
-        val that = other as BookmarkEntry?
+        val that = other as Bookmark?
         return that?.kilometers?.let { it.compareTo(kilometers) } == 0 && name == that.name && sportType == that.sportType && heightMeter == that.heightMeter
     }
 

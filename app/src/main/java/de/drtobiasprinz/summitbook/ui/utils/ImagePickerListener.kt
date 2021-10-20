@@ -1,20 +1,19 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import android.app.Activity
-import android.database.sqlite.SQLiteDatabase
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.github.dhaval2404.imagepicker.ImagePicker
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.models.Summit
 import java.io.File
 
 class ImagePickerListener {
 
-    fun setListener(addImageButton: ImageButton, summitEntry: SummitEntry, adapter: SummitViewAdapter, database: SQLiteDatabase, helper: SummitBookDatabaseHelper) {
+    fun setListener(addImageButton: ImageButton, summit: Summit, adapter: SummitViewAdapter, database: AppDatabase) {
         val context: AppCompatActivity? = MainActivity.mainActivity
         addImageButton.setOnClickListener { _ ->
             MainActivity.mainActivity?.let {
@@ -27,8 +26,8 @@ class ImagePickerListener {
                             if (resultCode == Activity.RESULT_OK) {
                                 val file: File? = ImagePicker.getFile(data)
                                 if (file != null) {
-                                    file.copyTo(summitEntry.getNextImagePath(true).toFile(), overwrite = true)
-                                    helper.updateImageIdsSummit(database, summitEntry._id, summitEntry.imageIds)
+                                    file.copyTo(summit.getNextImagePath(true).toFile(), overwrite = true)
+                                    database.summitDao()?.updateImageIds(summit.id, summit.imageIds)
                                     adapter.notifyDataSetChanged()
                                 }
                             } else if (resultCode == ImagePicker.RESULT_ERROR) {

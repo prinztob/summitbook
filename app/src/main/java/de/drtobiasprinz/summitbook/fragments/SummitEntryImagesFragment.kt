@@ -1,4 +1,3 @@
-import android.database.sqlite.SQLiteDatabase
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.view.LayoutInflater
@@ -14,8 +13,8 @@ import com.stfalcon.imageviewer.StfalconImageViewer
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import org.imaginativeworld.whynotimagecarousel.ImageCarousel
 import org.imaginativeworld.whynotimagecarousel.listener.CarouselListener
@@ -24,9 +23,8 @@ import org.imaginativeworld.whynotimagecarousel.model.CarouselItem
 
 class SummitEntryImagesFragment : Fragment() {
     private var pageViewModel: PageViewModel? = null
-    private var helper: SummitBookDatabaseHelper? = null
-    private var database: SQLiteDatabase? = null
-    private var summitEntry: SummitEntry? = null
+    private var database: AppDatabase? = null
+    private var summitEntry: Summit? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
@@ -38,28 +36,27 @@ class SummitEntryImagesFragment : Fragment() {
             savedInstanceState: Bundle?,
     ): View {
         val root: View = inflater.inflate(R.layout.fragment_summit_entry_images, container, false)
-        helper = SummitBookDatabaseHelper(requireContext())
-        database = helper?.writableDatabase
+        database = context?.let { AppDatabase.getDatabase(it) }
         if (summitEntry == null && savedInstanceState != null) {
-            val summitEntryId = savedInstanceState.getInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
-            if (summitEntryId != 0) {
-                summitEntry = helper?.getSummitsWithId(summitEntryId, database)
+            val summitEntryId = savedInstanceState.getLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
+            if (summitEntryId != 0L) {
+                summitEntry = database?.summitDao()?.getSummit(summitEntryId)
             }
         }
-        val localSummitEntry = summitEntry
-        if (localSummitEntry != null) {
+        val localSummit = summitEntry
+        if (localSummit != null) {
             val textViewName = root.findViewById<TextView>(R.id.summit_name)
-            textViewName.text = localSummitEntry.name
+            textViewName.text = localSummit.name
             val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
-            imageViewSportType.setImageResource(localSummitEntry.sportType.imageId)
-            if (localSummitEntry.hasImagePath()) {
-                setImages(root, localSummitEntry)
+            imageViewSportType.setImageResource(localSummit.sportType.imageId)
+            if (localSummit.hasImagePath()) {
+                setImages(root, localSummit)
             }
         }
         return root
     }
 
-    private fun setImages(root: View, localSummitEntry: SummitEntry) {
+    private fun setImages(root: View, localSummit: Summit) {
         val metrics = DisplayMetrics()
         val mainActivity = MainActivity.mainActivity
         mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
@@ -69,12 +66,12 @@ class SummitEntryImagesFragment : Fragment() {
         params.height = (metrics.heightPixels * 0.7).toInt()
         carousel.layoutParams = params
 
-        if (localSummitEntry.imageIds.size > 1) {
+        if (localSummit.imageIds.size > 1) {
             carousel.infiniteCarousel = true
         }
         val list = mutableListOf<CarouselItem>()
-        for (imageId in localSummitEntry.imageIds) {
-            val item = CarouselItem(imageUrl = "file://" + localSummitEntry.getImagePath(imageId))
+        for (imageId in localSummit.imageIds) {
+            val item = CarouselItem(imageUrl = "file://" + localSummit.getImagePath(imageId))
             list.add(item)
         }
         carousel.setData(list)
@@ -82,7 +79,7 @@ class SummitEntryImagesFragment : Fragment() {
             override fun onClick(position: Int, carouselItem: CarouselItem) {
                 StfalconImageViewer.Builder(context, summitEntry?.imageIds) { view, imageId ->
                     Glide.with(root)
-                            .load("file://" + localSummitEntry.getImagePath(imageId))
+                            .load("file://" + localSummit.getImagePath(imageId))
                             .fitCenter()
                             .diskCacheStrategy(DiskCacheStrategy.NONE)
                             .skipMemoryCache(true)
@@ -97,18 +94,17 @@ class SummitEntryImagesFragment : Fragment() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        summitEntry?._id?.let { outState.putInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
+        summitEntry?.id?.let { outState.putLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         database?.close()
-        helper?.close()
     }
 
     companion object {
-        private const val TAG = "SummitEntryImagesFragment"
-        fun newInstance(summitEntry: SummitEntry): SummitEntryImagesFragment {
+        private const val TAG = "SummitImagesFragment"
+        fun newInstance(summitEntry: Summit): SummitEntryImagesFragment {
             val fragment = SummitEntryImagesFragment()
             fragment.summitEntry = summitEntry
             return fragment

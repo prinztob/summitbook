@@ -6,11 +6,11 @@ import android.widget.TextView
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.infowindow.InfoWindow
 
-class MapCustomInfoBubble(mapView: MapView?, var entry: SummitEntry, var context: Context, var alwaysShowTrack: Boolean) : InfoWindow(R.layout.bonuspack_bubble, mapView) {
+class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Context, var alwaysShowTrack: Boolean) : InfoWindow(R.layout.bonuspack_bubble, mapView) {
     override fun onClose() {
         updateGpxTrack()
     }
@@ -65,7 +65,7 @@ class MapCustomInfoBubble(mapView: MapView?, var entry: SummitEntry, var context
     private fun startIntent() {
         try {
             val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-            intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, entry._id)
+            intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, entry.id)
             context.startActivity(intent)
         } catch (e: NullPointerException) {
             // DO NOTHING

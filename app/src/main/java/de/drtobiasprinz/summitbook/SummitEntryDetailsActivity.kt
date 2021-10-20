@@ -1,7 +1,6 @@
 package de.drtobiasprinz.summitbook
 
 import android.content.res.Configuration
-import android.database.sqlite.SQLiteDatabase
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -9,20 +8,18 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import com.google.android.material.tabs.TabLayout
 import de.drtobiasprinz.summitbook.adapter.TabsPagerAdapter
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.HackyViewPager
 
 
 class SummitEntryDetailsActivity : AppCompatActivity() {
-    private lateinit var summitEntry: SummitEntry
-    private lateinit var helper: SummitBookDatabaseHelper
-    private lateinit var database: SQLiteDatabase
+    private lateinit var summitEntry: Summit
+    private var database: AppDatabase? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_summit_entry_details)
-        helper = SummitBookDatabaseHelper(this)
-        database = helper.writableDatabase
+        database = AppDatabase.getDatabase(applicationContext)
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         val supportActionBarLocal = supportActionBar
@@ -35,9 +32,9 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
         }
         val bundle = intent.extras
         if (bundle != null) {
-            val summitEntryId = intent.extras?.getInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
+            val summitEntryId = intent.extras?.getLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
             if (summitEntryId != null) {
-                val entry = helper.getSummitsWithId(summitEntryId, database)
+                val entry = database?.summitDao()?.getSummit(summitEntryId)
                 if (entry != null) {
                     summitEntry = entry
                 }
@@ -64,8 +61,7 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        database.close()
-        helper.close()
+        database?.close()
     }
 
 

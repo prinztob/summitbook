@@ -14,8 +14,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.FileProvider
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
-import de.drtobiasprinz.summitbook.models.BookmarkEntry
+import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.models.Bookmark
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowSrolling
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
@@ -25,9 +25,8 @@ import java.io.IOException
 import java.util.*
 
 class BookmarkDetailsActivity : AppCompatActivity() {
-    private var bookmark: BookmarkEntry? = null
-    private lateinit var helper: SummitBookDatabaseHelper
-    private lateinit var database: SQLiteDatabase
+    private var bookmark: Bookmark? = null
+    private lateinit var database: AppDatabase
     private lateinit var osMap: CustomMapViewToAllowSrolling
     private var metrics = DisplayMetrics()
     private var isMilageButtonShown: Boolean = false
@@ -35,8 +34,7 @@ class BookmarkDetailsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_bookmark_entry_details)
         osMap = findViewById(R.id.osmap)
-        helper = SummitBookDatabaseHelper(this)
-        database = helper.writableDatabase
+        database = AppDatabase.getDatabase(applicationContext)
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         val supportActionBarLocal = supportActionBar
@@ -48,8 +46,8 @@ class BookmarkDetailsActivity : AppCompatActivity() {
         mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
         val bundle = intent.extras
         if (bundle != null) {
-            val entryId = bundle.getInt(BOOKMARK_ID_EXTRA_IDENTIFIER)
-            val bookmarkLocal = helper.getBookmarkWithId(entryId, database)
+            val entryId = bundle.getLong(BOOKMARK_ID_EXTRA_IDENTIFIER)
+            val bookmarkLocal = database.bookmarkDao()?.getBookmark(entryId)
             if (bookmarkLocal != null) {
                 bookmark = bookmarkLocal
                 if (bookmarkLocal.hasGpsTrack()) {
@@ -187,7 +185,6 @@ class BookmarkDetailsActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         database.close()
-        helper.close()
     }
 
     companion object {

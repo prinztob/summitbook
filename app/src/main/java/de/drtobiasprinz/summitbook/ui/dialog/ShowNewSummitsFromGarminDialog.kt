@@ -1,7 +1,6 @@
 package de.drtobiasprinz.summitbook.ui.dialog
 
 import android.content.Context
-import android.database.sqlite.SQLiteDatabase
 import android.graphics.Color
 import android.os.AsyncTask
 import android.os.Bundle
@@ -15,10 +14,11 @@ import android.widget.*
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
+import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.updateNewSummits
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.IgnoredActivity
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.time.LocalDateTime
@@ -26,19 +26,18 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 
-class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitEntry>, val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?, val progressBar: ProgressBar? = null) : DialogFragment(), BaseDialog {
+class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>, val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?, private val progressBar: ProgressBar? = null) : DialogFragment(), BaseDialog {
 
     private lateinit var addSummitsButton: Button
     private lateinit var currentContext: Context
-    private lateinit var entriesWithoutIgnored: MutableList<SummitEntry>
+    private lateinit var entriesWithoutIgnored: MutableList<Summit>
     private lateinit var mergeSummitsButton: Button
     private lateinit var ignoreSummitsButton: Button
     private lateinit var updateSummitsButton: ImageButton
     private lateinit var revertIgnoredSummitsButton: ImageButton
     private lateinit var backButton: Button
     private lateinit var tableLayout: TableLayout
-    private lateinit var helper: SummitBookDatabaseHelper
-    private lateinit var database: SQLiteDatabase
+    private lateinit var database: AppDatabase
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.dialog_show_new_summit_from_garmin, container)
@@ -49,8 +48,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
         currentContext = requireContext()
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         val useTcx = sharedPreferences.getBoolean("download_tcx", false)
-        helper = SummitBookDatabaseHelper(view.context)
-        database = helper.writableDatabase
+        database = AppDatabase.getDatabase(currentContext)
         updateEntriesWithoutIgnored()
 
         updateSummitsButton = view.findViewById(R.id.update_new_summits)
@@ -66,7 +64,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
         }
         revertIgnoredSummitsButton = view.findViewById(R.id.revert_ignored_summits)
         revertIgnoredSummitsButton.setOnClickListener {
-            helper.dropIgnoredActivities(database)
+            database.ignoredActivityDao()?.deleteAll()
             updateEntriesWithoutIgnored()
             tableLayout.removeAllViews()
             drawTable(view)
@@ -99,7 +97,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
             if (areEntriesChecked()) {
                 entriesWithoutIgnored.filter { summit -> summit.isSelected }.forEach {
                     entriesWithoutIgnored.remove(it)
-                    it.activityData?.activityId?.let { ignoredEntry -> helper.insertIgnoredActivityId(database, ignoredEntry) }
+                    it.garminData?.activityId?.let { ignoredEntry -> database.ignoredActivityDao()?.addActivity(IgnoredActivity(ignoredEntry) ) }
                 }
             }
             tableLayout.removeAllViews()
@@ -116,9 +114,11 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
     }
 
     private fun updateEntriesWithoutIgnored() {
-        val activitiesIdIgnored = helper.getAllIgnoredActivities(sortFilterHelper.database)
-        val activityIdsInSummitBook = sortFilterHelper.entries.filter { !it.activityData?.activityIds.isNullOrEmpty() }.map { it.activityData?.activityIds as List<String> }.flatten()
-        entriesWithoutIgnored = allEntries.filter { !(it.activityData?.activityId in activitiesIdIgnored) && !(it.activityData?.activityId in activityIdsInSummitBook) } as MutableList
+        val activitiesIdIgnored = database.ignoredActivityDao()?.allIgnoredActivities?.map { it.activityId }
+        if (activitiesIdIgnored != null) {
+            val activityIdsInSummitBook = sortFilterHelper.entries.filter { !it.garminData?.activityIds.isNullOrEmpty() }.map { it.garminData?.activityIds as List<String> }.flatten()
+            entriesWithoutIgnored = allEntries.filter { !(it.garminData?.activityId in activitiesIdIgnored) && !(it.garminData?.activityId in activityIdsInSummitBook) } as MutableList
+        }
     }
 
     private fun drawTable(view: View) {
@@ -128,8 +128,8 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
         }
     }
 
-    private fun addSummitToTable(entry: SummitEntry, view: View, i: Int, tl: TableLayout) {
-        val date = "<a href=\"${entry.activityData?.url ?: "unknown"}\">${entry.getDateAsString()}</a>"
+    private fun addSummitToTable(entry: Summit, view: View, i: Int, tl: TableLayout) {
+        val date = "<a href=\"${entry.garminData?.url ?: "unknown"}\">${entry.getDateAsString()}</a>"
         val name: String = entry.name.chunked(10).joinToString("\n")
         val kilometers: Double = entry.kilometers
         val heightMeters: Int = entry.elevationData.elevationGain
@@ -141,8 +141,8 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
                 TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT)
         addLabel(view, tr, 200 + i, date, padding = 2, isHtml = true)
         addLabel(view, tr, 200 + i, name, padding = 2)
-        addLabel(view, tr, 200 + i, String.format(Locale.ENGLISH, "%.1f km", kilometers), padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
-        addLabel(view, tr, 200 + i, String.format(Locale.ENGLISH, "%s m", heightMeters), padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
+        addLabel(view, tr, 200 + i, String.format(Locale.ENGLISH, "%.1f km", kilometers), padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
+        addLabel(view, tr, 200 + i, String.format(Locale.ENGLISH, "%s m", heightMeters), padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
         val box = CheckBox(view.context)
         box.setOnCheckedChangeListener { _, arg1 ->
             entry.isSelected = arg1
@@ -175,7 +175,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
                 TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT))
     }
 
-    private fun addLabel(view: View, tr: TableRow, id: Int, text: String, color: Int = Color.WHITE, padding: Int = 5, aligment: Int = View.TEXT_ALIGNMENT_CENTER, isHtml: Boolean = false) {
+    private fun addLabel(view: View, tr: TableRow, id: Int, text: String, color: Int = Color.WHITE, padding: Int = 5, alignment: Int = View.TEXT_ALIGNMENT_CENTER, isHtml: Boolean = false) {
         val label = TextView(view.context)
         label.id = id
         if (isHtml) {
@@ -186,7 +186,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
         } else {
             label.text = text
         }
-        label.gravity = aligment
+        label.gravity = alignment
         label.setTextColor(color)
         label.setPadding(padding, padding, padding, padding)
         tr.addView(label)
@@ -199,12 +199,11 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<SummitE
     override fun onDestroyView() {
         super.onDestroyView()
         database.close()
-        helper.close()
     }
 
     companion object {
 
-        class AsyncDownloadActivities(private val summits: List<SummitEntry>, private val pythonExecutor: GarminPythonExecutor, private val startDate: String, private val endDate: String, val dialog: ShowNewSummitsFromGarminDialog) : AsyncTask<Void?, Void?, Void?>() {
+        class AsyncDownloadActivities(private val summits: List<Summit>, private val pythonExecutor: GarminPythonExecutor, private val startDate: String, private val endDate: String, val dialog: ShowNewSummitsFromGarminDialog) : AsyncTask<Void?, Void?, Void?>() {
 
             override fun doInBackground(vararg params: Void?): Void? {
                 try {

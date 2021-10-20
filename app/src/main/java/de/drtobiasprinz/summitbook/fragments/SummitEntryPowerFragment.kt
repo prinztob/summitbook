@@ -1,4 +1,3 @@
-import android.database.sqlite.SQLiteDatabase
 import android.graphics.Color
 import android.os.Bundle
 import android.util.DisplayMetrics
@@ -19,9 +18,9 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
+import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.PowerData
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import java.util.*
@@ -30,11 +29,10 @@ import kotlin.math.round
 
 class SummitEntryPowerFragment : Fragment() {
     private var pageViewModel: PageViewModel? = null
-    private var summitEntry: SummitEntry? = null
+    private var summitEntry: Summit? = null
     private lateinit var root: View
     private lateinit var metrics: DisplayMetrics
-    private var helper: SummitBookDatabaseHelper? = null
-    private var database: SQLiteDatabase? = null
+    private var database: AppDatabase? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
@@ -43,33 +41,32 @@ class SummitEntryPowerFragment : Fragment() {
 
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
-            savedInstanceState: Bundle?
+            savedInstanceState: Bundle?,
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_power, container, false)
-        helper = SummitBookDatabaseHelper(requireContext())
-        database = helper?.writableDatabase
+        database = context?.let { AppDatabase.getDatabase(it) }
         metrics = DisplayMetrics()
         val mainActivity = MainActivity.mainActivity
         mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
         if (summitEntry == null && savedInstanceState != null) {
-            val summitEntryId = savedInstanceState.getInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
-            if (summitEntryId != 0) {
-                summitEntry = helper?.getSummitsWithId(summitEntryId, database)
+            val summitEntryId = savedInstanceState.getLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
+            if (summitEntryId != 0L) {
+                summitEntry = database?.summitDao()?.getSummit(summitEntryId)
             }
         }
-        val localSummitEntry = summitEntry
-        if (localSummitEntry != null) {
+        val localSummit = summitEntry
+        if (localSummit != null) {
             val textViewName = root.findViewById<TextView>(R.id.summit_name)
-            textViewName.text = localSummitEntry.name
+            textViewName.text = localSummit.name
             val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
-            imageViewSportType.setImageResource(localSummitEntry.sportType.imageId)
-            drawChart(localSummitEntry)
+            imageViewSportType.setImageResource(localSummit.sportType.imageId)
+            drawChart(localSummit)
         }
         return root
     }
 
-    private fun drawChart(entry: SummitEntry) {
-        val power = entry.activityData?.power
+    private fun drawChart(entry: Summit) {
+        val power = entry.garminData?.power
         if (power != null) {
 
             val lineChart = root.findViewById<LineChart>(R.id.lineChart)
@@ -98,37 +95,37 @@ class SummitEntryPowerFragment : Fragment() {
 
     private fun getLineChartEntries(extremaValuesSummits: ExtremaValuesSummits): MutableList<Entry?> {
         val lineChartEntries: MutableList<Entry?> = ArrayList()
-        lineChartEntries.add(Entry(scaleCbr(1.0), extremaValuesSummits.power1sMinMax?.second?.activityData?.power?.oneSec?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(1.0), extremaValuesSummits.power1sMinMax?.second?.garminData?.power?.oneSec?.toFloat()
                 ?: 0f, extremaValuesSummits.power1sMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(2.0), extremaValuesSummits.power2sMinMax?.second?.activityData?.power?.twoSec?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(2.0), extremaValuesSummits.power2sMinMax?.second?.garminData?.power?.twoSec?.toFloat()
                 ?: 0f, extremaValuesSummits.power2sMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(5.0), extremaValuesSummits.power5sMinMax?.second?.activityData?.power?.fiveSec?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(5.0), extremaValuesSummits.power5sMinMax?.second?.garminData?.power?.fiveSec?.toFloat()
                 ?: 0f, extremaValuesSummits.power5sMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(10.0), extremaValuesSummits.power10sMinMax?.second?.activityData?.power?.tenSec?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(10.0), extremaValuesSummits.power10sMinMax?.second?.garminData?.power?.tenSec?.toFloat()
                 ?: 0f, extremaValuesSummits.power10sMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(20.0), extremaValuesSummits.power20sMinMax?.second?.activityData?.power?.twentySec?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(20.0), extremaValuesSummits.power20sMinMax?.second?.garminData?.power?.twentySec?.toFloat()
                 ?: 0f, extremaValuesSummits.power20sMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(30.0), extremaValuesSummits.power30sMinMax?.second?.activityData?.power?.thirtySec?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(30.0), extremaValuesSummits.power30sMinMax?.second?.garminData?.power?.thirtySec?.toFloat()
                 ?: 0f, extremaValuesSummits.power30sMinMax?.second))
 
-        lineChartEntries.add(Entry(scaleCbr(60.0), extremaValuesSummits.power1minMinMax?.second?.activityData?.power?.oneMin?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(60.0), extremaValuesSummits.power1minMinMax?.second?.garminData?.power?.oneMin?.toFloat()
                 ?: 0f, extremaValuesSummits.power1minMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(120.0), extremaValuesSummits.power2minMinMax?.second?.activityData?.power?.twoMin?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(120.0), extremaValuesSummits.power2minMinMax?.second?.garminData?.power?.twoMin?.toFloat()
                 ?: 0f, extremaValuesSummits.power2minMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(300.0), extremaValuesSummits.power5minMinMax?.second?.activityData?.power?.fiveMin?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(300.0), extremaValuesSummits.power5minMinMax?.second?.garminData?.power?.fiveMin?.toFloat()
                 ?: 0f, extremaValuesSummits.power5minMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(600.0), extremaValuesSummits.power10minMinMax?.second?.activityData?.power?.tenMin?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(600.0), extremaValuesSummits.power10minMinMax?.second?.garminData?.power?.tenMin?.toFloat()
                 ?: 0f, extremaValuesSummits.power10minMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(1200.0), extremaValuesSummits.power20minMinMax?.second?.activityData?.power?.twentyMin?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(1200.0), extremaValuesSummits.power20minMinMax?.second?.garminData?.power?.twentyMin?.toFloat()
                 ?: 0f, extremaValuesSummits.power20minMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(1800.0), extremaValuesSummits.power30minMinMax?.second?.activityData?.power?.thirtyMin?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(1800.0), extremaValuesSummits.power30minMinMax?.second?.garminData?.power?.thirtyMin?.toFloat()
                 ?: 0f, extremaValuesSummits.power30minMinMax?.second))
 
-        lineChartEntries.add(Entry(scaleCbr(3600.0), extremaValuesSummits.power1hMinMax?.second?.activityData?.power?.oneHour?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(3600.0), extremaValuesSummits.power1hMinMax?.second?.garminData?.power?.oneHour?.toFloat()
                 ?: 0f, extremaValuesSummits.power1hMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(7200.0), extremaValuesSummits.power2hMinMax?.second?.activityData?.power?.twoHours?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(7200.0), extremaValuesSummits.power2hMinMax?.second?.garminData?.power?.twoHours?.toFloat()
                 ?: 0f, extremaValuesSummits.power2hMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(18000.0), extremaValuesSummits.power5hMinMax?.second?.activityData?.power?.fiveHours?.toFloat()
+        lineChartEntries.add(Entry(scaleCbr(18000.0), extremaValuesSummits.power5hMinMax?.second?.garminData?.power?.fiveHours?.toFloat()
                 ?: 0f, extremaValuesSummits.power5hMinMax?.second))
         return lineChartEntries
     }
@@ -200,20 +197,19 @@ class SummitEntryPowerFragment : Fragment() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        summitEntry?._id?.let { outState.putInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
+        summitEntry?.id?.let { outState.putLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         database?.close()
-        helper?.close()
     }
 
 
     companion object {
         private const val TAG = "SummitEntryPowerFragement"
 
-        fun newInstance(summitEntry: SummitEntry): SummitEntryPowerFragment {
+        fun newInstance(summitEntry: Summit): SummitEntryPowerFragment {
             val fragment = SummitEntryPowerFragment()
             fragment.summitEntry = summitEntry
             return fragment

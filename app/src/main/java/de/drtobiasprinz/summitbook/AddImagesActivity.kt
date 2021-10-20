@@ -14,54 +14,47 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import com.github.dhaval2404.imagepicker.ImagePicker
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
+import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import java.io.File
 
 class AddImagesActivity : AppCompatActivity() {
-    //    private var pageViewModel: PageViewModel? = null
-    private lateinit var helper: SummitBookDatabaseHelper
-    private lateinit var database: SQLiteDatabase
-    private var summitEntry: SummitEntry? = null
+    private var database: AppDatabase? = null
+    private var summitEntry: Summit? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_images)
-//
-//        pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
-//        pageViewModel?.setIndex(TAG)
-
-        helper = SummitBookDatabaseHelper(this)
-        database = helper.writableDatabase
+        database = AppDatabase.getDatabase(applicationContext)
         val bundle = intent.extras
         if (bundle != null) {
-            val summitEntryId = bundle.getInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
-            summitEntry = helper.getSummitsWithId(summitEntryId, database)
+            val summitEntryId = bundle.getLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
+            summitEntry = database?.summitDao()?.getSummit(summitEntryId)
         }
-        val localSummitEntry = summitEntry
-        if (localSummitEntry != null) {
+        val localSummit = summitEntry
+        if (localSummit != null) {
             val textViewName = findViewById<TextView>(R.id.summit_name)
-            textViewName.text = localSummitEntry.name
+            textViewName.text = localSummit.name
             val imageViewSportType = findViewById<ImageView>(R.id.sport_type_image)
-            imageViewSportType.setImageResource(localSummitEntry.sportType.imageId)
-            if (localSummitEntry.hasImagePath()) {
+            imageViewSportType.setImageResource(localSummit.sportType.imageId)
+            if (localSummit.hasImagePath()) {
                 val layout: RelativeLayout = findViewById(R.id.images)
-                drawLayout(localSummitEntry, layout)
+                drawLayout(localSummit, layout)
             }
         }
     }
 
-    private fun drawLayout(localSummitEntry: SummitEntry, layout: RelativeLayout) {
+    private fun drawLayout(localSummit: Summit, layout: RelativeLayout) {
         var id = 0
-        for ((position, imageId) in localSummitEntry.imageIds.withIndex()) {
-            id = addImage(localSummitEntry, imageId, layout, id, position)
+        for ((position, imageId) in localSummit.imageIds.withIndex()) {
+            id = addImage(localSummit, imageId, layout, id, position)
         }
-        addAdditionalImage(id, layout, localSummitEntry)
+        addAdditionalImage(id, layout, localSummit)
     }
 
-    private fun addAdditionalImage(id: Int, layout: RelativeLayout, localSummitEntry: SummitEntry) {
-        val localSummitEntryImage = PhotoView(this)
-        localSummitEntryImage.visibility = View.VISIBLE
+    private fun addAdditionalImage(id: Int, layout: RelativeLayout, localSummit: Summit) {
+        val localSummitImage = PhotoView(this)
+        localSummitImage.visibility = View.VISIBLE
         val lp = RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT)
         if (id > 0) {
@@ -69,8 +62,8 @@ class AddImagesActivity : AppCompatActivity() {
         } else {
             lp.addRule(RelativeLayout.BELOW, R.id.name_and_type)
         }
-        localSummitEntryImage.id = View.generateViewId()
-        layout.addView(localSummitEntryImage, lp)
+        localSummitImage.id = View.generateViewId()
+        layout.addView(localSummitImage, lp)
         val addImageButton = ImageButton(this)
         addImageButton.setImageResource(R.drawable.ic_add_black_24dp)
         addImageButton.setOnClickListener { _ ->
@@ -83,11 +76,11 @@ class AddImagesActivity : AppCompatActivity() {
                         if (resultCode == Activity.RESULT_OK) {
                             val file: File? = ImagePicker.getFile(data)
                             if (file != null) {
-                                file.copyTo(localSummitEntry.getNextImagePath(true).toFile(), overwrite = true)
-                                helper.updateImageIdsSummit(database, localSummitEntry._id, localSummitEntry.imageIds)
+                                file.copyTo(localSummit.getNextImagePath(true).toFile(), overwrite = true)
+                                database?.summitDao()?.updateImageIds(localSummit.id, localSummit.imageIds)
                                 SummitViewFragment.adapter.notifyDataSetChanged()
                                 layout.removeAllViewsInLayout()
-                                drawLayout(localSummitEntry, layout)
+                                drawLayout(localSummit, layout)
                             }
                         } else if (resultCode == ImagePicker.RESULT_ERROR) {
                             Toast.makeText(this, ImagePicker.getError(data), Toast.LENGTH_SHORT).show()
@@ -96,18 +89,18 @@ class AddImagesActivity : AppCompatActivity() {
                         }
                     }
         }
-        layout.addView(addImageButton, getLayoutParams(localSummitEntryImage.id, RelativeLayout.ALIGN_TOP))
+        layout.addView(addImageButton, getLayoutParams(localSummitImage.id, RelativeLayout.ALIGN_TOP))
     }
 
-    private fun addImage(localSummitEntry: SummitEntry, imageId: Int, layout: RelativeLayout, id: Int, position: Int): Int {
-        val localSummitEntryImage = PhotoView(this)
-        localSummitEntryImage.visibility = View.VISIBLE
+    private fun addImage(localSummit: Summit, imageId: Int, layout: RelativeLayout, id: Int, position: Int): Int {
+        val localSummitImage = PhotoView(this)
+        localSummitImage.visibility = View.VISIBLE
         Glide.with(this)
-                .load("file://" + localSummitEntry.getImagePath(imageId))
+                .load("file://" + localSummit.getImagePath(imageId))
                 .fitCenter()
                 .diskCacheStrategy(DiskCacheStrategy.NONE)
                 .skipMemoryCache(true)
-                .into(localSummitEntryImage)
+                .into(localSummitImage)
 
         val lp = RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT)
@@ -116,8 +109,8 @@ class AddImagesActivity : AppCompatActivity() {
         } else {
             lp.addRule(RelativeLayout.BELOW, R.id.name_and_type)
         }
-        localSummitEntryImage.id = View.generateViewId()
-        layout.addView(localSummitEntryImage, lp)
+        localSummitImage.id = View.generateViewId()
+        layout.addView(localSummitImage, lp)
 
         val removeButton = ImageButton(this)
         removeButton.id = View.generateViewId()
@@ -127,10 +120,10 @@ class AddImagesActivity : AppCompatActivity() {
                     .setTitle(getString(R.string.delete_image))
                     .setMessage(getString(R.string.delete_image_text))
                     .setPositiveButton(android.R.string.yes) { _: DialogInterface?, _: Int ->
-                        if (localSummitEntry.getImagePath(imageId).toFile()?.delete() == true) {
-                            localSummitEntry.imageIds.remove(imageId)
-                            updateAdapterAndDatabase(localSummitEntry)
-                            localSummitEntryImage.visibility = View.GONE
+                        if (localSummit.getImagePath(imageId).toFile()?.delete() == true) {
+                            localSummit.imageIds.remove(imageId)
+                            updateAdapterAndDatabase(localSummit)
+                            localSummitImage.visibility = View.GONE
                             Toast.makeText(v.context, getString(R.string.delete_image_done),
                                     Toast.LENGTH_SHORT).show()
                         }
@@ -143,50 +136,50 @@ class AddImagesActivity : AppCompatActivity() {
                     .setIcon(android.R.drawable.ic_dialog_alert)
                     .show()
         }
-        layout.addView(removeButton, getLayoutParams(localSummitEntryImage.id, RelativeLayout.ALIGN_TOP))
+        layout.addView(removeButton, getLayoutParams(localSummitImage.id, RelativeLayout.ALIGN_TOP))
 
         val upButton = ImageButton(this)
         upButton.id = View.generateViewId()
         upButton.setImageResource(R.drawable.ic_baseline_arrow_upward_24)
         upButton.setOnClickListener {
-            localSummitEntry.imageIds[position] = localSummitEntry.imageIds[position - 1]
-            localSummitEntry.imageIds[position - 1] = imageId
-            updateAdapterAndDatabase(localSummitEntry)
+            localSummit.imageIds[position] = localSummit.imageIds[position - 1]
+            localSummit.imageIds[position - 1] = imageId
+            updateAdapterAndDatabase(localSummit)
             layout.removeAllViewsInLayout()
-            drawLayout(localSummitEntry, layout)
+            drawLayout(localSummit, layout)
         }
 
-        if (localSummitEntry.imageIds.first() != imageId) {
+        if (localSummit.imageIds.first() != imageId) {
             layout.addView(upButton, getLayoutParams(removeButton.id, RelativeLayout.BELOW))
         }
         val downButton = ImageButton(this)
         downButton.setImageResource(R.drawable.ic_baseline_arrow_downward_24)
         downButton.setOnClickListener {
-            localSummitEntry.imageIds[position] = localSummitEntry.imageIds[position + 1]
-            localSummitEntry.imageIds[position + 1] = imageId
-            updateAdapterAndDatabase(localSummitEntry)
+            localSummit.imageIds[position] = localSummit.imageIds[position + 1]
+            localSummit.imageIds[position + 1] = imageId
+            updateAdapterAndDatabase(localSummit)
             layout.removeAllViewsInLayout()
-            drawLayout(localSummitEntry, layout)
+            drawLayout(localSummit, layout)
         }
 
-        if (localSummitEntry.imageIds.last() != imageId) {
-            layout.addView(downButton, getLayoutParams(if (localSummitEntry.imageIds.first() != imageId) upButton.id else removeButton.id, RelativeLayout.BELOW))
+        if (localSummit.imageIds.last() != imageId) {
+            layout.addView(downButton, getLayoutParams(if (localSummit.imageIds.first() != imageId) upButton.id else removeButton.id, RelativeLayout.BELOW))
         }
 
-        return localSummitEntryImage.id
+        return localSummitImage.id
     }
 
-    private fun updateAdapterAndDatabase(localSummitEntry: SummitEntry) {
-        updateImageIds(localSummitEntry, SummitViewFragment.adapter.summitEntries)
-        SummitViewFragment.adapter.summitEntriesFiltered?.let { updateImageIds(localSummitEntry, it) }
-        helper.updateImageIdsSummit(database, localSummitEntry._id, localSummitEntry.imageIds)
+    private fun updateAdapterAndDatabase(localSummit: Summit) {
+        updateImageIds(localSummit, SummitViewFragment.adapter.summitEntries)
+        SummitViewFragment.adapter.summitEntriesFiltered?.let { updateImageIds(localSummit, it) }
+        database?.summitDao()?.updateImageIds(localSummit.id, localSummit.imageIds)
         SummitViewFragment.adapter.notifyDataSetChanged()
     }
 
-    private fun updateImageIds(localSummitEntry: SummitEntry, summitEntries: ArrayList<SummitEntry>) {
+    private fun updateImageIds(localSummit: Summit, summitEntries: List<Summit>) {
         summitEntries.forEach {
-            if (it._id == localSummitEntry._id) {
-                it.imageIds = localSummitEntry.imageIds
+            if (it.id == localSummit.id) {
+                it.imageIds = localSummit.imageIds
             }
         }
     }
@@ -201,13 +194,12 @@ class AddImagesActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        summitEntry?._id?.let { outState.putInt(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
+        summitEntry?.id?.let { outState.putLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        database.close()
-        helper.close()
+        database?.close()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -223,7 +215,7 @@ class AddImagesActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val TAG = "SummitEntryAddImagesActivity"
+        private const val TAG = "SummitAddImagesActivity"
     }
 
 

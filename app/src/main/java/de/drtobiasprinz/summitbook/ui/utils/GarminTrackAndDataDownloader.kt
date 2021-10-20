@@ -10,17 +10,17 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 
-class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPythonExecutor: GarminPythonExecutor, var useTcx: Boolean = false) {
+class GarminTrackAndDataDownloader(var entries: List<Summit>, val garminPythonExecutor: GarminPythonExecutor, var useTcx: Boolean = false) {
 
     val downloadedTracks: MutableList<File> = mutableListOf()
-    var finalEntry: SummitEntry? = null
+    var finalEntry: Summit? = null
     private val activityDuration = entries.map { it.kilometers / it.velocityData.avgVelocity }
 
     fun downloadTracks(isAlreadyDownloaded: Boolean = false) {
         for (entry in entries) {
-            val activityData = entry.activityData
-            if (activityData != null) {
-                val idsWithoutParentId = getIds(activityData, isAlreadyDownloaded)
+            val garminData = entry.garminData
+            if (garminData != null) {
+                val idsWithoutParentId = getIds(garminData, isAlreadyDownloaded)
                 for (activityId in idsWithoutParentId) {
                     val file = getTempGpsFilePath(activityId, useTcx).toFile()
                     if (!(isAlreadyDownloaded || file.exists())) {
@@ -36,11 +36,11 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
         }
     }
 
-    private fun getIds(activityData: GarminActivityData, isAlreadyDownloaded: Boolean): MutableList<String> {
-        if (activityData.activityIds.size > 1) {
-            return if (isAlreadyDownloaded) mutableListOf(activityData.activityId) else activityData.activityIds.subList(1, activityData.activityIds.size)
+    private fun getIds(garminData: GarminData, isAlreadyDownloaded: Boolean): MutableList<String> {
+        if (garminData.activityIds.size > 1) {
+            return if (isAlreadyDownloaded) mutableListOf(garminData.activityId) else garminData.activityIds.subList(1, garminData.activityIds.size)
         } else {
-            return activityData.activityIds
+            return garminData.activityIds
         }
     }
 
@@ -48,8 +48,7 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
     fun updateFinalEntry(sortFilterHelper: SortFilterHelper) {
         val finalEntryLocal = finalEntry
         if (finalEntryLocal != null) {
-            finalEntryLocal._id = sortFilterHelper.databaseHelper.insertSummit(sortFilterHelper.database, finalEntryLocal).toInt()
-            SummitViewFragment.adapter.summitEntries.add(finalEntryLocal)
+            finalEntryLocal.id = sortFilterHelper.database.summitDao()?.addSummit(finalEntryLocal) ?: 0L
             sortFilterHelper.entries.add(finalEntryLocal)
             sortFilterHelper.update(sortFilterHelper.entries)
             SummitViewFragment.adapter.notifyDataSetChanged()
@@ -80,8 +79,8 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
         }
     }
 
-    fun extractFinalSummitEntry() {
-        finalEntry = SummitEntry(
+    fun extractFinalSummit() {
+        finalEntry = Summit(
                 entries.first().date,
                 entries.first().name,
                 entries.first().sportType,
@@ -92,52 +91,55 @@ class GarminTrackAndDataDownloader(var entries: List<SummitEntry>, val garminPyt
                 entries.sumByDouble { it.kilometers },
                 VelocityData.parse( entries.sumByDouble { it.kilometers } / activityDuration.sum(),
                         entries.maxByOrNull { it.velocityData.maxVelocity }?.velocityData?.maxVelocity ?: 0.0),
+                null, null,
                 entries.map { it.participants }.flatten(),
-                mutableListOf()
+                false,
+                mutableListOf(),
+                getGarminData(),
+                null
         )
-        finalEntry?.activityData = getGarminActivityData()
     }
 
-    private fun getGarminActivityData(): GarminActivityData? {
-        val activityDataSets = entries.filter { it.activityData != null }.map { it.activityData }
+    private fun getGarminData(): GarminData? {
+        val garminDataSets = entries.filter { it.garminData != null }.map { it.garminData }
         entries.forEach {
-            if (it.activityData != null) {
-                it.activityData?.duration = it.kilometers / it.velocityData.avgVelocity
+            if (it.garminData != null) {
+                it.garminData?.duration = it.kilometers / it.velocityData.avgVelocity
             }
         }
-        if (activityDataSets.isNotEmpty()) {
+        if (garminDataSets.isNotEmpty()) {
             val activityIds: MutableList<String> = mutableListOf()
-            activityDataSets.forEach { it?.activityIds?.let { it1 -> activityIds.addAll(it1) } } //TODO
-            return GarminActivityData(
+            garminDataSets.forEach { it?.activityIds?.let { it1 -> activityIds.addAll(it1) } } //TODO
+            return GarminData(
                     activityIds,
-                    activityDataSets.sumByDouble { it?.calories?.toDouble() ?: 0.0 }.toFloat(),
-                    (activityDataSets.sumByDouble {
+                    garminDataSets.sumByDouble { it?.calories?.toDouble() ?: 0.0 }.toFloat(),
+                    (garminDataSets.sumByDouble {
                         (it?.averageHR?.toDouble() ?: 0.0) * (it?.duration ?: 0.0)
-                    } / entries.filter { it.activityData?.averageHR != null && (it.activityData?.averageHR ?: 0f) > 0 }.map { it.kilometers / it.velocityData.avgVelocity }.sum()).toFloat(),
-                    activityDataSets.maxByOrNull { it?.maxHR?.toDouble() ?: 0.0 }?.maxHR ?: 0f,
+                    } / entries.filter { it.garminData?.averageHR != null && (it.garminData?.averageHR ?: 0f) > 0 }.map { it.kilometers / it.velocityData.avgVelocity }.sum()).toFloat(),
+                    garminDataSets.maxByOrNull { it?.maxHR?.toDouble() ?: 0.0 }?.maxHR ?: 0f,
                     getPowerData(),
-                    activityDataSets.maxByOrNull { it?.ftp ?: 0 }?.ftp ?: 0,
-                    activityDataSets.maxByOrNull { it?.vo2max ?: 0 }?.vo2max ?: 0,
-                    activityDataSets.maxByOrNull {
+                    garminDataSets.maxByOrNull { it?.ftp ?: 0 }?.ftp ?: 0,
+                    garminDataSets.maxByOrNull { it?.vo2max ?: 0 }?.vo2max ?: 0,
+                    garminDataSets.maxByOrNull {
                         it?.aerobicTrainingEffect?.toDouble() ?: 0.0
                     }?.aerobicTrainingEffect ?: 0f,
-                    activityDataSets.maxByOrNull {
+                    garminDataSets.maxByOrNull {
                         it?.anaerobicTrainingEffect?.toDouble() ?: 0.0
                     }?.anaerobicTrainingEffect ?: 0f,
-                    activityDataSets.maxByOrNull { it?.grit?.toDouble() ?: 0.0 }?.grit ?: 0f,
-                    activityDataSets.maxByOrNull { it?.flow?.toDouble() ?: 0.0 }?.flow ?: 0f,
-                    activityDataSets.sumByDouble { it?.trainingLoad?.toDouble() ?: 0.0 }.toFloat()
+                    garminDataSets.maxByOrNull { it?.grit?.toDouble() ?: 0.0 }?.grit ?: 0f,
+                    garminDataSets.maxByOrNull { it?.flow?.toDouble() ?: 0.0 }?.flow ?: 0f,
+                    garminDataSets.sumByDouble { it?.trainingLoad?.toDouble() ?: 0.0 }.toFloat()
             )
         }
         return null
     }
 
     private fun getPowerData(): PowerData {
-        val powerDataSets = entries.filter { it.activityData?.power != null }.map { it.activityData }
+        val powerDataSets = entries.filter { it.garminData?.power != null }.map { it.garminData }
         return if (powerDataSets.isNotEmpty()) PowerData(
                 (powerDataSets.sumByDouble {
                     (it?.power?.avgPower?.toDouble() ?: 0.0) * (it?.duration ?: 0.0)
-                } / entries.filter { it.activityData?.power?.avgPower != null && (it.activityData?.power?.avgPower ?: 0f) > 0 }.map { it.kilometers / it.velocityData.avgVelocity }.sum()).toFloat(),
+                } / entries.filter { it.garminData?.power?.avgPower != null && (it.garminData?.power?.avgPower ?: 0f) > 0 }.map { it.kilometers / it.velocityData.avgVelocity }.sum()).toFloat(),
                 powerDataSets.maxByOrNull { it?.power?.maxPower ?: 0f }?.power?.maxPower ?: 0f,
                 powerDataSets.maxByOrNull { it?.power?.normPower ?: 0f }?.power?.normPower ?: 0f,
                 powerDataSets.maxByOrNull { it?.power?.oneSec ?: 0 }?.power?.oneSec ?: 0,

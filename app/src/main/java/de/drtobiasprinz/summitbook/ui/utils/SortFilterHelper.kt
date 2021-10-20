@@ -4,7 +4,6 @@ import android.app.DatePickerDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
-import android.database.sqlite.SQLiteDatabase
 import android.os.Bundle
 import android.text.InputType
 import android.view.View
@@ -17,12 +16,12 @@ import com.hootsuite.nachos.NachoTextView
 import com.hootsuite.nachos.terminator.ChipTerminatorHandler
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
+import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.StatisticsFragment
 import de.drtobiasprinz.summitbook.fragments.SummationFragment
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.StatisticEntry
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import io.apptik.widget.MultiSlider
 import io.apptik.widget.MultiSlider.SimpleChangeListener
 import io.apptik.widget.MultiSlider.Thumb
@@ -33,11 +32,11 @@ import java.util.*
 import kotlin.math.roundToLong
 
 
-class SortFilterHelper(private val filterAndSortView: View, private val context: Context, var entries: ArrayList<SummitEntry>, val databaseHelper: SummitBookDatabaseHelper, val database: SQLiteDatabase) {
+class SortFilterHelper(private val filterAndSortView: View, private val context: Context, var entries: ArrayList<Summit>, val database: AppDatabase) {
     @JvmField
     var selectedYear = ""
     lateinit var fragment: SummationFragment
-    lateinit var filteredEntries: ArrayList<SummitEntry>
+    lateinit var filteredEntries: ArrayList<Summit>
         private set
     private lateinit var uniqueYearsOfSummit: ArrayList<String>
     private var startDate: Date? = null
@@ -164,7 +163,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         if (eText.text.toString().trim() != "") {
             val dateSplitted = eText.text.toString().trim().split("-".toRegex()).toTypedArray()
             if (dateSplitted.size == 3) {
-                day =  dateSplitted[2].toInt()
+                day = dateSplitted[2].toInt()
                 month = dateSplitted[1].toInt() - 1
                 year = dateSplitted[0].toInt()
             }
@@ -248,7 +247,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
 
     private fun setMinMaxValuesKm() {
         val min1 = filterAndSortView.findViewById<TextView>(R.id.minValueKm)
-        min1.text = String.format("%s km", (extremaValuesFilteredSummits?.minKilometers ?: 0.0).toInt())
+        min1.text = String.format("%s km", (extremaValuesFilteredSummits?.minKilometers
+                ?: 0.0).toInt())
         val max1 = filterAndSortView.findViewById<TextView>(R.id.maxValueKm)
         max1.text = String.format("%s km", extremaValuesFilteredSummits?.maxKilometersCeil)
         multiSliderKilometers.setOnThumbValueChangeListener(object : SimpleChangeListener() {
@@ -284,7 +284,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
 
     private fun setMinMaxValuesTopSpeed() {
         val min1 = filterAndSortView.findViewById<TextView>(R.id.minValueTopSpeed)
-        min1.text = String.format("%s km/s", (extremaValuesFilteredSummits?.minTopSpeed ?: 0.0).toInt())
+        min1.text = String.format("%s km/s", (extremaValuesFilteredSummits?.minTopSpeed
+                ?: 0.0).toInt())
         val max1 = filterAndSortView.findViewById<TextView>(R.id.maxValueTopSpeed)
         max1.text = String.format("%s km/s", extremaValuesFilteredSummits?.maxTopSpeedCeil)
         multiSliderTopSpeed.setOnThumbValueChangeListener(object : SimpleChangeListener() {
@@ -302,7 +303,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
 
     private fun setMinMaxValuesAverageSpeed() {
         val min1 = filterAndSortView.findViewById<TextView>(R.id.minValueAverageSpeed)
-        min1.text = String.format("%s km/s", (extremaValuesFilteredSummits?.minAverageSpeed ?: 0.0).toInt())
+        min1.text = String.format("%s km/s", (extremaValuesFilteredSummits?.minAverageSpeed
+                ?: 0.0).toInt())
         val max1 = filterAndSortView.findViewById<TextView>(R.id.maxValueAverageSpeed)
         max1.text = String.format("%s km/s", extremaValuesFilteredSummits?.maxAverageSpeedCeil)
         multiSliderAverageSpeed.setOnThumbValueChangeListener(object : SimpleChangeListener() {
@@ -406,7 +408,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     private fun filterByPosition() {
-        val entries = ArrayList<SummitEntry>()
+        val entries = ArrayList<Summit>()
         for (entry in filteredEntries) {
             when (selectedSegmentedWithPosition) {
                 0 -> if (entry.latLng != null) {
@@ -422,7 +424,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     private fun filterByGpx() {
-        val entries = ArrayList<SummitEntry>()
+        val entries = ArrayList<Summit>()
         for (entry in filteredEntries) {
             when (selectedSegmentedWithGpx) {
                 0 -> if (entry.hasGpsTrack()) {
@@ -438,7 +440,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     private fun filterByImage() {
-        val entries = ArrayList<SummitEntry>()
+        val entries = ArrayList<Summit>()
         for (entry in filteredEntries) {
             when (selectedSegmentedWithImage) {
                 0 -> if (entry.hasImagePath()) {
@@ -455,7 +457,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
 
     private fun filterByDate() {
         selectedDateSpinner(selectedDateItem)
-        val entries = ArrayList<SummitEntry>()
+        val entries = ArrayList<Summit>()
         for (entry in filteredEntries) {
             if (entry.date.after(startDate) && entry.date.before(endDate)) {
                 entries.add(entry)
@@ -466,7 +468,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
 
     private fun filterBySportType() {
         val selectedSportType = selectedSportTypeSpinner(selectedSportTypeItem)
-        val entries = ArrayList<SummitEntry>()
+        val entries = ArrayList<Summit>()
         if (selectedSportType != null) {
             for (entry in filteredEntries) {
                 if (entry.sportType == selectedSportType) {
@@ -479,7 +481,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
 
     private fun filterByParticipants() {
         val selectedParticipants = participants.chipValues
-        val entries = ArrayList<SummitEntry>()
+        val entries = ArrayList<Summit>()
         if (selectedParticipants.size != 0) {
             for (entry in filteredEntries) {
                 for (participant in selectedParticipants) {
@@ -508,7 +510,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     private fun filterByKm() {
-        val entries = ArrayList<SummitEntry>()
+        val entries = ArrayList<Summit>()
         val extremaValues = extremaValuesFilteredSummits
         if (extremaValues != null) {
             for (entry in filteredEntries) {
@@ -521,7 +523,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     private fun filterByHm() {
-        val entries = ArrayList<SummitEntry>()
+        val entries = ArrayList<Summit>()
         val extremaValues = extremaValuesFilteredSummits
         if (extremaValues != null) {
             for (entry in filteredEntries) {
@@ -534,7 +536,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     private fun filterByTopSpeed() {
-        val entries = ArrayList<SummitEntry>()
+        val entries = ArrayList<Summit>()
         val extremaValues = extremaValuesFilteredSummits
         if (extremaValues != null) {
             for (entry in filteredEntries) {
@@ -547,7 +549,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     private fun filterByAverageSpeed() {
-        val entries = ArrayList<SummitEntry>()
+        val entries = ArrayList<Summit>()
         val extremaValues = extremaValuesFilteredSummits
         if (extremaValues != null) {
             for (entry in filteredEntries) {
@@ -560,7 +562,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     private fun filterByTopElevation() {
-        val entries = ArrayList<SummitEntry>()
+        val entries = ArrayList<Summit>()
         val extremaValues = extremaValuesFilteredSummits
         if (extremaValues != null) {
             for (entry in filteredEntries) {
@@ -572,12 +574,12 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         }
     }
 
-    private fun setAllEntries(entries: ArrayList<SummitEntry>) {
+    private fun setAllEntries(entries: ArrayList<Summit>) {
         this.entries = entries
         this.filteredEntries = entries
     }
 
-    fun update(entries: ArrayList<SummitEntry>) {
+    fun update(entries: ArrayList<Summit>) {
         MainActivity.extremaValuesAllSummits = ExtremaValuesSummits(entries)
         setAllEntries(entries)
         setExtremeValues()
@@ -588,20 +590,20 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         try {
             when (position) {
                 0 -> {
-                    startDate = SummitEntry.parseDate(String.format("%s-01-01", if (uniqueYearsOfSummit.size == 0) "1900" else Collections.min(uniqueYearsOfSummit)))
-                    endDate = SummitEntry.parseDate(String.format("%s-12-31", if (uniqueYearsOfSummit.size == 0) "2200" else Collections.max(uniqueYearsOfSummit)))
+                    startDate = Summit.parseDate(String.format("%s-01-01", if (uniqueYearsOfSummit.size == 0) "1900" else Collections.min(uniqueYearsOfSummit)))
+                    endDate = Summit.parseDate(String.format("%s-12-31", if (uniqueYearsOfSummit.size == 0) "2200" else Collections.max(uniqueYearsOfSummit)))
                     selectedYear = ""
                 }
                 1 -> {
                     startDate = if (startDateText.text.toString().trim { it <= ' ' } != "") {
-                        SummitEntry.parseDate(startDateText.text.toString())
+                        Summit.parseDate(startDateText.text.toString())
                     } else {
-                        SummitEntry.parseDate(String.format("%s-01-01", Collections.min(uniqueYearsOfSummit)))
+                        Summit.parseDate(String.format("%s-01-01", Collections.min(uniqueYearsOfSummit)))
                     }
                     endDate = if (endDateText.text.toString().trim { it <= ' ' } != "") {
-                        SummitEntry.parseDate(endDateText.text.toString())
+                        Summit.parseDate(endDateText.text.toString())
                     } else {
-                        SummitEntry.parseDate(String.format("%s-12-31", uniqueYearsOfSummit))
+                        Summit.parseDate(String.format("%s-12-31", uniqueYearsOfSummit))
                     }
                     selectedYear = ""
                 }
@@ -615,7 +617,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     @Throws(ParseException::class)
     private fun setDateFromPosition(position: Int) {
         selectedYear = uniqueYearsOfSummit[position - 2]
-        val df: DateFormat = SimpleDateFormat(SummitEntry.DATETIME_FORMAT, Locale.ENGLISH)
+        val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
         df.isLenient = false
         startDate = df.parse(String.format("%s-01-01 00:00:00", selectedYear))
         endDate = df.parse(String.format("%s-12-31 23:59:59", selectedYear))
@@ -669,14 +671,24 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         outState.putInt(SORT_FILTER_HELPER_GPX_SELECTED, selectedSegmentedWithGpx)
         outState.putInt(SORT_FILTER_HELPER_IMAGE_SELECTED, selectedSegmentedWithImage)
         outState.putString(SORT_FILTER_HELPER_UNIQUE_YEARS, uniqueYearsOfSummit.joinToString(","))
+        outState.putString(SORT_FILTER_HELPER_MULTI_SLIDER_AVG_SPEED, multiSliderToString(multiSliderAverageSpeed))
+        outState.putString(SORT_FILTER_HELPER_MULTI_SLIDER_HEIGHT_METERS, multiSliderToString(multiSliderHeightMeters))
+        outState.putString(SORT_FILTER_HELPER_MULTI_SLIDER_KILOMETERS, multiSliderToString(multiSliderKilometers))
+        outState.putString(SORT_FILTER_HELPER_MULTI_SLIDER_TOP_ELEVATION, multiSliderToString(multiSliderTopElevation))
+        outState.putString(SORT_FILTER_HELPER_MULTI_SLIDER_TOP_SPEED, multiSliderToString(multiSliderTopSpeed))
     }
+
+    private fun multiSliderToString(multiSlider: MultiSlider) =
+            "${multiSlider.min},${multiSlider.getThumb(0).value},${multiSlider.getThumb(1).value},${multiSlider.max}"
 
 
     companion object {
-        fun getInstance(filterAndSortView: View, context: Context, entries: ArrayList<SummitEntry>,
-                        databaseHelper: SummitBookDatabaseHelper, database: SQLiteDatabase,
-                        savedInstanceState: Bundle?, sharedPreferences: SharedPreferences?): SortFilterHelper {
-            val sortFilterHelper =  SortFilterHelper(filterAndSortView, context, entries, databaseHelper, database)
+        fun getInstance(
+                filterAndSortView: View, context: Context, entries: ArrayList<Summit>,
+                database: AppDatabase, savedInstanceState: Bundle?,
+                sharedPreferences: SharedPreferences?,
+        ): SortFilterHelper {
+            val sortFilterHelper = SortFilterHelper(filterAndSortView, context, entries, database)
             if (!sortFilterHelper.areSharedPrefInitialized) {
                 sortFilterHelper.areSharedPrefInitialized = true
                 if (sharedPreferences?.getBoolean("current_year_switch", false) == true) {
@@ -697,12 +709,29 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
                 sortFilterHelper.selectedSegmentedWithPosition = savedInstanceState.getInt(SORT_FILTER_HELPER_POSITION_SELECTED)
                 sortFilterHelper.selectedSegmentedWithGpx = savedInstanceState.getInt(SORT_FILTER_HELPER_GPX_SELECTED)
                 sortFilterHelper.selectedSegmentedWithImage = savedInstanceState.getInt(SORT_FILTER_HELPER_POSITION_SELECTED)
+                setMultiSlider(savedInstanceState, sortFilterHelper.multiSliderAverageSpeed, SORT_FILTER_HELPER_MULTI_SLIDER_AVG_SPEED)
+                setMultiSlider(savedInstanceState, sortFilterHelper.multiSliderTopSpeed, SORT_FILTER_HELPER_MULTI_SLIDER_TOP_SPEED)
+                setMultiSlider(savedInstanceState, sortFilterHelper.multiSliderHeightMeters, SORT_FILTER_HELPER_MULTI_SLIDER_HEIGHT_METERS)
+                setMultiSlider(savedInstanceState, sortFilterHelper.multiSliderKilometers, SORT_FILTER_HELPER_MULTI_SLIDER_KILOMETERS)
+                setMultiSlider(savedInstanceState, sortFilterHelper.multiSliderTopElevation, SORT_FILTER_HELPER_MULTI_SLIDER_TOP_ELEVATION)
                 sortFilterHelper.setSegmentedButtonGroup()
             } else {
                 sortFilterHelper.setDataSpinnerToDefault()
             }
             return sortFilterHelper
         }
+
+        private fun setMultiSlider(savedInstanceState: Bundle, multiSlider: MultiSlider, multiSliderKey: String) {
+            val sliverValues = savedInstanceState.getString(multiSliderKey)?.split(",")
+            if (sliverValues != null && sliverValues.size == 4) {
+                multiSlider.min = sliverValues[0].toInt()
+                multiSlider.getThumb(0).value = sliverValues[1].toInt()
+                multiSlider.getThumb(1).value = sliverValues[2].toInt()
+                multiSlider.max = sliverValues[3].toInt()
+                multiSlider.repositionThumbs()
+            }
+        }
+
         var SORT_FILTER_HELPER_SELECTED_YEAR = "SORT_FILTER_HELPER_SELECTED_YEAR"
         var SORT_FILTER_HELPER_SELECTED_SORT_ASC_DESC = "SORT_FILTER_HELPER_SELECTED_SORT_ASC_DESC"
         var SORT_FILTER_HELPER_SELECTED_SORT_BY = "SORT_FILTER_HELPER_SELECTED_SORT_BY"
@@ -711,6 +740,11 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         var SORT_FILTER_HELPER_GPX_SELECTED = "SORT_FILTER_HELPER_GPS_SELECTED"
         var SORT_FILTER_HELPER_IMAGE_SELECTED = "SORT_FILTER_HELPER_IMAGE_SELECTED"
         var SORT_FILTER_HELPER_UNIQUE_YEARS = "SORT_FILTER_HELPER_UNIQUE_YEARS"
+        var SORT_FILTER_HELPER_MULTI_SLIDER_AVG_SPEED = "SORT_FILTER_HELPER_MULTI_SLIDER_AVG_SPEED"
+        var SORT_FILTER_HELPER_MULTI_SLIDER_TOP_SPEED = "SORT_FILTER_HELPER_MULTI_SLIDER_TOP_SPEED"
+        var SORT_FILTER_HELPER_MULTI_SLIDER_HEIGHT_METERS = "SORT_FILTER_HELPER_MULTI_SLIDER_HEIGHT_METERS"
+        var SORT_FILTER_HELPER_MULTI_SLIDER_KILOMETERS = "SORT_FILTER_HELPER_MULTI_SLIDER_KILOMETERS"
+        var SORT_FILTER_HELPER_MULTI_SLIDER_TOP_ELEVATION = "SORT_FILTER_HELPER_MULTI_SLIDER_TOP_ELEVATION"
 
     }
 }

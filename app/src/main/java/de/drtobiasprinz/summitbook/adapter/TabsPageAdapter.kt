@@ -9,10 +9,10 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 
 
-class TabsPagerAdapter(private val mContext: Context, fm: FragmentManager?, private val summitEntry: SummitEntry) : FragmentPagerAdapter(fm!!, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
+class TabsPagerAdapter(private val mContext: Context, fm: FragmentManager?, private val summitEntry: Summit) : FragmentPagerAdapter(fm!!, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
 
     override fun getItem(position: Int): Fragment {
         if (position == 0) {
@@ -24,10 +24,10 @@ class TabsPagerAdapter(private val mContext: Context, fm: FragmentManager?, priv
         if ((summitEntry.hasGpsTrack() && summitEntry.hasImagePath() && position == 2) || (summitEntry.hasGpsTrack() && !summitEntry.hasImagePath() && position == 1)) {
             return SummitEntryTrackFragment.newInstance(summitEntry)
         }
-        if ((summitEntry.hasGpsTrack() && summitEntry.hasImagePath() && summitEntry.activityData?.power != null && summitEntry.activityData?.power?.hasPowerData() == true && position == 3) ||
-                (summitEntry.hasGpsTrack() && !summitEntry.hasImagePath() && summitEntry.activityData?.power != null && summitEntry.activityData?.power?.hasPowerData() == true && position == 2) ||
-                (!summitEntry.hasGpsTrack() && summitEntry.hasImagePath() && summitEntry.activityData?.power != null && summitEntry.activityData?.power?.hasPowerData() == true && position == 2) ||
-                (!summitEntry.hasGpsTrack() && !summitEntry.hasImagePath() && summitEntry.activityData?.power != null && summitEntry.activityData?.power?.hasPowerData() == true && position == 1)
+        if ((summitEntry.hasGpsTrack() && summitEntry.hasImagePath() && summitEntry.garminData?.power != null && summitEntry.garminData?.power?.hasPowerData() == true && position == 3) ||
+                (summitEntry.hasGpsTrack() && !summitEntry.hasImagePath() && summitEntry.garminData?.power != null && summitEntry.garminData?.power?.hasPowerData() == true && position == 2) ||
+                (!summitEntry.hasGpsTrack() && summitEntry.hasImagePath() && summitEntry.garminData?.power != null && summitEntry.garminData?.power?.hasPowerData() == true && position == 2) ||
+                (!summitEntry.hasGpsTrack() && !summitEntry.hasImagePath() && summitEntry.garminData?.power != null && summitEntry.garminData?.power?.hasPowerData() == true && position == 1)
                 ) {
             return SummitEntryPowerFragment.newInstance(summitEntry)
         }
@@ -42,7 +42,7 @@ class TabsPagerAdapter(private val mContext: Context, fm: FragmentManager?, priv
         if (summitEntry.hasGpsTrack()) {
             TAB_TITLES.add(R.string.tab_text_3)
         }
-        if (summitEntry.activityData?.power != null && summitEntry.activityData?.power?.hasPowerData() == true) {
+        if (summitEntry.garminData?.power != null && summitEntry.garminData?.power?.hasPowerData() == true) {
             TAB_TITLES.add(R.string.tab_text_4)
         }
         return mContext.resources.getString(TAB_TITLES[position])
@@ -56,7 +56,7 @@ class TabsPagerAdapter(private val mContext: Context, fm: FragmentManager?, priv
         if (summitEntry.hasGpsTrack()) {
             tabCount += 1
         }
-        if (summitEntry.activityData?.power != null && summitEntry.activityData?.power?.hasPowerData() == true) {
+        if (summitEntry.garminData?.power != null && summitEntry.garminData?.power?.hasPowerData() == true) {
             tabCount += 1
         }
         return tabCount

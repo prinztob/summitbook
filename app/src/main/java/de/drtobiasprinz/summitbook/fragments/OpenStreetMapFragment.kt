@@ -10,7 +10,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
@@ -32,8 +32,8 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper) : Fragment()
     private var mMarkers: MutableList<Marker?> = ArrayList()
     private var mMarkersShown: MutableList<Marker?> = ArrayList()
     private var gotoLocationDialog: AlertDialog? = null
-    lateinit var summitEntries: ArrayList<SummitEntry>
-    private var filteredEntries: ArrayList<SummitEntry>? = null
+    lateinit var summitEntries: List<Summit>
+    private var filteredEntries: List<Summit>? = null
     private lateinit var mMapView: MapView
     private lateinit var root: View
 
@@ -157,7 +157,7 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper) : Fragment()
         mMapView.post { calculateBoundingBox(mMapView, mGeoPoints) }
     }
 
-    override fun update(filteredSummitEntries: ArrayList<SummitEntry>?) {
+    override fun update(filteredSummitEntries: List<Summit>?) {
         filteredEntries = filteredSummitEntries
         addAllMarkers()
     }

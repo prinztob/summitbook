@@ -1,11 +1,14 @@
 package de.drtobiasprinz.summitbook.models
 
 import android.content.Context
-import android.database.sqlite.SQLiteDatabase
+import androidx.room.Embedded
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
 import com.google.android.gms.maps.model.LatLng
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
+import de.drtobiasprinz.summitbook.database.AppDatabase
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import java.io.File
@@ -19,35 +22,27 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 
-class SummitEntry @JvmOverloads constructor(
+
+@Entity
+class Summit(
         var date: Date, var name: String, var sportType: SportType, var places: List<String>,
-        var countries: List<String>, var comments: String, var elevationData: ElevationData,
-        var kilometers: Double, var velocityData: VelocityData, var participants: List<String>,
-        var imageIds: MutableList<Int>, var activityId: Int =
-                this.getActivityId(date, name, sportType, elevationData.elevationGain, kilometers)) {
-    var _id = -1
-    var latLng: LatLng? = null
-    var activityData: GarminActivityData? = null
-    var isFavorite = false
-    var isSelected = false
+        var countries: List<String>, var comments: String,
+        @Embedded var elevationData: ElevationData, var kilometers: Double,
+        @Embedded var velocityData: VelocityData, var lat: Double?, var lng: Double?,
+        var participants: List<String>, var isFavorite: Boolean, var imageIds: MutableList<Int>,
+        @Embedded var garminData: GarminData?, @Embedded var trackBoundingBox: TrackBoundingBox?,
+        var activityId: Long = System.currentTimeMillis()
+) {
+    @PrimaryKey(autoGenerate = true)
+    var id: Long = 0
+    @Ignore
+    var latLng = lat?.let { lng?.let { it1 -> LatLng(it, it1) } }
+    @Ignore
     var duration = getWellDefinedDuration()
+    @Ignore
     var gpsTrack: GpsTrack? = null
-    var trackBoundingBox: TrackBoundingBox? = null
-    private var rootDirectoryImages = File(MainActivity.storage, "${subDirForImages}/${activityId}")
-
-    private constructor(date: Date, name: String, sportType: SportType, place: List<String>, country: List<String>,
-                        comments: String, elevationData1: ElevationData, kilometers: Double, velocityData1: VelocityData,
-                        latLng: LatLng?, participants: List<String>, imageIds: MutableList<Int>, activityId: Int) :
-            this(date, name, sportType, place, country, comments, elevationData1, kilometers, velocityData1, participants, imageIds, activityId) {
-        this.latLng = latLng
-    }
-
-    constructor(_id: Int, date: Date, name: String, sportType: SportType, place: List<String>, country: List<String>,
-                comments: String, elevationData1: ElevationData, kilometers: Double, velocityData1: VelocityData,
-                participants: List<String>, imageIds: MutableList<Int>, activityId: Int) :
-            this(date, name, sportType, place, country, comments, elevationData1, kilometers, velocityData1, participants, imageIds, activityId) {
-        this._id = _id
-    }
+    @Ignore
+    var isSelected: Boolean = false
 
     private fun getWellDefinedDuration(): Double {
         val dur = if (velocityData.avgVelocity > 0) kilometers / velocityData.avgVelocity else 0.0
@@ -58,27 +53,30 @@ class SummitEntry @JvmOverloads constructor(
         }
     }
 
-    fun getImagePath(id: Int): Path {
-        return Paths.get(rootDirectoryImages.toString(), String.format(Locale.ENGLISH, "%s.jpg", id))
+    fun getImagePath(imageId: Int): Path {
+        val rootDirectoryImages = File(MainActivity.storage, "${Summit.subDirForImages}/${id}")
+        return Paths.get(rootDirectoryImages.toString(), String.format(Locale.ENGLISH, "%s.jpg", imageId))
     }
 
-    fun getImageUrl(id: Int): String {
-        return "file://" + Paths.get(rootDirectoryImages.toString(), String.format(Locale.ENGLISH, "%s.jpg", id)).toString()
+    fun getImageUrl(imageId: Int): String {
+        val rootDirectoryImages = File(MainActivity.storage, "${Summit.subDirForImages}/${id}")
+        return "file://" + Paths.get(rootDirectoryImages.toString(), String.format(Locale.ENGLISH, "%s.jpg", imageId)).toString()
     }
 
     fun getNextImagePath(addIdToImageIds: Boolean = false): Path {
-        var id = 1001
+        val rootDirectoryImages = File(MainActivity.storage, "${Summit.subDirForImages}/${id}")
+        var imageId = 1001
         if (imageIds.isEmpty()) {
             if (!rootDirectoryImages.exists()) {
                 rootDirectoryImages.mkdir()
             }
         } else {
-            id = (imageIds.maxOrNull() ?: id) + 1
+            imageId = (imageIds.maxOrNull() ?: imageId) + 1
         }
         if (addIdToImageIds) {
-            imageIds.add(id)
+            imageIds.add(imageId)
         }
-        return getImagePath(id)
+        return getImagePath(imageId)
     }
 
     fun getGpsTrackPath(): Path? {
@@ -122,7 +120,7 @@ class SummitEntry @JvmOverloads constructor(
         return getGpsTrackPath()?.toFile()?.exists() ?: false
     }
 
-    fun isDuplicate(allExistingEntries: ArrayList<SummitEntry>?): Boolean {
+    fun isDuplicate(allExistingEntries: List<Summit>?): Boolean {
         var isInList = false
         if (allExistingEntries != null) {
             for (entry in allExistingEntries) {
@@ -173,8 +171,8 @@ class SummitEntry @JvmOverloads constructor(
                 lng + ';' +
                 participants.joinToString(",") + ';' +
                 activityId + ';'
-        entryToString += if (activityData != null) {
-            activityData.toString()
+        entryToString += if (garminData != null) {
+            garminData.toString()
         } else {
             ";;;;;;;;;;;"
         }
@@ -183,7 +181,7 @@ class SummitEntry @JvmOverloads constructor(
     }
 
     fun toReadableString(context: Context): String {
-        return "${context.getString(R.string.tour_date)}: ${getDateAsString()}, ${context.getString(R.string.name)}: ${name}, ${context.getString(R.string.type)}: $sportType, $elevationData hm, $kilometers km"
+        return "${context.getString(R.string.tour_date)}: ${getDateAsString()}, ${context.getString(R.string.name)}: ${name}, ${context.getString(R.string.type)}: $sportType, ${elevationData.elevationGain} hm, $kilometers km"
     }
 
     fun getConnectedEntryString(context: Context): String {
@@ -191,12 +189,12 @@ class SummitEntry @JvmOverloads constructor(
     }
 
 
-    fun getPlacesWithConnectedEntryString(context: Context, database: SQLiteDatabase, databaseHelper: SummitBookDatabaseHelper): List<String> {
+    fun getPlacesWithConnectedEntryString(context: Context, database: AppDatabase): List<String> {
         val updatedPlaces = mutableListOf<String>()
         for (place in places) {
             val matchResult = "${CONNECTED_ACTIVITY_PREFIX}([0-9]*)".toRegex().find(place)
             if (matchResult?.groupValues != null) {
-                val connectedSummit = databaseHelper.getSummitsWithActivityId(matchResult.groupValues[1].toInt(), database)
+                val connectedSummit = database.summitDao()?.getSummitFromActivityId(matchResult.groupValues[1].toLong())
                 if (connectedSummit != null) {
                     updatedPlaces.add(connectedSummit.getConnectedEntryString(context))
                 } else {
@@ -209,27 +207,27 @@ class SummitEntry @JvmOverloads constructor(
         return updatedPlaces
     }
 
-    fun setConnectedEntries(connectedEntries: MutableList<SummitEntry>, database: SQLiteDatabase, databaseHelper: SummitBookDatabaseHelper) {
-        setConnectedEntriesFromPlaces(databaseHelper, database, connectedEntries)
-        setConnectedEntriesWhichReferenceThisEntry(databaseHelper, database, connectedEntries)
+    fun setConnectedEntries(connectedEntries: MutableList<Summit>, database: AppDatabase) {
+        setConnectedEntriesFromPlaces(database, connectedEntries)
+        setConnectedEntriesWhichReferenceThisEntry(database, connectedEntries)
     }
 
-    private fun setConnectedEntriesWhichReferenceThisEntry(databaseHelper: SummitBookDatabaseHelper, database: SQLiteDatabase, connectedEntries: MutableList<SummitEntry>) {
-        val connectedSummit = databaseHelper.getSummitsWithConnectedActivityId(activityId, database)
+    private fun setConnectedEntriesWhichReferenceThisEntry(database: AppDatabase, connectedEntries: MutableList<Summit>) {
+        val connectedSummit = database.summitDao()?.getSummitsWithConnectedId("${CONNECTED_ACTIVITY_PREFIX}${activityId}")
         if (connectedSummit != null) {
             connectedEntries.add(connectedSummit)
-            connectedSummit.setConnectedEntriesWhichReferenceThisEntry(databaseHelper, database, connectedEntries)
+            connectedSummit.setConnectedEntriesWhichReferenceThisEntry(database, connectedEntries)
         }
     }
 
-    private fun setConnectedEntriesFromPlaces(databaseHelper: SummitBookDatabaseHelper, database: SQLiteDatabase, connectedEntries: MutableList<SummitEntry>) {
+    private fun setConnectedEntriesFromPlaces(database: AppDatabase, connectedEntries: MutableList<Summit>) {
         for (place in places) {
             val matchResult = "${CONNECTED_ACTIVITY_PREFIX}([0-9]*)".toRegex().find(place)
             if (matchResult?.groupValues != null) {
-                val connectedSummit = databaseHelper.getSummitsWithActivityId(matchResult.groupValues[1].toInt(), database)
+                val connectedSummit = database.summitDao()?.getSummitFromActivityId(matchResult.groupValues[1].toLong())
                 if (connectedSummit != null) {
                     connectedEntries.add(connectedSummit)
-                    connectedSummit.setConnectedEntriesFromPlaces(databaseHelper, database, connectedEntries)
+                    connectedSummit.setConnectedEntriesFromPlaces(database, connectedEntries)
                 }
             }
         }
@@ -257,14 +255,14 @@ class SummitEntry @JvmOverloads constructor(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
-        val that = other as SummitEntry
+        val that = other as Summit
         return that.kilometers == kilometers && that.getDateAsString() == getDateAsString() && name == that.name && sportType == that.sportType && elevationData == that.elevationData
     }
 
     fun equalsInAllProperties(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
-        val that = other as SummitEntry
+        val that = other as Summit
         return that.kilometers == kilometers && that.getDateAsString() == getDateAsString()
                 && name == that.name && sportType == that.sportType
                 && elevationData == that.elevationData && velocityData == that.velocityData && comments == that.comments
@@ -284,8 +282,7 @@ class SummitEntry @JvmOverloads constructor(
         var subDirForImages: String = "summitbook_images"
 
         @Throws(Exception::class)
-        fun parseFromCsvFileLine(line: String): SummitEntry {
-            val entry: SummitEntry
+        fun parseFromCsvFileLine(line: String): Summit {
             val cvsSplitBy = ";"
             val splitLine: Array<String> = line.trim { it <= ' ' }.split(cvsSplitBy.toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             checkValidNumberOfElements(splitLine)
@@ -301,24 +298,33 @@ class SummitEntry @JvmOverloads constructor(
             val countries = splitLine[3].split(",")
             val places = splitLine[4].split(",")
             val participants = splitLine[13].split(",")
-            val activityId = if (splitLine[14].trim { it <= ' ' } != "") splitLine[14].toInt() else getActivityId(date, splitLine[1], sportType, elevationData.elevationGain, km)
-            entry = if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") {
-                val latLng = splitLine[11].toDouble().let { LatLng(it, splitLine[12].toDouble()) }
-                SummitEntry(date, splitLine[1], sportType, countries, places, splitLine[5], elevationData, km, VelocityData.parse(splitLine[8].split(","), topSpeed), latLng, participants, mutableListOf(), activityId)
-            } else {
-                SummitEntry(date, splitLine[1], sportType, countries, places, splitLine[5], elevationData, km, VelocityData.parse(splitLine[8].split(","), topSpeed), participants, mutableListOf(), activityId)
-            }
+            val activityId = if (splitLine[14].trim { it <= ' ' } != "") splitLine[14].toLong() else System.currentTimeMillis()
+            val garminData = if (splitLine[15].trim { it <= ' ' } != "") getGarminData(splitLine) else null
+            val latLng = if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") splitLine[11].toDouble().let { LatLng(it, splitLine[12].toDouble()) } else null
             val isFavorite = if (splitLine.size == NUMBER_OF_ELEMENTS) splitLine[27] else splitLine[29]
-            entry.isFavorite = isFavorite == "1"
-            if (splitLine[15].trim { it <= ' ' } != "") {
-                entry.activityData = getGarminActivityData(splitLine)
-            }
-            return entry
+            return Summit(
+                    date,
+                    splitLine[1],
+                    sportType,
+                    countries,
+                    places,
+                    splitLine[5],
+                    elevationData,
+                    km,
+                    VelocityData.parse(splitLine[8].split(","), topSpeed),
+                    latLng?.latitude,latLng?.longitude,
+                    participants,
+                    isFavorite == "1",
+                    mutableListOf(),
+                    garminData,
+                    null,
+                    activityId
+            )
         }
 
-        private fun getGarminActivityData(splitLine: Array<String>): GarminActivityData {
+        private fun getGarminData(splitLine: Array<String>): GarminData {
             if (splitLine.size == 30) {
-                return GarminActivityData(splitLine[15].split(",") as MutableList<String>,
+                return GarminData(splitLine[15].split(",") as MutableList<String>,
                         splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
                         PowerData(splitLine[19].toFloat(), splitLine[20].toFloat(), splitLine[21].toFloat(),
                                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -327,7 +333,7 @@ class SummitEntry @JvmOverloads constructor(
                         splitLine[24].toFloat(), splitLine[25].toFloat(),
                         splitLine[26].toFloat(), splitLine[27].toFloat(), splitLine[28].toFloat())
             } else {
-                return GarminActivityData(splitLine[15].split(",") as MutableList<String>,
+                return GarminData(splitLine[15].split(",") as MutableList<String>,
                         splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
                         PowerData.parse(splitLine[19].split(",")),
                         splitLine[20].toInt(), splitLine[21].toInt(),
@@ -386,11 +392,7 @@ class SummitEntry @JvmOverloads constructor(
         }
 
         fun getCsvHeadline(): String {
-            return "Date; Name; SportType; place; country; comments; hm; km; pace; topSpeed; topElevation; lat; lng; participants; activityId; garminActivityId; calories; averageHR; maxHR; powerData; FTP; VO2MAX; aerobicTrainingEffect; anaerobicTrainingEffect; grit; flow; trainingsload; isFavorite".trimIndent() + "\n"
-        }
-
-        fun getActivityId(date: Date?, name: String?, sportType: SportType?, heightMeter: Int, kilometers: Double): Int {
-            return Objects.hash(date, name, sportType, heightMeter, kilometers) and 0xfffffff
+            return "Date; Name; SportType; place; country; comments; hm; km; pace; topSpeed; topElevation; lat; lng; participants; activityId; garminid; calories; averageHR; maxHR; powerData; FTP; VO2MAX; aerobicTrainingEffect; anaerobicTrainingEffect; grit; flow; trainingsload; isFavorite".trimIndent() + "\n"
         }
 
     }

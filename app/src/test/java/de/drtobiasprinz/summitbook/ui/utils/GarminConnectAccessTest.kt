@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.models.ElevationData
 import de.drtobiasprinz.summitbook.models.SportType
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.models.VelocityData
 import de.drtobiasprinz.summitbook.ui.utils.GarminConnectAccess.Companion.getDisplayName
 import de.drtobiasprinz.summitbook.ui.utils.GarminConnectAccess.Companion.getJsonData
@@ -31,8 +31,8 @@ class GarminConnectAccessTest {
             val activity = File(resource.path)
             val gson = JsonParser().parse(getJsonData(activity)) as JsonArray
             val connectAccess = GarminConnectAccess()
-            val actualEntries: ArrayList<SummitEntry> = connectAccess.getSummitsAtDate(gson)
-            val expectedEntry = SummitEntry(SummitEntry.parseDate("2019-12-29"), "summit1", SportType.Hike, emptyList(), emptyList(), "", ElevationData.Companion.parse(122, 218), 4.14, VelocityData.Companion.parse(2.99, 9.31), mutableListOf("participant1"), mutableListOf())
+            val actualEntries: ArrayList<Summit> = connectAccess.getSummitsAtDate(gson) as ArrayList<Summit>
+            val expectedEntry = Summit(Summit.parseDate("2019-12-29"), "summit1", SportType.Hike, emptyList(), emptyList(), "", ElevationData.Companion.parse(122, 218), 4.14, VelocityData.Companion.parse(2.99, 9.31), 0.0, 0.0, mutableListOf("participant1"), false, mutableListOf(), null, null)
             Assert.assertEquals(1, actualEntries.size.toLong())
             Assert.assertEquals(expectedEntry, actualEntries[0])
         }

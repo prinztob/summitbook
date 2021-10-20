@@ -2,19 +2,19 @@ package de.drtobiasprinz.summitbook.ui.utils
 
 import android.util.Log
 import de.drtobiasprinz.summitbook.MainActivity.Companion.CSV_FILE_NAME
-import de.drtobiasprinz.summitbook.database.SummitBookDatabaseHelper
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.models.Summit
 import java.io.*
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
-class ZipFileReader(private val baseDirectory: File, private val databaseHelper: SummitBookDatabaseHelper) {
+class ZipFileReader(private val baseDirectory: File, private val database: AppDatabase) {
     var successful = 0
     var unsuccessful = 0
     var duplicate = 0
-    val newSummits = arrayListOf<SummitEntry>()
+    val newSummits = arrayListOf<Summit>()
 
     fun extractZip(inputStream: InputStream) {
         ZipInputStream(BufferedInputStream(inputStream)).use { zipInputStream ->
@@ -42,32 +42,29 @@ class ZipFileReader(private val baseDirectory: File, private val databaseHelper:
     fun readFromCache() {
         val inputCsvFile = File(baseDirectory, CSV_FILE_NAME)
         try {
-            databaseHelper.readableDatabase.use { db ->
-                val allSummits = databaseHelper.getAllSummits(db)
-                val iStream: InputStream = FileInputStream(inputCsvFile)
-                BufferedReader(InputStreamReader(iStream)).use { br ->
-                    var line: String?
-                    while (br.readLine().also { line = it } != null) {
-                        var entry: SummitEntry
-                        val lineLocal = line
-                        try {
-                            if (lineLocal != null && !lineLocal.startsWith("Date")) {
-                                entry = SummitEntry.parseFromCsvFileLine(lineLocal)
-                                if (!entry.isDuplicate(allSummits)) {
-                                    entry._id = databaseHelper.insertSummit(db, entry).toInt()
-                                    allSummits.add(entry)
-                                    newSummits.add(entry)
-                                    successful++
-                                    Log.d("Line %s was added in db.", lineLocal)
-                                } else {
-                                    duplicate++
-                                    Log.d("Line %s is already db.", lineLocal)
-                                }
+            val allSummits = database.summitDao()?.allSummit as MutableList<Summit>
+            val iStream: InputStream = FileInputStream(inputCsvFile)
+            BufferedReader(InputStreamReader(iStream)).use { br ->
+                var line: String?
+                while (br.readLine().also { line = it } != null) {
+                    var entry: Summit
+                    val lineLocal = line
+                    try {
+                        if (lineLocal != null && !lineLocal.startsWith("Date")) {
+                            entry = Summit.parseFromCsvFileLine(lineLocal)
+                            if (!entry.isDuplicate(allSummits)) {
+                                allSummits.add(entry)
+                                newSummits.add(entry)
+                                successful++
+                                Log.d("Line %s was added in db.", lineLocal)
+                            } else {
+                                duplicate++
+                                Log.d("Line %s is already db.", lineLocal)
                             }
-                        } catch (e: Exception) {
-                            unsuccessful++
-                            e.printStackTrace()
                         }
+                    } catch (e: Exception) {
+                        unsuccessful++
+                        e.printStackTrace()
                     }
                 }
             }
@@ -79,7 +76,7 @@ class ZipFileReader(private val baseDirectory: File, private val databaseHelper:
     }
 
     @Throws(IOException::class)
-    fun readGpxFile(entry: SummitEntry) {
+    fun readGpxFile(entry: Summit) {
         val gpxFile = File(baseDirectory, entry.getExportTrackPath())
         if (gpxFile.exists()) {
             Files.copy(gpxFile.toPath(), entry.getGpsTrackPath(), StandardCopyOption.REPLACE_EXISTING)
@@ -87,7 +84,7 @@ class ZipFileReader(private val baseDirectory: File, private val databaseHelper:
     }
 
     @Throws(IOException::class)
-    fun readImageFile(entry: SummitEntry) {
+    fun readImageFile(entry: Summit) {
         // old location
         val imageFile = File(baseDirectory, entry.getExportImagePath())
         if (imageFile.exists()) {

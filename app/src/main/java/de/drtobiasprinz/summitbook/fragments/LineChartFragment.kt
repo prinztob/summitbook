@@ -27,14 +27,15 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.models.SummitEntry
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
 class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragment(), SummationFragment {
-    private var summitEntries: ArrayList<SummitEntry>? = null
-    private var filteredEntries: ArrayList<SummitEntry>? = null
+    private var summitEntries: ArrayList<Summit>? = null
+    private var filteredEntries: ArrayList<Summit>? = null
     private var dataSpinner: Spinner? = null
     private var lineChartView: View? = null
     private var lineChartEntries: MutableList<Entry?> = ArrayList()
@@ -92,8 +93,8 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
         xAxis?.position = XAxis.XAxisPosition.BOTTOM
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String? {
-                return SimpleDateFormat(SummitEntry.DATE_FORMAT, Locale.ENGLISH)
-                        .format(SummitEntry.getDateFromFloat(value))
+                return SimpleDateFormat(Summit.DATE_FORMAT, Locale.ENGLISH)
+                        .format(Summit.getDateFromFloat(value))
             }
         }
     }
@@ -106,8 +107,8 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
         }
     }
 
-    override fun update(filteredSummitEntries: ArrayList<SummitEntry>?) {
-        filteredEntries = filteredSummitEntries
+    override fun update(filteredSummitEntries: List<Summit>?) {
+        filteredEntries = filteredSummitEntries as ArrayList<Summit>?
         dataSpinner?.selectedItemId?.toInt()?.let { selectedDataSpinner(it) }
         drawLineChart()
     }
@@ -210,10 +211,10 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
                 label = "Average HR"
                 if (sortedEntries != null) {
                     for (summitEntry in sortedEntries) {
-                        if (summitEntry.activityData != null) {
-                            val activityData = summitEntry.activityData
-                            if (activityData != null && activityData.averageHR > 0) {
-                                lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), activityData.averageHR, summitEntry))
+                        if (summitEntry.garminData != null) {
+                            val garminData = summitEntry.garminData
+                            if (garminData != null && garminData.averageHR > 0) {
+                                lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), garminData.averageHR, summitEntry))
                             }
                         }
                     }
@@ -224,10 +225,10 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
                 label = "Norm Power"
                 if (sortedEntries != null) {
                     for (summitEntry in sortedEntries) {
-                        if (summitEntry.activityData != null) {
-                            val activityData = summitEntry.activityData
-                            if (activityData != null && activityData.power.normPower > 0) {
-                                lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), activityData.power.normPower, summitEntry))
+                        if (summitEntry.garminData != null) {
+                            val garminData = summitEntry.garminData
+                            if (garminData != null && garminData.power.normPower > 0) {
+                                lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), garminData.power.normPower, summitEntry))
                             }
                         }
                     }
@@ -238,10 +239,10 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
                 label = "Average Power 20 min"
                 if (sortedEntries != null) {
                     for (summitEntry in sortedEntries) {
-                        if (summitEntry.activityData != null) {
-                            val activityData = summitEntry.activityData
-                            if (activityData != null && activityData.power.twentyMin > 0) {
-                                lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), activityData.power.twentyMin.toFloat(), summitEntry))
+                        if (summitEntry.garminData != null) {
+                            val garminData = summitEntry.garminData
+                            if (garminData != null && garminData.power.twentyMin > 0) {
+                                lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), garminData.power.twentyMin.toFloat(), summitEntry))
                             }
                         }
                     }
@@ -252,10 +253,10 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
                 label = "Average Power 1 hour"
                 if (sortedEntries != null) {
                     for (summitEntry in sortedEntries) {
-                        if (summitEntry.activityData != null) {
-                            val activityData = summitEntry.activityData
-                            if (activityData != null && activityData.power.oneHour > 0) {
-                                lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), activityData.power.oneHour.toFloat(), summitEntry))
+                        if (summitEntry.garminData != null) {
+                            val garminData = summitEntry.garminData
+                            if (garminData != null && garminData.power.oneHour > 0) {
+                                lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), garminData.power.oneHour.toFloat(), summitEntry))
                             }
                         }
                     }
@@ -298,7 +299,7 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
 
         override fun refreshContent(e: Entry?, highlight: Highlight?) {
             try {
-                val summitEntry = e?.data as SummitEntry
+                val summitEntry = e?.data as Summit
                 tvContent?.text = String.format("%s\n%s\n%s hm", summitEntry.name, summitEntry.getDateAsString(), summitEntry.elevationData.elevationGain) // set the entry-value as the display text
             } catch (ex: Exception) {
                 ex.printStackTrace()
