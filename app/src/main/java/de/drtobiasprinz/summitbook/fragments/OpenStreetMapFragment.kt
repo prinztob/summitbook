@@ -1,4 +1,4 @@
-package de.drtobiasprinz.summitbook.fragments
+ package de.drtobiasprinz.summitbook.fragments
 
 import android.app.AlertDialog
 import android.content.Context
@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
@@ -27,32 +28,45 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.util.*
 
-class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper) : Fragment(), SummationFragment {
+class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper? = null) : Fragment(), SummationFragment {
     private var mGeoPoints: MutableList<GeoPoint?> = ArrayList()
     private var mMarkers: MutableList<Marker?> = ArrayList()
     private var mMarkersShown: MutableList<Marker?> = ArrayList()
     private var gotoLocationDialog: AlertDialog? = null
-    lateinit var summitEntries: List<Summit>
+    private var summitEntries: List<Summit>? = null
     private var filteredEntries: List<Summit>? = null
-    private lateinit var mMapView: MapView
+    private var mMapView: MapView? = null
     private lateinit var root: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setRetainInstance(true)
         setHasOptionsMenu(true)
-        val ctx = requireContext()
-        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx))
-        Log.d(TAG, "onCreate")
+        val context = requireContext()
+        if (sortFilterHelper == null) {
+            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+            val database = AppDatabase.getDatabase(context)
+            val entries = database.summitDao()?.allSummit
+            sortFilterHelper = SortFilterHelper.getInstance(context, entries as ArrayList<Summit>, database, savedInstanceState, sharedPreferences)
+            sortFilterHelper?.fragment = this
+            sortFilterHelper?.apply()
+        }
+        Configuration.getInstance().load(context, PreferenceManager.getDefaultSharedPreferences(context))
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         root = inflater.inflate(R.layout.fragment_open_street_map, container, false)
         setHasOptionsMenu(true)
-        sortFilterHelper.fragment = this
-        summitEntries = sortFilterHelper.entries
-        filteredEntries = sortFilterHelper.filteredEntries
-        mMapView = root.findViewById(R.id.osmap)
+        sortFilterHelper?.fragment = this
+        summitEntries = sortFilterHelper?.entries
+        filteredEntries = sortFilterHelper?.filteredEntries
+        setMap()
+        Log.d(TAG, "onCreateView")
+        return root
+    }
+
+    private fun setMap() {
+        val mMapView = root.findViewById<MapView>(R.id.osmap)
+        this.mMapView = mMapView
         val changeMapTypeButton: ImageButton = root.findViewById(R.id.change_map)
         changeMapTypeButton.setOnClickListener { showMapTypeSelectorDialog(requireContext(), mMapView) }
 
@@ -60,12 +74,12 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper) : Fragment()
         showAllTracksButton.setOnClickListener { _: View? ->
             val markersInBoundingBox = mMarkers.filter {
                 val mapCustomInfoBubble: MapCustomInfoBubble = it?.infoWindow as MapCustomInfoBubble
-                val shouldBeShown = mapCustomInfoBubble.entry.isInBoundingBox(mMapView.boundingBox)
-                if (!shouldBeShown && it in mMarkersShown) {
+                val shouldBeShown = mMapView?.boundingBox?.let { it1 -> mapCustomInfoBubble.entry.isInBoundingBox(it1) }
+                if (shouldBeShown == false && it in mMarkersShown) {
                     mapCustomInfoBubble.updateGpxTrack(forceRemove = true)
                     mMarkersShown.remove(it)
                 }
-                shouldBeShown
+                shouldBeShown == true
             }
             if (markersInBoundingBox.size <= 10) {
                 markersInBoundingBox.forEach {
@@ -84,47 +98,48 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper) : Fragment()
 
         requireActivity().findViewById<View>(R.id.add_new_summit).visibility = View.INVISIBLE
 
-        mMapView.setOnGenericMotionListener { _: View?, event: MotionEvent ->
+        mMapView?.setOnGenericMotionListener { _: View?, event: MotionEvent ->
             if (0 != event.source and InputDevice.SOURCE_CLASS_POINTER) {
                 if (event.action == MotionEvent.ACTION_SCROLL) {
                     if (event.getAxisValue(MotionEvent.AXIS_VSCROLL) < 0.0f) {
-                        mMapView.controller.zoomOut()
+                        mMapView.controller?.zoomOut()
                     } else {
-                        mMapView.controller.zoomIn()
+                        mMapView.controller?.zoomIn()
                     }
                     return@setOnGenericMotionListener true
                 }
             }
             false
         }
-        Log.d(TAG, "onCreateView")
-        return root
     }
 
     override fun onPause() {
-        mMapView.onPause()
         super.onPause()
+        mMapView?.onPause()
     }
 
     override fun onResume() {
         super.onResume()
-        mMapView.onResume()
+        mMapView?.onResume()
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        setTileSource(selectedItem, mMapView)
-        addOverlays()
-        val context: Context? = this.activity
-        val mLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), mMapView)
-        mLocationOverlay.enableMyLocation()
-        mMapView.overlays.add(mLocationOverlay)
-        addDefaultSettings(requireContext(), mMapView, requireActivity())
+        val localMapView = mMapView
+        if (localMapView != null) {
+            setTileSource(selectedItem, localMapView)
+            addOverlays()
+            val context: Context? = this.activity
+            val mLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), localMapView)
+            mLocationOverlay.enableMyLocation()
+            localMapView.overlays.add(mLocationOverlay)
+            addDefaultSettings(requireContext(), localMapView, requireActivity())
+        }
     }
 
     override fun onDestroyView() {
         Log.d(TAG, "onDetach")
-        mMapView.onDetach()
+        mMapView?.onDetach()
         super.onDestroyView()
     }
 
@@ -140,26 +155,36 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper) : Fragment()
     }
 
     private fun addAllMarkers() {
-        mMapView.overlays.clear()
-        mGeoPoints = ArrayList()
-        mMarkers = ArrayList()
-        val filteredEntriesLocal = filteredEntries
-        if (filteredEntriesLocal != null) {
-            for (entry in filteredEntriesLocal) {
-                val latLng = entry.latLng
-                if (latLng != null) {
-                    val point = GeoPoint(latLng.latitude, latLng.longitude)
-                    mGeoPoints.add(point)
-                    mMarkers.add(addMarker(mMapView, requireContext(), point, entry))
+        val localMapView = mMapView
+        if (localMapView != null) {
+            localMapView.overlays?.clear()
+            mGeoPoints = ArrayList()
+            mMarkers = ArrayList()
+            val filteredEntriesLocal = filteredEntries
+            if (filteredEntriesLocal != null) {
+                for (entry in filteredEntriesLocal) {
+                    val latLng = entry.latLng
+                    if (latLng != null && mMapView != null) {
+                        val point = GeoPoint(latLng.latitude, latLng.longitude)
+                        mGeoPoints.add(point)
+                        mMarkers.add(addMarker(localMapView, requireContext(), point, entry))
+                    }
                 }
             }
+            mMapView?.post { calculateBoundingBox(localMapView, mGeoPoints) }
         }
-        mMapView.post { calculateBoundingBox(mMapView, mGeoPoints) }
     }
 
     override fun update(filteredSummitEntries: List<Summit>?) {
-        filteredEntries = filteredSummitEntries
-        addAllMarkers()
+        if (mMapView != null) {
+            filteredEntries = filteredSummitEntries
+            addAllMarkers()
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        sortFilterHelper?.onSaveInstanceState(outState)
     }
 
     companion object {

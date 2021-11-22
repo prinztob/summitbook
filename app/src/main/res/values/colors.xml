@@ -107,4 +107,5 @@
     <!-- Mixed Colors -->
 
     <color name="translucent">#80000000</color>
+    <color name="translucent70">#70000000</color>
 </resources>

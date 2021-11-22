@@ -82,10 +82,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         File(storage, Summit.subDirForGpsTracks).mkdirs()
         File(storage, Bookmark.subDirForGpsTracks).mkdirs()
         File(storage, Summit.subDirForImages).mkdirs()
-        val factory = LayoutInflater.from(this)
-        val filterAndSortView = factory.inflate(R.layout.dialog_filter_and_sort, null)
 
-        sortFilterHelper = SortFilterHelper.getInstance(filterAndSortView, this, entries as ArrayList<Summit>, database, savedInstanceState, sharedPreferences)
+        sortFilterHelper = SortFilterHelper.getInstance(this, entries as ArrayList<Summit>, database, savedInstanceState, sharedPreferences)
         if (viewedFragment != null && viewedFragment is SummationFragment) {
             sortFilterHelper.fragment = viewedFragment
         } else {
@@ -129,6 +127,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }, 0, 10, TimeUnit.MINUTES)
 
         if (viewedFragment == null) {
+            extremaValuesAllSummits = ExtremaValuesSummits(sortFilterHelper.entries)
             val ft = supportFragmentManager.beginTransaction()
             ft.add(R.id.content_frame, summitViewFragment)
             ft.commit()
@@ -384,7 +383,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         const val PICK_ZIP_FILE = 102
         private const val KEY_IS_DIALOG_SHOWN = "IS_DIALOG_SHOWN"
         private const val KEY_CURRENT_POSITION = "CURRENT_POSITION"
-        private const val SELECTED_NAV_ITEM_ID = "SELECTED_NAV_ITEM_ID"
         var extremaValuesAllSummits: ExtremaValuesSummits? = null
 
         @kotlin.jvm.JvmField

@@ -40,6 +40,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
     private lateinit var database: AppDatabase
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        setRetainInstance(true)
         return inflater.inflate(R.layout.dialog_show_new_summit_from_garmin, container)
     }
 

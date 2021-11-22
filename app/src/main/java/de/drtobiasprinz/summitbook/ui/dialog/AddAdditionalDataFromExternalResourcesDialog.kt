@@ -39,6 +39,7 @@ class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summ
     private var tableEntries: MutableList<TableEntry> = mutableListOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        setRetainInstance(true)
         return inflater.inflate(R.layout.dialog_add_additional_data_from_external_resources, container)
     }
 
@@ -220,10 +221,6 @@ class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summ
         label.setTextColor(color)
         label.setPadding(padding, padding, padding, padding)
         tr.addView(label)
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
     }
 
     companion object {

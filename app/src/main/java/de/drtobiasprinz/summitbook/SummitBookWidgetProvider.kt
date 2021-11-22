@@ -19,7 +19,7 @@ import kotlin.math.roundToInt
 class SummitBookWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         val database = AppDatabase.getDatabase(context)
-        val entries = database?.summitDao()?.allSummit
+        val entries = database.summitDao()?.allSummit
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         val annualTargetActivity = sharedPreferences.getString("annual_target_activities", "52")?.toInt()
                 ?: 52

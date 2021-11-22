@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.InputType
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
@@ -683,11 +684,12 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
 
 
     companion object {
-        fun getInstance(
-                filterAndSortView: View, context: Context, entries: ArrayList<Summit>,
+        fun getInstance(context: Context, entries: ArrayList<Summit>,
                 database: AppDatabase, savedInstanceState: Bundle?,
                 sharedPreferences: SharedPreferences?,
         ): SortFilterHelper {
+            val factory = LayoutInflater.from(context)
+            val filterAndSortView = factory.inflate(R.layout.dialog_filter_and_sort, null)
             val sortFilterHelper = SortFilterHelper(filterAndSortView, context, entries, database)
             if (!sortFilterHelper.areSharedPrefInitialized) {
                 sortFilterHelper.areSharedPrefInitialized = true

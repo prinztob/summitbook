@@ -98,6 +98,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     private lateinit var sportTypeSpinner: Spinner
     private var garminDataFromGarminConnect: GarminData? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        setRetainInstance(true)
         return inflater.inflate(R.layout.dialog_add_summit, container)
     }
 

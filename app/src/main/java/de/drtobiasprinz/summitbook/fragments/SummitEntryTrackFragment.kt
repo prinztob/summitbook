@@ -358,7 +358,7 @@ class SummitEntryTrackFragment : Fragment() {
             for (entry in connectedEntries) {
                 OpenStreetMapUtils.drawTrack(entry, false, osMap, false, color = Color.BLACK)
             }
-            marker = OpenStreetMapUtils.addTrackAndMarker(localSummit, osMap, requireContext(), false, isMilageButtonShown, true)
+            marker = OpenStreetMapUtils.addTrackAndMarker(localSummit, osMap, requireContext(), true, isMilageButtonShown, true)
             maxSlopeButton.setOnClickListener {
                 addMaxSlopePoints(localSummit)
             }

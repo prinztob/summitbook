@@ -41,6 +41,7 @@ class AddBookmarkDialog : DialogFragment() {
     }
     private var sportTypeSpinner: Spinner? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        setRetainInstance(true)
         return inflater.inflate(R.layout.dialog_add_bookmark, container)
     }
 
