@@ -31,6 +31,10 @@
             android:icon="@drawable/ic_baseline_photo_album_24"
             android:title="@string/nav_diashow" />
         <item
+            android:id="@+id/nav_forecast"
+            android:icon="@drawable/ic_baseline_av_timer_24"
+            android:title="@string/forecast" />
+        <item
             android:id="@+id/export_csv"
             android:icon="@drawable/ic_file_upload_black_24dp"
             android:title="@string/nav_export" />

@@ -52,6 +52,7 @@
     <string name="sport_type_image">sport type image</string>
     <string name="delete_icon">delete icon</string>
     <string name="edit_icon">edit icon</string>
+    <string name="edit">edit</string>
     <string name="add_coordinate">add coordinate</string>
     <string name="is_favorite">Mark this entry as favorite summit</string>
     <string name="choose_data_source">Choose data source</string>
@@ -160,6 +161,9 @@
     <string name="shared_gpx_text">"Sharing gpx file for bookmark %1$s.\nElevation gain: %2$s hm\nDistance: %3$s km"</string>
     <string name="shared_summit_gpx_text">"Sharing gpx file for %1$s.\nDate: %2$s\nElevation gain: %3$s hm\nDistance: %4$s km"</string>
     <string name="base_info">"%1$s summits with %2$s km and an elevation gain of %3$s m."</string>
+    <string name="forecast_info_hm">"%1$s: Estimated elevation gain: %2$s m (Goal: %3$s m)."</string>
+    <string name="forecast_info_km">"%1$s: Estimated distance: %2$s km (Goal: %3$s km)."</string>
+    <string name="forecast_info_activities">"%1$s: Estimated activities: %2$s m (Goal: %3$s)."</string>
     <string name="import_string_titel">"Import successful"</string>
     <string name="import_string">"Finished import of Zip File with in total %1$s entries in CSV file\nImported entries: %2$s\nInvalid entries: %3$s\nDuplicate entries: %4$s"</string>
     <string name="current_estimate">"Current estimate from annual target: %1$s hm."</string>
@@ -296,5 +300,21 @@
     <string name="max_verticalVelocity_10Min">Max vertical velocity in 10min</string>
     <string name="max_verticalVelocity_1h">Max vertical velocity in 1h</string>
     <string name="ok">OK</string>
+    <string name="forecast">Forecast</string>
+    <string name="january">January</string>
+    <string name="february">February</string>
+    <string name="march">March</string>
+    <string name="april">April</string>
+    <string name="may">May</string>
+    <string name="june">June</string>
+    <string name="july">July</string>
+    <string name="august">August</string>
+    <string name="september">September</string>
+    <string name="october">October</string>
+    <string name="november">November</string>
+    <string name="december">December</string>
+    <string name="activity_hint">Activities</string>
+    <string name="next_year">Next year</string>
+    <string name="current_year">Current year</string>
 
 </resources>

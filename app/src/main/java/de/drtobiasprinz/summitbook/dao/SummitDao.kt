@@ -16,6 +16,9 @@ interface SummitDao {
     @get:Query("select * from summit")
     val allSummit: List<Summit>?
 
+    @Query("select * from summit WHERE date >= :startDate")
+    fun getAllSummitForYear(startDate: Long): List<Summit>?
+
     @Query("select * from summit where id = :id")
     fun getSummit(id: Long): Summit?
 

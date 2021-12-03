@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.fragments
 
 import android.content.Context
+import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
 import android.util.DisplayMetrics
@@ -15,20 +16,18 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
+import com.github.mikephil.charting.charts.CombinedChart.DrawOrder
 import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.components.MarkerView
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.YAxis
-import com.github.mikephil.charting.data.BarData
-import com.github.mikephil.charting.data.BarDataSet
-import com.github.mikephil.charting.data.BarEntry
-import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
-import com.github.mikephil.charting.interfaces.datasets.IBarDataSet
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.models.Forecast
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.utils.BarChartCustomRenderer
@@ -47,15 +46,17 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     private var summitEntries: ArrayList<Summit>? = null
     private var filteredEntries: ArrayList<Summit>? = null
     private var dataSpinner: Spinner? = null
+    private var selectedDataSpinner = 0
     private var xAxisSpinner: Spinner? = null
+    private var selectedXAxisSpinner = 0
     private var barChartView: View? = null
-    private var barChartEntries: MutableList<BarEntry?>? = null
+    private var barChartEntries: MutableList<BarEntry?> = mutableListOf()
+    private var lineChartEntriesForecast: MutableList<Entry?> = mutableListOf()
     private var unit: String? = "hm"
     private var label: String? = "Height meters"
     private var barChart: CustomBarChart? = null
-    private lateinit var intervallHelper: IntervalHelper
-    private var selectedDataSpinner = 0
-    private var selectedXAxisSpinner = 0
+    private lateinit var intervalHelper: IntervalHelper
+    private lateinit var forecasts: ArrayList<Forecast>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,15 +70,15 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         barChartView = inflater.inflate(R.layout.fragment_bar_chart, container, false)
         setHasOptionsMenu(true)
         sortFilterHelper.fragment = this
+        forecasts = sortFilterHelper.database.forecastDao()?.allForecasts as java.util.ArrayList<Forecast>
         fillDateSpinner()
         summitEntries = sortFilterHelper.entries
-        intervallHelper = IntervalHelper(summitEntries)
+        intervalHelper = IntervalHelper(summitEntries)
         barChart = barChartView?.findViewById(R.id.barChart) // Fragment
         val barChartCustomRenderer = BarChartCustomRenderer(barChart, barChart?.animator, barChart?.viewPortHandler)
         barChart?.renderer = barChartCustomRenderer
         barChart?.setDrawValueAboveBar(false)
         resizeChart()
-        barChartEntries = ArrayList()
         filteredEntries = sortFilterHelper.filteredEntries
         listenOnDataSpinner()
         update(filteredEntries)
@@ -90,35 +91,64 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         barChart?.minimumHeight = (metrics.heightPixels * 0.7).toInt()
     }
 
-    private fun drawLineChart() {
-        val dataSets: MutableList<IBarDataSet?> = ArrayList()
-        val dataSet = BarDataSet(barChartEntries, label)
-        setGraphView(dataSet)
-        dataSets.add(dataSet)
-        barChart?.data = BarData(dataSets)
+    private fun drawChart() {
+        barChart?.drawOrder = arrayOf(
+                DrawOrder.BAR, DrawOrder.BUBBLE, DrawOrder.CANDLE, DrawOrder.LINE, DrawOrder.SCATTER
+        )
+        val combinedData = CombinedData()
+
+        setBarData(combinedData)
+
+        if (lineChartEntriesForecast.isNotEmpty()) {
+            val lastEntry = lineChartEntriesForecast.last()
+            if (lastEntry != null) {
+                lineChartEntriesForecast.add(Entry(lastEntry.x + 1f, lastEntry.y))
+            }
+            setLineData(combinedData)
+        }
+
         setXAxis()
         val yAxisLeft = barChart?.axisLeft
         setYAxis(yAxisLeft)
         val yAxisRight = barChart?.axisRight
         setYAxis(yAxisRight)
+        barChart?.data = combinedData
         barChart?.setTouchEnabled(true)
         barChart?.marker = CustomMarkerView(barChartView?.context, R.layout.marker_graph_bar_chart)
+
         barChart?.invalidate()
     }
 
-    private fun setXAxis() {
+    private fun setBarData(combinedData: CombinedData) {
+        val dataSet = BarDataSet(barChartEntries, label)
+        setGraphViewBarChart(dataSet)
+        combinedData.setData(BarData(dataSet))
+    }
+
+    private fun setLineData(combinedData: CombinedData) {
+        val dataSet = LineDataSet(lineChartEntriesForecast, "Forecast")
+        setGraphViewLineChart(dataSet)
+        val data = LineData(dataSet)
+        combinedData.setData(data)
+    }
+
+    private fun setXAxis(): XAxis? {
         val xAxis = barChart?.xAxis
-        xAxis?.position = XAxis.XAxisPosition.TOP
+        val max = barChartEntries.maxByOrNull { it?.x ?: 0f }?.x ?: 0f
+        val min = barChartEntries.minByOrNull { it?.x ?: 0f }?.x ?: 0f
+        xAxis?.axisMaximum = max + 0.5f;
+        xAxis?.axisMinimum = min - 0.5f;
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 return when (selectedXAxisSpinner) {
                     1 -> String.format("%s", ((value + 0.5) * IntervalHelper.kilometersStep).toInt())
                     2 -> String.format("%s", ((value + 0.5) * IntervalHelper.elevationGainStep).toInt())
                     3 -> String.format("%s", ((value + 0.5) * IntervalHelper.topElevationStep).toInt())
-                    else -> if (sortFilterHelper.selectedYear == "" || value > 12) String.format("%s", value.toInt()) else String.format("%s", Month.of(value.toInt()))
+                    else -> if (sortFilterHelper.selectedYear == "" || value > 12f || value == 0f) String.format("%s", value.toInt()) else String.format("%s", Month.of(value.toInt()))
                 }
             }
         }
+        return xAxis
     }
 
     private fun setYAxis(yAxis: YAxis?) {
@@ -132,14 +162,24 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     override fun update(filteredSummitEntries: List<Summit>?) {
         filteredEntries = filteredSummitEntries as ArrayList<Summit>
         selectedDataSpinner()
-        drawLineChart()
+        drawChart()
     }
 
-    private fun setGraphView(dataSet: BarDataSet) {
+    private fun setGraphViewBarChart(dataSet: BarDataSet) {
         dataSet.setDrawValues(false)
         dataSet.highLightColor = Color.RED
         dataSet.colors = SportType.values().map { ContextCompat.getColor(requireContext(), it.color) }
         dataSet.stackLabels = SportType.values().map { getString(it.abbreviationStringId) }.toTypedArray()
+    }
+
+    private fun setGraphViewLineChart(dataSet: LineDataSet) {
+        dataSet.setDrawValues(false)
+        dataSet.setDrawCircles(false)
+        dataSet.color = Color.DKGRAY
+        dataSet.circleHoleColor = Color.RED
+        dataSet.highLightColor = Color.RED
+        dataSet.lineWidth = 2f
+        dataSet.mode = LineDataSet.Mode.STEPPED
     }
 
     private fun selectedDataSpinner() {
@@ -147,7 +187,8 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         barChart?.axisLeft?.removeAllLimitLines()
         val sortedEntries = filteredEntries
         sortedEntries?.sortWith(compareBy { it.date })
-        barChartEntries?.clear()
+        barChartEntries.clear()
+        lineChartEntriesForecast.clear()
         try {
             var annualTarget: Float = when (selectedDataSpinner) {
                 1 -> {
@@ -180,26 +221,39 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     @Throws(ParseException::class)
     private fun updateBarChartWithDateAsXAxis() {
-        intervallHelper.setSelectedYear(sortFilterHelper.selectedYear)
-        intervallHelper.calculate()
-        for (i in 0 until intervallHelper.dates.size - 1) {
-            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenDates(filteredEntries, intervallHelper.dates[i], intervallHelper.dates[i + 1]) }
-            val xValue = intervallHelper.dateAnnotation[i]
+        intervalHelper.setSelectedYear(sortFilterHelper.selectedYear)
+        intervalHelper.calculate()
+        val now = Calendar.getInstance()
+        val currentYear = now[Calendar.YEAR].toString()
+
+        for (i in 0 until intervalHelper.dates.size - 1) {
+            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenDates(filteredEntries, intervalHelper.dates[i], intervalHelper.dates[i + 1]) }
+            val xValue = intervalHelper.dateAnnotation[i]
             when (selectedDataSpinner) {
                 1 -> {
                     label = "Kilometers"
                     unit = "km"
-                    barChartEntries?.add(BarEntry(xValue, getKilometerPerSportType(streamSupplier)))
+                    barChartEntries.add(BarEntry(xValue, getKilometerPerSportType(streamSupplier)))
                 }
                 2 -> {
                     label = "Elevation Gain"
                     unit = "m"
-                    barChartEntries?.add(BarEntry(xValue, getElevationGainsPerSportType(streamSupplier)))
+                    barChartEntries.add(BarEntry(xValue, getElevationGainsPerSportType(streamSupplier)))
                 }
                 else -> {
                     label = "Count"
                     unit = ""
-                    barChartEntries?.add(BarEntry(xValue, getCountsPerSportType(streamSupplier)))
+                    barChartEntries.add(BarEntry(xValue, getCountsPerSportType(streamSupplier)))
+                }
+            }
+            if (sortFilterHelper.selectedYear == currentYear) {
+                val forecast = forecasts.firstOrNull { it.month == xValue.toInt() && it.year.toString() == currentYear }
+                if (forecast != null) {
+                    when (selectedDataSpinner) {
+                        1 -> lineChartEntriesForecast.add(Entry(xValue - 0.5F, forecast.forecastDistance.toFloat()))
+                        2 -> lineChartEntriesForecast.add(Entry(xValue - 0.5F, forecast.forecastHeightMeter.toFloat()))
+                        else -> lineChartEntriesForecast.add(Entry(xValue - 0.5F, forecast.forecastNumberActivities.toFloat()))
+                    }
                 }
             }
         }
@@ -207,25 +261,25 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     @Throws(ParseException::class)
     private fun updateBarChartWithElevationGainAsXAxis() {
-        intervallHelper.calculate()
-        for (i in 0 until intervallHelper.elevationGains.size - 1) {
-            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenElevationGains(filteredEntries, intervallHelper.elevationGains[i], intervallHelper.elevationGains[i + 1]) }
-            val xValue = intervallHelper.elevationGainAnnotation[i]
+        intervalHelper.calculate()
+        for (i in 0 until intervalHelper.elevationGains.size - 1) {
+            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenElevationGains(filteredEntries, intervalHelper.elevationGains[i], intervalHelper.elevationGains[i + 1]) }
+            val xValue = intervalHelper.elevationGainAnnotation[i]
             when (selectedDataSpinner) {
                 1 -> {
                     label = "Kilometers"
                     unit = "km"
-                    barChartEntries?.add(BarEntry(xValue, getKilometerPerSportType(streamSupplier)))
+                    barChartEntries.add(BarEntry(xValue, getKilometerPerSportType(streamSupplier)))
                 }
                 2 -> {
                     label = "Elevation Gain"
                     unit = "m"
-                    barChartEntries?.add(BarEntry(xValue, getElevationGainsPerSportType(streamSupplier)))
+                    barChartEntries.add(BarEntry(xValue, getElevationGainsPerSportType(streamSupplier)))
                 }
                 else -> {
                     label = "Count"
                     unit = ""
-                    barChartEntries?.add(BarEntry(xValue, getCountsPerSportType(streamSupplier)))
+                    barChartEntries.add(BarEntry(xValue, getCountsPerSportType(streamSupplier)))
                 }
             }
         }
@@ -233,25 +287,25 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     @Throws(ParseException::class)
     private fun updateBarChartWithKilometersAsXAxis() {
-        intervallHelper.calculate()
-        for (i in 0 until intervallHelper.kilometers.size - 1) {
-            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenKilometers(filteredEntries, intervallHelper.kilometers[i], intervallHelper.kilometers[i + 1]) }
-            val xValue = intervallHelper.kilometerAnnotation[i]
+        intervalHelper.calculate()
+        for (i in 0 until intervalHelper.kilometers.size - 1) {
+            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenKilometers(filteredEntries, intervalHelper.kilometers[i], intervalHelper.kilometers[i + 1]) }
+            val xValue = intervalHelper.kilometerAnnotation[i]
             when (selectedDataSpinner) {
                 1 -> {
                     label = "Kilometers"
                     unit = "km"
-                    barChartEntries?.add(BarEntry(xValue, getKilometerPerSportType(streamSupplier)))
+                    barChartEntries.add(BarEntry(xValue, getKilometerPerSportType(streamSupplier)))
                 }
                 2 -> {
                     label = "Elevation Gain"
                     unit = "m"
-                    barChartEntries?.add(BarEntry(xValue, getElevationGainsPerSportType(streamSupplier)))
+                    barChartEntries.add(BarEntry(xValue, getElevationGainsPerSportType(streamSupplier)))
                 }
                 else -> {
                     label = "Count"
                     unit = ""
-                    barChartEntries?.add(BarEntry(xValue, getCountsPerSportType(streamSupplier)))
+                    barChartEntries.add(BarEntry(xValue, getCountsPerSportType(streamSupplier)))
                 }
             }
         }
@@ -259,25 +313,25 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     @Throws(ParseException::class)
     private fun updateBarChartWithTopElevationAsXAxis() {
-        intervallHelper.calculate()
-        for (i in 0 until intervallHelper.topElevations.size - 1) {
-            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenTopElevation(filteredEntries, intervallHelper.topElevations[i], intervallHelper.topElevations[i + 1]) }
-            val xValue = intervallHelper.topElevationAnnotation[i]
+        intervalHelper.calculate()
+        for (i in 0 until intervalHelper.topElevations.size - 1) {
+            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenTopElevation(filteredEntries, intervalHelper.topElevations[i], intervalHelper.topElevations[i + 1]) }
+            val xValue = intervalHelper.topElevationAnnotation[i]
             when (selectedDataSpinner) {
                 1 -> {
                     label = "Kilometers"
                     unit = "km"
-                    barChartEntries?.add(BarEntry(xValue, getKilometerPerSportType(streamSupplier)))
+                    barChartEntries.add(BarEntry(xValue, getKilometerPerSportType(streamSupplier)))
                 }
                 2 -> {
                     label = "Elevation Gain"
                     unit = "m"
-                    barChartEntries?.add(BarEntry(xValue, getElevationGainsPerSportType(streamSupplier)))
+                    barChartEntries.add(BarEntry(xValue, getElevationGainsPerSportType(streamSupplier)))
                 }
                 else -> {
                     label = "Count"
                     unit = ""
-                    barChartEntries?.add(BarEntry(xValue, getCountsPerSportType(streamSupplier)))
+                    barChartEntries.add(BarEntry(xValue, getCountsPerSportType(streamSupplier)))
                 }
             }
         }
@@ -346,7 +400,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 selectedDataSpinner = i
                 selectedDataSpinner()
-                drawLineChart()
+                drawChart()
             }
 
             override fun onNothingSelected(adapterView: AdapterView<*>?) {}
@@ -355,7 +409,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 selectedXAxisSpinner = i
                 selectedDataSpinner()
-                drawLineChart()
+                drawChart()
             }
 
             override fun onNothingSelected(adapterView: AdapterView<*>?) {}
@@ -377,6 +431,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     inner class CustomMarkerView(context: Context?, layoutResource: Int) : MarkerView(context, layoutResource) {
         private val tvContent: TextView? = findViewById(R.id.tvContent)
+
         override fun refreshContent(e: Entry?, highlight: Highlight?) {
             try {
                 val value: String
@@ -397,7 +452,18 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
                 }
 
             } catch (ex: Exception) {
+                tvContent?.text = ""
                 ex.printStackTrace()
+            }
+        }
+        private val uiScreenWidth = resources.displayMetrics.widthPixels
+        override fun draw(canvas: Canvas?, posX: Float, posY: Float) {
+            var newPosX = posX
+            if ((uiScreenWidth - posX) < width/2f) {
+                newPosX = uiScreenWidth - width/2f - 25f
+            }
+            if (tvContent?.text != "") {
+                super.draw(canvas, newPosX, posY)
             }
         }
 

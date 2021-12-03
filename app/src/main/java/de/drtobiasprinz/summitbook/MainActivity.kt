@@ -12,7 +12,6 @@ import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -37,6 +36,7 @@ import de.drtobiasprinz.summitbook.fragments.*
 import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
+import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
@@ -191,8 +191,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.nav_osmap -> {
                 commitFragment(OpenStreetMapFragment(sortFilterHelper))
             }
-            R.id.nav_diashow -> {
-                openViewer()
+            R.id.nav_forecast -> {
+                ForecastDialog().show(this.supportFragmentManager, "ForecastDialog")
             }
             R.id.import_csv -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {

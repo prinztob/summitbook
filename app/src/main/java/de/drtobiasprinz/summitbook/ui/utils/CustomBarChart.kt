@@ -5,10 +5,10 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
-import com.github.mikephil.charting.charts.BarChart
+import com.github.mikephil.charting.charts.CombinedChart
 
 
-open class CustomBarChart : BarChart {
+open class CustomBarChart : CombinedChart {
     private var lowerYAxisSafeZonePaint: Paint? = null
     private var upperYAxisSafeZonePaint: Paint? = null
 
@@ -32,7 +32,7 @@ open class CustomBarChart : BarChart {
         } else {
             val l1 = limitLines[0]
             drawRect(lowerYAxisSafeZonePaint, 0f, l1.limit, canvas)
-            drawRect(upperYAxisSafeZonePaint,l1.limit, l1.limit*50, canvas)
+            drawRect(upperYAxisSafeZonePaint, l1.limit, l1.limit * 50, canvas)
             super.onDraw(canvas)
         }
     }

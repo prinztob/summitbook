@@ -15,6 +15,7 @@
     <string name="accept">Akzeptiere</string>
     <string name="summit_name_hint">Name des Gipfel</string>
     <string name="height_meter_hint">Höhenmeter</string>
+    <string name="activity_hint">Aktivitäten</string>
     <string name="action_share">Teilen</string>
     <string name="capricorn_caption">Steinbock in den Alpen</string>
     <string name="tour_date">Gipfel Datum</string>
@@ -51,7 +52,8 @@
     <string name="achievement">Zielerreichung im gewählten Jahr</string>
     <string name="sport_type_image">Sportart Bild</string>
     <string name="delete_icon">Löschicon</string>
-    <string name="edit_icon">Modifiziericon</string>
+    <string name="edit_icon">Modifiziere Icon</string>
+    <string name="edit">Modifiziere</string>
     <string name="add_coordinate">Füge Koordinaten hinzu</string>
     <string name="is_favorite">Markiere diesen Gipfel als Favorit</string>
     <string name="choose_data_source">Wähle Datenquelle</string>
@@ -163,6 +165,9 @@ von
     <string name="shared_gpx_text">"Teile GPX Track für Bookmark %1$s.\nHöhenmeter: %2$s hm\nEntfernung: %3$s km"</string>
     <string name="shared_summit_gpx_text">"Teile GPX Track for %1$s.\nDatum: %2$s\nHöhenmeter: %3$s hm\nEntfernung: %4$s km",</string>
     <string name="base_info">"%1$s Gipfel mit %2$s km und %3$s m Höhenmeter."</string>
+    <string name="forecast_info_hm">"%1$s: Schätzung Höhenmeter: %2$s hm (Ziel: %3$s hm)."</string>
+    <string name="forecast_info_km">"%1$s: Schätzung Entfernung: %2$s km (Ziel: %3$s km)."</string>
+    <string name="forecast_info_activities">"%1$s: Schätzung Gipfel: %2$s m (Ziel: %3$s)."</string>
     <string name="import_string_titel">"Import erfolgreich"</string>
     <string name="import_string">"Der Import der Zip Datei ist abgeschlossen mit Zeilen in CSV Datei: %1$s\nImportierte Gipfel: %2$s\nInvalide Gipfel: %3$s\nDuplizierte Gipfel: %4$s"</string>
     <string name="current_estimate">"Aktuelle Hochrechnung für Jahresziel: %1$s hm."</string>
@@ -297,5 +302,19 @@ von
     <string name="max_verticalVelocity_1Min">vert. Geschw. 1Min</string>
     <string name="max_verticalVelocity_10Min">vert. Geschw. 10min</string>
     <string name="max_verticalVelocity_1h">vert. Geschw. 1h</string>
-
+    <string name="forecast">Schätzung</string>
+    <string name="january">Januar</string>
+    <string name="february">Februar</string>
+    <string name="march">März</string>
+    <string name="april">April</string>
+    <string name="may">Mai</string>
+    <string name="june">Juni</string>
+    <string name="july">Juli</string>
+    <string name="august">August</string>
+    <string name="september">September</string>
+    <string name="october">October</string>
+    <string name="november">November</string>
+    <string name="december">Dezember</string>
+    <string name="next_year">Nächstes Jahr</string>
+    <string name="current_year">Aktuelles Jahr</string>
 </resources>
