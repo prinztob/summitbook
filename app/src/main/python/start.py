@@ -1,3 +1,4 @@
+import gpxpy.gpx
 import json
 import os
 from datetime import date
@@ -23,6 +24,7 @@ def get_authenticated_client(user_name, password):
     except Exception as err:
         return "return code: 1Unknown error occurred during Garmin Connect Client init %s" % err
 
+
 def get_activity_json_for_date(client, date):
     try:
         activities = client.get_activities_by_date(date, date, None)
@@ -35,6 +37,7 @@ def get_activity_json_for_date(client, date):
         return "return code: 1Error occurred during Garmin Connect Client get activities: %s" % err
     except Exception as err:
         return "return code: 1Unknown error occurred during Garmin Connect Client get activities %s" % err
+
 
 def download_tcx(client, activity_id, output_file):
     try:
@@ -80,6 +83,7 @@ def get_multi_sport_data(client, activity_id):
     except Exception as err:
         return "return code: 1Unknown error occurred during Garmin Connect Client get activities %s" % err
 
+
 def get_split_data(client, activity_id, folder):
     try:
         return download_splits(client, activity_id, folder)
@@ -100,8 +104,9 @@ def get_power_data(client, date):
     try:
         start = 0
         limit = 20
-        activitiesurl = BASE_URL + '/modern/proxy/fitnessstats-service/powerCurve/?startDate=' + str(date) + \
-                        '&endDate=' + str(date)  + '&start=' + str(start) + '&limit=' + str(limit)
+        activitiesurl = BASE_URL + '/modern/proxy/fitnessstats-service/powerCurve/?startDate=' + str(
+            date) + \
+                        '&endDate=' + str(date) + '&start=' + str(start) + '&limit=' + str(limit)
         print("Fetching power data with url %s", activitiesurl)
         client.headers["nk"] = "NT"
         return client.fetch_data(activitiesurl)
@@ -123,7 +128,7 @@ def download_activities_by_date(client, folder, start_date, end_date=date.today(
             activity_id = activity["activityId"]
             if activity["activityType"]["typeId"] == 89:
                 multi_sport_data = client.get_excercise_sets(activity_id)
-                child_ids =  multi_sport_data["metadataDTO"]["childIds"]
+                child_ids = multi_sport_data["metadataDTO"]["childIds"]
                 activity["childIds"] = child_ids
                 for id in child_ids:
                     details = client.get_excercise_sets(id)
@@ -142,7 +147,8 @@ def download_activities_by_date(client, folder, start_date, end_date=date.today(
                     json.dump(activity, fb)
                     write_index += 1
             download_splits(client, activity_id, folder)
-        return "return code: 0\nDownloaded {} activities, wrote {} to file".format(len(activities), write_index)
+        return "return code: 0\nDownloaded {} activities, wrote {} to file".format(len(activities),
+                                                                                   write_index)
     except (
             GarminConnectConnectionError,
             GarminConnectAuthenticationError,
@@ -180,3 +186,45 @@ def update_power_data(activity, client, date):
         activity['maxAvgPower_3600'] = power_data['entries'][12]['power']
         activity['maxAvgPower_7200'] = power_data['entries'][13]['power']
         activity['maxAvgPower_18000'] = power_data['entries'][14]['power']
+
+
+suffix = "_simplified"
+
+
+def prefix_filename(fn: str, prefix: str) -> str:
+    return fn.replace(".gpx", prefix + ".gpx")
+
+
+def get_gpx_data(gpx):
+    extremes = gpx.get_elevation_extremes()
+    gpx.smooth()
+    moving_data = gpx.get_moving_data()
+    uphill_downhill = gpx.get_uphill_downhill()
+    return {
+        "duration": gpx.get_duration(),
+        "min_elevation": extremes.minimum,
+        "max_elevation": extremes.maximum,
+        "number_points": gpx.get_points_no(),
+        "elevation_gain": uphill_downhill.uphill,
+        "elevation_loss": uphill_downhill.downhill,
+        "moving_time": moving_data.moving_time,
+        "moving_distance": moving_data.moving_distance,
+        "max_speed": moving_data.max_speed,
+    }
+
+
+def analyze_gpx_track(path):
+    try:
+        gpx_file = open(path, 'r')
+        gpx_file_simplified = prefix_filename(path, suffix)
+        gpx_file_gpxpy = path.replace(".gpx", "_gpxpy.json")
+        gpx = gpxpy.parse(gpx_file)
+        data = get_gpx_data(gpx)
+        with open(gpx_file_gpxpy, 'w') as fp:
+            json.dump(data, fp, indent=4)
+        gpx.simplify()
+        with open(gpx_file_simplified, 'w') as f:
+            f.write(gpx.to_xml())
+        return "return code: 0"
+    except Exception as err:  # pylint: disable=broad-except
+        return "return code: 1Unknown error occurred %s" % err

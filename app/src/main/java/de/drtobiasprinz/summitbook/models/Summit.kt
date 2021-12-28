@@ -31,16 +31,20 @@ class Summit(
         @Embedded var velocityData: VelocityData, var lat: Double?, var lng: Double?,
         var participants: List<String>, var isFavorite: Boolean, var imageIds: MutableList<Int>,
         @Embedded var garminData: GarminData?, @Embedded var trackBoundingBox: TrackBoundingBox?,
-        var activityId: Long = System.currentTimeMillis()
+        var activityId: Long = System.currentTimeMillis(),
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0
+
     @Ignore
     var latLng = lat?.let { lng?.let { it1 -> LatLng(it, it1) } }
+
     @Ignore
     var duration = getWellDefinedDuration()
+
     @Ignore
     var gpsTrack: GpsTrack? = null
+
     @Ignore
     var isSelected: Boolean = false
 
@@ -54,17 +58,17 @@ class Summit(
     }
 
     fun getImagePath(imageId: Int): Path {
-        val rootDirectoryImages = File(MainActivity.storage, "${Summit.subDirForImages}/${id}")
+        val rootDirectoryImages = File(MainActivity.storage, "$subDirForImages/${id}")
         return Paths.get(rootDirectoryImages.toString(), String.format(Locale.ENGLISH, "%s.jpg", imageId))
     }
 
     fun getImageUrl(imageId: Int): String {
-        val rootDirectoryImages = File(MainActivity.storage, "${Summit.subDirForImages}/${id}")
+        val rootDirectoryImages = File(MainActivity.storage, "$subDirForImages/${id}")
         return "file://" + Paths.get(rootDirectoryImages.toString(), String.format(Locale.ENGLISH, "%s.jpg", imageId)).toString()
     }
 
     fun getNextImagePath(addIdToImageIds: Boolean = false): Path {
-        val rootDirectoryImages = File(MainActivity.storage, "${Summit.subDirForImages}/${id}")
+        val rootDirectoryImages = File(MainActivity.storage, "$subDirForImages/${id}")
         var imageId = 1001
         if (imageIds.isEmpty()) {
             if (!rootDirectoryImages.exists()) {
@@ -79,8 +83,9 @@ class Summit(
         return getImagePath(imageId)
     }
 
-    fun getGpsTrackPath(): Path? {
-        return Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, String.format(Locale.ENGLISH, "id_%s.gpx", activityId))
+    fun getGpsTrackPath(simplified: Boolean = false): Path {
+        val fileName = if (simplified) "id_${activityId}_simplified.gpx" else "id_${activityId}.gpx"
+        return Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
     }
 
     @Throws(IOException::class)
@@ -88,10 +93,7 @@ class Summit(
         val tempFile = File.createTempFile(String.format(Locale.ENGLISH, "id_%s", activityId),
                 ".gpx", dir)
         if (hasGpsTrack()) {
-            val gpsTrackPath = getGpsTrackPath()
-            if (gpsTrackPath != null) {
-                Files.copy(gpsTrackPath, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
-            }
+            Files.copy(getGpsTrackPath(), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
         }
         return tempFile
     }
@@ -116,8 +118,8 @@ class Summit(
         return imageIds.isNotEmpty()
     }
 
-    fun hasGpsTrack(): Boolean {
-        return getGpsTrackPath()?.toFile()?.exists() ?: false
+    fun hasGpsTrack(simplified: Boolean = false): Boolean {
+        return getGpsTrackPath(simplified).toFile()?.exists() ?: false
     }
 
     fun isDuplicate(allExistingEntries: List<Summit>?): Boolean {
@@ -143,9 +145,8 @@ class Summit(
 
     fun setGpsTrack() {
         if (hasGpsTrack()) {
-            val path: Path? = getGpsTrackPath()
-            if (gpsTrack == null && path != null) {
-                gpsTrack = GpsTrack(path)
+            if (gpsTrack == null) {
+                gpsTrack = GpsTrack(getGpsTrackPath(), getGpsTrackPath(simplified = true))
             }
             if (gpsTrack != null && gpsTrack?.hasNoTrackPoints() == true) {
                 gpsTrack?.parseTrack()
@@ -236,7 +237,7 @@ class Summit(
     fun setBoundingBoxFromTrack() {
         if (hasGpsTrack()) {
             setGpsTrack()
-            if (gpsTrack?.trackGeoPoints?.size?:0 > 0) {
+            if (gpsTrack?.trackGeoPoints?.size ?: 0 > 0) {
                 val boundingBox = BoundingBox.fromGeoPoints(gpsTrack?.trackGeoPoints)
                 trackBoundingBox = TrackBoundingBox(boundingBox.latNorth, boundingBox.latSouth, boundingBox.lonWest, boundingBox.lonEast)
             }
@@ -312,7 +313,7 @@ class Summit(
                     elevationData,
                     km,
                     VelocityData.parse(splitLine[8].split(","), topSpeed),
-                    latLng?.latitude,latLng?.longitude,
+                    latLng?.latitude, latLng?.longitude,
                     participants,
                     isFavorite == "1",
                     mutableListOf(),

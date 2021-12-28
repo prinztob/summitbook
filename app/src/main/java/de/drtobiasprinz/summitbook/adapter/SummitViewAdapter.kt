@@ -165,7 +165,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
     private fun deleteEntry(entry: Summit, v: View) {
             sortFilterHelper.database.summitDao()?.delete(entry)
             if (entry.hasGpsTrack()) {
-                entry.getGpsTrackPath()?.toFile()?.delete()
+                entry.getGpsTrackPath().toFile()?.delete()
             }
             if (entry.hasImagePath()) {
                 entry.imageIds.forEach {

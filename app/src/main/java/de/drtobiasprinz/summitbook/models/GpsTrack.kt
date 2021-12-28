@@ -19,11 +19,12 @@ import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Path
 import kotlin.collections.ArrayList
+import kotlin.io.path.exists
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
 
-class GpsTrack(private val gpsTrackPath: Path) {
+class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPath: Path? = null) {
     var osMapRoute: Polyline? = null
     var isShownOnMap: Boolean = false
     val trackGeoPoints: ArrayList<GeoPoint?> = ArrayList()
@@ -130,10 +131,10 @@ class GpsTrack(private val gpsTrackPath: Path) {
         return MilestoneManager(pMilestoneLister, MilestoneLineDisplayer(slicePaint))
     }
 
-    fun parseTrack() {
+    fun parseTrack(useSimplifiedIfExists: Boolean = true) {
         val mParser = GPXParser()
         try {
-            val inputStream: InputStream = FileInputStream(gpsTrackPath.toFile())
+            val inputStream: InputStream = if (useSimplifiedIfExists && simplifiedGpsTrackPath != null && simplifiedGpsTrackPath.toFile().exists()) FileInputStream(simplifiedGpsTrackPath.toFile()) else FileInputStream(gpsTrackPath.toFile())
             gpxTrack = mParser.parse(inputStream)
         } catch (e: IOException) {
             e.printStackTrace()

@@ -22,6 +22,7 @@ android {
                 install "requests==2.24.0"
                 install "cloudscraper==1.2.58"
                 install "garminconnect==0.1.22"
+                install "gpxpy==1.4.2"
             }
         }
 

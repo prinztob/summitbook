@@ -29,12 +29,15 @@ import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
 import com.google.android.material.navigation.NavigationView
 import com.stfalcon.imageviewer.StfalconImageViewer
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.*
 import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
+import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
@@ -65,6 +68,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var viewer: StfalconImageViewer<String>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!Python.isStarted()) {
+            Python.start(AndroidPlatform(this))
+        }
+        val pythonInstance = Python.getInstance()
         database = AppDatabase.getDatabase(applicationContext)
         val entries = database.summitDao()?.allSummit
         val viewedFragment: Fragment? = supportFragmentManager.findFragmentById(R.id.content_frame)
@@ -73,7 +80,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val username = sharedPreferences.getString("garmin_username", null) ?: ""
         val password = sharedPreferences.getString("garmin_password", null) ?: ""
         if (username != "" && password != "") {
-            pythonExecutor = GarminPythonExecutor(username, password)
+            pythonExecutor = GarminPythonExecutor(pythonInstance, username, password)
         }
         mainActivity = this
         setContentView(R.layout.activity_main)
@@ -105,8 +112,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val navigationView = findViewById<NavigationView>(R.id.nav_view)
         navigationView.setNavigationItemSelectedListener(this)
 
-        val scheduler = Executors.newSingleThreadScheduledExecutor()
-        scheduler.scheduleAtFixedRate({
+        val schedulerBoundingBox = Executors.newSingleThreadScheduledExecutor()
+        schedulerBoundingBox.schedule({
             val entriesWithoutBoundingBox = sortFilterHelper.entries.filter {
                 it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingboxCalculation
             }
@@ -115,16 +122,21 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 entryToCheck.setBoundingBoxFromTrack()
                 if (entryToCheck.trackBoundingBox != null) {
                     database.summitDao()?.updateSummit(entryToCheck)
-                    Log.i("ScheduleAtFixedRate", "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining.")
+                    Log.i("Scheduler", "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining.")
                 } else {
-                    Log.i("ScheduleAtFixedRate", "Updated bounding box for ${entryToCheck.name} failed, remove it from update list.")
+                    Log.i("Scheduler", "Updated bounding box for ${entryToCheck.name} failed, remove it from update list.")
                     entriesToExcludeForBoundingboxCalculation.add(entryToCheck)
                 }
             } else {
-                Log.i("ScheduleAtFixedRate", "Nothing to do.")
+                Log.i("Scheduler", "No more bounding boxes to calculate.")
             }
 
-        }, 0, 10, TimeUnit.MINUTES)
+        }, 10, TimeUnit.MINUTES)
+
+        val entriesWithoutSimplifiedGpxTrack = sortFilterHelper.entries.filter {
+            it.hasGpsTrack() && !it.hasGpsTrack(simplified = true)
+        }.take(100)
+        AsyncSimplifyGpaTracks(entriesWithoutSimplifiedGpxTrack, pythonInstance).execute()
 
         if (viewedFragment == null) {
             extremaValuesAllSummits = ExtremaValuesSummits(sortFilterHelper.entries)
@@ -466,6 +478,32 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
 
+        class AsyncSimplifyGpaTracks(private val summitsWithoutSimplifiedTracks: List<Summit>, private val pythonInstance: Python) : AsyncTask<Uri, Int?, Void?>() {
+
+            var numberSimplifiedGpxTracks = 0
+            override fun doInBackground(vararg uri: Uri): Void? {
+                if (summitsWithoutSimplifiedTracks.isNotEmpty()) {
+                    summitsWithoutSimplifiedTracks.forEach {
+                        try {
+                            GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(it.getGpsTrackPath(simplified = false))
+                            numberSimplifiedGpxTracks += 1
+                            Log.i("AsyncSimplifyGpaTracks", "Simplify track for ${it.getDateAsString()}_${it.name}.")
+                        } catch (ex: RuntimeException) {
+                            Log.e("AsyncSimplifyGpaTracks", "Error in simplify track for ${it.getDateAsString()}_${it.name}: ${ex.message}")
+                        }
+                    }
+                } else {
+                    Log.i("AsyncSimplifyGpaTracks", "No more gpx tracks to simplified.")
+                }
+                return null
+            }
+
+            override fun onPostExecute(param: Void?) {
+                Log.i("AsyncSimplifyGpaTracks", "${numberSimplifiedGpxTracks} gpx tracks simplified.")
+            }
+        }
+
+
         @SuppressLint("StaticFieldLeak")
         class AsyncExportZipFile(val context: Context, val progressBar: ProgressBar, val entries: List<Summit>, val resultData: Intent?) : AsyncTask<Uri, Int?, Void?>() {
             var entryNumber = 0
@@ -514,7 +552,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                     Log.i("MainActivity.writeToZipFile", "Write summit $summit to zipFile")
                                     entryNumber += 1
                                     if (summit.hasGpsTrack()) {
-                                        val file = summit.getGpsTrackPath()?.toFile()
+                                        val file = summit.getGpsTrackPath().toFile()
                                         addFileToZip(file, summit.getExportTrackPath(), out)
                                         withGpsFile += 1
                                     }

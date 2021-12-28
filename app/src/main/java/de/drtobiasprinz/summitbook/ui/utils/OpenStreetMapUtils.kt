@@ -68,7 +68,7 @@ object OpenStreetMapUtils {
     @JvmStatic
     fun drawTrack(
             summitEntry: Summit, forceAddTrack: Boolean, osMap: MapView, isMilageButtonShown: Boolean,
-            calculateBondingBox: Boolean = false, mGeoPoints: ArrayList<GeoPoint> = arrayListOf(), color: Int = Color.BLUE
+            calculateBondingBox: Boolean = false, mGeoPoints: ArrayList<GeoPoint> = arrayListOf(), color: Int = Color.BLUE,
     ) {
         if (summitEntry.hasGpsTrack()) {
             if (summitEntry.gpsTrack == null) {
@@ -83,7 +83,7 @@ object OpenStreetMapUtils {
                     gpsTrack.addGpsTrack(osMap, isMilageButtonShown, color)
                     gpsTrack.isShownOnMap = true
                 }
-                addTrackPoints(gpsTrack, mGeoPoints)
+                mGeoPoints.addAll(getTrackPointsFrom(gpsTrack))
             }
             if (calculateBondingBox) {
                 osMap.post { calculateBoundingBox(osMap, mGeoPoints) }
@@ -105,19 +105,21 @@ object OpenStreetMapUtils {
                     gpsTrack.addGpsTrack(osMap, isMilageButtonShown)
                     gpsTrack.isShownOnMap = true
                 }
-                addTrackPoints(gpsTrack, mGeoPoints)
+                mGeoPoints.addAll(getTrackPointsFrom(gpsTrack))
             }
         }
         osMap.post { calculateBoundingBox(osMap, mGeoPoints) }
     }
 
-    private fun addTrackPoints(gpsTrack: GpsTrack, mGeoPoints: ArrayList<GeoPoint>) {
+    private fun getTrackPointsFrom(gpsTrack: GpsTrack): List<GeoPoint> {
+        val mGeoPoints: MutableList<GeoPoint> = mutableListOf()
         val positions = gpsTrack.getTrackPositions()
         for (entry in positions) {
             if (entry != null && entry.longitude != 0.0 && entry.latitude != 0.0) {
                 mGeoPoints.add(GeoPoint(entry.latitude, entry.longitude))
             }
         }
+        return mGeoPoints
     }
 
     @JvmStatic
@@ -158,7 +160,7 @@ object OpenStreetMapUtils {
     fun calculateBoundingBox(mMapView: MapView, gpsTrack: GpsTrack, point: GeoPoint) {
         val mGeoPoints = ArrayList<GeoPoint>()
         mGeoPoints.add(point)
-        addTrackPoints(gpsTrack, mGeoPoints)
+        mGeoPoints.addAll(getTrackPointsFrom(gpsTrack))
         calculateBoundingBox(mMapView, mGeoPoints)
     }
 

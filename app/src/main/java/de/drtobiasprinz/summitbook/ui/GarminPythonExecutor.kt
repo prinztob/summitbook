@@ -24,9 +24,8 @@ import java.util.*
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
-class GarminPythonExecutor(val username: String, val password: String) {
-    lateinit var pythonInstance: Python
-    lateinit var pythonModule: PyObject
+class GarminPythonExecutor(var pythonInstance: Python, val username: String, val password: String) {
+    private lateinit var pythonModule: PyObject
     var client: PyObject? = null
 
     private fun login() {
@@ -34,7 +33,6 @@ class GarminPythonExecutor(val username: String, val password: String) {
             if (!Python.isStarted()) {
                 MainActivity.mainActivity?.let { AndroidPlatform(it) }?.let { Python.start(it) }
             }
-            pythonInstance = Python.getInstance()
             pythonModule = pythonInstance.getModule("start")
             Log.i("GarminPythonExecutor", "do login")
             val result = pythonModule.callAttr("get_authenticated_client", username, password)
