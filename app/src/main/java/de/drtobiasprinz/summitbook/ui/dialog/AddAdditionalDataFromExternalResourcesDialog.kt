@@ -5,8 +5,6 @@ import android.content.Context
 import android.graphics.Color
 import android.os.AsyncTask
 import android.os.Bundle
-import android.text.Html
-import android.text.method.LinkMovementMethod
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -27,6 +25,8 @@ import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import de.drtobiasprinz.summitbook.ui.utils.SummitSlope
 import java.io.File
 import java.util.*
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 
 class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summit, private val pythonExecutor: GarminPythonExecutor, val sortFilterHelper: SortFilterHelper, val button: ImageButton) : DialogFragment() {
@@ -71,13 +71,11 @@ class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summ
             dialog?.cancel()
         }
         if (summitEntry.hasGpsTrack()) {
-            if (summitEntry.gpsTrack == null) {
-                summitEntry.setGpsTrack()
-            }
+            summitEntry.setGpsTrack(useSimplifiedTrack = false, updateTrack = true)
             val gpsTrack = summitEntry.gpsTrack
             if (gpsTrack != null) {
                 if (gpsTrack.hasNoTrackPoints()) {
-                    gpsTrack.parseTrack()
+                    gpsTrack.parseTrack(useSimplifiedIfExists = false)
                 }
                 val slopeCalculator = SummitSlope()
                 tableEntries.add(TableEntry(getString(R.string.max_slope),
@@ -156,6 +154,61 @@ class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summ
                 AsyncDownloadSpeedDataForActivity(summitEntry, pythonExecutor, sortFilterHelper, button).execute()
             }
         }
+        val gpxPyJsonFile = summitEntry.getGpxPyPath().toFile()
+        if (gpxPyJsonFile.exists()) {
+            val gpxPyJson = JsonParser().parse(GarminConnectAccess.getJsonData(gpxPyJsonFile)) as JsonObject
+
+            val elevationGain = gpxPyJson.getAsJsonPrimitive("elevation_gain").asDouble.roundToInt()
+            if (elevationGain > 0) {
+                tableEntries.add(TableEntry(getString(R.string.height_meter_hint),
+                        elevationGain.toDouble(),
+                        "hm", summitEntry.elevationData.elevationGain == elevationGain,
+                        { e -> summitEntry.elevationData.elevationGain = e.toInt() },
+                        summitEntry.elevationData.elevationGain.toDouble())
+                )
+            }
+
+            val maxElevation = gpxPyJson.getAsJsonPrimitive("max_elevation").asDouble.roundToInt()
+            if (maxElevation > 0) {
+                tableEntries.add(TableEntry(getString(R.string.top_elevation_hint),
+                        maxElevation.toDouble(),
+                        "hm", summitEntry.elevationData.maxElevation == maxElevation,
+                        { e -> summitEntry.elevationData.maxElevation = e.toInt() },
+                        summitEntry.elevationData.maxElevation.toDouble())
+                )
+            }
+
+            val distance = gpxPyJson.getAsJsonPrimitive("moving_distance").asDouble / 1000
+            if (distance > 0) {
+                tableEntries.add(TableEntry(getString(R.string.kilometers_hint),
+                        distance,
+                        "km", abs(summitEntry.kilometers - distance) < 0.05,
+                        { e -> summitEntry.kilometers = e },
+                        summitEntry.kilometers)
+                )
+            }
+
+            val movingDuration = gpxPyJson.getAsJsonPrimitive("moving_time").asDouble
+            if (movingDuration > 0) {
+                val pace = distance / movingDuration * 3600
+                tableEntries.add(TableEntry(getString(R.string.pace_hint),
+                        pace,
+                        "hm/h", abs(summitEntry.velocityData.avgVelocity - pace) < 0.05,
+                        { e -> summitEntry.velocityData.avgVelocity = e },
+                        summitEntry.velocityData.avgVelocity)
+                )
+            }
+
+            val maxVelocity = gpxPyJson.getAsJsonPrimitive("max_speed").asDouble * 3.6
+            if (maxVelocity > 0) {
+                tableEntries.add(TableEntry(getString(R.string.top_speed),
+                        maxVelocity,
+                        "hm/h", abs(summitEntry.velocityData.maxVelocity - maxVelocity) < 0.05,
+                        { e -> summitEntry.velocityData.maxVelocity = e },
+                        summitEntry.velocityData.maxVelocity)
+                )
+            }
+        }
         tableLayout = view.findViewById(R.id.tableSummits) as TableLayout
         drawTable(view)
 
@@ -180,7 +233,10 @@ class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summ
         tr.layoutParams = TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT)
         addLabel(view, tr, 200 + i, name, padding = 2)
-        addLabel(view, tr, 200 + i, String.format(Locale.ENGLISH, "%.1f %s", entry.value, entry.unit), padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
+        addLabel(view, tr, 201 + i, String.format(Locale.ENGLISH, "%.1f", entry.value), padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
+        val defaultValueAsString = if (abs(entry.defaultValue) < 0.05 || abs(entry.value - entry.defaultValue) < 0.05) "-" else String.format(Locale.ENGLISH, "%.1f", entry.defaultValue)
+        addLabel(view, tr, 202 + i, defaultValueAsString, padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
+        addLabel(view, tr, 203 + i, entry.unit, padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
         val box = CheckBox(view.context)
         box.isChecked = entry.isChecked
         box.setOnCheckedChangeListener { _, arg1 ->
@@ -199,24 +255,20 @@ class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summ
         tableRowHead.layoutParams = TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT)
         addLabel(view, tableRowHead, 20, "Entry", Color.GRAY)
-        addLabel(view, tableRowHead, 21, "Value", Color.GRAY)
-        addLabel(view, tableRowHead, 22, "", Color.GRAY)
+        //TODO: i8
+        addLabel(view, tableRowHead, 21, "update", Color.GRAY)
+        addLabel(view, tableRowHead, 22, "current", Color.GRAY)
+        addLabel(view, tableRowHead, 23, "unit", Color.GRAY)
+        addLabel(view, tableRowHead, 24, "", Color.GRAY)
 
         tl.addView(tableRowHead, TableLayout.LayoutParams(
                 TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT))
     }
 
-    private fun addLabel(view: View, tr: TableRow, id: Int, text: String, color: Int = Color.WHITE, padding: Int = 5, aligment: Int = View.TEXT_ALIGNMENT_CENTER, isHtml: Boolean = false) {
+    private fun addLabel(view: View, tr: TableRow, id: Int, text: String, color: Int = Color.WHITE, padding: Int = 5, aligment: Int = View.TEXT_ALIGNMENT_CENTER) {
         val label = TextView(view.context)
         label.id = id
-        if (isHtml) {
-            label.setLinkTextColor(Color.WHITE)
-            label.isClickable = true
-            label.movementMethod = LinkMovementMethod.getInstance()
-            label.text = Html.fromHtml(text, Html.FROM_HTML_MODE_COMPACT)
-        } else {
-            label.text = text
-        }
+        label.text = text
         label.gravity = aligment
         label.setTextColor(color)
         label.setPadding(padding, padding, padding, padding)

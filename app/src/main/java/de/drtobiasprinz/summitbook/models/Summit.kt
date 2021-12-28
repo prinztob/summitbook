@@ -88,6 +88,11 @@ class Summit(
         return Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
     }
 
+    fun getGpxPyPath(): Path {
+        val fileName = "id_${activityId}_gpxpy.json"
+        return Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
+    }
+
     @Throws(IOException::class)
     fun copyGpsTrackToTempFile(dir: File?): File? {
         val tempFile = File.createTempFile(String.format(Locale.ENGLISH, "id_%s", activityId),
@@ -143,10 +148,10 @@ class Summit(
         return ((date.time - REFERENCE_VALUE_DATE) / 1e8).toFloat()
     }
 
-    fun setGpsTrack() {
+    fun setGpsTrack(useSimplifiedTrack: Boolean = true, updateTrack: Boolean = false) {
         if (hasGpsTrack()) {
-            if (gpsTrack == null) {
-                gpsTrack = GpsTrack(getGpsTrackPath(), getGpsTrackPath(simplified = true))
+            if (gpsTrack == null || updateTrack) {
+                gpsTrack = GpsTrack(getGpsTrackPath(), getGpsTrackPath(simplified = useSimplifiedTrack))
             }
             if (gpsTrack != null && gpsTrack?.hasNoTrackPoints() == true) {
                 gpsTrack?.parseTrack()
