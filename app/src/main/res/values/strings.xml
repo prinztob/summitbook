@@ -197,6 +197,12 @@
     <string name="garmin_pwd_title">Enter Garmin password</string>
     <string name="garmin_user_summary">Enter Garmin user name to retrieve gpx from Garmin connect</string>
     <string name="garmin_user_title">Enter Garmin user name</string>
+    <string name="max_number_points_title">Maximum number of points on map</string>
+    <string name="max_number_points">Enter the maximum number of points which will be shown on a map.</string>
+    <string name="minimal_delta_for_elevation_gain_title">Minimal delta for height meters</string>
+    <string name="minimal_delta_for_elevation_gain">Enter the minimal delta in meters which is used for calculating the climbed height meters. A difference in height meters below this threshold will be ignored.</string>
+    <string name="use_simplified_tracks_title">Use simplified tracks</string>
+    <string name="use_simplified_tracks">Use simplified tracks to reduce the loading time of gps tracks.</string>
     <string name="tcx_switch">Turn this option to download tcx instead of gpx files</string>
     <string name="tcx_switch_title">Download tcx instead of gpx</string>
     <string name="current_year_summary">Turn this option to change the default behaviour at startup</string>

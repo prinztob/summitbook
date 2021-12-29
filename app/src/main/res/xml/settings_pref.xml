@@ -4,16 +4,19 @@
         android:title="@string/annual_target_height_meter_title"
         android:key="annual_target"
         android:defaultValue="50000"
+        android:inputType="number"
         android:summary="@string/annual_target_height_meter_summary"/>
     <EditTextPreference
         android:title="@string/annual_target_kilometer_title"
         android:key="annual_target_km"
         android:defaultValue="1200"
+        android:inputType="number"
         android:summary="@string/annual_target_kilometer_summary"/>
     <EditTextPreference
         android:title="@string/annual_target_activities_title"
         android:key="annual_target_activities"
         android:defaultValue="52"
+        android:inputType="number"
         android:summary="@string/annual_target_activities_summary"/>
     <SwitchPreference
         android:defaultValue="false"
@@ -39,4 +42,21 @@
         android:title="Start date for syncing Garmin Activities"
         android:key="garmin_start_date"
         android:defaultValue="2020-01-01"/>
+    <EditTextPreference
+        android:title="@string/minimal_delta_for_elevation_gain_title"
+        android:key="min_delta_height_meters"
+        android:defaultValue="5"
+        android:inputType="number"
+        android:summary="@string/minimal_delta_for_elevation_gain"/>
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="use_simplified_tracks"
+        android:title="@string/use_simplified_tracks_title"
+        android:summary="@string/use_simplified_tracks"/>
+    <EditTextPreference
+        android:title="@string/max_number_points_title"
+        android:key="max_number_points"
+        android:defaultValue="10000"
+        android:inputType="number"
+        android:summary="@string/max_number_points"/>
 </PreferenceScreen>

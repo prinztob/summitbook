@@ -37,19 +37,22 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper? = null) : Fr
     private var filteredEntries: List<Summit>? = null
     private var mMapView: MapView? = null
     private lateinit var root: View
+    private var maxPointsToShow: Int = 10000
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
         val context = requireContext()
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         if (sortFilterHelper == null) {
-            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
             val database = AppDatabase.getDatabase(context)
             val entries = database.summitDao()?.allSummit
             sortFilterHelper = SortFilterHelper.getInstance(context, entries as ArrayList<Summit>, database, savedInstanceState, sharedPreferences)
             sortFilterHelper?.fragment = this
             sortFilterHelper?.apply()
         }
+        maxPointsToShow = (sharedPreferences.getString("max_number_points", maxPointsToShow.toString())?: maxPointsToShow.toString()).toInt()
         Configuration.getInstance().load(context, PreferenceManager.getDefaultSharedPreferences(context))
     }
 
@@ -72,27 +75,33 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper? = null) : Fr
 
         val showAllTracksButton: ImageButton = root.findViewById(R.id.show_all_tracks)
         showAllTracksButton.setOnClickListener { _: View? ->
+            var pointsShown = mMarkersShown.sumBy { (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size?:0 }
             val markersInBoundingBox = mMarkers.filter {
                 val mapCustomInfoBubble: MapCustomInfoBubble = it?.infoWindow as MapCustomInfoBubble
                 val shouldBeShown = mMapView?.boundingBox?.let { it1 -> mapCustomInfoBubble.entry.isInBoundingBox(it1) }
                 if (shouldBeShown == false && it in mMarkersShown) {
+                    pointsShown -= mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size?: 0
                     mapCustomInfoBubble.updateGpxTrack(forceRemove = true)
                     mMarkersShown.remove(it)
+
                 }
                 shouldBeShown == true
             }
-            if (markersInBoundingBox.size <= 10) {
-                markersInBoundingBox.forEach {
-                    if (it != null) {
-                        val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
-                        if (it !in mMarkersShown) {
+            markersInBoundingBox.forEach {
+                if (it != null) {
+                    val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
+                    if (it !in mMarkersShown) {
+                        if (pointsShown < maxPointsToShow) {
                             infoWindow.updateGpxTrack(forceShow = true)
+                            pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size?: 0
                             mMarkersShown.add(it)
                         }
                     }
                 }
-            } else {
-                Toast.makeText(context, "Show all tracks is only active when less than 10 tracks are selected. Currently ${markersInBoundingBox.size} would be shown", Toast.LENGTH_SHORT).show()
+            }
+            if (pointsShown > maxPointsToShow) {
+                //TODO: language
+                Toast.makeText(context, "Only ${mMarkersShown.size} of ${markersInBoundingBox.size} summits are shown, because track points exceeds limit.", Toast.LENGTH_LONG).show()
             }
         }
 

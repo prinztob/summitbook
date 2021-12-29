@@ -35,7 +35,8 @@ import com.google.android.material.navigation.NavigationView
 import com.stfalcon.imageviewer.StfalconImageViewer
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.*
-import de.drtobiasprinz.summitbook.models.*
+import de.drtobiasprinz.summitbook.models.Bookmark
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
@@ -133,10 +134,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         }, 10, TimeUnit.MINUTES)
 
-        val entriesWithoutSimplifiedGpxTrack = sortFilterHelper.entries.filter {
-            it.hasGpsTrack() && !it.hasGpsTrack(simplified = true)
-        }.take(100)
-        AsyncSimplifyGpaTracks(entriesWithoutSimplifiedGpxTrack, pythonInstance).execute()
+        val useSimplifiedTracks = sharedPreferences.getBoolean("use_simplified_tracks", true)
+        if (useSimplifiedTracks) {
+            val entriesWithoutSimplifiedGpxTrack = sortFilterHelper.entries.filter {
+                it.hasGpsTrack() && !it.hasGpsTrack(simplified = true)
+            }.take(100)
+            AsyncSimplifyGpaTracks(entriesWithoutSimplifiedGpxTrack, pythonInstance).execute()
+        } else {
+            sortFilterHelper.entries.filter {
+                it.hasGpsTrack(simplified = true)
+            }.forEach {
+                val trackFile = it.getGpsTrackPath(simplified = true).toFile()
+                if (trackFile.exists()) {
+                    trackFile.delete()
+                }
+                val gpxPyFile = it.getGpxPyPath().toFile()
+                if (gpxPyFile.exists()) {
+                    gpxPyFile.delete()
+                }
+                Log.e("useSimplifiedTracks", "Deleted ${it.getDateAsString()}_${it.name} because useSimplifiedTracks was set to false.")
+            }
+        }
 
         if (viewedFragment == null) {
             extremaValuesAllSummits = ExtremaValuesSummits(sortFilterHelper.entries)
@@ -205,6 +223,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             R.id.nav_forecast -> {
                 ForecastDialog().show(this.supportFragmentManager, "ForecastDialog")
+            }
+            R.id.nav_diashow -> {
+                openViewer()
             }
             R.id.import_csv -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
