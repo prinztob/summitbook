@@ -21,8 +21,10 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import org.osmdroid.config.Configuration
+import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
@@ -180,6 +182,25 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper? = null) : Fr
                     }
                 }
             }
+            val mReceive: MapEventsReceiver = object : MapEventsReceiver {
+                override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+                    return false
+                }
+
+                override fun longPressHelper(arg0: GeoPoint): Boolean {
+                    Log.d("debug", "LongPressHelper")
+                    mMarkers.forEach {
+                        if (it?.isInfoWindowShown == true) {
+                            it.infoWindow.close()
+                        }
+                    }
+                    //your onLongPress logic here
+                    return false
+                }
+            }
+
+            val eventsOverlay = MapEventsOverlay(mReceive)
+            mMapView?.overlays?.add(eventsOverlay)
             mMapView?.post { calculateBoundingBox(localMapView, mGeoPoints) }
         }
     }
