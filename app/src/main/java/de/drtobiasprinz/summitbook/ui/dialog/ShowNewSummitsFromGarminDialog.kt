@@ -208,11 +208,9 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
 
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
-                    dialog.view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility = View.VISIBLE
                     pythonExecutor.downloadActivitiesByDate(activitiesDir, startDate, endDate)
                 } catch (e: java.lang.RuntimeException) {
                     Log.e("AsyncDownloadActivities", e.message ?: "")
-                    dialog.view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility = View.GONE
                 }
                 return null
             }
