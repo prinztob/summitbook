@@ -87,7 +87,7 @@ class SummitEntryTrackFragment : Fragment() {
             val textViewName = root.findViewById<TextView>(R.id.summit_name)
             textViewName.text = localSummit.name
             val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
-            imageViewSportType.setImageResource(localSummit.sportType.imageId)
+            imageViewSportType.setImageResource(localSummit.sportType.imageIdBlack)
             setOpenStreetMap(localSummit)
             fillDateSpinner(localSummit)
             drawChart(localSummit)

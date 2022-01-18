@@ -2,7 +2,6 @@ package de.drtobiasprinz.summitbook
 
 import android.app.Activity
 import android.content.DialogInterface
-import android.database.sqlite.SQLiteDatabase
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -36,7 +35,7 @@ class AddImagesActivity : AppCompatActivity() {
             val textViewName = findViewById<TextView>(R.id.summit_name)
             textViewName.text = localSummit.name
             val imageViewSportType = findViewById<ImageView>(R.id.sport_type_image)
-            imageViewSportType.setImageResource(localSummit.sportType.imageId)
+            imageViewSportType.setImageResource(localSummit.sportType.imageIdBlack)
             if (localSummit.hasImagePath()) {
                 val layout: RelativeLayout = findViewById(R.id.images)
                 drawLayout(localSummit, layout)

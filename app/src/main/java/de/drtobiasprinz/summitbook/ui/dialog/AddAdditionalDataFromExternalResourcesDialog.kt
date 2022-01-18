@@ -19,7 +19,7 @@ import de.drtobiasprinz.summitbook.models.ElevationData
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.models.VelocityData
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
-import de.drtobiasprinz.summitbook.ui.utils.GarminConnectAccess
+import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
 import de.drtobiasprinz.summitbook.ui.utils.MaxVelocitySummit
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import de.drtobiasprinz.summitbook.ui.utils.SummitSlope
@@ -99,7 +99,7 @@ class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summ
         if (summitEntry.garminData != null && summitEntry.garminData?.activityId != null) {
             val splitsFile = File("${activitiesDir.absolutePath}/activity_${summitEntry.garminData?.activityId}_splits.json")
             if (splitsFile.exists()) {
-                val json = JsonParser().parse(GarminConnectAccess.getJsonData(splitsFile)) as JsonObject
+                val json = JsonParser().parse(JsonUtils.getJsonData(splitsFile)) as JsonObject
                 val maxVelocitySummit = MaxVelocitySummit()
                 val velocityEntries = maxVelocitySummit.parseFomGarmin(json)
                 tableEntries.add(TableEntry(getString(R.string.top_speed_1km_hint),
@@ -156,7 +156,7 @@ class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summ
         }
         val gpxPyJsonFile = summitEntry.getGpxPyPath().toFile()
         if (gpxPyJsonFile.exists()) {
-            val gpxPyJson = JsonParser().parse(GarminConnectAccess.getJsonData(gpxPyJsonFile)) as JsonObject
+            val gpxPyJson = JsonParser().parse(JsonUtils.getJsonData(gpxPyJsonFile)) as JsonObject
 
             val elevationGain = gpxPyJson.getAsJsonPrimitive("elevation_gain").asDouble.roundToInt()
             if (elevationGain > 0) {

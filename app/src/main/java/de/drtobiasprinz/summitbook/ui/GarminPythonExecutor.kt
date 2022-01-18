@@ -175,8 +175,12 @@ class GarminPythonExecutor(var pythonInstance: Python, val username: String, val
                 if (files?.isNotEmpty() == true) {
                     files.forEach {
                         if (it.name.startsWith("activity_") && !it.name.endsWith("_splits.json")) {
-                            val gson = JsonParser().parse(it.readText()) as JsonObject
-                            entries.add(parseJsonObject(gson))
+                            try {
+                                val gson = JsonParser().parse(it.readText()) as JsonObject
+                                entries.add(parseJsonObject(gson))
+                            } catch (ex: IllegalArgumentException) {
+                                it.delete()
+                            }
                         }
                     }
                 }
@@ -266,6 +270,7 @@ class GarminPythonExecutor(var pythonInstance: Python, val username: String, val
                 1 -> SportType.Running
                 2 -> SportType.Bicycle
                 5 -> SportType.Mountainbike
+                25 -> SportType.IndoorTrainer
                 89 -> SportType.BikeAndHike
                 169 -> SportType.Skitour
                 else -> SportType.Hike

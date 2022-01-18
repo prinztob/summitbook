@@ -34,7 +34,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignBottom="@id/card_view_image"
                 android:layout_gravity="bottom"
-                android:background="#80000000"
+                android:background="#33000000"
                 android:orientation="vertical">
 
                 <ImageView
@@ -44,6 +44,7 @@
                     android:layout_margin="5dp"
                     android:contentDescription="@string/sport_type_image"
                     android:paddingTop="5dp"
+                    android:paddingBottom="5dp"
                     android:tag="image_tag" />
 
                 <TextView

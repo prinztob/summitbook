@@ -235,6 +235,8 @@
     <string name="skitour_short">Ski</string>
     <string name="racer">Racer</string>
     <string name="racer_short">Racer</string>
+    <string name="indoor_trainer">Indoor Trainer</string>
+    <string name="indoor_trainer_short">Trainer</string>
     <string name="running">Running</string>
     <string name="running_short">Run</string>
     <string name="other">Other</string>

@@ -56,7 +56,7 @@ class SummitEntryDataFragment : Fragment() {
             val textViewName = root.findViewById<TextView>(R.id.summit_name)
             textViewName.text = localSummit.name
             val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
-            imageViewSportType.setImageResource(localSummit.sportType.imageId)
+            imageViewSportType.setImageResource(localSummit.sportType.imageIdBlack)
             setText(localSummit.elevationData.elevationGain, "hm", root.findViewById(R.id.height_meterText), root.findViewById(R.id.height_meter),
                     Pair(extrema?.heightMetersMinMax?.first?.elevationData?.elevationGain
                             ?: 0, extrema?.heightMetersMinMax?.second?.elevationData?.elevationGain

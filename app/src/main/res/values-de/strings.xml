@@ -240,6 +240,8 @@ von
     <string name="skitour_short">Ski</string>
     <string name="racer">Rennrad</string>
     <string name="racer_short">RR</string>
+    <string name="indoor_trainer">Indoor Trainer</string>
+    <string name="indoor_trainer_short">Trainer</string>
     <string name="running">Laufen</string>
     <string name="running_short">Laufen</string>
     <string name="other">Andere</string>

@@ -2,7 +2,7 @@ package de.drtobiasprinz.summitbook.ui.utils
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import de.drtobiasprinz.summitbook.ui.utils.GarminConnectAccess.Companion.getJsonData
+import de.drtobiasprinz.summitbook.ui.utils.JsonUtils.Companion.getJsonData
 import org.junit.Assert
 import org.junit.Test
 import java.io.File

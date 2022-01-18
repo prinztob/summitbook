@@ -1,7 +1,6 @@
 package de.drtobiasprinz.summitbook
 
 import android.content.Intent
-import android.database.sqlite.SQLiteDatabase
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.view.Menu
@@ -62,7 +61,7 @@ class BookmarkDetailsActivity : AppCompatActivity() {
             val textViewName = findViewById<TextView>(R.id.bookmark_name)
             textViewName.text = bookmark?.name
             val imageViewSportType = findViewById<ImageView>(R.id.sport_type_image)
-            bookmark?.sportType?.imageId?.let { imageViewSportType.setImageResource(it) }
+            bookmark?.sportType?.imageIdBlack?.let { imageViewSportType.setImageResource(it) }
             bookmark?.heightMeter?.let { setText(it, "hm", findViewById(R.id.height_meterText), findViewById(R.id.height_meter)) }
             bookmark?.kilometers?.let { setText(it, "km", findViewById(R.id.kilometersText), findViewById(R.id.kilometers)) }
             bookmark?.comments?.let { setText(it, findViewById(R.id.comments), findViewById(R.id.comments)) }

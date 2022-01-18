@@ -499,13 +499,14 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         return when (selectedItemId) {
             1 -> SportType.Bicycle
             2 -> SportType.Racer
-            3 -> SportType.Mountainbike
-            4 -> SportType.BikeAndHike
-            5 -> SportType.Climb
-            6 -> SportType.Hike
-            7 -> SportType.Running
-            8 -> SportType.Skitour
-            9 -> SportType.Other
+            3 -> SportType.IndoorTrainer
+            4 -> SportType.Mountainbike
+            5 -> SportType.BikeAndHike
+            6 -> SportType.Climb
+            7 -> SportType.Hike
+            8 -> SportType.Running
+            9 -> SportType.Skitour
+            10 -> SportType.Other
             else -> null
         }
     }

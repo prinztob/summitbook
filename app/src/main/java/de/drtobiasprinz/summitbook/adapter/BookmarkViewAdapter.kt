@@ -58,7 +58,7 @@ class BookmarkViewAdapter(var bookmarks: ArrayList<Bookmark>) : RecyclerView.Ada
             val textViewKm = cardView.findViewById<TextView?>(R.id.kilometers)
             textViewKm?.text = String.format("%s km", entry.kilometers)
             val imageViewSportType = cardView.findViewById<ImageView?>(R.id.sport_type_image)
-            entry.sportType.imageId.let { imageViewSportType?.setImageResource(it) }
+            entry.sportType.imageIdBlack.let { imageViewSportType?.setImageResource(it) }
 
             val removeButton = cardView.findViewById<ImageButton?>(R.id.entry_delete)
             //delete a summit entry

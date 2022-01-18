@@ -95,6 +95,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         barChart?.drawOrder = arrayOf(
                 DrawOrder.BAR, DrawOrder.BUBBLE, DrawOrder.CANDLE, DrawOrder.LINE, DrawOrder.SCATTER
         )
+        barChart?.legend?.isWordWrapEnabled = true
         val combinedData = CombinedData()
 
         setBarData(combinedData)
@@ -136,8 +137,8 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         val xAxis = barChart?.xAxis
         val max = barChartEntries.maxByOrNull { it?.x ?: 0f }?.x ?: 0f
         val min = barChartEntries.minByOrNull { it?.x ?: 0f }?.x ?: 0f
-        xAxis?.axisMaximum = max + 0.5f;
-        xAxis?.axisMinimum = min - 0.5f;
+        xAxis?.axisMaximum = max + 0.5f
+        xAxis?.axisMinimum = min - 0.5f
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 return when (selectedXAxisSpinner) {
@@ -169,7 +170,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         dataSet.setDrawValues(false)
         dataSet.highLightColor = Color.RED
         dataSet.colors = SportType.values().map { ContextCompat.getColor(requireContext(), it.color) }
-        dataSet.stackLabels = SportType.values().map { getString(it.abbreviationStringId) }.toTypedArray()
+        dataSet.stackLabels = SportType.values().map { getString(it.sportNameStringId) }.toTypedArray()
     }
 
     private fun setGraphViewLineChart(dataSet: LineDataSet) {

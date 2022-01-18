@@ -3,7 +3,6 @@ package de.drtobiasprinz.summitbook.adapter
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.database.sqlite.SQLiteDatabase
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
@@ -65,12 +64,14 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         val textViewHeight = cardView.findViewById<TextView?>(R.id.height_meter)
         textViewHeight?.text = String.format("%s hm", summit.elevationData.elevationGain)
         val imageViewSportType = cardView.findViewById<ImageView?>(R.id.sport_type_image)
-        summit.sportType.imageId.let { imageViewSportType?.setImageResource(it) }
-        val image = cardView.findViewById<ImageView?>(R.id.card_view_image)
-        val imageText = cardView.findViewById<RelativeLayout?>(R.id.card_view_text)
-        if (imageText != null) {
-            addImage(summit, imageText, textViewName, image, cardView)
+        if (summit.hasImagePath()) {
+            imageViewSportType.setImageResource(summit.sportType.imageIdWhite)
+        } else {
+            imageViewSportType.setImageResource(summit.sportType.imageIdBlack)
         }
+        val image = cardView.findViewById<ImageView?>(R.id.card_view_image)
+        val imageText = cardView.findViewById<RelativeLayout>(R.id.card_view_text)
+        addImage(summit, imageText, textViewName, image, cardView)
         val setFavoriteButton = cardView.findViewById<ImageButton?>(R.id.entry_favorite)
         if (summit.isFavorite) {
             setFavoriteButton?.setImageResource(R.drawable.ic_star_black_24dp)
@@ -178,25 +179,23 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
             Toast.makeText(v.context, v.context.getString(R.string.delete_entry, entry.name), Toast.LENGTH_SHORT).show()
     }
 
-    private fun addImage(entry: Summit, imageText: RelativeLayout, textViewName: TextView?, image: ImageView?, cardView: CardView?) {
+    private fun addImage(entry: Summit, imageText: RelativeLayout, textViewName: TextView, image: ImageView, cardView: CardView) {
         if (entry.hasImagePath()) {
             imageText.setBackgroundResource(R.color.translucent)
-            textViewName?.setTextColor(Color.WHITE)
-            image?.visibility = View.VISIBLE
-            cardView?.context?.let {
-                if (image != null) {
+            textViewName.setTextColor(Color.WHITE)
+            image.visibility = View.VISIBLE
+            cardView.context?.let {
                     Glide.with(it)
                             .load("file://" + entry.getImagePath(entry.imageIds.first()))
                             .centerInside()
                             .diskCacheStrategy(DiskCacheStrategy.NONE)
                             .skipMemoryCache(true)
                             .into(image)
-                }
             }
         } else {
             imageText.setBackgroundColor(Color.TRANSPARENT)
-            textViewName?.setTextColor(Color.BLACK)
-            image?.visibility = View.GONE
+            textViewName.setTextColor(Color.BLACK)
+            image.visibility = View.GONE
         }
     }
 
