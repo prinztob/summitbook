@@ -208,9 +208,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
                 } else {
                     val filteredList = ArrayList<Summit>()
                     for (entry in sortFilterHelper.entries) {
-                        val name: String = entry.name
-                        val comments: String = entry.comments
-                        if (name.contains(charString, ignoreCase = true) || comments.contains(charString, ignoreCase = true)) {
+                        if (entry.name.contains(charString, ignoreCase = true) || entry.comments.contains(charString, ignoreCase = true) || entry.places.joinToString(";").contains(charString, ignoreCase = true)) {
                             filteredList.add(entry)
                         }
                     }

@@ -219,7 +219,7 @@ class Summit(
     }
 
     private fun setConnectedEntriesWhichReferenceThisEntry(database: AppDatabase, connectedEntries: MutableList<Summit>) {
-        val connectedSummit = database.summitDao()?.getSummitsWithConnectedId("${CONNECTED_ACTIVITY_PREFIX}${activityId}")
+        val connectedSummit = database.summitDao()?.getSummitsWithConnectedId("%${CONNECTED_ACTIVITY_PREFIX}${activityId}%")
         if (connectedSummit != null) {
             connectedEntries.add(connectedSummit)
             connectedSummit.setConnectedEntriesWhichReferenceThisEntry(database, connectedEntries)
