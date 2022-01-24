@@ -91,7 +91,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
             Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
             val entry = summitEntry
             if (entry != null) {
-                addTrackAndMarker(entry, localOsMap, this, false, isMilageButtonShown = false, alwaysShowTrackOnMap = false)
+                addTrackAndMarker(entry, localOsMap, this, false, 0, alwaysShowTrackOnMap = false)
                 entry.trackBoundingBox?.let { drawBoundingBox(osMap, it) }
             }
             addDefaultSettings(this, localOsMap, this)
@@ -299,7 +299,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
         if (entry != null) {
             val geoPointSelectedPosition = GeoPoint(point.latitude, point.longitude)
             addMarker(osMap, this, geoPointSelectedPosition, entry)
-            gpsTrack.addGpsTrack(osMap, false)
+            gpsTrack.addGpsTrack(osMap, 0)
             if (!wasBoundingBoxCalculated) {
                 calculateBoundingBox(osMap, gpsTrack, geoPointSelectedPosition)
                 wasBoundingBoxCalculated = true

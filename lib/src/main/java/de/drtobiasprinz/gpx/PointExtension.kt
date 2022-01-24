@@ -1,6 +1,5 @@
 package de.drtobiasprinz.gpx
 
-import android.view.VelocityTracker
 import de.drtobiasprinz.gpx.xml.XmlWritable
 import de.drtobiasprinz.gpx.xml.XmlWrite
 import io.reactivex.Observable

@@ -4,7 +4,7 @@ import de.drtobiasprinz.summitbook.models.Summit
 import java.util.*
 import kotlin.math.ceil
 
-class ExtremaValuesSummits(private val entries: List<Summit>) {
+class ExtremaValuesSummits(val entries: List<Summit>) {
     var averageSpeedMinMax = getMinMax { e -> e.velocityData.avgVelocity }
     var minAverageSpeed = averageSpeedMinMax?.first?.velocityData?.avgVelocity ?: 0.0
     var maxAverageSpeed = averageSpeedMinMax?.second?.velocityData?.avgVelocity ?: 0.0
@@ -85,7 +85,7 @@ class ExtremaValuesSummits(private val entries: List<Summit>) {
                     maxValue = value
                     max = entry
                 }
-                if (value.toDouble() in 0.0..minValue.toDouble()) {
+                if (value.toDouble() in 0.0..minValue.toDouble() && value.toDouble() != 0.0) {
                     minValue = value
                     min = entry
                 }

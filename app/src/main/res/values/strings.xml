@@ -188,8 +188,12 @@
     <string name="slope_profile_label">"Slope profile"</string>
     <string name="cadence_profile_label">"Cadence profile"</string>
     <string name="height_profile_label">"Height profile"</string>
+    <string name="power_profile_chart_label">"Power profile"</string>
+    <string name="speed_profile_label">"Speed profile"</string>
+    <string name="vertical_speed_profile_label">"Vertical speed profile"</string>
     <string name="power_profile_label">"Current summit"</string>
-    <string name="power_profile_all_label">"Record"</string>
+    <string name="power_profile_max_label">"Record"</string>
+    <string name="power_profile_min_label">"Negative Record"</string>
     <string name="delete_image">"Deleted image for entry %1$s."</string>
     <string name="delete_image_text">"Are you sure you want to delete this image?"</string>
     <string name="delete_image_done">"Image was deleted."</string>
@@ -324,5 +328,7 @@
     <string name="activity_hint">Activities</string>
     <string name="next_year">Next year</string>
     <string name="current_year">Current year</string>
+    <string name="customize_track_color">Customize Track color</string>
+    <string name="track_color">Track Color</string>
 
 </resources>

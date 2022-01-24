@@ -46,7 +46,7 @@ class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Con
                     if (gpsTrack.hasNoTrackPoints()) {
                         gpsTrack.parseTrack()
                     }
-                    gpsTrack.addGpsTrack(mMapView, false)
+                    gpsTrack.addGpsTrack(mMapView, 0)
                 }
             }
         }

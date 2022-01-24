@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import de.drtobiasprinz.gpx.*
+import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.ui.utils.SummitSlope.Companion.keepOnlyMaximalValues
 import de.drtobiasprinz.summitbook.ui.utils.SummitSlope.Companion.removeDeltasSmallerAs
 import io.reactivex.Observable
@@ -9,7 +10,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.File
-import java.io.FileInputStream
 import java.text.ParseException
 
 @RunWith(RobolectricTestRunner::class)
@@ -17,18 +17,18 @@ class SummitSlopeTest {
     @Test
     @Throws(ParseException::class)
     fun getSlopeFromSimpleGpx() {
-        val summitSlope = SummitSlope()
-        summitSlope.calculateMaxSlope(getTrack(), 50.0, requiredR2 = 0.0)
+        val summitSlope = SummitSlope(getTrack().trackPoints)
+        summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0)
         Assert.assertEquals(16.0, summitSlope.maxSlope, 0.1)
-        summitSlope.calculateMaxSlope(getTrack(), 50.0, false)
+        summitSlope.calculateMaxSlope(50.0, false)
         Assert.assertEquals(16.0, summitSlope.maxSlope, 0.1)
     }
 
     @Test
     @Throws(ParseException::class)
     fun getVerticalVelocityFromSimpleGpx() {
-        val summitSlope = SummitSlope()
-        summitSlope.calculateMaxVerticalVelocity(getTrack(), 50.0, 1)
+        val summitSlope = SummitSlope(getTrack().trackPoints)
+        summitSlope.calculateMaxVerticalVelocity(50.0, 1)
         Assert.assertEquals(0.16, summitSlope.maxVerticalVelocity, 0.01)
     }
 
@@ -38,25 +38,23 @@ class SummitSlopeTest {
         val resource = this.javaClass.classLoader?.getResource("track.gpx")
         if (resource != null) {
             val gpxTrackFile = File(resource.path)
-            val parser = GPXParser()
-            val track = parser.parse(FileInputStream(gpxTrackFile))
-            val summitSlope = SummitSlope()
-            summitSlope.calculateMaxSlope(track, 25.0)
+            val summitSlope = SummitSlope(getTrackFromFile(gpxTrackFile))
+            summitSlope.calculateMaxSlope(25.0)
             Assert.assertEquals(75.5, summitSlope.maxSlope, 0.1)
 
-            summitSlope.calculateMaxSlope(track, 25.0, false)
+            summitSlope.calculateMaxSlope(25.0, false)
             Assert.assertEquals(63.8, summitSlope.maxSlope, 0.1)
 
-            summitSlope.calculateMaxSlope(track, 50.0)
+            summitSlope.calculateMaxSlope(50.0)
             Assert.assertEquals(37.0, summitSlope.maxSlope, 0.1)
 
-            summitSlope.calculateMaxSlope(track, 50.0, false)
+            summitSlope.calculateMaxSlope(50.0, false)
             Assert.assertEquals(39.4, summitSlope.maxSlope, 0.1)
 
-            summitSlope.calculateMaxSlope(track, 100.0)
+            summitSlope.calculateMaxSlope(100.0)
             Assert.assertEquals(34.1, summitSlope.maxSlope, 0.1)
 
-            summitSlope.calculateMaxSlope(track, 100.0, false)
+            summitSlope.calculateMaxSlope(100.0, false)
             Assert.assertEquals(32.7, summitSlope.maxSlope, 0.1)
         }
     }
@@ -67,16 +65,14 @@ class SummitSlopeTest {
         val resource = this.javaClass.classLoader?.getResource("track.gpx")
         if (resource != null) {
             val gpxTrackFile = File(resource.path)
-            val parser = GPXParser()
-            val track = parser.parse(FileInputStream(gpxTrackFile))
-            val summitSlope = SummitSlope()
-            summitSlope.calculateMaxVerticalVelocity(track, 60.0)
+            val summitSlope = SummitSlope(getTrackFromFile(gpxTrackFile))
+            summitSlope.calculateMaxVerticalVelocity(60.0)
             Assert.assertEquals(0.25, summitSlope.maxVerticalVelocity, 0.01)
 
-            summitSlope.calculateMaxVerticalVelocity(track, 600.0)
+            summitSlope.calculateMaxVerticalVelocity(600.0)
             Assert.assertEquals(0.20, summitSlope.maxVerticalVelocity, 0.01)
 
-            summitSlope.calculateMaxVerticalVelocity(track, 3600.0)
+            summitSlope.calculateMaxVerticalVelocity(3600.0)
             Assert.assertEquals(0.15, summitSlope.maxVerticalVelocity, 0.01)
 
         }
@@ -85,7 +81,7 @@ class SummitSlopeTest {
     @Test
     @Throws(ParseException::class)
     fun testTrackWithOnlyMaximalValues() {
-       val reducedTrackPoints = keepOnlyMaximalValues(getTrackPoints() as MutableList<TrackPoint>)
+        val reducedTrackPoints = keepOnlyMaximalValues(getTrackPoints() as MutableList<TrackPoint>)
         Assert.assertEquals(6, reducedTrackPoints.size)
     }
 
@@ -104,10 +100,9 @@ class SummitSlopeTest {
 
     }
 
-
-
-    private fun getTrack(): Gpx {
-        return Gpx(
+    private fun getTrack(): GpsTrack {
+        val track = GpsTrack(File("").toPath(), File("").toPath())
+        val gpx = Gpx(
                 creator = "RouteConverter",
                 metadata = Metadata(name = "SlopeTestTrack"),
                 tracks = Observable.just(
@@ -118,6 +113,14 @@ class SummitSlopeTest {
                                         ))
                         ))
         )
+        track.trackPoints = SummitSlope.getTrackPoints(gpx)
+        return track
+    }
+
+    private fun getTrackFromFile(file: File): MutableList<TrackPoint> {
+        val track = GpsTrack(file.toPath(), File("").toPath())
+        track.parseTrack(false)
+        return track.trackPoints
     }
 
     private fun getTrackPoints() = listOf(

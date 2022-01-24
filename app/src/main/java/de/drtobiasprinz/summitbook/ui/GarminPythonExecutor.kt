@@ -24,8 +24,8 @@ import java.util.*
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
-class GarminPythonExecutor(var pythonInstance: Python, val username: String, val password: String) {
-    private lateinit var pythonModule: PyObject
+class GarminPythonExecutor(var pythonInstance: Python?, val username: String, val password: String) {
+    private var pythonModule: PyObject? = null
     var client: PyObject? = null
 
     private fun login() {
@@ -33,9 +33,9 @@ class GarminPythonExecutor(var pythonInstance: Python, val username: String, val
             if (!Python.isStarted()) {
                 MainActivity.mainActivity?.let { AndroidPlatform(it) }?.let { Python.start(it) }
             }
-            pythonModule = pythonInstance.getModule("start")
+            pythonModule = pythonInstance?.getModule("start")
             Log.i("GarminPythonExecutor", "do login")
-            val result = pythonModule.callAttr("get_authenticated_client", username, password)
+            val result = pythonModule?.callAttr("get_authenticated_client", username, password)
             checkOutput(result)
             client = result
         }
@@ -45,7 +45,7 @@ class GarminPythonExecutor(var pythonInstance: Python, val username: String, val
         if (client == null) {
             login()
         }
-        val result = pythonModule.callAttr("get_activity_json_for_date", client, dateAsString)
+        val result = pythonModule?.callAttr("get_activity_json_for_date", client, dateAsString)
         checkOutput(result)
         val jsonResponse = JsonParser().parse(result.toString()) as JsonArray
         return getSummitsAtDate(jsonResponse)
@@ -55,7 +55,7 @@ class GarminPythonExecutor(var pythonInstance: Python, val username: String, val
         if (client == null) {
             login()
         }
-        val result = pythonModule.callAttr("download_gpx", client, garminActivityId, downloadPath)
+        val result = pythonModule?.callAttr("download_gpx", client, garminActivityId, downloadPath)
         checkOutput(result)
     }
 
@@ -63,7 +63,7 @@ class GarminPythonExecutor(var pythonInstance: Python, val username: String, val
         if (client == null) {
             login()
         }
-        val result = pythonModule.callAttr("download_tcx", client, garminActivityId, downloadPath)
+        val result = pythonModule?.callAttr("download_tcx", client, garminActivityId, downloadPath)
         checkOutput(result)
     }
 
@@ -74,7 +74,7 @@ class GarminPythonExecutor(var pythonInstance: Python, val username: String, val
         if (!activitiesDir.exists()) {
             activitiesDir.mkdirs()
         }
-        val result = pythonModule.callAttr("download_activities_by_date", client, activitiesDir.absolutePath, startDate, endDate)
+        val result = pythonModule?.callAttr("download_activities_by_date", client, activitiesDir.absolutePath, startDate, endDate)
         checkOutput(result)
     }
 
@@ -82,7 +82,7 @@ class GarminPythonExecutor(var pythonInstance: Python, val username: String, val
         if (client == null) {
             login()
         }
-        val result = pythonModule.callAttr("get_split_data", client, activityId, activitiesDir.absolutePath)
+        val result = pythonModule?.callAttr("get_split_data", client, activityId, activitiesDir.absolutePath)
         checkOutput(result)
         return JsonParser().parse(result.toString()) as JsonObject
     }
@@ -91,7 +91,7 @@ class GarminPythonExecutor(var pythonInstance: Python, val username: String, val
         if (client == null) {
             login()
         }
-        val result = pythonModule.callAttr("get_multi_sport_data", client, activityId)
+        val result = pythonModule?.callAttr("get_multi_sport_data", client, activityId)
         checkOutput(result)
         return JsonParser().parse(result.toString()) as JsonObject
     }
@@ -100,7 +100,7 @@ class GarminPythonExecutor(var pythonInstance: Python, val username: String, val
         if (client == null) {
             login()
         }
-        val result = pythonModule.callAttr("get_power_data", client, dateAsString)
+        val result = pythonModule?.callAttr("get_power_data", client, dateAsString)
         checkOutput(result)
         return JsonParser().parse(result.toString()) as JsonObject
     }

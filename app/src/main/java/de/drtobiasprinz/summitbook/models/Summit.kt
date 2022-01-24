@@ -148,13 +148,21 @@ class Summit(
         return ((date.time - REFERENCE_VALUE_DATE) / 1e8).toFloat()
     }
 
-    fun setGpsTrack(useSimplifiedTrack: Boolean = true, updateTrack: Boolean = false) {
+    fun setGpsTrack(useSimplifiedTrack: Boolean = true, updateTrack: Boolean = false, loadFullTrackAsynchronous: Boolean=false) {
         if (hasGpsTrack()) {
             if (gpsTrack == null || updateTrack) {
                 gpsTrack = GpsTrack(getGpsTrackPath(), getGpsTrackPath(simplified = useSimplifiedTrack))
             }
             if (gpsTrack != null && gpsTrack?.hasNoTrackPoints() == true) {
-                gpsTrack?.parseTrack()
+                gpsTrack?.parseTrack(loadFullTrackAsynchronous = loadFullTrackAsynchronous)
+            }
+            if (gpsTrack?.trackPoints?.isEmpty() == true) {
+                if (getGpsTrackPath().toFile().exists()) {
+                    getGpsTrackPath().toFile().delete()
+                }
+                if (getGpsTrackPath(simplified = true).toFile().exists()) {
+                    getGpsTrackPath(simplified = true).toFile().delete()
+                }
             }
         }
     }

@@ -147,7 +147,7 @@ von
 
     <string name="tab_text_1">Daten</string>
     <string name="tab_text_2">Bilder</string>
-    <string name="tab_text_3">Karte und Höhenprofile</string>
+    <string name="tab_text_3">Karte und Höhenprofil</string>
 
     <string name="bar_charts">Balkendiagramm</string>
     <string name="summit_image">Gipfelbild</string>
@@ -192,8 +192,12 @@ von
     <string name="slope_profile_label">"Neigung"</string>
     <string name="cadence_profile_label">"Kadenceprofil"</string>
     <string name="height_profile_label">"Höhenprofil"</string>
+    <string name="power_profile_chart_label">"Leisungsprofil"</string>
+    <string name="speed_profile_label">"Geschwindigkeitsprofil"</string>
+    <string name="vertical_speed_profile_label">"Profil der Vertikale Geschw."</string>
     <string name="power_profile_label">"Aktueller Gipfel"</string>
-    <string name="power_profile_all_label">"Rekord"</string>
+    <string name="power_profile_max_label">"Rekord"</string>
+    <string name="power_profile_min_label">"Negativrekord"</string>
     <string name="delete_image">"Lösche Bild von Gipfel %1$s."</string>
     <string name="delete_image_text">"Sind Sie sicher, dass sie das Bild löschen möchten?"</string>
     <string name="delete_image_done">"Bild wurde gelöscht."</string>
@@ -325,4 +329,6 @@ von
     <string name="december">Dezember</string>
     <string name="next_year">Nächstes Jahr</string>
     <string name="current_year">Aktuelles Jahr</string>
+    <string name="customize_track_color">Track Farbe anpassen</string>
+    <string name="track_color">Track Farbe</string>
 </resources>

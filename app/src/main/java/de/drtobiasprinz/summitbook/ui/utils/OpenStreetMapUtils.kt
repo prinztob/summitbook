@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.ui.utils
 import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
+import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
@@ -32,7 +33,7 @@ object OpenStreetMapUtils {
     var selectedItem = 0
 
     @JvmStatic
-    fun addTrackAndMarker(summitEntry: Summit, osMap: MapView, context: Context, forceAddTrack: Boolean, isMilageButtonShown: Boolean, alwaysShowTrackOnMap: Boolean): Marker? {
+    fun addTrackAndMarker(summitEntry: Summit, osMap: MapView, context: Context, forceAddTrack: Boolean, selectedCustomizeTrackItem: Int, alwaysShowTrackOnMap: Boolean, rootView: View? = null): Marker? {
         val mGeoPoints = ArrayList<GeoPoint>()
         val latLng = summitEntry.latLng
         var marker: Marker? = null
@@ -46,7 +47,7 @@ object OpenStreetMapUtils {
                 mapController.setCenter(point)
             }
         }
-        drawTrack(summitEntry, forceAddTrack, osMap, isMilageButtonShown, true, mGeoPoints)
+        drawTrack(summitEntry, forceAddTrack, osMap, selectedCustomizeTrackItem, true, mGeoPoints, rootView = rootView)
         if (marker != null) {
             osMap.overlays.add(marker)
         }
@@ -67,8 +68,9 @@ object OpenStreetMapUtils {
 
     @JvmStatic
     fun drawTrack(
-            summitEntry: Summit, forceAddTrack: Boolean, osMap: MapView, isMilageButtonShown: Boolean,
-            calculateBondingBox: Boolean = false, mGeoPoints: ArrayList<GeoPoint> = arrayListOf(), color: Int = Color.BLUE,
+            summitEntry: Summit, forceAddTrack: Boolean, osMap: MapView, selectedCustomizeTrackItem: Int,
+            calculateBondingBox: Boolean = false, mGeoPoints: ArrayList<GeoPoint> = arrayListOf(),
+            color: Int = Color.BLUE, rootView: View? = null
     ) {
         if (summitEntry.hasGpsTrack()) {
             if (summitEntry.gpsTrack == null) {
@@ -80,7 +82,7 @@ object OpenStreetMapUtils {
                     gpsTrack.parseTrack()
                 }
                 if (gpsTrack.osMapRoute == null || forceAddTrack) {
-                    gpsTrack.addGpsTrack(osMap, isMilageButtonShown, color)
+                    gpsTrack.addGpsTrack(osMap, selectedCustomizeTrackItem, color, rootView)
                     gpsTrack.isShownOnMap = true
                 }
                 mGeoPoints.addAll(getTrackPointsFrom(gpsTrack))
@@ -92,7 +94,7 @@ object OpenStreetMapUtils {
     }
 
     @JvmStatic
-    fun addTrackAndMarker(bookmark: Bookmark, osMap: MapView, forceAddTrack: Boolean, isMilageButtonShown: Boolean) {
+    fun addTrackAndMarker(bookmark: Bookmark, osMap: MapView, forceAddTrack: Boolean, selectedCustomizeTrackItem: Int) {
         val mGeoPoints = ArrayList<GeoPoint>()
         if (bookmark.hasGpsTrack()) {
             bookmark.setGpsTrack()
@@ -102,7 +104,7 @@ object OpenStreetMapUtils {
                     gpsTrack.parseTrack()
                 }
                 if (gpsTrack.osMapRoute == null || forceAddTrack) {
-                    gpsTrack.addGpsTrack(osMap, isMilageButtonShown)
+                    gpsTrack.addGpsTrack(osMap, selectedCustomizeTrackItem)
                     gpsTrack.isShownOnMap = true
                 }
                 mGeoPoints.addAll(getTrackPointsFrom(gpsTrack))
@@ -197,6 +199,7 @@ object OpenStreetMapUtils {
     @JvmStatic
     fun showMapTypeSelectorDialog(context: Context, mapView: MapView) {
         // Prepare the dialog by setting up a Builder.
+        // TODO: translate
         val fDialogTitle = "Select Map Type"
         val builder = AlertDialog.Builder(context)
         builder.setTitle(fDialogTitle)

@@ -77,21 +77,21 @@ class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summ
                 if (gpsTrack.hasNoTrackPoints()) {
                     gpsTrack.parseTrack(useSimplifiedIfExists = false)
                 }
-                val slopeCalculator = SummitSlope()
+                val slopeCalculator = SummitSlope(gpsTrack.trackPoints)
                 tableEntries.add(TableEntry(getString(R.string.max_slope),
-                        if (summitEntry.elevationData.maxSlope > 0.0) summitEntry.elevationData.maxSlope else slopeCalculator.calculateMaxSlope(summitEntry.gpsTrack?.gpxTrack),
+                        if (summitEntry.elevationData.maxSlope > 0.0) summitEntry.elevationData.maxSlope else slopeCalculator.calculateMaxSlope(),
                         "%", summitEntry.elevationData.maxSlope > 0.0,
                         { e -> summitEntry.elevationData.maxSlope = e }))
                 tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_1Min),
-                        if (summitEntry.elevationData.maxVerticalVelocity1Min > 0.0) summitEntry.elevationData.maxVerticalVelocity1Min else slopeCalculator.calculateMaxVerticalVelocity(summitEntry.gpsTrack?.gpxTrack, 60.0),
+                        if (summitEntry.elevationData.maxVerticalVelocity1Min > 0.0) summitEntry.elevationData.maxVerticalVelocity1Min else slopeCalculator.calculateMaxVerticalVelocity( 60.0),
                         "m/s", summitEntry.elevationData.maxVerticalVelocity1Min > 0.0,
                         { e -> summitEntry.elevationData.maxVerticalVelocity1Min = e }))
                 tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_10Min),
-                        if (summitEntry.elevationData.maxVerticalVelocity10Min > 0.0) summitEntry.elevationData.maxVerticalVelocity10Min else slopeCalculator.calculateMaxVerticalVelocity(summitEntry.gpsTrack?.gpxTrack, 600.0),
+                        if (summitEntry.elevationData.maxVerticalVelocity10Min > 0.0) summitEntry.elevationData.maxVerticalVelocity10Min else slopeCalculator.calculateMaxVerticalVelocity( 600.0),
                         "m/s", summitEntry.elevationData.maxVerticalVelocity10Min > 0.0,
                         { e -> summitEntry.elevationData.maxVerticalVelocity10Min = e }))
                 tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_1h),
-                        if (summitEntry.elevationData.maxVerticalVelocity1h > 0.0) summitEntry.elevationData.maxVerticalVelocity1h else slopeCalculator.calculateMaxVerticalVelocity(summitEntry.gpsTrack?.gpxTrack, 3600.0),
+                        if (summitEntry.elevationData.maxVerticalVelocity1h > 0.0) summitEntry.elevationData.maxVerticalVelocity1h else slopeCalculator.calculateMaxVerticalVelocity( 3600.0),
                         "m/s", summitEntry.elevationData.maxVerticalVelocity1h > 0.0,
                         { e -> summitEntry.elevationData.maxVerticalVelocity1h = e }))
             }

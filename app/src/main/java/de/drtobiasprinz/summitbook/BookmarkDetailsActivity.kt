@@ -96,7 +96,7 @@ class BookmarkDetailsActivity : AppCompatActivity() {
                     showMilageButton.setImageResource(R.drawable.moreinfo_arrow_pressed)
                 }
                 osMap.overlays?.clear()
-                bookmark?.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, true, isMilageButtonShown) }
+                bookmark?.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, true, if (isMilageButtonShown) 1 else 0) }
             }
             val shareButton = findViewById<ImageButton>(R.id.gps_share)
             shareButton.setOnClickListener { _: View? ->
@@ -133,7 +133,7 @@ class BookmarkDetailsActivity : AppCompatActivity() {
         val params = osMap.layoutParams
         params?.height = (metrics.heightPixels * 0.5).toInt()
         osMap.layoutParams = params
-        bookmark?.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, false, isMilageButtonShown) }
+        bookmark?.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, false, if (isMilageButtonShown) 1 else 0) }
     }
 
     private fun setText(text: String, info: TextView, textView: TextView) {

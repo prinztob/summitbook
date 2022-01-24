@@ -321,40 +321,6 @@ class SummitEntryDataFragment : Fragment() {
         }
     }
 
-    private fun setAdditionalPowerDataVisibility(visibility: Int) {
-        root.findViewById<TextView>(R.id.power1sec).visibility = visibility
-        root.findViewById<TextView>(R.id.power1secText).visibility = visibility
-        root.findViewById<TextView>(R.id.power2sec).visibility = visibility
-        root.findViewById<TextView>(R.id.power2secText).visibility = visibility
-        root.findViewById<TextView>(R.id.power5sec).visibility = visibility
-        root.findViewById<TextView>(R.id.power5secText).visibility = visibility
-        root.findViewById<TextView>(R.id.power10sec).visibility = visibility
-        root.findViewById<TextView>(R.id.power10secText).visibility = visibility
-        root.findViewById<TextView>(R.id.power20sec).visibility = visibility
-        root.findViewById<TextView>(R.id.power20secText).visibility = visibility
-        root.findViewById<TextView>(R.id.power30sec).visibility = visibility
-        root.findViewById<TextView>(R.id.power30secText).visibility = visibility
-
-        root.findViewById<TextView>(R.id.power1min).visibility = visibility
-        root.findViewById<TextView>(R.id.power1minText).visibility = visibility
-        root.findViewById<TextView>(R.id.power2min).visibility = visibility
-        root.findViewById<TextView>(R.id.power2minText).visibility = visibility
-        root.findViewById<TextView>(R.id.power5min).visibility = visibility
-        root.findViewById<TextView>(R.id.power5minText).visibility = visibility
-        root.findViewById<TextView>(R.id.power10min).visibility = visibility
-        root.findViewById<TextView>(R.id.power10minText).visibility = visibility
-        root.findViewById<TextView>(R.id.power20min).visibility = visibility
-        root.findViewById<TextView>(R.id.power20minText).visibility = visibility
-        root.findViewById<TextView>(R.id.power30min).visibility = visibility
-        root.findViewById<TextView>(R.id.power30minText).visibility = visibility
-
-        root.findViewById<TextView>(R.id.power1h).visibility = visibility
-        root.findViewById<TextView>(R.id.power1hText).visibility = visibility
-        root.findViewById<TextView>(R.id.power2h).visibility = visibility
-        root.findViewById<TextView>(R.id.power2hText).visibility = visibility
-        root.findViewById<TextView>(R.id.power5h).visibility = visibility
-        root.findViewById<TextView>(R.id.power5hText).visibility = visibility
-    }
 
     private fun setText(
             value: Double, unit: String, info: TextView, textView: TextView,
