@@ -14,30 +14,40 @@ class StatisticEntry {
     var achievementHm = 0.0
     var achievementKm = 0.0
     var achievementActivity = 0.0
-    var epectedAchievementActivityAbsolute = 0.0
-    var epectedAchievementHmAbsolute = 0.0
-    var epectedAchievementKmAbsolute = 0.0
+    var expectedAchievementActivityAbsolute = 0.0
+    var expectedAchievementHmAbsolute = 0.0
+    var expectedAchievementKmAbsolute = 0.0
     private var filteredSummitEntries: List<Summit>?
-    private var activitesPerYear = 50
+    private var activitiesPerYear = 50
     private var kilometerPerYear = 1200
     private var elevationGainPerYear = 50000
+    private var indoorHeightMeterPercent = 0
 
-    constructor(filteredSummitEntries: List<Summit>?) {
+
+    constructor(filteredSummitEntries: List<Summit>?, indoorHeightMeterPercent: Int = 0) {
         this.filteredSummitEntries = filteredSummitEntries
+        this.indoorHeightMeterPercent = indoorHeightMeterPercent
     }
 
-    constructor(filteredSummitEntries: List<Summit>?, activitesPerYear: Int, kilometerPerYear: Int, elevationGainPerYear: Int) {
+    constructor(filteredSummitEntries: List<Summit>?, activitiesPerYear: Int, kilometerPerYear: Int, elevationGainPerYear: Int, indoorHeightMeterPercent: Int = 0) {
         this.filteredSummitEntries = filteredSummitEntries
         this.elevationGainPerYear = elevationGainPerYear
-        this.activitesPerYear = activitesPerYear
+        this.activitiesPerYear = activitiesPerYear
         this.kilometerPerYear = kilometerPerYear
+        this.indoorHeightMeterPercent = indoorHeightMeterPercent
     }
 
     fun calculate() {
         totalSummits = filteredSummitEntries?.size ?: 0
-        totalHm = filteredSummitEntries?.stream()?.mapToInt { obj: Summit? -> obj?.elevationData?.elevationGain ?: 0 }?.sum() ?: 0
-        totalKm = filteredSummitEntries?.stream()?.mapToDouble { obj: Summit? -> obj?.kilometers ?: 0.0 }?.sum() ?: 0.0
-        achievementActivity = round(totalSummits * 100.0 / activitesPerYear).toDouble()
+        totalHm = filteredSummitEntries?.map {
+            if (it.sportType == SportType.IndoorTrainer) {
+                it.elevationData.elevationGain * indoorHeightMeterPercent / 100
+            } else {
+                it.elevationData.elevationGain
+            }
+        }?.sum() ?: 0
+        totalKm = filteredSummitEntries?.map { it.kilometers }?.sum() ?: 0.0
+        achievementActivity = round(totalSummits * 100.0 / activitiesPerYear).toDouble()
         achievementKm = totalKm * 100.0 / kilometerPerYear
         achievementHm = totalHm * 100.0 / elevationGainPerYear
         setExpectedAchievement()
@@ -52,9 +62,9 @@ class StatisticEntry {
         try {
             beginOfYear = df.parse(String.format("%s-01-01", currentYear))
             val diff = date.time - beginOfYear.time
-            epectedAchievementHmAbsolute = (elevationGainPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
-            epectedAchievementKmAbsolute = (kilometerPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
-            epectedAchievementActivityAbsolute = (activitesPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
+            expectedAchievementHmAbsolute = (elevationGainPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
+            expectedAchievementKmAbsolute = (kilometerPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
+            expectedAchievementActivityAbsolute = (activitiesPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
         } catch (e: ParseException) {
             e.printStackTrace()
         }
@@ -69,6 +79,6 @@ class StatisticEntry {
     }
 
     fun getExpectedAchievementHmPercent(): Double {
-        return epectedAchievementHmAbsolute / elevationGainPerYear * 100
+        return expectedAchievementHmAbsolute / elevationGainPerYear * 100
     }
 }

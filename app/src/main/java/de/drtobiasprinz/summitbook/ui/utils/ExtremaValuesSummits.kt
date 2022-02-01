@@ -1,48 +1,49 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
+import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
 import java.util.*
 import kotlin.math.ceil
 
-class ExtremaValuesSummits(val entries: List<Summit>) {
-    var averageSpeedMinMax = getMinMax { e -> e.velocityData.avgVelocity }
+class ExtremaValuesSummits(val entries: List<Summit>, private val indoorHeightMeterPercent: Int = 0) {
+    var averageSpeedMinMax = getMinMax(true) { e -> e.velocityData.avgVelocity }
     var minAverageSpeed = averageSpeedMinMax?.first?.velocityData?.avgVelocity ?: 0.0
     var maxAverageSpeed = averageSpeedMinMax?.second?.velocityData?.avgVelocity ?: 0.0
     val maxAverageSpeedCeil = ceil(averageSpeedMinMax?.second?.velocityData?.avgVelocity
             ?: 0.0).toInt()
 
     var durationMinMax = getMinMax { e -> if (e.duration < 24.0) e.duration else 0.0 }
-    var topSpeedMinMax = getMinMax { e -> e.velocityData.maxVelocity }
+    var topSpeedMinMax = getMinMax(true) { e -> e.velocityData.maxVelocity }
     var minTopSpeed = topSpeedMinMax?.first?.velocityData?.maxVelocity ?: 0.0
     var maxTopSpeed = topSpeedMinMax?.second?.velocityData?.maxVelocity ?: 0.0
     val maxTopSpeedCeil = ceil(topSpeedMinMax?.second?.velocityData?.maxVelocity ?: 0.0).toInt()
-    var oneKmMinMax = getMinMax { e -> e.velocityData.oneKilometer }
-    var fiveKmMinMax = getMinMax { e -> e.velocityData.fiveKilometer }
-    var tenKmMinMax = getMinMax { e -> e.velocityData.tenKilometers }
-    var fifteenKmMinMax = getMinMax { e -> e.velocityData.fifteenKilometers }
-    var twentyKmMinMax = getMinMax { e -> e.velocityData.twentyKilometers }
-    var thirtyKmMinMax = getMinMax { e -> e.velocityData.thirtyKilometers }
-    var fortyKmMinMax = getMinMax { e -> e.velocityData.fortyKilometers }
-    var fiftyKmMinMax = getMinMax { e -> e.velocityData.fiftyKilometers }
-    var seventyFiveKmMinMax = getMinMax { e -> e.velocityData.seventyFiveKilometers }
-    var hundredKmMinMax = getMinMax { e -> e.velocityData.hundredKilometers }
+    var oneKmMinMax = getMinMax(true) { e -> e.velocityData.oneKilometer }
+    var fiveKmMinMax = getMinMax(true) { e -> e.velocityData.fiveKilometer }
+    var tenKmMinMax = getMinMax(true) { e -> e.velocityData.tenKilometers }
+    var fifteenKmMinMax = getMinMax(true) { e -> e.velocityData.fifteenKilometers }
+    var twentyKmMinMax = getMinMax(true) { e -> e.velocityData.twentyKilometers }
+    var thirtyKmMinMax = getMinMax(true) { e -> e.velocityData.thirtyKilometers }
+    var fortyKmMinMax = getMinMax(true) { e -> e.velocityData.fortyKilometers }
+    var fiftyKmMinMax = getMinMax(true) { e -> e.velocityData.fiftyKilometers }
+    var seventyFiveKmMinMax = getMinMax(true) { e -> e.velocityData.seventyFiveKilometers }
+    var hundredKmMinMax = getMinMax(true) { e -> e.velocityData.hundredKilometers }
 
-    var kilometersMinMax = getMinMax { e -> e.kilometers }
+    var kilometersMinMax = getMinMax(true) { e -> e.kilometers }
     var minKilometers = kilometersMinMax?.first?.kilometers ?: 0.0
     var maxKilometers = kilometersMinMax?.second?.kilometers ?: 0.0
     val maxKilometersCeil = ceil(kilometersMinMax?.second?.kilometers ?: 0.0).toInt()
 
-    var heightMetersMinMax = getMinMax { e -> e.elevationData.elevationGain }
+    var heightMetersMinMax = getMinMax(true) { e -> e.elevationData.elevationGain }
     var minHeightMeters = heightMetersMinMax?.first?.elevationData?.elevationGain ?: 0
     var maxHeightMeters = heightMetersMinMax?.second?.elevationData?.elevationGain ?: 0
 
-    var topElevationMinMax = getMinMax { e -> e.elevationData.maxElevation }
+    var topElevationMinMax = getMinMax(true) { e -> e.elevationData.maxElevation }
     var minTopElevation = topElevationMinMax?.first?.elevationData?.maxElevation ?: 0
     var maxTopElevation = topElevationMinMax?.second?.elevationData?.maxElevation ?: 0
-    var topSlopeMinMax = getMinMax { e -> e.elevationData.maxSlope }
-    var topVerticalVelocity1MinMinMax = getMinMax { e -> e.elevationData.maxVerticalVelocity1Min }
-    var topVerticalVelocity10MinMinMax = getMinMax { e -> e.elevationData.maxVerticalVelocity10Min }
-    var topVerticalVelocity1hMinMax = getMinMax { e -> e.elevationData.maxVerticalVelocity1h }
+    var topSlopeMinMax = getMinMax(true) { e -> e.elevationData.maxSlope }
+    var topVerticalVelocity1MinMinMax = getMinMax(true) { e -> e.elevationData.maxVerticalVelocity1Min }
+    var topVerticalVelocity10MinMinMax = getMinMax(true) { e -> e.elevationData.maxVerticalVelocity10Min }
+    var topVerticalVelocity1hMinMax = getMinMax(true) { e -> e.elevationData.maxVerticalVelocity1h }
 
     var averageHRMinMax = getMinMax { e -> e.garminData?.averageHR ?: 0 }
 
@@ -73,13 +74,14 @@ class ExtremaValuesSummits(val entries: List<Summit>) {
     var gritMinMax = getMinMax { e -> e.garminData?.grit ?: 0 }
     var trainingsLoadMinMax = getMinMax { e -> e.garminData?.trainingLoad ?: 0 }
 
-    private fun getMinMax(f: (Summit) -> Number): Pair<Summit, Summit>? {
+    private fun getMinMax(shouldIndoorAvitivityBeExcluded: Boolean = false, f: (Summit) -> Number): Pair<Summit, Summit>? {
         var min: Summit? = entries.firstOrNull { f(it).toDouble() != 0.0 }
         if (min != null) {
             var minValue = f(min)
             var max: Summit = min
             var maxValue = f(max)
-            for (entry in entries) {
+            val filteredEntries = if (shouldIndoorAvitivityBeExcluded) entries.filter { it.sportType != SportType.IndoorTrainer } else entries
+            for (entry in filteredEntries) {
                 val value = f(entry)
                 if (value.toDouble() > maxValue.toDouble()) {
                     maxValue = value

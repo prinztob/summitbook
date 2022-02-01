@@ -47,6 +47,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private lateinit var startDateText: EditText
     private lateinit var endDateText: EditText
     private var selectedDateItemDefault = 0
+    private var indoorHeightMeterPercent = 0
     private var selectedDateItem = 0
     private val segmentedSortAscDesc: SegmentedButtonGroup = filterAndSortView.findViewById(R.id.group_sort_asc_desc)
     private val segmentedSortBy: SegmentedButtonGroup = filterAndSortView.findViewById(R.id.group_sort_by)
@@ -376,7 +377,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     private fun setOverviewText() {
-        val statisticEntry = StatisticEntry(filteredEntries)
+        val statisticEntry = StatisticEntry(filteredEntries, indoorHeightMeterPercent)
         statisticEntry.calculate()
         overview.text = context.getString(R.string.base_info, filteredEntries.size.toString(), statisticEntry.totalKm.roundToLong().toInt().toString(), statisticEntry.totalHm.toFloat().roundToLong().toString())
     }
@@ -629,6 +630,10 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         this.selectedDateItemDefault = selectedDateItemDefault
     }
 
+    fun setIndoorHeightMeterPercent(indoorHeightMeterPercent: Int) {
+        this.indoorHeightMeterPercent = indoorHeightMeterPercent
+    }
+
     init {
         prepare()
     }
@@ -699,6 +704,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
                 } else {
                     sortFilterHelper.setSelectedDateItemDefault(0)
                 }
+                sortFilterHelper.setIndoorHeightMeterPercent(sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0)
             }
             if (savedInstanceState != null) {
                 val uniqueYears = savedInstanceState.getString(SORT_FILTER_HELPER_UNIQUE_YEARS)?.split(",")

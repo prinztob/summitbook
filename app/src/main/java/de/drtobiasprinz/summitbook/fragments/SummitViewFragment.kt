@@ -78,7 +78,7 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         sortFilterHelper.areSharedPrefInitialized = false
-        if (key == "current_year_switch") {
+        if (key == "current_year_switch" || key == "indoor_height_meter_per_cent") {
             readSharedPreference(sharedPreferences)
         }
     }
@@ -91,6 +91,7 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
             } else {
                 sortFilterHelper.setSelectedDateItemDefault(0)
             }
+            sortFilterHelper.setIndoorHeightMeterPercent(sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0)
             sortFilterHelper.setDataSpinnerToDefault()
             sortFilterHelper.apply()
         }

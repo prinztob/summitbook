@@ -83,7 +83,7 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
                     textTotalHmInfo.setTextColor(if (annualTargetHm.toInt() < (sumCurrentYear ?: 0)) Color.GREEN else Color.RED)
                 } else {
                     textTotalHmInfo.visibility = View.VISIBLE
-                    textTotalHmInfo.text = getString(R.string.current_estimate, statisticEntry.epectedAchievementHmAbsolute.toInt().toString())
+                    textTotalHmInfo.text = getString(R.string.current_estimate, statisticEntry.expectedAchievementHmAbsolute.toInt().toString())
                 }
                 val sumNextYear = forecasts?.filter { it.year == currentYear + 1 }?.sumBy { it.forecastHeightMeter }
                 if (sumNextYear ?: 0 > 0) {
@@ -274,7 +274,8 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
         val annualTargetKm = sharedPreferences.getString("annual_target_km", "1200")?.toInt()
                 ?: 1200
         val annualTargetHm = sharedPreferences.getString("annual_target", "50000")?.toInt() ?: 50000
-        statisticEntry = StatisticEntry(filteredSummitEntries, annualTargetActivity, annualTargetKm, annualTargetHm)
+        val indoorHeightMeterPercent = sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0
+        statisticEntry = StatisticEntry(filteredSummitEntries, annualTargetActivity, annualTargetKm, annualTargetHm, indoorHeightMeterPercent)
         statisticEntry.calculate()
         setProgressBar()
         val extremaValuesSummits = filteredSummitEntries?.let { ExtremaValuesSummits(it) }
