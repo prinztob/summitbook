@@ -112,13 +112,13 @@ class SummitEntryPowerFragment : Fragment() {
             val summits = MainActivity.extremaValuesAllSummits?.entries
             if (summits != null) {
                 val filteredSummits = getFilteredSummits(summits)
-                val extremaValuesAllSummits = ExtremaValuesSummits(filteredSummits)
+                val extremaValuesAllSummits = ExtremaValuesSummits(filteredSummits, excludeZeroValueFromMin = true)
                 val extremalChartEntries = getLineChartEntriesMax(extremaValuesAllSummits)
                 val minimalChartEntries = getLineChartEntriesMin(extremaValuesAllSummits)
                 val dataSetMaximalValues = LineDataSet(extremalChartEntries, getString(R.string.power_profile_max_label))
-                dataSetMaximalValues.setFillFormatter(MyFillFormatter(LineDataSet(minimalChartEntries, getString(R.string.power_profile_min_label))))
+                dataSetMaximalValues.fillFormatter = MyFillFormatter(LineDataSet(minimalChartEntries, getString(R.string.power_profile_min_label)))
 
-                lineChart.setRenderer(MyLineLegendRenderer(lineChart, lineChart.animator, lineChart.viewPortHandler))
+                lineChart.renderer = MyLineLegendRenderer(lineChart, lineChart.animator, lineChart.viewPortHandler)
 
                 setGraphView(dataSetMaximalValues)
                 dataSets.add(dataSetMaximalValues)

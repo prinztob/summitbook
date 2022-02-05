@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.fragments
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
@@ -47,6 +48,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     private var filteredEntries: ArrayList<Summit>? = null
     private var dataSpinner: Spinner? = null
     private var selectedDataSpinner = 0
+    private var indoorHeightMeterPercent = 0
     private var xAxisSpinner: Spinner? = null
     private var selectedXAxisSpinner = 0
     private var barChartView: View? = null
@@ -57,6 +59,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     private var barChart: CustomBarChart? = null
     private lateinit var intervalHelper: IntervalHelper
     private lateinit var forecasts: ArrayList<Forecast>
+    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,6 +74,8 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         setHasOptionsMenu(true)
         sortFilterHelper.fragment = this
         forecasts = sortFilterHelper.database.forecastDao()?.allForecasts as java.util.ArrayList<Forecast>
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        indoorHeightMeterPercent = sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0
         fillDateSpinner()
         summitEntries = sortFilterHelper.entries
         intervalHelper = IntervalHelper(summitEntries)
@@ -93,7 +98,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     private fun drawChart() {
         barChart?.drawOrder = arrayOf(
-                DrawOrder.BAR, DrawOrder.BUBBLE, DrawOrder.CANDLE, DrawOrder.LINE, DrawOrder.SCATTER
+                DrawOrder.LINE, DrawOrder.BUBBLE, DrawOrder.CANDLE, DrawOrder.BAR, DrawOrder.SCATTER
         )
         barChart?.legend?.isWordWrapEnabled = true
         val combinedData = CombinedData()
@@ -145,7 +150,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
                     1 -> String.format("%s", ((value + 0.5) * IntervalHelper.kilometersStep).toInt())
                     2 -> String.format("%s", ((value + 0.5) * IntervalHelper.elevationGainStep).toInt())
                     3 -> String.format("%s", ((value + 0.5) * IntervalHelper.topElevationStep).toInt())
-                    else -> if (sortFilterHelper.selectedYear == "" || value > 12f || value == 0f) String.format("%s", value.toInt()) else String.format("%s", Month.of(value.toInt()))
+                    else -> if (sortFilterHelper.selectedYear == "" || value > 12f || value == 0f) String.format("%s", value.toInt()) else String.format("%s", Month.of(if (value <1 || value > 12) 1 else value.toInt()))
                 }
             }
         }
@@ -176,6 +181,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     private fun setGraphViewLineChart(dataSet: LineDataSet) {
         dataSet.setDrawValues(false)
         dataSet.setDrawCircles(false)
+        dataSet.isHighlightEnabled = false
         dataSet.color = Color.DKGRAY
         dataSet.circleHoleColor = Color.RED
         dataSet.highLightColor = Color.RED
@@ -184,7 +190,6 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     }
 
     private fun selectedDataSpinner() {
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         barChart?.axisLeft?.removeAllLimitLines()
         val sortedEntries = filteredEntries
         sortedEntries?.sortWith(compareBy { it.date })
@@ -392,7 +397,11 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     private fun getElevationGainsFromStream(stream: Stream<Summit?>?): Float {
         return stream
-                ?.mapToInt { obj: Summit? -> obj?.elevationData?.elevationGain ?: 0 }
+                ?.mapToInt { if (it?.sportType == SportType.IndoorTrainer) {
+                    it.elevationData.elevationGain * indoorHeightMeterPercent/100
+                } else {
+                    it?.elevationData?.elevationGain ?: 0
+                }}
                 ?.sum()?.toFloat() ?: 0.0f
     }
 

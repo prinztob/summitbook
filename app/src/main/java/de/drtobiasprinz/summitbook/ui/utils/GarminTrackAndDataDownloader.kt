@@ -61,7 +61,7 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, val garminPythonEx
             val gpsUtils = GpsUtils()
             val name = "${finalEntryLocal.getDateAsString()}_${finalEntryLocal.name.replace(" ", "_")}"
             val tracks = if (useTcx) gpsUtils.composeTcxFile(downloadedTracks as ArrayList<File>) else gpsUtils.composeGpxFile(downloadedTracks as ArrayList<File>)
-            val gpxTrackFile = fileDestination ?: finalEntryLocal.getGpsTrackPath()?.toFile()
+            val gpxTrackFile = fileDestination ?: finalEntryLocal.getGpsTrackPath().toFile()
             gpxTrackFile?.let { gpsUtils.write(fileDestination ?: it, tracks, name) }
             if (finalEntryLocal.latLng == null || finalEntryLocal.latLng?.latitude == 0.0) {
                 val points = tracks.map { it.segments.toList().blockingGet() }.flatten().map { it.points.toList().blockingGet() }.flatten()
@@ -73,6 +73,8 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, val garminPythonEx
                         }
                     }
                     finalEntryLocal.latLng = LatLng(highestTrackPoint.lat, highestTrackPoint.lon)
+                    finalEntryLocal.lat = highestTrackPoint.lat
+                    finalEntryLocal.lng = highestTrackPoint.lon
                 }
             }
             finalEntryLocal.setBoundingBoxFromTrack()

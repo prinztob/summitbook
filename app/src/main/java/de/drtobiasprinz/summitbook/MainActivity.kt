@@ -329,7 +329,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (requestCode == CREATE_ZIP_FILE_FILTERED_SUMMITS && resultCode == Activity.RESULT_OK) {
             val progressBarZip = findViewById<ProgressBar>(R.id.progressBarZip)
             progressBarZip.visibility = View.VISIBLE
-            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.filteredEntries, resultData)
+            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.filteredEntries, resultData).execute()
         }
         if (requestCode == SelectOnOsMapActivity.PICK_GPX_FILE && resultCode == Activity.RESULT_OK) {
             BookmarkViewFragment.adapter?.onActivityResult(requestCode, resultCode, resultData)

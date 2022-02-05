@@ -54,7 +54,7 @@ class SummitEntryTrackFragment : Fragment() {
     private lateinit var metrics: DisplayMetrics
     private var marker: Marker? = null
     private var database: AppDatabase? = null
-    private var selectedCustomizeTrackItem = 0
+    private var selectedCustomizeTrackItem = 2
     private var trackSlopeGraph: MutableList<Entry> = mutableListOf()
     private var trackSlopeGraphBinSize: Double = 100.0
     private var gpsTrack: GpsTrack? = null
