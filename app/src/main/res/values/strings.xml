@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Summit Book</string>
+    <string name="required">required</string>
+    <string name="optional">optional</string>
     <string name="user_name">spot@prinz.de</string>
     <string name="nav_summits">Summits</string>
     <string name="nav_statistics">Statistics</string>
@@ -22,11 +24,14 @@
     <string name="saveButtonText">Save</string>
     <string name="cancelButtonText">Cancel</string>
     <string name="updateButtonText">Update</string>
+    <string name="place">Places visited</string>
     <string name="place_hint">Places visited on the way to Summit</string>
     <string name="country_hint">country</string>
     <string name="comment_hint">comment, e.g. other places visited in trip, people joined, etc.</string>
     <string name="kilometers_hint">Distance</string>
-    <string name="pace_hint">Average moving speed</string>
+    <string name="latitude">Latitude</string>
+    <string name="longitude">Longitude</string>
+    <string name="pace_hint">Average speed</string>
     <string name="top_speed_hint">Max speed</string>
     <string name="top_speed_1km_hint">Max speed 1 km</string>
     <string name="top_speed_5km_hint">Max speed 5 km</string>
@@ -49,6 +54,7 @@
     <string name="total_kilometers">Total kilometers</string>
     <string name="total_summits">Total summits</string>
     <string name="achievement">Achievement in selected year</string>
+    <string name="sport_type">sport type</string>
     <string name="sport_type_image">sport type image</string>
     <string name="delete_icon">delete icon</string>
     <string name="edit_icon">edit icon</string>
@@ -207,6 +213,10 @@
     <string name="minimal_delta_for_elevation_gain">Enter the minimal delta in meters which is used for calculating the climbed height meters. A difference in height meters below this threshold will be ignored.</string>
     <string name="use_simplified_tracks_title">Use simplified tracks</string>
     <string name="use_simplified_tracks">Use simplified tracks to reduce the loading time of gps tracks.</string>
+    <string name="export_third_party_data_title">Export third party data.</string>
+    <string name="export_third_party_data">Export data to csv from added third party data.</string>
+    <string name="export_calculated_data_title">Export calculated data.</string>
+    <string name="export_calculated_data">Export calculated data to csv which were determined from track.</string>
     <string name="tcx_switch">Turn this option to download tcx instead of gpx files</string>
     <string name="tcx_switch_title">Download tcx instead of gpx</string>
     <string name="current_year_summary">Turn this option to change the default behaviour at startup</string>

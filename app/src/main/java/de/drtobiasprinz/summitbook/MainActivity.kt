@@ -7,7 +7,9 @@ import android.app.SearchManager
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.content.res.Resources
 import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
@@ -58,10 +60,12 @@ import kotlin.math.round
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
     private var imagePathsOfAllImages: List<String>? = listOf()
     private lateinit var database: AppDatabase
+    private lateinit var sharedPreferences: SharedPreferences
     lateinit var summitViewFragment: SummitViewFragment
     private var searchView: SearchView? = null
     private lateinit var sortFilterHelper: SortFilterHelper
     private var pythonExecutor: GarminPythonExecutor? = null
+
     private var entriesToExcludeForBoundingboxCalculation: MutableList<Summit> = mutableListOf()
 
     private var isDialogShown = false
@@ -77,7 +81,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val entries = database.summitDao()?.allSummit
         val viewedFragment: Fragment? = supportFragmentManager.findFragmentById(R.id.content_frame)
         verifyStoragePermissions(this)
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         val username = sharedPreferences.getString("garmin_username", null) ?: ""
         val password = sharedPreferences.getString("garmin_password", null) ?: ""
         if (username != "" && password != "") {
@@ -314,6 +318,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
         super.onActivityResult(requestCode, resultCode, resultData)
+        val exportThirdPartyData = sharedPreferences.getBoolean("export_third_party_data", true)
+        val exportCalculatedData = sharedPreferences.getBoolean("export_calculated_data", true)
         if (requestCode == PICK_ZIP_FILE && resultCode == Activity.RESULT_OK) {
             resultData?.data?.also { uri ->
                 val progressBarZip = findViewById<ProgressBar>(R.id.progressBarZip)
@@ -324,12 +330,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (requestCode == CREATE_ZIP_FILE_ALL_SUMMITS && resultCode == Activity.RESULT_OK) {
             val progressBarZip = findViewById<ProgressBar>(R.id.progressBarZip)
             progressBarZip.visibility = View.VISIBLE
-            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.entries, resultData).execute()
+            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.entries, resultData, exportThirdPartyData, exportCalculatedData).execute()
         }
         if (requestCode == CREATE_ZIP_FILE_FILTERED_SUMMITS && resultCode == Activity.RESULT_OK) {
             val progressBarZip = findViewById<ProgressBar>(R.id.progressBarZip)
             progressBarZip.visibility = View.VISIBLE
-            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.filteredEntries, resultData).execute()
+            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.filteredEntries, resultData, exportThirdPartyData, exportCalculatedData).execute()
         }
         if (requestCode == SelectOnOsMapActivity.PICK_GPX_FILE && resultCode == Activity.RESULT_OK) {
             BookmarkViewFragment.adapter?.onActivityResult(requestCode, resultCode, resultData)
@@ -526,13 +532,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
         @SuppressLint("StaticFieldLeak")
-        class AsyncExportZipFile(val context: Context, val progressBar: ProgressBar, val entries: List<Summit>, val resultData: Intent?) : AsyncTask<Uri, Int?, Void?>() {
+        class AsyncExportZipFile(val context: Context, private val progressBar: ProgressBar,
+                                 val entries: List<Summit>, private val resultData: Intent?,
+                                 private val exportThirdPartyData: Boolean = true,
+                                 private val exportCalculatedData: Boolean = true) : AsyncTask<Uri, Int?, Void?>() {
             var entryNumber = 0
             var withImages = 0
             var withGpsFile = 0
 
             override fun doInBackground(vararg uri: Uri): Void? {
-                writeToZipFile(entries, resultData)
+                writeToZipFile(entries, resultData, context.resources, exportThirdPartyData, exportCalculatedData)
                 return null
             }
 
@@ -555,12 +564,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         .show()
             }
 
-            private fun writeToZipFile(entries: List<Summit>, resultData: Intent?) {
+            private fun writeToZipFile(entries: List<Summit>, resultData: Intent?,
+                                       resources: Resources, exportThirdPartyData: Boolean,
+                                       exportCalculatedData: Boolean) {
                 val sb = StringBuilder()
 
-                sb.append(Summit.getCsvHeadline())
+                sb.append(Summit.getCsvHeadline(resources, exportThirdPartyData))
+                sb.append(Summit.getCsvDescription(resources, exportThirdPartyData))
                 for (entry in entries) {
-                    sb.append(entry.toString())
+                    sb.append(entry.getStringRepresentation(exportThirdPartyData, exportCalculatedData))
                 }
                 val dir = cache
                 if (dir != null) {

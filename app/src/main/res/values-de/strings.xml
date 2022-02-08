@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Gipfelbuch</string>
+    <string name="required">Erforderlich</string>
+    <string name="optional">Optional</string>
     <string name="user_name">spot@prinz.de</string>
     <string name="nav_summits">Gipfel</string>
     <string name="nav_statistics">Statistik</string>
@@ -23,10 +25,13 @@
     <string name="saveButtonText">Speichern</string>
     <string name="cancelButtonText">Abbrechen</string>
     <string name="updateButtonText">Aktualisieren</string>
+    <string name="place">Stationene</string>
     <string name="place_hint">Besuchte Orte</string>
     <string name="country_hint">Land</string>
     <string name="comment_hint">Kommentare</string>
     <string name="kilometers_hint">Entfernung</string>
+    <string name="latitude">Latitude</string>
+    <string name="longitude">Longitude</string>
     <string name="pace_hint">Durchschn. Geschw.</string>
     <string name="top_speed_hint">Max. Geschw.</string>
     <string name="top_speed_1km_hint">Max. Geschw. 1 km</string>
@@ -51,6 +56,7 @@
     <string name="total_summits">Anzahl Gipfel</string>
     <string name="achievement">Zielerreichung im gewählten Jahr</string>
     <string name="sport_type_image">Sportart Bild</string>
+    <string name="sport_type">Sportart</string>
     <string name="delete_icon">Löschicon</string>
     <string name="edit_icon">Modifiziere Icon</string>
     <string name="edit">Modifiziere</string>
@@ -212,6 +218,10 @@ von
     <string name="minimal_delta_for_elevation_gain">Füge das minimale Delta ein mit dem die zurückgelegten Höhenmeter bestimmt werden. Schwankungen in der Höhe kleiner dieses Delta werden ignoriert.</string>
     <string name="use_simplified_tracks_title">Verwende vereinfachte Tracks</string>
     <string name="use_simplified_tracks">Verwende vereinfachte Tracks um die ladezeit von GPX tracks zu verkürzen.</string>
+    <string name="export_third_party_data_title">Exportiere Third Party Daten.</string>
+    <string name="export_third_party_data">Exportiere Daten von Third Party in die CSV Datei.</string>
+    <string name="export_calculated_data_title">Exportiere berechnete Daten.</string>
+    <string name="export_calculated_data">Exportiere vom GPS Track berechnete Daten in die CSV Datei.</string>
     <string name="tcx_switch">Aktiviere diese Option um tcx Datein anstatt gpx herunterzuladen</string>
     <string name="tcx_switch_title">Lade tcx anstatt gpx herunter</string>
     <string name="current_year_summary">Aktiviere diese Option um das Standardverhalten nach dem Starten zu verändern</string>

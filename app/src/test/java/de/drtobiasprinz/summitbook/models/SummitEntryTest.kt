@@ -9,6 +9,7 @@ class SummitTest {
     companion object {
         private var entry1 = Summit(Summit.parseDate("2019-11-13"), "summit1", SportType.Bicycle, listOf("place1"), listOf("country1"), "comment1", ElevationData.Companion.parse(11, 1), 1.1, VelocityData.Companion.parse(1.2, 1.3),  0.0,0.0,mutableListOf("participant1"), false, mutableListOf(), null, null)
         private var entry2 = Summit(Summit.parseDate("2018-11-18"), "summit2", SportType.Bicycle, listOf("place2"), listOf("country2"), "comment2", ElevationData.Companion.parse(22, 2), 2.1, VelocityData.Companion.parse(2.2, 2.3),  0.0,0.0,mutableListOf("participant1"), false, mutableListOf(), null, null)
+        private var entryNewFormat = Summit(Summit.parseDate("2019-10-18"), "summitNewFormat", SportType.IndoorTrainer, listOf("placeNewFormat"), listOf("countryNewFormat"), "commentNewFormat", ElevationData.Companion.parse(569, 62), 11.73, VelocityData.Companion.parse(12.6, 24.3),  48.05205764248967, 11.60579879768192,mutableListOf(), false, mutableListOf(), null, null)
         private var entryNotInList = Summit(Summit.parseDate("2019-10-18"), "summit3", SportType.Bicycle, listOf("place3"), listOf("country3"), "comment3", ElevationData.Companion.parse(33, 3), 3.1, VelocityData.Companion.parse(3.2, 3.3),  0.0,0.0,mutableListOf("participant1"), false, mutableListOf(), null, null)
         private var summitEntries: ArrayList<Summit>? = ArrayList()
         init {
@@ -24,6 +25,8 @@ class SummitTest {
     @Test
     @Throws(Exception::class)
     fun parseFromCsvFileLine() {
+        val newFormatLineToParse = "2019-10-18;summitNewFormat;IndoorTrainer;placeNewFormat;countryNewFormat;commentNewFormat;62;11.73;12.6;24.3;569;48.05205764248967;11.60579879768192;;;0"
+        Assert.assertEquals(Summit.parseFromCsvFileLine(newFormatLineToParse), entryNewFormat)
         val lineToParse = "2019-11-13;summit1;Bicycle;place1;country1;comment1;1;1.1;1.2;1.3;11;;;participant1;;;;;;;;;;;;;;;;0\n"
         Assert.assertEquals(Summit.parseFromCsvFileLine(lineToParse), entry1)
         Assert.assertNotEquals(Summit.parseFromCsvFileLine(lineToParse), entry2)

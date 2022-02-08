@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.models
 
 import android.content.Context
+import android.content.res.Resources
 import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.Ignore
@@ -168,6 +169,10 @@ class Summit(
     }
 
     override fun toString(): String {
+        return getStringRepresentation()
+    }
+
+    fun getStringRepresentation(exportThirdPartyData: Boolean = true, exportCalculatedData: Boolean = true): String {
         val lat = latLng?.latitude?.toString() ?: ""
         val lng = latLng?.longitude?.toString() ?: ""
         var entryToString = getDateAsString() + ';' +
@@ -176,21 +181,22 @@ class Summit(
                 places.joinToString(",") + ';' +
                 countries.joinToString(",") + ';' +
                 comments + ';' +
-                elevationData.toString() + ';' +
+                (if (exportCalculatedData) elevationData.toString() else elevationData.elevationGain) + ';' +
                 kilometers + ';' +
-                velocityData.toString() + ';' +
+                (if (exportCalculatedData) velocityData.toString() else velocityData.avgVelocity) + ';' +
                 velocityData.maxVelocity + ';' +
                 elevationData.maxElevation + ';' +
                 lat + ';' +
                 lng + ';' +
                 participants.joinToString(",") + ';' +
                 activityId + ';'
-        entryToString += if (garminData != null) {
+        entryToString += if (exportThirdPartyData && garminData != null) {
             garminData.toString()
         } else {
-            ";;;;;;;;;;;"
+            GarminData.emptyLine(exportThirdPartyData)
         }
-        entryToString += ";" + if (isFavorite) "1\n" else "0\n"
+        entryToString += if (exportThirdPartyData) ";" else ""
+        entryToString += if (isFavorite) "1\n" else "0\n"
         return entryToString
     }
 
@@ -290,7 +296,8 @@ class Summit(
         const val DATE_FORMAT: String = "yyyy-MM-dd"
         const val DATETIME_FORMAT: String = "yyyy-MM-dd HH:mm:ss"
         const val CONNECTED_ACTIVITY_PREFIX: String = "ac_id:"
-        private const val NUMBER_OF_ELEMENTS = 28
+        private const val NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY = 28
+        private const val NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY = 16
         private const val REFERENCE_VALUE_DATE = 946681200000f
         var subDirForGpsTracks: String = "summitbook_tracks"
         var subDirForImages: String = "summitbook_images"
@@ -313,9 +320,9 @@ class Summit(
             val places = splitLine[4].split(",")
             val participants = splitLine[13].split(",")
             val activityId = if (splitLine[14].trim { it <= ' ' } != "") splitLine[14].toLong() else System.currentTimeMillis()
-            val garminData = if (splitLine[15].trim { it <= ' ' } != "") getGarminData(splitLine) else null
+            val garminData = getGarminData(splitLine)
             val latLng = if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") splitLine[11].toDouble().let { LatLng(it, splitLine[12].toDouble()) } else null
-            val isFavorite = if (splitLine.size == NUMBER_OF_ELEMENTS) splitLine[27] else splitLine[29]
+            val isFavorite = if (splitLine.size == NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY) splitLine[27] else (if (splitLine.size == NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY) splitLine[15] else splitLine[29])
             return Summit(
                     date,
                     splitLine[1],
@@ -336,31 +343,36 @@ class Summit(
             )
         }
 
-        private fun getGarminData(splitLine: Array<String>): GarminData {
-            if (splitLine.size == 30) {
-                return GarminData(splitLine[15].split(",") as MutableList<String>,
-                        splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
-                        PowerData(splitLine[19].toFloat(), splitLine[20].toFloat(), splitLine[21].toFloat(),
-                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                splitLine[22].toInt(), 0, splitLine[23].toInt(), 0, 0),
-                        0, 0,
-                        splitLine[24].toFloat(), splitLine[25].toFloat(),
-                        splitLine[26].toFloat(), splitLine[27].toFloat(), splitLine[28].toFloat())
+        private fun getGarminData(splitLine: Array<String>): GarminData? {
+            if (splitLine.size == NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY || splitLine[15].trim { it <= ' ' } == "") {
+                return null
             } else {
-                return GarminData(splitLine[15].split(",") as MutableList<String>,
-                        splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
-                        PowerData.parse(splitLine[19].split(",")),
-                        splitLine[20].toInt(), splitLine[21].toInt(),
-                        splitLine[22].toFloat(), splitLine[23].toFloat(),
-                        splitLine[24].toFloat(), splitLine[25].toFloat(), splitLine[26].toFloat())
+                if (splitLine.size == 30) {
+                    return GarminData(splitLine[15].split(",") as MutableList<String>,
+                            splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
+                            PowerData(splitLine[19].toFloat(), splitLine[20].toFloat(), splitLine[21].toFloat(),
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                    splitLine[22].toInt(), 0, splitLine[23].toInt(), 0, 0),
+                            0, 0,
+                            splitLine[24].toFloat(), splitLine[25].toFloat(),
+                            splitLine[26].toFloat(), splitLine[27].toFloat(), splitLine[28].toFloat())
+                } else {
+                    return GarminData(splitLine[15].split(",") as MutableList<String>,
+                            splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
+                            PowerData.parse(splitLine[19].split(",")),
+                            splitLine[20].toInt(), splitLine[21].toInt(),
+                            splitLine[22].toFloat(), splitLine[23].toFloat(),
+                            splitLine[24].toFloat(), splitLine[25].toFloat(), splitLine[26].toFloat())
+                }
             }
         }
 
         @Throws(Exception::class)
         private fun checkValidNumberOfElements(splitLine: Array<String>) {
-            if (splitLine.size != NUMBER_OF_ELEMENTS && splitLine.size != 30) {
-                throw Exception("Line " + splitLine.contentToString() + " has " + splitLine.size +
-                        " number of elements. Expected are " + NUMBER_OF_ELEMENTS)
+            if (splitLine.size != NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY && splitLine.size != 30 && splitLine.size != NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY) {
+                throw Exception("Line ${splitLine.contentToString()} has ${splitLine.size} number " +
+                        "of elements. Expected are $NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY or if no " +
+                        "third party data was added $NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY")
             }
         }
 
@@ -405,8 +417,44 @@ class Summit(
             return Date((dateAsFloat * 1e8 + REFERENCE_VALUE_DATE).toLong())
         }
 
-        fun getCsvHeadline(): String {
-            return "Date; Name; SportType; place; country; comments; hm; km; pace; topSpeed; topElevation; lat; lng; participants; activityId; garminid; calories; averageHR; maxHR; powerData; FTP; VO2MAX; aerobicTrainingEffect; anaerobicTrainingEffect; grit; flow; trainingsload; isFavorite".trimIndent() + "\n"
+        fun getCsvHeadline(resources: Resources, withThirdPartyData: Boolean = true): String {
+            return ("${resources.getString(R.string.tour_date)}; " +
+                    "${resources.getString(R.string.name)}; " +
+                    "${resources.getString(R.string.sport_type)}; " +
+                    "${resources.getString(R.string.place_hint)}; " +
+                    "${resources.getString(R.string.country_hint)}; " +
+                    "${resources.getString(R.string.comment_hint)}; " +
+                    "${resources.getString(R.string.height_meter)}; " +
+                    "${resources.getString(R.string.kilometers_hint)} (${resources.getString(R.string.km)}); " +
+                    "${resources.getString(R.string.pace_hint)} (${resources.getString(R.string.kmh)}); " +
+                    "${resources.getString(R.string.top_speed)} (${resources.getString(R.string.kmh)}); " +
+                    "${resources.getString(R.string.top_elevation_hint)} (${resources.getString(R.string.hm)}); " +
+                    "${resources.getString(R.string.latitude)}; " +
+                    "${resources.getString(R.string.longitude)}; " +
+                    "${resources.getString(R.string.participants)}; " +
+                    "activityId; " +
+                    (if (withThirdPartyData) GarminData.getCsvHeadline(resources) else "") +
+                    "isFavorite").trimIndent() + "\n"
+        }
+
+        fun getCsvDescription(resources: Resources, withThirdPartyData: Boolean = true): String {
+            return ("${resources.getString(R.string.required)}; " +
+                    "${resources.getString(R.string.required)}; " +
+                    "${resources.getString(R.string.required)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.required)}; " +
+                    "${resources.getString(R.string.required)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    (if (withThirdPartyData) GarminData.getCsvDescription(resources) else "") +
+                    "${resources.getString(R.string.required)}; ").trimIndent() + "\n"
         }
 
     }

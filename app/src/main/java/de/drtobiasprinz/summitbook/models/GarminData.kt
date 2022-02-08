@@ -1,7 +1,9 @@
 package de.drtobiasprinz.summitbook.models
 
+import android.content.res.Resources
 import androidx.room.Embedded
 import androidx.room.Ignore
+import de.drtobiasprinz.summitbook.R
 import java.util.*
 
 class GarminData(
@@ -12,8 +14,10 @@ class GarminData(
 
     @Ignore
     val activityId = activityIds.first()
+
     @Ignore
     val url = "https://connect.garmin.com/modern/activity/$activityId"
+
     @Ignore
     var duration = 0.0
 
@@ -41,5 +45,45 @@ class GarminData(
 
     override fun hashCode(): Int {
         return Objects.hash(activityIds)
+    }
+
+    companion object {
+        fun getCsvHeadline(resources: Resources): String {
+            return "garminid; " +
+                    "${resources.getString(R.string.calories)}; " +
+                    "${resources.getString(R.string.average_hr)} (${resources.getString(R.string.bpm)}); " +
+                    "${resources.getString(R.string.max_hr)} (${resources.getString(R.string.bpm)}); " +
+                    "powerData (W/1s - W/5h); " +
+                    "FTP; " +
+                    "VO2MAX; " +
+                    "aerobicTrainingEffect; " +
+                    "anaerobicTrainingEffect; " +
+                    "grit; " +
+                    "flow; " +
+                    "trainingsload; "
+        }
+
+        fun getCsvDescription(resources: Resources): String {
+            return "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; "
+        }
+
+        fun emptyLine(exportThirdPartyData: Boolean = true): String {
+            if (exportThirdPartyData) {
+                return ";;;;;;;;;;;"
+            } else {
+                return ""
+            }
+        }
     }
 }
