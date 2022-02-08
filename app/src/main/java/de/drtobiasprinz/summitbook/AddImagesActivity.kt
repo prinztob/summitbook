@@ -2,6 +2,8 @@ package de.drtobiasprinz.summitbook
 
 import android.app.Activity
 import android.content.DialogInterface
+import android.net.Uri
+import android.os.AsyncTask
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -115,6 +117,7 @@ class AddImagesActivity : AppCompatActivity() {
         removeButton.id = View.generateViewId()
         removeButton.setImageResource(R.drawable.ic_delete_black_24dp)
         removeButton.setOnClickListener { v: View ->
+            AsyncClearCache(Glide.get(applicationContext)).execute()
             AlertDialog.Builder(v.context)
                     .setTitle(getString(R.string.delete_image))
                     .setMessage(getString(R.string.delete_image_text))
@@ -215,7 +218,13 @@ class AddImagesActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "SummitAddImagesActivity"
-    }
 
+        internal class AsyncClearCache(private val glide: Glide) : AsyncTask<Uri, Int?, Void?>() {
+            override fun doInBackground(vararg p0: Uri?): Void? {
+                glide.clearDiskCache()
+                return null
+            }
+        }
+    }
 
 }

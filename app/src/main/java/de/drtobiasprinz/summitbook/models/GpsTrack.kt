@@ -55,7 +55,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     var startColor: Int = Color.BLUE
     var endColor: Int = Color.RED
 
-    fun addGpsTrack(mMapView: MapView?, selectedCustomizeTrackItem: Int = 0, color: Int = COLOR_POLYLINE_STATIC, rootView: View? = null) {
+    fun addGpsTrack(mMapView: MapView?, selectedCustomizeTrackItem: TrackColor = TrackColor.None, color: Int = COLOR_POLYLINE_STATIC, rootView: View? = null) {
         osMapRoute = Polyline(mMapView)
         osMapRoute?.setOnClickListener { _, _, eventPos ->
             if (rootView != null) {
@@ -63,16 +63,10 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                 textView.visibility = View.VISIBLE
                 val trackPoint = usedTrackPoints.minByOrNull { getDistance(it, TrackPoint(eventPos.latitude, eventPos.longitude)) }
                 if (trackPoint != null && (minForColorCoding != 0f || maxForColorCoding != 0f)) {
-                    when (selectedCustomizeTrackItem) {
-                        1 -> setTextForDouble(trackPoint, textView, "km", rootView.context) { e -> e.extension?.distance }
-                        2 -> setTextForDouble(trackPoint, textView, "hm", rootView.context, 0) { e -> e.ele }
-                        3 -> setTextForInt(trackPoint, textView, "", rootView.context) { e -> e.extension?.cadence }
-                        4 -> setTextForInt(trackPoint, textView, "bpm", rootView.context) { e -> e.extension?.heartRate }
-                        5 -> setTextForInt(trackPoint, textView, "W", rootView.context) { e -> e.extension?.power }
-                        6 -> setTextForDouble(trackPoint, textView, "kmh", rootView.context) { e -> e.extension?.speed }
-                        7 -> setTextForDouble(trackPoint, textView, "%", rootView.context) { e -> e.extension?.slope }
-                        8 -> setTextForDouble(trackPoint, textView, "m/s", rootView.context, 2) { e -> e.extension?.verticalVelocity }
-                        else -> textView.visibility = View.GONE
+                    if (selectedCustomizeTrackItem == TrackColor.None) {
+                        textView.visibility = View.GONE
+                    } else {
+                        setTextForDouble(trackPoint, textView, selectedCustomizeTrackItem.unit, rootView.context, selectedCustomizeTrackItem.digits, selectedCustomizeTrackItem.f)
                     }
                 } else {
                     textView.visibility = View.GONE
@@ -87,7 +81,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         paintBorder.strokeWidth = 20F
         val summitSlope = SummitSlope(trackPoints)
         when (selectedCustomizeTrackItem) {
-            1 -> {
+            TrackColor.Mileage -> {
                 setUsedPoints()
                 val managers: MutableList<MilestoneManager> = ArrayList()
                 val slicerForPath = MilestoneMeterDistanceSliceLister()
@@ -96,69 +90,31 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                 managers.add(getKilometerManager())
                 osMapRoute?.setMilestoneManagers(managers)
             }
-            2 -> {
-                setUsedPoints()
-                addColorToTrack(paintBorder) { e ->
-                    e.ele ?: 0.0
-                }
+            TrackColor.Elevation -> {
+                setUsedPoints(selectedCustomizeTrackItem.f)
+                addColorToTrack(paintBorder, selectedCustomizeTrackItem.f)
             }
-            3 -> {
-                setUsedPoints { e ->
-                    e.extension?.cadence?.toDouble() ?: 0.0
-                }
-                addColorToTrack(paintBorder) { e ->
-                    e.extension?.cadence?.toDouble() ?: 0.0
-                }
-            }
-            4 -> {
-                setUsedPoints { e ->
-                    e.extension?.heartRate?.toDouble() ?: 0.0
-                }
-                addColorToTrack(paintBorder) { e ->
-                    e.extension?.heartRate?.toDouble() ?: 0.0
-                }
-            }
-            5 -> {
-                setUsedPoints { e ->
-                    e.extension?.power?.toDouble() ?: 0.0
-                }
-                addColorToTrack(paintBorder) { e ->
-                    e.extension?.power?.toDouble() ?: 0.0
-                }
-            }
-            6 -> {
-                setUsedPoints { e ->
-                    e.extension?.speed ?: 0.0
-                }
-                addColorToTrack(paintBorder) { e ->
-                    e.extension?.speed ?: 0.0
-                }
-            }
-            7 -> {
+            TrackColor.Slope -> {
                 if (trackPoints.none { it.extension?.slope != null }) {
                     summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0, factor = 100)
                 }
-                setUsedPoints { e ->
-                    e.extension?.slope ?: 0.0
-                }
-                addColorToTrack(paintBorder) { e ->
-                    e.extension?.slope ?: 0.0
-                }
+                setUsedPoints(selectedCustomizeTrackItem.f)
+                addColorToTrack(paintBorder, selectedCustomizeTrackItem.f)
             }
-            8 -> {
+            TrackColor.VerticalSpeed -> {
                 if (trackPoints.none { it.extension?.verticalVelocity != null }) {
                     summitSlope.calculateMaxVerticalVelocity()
                 }
-                setUsedPoints { e ->
-                    e.extension?.verticalVelocity ?: 0.0
-                }
-                addColorToTrack(paintBorder) { e ->
-                    e.extension?.verticalVelocity ?: 0.0
-                }
+                setUsedPoints(selectedCustomizeTrackItem.f)
+                addColorToTrack(paintBorder, selectedCustomizeTrackItem.f)
             }
-            else -> {
+            TrackColor.None -> {
                 setUsedPoints()
                 Log.i(TAG, "Nothing to do, selectedCustomizeTrackItem is set to 0")
+            }
+            else -> {
+                setUsedPoints(selectedCustomizeTrackItem.f)
+                addColorToTrack(paintBorder, selectedCustomizeTrackItem.f)
             }
         }
         osMapRoute?.setPoints(usedTrackGeoPoints)
@@ -166,7 +122,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         isShownOnMap = true
     }
 
-    private fun setUsedPoints(f: (TrackPoint) -> Double) {
+    private fun setUsedPoints(f: (TrackPoint) -> Double?) {
         usedTrackPoints = trackPoints.filter { f(it) != 0.0 } as MutableList<TrackPoint>
         usedTrackGeoPoints = usedTrackPoints.map { GeoPoint(it.lat, it.lon) } as MutableList<GeoPoint>
     }
@@ -195,7 +151,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         if (value != null) {
             textView.text = "${f(trackPoint)} ${unit}"
             val fraction = (value - minForColorCoding) / (maxForColorCoding - minForColorCoding)
-            val rectangle = BitmapDrawable(context.resources, drawRectangle(interpolateColor(startColor, endColor, fraction.toFloat())))
+            val rectangle = BitmapDrawable(context.resources, drawRectangle(interpolateColor(startColor, endColor, fraction)))
             textView.setCompoundDrawablesRelativeWithIntrinsicBounds(rectangle, null, null, null)
         } else {
             textView.visibility = View.GONE
@@ -220,9 +176,10 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         return bitmap
     }
 
-    private fun addColorToTrack(paintBorder: Paint, f: (TrackPoint) -> Double) {
-        minForColorCoding = (usedTrackPoints.minByOrNull { f(it) }?.let { f(it) } ?: 0.0).toFloat()
-        maxForColorCoding = (usedTrackPoints.maxByOrNull { f(it) }?.let { f(it) } ?: 0.0).toFloat()
+    private fun addColorToTrack(paintBorder: Paint, f: (TrackPoint) -> Double?) {
+        val values = usedTrackPoints.map(f).filterNotNull()
+        minForColorCoding = (values.minOrNull() ?: 0.0).toFloat()
+        maxForColorCoding = (values.maxOrNull() ?: 0.0).toFloat()
         val pointsExists = usedTrackPoints.any { f(it) != 0.0 }
         if (pointsExists) {
             val attributeColorList = AttitudeColorList(usedTrackPoints, minForColorCoding, maxForColorCoding, startColor, endColor, f)
@@ -328,14 +285,14 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
 
-    fun getTrackGraph(f: (TrackPoint) -> Float?): MutableList<Entry> {
+    fun getTrackGraph(f: (TrackPoint) -> Double?): MutableList<Entry> {
         if (trackPoints.isNotEmpty()) {
             if (trackPoints.first().extension?.distance == null) {
                 setDistance()
             }
             val graph = mutableListOf<Entry>()
             for (trackPoint in trackPoints) {
-                val value = f(trackPoint)
+                val value = f(trackPoint)?.toFloat()
                 val distance = trackPoint.extension?.distance?.toFloat()
                 if (value != null && distance != null) {
                     graph.add(Entry(distance, value, trackPoint))
@@ -447,6 +404,8 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                 e.printStackTrace()
             } catch (e: XmlPullParserException) {
                 e.printStackTrace()
+            } catch (e: ArrayIndexOutOfBoundsException) {
+                e.printStackTrace()
             }
             return null
         }
@@ -493,11 +452,11 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
 
-    internal class AttitudeColorList(val points: List<TrackPoint>, val trackMin: Float, val trackMax: Float, val startColor: Int, val endColor: Int, val f: (TrackPoint) -> Double) : ColorMapping {
+    internal class AttitudeColorList(val points: List<TrackPoint>, val trackMin: Float, val trackMax: Float, val startColor: Int, val endColor: Int, val f: (TrackPoint) -> Double?) : ColorMapping {
         override fun getColorForIndex(pSegmentIndex: Int): Int {
             return if (pSegmentIndex < points.size) {
                 val value = f(points[pSegmentIndex])
-                val fraction = (value - trackMin) / (trackMax - trackMin)
+                val fraction = ((value ?: 0.0) - trackMin) / (trackMax - trackMin)
                 interpolateColor(startColor, endColor, fraction.toFloat())
             } else {
                 Color.BLACK

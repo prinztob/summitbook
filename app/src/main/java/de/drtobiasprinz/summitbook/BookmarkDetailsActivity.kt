@@ -15,6 +15,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.content.FileProvider
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.Bookmark
+import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowSrolling
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
@@ -96,7 +97,7 @@ class BookmarkDetailsActivity : AppCompatActivity() {
                     showMilageButton.setImageResource(R.drawable.moreinfo_arrow_pressed)
                 }
                 osMap.overlays?.clear()
-                bookmark?.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, true, if (isMilageButtonShown) 1 else 0) }
+                bookmark?.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, true, if (isMilageButtonShown) TrackColor.Mileage else TrackColor.None) }
             }
             val shareButton = findViewById<ImageButton>(R.id.gps_share)
             shareButton.setOnClickListener { _: View? ->
@@ -133,7 +134,7 @@ class BookmarkDetailsActivity : AppCompatActivity() {
         val params = osMap.layoutParams
         params?.height = (metrics.heightPixels * 0.5).toInt()
         osMap.layoutParams = params
-        bookmark?.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, false, if (isMilageButtonShown) 1 else 0) }
+        bookmark?.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, false, if (isMilageButtonShown) TrackColor.Mileage else TrackColor.None) }
     }
 
     private fun setText(text: String, info: TextView, textView: TextView) {

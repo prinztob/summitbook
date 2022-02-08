@@ -340,5 +340,12 @@
     <string name="current_year">Current year</string>
     <string name="customize_track_color">Customize Track color</string>
     <string name="track_color">Track Color</string>
+    <string name="none">None</string>
+    <string name="mileage">Mileage</string>
+    <string name="speed">Speed</string>
+    <string name="slope">Slope (50m)</string>
+    <string name="vertical_speed">Vertical Speed (1min)</string>
+    <string name="masl">m.a.s.l.</string>
+    <string name="show_all">Show all</string>
 
 </resources>

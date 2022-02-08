@@ -24,6 +24,7 @@ import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.adapte
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.summitRecycler
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addTrackAndMarker
@@ -91,7 +92,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
             Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
             val entry = summitEntry
             if (entry != null) {
-                addTrackAndMarker(entry, localOsMap, this, false, 0, alwaysShowTrackOnMap = false)
+                addTrackAndMarker(entry, localOsMap, this, false, TrackColor.None, alwaysShowTrackOnMap = false)
                 entry.trackBoundingBox?.let { drawBoundingBox(osMap, it) }
             }
             addDefaultSettings(this, localOsMap, this)
@@ -127,6 +128,8 @@ class SelectOnOsMapActivity : FragmentActivity() {
             val position = latLngSelectedPosition
             if (entry != null) {
                 if (position != null) {
+                    entry.lat = position.latitude
+                    entry.lng = position.longitude
                     database?.summitDao()?.updateLat(entry.id, position.latitude)
                     database?.summitDao()?.updateLng(entry.id, position.longitude)
                     entry.latLng = latLngSelectedPosition
@@ -138,9 +141,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                 if (localSelectedPath != null) {
                     val fileDest = entry.getGpsTrackPath()
                     try {
-                        if (fileDest != null) {
-                            Files.copy(localSelectedPath, fileDest, StandardCopyOption.REPLACE_EXISTING)
-                        }
+                        Files.copy(localSelectedPath, fileDest, StandardCopyOption.REPLACE_EXISTING)
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
@@ -178,7 +179,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                             selectedGpsPath = null
                             if (entry.hasGpsTrack()) {
                                 val gpsTrackPath = entry.getGpsTrackPath()
-                                gpsTrackPath?.toFile()?.delete()
+                                gpsTrackPath.toFile()?.delete()
                             }
                             entry.latLng = LatLng(0.0, 0.0)
 
@@ -299,7 +300,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
         if (entry != null) {
             val geoPointSelectedPosition = GeoPoint(point.latitude, point.longitude)
             addMarker(osMap, this, geoPointSelectedPosition, entry)
-            gpsTrack.addGpsTrack(osMap, 0)
+            gpsTrack.addGpsTrack(osMap, TrackColor.None)
             if (!wasBoundingBoxCalculated) {
                 calculateBoundingBox(osMap, gpsTrack, geoPointSelectedPosition)
                 wasBoundingBoxCalculated = true

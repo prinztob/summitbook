@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
-import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.github.mikephil.charting.charts.LineChart
@@ -34,6 +33,7 @@ import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowSrolling
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
@@ -54,7 +54,7 @@ class SummitEntryTrackFragment : Fragment() {
     private lateinit var metrics: DisplayMetrics
     private var marker: Marker? = null
     private var database: AppDatabase? = null
-    private var selectedCustomizeTrackItem = 2
+    private var selectedCustomizeTrackItem = TrackColor.Elevation
     private var trackSlopeGraph: MutableList<Entry> = mutableListOf()
     private var trackSlopeGraphBinSize: Double = 100.0
     private var gpsTrack: GpsTrack? = null
@@ -161,38 +161,9 @@ class SummitEntryTrackFragment : Fragment() {
                 params.height = (metrics.heightPixels * 0.3).toInt()
                 lineChart.layoutParams = params
                 val dataSets: MutableList<ILineDataSet> = ArrayList()
-                val lineChartEntries: MutableList<Entry>?
-                val label: String?
-                when {
-                    selectedCustomizeTrackItem == 3 && summitEntry.gpsTrack?.trackPoints?.any { it.extension?.cadence != null } == true -> {
-                        lineChartEntries = localGpsTrack.getTrackGraph { e -> e.extension?.cadence?.toFloat() }
-                        label = getString(R.string.cadence_profile_label)
-                    }
-                    selectedCustomizeTrackItem == 4 && summitEntry.gpsTrack?.trackPoints?.any { it.extension?.heartRate != null } == true -> {
-                        lineChartEntries = localGpsTrack.getTrackGraph { e -> e.extension?.heartRate?.toFloat() }
-                        label = getString(R.string.heart_rate_profile_label)
-                    }
-                    selectedCustomizeTrackItem == 5 && summitEntry.gpsTrack?.trackPoints?.any { it.extension?.power != null } == true -> {
-                        lineChartEntries = localGpsTrack.getTrackGraph { e -> e.extension?.power?.toFloat() }
-                        label = getString(R.string.power_profile_chart_label)
-                    }
-                    selectedCustomizeTrackItem == 6 && summitEntry.gpsTrack?.trackPoints?.any { it.extension?.speed != null } == true -> {
-                        lineChartEntries = localGpsTrack.getTrackGraph { e -> e.extension?.speed?.toFloat() }
-                        label = getString(R.string.speed_profile_label)
-                    }
-                    selectedCustomizeTrackItem == 7 && summitEntry.gpsTrack?.trackPoints?.any { it.extension?.slope != null } == true -> {
-                        lineChartEntries = localGpsTrack.getTrackGraph { e -> e.extension?.slope?.toFloat() }
-                        label = getString(R.string.slope_profile_label)
-                    }
-                    selectedCustomizeTrackItem == 8 && summitEntry.gpsTrack?.trackPoints?.any { it.extension?.verticalVelocity != null } == true -> {
-                        lineChartEntries = localGpsTrack.getTrackGraph { e -> e.extension?.verticalVelocity?.toFloat() }
-                        label = getString(R.string.vertical_speed_profile_label)
-                    }
-                    else -> {
-                        lineChartEntries = localGpsTrack.getTrackGraph { e -> e.ele?.toFloat() }
-                        label = getString(R.string.height_profile_label)
-                    }
-                }
+                val trackColor = if (selectedCustomizeTrackItem == TrackColor.None || selectedCustomizeTrackItem == TrackColor.Mileage) TrackColor.Elevation else selectedCustomizeTrackItem
+                val lineChartEntries = localGpsTrack.getTrackGraph(trackColor.f)
+                val label = getString(trackColor.labelId)
 
                 val leftAxis: YAxis = lineChart.axisLeft
                 leftAxis.textColor = Color.BLACK
@@ -225,23 +196,12 @@ class SummitEntryTrackFragment : Fragment() {
         l.entries
         l.yEntrySpace = 10f
         l.isWordWrapEnabled = true
-        val l1 = LegendEntry("$label min", Legend.LegendForm.CIRCLE, 9f, 5f, null, gpsTrack?.startColor ?: Color.GREEN)
-        val l2 = LegendEntry("$label max", Legend.LegendForm.CIRCLE, 9f, 5f, null, gpsTrack?.endColor ?: Color.RED)
+        val l1 = LegendEntry("$label min", Legend.LegendForm.CIRCLE, 9f, 5f, null, gpsTrack?.startColor
+                ?: Color.GREEN)
+        val l2 = LegendEntry("$label max", Legend.LegendForm.CIRCLE, 9f, 5f, null, gpsTrack?.endColor
+                ?: Color.RED)
         l.setCustom(arrayOf(l1, l2))
         l.isEnabled = true
-    }
-
-    private fun addBinnedOverlay(lineChart: LineChart, secondLineChartEntries: MutableList<Entry>, secondLabel: String?, dataSets: MutableList<ILineDataSet>) {
-        val rightAxis: YAxis = lineChart.axisRight
-        rightAxis.textColor = Color.BLUE
-        rightAxis.setDrawGridLines(false)
-        rightAxis.setDrawZeroLine(false)
-        rightAxis.isGranularityEnabled = false
-        val binSize = 3
-        val secondLineChartEntriesBinned = secondLineChartEntries.chunked(binSize) { Entry((it.sumBy { it.x.toInt() }.toFloat()) / it.size, (it.sumBy { it.y.toInt() }.toFloat()) / it.size) } as MutableList<Entry>
-        val secondDataSet = LineDataSet(secondLineChartEntriesBinned, "${secondLabel} (bin: ${binSize})")
-        setGraphView(secondDataSet, true)
-        dataSets.add(secondDataSet)
     }
 
     private fun setColors(lineChartEntries: MutableList<Entry>, dataSet: LineDataSet) {
@@ -250,7 +210,8 @@ class SummitEntryTrackFragment : Fragment() {
         if (min != null && max != null) {
             val colors = lineChartEntries.map {
                 val fraction = (it.y - min) / (max - min)
-                interpolateColor(gpsTrack?.startColor ?: Color.GREEN, gpsTrack?.endColor ?: Color.RED, fraction)
+                interpolateColor(gpsTrack?.startColor ?: Color.GREEN, gpsTrack?.endColor
+                        ?: Color.RED, fraction)
             }
             dataSet.colors = colors
         }
@@ -280,20 +241,20 @@ class SummitEntryTrackFragment : Fragment() {
         val params = osMap.layoutParams
         params?.height = (metrics.heightPixels * height).toInt()
         osMap.layoutParams = params
-        val customizeTracButton = root.findViewById<ImageButton>(R.id.customize_track)
+        val customizeTrackButton = root.findViewById<ImageButton>(R.id.customize_track)
         val databaseLocal = database
         if (hasPoints && databaseLocal != null) {
             val connectedEntries = mutableListOf<Summit>()
             localSummit.setConnectedEntries(connectedEntries, databaseLocal)
             for (entry in connectedEntries) {
-                OpenStreetMapUtils.drawTrack(entry, false, osMap, selectedCustomizeTrackItem, color = Color.BLACK)
+                OpenStreetMapUtils.drawTrack(entry, false, osMap, TrackColor.None, color = Color.BLACK)
             }
             marker = OpenStreetMapUtils.addTrackAndMarker(localSummit, osMap, requireContext(), true, selectedCustomizeTrackItem, true, rootView = root)
-            customizeTracButton.setOnClickListener {
+            customizeTrackButton.setOnClickListener {
                 customizeTrackDialog()
             }
         } else {
-            customizeTracButton.visibility = View.GONE
+            customizeTrackButton.visibility = View.GONE
             root.findViewById<RelativeLayout>(R.id.osmapLayout).visibility = View.GONE
         }
 
@@ -304,11 +265,19 @@ class SummitEntryTrackFragment : Fragment() {
         if (localSummit != null) {
             // TODO: translate
             val fDialogTitle = "Select value used for color code"
-            val items = arrayOf<CharSequence>("None", "Mileage", "Elevation", "Cadence", "Heart Rate", "Power", "Speed", "Slope (50m)", "Vertical Speed (1min)")
+            val useItems = TrackColor.values().filter { trackColorEntry: TrackColor ->
+                gpsTrack?.trackPoints?.any {
+                    val value = trackColorEntry.f(it)
+                    value != null && value != 0.0
+                } == true
+            }.mapIndexed { i, entry ->
+                entry.spinnerId = i
+                entry
+            }
             val builder = AlertDialog.Builder(requireContext())
             builder.setTitle(fDialogTitle)
-            builder.setSingleChoiceItems(items, selectedCustomizeTrackItem) { dialog: DialogInterface, item: Int ->
-                selectedCustomizeTrackItem = item
+            builder.setSingleChoiceItems(useItems.map { resources.getString(it.nameId) }.toTypedArray(), selectedCustomizeTrackItem.spinnerId) { dialog: DialogInterface, item: Int ->
+                selectedCustomizeTrackItem = useItems[item]
                 osMap.overlays?.clear()
                 localSummit.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, requireContext(), true, selectedCustomizeTrackItem, true, rootView = root) }
                 drawChart(localSummit)

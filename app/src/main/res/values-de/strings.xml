@@ -341,4 +341,11 @@ von
     <string name="current_year">Aktuelles Jahr</string>
     <string name="customize_track_color">Track Farbe anpassen</string>
     <string name="track_color">Track Farbe</string>
+    <string name="none">Keine</string>
+    <string name="mileage">Mileage</string>
+    <string name="speed">Geschwindigkeit</string>
+    <string name="slope">Steigung (50m)</string>
+    <string name="vertical_speed">Vertikale Geschw. (1min)</string>
+    <string name="masl">m.ü.M.</string>
+    <string name="show_all">Zeige alle</string>
 </resources>

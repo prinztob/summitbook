@@ -7,10 +7,7 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
-import de.drtobiasprinz.summitbook.models.Bookmark
-import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.models.Summit
-import de.drtobiasprinz.summitbook.models.TrackBoundingBox
+import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import org.osmdroid.tileprovider.tilesource.ITileSource
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -33,7 +30,7 @@ object OpenStreetMapUtils {
     var selectedItem = 0
 
     @JvmStatic
-    fun addTrackAndMarker(summitEntry: Summit, osMap: MapView, context: Context, forceAddTrack: Boolean, selectedCustomizeTrackItem: Int, alwaysShowTrackOnMap: Boolean, rootView: View? = null): Marker? {
+    fun addTrackAndMarker(summitEntry: Summit, osMap: MapView, context: Context, forceAddTrack: Boolean, selectedCustomizeTrackItem: TrackColor, alwaysShowTrackOnMap: Boolean, rootView: View? = null): Marker? {
         val mGeoPoints = ArrayList<GeoPoint>()
         val latLng = summitEntry.latLng
         var marker: Marker? = null
@@ -68,7 +65,7 @@ object OpenStreetMapUtils {
 
     @JvmStatic
     fun drawTrack(
-            summitEntry: Summit, forceAddTrack: Boolean, osMap: MapView, selectedCustomizeTrackItem: Int,
+            summitEntry: Summit, forceAddTrack: Boolean, osMap: MapView, selectedCustomizeTrackItem: TrackColor,
             calculateBondingBox: Boolean = false, mGeoPoints: ArrayList<GeoPoint> = arrayListOf(),
             color: Int = Color.BLUE, rootView: View? = null
     ) {
@@ -94,7 +91,7 @@ object OpenStreetMapUtils {
     }
 
     @JvmStatic
-    fun addTrackAndMarker(bookmark: Bookmark, osMap: MapView, forceAddTrack: Boolean, selectedCustomizeTrackItem: Int) {
+    fun addTrackAndMarker(bookmark: Bookmark, osMap: MapView, forceAddTrack: Boolean, selectedCustomizeTrackItem: TrackColor) {
         val mGeoPoints = ArrayList<GeoPoint>()
         if (bookmark.hasGpsTrack()) {
             bookmark.setGpsTrack()

@@ -168,6 +168,14 @@ class Summit(
         }
     }
 
+    fun getImageDescription(resources: Resources, index: Int): String {
+        return "${getDateAsString()}\n$name\n" +
+                (if (elevationData.maxElevation != 0) "${elevationData.maxElevation} ${resources.getString(R.string.masl)}\n" else "") +
+                (if (elevationData.elevationGain != 0) "${elevationData.elevationGain} ${resources.getString(R.string.hm)}\n" else "") +
+                (if (kilometers != 0.0) "$kilometers ${resources.getString(R.string.km)}\n" else "") +
+                "#${index + 1}\n"
+    }
+
     override fun toString(): String {
         return getStringRepresentation()
     }

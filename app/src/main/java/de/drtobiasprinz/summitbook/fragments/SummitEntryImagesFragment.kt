@@ -16,6 +16,7 @@ import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.PageViewModel
+import kotlinx.android.synthetic.*
 import org.imaginativeworld.whynotimagecarousel.ImageCarousel
 import org.imaginativeworld.whynotimagecarousel.listener.CarouselListener
 import org.imaginativeworld.whynotimagecarousel.model.CarouselItem
@@ -61,14 +62,11 @@ class SummitEntryImagesFragment : Fragment() {
         val mainActivity = MainActivity.mainActivity
         mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
         val carousel: ImageCarousel = root.findViewById(R.id.carousel)
-        carousel.registerLifecycle(lifecycle)
         val params = carousel.layoutParams
         params.height = (metrics.heightPixels * 0.7).toInt()
         carousel.layoutParams = params
-
-        if (localSummit.imageIds.size > 1) {
-            carousel.infiniteCarousel = true
-        }
+        carousel.invalidate()
+        carousel.clearFindViewByIdCache()
         val list = mutableListOf<CarouselItem>()
         for (imageId in localSummit.imageIds) {
             val item = CarouselItem(imageUrl = "file://" + localSummit.getImagePath(imageId))

@@ -13,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
+import com.google.android.material.button.MaterialButton
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.activitiesDir
@@ -34,10 +35,12 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
     private lateinit var mergeSummitsButton: Button
     private lateinit var ignoreSummitsButton: Button
     private lateinit var updateSummitsButton: ImageButton
-    private lateinit var revertIgnoredSummitsButton: ImageButton
-    private lateinit var backButton: Button
+    private lateinit var showAllButton: MaterialButton
+    private var showAllButtonEnabled = false
+    private lateinit var backButton: ImageButton
     private lateinit var tableLayout: TableLayout
     private lateinit var database: AppDatabase
+    private var activitiesIdIgnored: List<String> = emptyList()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         setRetainInstance(true)
@@ -63,10 +66,15 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
                 AsyncDownloadActivities(sortFilterHelper.entries, pythonExecutor, startDate, endDate, this).execute()
             }
         }
-        revertIgnoredSummitsButton = view.findViewById(R.id.revert_ignored_summits)
-        revertIgnoredSummitsButton.setOnClickListener {
-            database.ignoredActivityDao()?.deleteAll()
-            updateEntriesWithoutIgnored()
+        showAllButton = view.findViewById(R.id.show_all)
+        showAllButton.setOnClickListener {
+            if (showAllButtonEnabled) {
+                showAllButton.alpha = .5f
+            } else {
+                showAllButton.alpha = 1f
+            }
+            showAllButtonEnabled = !showAllButtonEnabled
+            updateEntriesWithoutIgnored(showAllButtonEnabled)
             tableLayout.removeAllViews()
             drawTable(view)
         }
@@ -114,11 +122,13 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
 
     }
 
-    private fun updateEntriesWithoutIgnored() {
-        val activitiesIdIgnored = database.ignoredActivityDao()?.allIgnoredActivities?.map { it.activityId }
-        if (activitiesIdIgnored != null) {
-            val activityIdsInSummitBook = sortFilterHelper.entries.filter { !it.garminData?.activityIds.isNullOrEmpty() }.map { it.garminData?.activityIds as List<String> }.flatten()
-            entriesWithoutIgnored = allEntries.filter { !(it.garminData?.activityId in activitiesIdIgnored) && !(it.garminData?.activityId in activityIdsInSummitBook) } as MutableList
+    private fun updateEntriesWithoutIgnored(showAll: Boolean = false) {
+        activitiesIdIgnored = database.ignoredActivityDao()?.allIgnoredActivities?.map { it.activityId }?: emptyList()
+        val activityIdsInSummitBook = sortFilterHelper.entries.filter { !it.garminData?.activityIds.isNullOrEmpty() }.map { it.garminData?.activityIds as List<String> }.flatten()
+        if (showAll) {
+            entriesWithoutIgnored = allEntries.filter { it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
+        } else {
+            entriesWithoutIgnored = allEntries.filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
         }
     }
 
@@ -136,7 +146,11 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
         val heightMeters: Int = entry.elevationData.elevationGain
 
         val tr = TableRow(view.context)
-        tr.setBackgroundColor(Color.GRAY)
+        if (entry.garminData?.activityId in activitiesIdIgnored) {
+            tr.setBackgroundColor(Color.LTGRAY)
+        } else {
+            tr.setBackgroundColor(Color.GRAY)
+        }
         tr.id = 100 + i
         tr.layoutParams = TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT)

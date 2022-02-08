@@ -38,9 +38,11 @@ import com.stfalcon.imageviewer.StfalconImageViewer
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.*
 import de.drtobiasprinz.summitbook.models.Bookmark
+import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
+import de.drtobiasprinz.summitbook.ui.PosterOverlayView
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
@@ -58,7 +60,7 @@ import kotlin.math.round
 
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
-    private var imagePathsOfAllImages: List<String>? = listOf()
+    private var allImages: MutableList<Poster> = mutableListOf()
     private lateinit var database: AppDatabase
     private lateinit var sharedPreferences: SharedPreferences
     lateinit var summitViewFragment: SummitViewFragment
@@ -66,11 +68,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var sortFilterHelper: SortFilterHelper
     private var pythonExecutor: GarminPythonExecutor? = null
 
+    private var overlayView: PosterOverlayView? = null
     private var entriesToExcludeForBoundingboxCalculation: MutableList<Summit> = mutableListOf()
 
     private var isDialogShown = false
     private var currentPosition: Int = 0
-    private var viewer: StfalconImageViewer<String>? = null
+    private var viewer: StfalconImageViewer<Poster>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!Python.isStarted()) {
@@ -271,40 +274,49 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun openViewer() {
-        setAllImagePaths()
+        setAllImages()
         var usePositionAfterTransition = -1
-        if (imagePathsOfAllImages?.size ?: 0 < currentPosition) {
+        if (allImages.size < currentPosition) {
             usePositionAfterTransition = currentPosition
             currentPosition = 0
         }
-        viewer = StfalconImageViewer.Builder(this, imagePathsOfAllImages) { view, imageUrl ->
-            Glide.with(this)
-                    .load(imageUrl)
-                    .fitCenter()
-                    .diskCacheStrategy(DiskCacheStrategy.NONE)
-                    .skipMemoryCache(true)
-                    .into(view)
-        }
-                .withStartPosition(currentPosition)
-                .withImageChangeListener {
-                    currentPosition = it
-                    val sizeBefore = imagePathsOfAllImages?.size
-                    setAllImagePaths()
-                    val sizeAfter = imagePathsOfAllImages?.size
-                    if (sizeAfter != sizeBefore) {
-                        viewer?.updateImages(imagePathsOfAllImages)
-                        if (usePositionAfterTransition >= 0) {
-                            viewer?.setCurrentPosition(usePositionAfterTransition)
+        if (allImages.size > 0) {
+            overlayView = PosterOverlayView(this).apply {
+                update(allImages[currentPosition])
+            }
+            viewer = StfalconImageViewer.Builder(this, allImages) { view, poster ->
+                Glide.with(this)
+                        .load(poster.url)
+                        .fitCenter()
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .into(view)
+            }
+                    .withStartPosition(currentPosition)
+                    .withImageChangeListener {
+                        currentPosition = it
+                        val sizeBefore = allImages.size
+                        setAllImages()
+                        val sizeAfter = allImages.size
+                        if (sizeAfter != sizeBefore) {
+                            viewer?.updateImages(allImages)
+                            if (usePositionAfterTransition >= 0) {
+                                viewer?.setCurrentPosition(usePositionAfterTransition)
+                            }
                         }
+                        overlayView?.update(allImages[it])
                     }
-                }
-                .withDismissListener { isDialogShown = false }
-                .show(!isDialogShown)
-        isDialogShown = true
+                    .withOverlayView(overlayView)
+                    .withDismissListener { isDialogShown = false }
+                    .show(!isDialogShown)
+            isDialogShown = true
+        } else {
+            Toast.makeText(this, "No images selected", Toast.LENGTH_SHORT).show()
+        }
     }
 
-    private fun setAllImagePaths() {
-        imagePathsOfAllImages = sortFilterHelper.filteredEntries.map { entry -> entry.imageIds.map { entry.getImageUrl(it) } }.flatten()
+    private fun setAllImages() {
+        allImages = sortFilterHelper.filteredEntries.map { entry -> entry.imageIds.mapIndexed { i, imageId -> Poster(entry.getImageUrl(imageId), entry.getImageDescription(resources, i)) } }.flatten() as MutableList<Poster>
     }
 
     private fun startFileSelectorAndExportSummits(filename: String, requestCode: Int) {

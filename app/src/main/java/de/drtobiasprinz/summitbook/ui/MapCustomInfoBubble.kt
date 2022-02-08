@@ -7,6 +7,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.models.TrackColor
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.infowindow.InfoWindow
 
@@ -46,7 +47,7 @@ class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Con
                     if (gpsTrack.hasNoTrackPoints()) {
                         gpsTrack.parseTrack()
                     }
-                    gpsTrack.addGpsTrack(mMapView, 0)
+                    gpsTrack.addGpsTrack(mMapView, TrackColor.None)
                 }
             }
         }
