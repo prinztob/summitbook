@@ -37,6 +37,7 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
     private var annualTargetActivity: String = ""
     private var annualTargetKm: String = ""
     private var annualTargetHm: String = ""
+    private var indoorHeightMeterPercent: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,7 +76,7 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
             val currentMonth: Int = (Calendar.getInstance())[Calendar.MONTH] + 1
             if (sortFilterHelper.selectedYear == currentYear.toString()) {
                 val forecasts = sortFilterHelper.database.forecastDao()?.allForecasts
-                forecasts?.forEach { summitEntries?.let { it1 -> it.setActual(it1) } }
+                forecasts?.forEach { summitEntries?.let { it1 -> it.setActual(it1, indoorHeightMeterPercent) } }
                 val sumCurrentYear = forecasts?.let { Forecast.getSumForYear(currentYear, it, 0, currentYear, currentMonth) }
                 if ((sumCurrentYear ?: 0) > 0) {
                     textTotalHmInfo.visibility = View.VISIBLE
@@ -274,11 +275,11 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
         val annualTargetKm = sharedPreferences.getString("annual_target_km", "1200")?.toInt()
                 ?: 1200
         val annualTargetHm = sharedPreferences.getString("annual_target", "50000")?.toInt() ?: 50000
-        val indoorHeightMeterPercent = sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0
+        indoorHeightMeterPercent = sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0
         statisticEntry = StatisticEntry(filteredSummitEntries, annualTargetActivity, annualTargetKm, annualTargetHm, indoorHeightMeterPercent)
         statisticEntry.calculate()
         setProgressBar()
-        val extremaValuesSummits = filteredSummitEntries?.let { ExtremaValuesSummits(it) }
+        val extremaValuesSummits = filteredSummitEntries?.let { ExtremaValuesSummits(it, shouldIndoorActivityBeExcluded = true) }
         setTextViews(extremaValuesSummits)
     }
 

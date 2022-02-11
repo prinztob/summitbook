@@ -22,19 +22,25 @@ class Forecast(
     @Ignore
     var actualNumberActivities = 0
 
-    fun setActual(summits: List<Summit>) {
+    fun setActual(summits: List<Summit>, indoorHeightMeterPercent: Int = 0) {
         val cal: Calendar = Calendar.getInstance()
         val summitsInMonth = summits.filter {
             cal.time = it.date
             cal.get(Calendar.MONTH) + 1 == month && cal.get(Calendar.YEAR) == year
         }
-        actualHeightMeter = summitsInMonth.sumBy { it.elevationData.elevationGain }
+        actualHeightMeter = summitsInMonth.sumBy {
+            if (it.sportType == SportType.IndoorTrainer) {
+                it.elevationData.elevationGain
+            } else {
+                it.elevationData.elevationGain * indoorHeightMeterPercent / 100
+            }
+        }
         actualDistance = summitsInMonth.sumBy { it.kilometers.roundToInt() }
         actualNumberActivities = summitsInMonth.size
     }
 
     companion object {
-        fun getSumForYear(year: Int, forecasts: List<Forecast>, selectedSegmentedForecastProperty: Int, currentYear: Int,  currentMonth: Int): Int {
+        fun getSumForYear(year: Int, forecasts: List<Forecast>, selectedSegmentedForecastProperty: Int, currentYear: Int, currentMonth: Int): Int {
             var sum = 0
             forecasts.forEach {
                 if (it.year == year) {
@@ -47,7 +53,8 @@ class Forecast(
             }
             return sum
         }
-        private fun getSumPerYear(forecast: Forecast, getForecast: (Forecast) -> Int, getActual: (Forecast) -> Int, currentYear: Int,  currentMonth: Int): Int {
+
+        private fun getSumPerYear(forecast: Forecast, getForecast: (Forecast) -> Int, getActual: (Forecast) -> Int, currentYear: Int, currentMonth: Int): Int {
             if (forecast.year == currentYear) {
                 if (forecast.month < currentMonth) {
                     return getActual(forecast)

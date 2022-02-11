@@ -21,7 +21,7 @@ import java.util.*
 import kotlin.math.round
 
 
-class ForecastDialog() : DialogFragment() {
+class ForecastDialog(val indoorHeightMeterPercent: Int) : DialogFragment() {
 
     private lateinit var currentContext: Context
     private lateinit var forecasts: ArrayList<Forecast>
@@ -108,7 +108,7 @@ class ForecastDialog() : DialogFragment() {
     private fun setAchievement() {
         forecasts.forEach {
             if (it.year == currentYear && it.month <= currentMonth) {
-                it.setActual(summits)
+                it.setActual(summits, indoorHeightMeterPercent)
             }
         }
     }

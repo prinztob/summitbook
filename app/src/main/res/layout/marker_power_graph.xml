@@ -12,10 +12,10 @@
         android:layout_marginLeft="3dp"
         android:layout_marginTop="3dp"
         android:layout_marginRight="3dp"
-        android:lines="1"
-        android:maxLines="1"
+        android:lines="2"
+        android:maxLines="2"
         android:minLines="1"
-        android:ems="3"
+        android:ems="4"
         android:textAlignment="center"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:textColor="@android:color/white" />

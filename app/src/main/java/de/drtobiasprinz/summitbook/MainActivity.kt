@@ -73,6 +73,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private var isDialogShown = false
     private var currentPosition: Int = 0
+    private var indoorHeightMeterPercent: Int = 0
     private var viewer: StfalconImageViewer<Poster>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,6 +86,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val viewedFragment: Fragment? = supportFragmentManager.findFragmentById(R.id.content_frame)
         verifyStoragePermissions(this)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        indoorHeightMeterPercent = sharedPreferences.getInt("indoor_height_meter_per_cent", 0)
         val username = sharedPreferences.getString("garmin_username", null) ?: ""
         val password = sharedPreferences.getString("garmin_password", null) ?: ""
         if (username != "" && password != "") {
@@ -229,7 +231,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 commitFragment(OpenStreetMapFragment(sortFilterHelper))
             }
             R.id.nav_forecast -> {
-                ForecastDialog().show(this.supportFragmentManager, "ForecastDialog")
+                ForecastDialog(indoorHeightMeterPercent).show(this.supportFragmentManager, "ForecastDialog")
             }
             R.id.nav_diashow -> {
                 openViewer()

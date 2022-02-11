@@ -411,7 +411,69 @@
                 app:sb_textColor="@color/colorAccent"
                 app:sb_textColor_onSelection="@android:color/white" />
         </co.ceryle.segmentedbutton.SegmentedButtonGroup>
+    </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/marked_summits" />
+
+
+        <co.ceryle.segmentedbutton.SegmentedButtonGroup
+            android:id="@+id/group_favorite_peak_marker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_margin="10dp"
+            android:elevation="2dp"
+            app:sbg_animateSelector="fastOutSlowIn"
+            app:sbg_animateSelectorDuration="1000"
+            app:sbg_backgroundColor="@android:color/transparent"
+            app:sbg_backgroundDrawable="@drawable/gradient_drawable"
+            app:sbg_dividerBackgroundDrawable="@drawable/gradient_drawable_divider"
+            app:sbg_dividerColor="@color/grey_500"
+            app:sbg_dividerPadding="50dp"
+            app:sbg_dividerRadius="50dp"
+            app:sbg_dividerSize="4dp"
+            app:sbg_position="1"
+            app:sbg_radius="20dp"
+            app:sbg_ripple="true"
+            app:sbg_rippleColor="@color/blue_300"
+            app:sbg_selectorColor="@color/colorPrimary">
+
+            <co.ceryle.segmentedbutton.SegmentedButton
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                app:sb_drawable="@drawable/ic_star_black_24dp"
+                app:sb_textColor="@color/colorAccent"
+                app:sb_textColor_onSelection="@android:color/white" />
+
+
+            <co.ceryle.segmentedbutton.SegmentedButton
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                app:sb_drawable="@drawable/ic_baseline_select_all_24"
+                app:sb_textColor="@color/colorAccent"
+                app:sb_textColor_onSelection="@android:color/white" />
+
+            <co.ceryle.segmentedbutton.SegmentedButton
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                app:sb_drawable="@drawable/icons8_mountain_24"
+                app:sb_textColor="@color/colorAccent"
+                app:sb_textColor_onSelection="@android:color/white" />
+        </co.ceryle.segmentedbutton.SegmentedButtonGroup>
     </LinearLayout>
 
     <ScrollView

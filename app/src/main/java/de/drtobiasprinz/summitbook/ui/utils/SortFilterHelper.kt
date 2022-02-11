@@ -54,6 +54,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private val segmentedWithPosition: SegmentedButtonGroup = filterAndSortView.findViewById(R.id.group_position)
     private val segmentedWithGpx: SegmentedButtonGroup = filterAndSortView.findViewById(R.id.group_gpx)
     private val segmentedWithImage: SegmentedButtonGroup = filterAndSortView.findViewById(R.id.group_image)
+    private val segmentedMarkedSummit: SegmentedButtonGroup = filterAndSortView.findViewById(R.id.group_favorite_peak_marker)
     private var selectedSegmentedSortAscDesc = 1
     private var selectedSegmentedSortBy = 0
     private var selectedSportTypeItem = 0
@@ -61,6 +62,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private var selectedSegmentedWithPosition = 1
     private var selectedSegmentedWithGpx = 1
     private var selectedSegmentedWithImage = 1
+    private var selectedSegmentedMarkedSummit = 1
     private var extremaValuesAllSummits: ExtremaValuesSummits? = null
     private var extremaValuesFilteredSummits: ExtremaValuesSummits? = null
     private lateinit var multiSliderKilometers: MultiSlider
@@ -212,6 +214,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         segmentedWithPosition.position = selectedSegmentedWithPosition
         selectedSegmentedWithImage = 1
         segmentedWithImage.position = selectedSegmentedWithImage
+        selectedSegmentedMarkedSummit = 1
+        segmentedMarkedSummit.position = selectedSegmentedMarkedSummit
         selectedSportTypeItem = 0
         sportTypeSpinner.setSelection(selectedSportTypeItem)
         setDataSpinnerToDefault()
@@ -357,6 +361,9 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         segmentedWithImage.setOnClickedButtonListener { position: Int ->
             selectedSegmentedWithImage = position
         }
+        segmentedMarkedSummit.setOnClickedButtonListener { position: Int ->
+            selectedSegmentedMarkedSummit = position
+        }
         sortAndFilter()
     }
 
@@ -366,6 +373,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         segmentedWithGpx.position = selectedSegmentedWithGpx
         segmentedWithPosition.position = selectedSegmentedWithPosition
         segmentedWithImage.position = selectedSegmentedWithImage
+        segmentedMarkedSummit.position = selectedSegmentedMarkedSummit
     }
 
     private fun sortAndFilter() {
@@ -399,6 +407,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         filterByPosition()
         filterByGpx()
         filterByImage()
+        filterByMarkedSummit()
         filterByKm()
         filterByHm()
         filterByTopSpeed()
@@ -449,6 +458,22 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
                     entries.add(entry)
                 }
                 2 -> if (!entry.hasImagePath()) {
+                    entries.add(entry)
+                }
+                else -> entries.add(entry)
+            }
+        }
+        filteredEntries = entries
+    }
+
+    private fun filterByMarkedSummit() {
+        val entries = ArrayList<Summit>()
+        for (entry in filteredEntries) {
+            when (selectedSegmentedMarkedSummit) {
+                0 -> if (entry.isFavorite) {
+                    entries.add(entry)
+                }
+                2 -> if (entry.isPeak) {
                     entries.add(entry)
                 }
                 else -> entries.add(entry)
@@ -677,6 +702,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         outState.putInt(SORT_FILTER_HELPER_POSITION_SELECTED, selectedSegmentedWithPosition)
         outState.putInt(SORT_FILTER_HELPER_GPX_SELECTED, selectedSegmentedWithGpx)
         outState.putInt(SORT_FILTER_HELPER_IMAGE_SELECTED, selectedSegmentedWithImage)
+        outState.putInt(SORT_FILTER_HELPER_MARKED_SUMMIT, selectedSegmentedMarkedSummit)
         outState.putString(SORT_FILTER_HELPER_UNIQUE_YEARS, uniqueYearsOfSummit.joinToString(","))
         outState.putString(SORT_FILTER_HELPER_MULTI_SLIDER_AVG_SPEED, multiSliderToString(multiSliderAverageSpeed))
         outState.putString(SORT_FILTER_HELPER_MULTI_SLIDER_HEIGHT_METERS, multiSliderToString(multiSliderHeightMeters))
@@ -717,7 +743,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
                 sortFilterHelper.selectedSportTypeItem = savedInstanceState.getInt(SORT_FILTER_HELPER_SELECTED_SPORT_TYPE)
                 sortFilterHelper.selectedSegmentedWithPosition = savedInstanceState.getInt(SORT_FILTER_HELPER_POSITION_SELECTED)
                 sortFilterHelper.selectedSegmentedWithGpx = savedInstanceState.getInt(SORT_FILTER_HELPER_GPX_SELECTED)
-                sortFilterHelper.selectedSegmentedWithImage = savedInstanceState.getInt(SORT_FILTER_HELPER_POSITION_SELECTED)
+                sortFilterHelper.selectedSegmentedWithImage = savedInstanceState.getInt(SORT_FILTER_HELPER_IMAGE_SELECTED)
+                sortFilterHelper.selectedSegmentedMarkedSummit = savedInstanceState.getInt(SORT_FILTER_HELPER_MARKED_SUMMIT)
                 setMultiSlider(savedInstanceState, sortFilterHelper.multiSliderAverageSpeed, SORT_FILTER_HELPER_MULTI_SLIDER_AVG_SPEED)
                 setMultiSlider(savedInstanceState, sortFilterHelper.multiSliderTopSpeed, SORT_FILTER_HELPER_MULTI_SLIDER_TOP_SPEED)
                 setMultiSlider(savedInstanceState, sortFilterHelper.multiSliderHeightMeters, SORT_FILTER_HELPER_MULTI_SLIDER_HEIGHT_METERS)
@@ -748,6 +775,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         var SORT_FILTER_HELPER_POSITION_SELECTED = "SORT_FILTER_HELPER_POSITION_SELECTED"
         var SORT_FILTER_HELPER_GPX_SELECTED = "SORT_FILTER_HELPER_GPS_SELECTED"
         var SORT_FILTER_HELPER_IMAGE_SELECTED = "SORT_FILTER_HELPER_IMAGE_SELECTED"
+        var SORT_FILTER_HELPER_MARKED_SUMMIT = "SORT_FILTER_HELPER_MARKED_SUMMIT"
         var SORT_FILTER_HELPER_UNIQUE_YEARS = "SORT_FILTER_HELPER_UNIQUE_YEARS"
         var SORT_FILTER_HELPER_MULTI_SLIDER_AVG_SPEED = "SORT_FILTER_HELPER_MULTI_SLIDER_AVG_SPEED"
         var SORT_FILTER_HELPER_MULTI_SLIDER_TOP_SPEED = "SORT_FILTER_HELPER_MULTI_SLIDER_TOP_SPEED"

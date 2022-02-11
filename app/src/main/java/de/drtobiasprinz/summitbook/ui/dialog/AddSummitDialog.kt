@@ -404,6 +404,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                         latlngHightestPoint?.latitude, latlngHightestPoint?.longitude,
                         participantsView.chipValues,
                         false,
+                        false,
                         mutableListOf(),
                         garminDataFromGarminConnect,
                         null

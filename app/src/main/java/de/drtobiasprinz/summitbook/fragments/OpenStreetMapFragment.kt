@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
@@ -63,7 +64,7 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper? = null) : Fr
         setHasOptionsMenu(true)
         sortFilterHelper?.fragment = this
         summitEntries = sortFilterHelper?.entries
-        filteredEntries = sortFilterHelper?.filteredEntries
+        filteredEntries = sortFilterHelper?.filteredEntries?.filter { it.sportType != SportType.IndoorTrainer }
         setMap()
         Log.d(TAG, "onCreateView")
         return root
@@ -207,7 +208,7 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper? = null) : Fr
 
     override fun update(filteredSummitEntries: List<Summit>?) {
         if (mMapView != null) {
-            filteredEntries = filteredSummitEntries
+            filteredEntries = filteredSummitEntries?.filter { it.sportType != SportType.IndoorTrainer }
             addAllMarkers()
         }
     }

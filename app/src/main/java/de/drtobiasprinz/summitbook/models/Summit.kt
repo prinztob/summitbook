@@ -2,10 +2,7 @@ package de.drtobiasprinz.summitbook.models
 
 import android.content.Context
 import android.content.res.Resources
-import androidx.room.Embedded
-import androidx.room.Entity
-import androidx.room.Ignore
-import androidx.room.PrimaryKey
+import androidx.room.*
 import com.google.android.gms.maps.model.LatLng
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
@@ -30,8 +27,9 @@ class Summit(
         var countries: List<String>, var comments: String,
         @Embedded var elevationData: ElevationData, var kilometers: Double,
         @Embedded var velocityData: VelocityData, var lat: Double?, var lng: Double?,
-        var participants: List<String>, var isFavorite: Boolean, var imageIds: MutableList<Int>,
-        @Embedded var garminData: GarminData?, @Embedded var trackBoundingBox: TrackBoundingBox?,
+        var participants: List<String>, var isFavorite: Boolean, @ColumnInfo(defaultValue = "false") var isPeak: Boolean,
+        var imageIds: MutableList<Int>, @Embedded var garminData: GarminData?,
+        @Embedded var trackBoundingBox: TrackBoundingBox?,
         var activityId: Long = System.currentTimeMillis(),
 ) {
     @PrimaryKey(autoGenerate = true)
@@ -330,7 +328,9 @@ class Summit(
             val activityId = if (splitLine[14].trim { it <= ' ' } != "") splitLine[14].toLong() else System.currentTimeMillis()
             val garminData = getGarminData(splitLine)
             val latLng = if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") splitLine[11].toDouble().let { LatLng(it, splitLine[12].toDouble()) } else null
-            val isFavorite = if (splitLine.size == NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY) splitLine[27] else (if (splitLine.size == NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY) splitLine[15] else splitLine[29])
+            val isFavoriteAndOrPeak = (if (splitLine.size == NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY) splitLine[27] else (if (splitLine.size == NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY) splitLine[15] else splitLine[29])).split(",")
+            val isFavorite = if (isFavoriteAndOrPeak.isEmpty()) false else isFavoriteAndOrPeak[0] == "1"
+            val isPeak = if (isFavoriteAndOrPeak.size <2) false else isFavoriteAndOrPeak[1] == "1"
             return Summit(
                     date,
                     splitLine[1],
@@ -343,7 +343,8 @@ class Summit(
                     VelocityData.parse(splitLine[8].split(","), topSpeed),
                     latLng?.latitude, latLng?.longitude,
                     participants,
-                    isFavorite == "1",
+                    isFavorite,
+                    isPeak,
                     mutableListOf(),
                     garminData,
                     null,

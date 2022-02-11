@@ -30,6 +30,7 @@ import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
 import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
 import java.util.*
+import kotlin.math.pow
 import kotlin.math.round
 
 
@@ -320,7 +321,13 @@ class SummitEntryPowerFragment : Fragment() {
         private val tvContent: TextView? = findViewById(R.id.tvContent)
 
         override fun refreshContent(e: Entry, highlight: Highlight?) {
-            tvContent?.text = "${e.y.toInt()} W"
+            val value = 10f.pow(e.x)
+            val xText = when (value) {
+                in 0f..59f -> "${round(value).toInt()} sec"
+                in 60f..3599f -> "${round(value / 60f).toInt()} min"
+                else -> "${round(value / 3660f).toInt()} h"
+            }
+            tvContent?.text = "${e.y.toInt()} W\n($xText)"
             super.refreshContent(e, highlight)
         }
 

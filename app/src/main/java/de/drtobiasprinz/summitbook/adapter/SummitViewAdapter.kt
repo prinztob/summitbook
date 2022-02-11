@@ -72,21 +72,13 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         val image = cardView.findViewById<ImageView?>(R.id.card_view_image)
         val imageText = cardView.findViewById<RelativeLayout>(R.id.card_view_text)
         addImage(summit, imageText, textViewName, image, cardView)
-        val setFavoriteButton = cardView.findViewById<ImageButton?>(R.id.entry_favorite)
-        if (summit.isFavorite) {
-            setFavoriteButton?.setImageResource(R.drawable.ic_star_black_24dp)
-        } else {
-            setFavoriteButton?.setImageResource(R.drawable.ic_star_border_black_24dp)
-        }
-        setFavoriteButton?.setOnClickListener { _: View? ->
-            if (summit.isFavorite) {
-                setFavoriteButton.setImageResource(R.drawable.ic_star_border_black_24dp)
-            } else {
-                setFavoriteButton.setImageResource(R.drawable.ic_star_black_24dp)
-            }
-            summit.isFavorite = !summit.isFavorite
-            sortFilterHelper.database.summitDao()?.updateIsFavorite(summit.id, summit.isFavorite)
-        }
+
+        val favoriteButton = cardView.findViewById<ImageButton?>(R.id.entry_favorite)
+        setFavoriteImage(summit, favoriteButton)
+
+        val mountainButton = cardView.findViewById<ImageButton?>(R.id.entry_summit)
+        setMountainImage(summit, mountainButton)
+
         val addImageButton = cardView.findViewById<ImageButton?>(R.id.entry_add_image)
         if (summit.hasImagePath()) {
             addImageButton.setOnClickListener { v: View? ->
@@ -144,6 +136,40 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
             val intent = Intent(context, SummitEntryDetailsActivity::class.java)
             intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
             v?.context?.startActivity(intent)
+        }
+    }
+
+    private fun setFavoriteImage(summit: Summit, imageButton: ImageButton) {
+        if (summit.isFavorite) {
+            imageButton.setImageResource(R.drawable.ic_star_black_24dp)
+        } else {
+            imageButton.setImageResource(R.drawable.ic_star_border_black_24dp)
+        }
+        imageButton.setOnClickListener {
+            if (summit.isFavorite) {
+                imageButton.setImageResource(R.drawable.ic_star_border_black_24dp)
+            } else {
+                imageButton.setImageResource(R.drawable.ic_star_black_24dp)
+            }
+            summit.isFavorite = !summit.isFavorite
+            sortFilterHelper.database.summitDao()?.updateIsFavorite(summit.id, summit.isFavorite)
+        }
+    }
+
+    private fun setMountainImage(summit: Summit, mountainButton: ImageButton) {
+        if (summit.isPeak) {
+            mountainButton.setImageResource(R.drawable.icons8_mountain_24)
+        } else {
+            mountainButton.setImageResource(R.drawable.icons8_valley_24)
+        }
+        mountainButton.setOnClickListener { _: View? ->
+            if (summit.isPeak) {
+                mountainButton.setImageResource(R.drawable.icons8_valley_24)
+            } else {
+                mountainButton.setImageResource(R.drawable.icons8_mountain_24)
+            }
+            summit.isPeak = !summit.isPeak
+            sortFilterHelper.database.summitDao()?.updateIsPeak(summit.id, summit.isPeak)
         }
     }
 

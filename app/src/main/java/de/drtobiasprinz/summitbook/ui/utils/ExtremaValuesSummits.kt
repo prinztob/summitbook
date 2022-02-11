@@ -4,7 +4,7 @@ import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
 import kotlin.math.ceil
 
-class ExtremaValuesSummits(val entries: List<Summit>, shouldIndoorActivityBeExcluded: Boolean = false, private val excludeZeroValueFromMin: Boolean = false) {
+class ExtremaValuesSummits(val entries: List<Summit>, val shouldIndoorActivityBeExcluded: Boolean = false, private val excludeZeroValueFromMin: Boolean = false) {
     var averageSpeedMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.velocityData.avgVelocity }
     var minAverageSpeed = averageSpeedMinMax?.first?.velocityData?.avgVelocity ?: 0.0
     var maxAverageSpeed = averageSpeedMinMax?.second?.velocityData?.avgVelocity ?: 0.0
@@ -74,12 +74,12 @@ class ExtremaValuesSummits(val entries: List<Summit>, shouldIndoorActivityBeExcl
     var trainingsLoadMinMax = getMinMax { e -> e.garminData?.trainingLoad ?: 0 }
 
     private fun getMinMax(shouldIndoorActivityBeExcluded: Boolean = false, f: (Summit) -> Number): Pair<Summit, Summit>? {
-        var min: Summit? = entries.firstOrNull { f(it).toDouble() != 0.0 }
+        val filteredEntries = if (shouldIndoorActivityBeExcluded) entries.filter { it.sportType != SportType.IndoorTrainer } else entries
+        var min: Summit? = filteredEntries.firstOrNull { f(it).toDouble() != 0.0 }
         if (min != null) {
             var minValue = f(min)
             var max: Summit = min
             var maxValue = f(max)
-            val filteredEntries = if (shouldIndoorActivityBeExcluded) entries.filter { it.sportType != SportType.IndoorTrainer } else entries
             for (entry in filteredEntries) {
                 val value = f(entry)
                 if (value.toDouble() > maxValue.toDouble()) {

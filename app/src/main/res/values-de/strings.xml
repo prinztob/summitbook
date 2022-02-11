@@ -348,4 +348,5 @@ von
     <string name="vertical_speed">Vertikale Geschw. (1min)</string>
     <string name="masl">m.ü.M.</string>
     <string name="show_all">Zeige alle</string>
+    <string name="marked_summits">Markierter Gipfel</string>
 </resources>

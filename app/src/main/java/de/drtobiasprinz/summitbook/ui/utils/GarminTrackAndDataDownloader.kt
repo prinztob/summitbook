@@ -96,6 +96,7 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, val garminPythonEx
                 null, null,
                 entries.map { it.participants }.flatten(),
                 false,
+                false,
                 mutableListOf(),
                 getGarminData(),
                 null

@@ -37,6 +37,9 @@ interface SummitDao {
     @Query("UPDATE summit SET isFavorite=:isFavorite WHERE id = :id")
     fun updateIsFavorite(id: Long, isFavorite: Boolean)
 
+    @Query("UPDATE summit SET isPeak=:isPeak WHERE id = :id")
+    fun updateIsPeak(id: Long, isPeak: Boolean)
+
     @Update(onConflict = OnConflictStrategy.REPLACE)
     fun updateSummit(summit: Summit?)
 

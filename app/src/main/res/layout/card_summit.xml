@@ -140,18 +140,6 @@
                 android:paddingEnd="5dp"
                 android:src="@drawable/ic_baseline_more_time_24" />
 
-            <ImageButton
-                android:id="@+id/entry_favorite"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:layout_marginBottom="5dp"
-                android:layout_toEndOf="@id/entry_add_velocity_data"
-                android:background="@color/color_white"
-                android:contentDescription="@string/is_favorite"
-                android:paddingStart="5dp"
-                android:paddingEnd="5dp"
-                android:src="@drawable/ic_star_border_black_24dp" />
 
             <ImageButton
                 android:id="@+id/entry_add_coordinate"
@@ -159,7 +147,7 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:layout_marginBottom="5dp"
-                android:layout_toEndOf="@id/entry_favorite"
+                android:layout_toEndOf="@id/entry_add_velocity_data"
                 android:background="@color/color_white"
                 android:contentDescription="@string/add_coordinate"
                 android:paddingStart="5dp"
@@ -191,6 +179,34 @@
                 android:paddingStart="5dp"
                 android:paddingEnd="5dp"
                 android:src="@drawable/ic_delete_black_24dp" />
+
+
+            <ImageButton
+                android:id="@+id/entry_favorite"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:layout_marginBottom="5dp"
+                android:layout_toEndOf="@id/entry_delete"
+                android:background="@color/color_white"
+                android:contentDescription="@string/is_favorite"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:src="@drawable/ic_star_border_black_24dp" />
+
+
+            <ImageButton
+                android:id="@+id/entry_summit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:layout_marginBottom="5dp"
+                android:layout_toEndOf="@id/entry_favorite"
+                android:background="@color/color_white"
+                android:contentDescription="@string/is_favorite"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:src="@drawable/icons8_mountain_24" />
 
         </RelativeLayout>
 

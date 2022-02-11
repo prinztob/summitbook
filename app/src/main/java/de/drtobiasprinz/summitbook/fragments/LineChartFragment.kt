@@ -27,6 +27,7 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.text.SimpleDateFormat
@@ -34,8 +35,8 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragment(), SummationFragment {
-    private var summitEntries: ArrayList<Summit>? = null
-    private var filteredEntries: ArrayList<Summit>? = null
+    private var summitEntries: List<Summit>? = null
+    private var filteredEntries: List<Summit>? = null
     private var dataSpinner: Spinner? = null
     private var lineChartView: View? = null
     private var lineChartEntries: MutableList<Entry?> = ArrayList()
@@ -59,7 +60,7 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
         summitEntries = sortFilterHelper.entries
         lineChart = lineChartView?.findViewById(R.id.lineChart) // Fragment
         resizeChart()
-        filteredEntries = sortFilterHelper.filteredEntries
+        filteredEntries = sortFilterHelper.filteredEntries.filter { it.sportType != SportType.IndoorTrainer }
         update(filteredEntries)
         listenOnDataSpinner()
         drawLineChart()
@@ -108,7 +109,7 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
     }
 
     override fun update(filteredSummitEntries: List<Summit>?) {
-        filteredEntries = filteredSummitEntries as ArrayList<Summit>?
+        filteredEntries = filteredSummitEntries?.filter { it.sportType != SportType.IndoorTrainer }
         dataSpinner?.selectedItemId?.toInt()?.let { selectedDataSpinner(it) }
         drawLineChart()
     }
@@ -131,7 +132,7 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
     }
 
     private fun selectedDataSpinner(position: Int) {
-        val sortedEntries = filteredEntries
+        val sortedEntries = filteredEntries as ArrayList<Summit>
         sortedEntries?.sortWith(compareBy { it.date })
         lineChartEntries.clear()
         when (position) {
