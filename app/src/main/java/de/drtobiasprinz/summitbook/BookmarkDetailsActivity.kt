@@ -79,11 +79,11 @@ class BookmarkDetailsActivity : AppCompatActivity() {
                             startActivity(intent)
                         } else {
                             Toast.makeText(applicationContext,
-                                    "GPX viewer not installed", Toast.LENGTH_LONG).show()
+                                    getString(R.string.gpx_viewer_not_installed), Toast.LENGTH_LONG).show()
                         }
                     } catch (e: IOException) {
                         Toast.makeText(applicationContext,
-                                "GPX file could not be copied", Toast.LENGTH_LONG).show()
+                                getString(R.string.gpx_file_not_copied), Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -113,11 +113,11 @@ class BookmarkDetailsActivity : AppCompatActivity() {
                             startActivity(intentShareFile)
                         } else {
                             Toast.makeText(applicationContext,
-                                    "E-Mail program not installed", Toast.LENGTH_LONG).show()
+                                    getString(R.string.no_email_prgram_installed), Toast.LENGTH_LONG).show()
                         }
                     } catch (e: IOException) {
                         Toast.makeText(applicationContext,
-                                "GPX file could not be shared", Toast.LENGTH_LONG).show()
+                                getString(R.string.gpx_file_not_copied), Toast.LENGTH_LONG).show()
                     }
                 }
             }

@@ -103,8 +103,9 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper? = null) : Fr
                 }
             }
             if (pointsShown > maxPointsToShow) {
-                //TODO: language
-                Toast.makeText(context, "Only ${mMarkersShown.size} of ${markersInBoundingBox.size} summits are shown, because track points exceeds limit.", Toast.LENGTH_LONG).show()
+                if (context != null) {
+                    Toast.makeText(context, String.format(requireContext().resources.getString(R.string.summits_shown, mMarkersShown.size.toString(), markersInBoundingBox.size.toString())), Toast.LENGTH_LONG).show()
+                }
             }
         }
 

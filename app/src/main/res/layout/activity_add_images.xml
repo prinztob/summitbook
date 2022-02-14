@@ -20,12 +20,21 @@
                 android:id="@+id/name_and_type"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
-
+                <ImageButton
+                    android:id="@+id/back"
+                    android:layout_width="50dp"
+                    android:layout_height="40dp"
+                    android:layout_margin="5dp"
+                    android:layout_centerVertical="true"
+                    android:contentDescription="@string/back"
+                    android:src="?attr/homeAsUpIndicator"
+                    android:background="?attr/selectableItemBackgroundBorderless" />
                 <ImageView
                     android:id="@+id/sport_type_image"
                     android:layout_width="50dp"
                     android:layout_height="40dp"
                     android:layout_margin="5dp"
+                    android:layout_toEndOf="@id/back"
                     android:contentDescription="@string/sport_type_image"
                     android:paddingTop="5dp"
                     android:tag="image_tag" />

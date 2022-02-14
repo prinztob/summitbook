@@ -19,7 +19,6 @@ import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog.Companion.updateInstance
-import de.drtobiasprinz.summitbook.ui.utils.ImagePickerListener
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.util.*
 
@@ -62,7 +61,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         val textViewName = cardView.findViewById<TextView?>(R.id.summit_name)
         textViewName?.text = summit.name
         val textViewHeight = cardView.findViewById<TextView?>(R.id.height_meter)
-        textViewHeight?.text = String.format("%s hm", summit.elevationData.elevationGain)
+        textViewHeight?.text = String.format("%s %s", summit.elevationData.elevationGain, cardView.resources.getString(R.string.hm))
         val imageViewSportType = cardView.findViewById<ImageView?>(R.id.sport_type_image)
         if (summit.hasImagePath()) {
             imageViewSportType.setImageResource(summit.sportType.imageIdWhite)
@@ -80,18 +79,14 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         setMountainImage(summit, mountainButton)
 
         val addImageButton = cardView.findViewById<ImageButton?>(R.id.entry_add_image)
-        if (summit.hasImagePath()) {
-            addImageButton.setOnClickListener { v: View? ->
-                val context = v?.context
-                val intent = Intent(context, AddImagesActivity::class.java)
-                intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
-                intent.putExtra(SelectOnOsMapActivity.SUMMIT_POSITION, position)
-                v?.context?.startActivity(intent)
-            }
-        } else {
-            val listener = ImagePickerListener()
-            listener.setListener(addImageButton, summit, this, sortFilterHelper.database)
+        addImageButton.setOnClickListener { v: View? ->
+            val context = v?.context
+            val intent = Intent(context, AddImagesActivity::class.java)
+            intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
+            intent.putExtra(SelectOnOsMapActivity.SUMMIT_POSITION, position)
+            v?.context?.startActivity(intent)
         }
+
         val addVelocityData = cardView.findViewById<ImageButton?>(R.id.entry_add_velocity_data)
         if (summit.velocityData.hasAdditionalData() || summit.elevationData.hasAdditionalData()) {
             addVelocityData?.setImageResource(R.drawable.ic_baseline_speed_24)
@@ -173,10 +168,10 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         }
     }
 
-    fun showDeleteEntryDialog(it: Context, entry: Summit, v: View): AlertDialog? {
-        return AlertDialog.Builder(it)
-                .setTitle("Delete entry")
-                .setMessage("Are you sure you want to delete this entry?")
+    fun showDeleteEntryDialog(context: Context, entry: Summit, v: View): AlertDialog? {
+        return AlertDialog.Builder(context)
+                .setTitle(String.format(context.resources.getString(R.string.delete_entry), entry.name))
+                .setMessage(context.resources.getString(R.string.delete_entry_text))
                 .setPositiveButton(android.R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteEntry(entry, v)
                 }

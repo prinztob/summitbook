@@ -349,4 +349,13 @@ von
     <string name="masl">m.ü.M.</string>
     <string name="show_all">Zeige alle</string>
     <string name="marked_summits">Markierter Gipfel</string>
+    <string name="pts">Pkt</string>
+    <string name="add_image_canceled">Bildauswahl abgebrochen</string>
+    <string name="summits_shown">Nur %1$s von %2$s Gipfel werden gezeigt, da das Limit an Trackpunkten überschritten wurde.</string>
+    <string name="no_image_selected">Kein Bild ausgewählt</string>
+    <string name="gpx_viewer_not_installed">GPX viewer nicht installiert</string>
+    <string name="gpx_file_not_copied">GPX Datei konnte nicht kopiert werden</string>
+    <string name="add_position_to_summit">Hinzufügen einer neuen position zu Gipfel %1$s war erfolgreich.</string>
+    <string name="no_email_prgram_installed">E-Mail program not installed</string>
+
 </resources>

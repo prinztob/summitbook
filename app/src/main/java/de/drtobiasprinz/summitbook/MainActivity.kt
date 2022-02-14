@@ -313,7 +313,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     .show(!isDialogShown)
             isDialogShown = true
         } else {
-            Toast.makeText(this, "No images selected", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.no_image_selected), Toast.LENGTH_SHORT).show()
         }
     }
 

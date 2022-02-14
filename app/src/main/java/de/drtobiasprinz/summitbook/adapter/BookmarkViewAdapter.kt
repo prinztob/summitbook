@@ -54,9 +54,9 @@ class BookmarkViewAdapter(var bookmarks: ArrayList<Bookmark>) : RecyclerView.Ada
             val textViewName = cardView.findViewById<TextView?>(R.id.bookmark_name)
             textViewName?.text = entry.name
             val textViewHeight = cardView.findViewById<TextView?>(R.id.height_meter)
-            textViewHeight?.text = String.format("%s hm", entry.heightMeter)
+            textViewHeight?.text = String.format("%s %s", entry.heightMeter, cardView.resources.getString(R.string.hm))
             val textViewKm = cardView.findViewById<TextView?>(R.id.kilometers)
-            textViewKm?.text = String.format("%s km", entry.kilometers)
+            textViewKm?.text = String.format("%s km", entry.kilometers, cardView.resources.getString(R.string.km))
             val imageViewSportType = cardView.findViewById<ImageView?>(R.id.sport_type_image)
             entry.sportType.imageIdBlack.let { imageViewSportType?.setImageResource(it) }
 

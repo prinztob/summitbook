@@ -45,21 +45,18 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     var gpxTrack: Gpx? = null
     private var minForColorCoding = 0f
     private var maxForColorCoding = 0f
-    private val COLOR_POLYLINE_STATIC = Color.BLUE
-    private val COLOR_POLYLINE_ANIMATED = Color.GREEN
-    private val COLOR_BACKGROUND = Color.WHITE
-    private val LINE_WIDTH_BIG = 12f
-    private val TEXT_SIZE = 20f
-    private val TAG = "GpsTrack"
 
     var startColor: Int = Color.BLUE
     var endColor: Int = Color.RED
 
     fun addGpsTrack(mMapView: MapView?, selectedCustomizeTrackItem: TrackColor = TrackColor.None, color: Int = COLOR_POLYLINE_STATIC, rootView: View? = null) {
         osMapRoute = Polyline(mMapView)
+        val textView: TextView? = rootView?.findViewById(R.id.track_value)
+        val defaultText = "${trackPoints.size} ${rootView?.resources?.getString(R.string.pts)}"
+        textView?.visibility = View.VISIBLE
+        textView?.text = defaultText
         osMapRoute?.setOnClickListener { _, _, eventPos ->
-            if (rootView != null) {
-                val textView: TextView = rootView.findViewById(R.id.track_value)
+            if (textView != null) {
                 textView.visibility = View.VISIBLE
                 val trackPoint = usedTrackPoints.minByOrNull { getDistance(it, TrackPoint(eventPos.latitude, eventPos.longitude)) }
                 if (trackPoint != null && (minForColorCoding != 0f || maxForColorCoding != 0f)) {
@@ -337,6 +334,14 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
 
 
     companion object {
+
+        private const val COLOR_POLYLINE_STATIC = Color.BLUE
+        private const val COLOR_POLYLINE_ANIMATED = Color.GREEN
+        private const val COLOR_BACKGROUND = Color.WHITE
+        private const val LINE_WIDTH_BIG = 12f
+        private const val TEXT_SIZE = 20f
+        private const val TAG = "GpsTrack"
+
         fun setDistanceFromPoints(trackPoints: List<TrackPoint?>) {
             var lastTrackPoint: TrackPoint? = null
             for (trackPoint in trackPoints) {

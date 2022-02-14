@@ -134,8 +134,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     database?.summitDao()?.updateLng(entry.id, position.longitude)
                     entry.latLng = latLngSelectedPosition
                     finish()
-                    Toast.makeText(v.context, "Adding a new position to summit " +
-                            entry.name + " was successful.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(v.context, String.format(getString(R.string.no_email_prgram_installed), entry.name), Toast.LENGTH_SHORT).show()
                 }
                 val localSelectedPath = selectedGpsPath
                 if (localSelectedPath != null) {

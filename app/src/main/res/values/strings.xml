@@ -348,5 +348,13 @@
     <string name="masl">m.a.s.l.</string>
     <string name="show_all">Show all</string>
     <string name="marked_summits">Marked Summits</string>
+    <string name="pts">Pts</string>
+    <string name="add_image_canceled">Image picking canceled</string>
+    <string name="summits_shown">Only %1$s of %2$s summits are shown, because track points exceeds limit.</string>
+    <string name="no_image_selected">No images selected</string>
+    <string name="gpx_viewer_not_installed">GPX viewer not installed</string>
+    <string name="gpx_file_not_copied">GPX file could not be copied</string>
+    <string name="add_position_to_summit">Adding a new position to summit %1$s was successful.</string>
+    <string name="no_email_prgram_installed">E-Mail program not installed</string>
 
 </resources>
