@@ -3,7 +3,7 @@ package de.drtobiasprinz.summitbook.models
 import android.content.Context
 import android.content.res.Resources
 import androidx.room.*
-import com.google.android.gms.maps.model.LatLng
+import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
@@ -36,7 +36,7 @@ class Summit(
     var id: Long = 0
 
     @Ignore
-    var latLng = lat?.let { lng?.let { it1 -> LatLng(it, it1) } }
+    var latLng = lat?.let { lng?.let { it1 -> TrackPoint(it, it1) } }
 
     @Ignore
     var duration = getWellDefinedDuration()
@@ -179,8 +179,8 @@ class Summit(
     }
 
     fun getStringRepresentation(exportThirdPartyData: Boolean = true, exportCalculatedData: Boolean = true): String {
-        val lat = latLng?.latitude?.toString() ?: ""
-        val lng = latLng?.longitude?.toString() ?: ""
+        val lat = latLng?.lat?.toString() ?: ""
+        val lng = latLng?.lon?.toString() ?: ""
         var entryToString = getDateAsString() + ';' +
                 name + ';' +
                 sportType + ';' +
@@ -272,7 +272,7 @@ class Summit(
     fun isInBoundingBox(boundingBox: BoundingBox): Boolean {
         val latLngLocal = latLng
         if (latLngLocal != null && hasGpsTrack()) {
-            return boundingBox.contains(GeoPoint(latLngLocal.latitude, latLngLocal.longitude)) || trackBoundingBox?.intersects(boundingBox) == true
+            return boundingBox.contains(GeoPoint(latLngLocal.lat, latLngLocal.lon)) || trackBoundingBox?.intersects(boundingBox) == true
         } else {
             return false
         }
@@ -327,7 +327,7 @@ class Summit(
             val participants = splitLine[13].split(",")
             val activityId = if (splitLine[14].trim { it <= ' ' } != "") splitLine[14].toLong() else System.currentTimeMillis()
             val garminData = getGarminData(splitLine)
-            val latLng = if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") splitLine[11].toDouble().let { LatLng(it, splitLine[12].toDouble()) } else null
+            val latLng = if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") splitLine[11].toDouble().let { TrackPoint(it, splitLine[12].toDouble()) } else null
             val isFavoriteAndOrPeak = (if (splitLine.size == NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY) splitLine[27] else (if (splitLine.size == NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY) splitLine[15] else splitLine[29])).split(",")
             val isFavorite = if (isFavoriteAndOrPeak.isEmpty()) false else isFavoriteAndOrPeak[0] == "1"
             val isPeak = if (isFavoriteAndOrPeak.size <2) false else isFavoriteAndOrPeak[1] == "1"
@@ -341,7 +341,7 @@ class Summit(
                     elevationData,
                     km,
                     VelocityData.parse(splitLine[8].split(","), topSpeed),
-                    latLng?.latitude, latLng?.longitude,
+                    latLng?.lat, latLng?.lon,
                     participants,
                     isFavorite,
                     isPeak,

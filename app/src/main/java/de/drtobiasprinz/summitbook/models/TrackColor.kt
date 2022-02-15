@@ -13,7 +13,7 @@ enum class TrackColor(val nameId: Int, var spinnerId: Int, val unit: String, val
     Cadence(R.string.cadence, 3, "", R.string.cadence_profile_label, f = { e -> e.extension?.cadence?.toDouble() }),
     HeartRate(R.string.heart_rate, 4, "bpm", R.string.heart_rate_profile_label, f = { e -> e.extension?.heartRate?.toDouble() }),
     Power(R.string.power, 5, "W", R.string.power_profile_label, f = { e -> e.extension?.power?.toDouble() }),
-    Speed(R.string.speed, 6, "km/h", R.string.speed_profile_label, digits = 1, f = { e -> e.extension?.speed }),
+    Speed(R.string.speed, 6, "km/h", R.string.speed_profile_label, digits = 1, f = { e -> (e.extension?.speed?: 0.0) * 3.6 }),
     Slope(R.string.slope, 7, "%", R.string.slope_profile_label, digits = 1, f = { e -> e.extension?.slope }),
     VerticalSpeed(R.string.vertical_speed, 8, "m/min", R.string.vertical_speed_profile_label, f = { e -> e.extension?.verticalVelocity?.times(60) });
 

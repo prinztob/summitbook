@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
-import com.google.android.gms.maps.model.LatLng
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.*
@@ -63,7 +62,7 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, val garminPythonEx
             val tracks = if (useTcx) gpsUtils.composeTcxFile(downloadedTracks as ArrayList<File>) else gpsUtils.composeGpxFile(downloadedTracks as ArrayList<File>)
             val gpxTrackFile = fileDestination ?: finalEntryLocal.getGpsTrackPath().toFile()
             gpxTrackFile?.let { gpsUtils.write(fileDestination ?: it, tracks, name) }
-            if (finalEntryLocal.latLng == null || finalEntryLocal.latLng?.latitude == 0.0) {
+            if (finalEntryLocal.latLng == null || finalEntryLocal.latLng?.lat == 0.0) {
                 val points = tracks.map { it.segments.toList().blockingGet() }.flatten().map { it.points.toList().blockingGet() }.flatten()
                 if (points.isNotEmpty()) {
                     var highestTrackPoint = points.first()
@@ -72,7 +71,7 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, val garminPythonEx
                             highestTrackPoint = point
                         }
                     }
-                    finalEntryLocal.latLng = LatLng(highestTrackPoint.lat, highestTrackPoint.lon)
+                    finalEntryLocal.latLng = highestTrackPoint
                     finalEntryLocal.lat = highestTrackPoint.lat
                     finalEntryLocal.lng = highestTrackPoint.lon
                 }

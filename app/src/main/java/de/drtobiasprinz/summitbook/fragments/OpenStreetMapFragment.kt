@@ -178,7 +178,7 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper? = null) : Fr
                 for (entry in filteredEntriesLocal) {
                     val latLng = entry.latLng
                     if (latLng != null && mMapView != null) {
-                        val point = GeoPoint(latLng.latitude, latLng.longitude)
+                        val point = GeoPoint(latLng.lat, latLng.lon)
                         mGeoPoints.add(point)
                         mMarkers.add(addMarker(localMapView, requireContext(), point, entry))
                     }

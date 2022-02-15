@@ -35,7 +35,7 @@ object OpenStreetMapUtils {
         val latLng = summitEntry.latLng
         var marker: Marker? = null
         if (latLng != null) {
-            val point = GeoPoint(latLng.latitude, latLng.longitude)
+            val point = GeoPoint(latLng.lat, latLng.lon)
             mGeoPoints.add(point)
             marker = addMarker(osMap, context, point, summitEntry, false, alwaysShowTrackOnMap)
             if (!summitEntry.hasGpsTrack()) {
@@ -114,8 +114,8 @@ object OpenStreetMapUtils {
         val mGeoPoints: MutableList<GeoPoint> = mutableListOf()
         val positions = gpsTrack.getTrackPositions()
         for (entry in positions) {
-            if (entry != null && entry.longitude != 0.0 && entry.latitude != 0.0) {
-                mGeoPoints.add(GeoPoint(entry.latitude, entry.longitude))
+            if (entry != null && entry.lat != 0.0 && entry.lon != 0.0) {
+                mGeoPoints.add(GeoPoint(entry.lat, entry.lon))
             }
         }
         return mGeoPoints

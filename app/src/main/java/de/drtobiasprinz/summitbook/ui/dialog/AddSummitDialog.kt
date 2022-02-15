@@ -15,11 +15,11 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
-import com.google.android.gms.maps.model.LatLng
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.hootsuite.nachos.NachoTextView
 import com.hootsuite.nachos.terminator.ChipTerminatorHandler
+import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
@@ -29,7 +29,6 @@ import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownl
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
-import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -43,7 +42,7 @@ import kotlin.math.round
 class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : DialogFragment(), BaseDialog {
     var isUpdate = false
     var temporaryGpxFile: File? = null
-    var latlngHightestPoint: LatLng? = null
+    var latlngHightestPoint: TrackPoint? = null
     private lateinit var currentContext: Context
     private lateinit var sportTypeAdapter: ArrayAdapter<SportType>
     private var currentSummit: Summit? = null
@@ -196,7 +195,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             val entry = currentSummit
             if (entry != null) {
                 val garminDataLocal = entry.garminData
-                val gpsTrackPath = entry.getGpsTrackPath()?.toFile()
+                val gpsTrackPath = entry.getGpsTrackPath().toFile()
                 val temporaryGpxFileLocal = temporaryGpxFile
                 if (garminDataLocal != null && temporaryGpxFileLocal != null && temporaryGpxFileLocal.exists() && gpsTrackPath != null) {
                     temporaryGpxFileLocal.copyTo(gpsTrackPath, overwrite = true)
@@ -401,7 +400,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                         ElevationData.parse(getTextWithDefaultInt(topElevationText), heightMeterText.text.toString().toInt()),
                         getTextWithDefaultDouble(kmText),
                         VelocityData.parse(getTextWithDefaultDouble(paceText), getTextWithDefaultDouble(topSpeedText)),
-                        latlngHightestPoint?.latitude, latlngHightestPoint?.longitude,
+                        latlngHightestPoint?.lat, latlngHightestPoint?.lon,
                         participantsView.chipValues,
                         false,
                         false,
@@ -641,7 +640,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     }
 
     override fun getProgressBarForAsyncTask(): ProgressBar? {
-        return progressBarDownload
+        return view?.findViewById(R.id.progressBarDownload)
     }
 
     override fun isStepByStepDownload(): Boolean {

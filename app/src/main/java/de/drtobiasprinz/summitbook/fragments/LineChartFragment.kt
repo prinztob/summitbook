@@ -1,11 +1,11 @@
 package de.drtobiasprinz.summitbook.fragments
 
 import android.content.Context
+import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.view.LayoutInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
@@ -27,6 +27,7 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.models.LineChartSpinnerEntry
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
@@ -38,10 +39,9 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
     private var summitEntries: List<Summit>? = null
     private var filteredEntries: List<Summit>? = null
     private var dataSpinner: Spinner? = null
+    private var lineChartSpinnerEntry: LineChartSpinnerEntry = LineChartSpinnerEntry.HeightMeter
     private var lineChartView: View? = null
     private var lineChartEntries: MutableList<Entry?> = ArrayList()
-    private var unit: String = "hm"
-    private var label: String = "Height meters"
     private var lineChart: LineChart? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,7 +60,7 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
         summitEntries = sortFilterHelper.entries
         lineChart = lineChartView?.findViewById(R.id.lineChart) // Fragment
         resizeChart()
-        filteredEntries = sortFilterHelper.filteredEntries.filter { it.sportType != SportType.IndoorTrainer }
+        filteredEntries = sortFilterHelper.filteredEntries
         update(filteredEntries)
         listenOnDataSpinner()
         drawLineChart()
@@ -74,8 +74,9 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
     }
 
     private fun drawLineChart() {
+        setLineChartEntries()
         val dataSets: MutableList<ILineDataSet?> = ArrayList()
-        val dataSet = LineDataSet(lineChartEntries, label)
+        val dataSet = LineDataSet(lineChartEntries, resources.getString(lineChartSpinnerEntry.nameId))
         setGraphView(dataSet)
         dataSets.add(dataSet)
         lineChart?.data = LineData(dataSets)
@@ -87,6 +88,31 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
         lineChart?.setTouchEnabled(true)
         lineChart?.marker = CustomMarkerView(lineChartView?.context, R.layout.marker_graph)
         lineChart?.invalidate()
+    }
+
+    private fun setLineChartEntries() {
+        val useEntries = filteredEntries?.filter {
+            val value = lineChartSpinnerEntry.f(it)
+            if (value != null) {
+                if (!lineChartSpinnerEntry.includeIndoorActivities) {
+                    if (it.sportType == SportType.IndoorTrainer) false else value > 0
+                } else {
+                    value > 0
+                }
+            } else {
+                false
+            }
+        }?.sortedBy { it.date }
+        var accumulator = 0f
+        lineChartEntries = useEntries?.map {
+            val value = if (!lineChartSpinnerEntry.accumulate) {
+                lineChartSpinnerEntry.f(it)
+            } else {
+                accumulator += lineChartSpinnerEntry.f(it) ?: 0f
+                accumulator
+            }
+            Entry(it.getDateAsFloat(), value ?: 0f, it)
+        }?.toMutableList() ?: mutableListOf()
     }
 
     private fun setXAxis() {
@@ -103,14 +129,17 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
     private fun setYAxis(yAxis: YAxis?) {
         yAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return String.format(Locale.ENGLISH, "%.0f %s", value, unit)
+                return String.format(Locale.ENGLISH, "%.0f %s", value, lineChartSpinnerEntry.unit)
             }
         }
     }
 
     override fun update(filteredSummitEntries: List<Summit>?) {
-        filteredEntries = filteredSummitEntries?.filter { it.sportType != SportType.IndoorTrainer }
-        dataSpinner?.selectedItemId?.toInt()?.let { selectedDataSpinner(it) }
+        filteredEntries = filteredSummitEntries
+        val selected = dataSpinner?.selectedItemId?.toInt()
+        if (selected != null) {
+            lineChartSpinnerEntry = LineChartSpinnerEntry.values()[selected]
+        }
         drawLineChart()
     }
 
@@ -122,163 +151,19 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
         dataSet?.setCircleColor(R.color.colorGreen)
         dataSet?.highLightColor = Color.RED
         dataSet?.lineWidth = 5f
-        dataSet?.circleRadius = 15f
+        dataSet?.circleRadius = 10f
         dataSet?.valueTextSize = 15f
         dataSet?.mode = LineDataSet.Mode.HORIZONTAL_BEZIER
         dataSet?.cubicIntensity = 0.2f
         dataSet?.setDrawFilled(true)
         dataSet?.fillColor = Color.BLACK
-        dataSet?.fillAlpha = 80
-    }
-
-    private fun selectedDataSpinner(position: Int) {
-        val sortedEntries = filteredEntries as ArrayList<Summit>
-        sortedEntries?.sortWith(compareBy { it.date })
-        lineChartEntries.clear()
-        when (position) {
-            1 -> {
-                unit = "hm"
-                label = "Height meters accumulated"
-                if (sortedEntries != null) {
-                    for (summitEntry in sortedEntries) {
-                        var accumulatedHm = summitEntry.elevationData.elevationGain.toFloat()
-                        if (lineChartEntries.size > 0) {
-                            accumulatedHm += lineChartEntries[lineChartEntries.size - 1]?.y ?: 0.0f
-                        }
-                        lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), accumulatedHm, summitEntry))
-                    }
-                }
-            }
-            2 -> {
-                unit = "km"
-                label = "Kilometers"
-                if (sortedEntries != null) {
-                    for (summitEntry in sortedEntries) {
-                        lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.kilometers.toFloat(), summitEntry))
-                    }
-                }
-            }
-            3 -> {
-                unit = "km"
-                label = "Kilometers accumulated"
-                if (sortedEntries != null) {
-                    for (summitEntry in sortedEntries) {
-                        if (summitEntry.kilometers > 0) {
-                            var accumulatedKilometers = summitEntry.kilometers
-                            if (lineChartEntries.size > 0) {
-                                accumulatedKilometers += lineChartEntries[lineChartEntries.size - 1]?.y
-                                        ?: 0.0f
-                            }
-                            lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), accumulatedKilometers.toFloat(), summitEntry))
-                        }
-                    }
-                }
-            }
-            4 -> {
-                unit = "hm"
-                label = "Elevation"
-                if (sortedEntries != null) {
-                    for (summitEntry in sortedEntries) {
-                        if (summitEntry.elevationData.maxElevation > 0) {
-                            lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.elevationData.maxElevation.toFloat(), summitEntry))
-                        }
-                    }
-                }
-            }
-            5 -> {
-                unit = "km/h"
-                label = "Average Speed"
-                if (sortedEntries != null) {
-                    for (summitEntry in sortedEntries) {
-                        if (summitEntry.velocityData.avgVelocity > 0) {
-                            lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.velocityData.avgVelocity.toFloat(), summitEntry))
-                        }
-                    }
-                }
-            }
-            6 -> {
-                unit = "km/h"
-                label = "Top Speed"
-                if (sortedEntries != null) {
-                    for (summitEntry in sortedEntries) {
-                        if (summitEntry.velocityData.maxVelocity > 0) {
-                            lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.velocityData.maxVelocity.toFloat(), summitEntry))
-                        }
-                    }
-                }
-            }
-            7 -> {
-                unit = "bpm"
-                label = "Average HR"
-                if (sortedEntries != null) {
-                    for (summitEntry in sortedEntries) {
-                        if (summitEntry.garminData != null) {
-                            val garminData = summitEntry.garminData
-                            if (garminData != null && garminData.averageHR > 0) {
-                                lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), garminData.averageHR, summitEntry))
-                            }
-                        }
-                    }
-                }
-            }
-            8 -> {
-                unit = "W"
-                label = "Norm Power"
-                if (sortedEntries != null) {
-                    for (summitEntry in sortedEntries) {
-                        if (summitEntry.garminData != null) {
-                            val garminData = summitEntry.garminData
-                            if (garminData != null && garminData.power.normPower > 0) {
-                                lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), garminData.power.normPower, summitEntry))
-                            }
-                        }
-                    }
-                }
-            }
-            9 -> {
-                unit = "W"
-                label = "Average Power 20 min"
-                if (sortedEntries != null) {
-                    for (summitEntry in sortedEntries) {
-                        if (summitEntry.garminData != null) {
-                            val garminData = summitEntry.garminData
-                            if (garminData != null && garminData.power.twentyMin > 0) {
-                                lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), garminData.power.twentyMin.toFloat(), summitEntry))
-                            }
-                        }
-                    }
-                }
-            }
-            10 -> {
-                unit = "W"
-                label = "Average Power 1 hour"
-                if (sortedEntries != null) {
-                    for (summitEntry in sortedEntries) {
-                        if (summitEntry.garminData != null) {
-                            val garminData = summitEntry.garminData
-                            if (garminData != null && garminData.power.oneHour > 0) {
-                                lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), garminData.power.oneHour.toFloat(), summitEntry))
-                            }
-                        }
-                    }
-                }
-            }
-            else -> {
-                unit = "hm"
-                label = "Height meters"
-                if (sortedEntries != null) {
-                    for (summitEntry in sortedEntries) {
-                        lineChartEntries.add(Entry(summitEntry.getDateAsFloat(), summitEntry.elevationData.elevationGain.toFloat(), summitEntry))
-                    }
-                }
-            }
-        }
+        dataSet?.fillAlpha = 60
     }
 
     private fun listenOnDataSpinner() {
         dataSpinner?.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
-                selectedDataSpinner(i)
+                lineChartSpinnerEntry = LineChartSpinnerEntry.values()[i]
                 drawLineChart()
             }
 
@@ -288,7 +173,8 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
 
     private fun fillDateSpinner() {
         val dateAdapter = ArrayAdapter(requireContext(),
-                android.R.layout.simple_spinner_item, ArrayList(listOf(*resources.getStringArray(R.array.data_array))))
+                android.R.layout.simple_spinner_item,
+                LineChartSpinnerEntry.values().map { resources.getString(it.nameId) }.toTypedArray())
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         dataSpinner = lineChartView?.findViewById(R.id.spinner_data)
         dataSpinner?.adapter = dateAdapter
@@ -301,15 +187,28 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
         override fun refreshContent(e: Entry?, highlight: Highlight?) {
             try {
                 val summitEntry = e?.data as Summit
-                tvContent?.text = String.format("%s\n%s\n%s hm", summitEntry.name, summitEntry.getDateAsString(), summitEntry.elevationData.elevationGain) // set the entry-value as the display text
+                tvContent?.text = String.format("%s\n%s\n%s hm", summitEntry.name, summitEntry.getDateAsString(), summitEntry.elevationData.elevationGain)
             } catch (ex: Exception) {
                 ex.printStackTrace()
+            }
+        }
+
+        private val uiScreenWidth = resources.displayMetrics.widthPixels
+
+        override fun draw(canvas: Canvas?, posX: Float, posY: Float) {
+            var newPosX = posX
+            if ((uiScreenWidth - posX) < width / 2f) {
+                newPosX = uiScreenWidth - width / 2f - 25f
+            }
+            if (tvContent?.text != "") {
+                super.draw(canvas, newPosX, posY)
             }
         }
 
         override fun getOffset(): MPPointF {
             return MPPointF(-(width / 2f), (-height).toFloat())
         }
+
     }
 
 }

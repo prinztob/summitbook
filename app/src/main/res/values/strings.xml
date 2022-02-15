@@ -29,6 +29,7 @@
     <string name="country_hint">country</string>
     <string name="comment_hint">comment, e.g. other places visited in trip, people joined, etc.</string>
     <string name="kilometers_hint">Distance</string>
+    <string name="kilometers_accumulated">Distance accumulated</string>
     <string name="latitude">Latitude</string>
     <string name="longitude">Longitude</string>
     <string name="pace_hint">Average speed</string>
@@ -84,6 +85,7 @@
     <string name="longest_distance">Longest Distance</string>
     <string name="height_meter_done">Most height meter done</string>
     <string name="height_meter">Height meter</string>
+    <string name="height_meter_accumulated">Height meter accumulated</string>
     <string name="power">Power</string>
     <string name="cadence">Cadence</string>
     <string name="heart_rate">Heart Rate</string>
@@ -119,19 +121,6 @@
     <string-array name="date_array">
         <item>Total</item>
         <item>Custom</item>
-    </string-array>
-    <string-array name="data_array">
-        <item>Height Meters</item>
-        <item>Height Meters accumulated</item>
-        <item>Kilometers</item>
-        <item>Kilometers accumulated</item>
-        <item>Elevation</item>
-        <item>Average Speed</item>
-        <item>Top Speed</item>
-        <item>Average HR</item>
-        <item>Norm Power</item>
-        <item>Average Power 20 min</item>
-        <item>Average Power 1 hour</item>
     </string-array>
 
     <string-array name="bar_chart_spinner">
@@ -356,5 +345,8 @@
     <string name="gpx_file_not_copied">GPX file could not be copied</string>
     <string name="add_position_to_summit">Adding a new position to summit %1$s was successful.</string>
     <string name="no_email_prgram_installed">E-Mail program not installed</string>
+    <string name="add_new_summit">Add new summit</string>
+    <string name="change_map_type">Change map type</string>
+    <string name="add_new_bookmark">Add new bookmark</string>
 
 </resources>

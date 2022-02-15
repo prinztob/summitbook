@@ -64,6 +64,8 @@ class AddImagesActivity : AppCompatActivity() {
 
     private fun addImage(localSummit: Summit, imageId: Int, layout: RelativeLayout, id: Int, position: Int): Int {
         val localSummitImage = PhotoView(this)
+        val isVerticalImageOnNextPosition = (position == 0 && localSummit.imageIds.size > 1 && canImageBeOnFirstPosition?.get(localSummit.imageIds.get(1)) == false)
+
         localSummitImage.visibility = View.VISIBLE
         Glide.with(this)
                 .load("file://" + localSummit.getImagePath(imageId))
@@ -90,16 +92,17 @@ class AddImagesActivity : AppCompatActivity() {
             AlertDialog.Builder(v.context)
                     .setTitle(v.context.getString(R.string.delete_image, summitEntry?.name))
                     .setMessage(getString(R.string.delete_image_text))
-                    .setPositiveButton(android.R.string.yes) { _: DialogInterface?, _: Int ->
+                    .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
                         if (localSummit.getImagePath(imageId).toFile()?.delete() == true) {
                             localSummit.imageIds.remove(imageId)
                             updateAdapterAndDatabase(localSummit)
-                            localSummitImage.visibility = View.GONE
+                            layout.removeAllViewsInLayout()
+                            drawLayout(localSummit, layout)
                             Toast.makeText(v.context, getString(R.string.delete_image_done),
                                     Toast.LENGTH_SHORT).show()
                         }
                     }
-                    .setNegativeButton(android.R.string.no
+                    .setNegativeButton(android.R.string.cancel
                     ) { _: DialogInterface?, _: Int ->
                         Toast.makeText(v.context, getString(R.string.delete_cancel),
                                 Toast.LENGTH_SHORT).show()
@@ -108,6 +111,9 @@ class AddImagesActivity : AppCompatActivity() {
                     .show()
         }
         layout.addView(removeButton, getLayoutParams(localSummitImage.id, RelativeLayout.ALIGN_TOP))
+        if (isVerticalImageOnNextPosition) {
+            removeButton.visibility = View.GONE
+        }
 
         val upButton = ImageButton(this)
         upButton.id = View.generateViewId()
@@ -134,7 +140,6 @@ class AddImagesActivity : AppCompatActivity() {
             drawLayout(localSummit, layout)
         }
 
-        val isVerticalImageOnNextPosition = (position == 0 && localSummit.imageIds.size > 1 && canImageBeOnFirstPosition?.get(localSummit.imageIds.get(1)) == false)
         if (!(localSummit.imageIds.last() == imageId || isVerticalImageOnNextPosition)) {
             layout.addView(downButton, getLayoutParams(if (addUpButton) upButton.id else removeButton.id, RelativeLayout.BELOW))
         }

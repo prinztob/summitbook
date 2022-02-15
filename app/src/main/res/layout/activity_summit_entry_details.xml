@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:background="?attr/colorPrimaryDark"
             app:tabSelectedTextColor="@color/colorPrimary"
-            app:tabTextColor="@color/textColorPrimary" />
+            app:tabTextColor="@color/colorPrimary" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <de.drtobiasprinz.summitbook.ui.HackyViewPager

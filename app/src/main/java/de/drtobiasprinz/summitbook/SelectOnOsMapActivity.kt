@@ -15,8 +15,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
-import com.google.android.gms.maps.model.LatLng
 import de.drtobiasprinz.gpx.GPXParser
+import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter.Companion.setIconForPositionButton
 import de.drtobiasprinz.summitbook.database.AppDatabase
@@ -46,7 +46,7 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 
 class SelectOnOsMapActivity : FragmentActivity() {
-    private var latLngSelectedPosition: LatLng? = null
+    private var latLngSelectedPosition: TrackPoint? = null
     private var summitEntry: Summit? = null
     private var database: AppDatabase? = null
     private var selectedGpsPath: Path? = null
@@ -100,9 +100,9 @@ class SelectOnOsMapActivity : FragmentActivity() {
                 override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
                     if (entry != null) {
                         updateSavePositionButton(true)
-                        latLngSelectedPosition = LatLng(p.latitude, p.longitude)
+                        latLngSelectedPosition = TrackPoint(p.latitude, p.longitude)
                         addMarker(localOsMap, applicationContext, p, entry)
-                        prepareGpxTrack()?.let { addSelectedPositionAndTrack(LatLng(p.latitude, p.longitude), it, localOsMap) }
+                        prepareGpxTrack()?.let { addSelectedPositionAndTrack(TrackPoint(p.latitude, p.longitude), it, localOsMap) }
                     }
                     return false
                 }
@@ -128,10 +128,10 @@ class SelectOnOsMapActivity : FragmentActivity() {
             val position = latLngSelectedPosition
             if (entry != null) {
                 if (position != null) {
-                    entry.lat = position.latitude
-                    entry.lng = position.longitude
-                    database?.summitDao()?.updateLat(entry.id, position.latitude)
-                    database?.summitDao()?.updateLng(entry.id, position.longitude)
+                    entry.lat = position.lat
+                    entry.lng = position.lon
+                    database?.summitDao()?.updateLat(entry.id, position.lat)
+                    database?.summitDao()?.updateLng(entry.id, position.lon)
                     entry.latLng = latLngSelectedPosition
                     finish()
                     Toast.makeText(v.context, String.format(getString(R.string.no_email_prgram_installed), entry.name), Toast.LENGTH_SHORT).show()
@@ -174,20 +174,20 @@ class SelectOnOsMapActivity : FragmentActivity() {
                 AlertDialog.Builder(v.context)
                         .setTitle("Delete coordinates and GPS track")
                         .setMessage("Are you sure you want to delete the selected coordinates and the added GPS track?")
-                        .setPositiveButton(android.R.string.yes) { _: DialogInterface?, _: Int ->
+                        .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
                             selectedGpsPath = null
                             if (entry.hasGpsTrack()) {
                                 val gpsTrackPath = entry.getGpsTrackPath()
                                 gpsTrackPath.toFile()?.delete()
                             }
-                            entry.latLng = LatLng(0.0, 0.0)
+                            entry.latLng = TrackPoint(0.0, 0.0)
 
                             database?.summitDao()?.updateLat(entry.id, 0.0)
                             database?.summitDao()?.updateLng(entry.id, 0.0)
                             finish()
                             Toast.makeText(v.context, v.context.getString(R.string.delete_gps, entry.name), Toast.LENGTH_SHORT).show()
                         }
-                        .setNegativeButton(android.R.string.no
+                        .setNegativeButton(android.R.string.cancel
                         ) { _: DialogInterface?, _: Int ->
                             Toast.makeText(v.context, getString(R.string.delete_cancel), Toast.LENGTH_SHORT).show()
                         }
@@ -272,8 +272,8 @@ class SelectOnOsMapActivity : FragmentActivity() {
         val gpsTrack = prepareGpxTrack()
         val highestTrackPoint = gpsTrack?.getHighestElevation()
         if (highestTrackPoint != null) {
-            latLngSelectedPosition = LatLng(highestTrackPoint.lat, highestTrackPoint.lon)
-            addSelectedPositionAndTrack(LatLng(highestTrackPoint.lat, highestTrackPoint.lon), gpsTrack, osMap)
+            latLngSelectedPosition = highestTrackPoint
+            addSelectedPositionAndTrack(highestTrackPoint, gpsTrack, osMap)
             updateSavePositionButton(true)
         }
     }
@@ -294,10 +294,10 @@ class SelectOnOsMapActivity : FragmentActivity() {
         return gpsTrack
     }
 
-    private fun addSelectedPositionAndTrack(point: LatLng, gpsTrack: GpsTrack, osMap: MapView) {
+    private fun addSelectedPositionAndTrack(point: TrackPoint, gpsTrack: GpsTrack, osMap: MapView) {
         val entry = summitEntry
         if (entry != null) {
-            val geoPointSelectedPosition = GeoPoint(point.latitude, point.longitude)
+            val geoPointSelectedPosition = GeoPoint(point.lat, point.lon)
             addMarker(osMap, this, geoPointSelectedPosition, entry)
             gpsTrack.addGpsTrack(osMap, TrackColor.None)
             if (!wasBoundingBoxCalculated) {

@@ -30,6 +30,7 @@
     <string name="country_hint">Land</string>
     <string name="comment_hint">Kommentare</string>
     <string name="kilometers_hint">Entfernung</string>
+    <string name="kilometers_accumulated">Entfernung aufsummiert</string>
     <string name="latitude">Latitude</string>
     <string name="longitude">Longitude</string>
     <string name="pace_hint">Durchschn. Geschw.</string>
@@ -84,6 +85,7 @@
     <string name="highest_average_speed">Höchste Durschnittsgeschw.</string>
     <string name="longest_distance">Längste Strecke</string>
     <string name="height_meter">Höhenmeter</string>
+    <string name="height_meter_accumulated">Höhenmeter aufsummiert</string>
     <string name="power">Leistung</string>
     <string name="cadence">Kadenz</string>
     <string name="heart_rate">Herzfrequenz</string>
@@ -123,19 +125,6 @@ von
     <string-array name="date_array">
         <item>Gesamt</item>
         <item>Benutzerdefiniert</item>
-    </string-array>
-    <string-array name="data_array">
-        <item>Höhenmeter</item>
-        <item>Höhenmeter aufsummiert</item>
-        <item>Kilometer</item>
-        <item>Kilometer aufsummiert</item>
-        <item>Höhe</item>
-        <item>Duchschn. Geschwindigkeit</item>
-        <item>Maximale Geschwindigkeit</item>
-        <item>Duchschn. HR</item>
-        <item>Norm Leistung</item>
-        <item>Duchschn. Leistung 20 min</item>
-        <item>Duchschn. Leistung 1 Stunde</item>
     </string-array>
 
     <string-array name="bar_chart_spinner">
@@ -357,5 +346,8 @@ von
     <string name="gpx_file_not_copied">GPX Datei konnte nicht kopiert werden</string>
     <string name="add_position_to_summit">Hinzufügen einer neuen position zu Gipfel %1$s war erfolgreich.</string>
     <string name="no_email_prgram_installed">E-Mail program not installed</string>
+    <string name="add_new_summit">Füge neuen Gipfel hinzu</string>
+    <string name="change_map_type">Ändere Kartentyp</string>
+    <string name="add_new_bookmark">Füge neues Lesezeichen hinzu</string>
 
 </resources>

@@ -2,7 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:background="@drawable/ic_marker">
+    android:background="@drawable/myshape">
 
     <TextView
         android:id="@+id/tvContent"
@@ -12,11 +12,11 @@
         android:layout_marginLeft="3dp"
         android:layout_marginTop="3dp"
         android:layout_marginRight="3dp"
-        android:lines="4"
-        android:maxLines="3"
-        android:minLines="5"
+        android:lines="3"
+        android:maxLines="5"
+        android:minLines="3"
         android:ems="10"
         android:textAlignment="center"
         android:textAppearance="?android:attr/textAppearanceSmall"
-        android:textColor="@android:color/black" />
+        android:textColor="@android:color/white" />
 </RelativeLayout>

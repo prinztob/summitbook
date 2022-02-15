@@ -61,7 +61,8 @@
             android:layout_margin="25dp"
             android:onClick="onAddSummit"
             android:src="@drawable/ic_add_white_24dp"
-            app:backgroundTint="@color/colorGreen" />
+            app:backgroundTint="@color/colorGreen"
+            android:contentDescription="@string/add_new_summit" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/change_map_type"
@@ -73,7 +74,8 @@
             android:src="@drawable/ic_more_vert_black_24dp"
             android:visibility="invisible"
             app:fabCustomSize="40dp"
-            app:backgroundTint="@color/colorPrimaryDark" />
+            app:backgroundTint="@color/colorPrimaryDark"
+            android:contentDescription="@string/change_map_type" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/add_new_bookmark"
@@ -85,7 +87,8 @@
             android:src="@drawable/ic_add_white_24dp"
             android:visibility="invisible"
             app:fabCustomSize="40dp"
-            app:backgroundTint="@color/colorDarkGreen" />
+            app:backgroundTint="@color/colorDarkGreen"
+            android:contentDescription="@string/add_new_bookmark" />
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <com.google.android.material.navigation.NavigationView

@@ -1,11 +1,7 @@
 package de.drtobiasprinz.summitbook.dao
 
 import androidx.room.*
-import com.google.android.gms.maps.model.LatLng
-import de.drtobiasprinz.summitbook.models.ElevationData
 import de.drtobiasprinz.summitbook.models.Summit
-import de.drtobiasprinz.summitbook.models.TrackBoundingBox
-import de.drtobiasprinz.summitbook.models.VelocityData
 
 
 @Dao

@@ -10,7 +10,6 @@ import android.util.Log
 import android.view.View
 import android.widget.TextView
 import com.github.mikephil.charting.data.Entry
-import com.google.android.gms.maps.model.LatLng
 import de.drtobiasprinz.gpx.GPXParser
 import de.drtobiasprinz.gpx.Gpx
 import de.drtobiasprinz.gpx.PointExtension
@@ -269,12 +268,8 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
 
-    fun getTrackPositions(): ArrayList<LatLng?> {
-        val positions = ArrayList<LatLng?>()
-        for (trackPoint in trackPoints) {
-            positions.add(LatLng(trackPoint.lat, trackPoint.lon))
-        }
-        return positions
+    fun getTrackPositions(): List<TrackPoint?> {
+        return trackPoints
     }
 
     private fun setDistance() {
@@ -424,9 +419,9 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             override fun doInBackground(vararg uri: Uri): Void? {
                 track = getTrack(fileToUse)
                 trackPoints = getTrackPoints(track)
-                val summitSlope = SummitSlope(trackPoints)
-                summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0, factor = 100)
-                summitSlope.calculateMaxVerticalVelocity()
+//                val summitSlope = SummitSlope(trackPoints)
+//                summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0, factor = 100)
+//                summitSlope.calculateMaxVerticalVelocity()
                 trackGeoPoints = getGeoPoints(trackPoints)
                 return null
             }
