@@ -1,38 +1,28 @@
 package de.drtobiasprinz.summitbook.adapter
 
-import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
-import de.drtobiasprinz.summitbook.BookmarkDetailsActivity
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SelectOnOsMapActivity.Companion.PICK_GPX_FILE
+import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
+import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.Bookmark
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.dialog.AddBookmarkDialog.Companion.updateInstance
-import org.xmlpull.v1.XmlPullParserException
-import java.io.IOException
-import java.io.InputStream
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import java.util.*
 
 
-class BookmarkViewAdapter(var bookmarks: ArrayList<Bookmark>) : RecyclerView.Adapter<BookmarkViewAdapter.ViewHolder?>() {
+class BookmarkViewAdapter(var bookmarks: MutableList<Summit>) : RecyclerView.Adapter<BookmarkViewAdapter.ViewHolder?>() {
     private var cardView: CardView? = null
     private var context: Context? = null
-    private var selectedBookmark: Bookmark? = null
+    private var database: AppDatabase? = null
     override fun getItemCount(): Int {
         return bookmarks.size
     }
@@ -48,13 +38,13 @@ class BookmarkViewAdapter(var bookmarks: ArrayList<Bookmark>) : RecyclerView.Ada
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val cardView = holder.cardView
-        val database = context?.let { AppDatabase.getDatabase(it) }
+        database = context?.let { AppDatabase.getDatabase(it) }
         val entry = bookmarks[position]
         if (cardView != null) {
             val textViewName = cardView.findViewById<TextView?>(R.id.bookmark_name)
             textViewName?.text = entry.name
             val textViewHeight = cardView.findViewById<TextView?>(R.id.height_meter)
-            textViewHeight?.text = String.format("%s %s", entry.heightMeter, cardView.resources.getString(R.string.hm))
+            textViewHeight?.text = String.format("%s %s", entry.elevationData.elevationGain, cardView.resources.getString(R.string.hm))
             val textViewKm = cardView.findViewById<TextView?>(R.id.kilometers)
             textViewKm?.text = String.format("%s km", entry.kilometers, cardView.resources.getString(R.string.km))
             val imageViewSportType = cardView.findViewById<ImageView?>(R.id.sport_type_image)
@@ -72,37 +62,27 @@ class BookmarkViewAdapter(var bookmarks: ArrayList<Bookmark>) : RecyclerView.Ada
                 val updateDialog = updateInstance(entry)
                 MainActivity.mainActivity?.supportFragmentManager?.let { updateDialog.show(it, "Update Bookmark") }
             }
-        }
-        val addPosition = cardView?.findViewById<ImageButton?>(R.id.entry_add_coordinate)
-        addPosition?.setOnClickListener { v: View? ->
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
-                type = "*/*"
+            cardView.setOnClickListener { v: View? ->
+                val context = v?.context
+                val intent = Intent(context, SummitEntryDetailsActivity::class.java)
+                intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, entry.id)
+                intent.putExtra(SUMMIT_IS_BOOKMARK_IDENTIFIERS, true)
+                v?.context?.startActivity(intent)
             }
-            val origin = v?.context as Activity
-            selectedBookmark = entry
-            origin.startActivityForResult(intent, PICK_GPX_FILE)
-        }
-        cardView?.setOnClickListener { v: View? ->
-            val context = v?.context
-            val intent = Intent(context, BookmarkDetailsActivity::class.java)
-            intent.putExtra(BookmarkDetailsActivity.BOOKMARK_ID_EXTRA_IDENTIFIER, entry.id)
-            v?.context?.startActivity(intent)
         }
     }
 
-    private fun showAlertDialog(it: Context, database: AppDatabase?, entry: Bookmark, v: View): AlertDialog? {
+    private fun showAlertDialog(it: Context, database: AppDatabase?, entry: Summit, v: View): AlertDialog? {
         return AlertDialog.Builder(it)
                 .setTitle(v.context.getString(R.string.delete_entry, entry.name))
                 .setMessage(v.context.getString(R.string.delete_entry_text))
-                .setPositiveButton(android.R.string.yes) { _: DialogInterface?, _: Int ->
-                    val taskState = database?.let { database.bookmarkDao()?.delete(entry) }
-                            ?: false
+                .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
+                    database?.let { database.summitDao()?.delete(entry) }
                     bookmarks.remove(entry)
                     notifyDataSetChanged()
                     Toast.makeText(v.context, v.context.getString(R.string.delete_entry, entry.name), Toast.LENGTH_SHORT).show()
                 }
-                .setNegativeButton(android.R.string.no
+                .setNegativeButton(android.R.string.cancel
                 ) { _: DialogInterface?, _: Int ->
                     Toast.makeText(v.context, v.context.getString(R.string.delete_cancel),
                             Toast.LENGTH_SHORT).show()
@@ -111,38 +91,10 @@ class BookmarkViewAdapter(var bookmarks: ArrayList<Bookmark>) : RecyclerView.Ada
                 .show()
     }
 
-    fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
-        if (requestCode == PICK_GPX_FILE && resultCode == Activity.RESULT_OK) {
-            resultData?.data?.also { uri ->
-                val bookmarkLocal = selectedBookmark
-                if (bookmarkLocal != null) {
-                    context?.contentResolver?.openInputStream(uri)?.use { inputStream ->
-                        uploadGpxFile(inputStream, bookmarkLocal, cardView)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun uploadGpxFile(inputStream: InputStream, entry: Bookmark, v: View?) {
-        try {
-            val fileDest = entry.getGpsTrackPath()
-            try {
-                Files.copy(inputStream, fileDest, StandardCopyOption.REPLACE_EXISTING)
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-            Toast.makeText(v?.context, v?.context?.getString(R.string.add_gpx_successful, entry.name), Toast.LENGTH_SHORT).show()
-        } catch (e: IOException) {
-            e.printStackTrace()
-            Toast.makeText(v?.context, v?.context?.getString(R.string.add_gpx_failed, entry.name), Toast.LENGTH_SHORT).show()
-        } catch (e: XmlPullParserException) {
-            e.printStackTrace()
-            Toast.makeText(v?.context, v?.context?.getString(R.string.add_gpx_failed, entry.name), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-
     class ViewHolder internal constructor(val cardView: CardView?) : RecyclerView.ViewHolder(cardView!!) {
+    }
+
+    companion object {
+        var SUMMIT_IS_BOOKMARK_IDENTIFIERS = "SUMMIT_IS_BOOKMARK_IDENTIFIERS"
     }
 }

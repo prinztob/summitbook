@@ -1,30 +1,26 @@
 package de.drtobiasprinz.summitbook.database
 
 import android.content.Context
-import androidx.room.Database
-import androidx.room.Room
-import androidx.room.RoomDatabase
-import androidx.room.AutoMigration
-import androidx.room.TypeConverters
+import androidx.room.*
+import androidx.room.migration.AutoMigrationSpec
 import de.drtobiasprinz.summitbook.dao.*
-import de.drtobiasprinz.summitbook.models.Bookmark
 import de.drtobiasprinz.summitbook.models.Forecast
 import de.drtobiasprinz.summitbook.models.IgnoredActivity
 import de.drtobiasprinz.summitbook.models.Summit
 
 
 @Database(
-        entities = [Summit::class, Bookmark::class, Forecast::class, IgnoredActivity::class],
-        version = 3,
+        entities = [Summit::class, Forecast::class, IgnoredActivity::class],
+        version = 4,
         autoMigrations = [
-            AutoMigration (from = 1, to = 2),
-            AutoMigration (from = 2, to = 3)
+            AutoMigration(from = 1, to = 2),
+            AutoMigration(from = 2, to = 3),
+            AutoMigration(from = 3, to = 4, spec = AppDatabase.MyAutoMigration::class)
         ],
         exportSchema = true
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun bookmarkDao(): BookmarkDao?
     abstract fun forecastDao(): ForecastDao?
     abstract fun summitDao(): SummitDao?
     abstract fun ignoredActivityDao(): IgnoredActivityDao?
@@ -39,4 +35,6 @@ abstract class AppDatabase : RoomDatabase() {
             return database
         }
     }
+    @DeleteTable(tableName = "Bookmark")
+    class MyAutoMigration : AutoMigrationSpec
 }

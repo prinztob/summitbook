@@ -40,7 +40,7 @@
         android:summary="@string/garmin_pwd_summary"
         android:inputType="textPassword" />
     <de.drtobiasprinz.summitbook.ui.utils.DatePreference
-        android:title="Start date for syncing Garmin Activities"
+        android:title="@string/start_date_sync_garmin"
         android:key="garmin_start_date"
         android:defaultValue="2020-01-01"/>
     <EditTextPreference
@@ -64,7 +64,7 @@
         app:defaultValue="0"
         app:showSeekBarValue="true"
         app:key="indoor_height_meter_per_cent"
-        app:title="Indoor height meter inclusion %"/>
+        app:title="@string/indoor_hm_percent"/>
     <SwitchPreference
         android:defaultValue="true"
         android:key="export_third_party_data"

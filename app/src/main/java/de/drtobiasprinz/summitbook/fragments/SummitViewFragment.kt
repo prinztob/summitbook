@@ -10,7 +10,6 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -24,10 +23,9 @@ import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
-import de.drtobiasprinz.summitbook.ui.SwipeToDeleteCallback
+import de.drtobiasprinz.summitbook.ui.SwipeToMarkCallback
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.io.File
-import java.util.*
 
 
 class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : Fragment(), SummationFragment, OnSharedPreferenceChangeListener {
@@ -55,7 +53,7 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
         summitRecycler.adapter = adapter
         val layoutManager = LinearLayoutManager(activity)
         summitRecycler.layoutManager = layoutManager
-        val itemTouchHelper = ItemTouchHelper(SwipeToDeleteCallback(adapter, requireContext(), summitRecycler))
+        val itemTouchHelper = ItemTouchHelper(SwipeToMarkCallback(adapter, requireContext()))
         itemTouchHelper.attachToRecyclerView(summitRecycler)
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)

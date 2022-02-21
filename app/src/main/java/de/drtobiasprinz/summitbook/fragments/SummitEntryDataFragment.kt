@@ -57,27 +57,27 @@ class SummitEntryDataFragment : Fragment() {
             textViewName.text = localSummit.name
             val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
             imageViewSportType.setImageResource(localSummit.sportType.imageIdBlack)
-            setText(localSummit.elevationData.elevationGain, "hm", root.findViewById(R.id.height_meterText), root.findViewById(R.id.height_meter),
+            setText(localSummit.elevationData.elevationGain, getString(R.string.hm), root.findViewById(R.id.height_meterText), root.findViewById(R.id.height_meter),
                     Pair(extrema?.heightMetersMinMax?.first?.elevationData?.elevationGain
                             ?: 0, extrema?.heightMetersMinMax?.second?.elevationData?.elevationGain
                             ?: 0))
-            setText(localSummit.kilometers, "km", root.findViewById(R.id.kilometersText), root.findViewById(R.id.kilometers),
+            setText(localSummit.kilometers, getString(R.string.km), root.findViewById(R.id.kilometersText), root.findViewById(R.id.kilometers),
                     Pair(floor(extrema?.kilometersMinMax?.first?.kilometers
                             ?: 0.0).toInt(), ceil(extrema?.kilometersMinMax?.second?.kilometers
                             ?: 0.0).toInt()))
-            setText(localSummit.elevationData.maxElevation, "hm", root.findViewById(R.id.top_elevationText), root.findViewById(R.id.top_elevation),
+            setText(localSummit.elevationData.maxElevation, getString(R.string.hm), root.findViewById(R.id.top_elevationText), root.findViewById(R.id.top_elevation),
                     Pair(extrema?.topElevationMinMax?.first?.elevationData?.maxElevation
                             ?: 0, extrema?.topElevationMinMax?.second?.elevationData?.maxElevation
                             ?: 0))
-            setText(localSummit.elevationData.maxVerticalVelocity1Min, "m", root.findViewById(R.id.top_verticalVelocity1MinText), root.findViewById(R.id.top_verticalVelocity1Min),
+            setText(localSummit.elevationData.maxVerticalVelocity1Min, getString(R.string.m), root.findViewById(R.id.top_verticalVelocity1MinText), root.findViewById(R.id.top_verticalVelocity1Min),
                     Pair(extrema?.topVerticalVelocity1MinMinMax?.first?.elevationData?.maxVerticalVelocity1Min
                             ?: 0.0, extrema?.topVerticalVelocity1MinMinMax?.second?.elevationData?.maxVerticalVelocity1Min
                             ?: 0.0), factor = 60, digits = 0)
-            setText(localSummit.elevationData.maxVerticalVelocity10Min, "m", root.findViewById(R.id.top_verticalVelocity10MinText), root.findViewById(R.id.top_verticalVelocity10Min),
+            setText(localSummit.elevationData.maxVerticalVelocity10Min, getString(R.string.m), root.findViewById(R.id.top_verticalVelocity10MinText), root.findViewById(R.id.top_verticalVelocity10Min),
                     Pair(extrema?.topVerticalVelocity10MinMinMax?.first?.elevationData?.maxVerticalVelocity10Min
                             ?: 0.0, extrema?.topVerticalVelocity10MinMinMax?.second?.elevationData?.maxVerticalVelocity10Min
                             ?: 0.0), factor = 600, digits = 0)
-            setText(localSummit.elevationData.maxVerticalVelocity1h, "m", root.findViewById(R.id.top_verticalVelocity1hText), root.findViewById(R.id.top_verticalVelocity1h),
+            setText(localSummit.elevationData.maxVerticalVelocity1h, getString(R.string.m), root.findViewById(R.id.top_verticalVelocity1hText), root.findViewById(R.id.top_verticalVelocity1h),
                     Pair(extrema?.topVerticalVelocity1hMinMax?.first?.elevationData?.maxVerticalVelocity1h
                             ?: 0.0, extrema?.topVerticalVelocity1hMinMax?.second?.elevationData?.maxVerticalVelocity1h
                             ?: 0.0), factor = 3600, digits = 0)
@@ -85,11 +85,11 @@ class SummitEntryDataFragment : Fragment() {
                     Pair(extrema?.topSlopeMinMax?.first?.elevationData?.maxSlope
                             ?: 0.0, extrema?.topSlopeMinMax?.second?.elevationData?.maxSlope
                             ?: 0.0))
-            setText(localSummit.velocityData.avgVelocity, "km/h", root.findViewById(R.id.paceText), root.findViewById(R.id.pace),
+            setText(localSummit.velocityData.avgVelocity, getString(R.string.kmh), root.findViewById(R.id.paceText), root.findViewById(R.id.pace),
                     Pair(floor(extrema?.averageSpeedMinMax?.first?.velocityData?.avgVelocity
                             ?: 0.0).toInt(), ceil(extrema?.averageSpeedMinMax?.second?.velocityData?.avgVelocity
                             ?: 0.0).toInt()))
-            setText(localSummit.velocityData.maxVelocity, "km/h", root.findViewById(R.id.top_speedText), root.findViewById(R.id.top_speed),
+            setText(localSummit.velocityData.maxVelocity, getString(R.string.kmh), root.findViewById(R.id.top_speedText), root.findViewById(R.id.top_speed),
                     Pair(floor(extrema?.topSpeedMinMax?.first?.velocityData?.maxVelocity
                             ?: 0.0).toInt(), ceil(extrema?.topSpeedMinMax?.second?.velocityData?.maxVelocity
                             ?: 0.0).toInt()))
@@ -131,25 +131,25 @@ class SummitEntryDataFragment : Fragment() {
                 val text = "<a href=\"${garminData.url}\">${requireContext().getString(R.string.sensor_data)}</a>"
                 textView.text = Html.fromHtml(text, 0)
                 root.findViewById<View>(R.id.garminData).visibility = View.VISIBLE
-                setText(garminData.averageHR.toInt(), "bpm", root.findViewById(R.id.averageHrText), root.findViewById(R.id.averageHr),
+                setText(garminData.averageHR.toInt(), getString(R.string.bpm), root.findViewById(R.id.averageHrText), root.findViewById(R.id.averageHr),
                         Pair(extrema?.averageHRMinMax?.first?.garminData?.averageHR
                                 ?: 0f, extrema?.averageHRMinMax?.second?.garminData?.averageHR
                                 ?: 0f), true)
-                setText(garminData.maxHR.toInt(), "bpm", root.findViewById(R.id.maxHrText), root.findViewById(R.id.maxHr),
+                setText(garminData.maxHR.toInt(), getString(R.string.bpm), root.findViewById(R.id.maxHrText), root.findViewById(R.id.maxHr),
                         Pair(extrema?.maxHRMinMax?.first?.garminData?.maxHR
                                 ?: 0f, extrema?.maxHRMinMax?.second?.garminData?.maxHR ?: 0f), true)
-                setText(garminData.power.maxPower.toInt(), "W", root.findViewById(R.id.maxPowerText), root.findViewById(R.id.maxPower),
+                setText(garminData.power.maxPower.toInt(), getString(R.string.watt), root.findViewById(R.id.maxPowerText), root.findViewById(R.id.maxPower),
                         Pair(extrema?.maxPowerMinMax?.first?.garminData?.power?.maxPower
                                 ?: 0f, extrema?.maxPowerMinMax?.second?.garminData?.power?.maxPower
                                 ?: 0f))
-                setText(garminData.calories.toInt(), "kcal", root.findViewById(R.id.caloriesText), root.findViewById(R.id.calories),
+                setText(garminData.calories.toInt(), getString(R.string.kcal), root.findViewById(R.id.caloriesText), root.findViewById(R.id.calories),
                         Pair(extrema?.caloriesMinMax?.first?.garminData?.calories
                                 ?: 0f, extrema?.caloriesMinMax?.second?.garminData?.calories ?: 0f))
-                setText(garminData.power.avgPower.toInt(), "W", root.findViewById(R.id.averagePowerText), root.findViewById(R.id.averagePower),
+                setText(garminData.power.avgPower.toInt(), getString(R.string.watt), root.findViewById(R.id.averagePowerText), root.findViewById(R.id.averagePower),
                         Pair(extrema?.averagePowerMinMax?.first?.garminData?.power?.avgPower
                                 ?: 0f, extrema?.averagePowerMinMax?.second?.garminData?.power?.avgPower
                                 ?: 0f))
-                setText(garminData.power.normPower.toInt(), "W", root.findViewById(R.id.normPowerText), root.findViewById(R.id.normPower),
+                setText(garminData.power.normPower.toInt(), getString(R.string.watt), root.findViewById(R.id.normPowerText), root.findViewById(R.id.normPower),
                         Pair(extrema?.normPowerMinMax?.first?.garminData?.power?.normPower
                                 ?: 0f, extrema?.normPowerMinMax?.second?.garminData?.power?.normPower
                                 ?: 0f))
@@ -203,108 +203,108 @@ class SummitEntryDataFragment : Fragment() {
     }
 
     private fun setAdditionalSpeedData(localSummit: Summit, extrema: ExtremaValuesSummits?, visibility: Int = View.GONE) {
-        setText(localSummit.velocityData.oneKilometer, "km/h", root.findViewById(R.id.oneKM_top_speedText), root.findViewById(R.id.oneKM_top_speed),
+        setText(localSummit.velocityData.oneKilometer, getString(R.string.kmh), root.findViewById(R.id.oneKM_top_speedText), root.findViewById(R.id.oneKM_top_speed),
                 Pair(floor(extrema?.oneKmMinMax?.first?.velocityData?.oneKilometer
                         ?: 0.0).toInt(), ceil(extrema?.oneKmMinMax?.second?.velocityData?.fiveKilometer
                         ?: 0.0).toInt()), visibility = visibility)
-        setText(localSummit.velocityData.fiveKilometer, "km/h", root.findViewById(R.id.fiveKM_top_speedText), root.findViewById(R.id.fiveKM_top_speed),
+        setText(localSummit.velocityData.fiveKilometer, getString(R.string.kmh), root.findViewById(R.id.fiveKM_top_speedText), root.findViewById(R.id.fiveKM_top_speed),
                 Pair(floor(extrema?.fiveKmMinMax?.first?.velocityData?.fiveKilometer
                         ?: 0.0).toInt(), ceil(extrema?.fiveKmMinMax?.second?.velocityData?.fiveKilometer
                         ?: 0.0).toInt()), visibility = visibility)
-        setText(localSummit.velocityData.tenKilometers, "km/h", root.findViewById(R.id.tenKM_top_speedText), root.findViewById(R.id.tenKM_top_speed),
+        setText(localSummit.velocityData.tenKilometers, getString(R.string.kmh), root.findViewById(R.id.tenKM_top_speedText), root.findViewById(R.id.tenKM_top_speed),
                 Pair(floor(extrema?.tenKmMinMax?.first?.velocityData?.tenKilometers
                         ?: 0.0).toInt(), ceil(extrema?.tenKmMinMax?.second?.velocityData?.tenKilometers
                         ?: 0.0).toInt()), visibility = visibility)
-        setText(localSummit.velocityData.fifteenKilometers, "km/h", root.findViewById(R.id.fifteenKM_top_speedText), root.findViewById(R.id.fifteenKM_top_speed),
+        setText(localSummit.velocityData.fifteenKilometers, getString(R.string.kmh), root.findViewById(R.id.fifteenKM_top_speedText), root.findViewById(R.id.fifteenKM_top_speed),
                 Pair(floor(extrema?.fifteenKmMinMax?.first?.velocityData?.fifteenKilometers
                         ?: 0.0).toInt(), ceil(extrema?.fifteenKmMinMax?.second?.velocityData?.fifteenKilometers
                         ?: 0.0).toInt()), visibility = visibility)
-        setText(localSummit.velocityData.twentyKilometers, "km/h", root.findViewById(R.id.twentyKM_top_speedText), root.findViewById(R.id.twentyKM_top_speed),
+        setText(localSummit.velocityData.twentyKilometers, getString(R.string.kmh), root.findViewById(R.id.twentyKM_top_speedText), root.findViewById(R.id.twentyKM_top_speed),
                 Pair(floor(extrema?.twentyKmMinMax?.first?.velocityData?.twentyKilometers
                         ?: 0.0).toInt(), ceil(extrema?.twentyKmMinMax?.second?.velocityData?.twentyKilometers
                         ?: 0.0).toInt()), visibility = visibility)
-        setText(localSummit.velocityData.thirtyKilometers, "km/h", root.findViewById(R.id.thirtyKM_top_speedText), root.findViewById(R.id.thirtyKM_top_speed),
+        setText(localSummit.velocityData.thirtyKilometers, getString(R.string.kmh), root.findViewById(R.id.thirtyKM_top_speedText), root.findViewById(R.id.thirtyKM_top_speed),
                 Pair(floor(extrema?.thirtyKmMinMax?.first?.velocityData?.thirtyKilometers
                         ?: 0.0).toInt(), ceil(extrema?.thirtyKmMinMax?.second?.velocityData?.thirtyKilometers
                         ?: 0.0).toInt()), visibility = visibility)
-        setText(localSummit.velocityData.fortyKilometers, "km/h", root.findViewById(R.id.fourtyKM_top_speedText), root.findViewById(R.id.fourtyKM_top_speed),
+        setText(localSummit.velocityData.fortyKilometers, getString(R.string.kmh), root.findViewById(R.id.fourtyKM_top_speedText), root.findViewById(R.id.fourtyKM_top_speed),
                 Pair(floor(extrema?.fortyKmMinMax?.first?.velocityData?.fortyKilometers
                         ?: 0.0).toInt(), ceil(extrema?.fortyKmMinMax?.second?.velocityData?.fortyKilometers
                         ?: 0.0).toInt()), visibility = visibility)
-        setText(localSummit.velocityData.fiftyKilometers, "km/h", root.findViewById(R.id.fiftyKM_top_speedText), root.findViewById(R.id.fiftyKM_top_speed),
+        setText(localSummit.velocityData.fiftyKilometers, getString(R.string.kmh), root.findViewById(R.id.fiftyKM_top_speedText), root.findViewById(R.id.fiftyKM_top_speed),
                 Pair(floor(extrema?.fiftyKmMinMax?.first?.velocityData?.fiftyKilometers
                         ?: 0.0).toInt(), ceil(extrema?.fiftyKmMinMax?.second?.velocityData?.fiftyKilometers
                         ?: 0.0).toInt()), visibility = visibility)
-        setText(localSummit.velocityData.seventyFiveKilometers, "km/h", root.findViewById(R.id.seventyfiveKM_top_speedText), root.findViewById(R.id.seventyfiveKM_top_speed),
+        setText(localSummit.velocityData.seventyFiveKilometers, getString(R.string.kmh), root.findViewById(R.id.seventyfiveKM_top_speedText), root.findViewById(R.id.seventyfiveKM_top_speed),
                 Pair(floor(extrema?.seventyFiveKmMinMax?.first?.velocityData?.seventyFiveKilometers
                         ?: 0.0).toInt(), ceil(extrema?.seventyFiveKmMinMax?.second?.velocityData?.seventyFiveKilometers
                         ?: 0.0).toInt()), visibility = visibility)
-        setText(localSummit.velocityData.hundredKilometers, "km/h", root.findViewById(R.id.hundretKM_top_speedText), root.findViewById(R.id.hundretKM_top_speed),
+        setText(localSummit.velocityData.hundredKilometers, getString(R.string.kmh), root.findViewById(R.id.hundretKM_top_speedText), root.findViewById(R.id.hundretKM_top_speed),
                 Pair(floor(extrema?.hundredKmMinMax?.first?.velocityData?.hundredKilometers
                         ?: 0.0).toInt(), ceil(extrema?.hundredKmMinMax?.second?.velocityData?.hundredKilometers
                         ?: 0.0).toInt()), visibility = visibility)
     }
 
     private fun setAdditionalPowerData(garminData: GarminData, extrema: ExtremaValuesSummits?, visibility: Int = View.GONE) {
-        setText(garminData.power.oneSec, "W", root.findViewById(R.id.power1secText), root.findViewById(R.id.power1sec),
+        setText(garminData.power.oneSec, getString(R.string.watt), root.findViewById(R.id.power1secText), root.findViewById(R.id.power1sec),
                 Pair(extrema?.power1sMinMax?.first?.garminData?.power?.oneSec
                         ?: 0, extrema?.power1sMinMax?.second?.garminData?.power?.oneSec
                         ?: 0), visibility = visibility)
-        setText(garminData.power.twoSec, "W", root.findViewById(R.id.power2secText), root.findViewById(R.id.power2sec),
+        setText(garminData.power.twoSec, getString(R.string.watt), root.findViewById(R.id.power2secText), root.findViewById(R.id.power2sec),
                 Pair(extrema?.power2sMinMax?.first?.garminData?.power?.twoSec
                         ?: 0, extrema?.power2sMinMax?.second?.garminData?.power?.twoSec
                         ?: 0), visibility = visibility)
-        setText(garminData.power.fiveSec, "W", root.findViewById(R.id.power5secText), root.findViewById(R.id.power5sec),
+        setText(garminData.power.fiveSec, getString(R.string.watt), root.findViewById(R.id.power5secText), root.findViewById(R.id.power5sec),
                 Pair(extrema?.power5sMinMax?.first?.garminData?.power?.fiveSec
                         ?: 0, extrema?.power5sMinMax?.second?.garminData?.power?.fiveSec
                         ?: 0), visibility = visibility)
-        setText(garminData.power.tenSec, "W", root.findViewById(R.id.power10secText), root.findViewById(R.id.power10sec),
+        setText(garminData.power.tenSec, getString(R.string.watt), root.findViewById(R.id.power10secText), root.findViewById(R.id.power10sec),
                 Pair(extrema?.power10sMinMax?.first?.garminData?.power?.tenSec
                         ?: 0, extrema?.power10sMinMax?.second?.garminData?.power?.tenSec
                         ?: 0), visibility = visibility)
-        setText(garminData.power.twentySec, "W", root.findViewById(R.id.power20secText), root.findViewById(R.id.power20sec),
+        setText(garminData.power.twentySec, getString(R.string.watt), root.findViewById(R.id.power20secText), root.findViewById(R.id.power20sec),
                 Pair(extrema?.power20sMinMax?.first?.garminData?.power?.twentySec
                         ?: 0, extrema?.power20sMinMax?.second?.garminData?.power?.twentySec
                         ?: 0), visibility = visibility)
-        setText(garminData.power.thirtySec, "W", root.findViewById(R.id.power30secText), root.findViewById(R.id.power30sec),
+        setText(garminData.power.thirtySec, getString(R.string.watt), root.findViewById(R.id.power30secText), root.findViewById(R.id.power30sec),
                 Pair(extrema?.power30sMinMax?.first?.garminData?.power?.thirtySec
                         ?: 0, extrema?.power30sMinMax?.second?.garminData?.power?.thirtySec
                         ?: 0), visibility = visibility)
 
-        setText(garminData.power.oneMin, "W", root.findViewById(R.id.power1minText), root.findViewById(R.id.power1min),
+        setText(garminData.power.oneMin, getString(R.string.watt), root.findViewById(R.id.power1minText), root.findViewById(R.id.power1min),
                 Pair(extrema?.power1minMinMax?.first?.garminData?.power?.oneMin
                         ?: 0, extrema?.power1minMinMax?.second?.garminData?.power?.oneMin
                         ?: 0), visibility = visibility)
-        setText(garminData.power.twoMin, "W", root.findViewById(R.id.power2minText), root.findViewById(R.id.power2min),
+        setText(garminData.power.twoMin, getString(R.string.watt), root.findViewById(R.id.power2minText), root.findViewById(R.id.power2min),
                 Pair(extrema?.power2minMinMax?.first?.garminData?.power?.twoMin
                         ?: 0, extrema?.power2minMinMax?.second?.garminData?.power?.twoMin
                         ?: 0), visibility = visibility)
-        setText(garminData.power.fiveMin, "W", root.findViewById(R.id.power5minText), root.findViewById(R.id.power5min),
+        setText(garminData.power.fiveMin, getString(R.string.watt), root.findViewById(R.id.power5minText), root.findViewById(R.id.power5min),
                 Pair(extrema?.power5minMinMax?.first?.garminData?.power?.fiveMin
                         ?: 0, extrema?.power5minMinMax?.second?.garminData?.power?.fiveMin
                         ?: 0), visibility = visibility)
-        setText(garminData.power.tenMin, "W", root.findViewById(R.id.power10minText), root.findViewById(R.id.power10min),
+        setText(garminData.power.tenMin, getString(R.string.watt), root.findViewById(R.id.power10minText), root.findViewById(R.id.power10min),
                 Pair(extrema?.power10minMinMax?.first?.garminData?.power?.tenMin
                         ?: 0, extrema?.power10minMinMax?.second?.garminData?.power?.tenMin
                         ?: 0), visibility = visibility)
-        setText(garminData.power.twentyMin, "W", root.findViewById(R.id.power20minText), root.findViewById(R.id.power20min),
+        setText(garminData.power.twentyMin, getString(R.string.watt), root.findViewById(R.id.power20minText), root.findViewById(R.id.power20min),
                 Pair(extrema?.power20minMinMax?.first?.garminData?.power?.twentyMin
                         ?: 0, extrema?.power20minMinMax?.second?.garminData?.power?.twentyMin
                         ?: 0), visibility = visibility)
-        setText(garminData.power.thirtyMin, "W", root.findViewById(R.id.power30minText), root.findViewById(R.id.power30min),
+        setText(garminData.power.thirtyMin, getString(R.string.watt), root.findViewById(R.id.power30minText), root.findViewById(R.id.power30min),
                 Pair(extrema?.power30minMinMax?.first?.garminData?.power?.thirtyMin
                         ?: 0, extrema?.power30minMinMax?.second?.garminData?.power?.thirtyMin
                         ?: 0), visibility = visibility)
 
-        setText(garminData.power.oneHour, "W", root.findViewById(R.id.power1hText), root.findViewById(R.id.power1h),
+        setText(garminData.power.oneHour, getString(R.string.watt), root.findViewById(R.id.power1hText), root.findViewById(R.id.power1h),
                 Pair(extrema?.power1hMinMax?.first?.garminData?.power?.oneHour
                         ?: 0, extrema?.power1hMinMax?.second?.garminData?.power?.oneHour
                         ?: 0), visibility = visibility)
-        setText(garminData.power.twoHours, "W", root.findViewById(R.id.power2hText), root.findViewById(R.id.power2h),
+        setText(garminData.power.twoHours, getString(R.string.watt), root.findViewById(R.id.power2hText), root.findViewById(R.id.power2h),
                 Pair(extrema?.power2hMinMax?.first?.garminData?.power?.twoHours
                         ?: 0, extrema?.power2hMinMax?.second?.garminData?.power?.twoHours
                         ?: 0), visibility = visibility)
-        setText(garminData.power.fiveHours, "W", root.findViewById(R.id.power5hText), root.findViewById(R.id.power5h),
+        setText(garminData.power.fiveHours, getString(R.string.watt), root.findViewById(R.id.power5hText), root.findViewById(R.id.power5h),
                 Pair(extrema?.power5hMinMax?.first?.garminData?.power?.fiveHours
                         ?: 0, extrema?.power5hMinMax?.second?.garminData?.power?.fiveHours
                         ?: 0), visibility = visibility)
@@ -400,7 +400,7 @@ class SummitEntryDataFragment : Fragment() {
     }
 
     companion object {
-        private const val TAG = "SummitDataFragement"
+        private const val TAG = "SummitEntryDataFragment"
 
         fun newInstance(summitEntry: Summit): SummitEntryDataFragment {
             val fragment = SummitEntryDataFragment()

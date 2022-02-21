@@ -40,10 +40,10 @@ class SummitSlopeTest {
             val gpxTrackFile = File(resource.path)
             val summitSlope = SummitSlope(getTrackFromFile(gpxTrackFile))
             summitSlope.calculateMaxSlope(25.0)
-            Assert.assertEquals(75.5, summitSlope.maxSlope, 0.1)
+            Assert.assertEquals(44.8, summitSlope.maxSlope, 0.1)
 
             summitSlope.calculateMaxSlope(25.0, false)
-            Assert.assertEquals(63.8, summitSlope.maxSlope, 0.1)
+            Assert.assertEquals(44.6, summitSlope.maxSlope, 0.1)
 
             summitSlope.calculateMaxSlope(50.0)
             Assert.assertEquals(37.0, summitSlope.maxSlope, 0.1)

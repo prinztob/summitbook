@@ -16,13 +16,12 @@ import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.BookmarkViewAdapter
 import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.Bookmark
+import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.dialog.AddBookmarkDialog
-import java.util.*
 
 
 class BookmarkViewFragment : Fragment() {
-    private lateinit var bookmarks: ArrayList<Bookmark>
+    private lateinit var bookmarks: MutableList<Summit>
     private var addBookmarkFab: FloatingActionButton? = null
 
     override fun onCreateView(
@@ -33,7 +32,7 @@ class BookmarkViewFragment : Fragment() {
                 R.layout.fragment_summit_view, container, false) as RecyclerView
         setHasOptionsMenu(true)
         val database = context?.let { AppDatabase.getDatabase(it) }
-        bookmarks = database?.bookmarkDao()?.allBookmark as ArrayList<Bookmark>
+        bookmarks = (database?.summitDao()?.allBookmark?: listOf()) as MutableList
         adapter = BookmarkViewAdapter(bookmarks)
         summitRecycler?.adapter = adapter
         val layoutManager = LinearLayoutManager(activity)
@@ -45,7 +44,7 @@ class BookmarkViewFragment : Fragment() {
         addBookmarkFab?.visibility = View.VISIBLE
         addBookmarkFab?.setOnClickListener { _: View? ->
             val addSummit = AddBookmarkDialog()
-            MainActivity.mainActivity?.supportFragmentManager?.let { addSummit.show(it, "Add new bookmark") }
+            MainActivity.mainActivity?.supportFragmentManager?.let { addSummit.show(it, getString(R.string.add_new_bookmark)) }
         }
 
         return summitRecycler
@@ -69,13 +68,11 @@ class BookmarkViewFragment : Fragment() {
             requireActivity().findViewById<View>(R.id.add_new_summit).visibility = View.VISIBLE
         }
     }
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        adapter?.onActivityResult(requestCode, resultCode, data)
-    }
 
     companion object {
         @SuppressLint("StaticFieldLeak")
         var summitRecycler: RecyclerView? = null
+        @SuppressLint("StaticFieldLeak")
         var adapter: BookmarkViewAdapter? = null
     }
 

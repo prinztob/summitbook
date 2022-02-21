@@ -90,26 +90,6 @@ object OpenStreetMapUtils {
         }
     }
 
-    @JvmStatic
-    fun addTrackAndMarker(bookmark: Bookmark, osMap: MapView, forceAddTrack: Boolean, selectedCustomizeTrackItem: TrackColor) {
-        val mGeoPoints = ArrayList<GeoPoint>()
-        if (bookmark.hasGpsTrack()) {
-            bookmark.setGpsTrack()
-            val gpsTrack: GpsTrack? = bookmark.gpsTrack
-            if (gpsTrack != null) {
-                if (gpsTrack.hasNoTrackPoints()) {
-                    gpsTrack.parseTrack()
-                }
-                if (gpsTrack.osMapRoute == null || forceAddTrack) {
-                    gpsTrack.addGpsTrack(osMap, selectedCustomizeTrackItem)
-                    gpsTrack.isShownOnMap = true
-                }
-                mGeoPoints.addAll(getTrackPointsFrom(gpsTrack))
-            }
-        }
-        osMap.post { calculateBoundingBox(osMap, mGeoPoints) }
-    }
-
     private fun getTrackPointsFrom(gpsTrack: GpsTrack): List<GeoPoint> {
         val mGeoPoints: MutableList<GeoPoint> = mutableListOf()
         val positions = gpsTrack.getTrackPositions()

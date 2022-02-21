@@ -1,3 +1,4 @@
+import android.content.ActivityNotFoundException
 import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Color
@@ -58,6 +59,7 @@ class SummitEntryTrackFragment : Fragment() {
     private var trackSlopeGraph: MutableList<Entry> = mutableListOf()
     private var trackSlopeGraphBinSize: Double = 100.0
     private var gpsTrack: GpsTrack? = null
+    private var usedItemsForColorCode: List<TrackColor> = emptyList()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
@@ -81,6 +83,7 @@ class SummitEntryTrackFragment : Fragment() {
         val localSummit = summitEntry
         if (localSummit != null) {
             setGpsTrack(localSummit, loadFullTrackAsynchronous = true)
+            setUsedItemsForColorCode()
             val textViewName = root.findViewById<TextView>(R.id.summit_name)
             textViewName.text = localSummit.name
             val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
@@ -96,15 +99,13 @@ class SummitEntryTrackFragment : Fragment() {
                         intent.setDataAndType(uri, "application/gpx")
                         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
-                        if (intent.resolveActivity(requireActivity().packageManager) != null) {
-                            startActivity(intent)
-                        } else {
-                            Toast.makeText(requireContext(),
-                                    "GPX viewer not installed", Toast.LENGTH_LONG).show()
-                        }
+                        startActivity(intent)
                     } catch (e: IOException) {
-                        Toast.makeText(requireContext(),
-                                "GPX file could not be copied", Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), getString(R.string.gpx_file_not_copied),
+                                Toast.LENGTH_LONG).show()
+                    } catch (e: ActivityNotFoundException) {
+                        Toast.makeText(requireContext(), getString(R.string.gpx_viewer_not_installed),
+                                Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -121,13 +122,13 @@ class SummitEntryTrackFragment : Fragment() {
                                 localSummit.name, localSummit.getDateAsString(), localSummit.elevationData.toString(), localSummit.kilometers.toString()))
                         if (intentShareFile.resolveActivity(requireActivity().packageManager) != null) {
                             startActivity(intentShareFile)
-                        } else {
-                            Toast.makeText(requireContext(),
-                                    "E-Mail program not installed", Toast.LENGTH_LONG).show()
                         }
                     } catch (e: IOException) {
                         Toast.makeText(requireContext(),
-                                "GPX file could not be shared", Toast.LENGTH_LONG).show()
+                                getString(R.string.no_email_prgram_installed), Toast.LENGTH_LONG).show()
+                    } catch (e: ActivityNotFoundException) {
+                        Toast.makeText(requireContext(),
+                                getString(R.string.no_email_prgram_installed), Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -196,10 +197,8 @@ class SummitEntryTrackFragment : Fragment() {
         l.entries
         l.yEntrySpace = 10f
         l.isWordWrapEnabled = true
-        val l1 = LegendEntry("$label min", Legend.LegendForm.CIRCLE, 9f, 5f, null, gpsTrack?.startColor
-                ?: Color.GREEN)
-        val l2 = LegendEntry("$label max", Legend.LegendForm.CIRCLE, 9f, 5f, null, gpsTrack?.endColor
-                ?: Color.RED)
+        val l1 = LegendEntry("$label ${getString(R.string.min)}", Legend.LegendForm.CIRCLE, 9f, 5f, null, selectedCustomizeTrackItem.minColor)
+        val l2 = LegendEntry("$label ${getString(R.string.max)}", Legend.LegendForm.CIRCLE, 9f, 5f, null, selectedCustomizeTrackItem.maxColor)
         l.setCustom(arrayOf(l1, l2))
         l.isEnabled = true
     }
@@ -210,8 +209,8 @@ class SummitEntryTrackFragment : Fragment() {
         if (min != null && max != null) {
             val colors = lineChartEntries.map {
                 val fraction = (it.y - min) / (max - min)
-                interpolateColor(gpsTrack?.startColor ?: Color.GREEN, gpsTrack?.endColor
-                        ?: Color.RED, fraction)
+                interpolateColor(selectedCustomizeTrackItem.minColor,
+                        selectedCustomizeTrackItem.maxColor, fraction)
             }
             dataSet.colors = colors
         }
@@ -263,21 +262,12 @@ class SummitEntryTrackFragment : Fragment() {
     private fun customizeTrackDialog() {
         val localSummit = summitEntry
         if (localSummit != null) {
-            // TODO: translate
-            val fDialogTitle = "Select value used for color code"
-            val useItems = TrackColor.values().filter { trackColorEntry: TrackColor ->
-                gpsTrack?.trackPoints?.any {
-                    val value = trackColorEntry.f(it)
-                    value != null && value != 0.0
-                } == true
-            }.mapIndexed { i, entry ->
-                entry.spinnerId = i
-                entry
-            }
+            val fDialogTitle = getString(R.string.color_code_selection)
+            setUsedItemsForColorCode()
             val builder = AlertDialog.Builder(requireContext())
             builder.setTitle(fDialogTitle)
-            builder.setSingleChoiceItems(useItems.map { resources.getString(it.nameId) }.toTypedArray(), selectedCustomizeTrackItem.spinnerId) { dialog: DialogInterface, item: Int ->
-                selectedCustomizeTrackItem = useItems[item]
+            builder.setSingleChoiceItems(usedItemsForColorCode.map { resources.getString(it.nameId) }.toTypedArray(), selectedCustomizeTrackItem.spinnerId) { dialog: DialogInterface, item: Int ->
+                selectedCustomizeTrackItem = usedItemsForColorCode[item]
                 osMap.overlays?.clear()
                 localSummit.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, requireContext(), true, selectedCustomizeTrackItem, true, rootView = root) }
                 drawChart(localSummit)
@@ -287,6 +277,21 @@ class SummitEntryTrackFragment : Fragment() {
             val fMapTypeDialog = builder.create()
             fMapTypeDialog.setCanceledOnTouchOutside(true)
             fMapTypeDialog.show()
+        }
+    }
+
+    private fun setUsedItemsForColorCode() {
+        usedItemsForColorCode = TrackColor.values().filter { trackColorEntry: TrackColor ->
+            gpsTrack?.trackPoints?.any {
+                val value = trackColorEntry.f(it)
+                value != null && value != 0.0
+            } == true
+        }.mapIndexed { i, entry ->
+            entry.spinnerId = i
+            entry
+        }
+        if (usedItemsForColorCode.size <= 2) {
+            selectedCustomizeTrackItem = TrackColor.None
         }
     }
 

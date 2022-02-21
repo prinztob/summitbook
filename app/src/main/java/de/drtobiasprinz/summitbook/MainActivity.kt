@@ -37,12 +37,12 @@ import com.google.android.material.navigation.NavigationView
 import com.stfalcon.imageviewer.StfalconImageViewer
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.*
-import de.drtobiasprinz.summitbook.models.Bookmark
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.PosterOverlayView
+import de.drtobiasprinz.summitbook.ui.dialog.AddBookmarkDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
@@ -80,7 +80,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (!Python.isStarted()) {
             Python.start(AndroidPlatform(this))
         }
-        val pythonInstance = Python.getInstance()
+        pythonInstance = Python.getInstance()
         database = AppDatabase.getDatabase(applicationContext)
         val entries = database.summitDao()?.allSummit
         val viewedFragment: Fragment? = supportFragmentManager.findFragmentById(R.id.content_frame)
@@ -97,7 +97,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         cache = applicationContext.cacheDir
         storage = applicationContext.filesDir
         File(storage, Summit.subDirForGpsTracks).mkdirs()
-        File(storage, Bookmark.subDirForGpsTracks).mkdirs()
+        File(storage, Summit.subDirForGpsTracksBookmark).mkdirs()
         File(storage, Summit.subDirForImages).mkdirs()
 
         sortFilterHelper = SortFilterHelper.getInstance(this, entries as ArrayList<Summit>, database, savedInstanceState, sharedPreferences)
@@ -351,9 +351,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             progressBarZip.visibility = View.VISIBLE
             AsyncExportZipFile(this, progressBarZip, sortFilterHelper.filteredEntries, resultData, exportThirdPartyData, exportCalculatedData).execute()
         }
-        if (requestCode == SelectOnOsMapActivity.PICK_GPX_FILE && resultCode == Activity.RESULT_OK) {
-            BookmarkViewFragment.adapter?.onActivityResult(requestCode, resultCode, resultData)
-        }
     }
 
 
@@ -446,6 +443,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         @kotlin.jvm.JvmField
         var cache: File? = null
+
+        lateinit var pythonInstance: Python
 
         @SuppressLint("StaticFieldLeak")
         @kotlin.jvm.JvmField

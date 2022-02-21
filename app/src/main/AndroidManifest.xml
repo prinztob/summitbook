@@ -27,7 +27,6 @@
         tools:ignore="GoogleAppIndexingWarning">
         <activity android:name=".AddImagesActivity" />
         <activity android:name=".SummitEntryDetailsActivity" />
-        <activity android:name=".BookmarkDetailsActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

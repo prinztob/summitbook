@@ -165,15 +165,15 @@ class SelectOnOsMapActivity : FragmentActivity() {
         closeDialogButton = findViewById(R.id.add_position_cancel)
         closeDialogButton.setOnClickListener { v: View ->
             finish()
-            Toast.makeText(v.context, "Adding a new position was canceled.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(v.context, getString(R.string.add_position_to_summit_cancel, summitEntry?.name), Toast.LENGTH_SHORT).show()
         }
         deletButton = findViewById(R.id.add_position_delete)
         deletButton.setOnClickListener { v: View ->
             val entry = summitEntry
             if (entry != null) {
                 AlertDialog.Builder(v.context)
-                        .setTitle("Delete coordinates and GPS track")
-                        .setMessage("Are you sure you want to delete the selected coordinates and the added GPS track?")
+                        .setTitle(getString(R.string.delete_coordinates))
+                        .setMessage(getString(R.string.delete_coordinates_message))
                         .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
                             selectedGpsPath = null
                             if (entry.hasGpsTrack()) {

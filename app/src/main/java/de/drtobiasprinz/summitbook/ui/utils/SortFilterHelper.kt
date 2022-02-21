@@ -192,12 +192,12 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         setMinMaxValuesTopSpeed()
         setMinMaxValuesAverageSpeed()
         setMinMaxValuesTopElevation()
-        alert.setTitle("Filter and sorting")
+        alert.setTitle(context.getString(R.string.filter_sort))
         alert.setView(filterAndSortView)
-        alert.setPositiveButton("Apply") { _: DialogInterface?, _: Int ->
+        alert.setPositiveButton(context.getString(R.string.apply)) { _: DialogInterface?, _: Int ->
             sortAndFilter()
         }
-        alert.setNegativeButton("Set to default") { _: DialogInterface?, _: Int ->
+        alert.setNegativeButton(context.getString(R.string.set_to_default)) { _: DialogInterface?, _: Int ->
             setAllToDefault()
         }
         alert.show()
@@ -260,10 +260,10 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         multiSliderKilometers.setOnThumbValueChangeListener(object : SimpleChangeListener() {
             override fun onValueChanged(multiSlider: MultiSlider, thumb: Thumb, thumbIndex: Int, value: Int) {
                 if (thumbIndex == 0) {
-                    min1.text = String.format("%s km", value.toString())
+                    min1.text = String.format("%s %s", value.toString(), context.getString(R.string.km))
                     extremaValuesFilteredSummits?.minKilometers = value.toDouble()
                 } else {
-                    max1.text = String.format("%s km", value.toString())
+                    max1.text = String.format("%s %s", value.toString(), context.getString(R.string.km))
                     extremaValuesFilteredSummits?.maxKilometers = value.toDouble()
                 }
             }
@@ -278,10 +278,10 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         multiSliderHeightMeters.setOnThumbValueChangeListener(object : SimpleChangeListener() {
             override fun onValueChanged(multiSlider: MultiSlider, thumb: Thumb, thumbIndex: Int, value: Int) {
                 if (thumbIndex == 0) {
-                    min1.text = String.format("%s hm", value.toString())
+                    min1.text = String.format("%s %s", value.toString(), context.getString(R.string.hm))
                     extremaValuesFilteredSummits?.minHeightMeters = value
                 } else {
-                    max1.text = String.format("%s hm", value.toString())
+                    max1.text = String.format("%s %s", value.toString(), context.getString(R.string.hm))
                     extremaValuesFilteredSummits?.maxHeightMeters = value
                 }
             }
@@ -297,10 +297,10 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         multiSliderTopSpeed.setOnThumbValueChangeListener(object : SimpleChangeListener() {
             override fun onValueChanged(multiSlider: MultiSlider, thumb: Thumb, thumbIndex: Int, value: Int) {
                 if (thumbIndex == 0) {
-                    min1.text = String.format("%s km/s", value.toString())
+                    min1.text = String.format("%s %s", value.toString(), context.getString(R.string.kmh))
                     extremaValuesFilteredSummits?.minTopSpeed = value.toDouble()
                 } else {
-                    max1.text = String.format("%s km/s", value.toString())
+                    max1.text = String.format("%s %s", value.toString(), context.getString(R.string.kmh))
                     extremaValuesFilteredSummits?.maxTopSpeed = value.toDouble()
                 }
             }
@@ -316,10 +316,10 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         multiSliderAverageSpeed.setOnThumbValueChangeListener(object : SimpleChangeListener() {
             override fun onValueChanged(multiSlider: MultiSlider, thumb: Thumb, thumbIndex: Int, value: Int) {
                 if (thumbIndex == 0) {
-                    min1.text = String.format("%s km/s", value.toString())
+                    min1.text = String.format("%s %s", value.toString(), context.getString(R.string.kmh))
                     extremaValuesFilteredSummits?.minAverageSpeed = value.toDouble()
                 } else {
-                    max1.text = String.format("%s km/s", value.toString())
+                    max1.text = String.format("%s %s", value.toString(), context.getString(R.string.kmh))
                     extremaValuesFilteredSummits?.maxAverageSpeed = value.toDouble()
                 }
             }
@@ -334,10 +334,10 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         multiSliderTopElevation.setOnThumbValueChangeListener(object : SimpleChangeListener() {
             override fun onValueChanged(multiSlider: MultiSlider, thumb: Thumb, thumbIndex: Int, value: Int) {
                 if (thumbIndex == 0) {
-                    min1.text = String.format("%s hm", value.toString())
+                    min1.text = String.format("%s %s", value.toString(), context.getString(R.string.hm))
                     extremaValuesFilteredSummits?.minTopElevation = value
                 } else {
-                    max1.text = String.format("%s hm", value.toString())
+                    max1.text = String.format("%s %s", value.toString(), context.getString(R.string.hm))
                     extremaValuesFilteredSummits?.maxTopElevation = value
                 }
             }
@@ -672,7 +672,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         multiSliderTopSpeed = filterAndSortView.findViewById(R.id.range_slider_topSpeed)
         multiSliderAverageSpeed = filterAndSortView.findViewById(R.id.range_slider_averageSpeed)
         setMultiSliders()
-        val sportTypes: ArrayList<String> = arrayListOf("ALL")
+        val sportTypes: ArrayList<String> = arrayListOf(context.getString(R.string.all))
         for (value in SportType.values()) {
             sportTypes.add(context.getString(value.sportNameStringId))
         }

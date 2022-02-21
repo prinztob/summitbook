@@ -45,9 +45,6 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     private var minForColorCoding = 0f
     private var maxForColorCoding = 0f
 
-    var startColor: Int = Color.BLUE
-    var endColor: Int = Color.RED
-
     fun addGpsTrack(mMapView: MapView?, selectedCustomizeTrackItem: TrackColor = TrackColor.None, color: Int = COLOR_POLYLINE_STATIC, rootView: View? = null) {
         osMapRoute = Polyline(mMapView)
         val textView: TextView? = rootView?.findViewById(R.id.track_value)
@@ -62,7 +59,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                     if (selectedCustomizeTrackItem == TrackColor.None) {
                         textView.visibility = View.GONE
                     } else {
-                        setTextForDouble(trackPoint, textView, selectedCustomizeTrackItem.unit, rootView.context, selectedCustomizeTrackItem.digits, selectedCustomizeTrackItem.f)
+                        setTextForDouble(trackPoint, textView, selectedCustomizeTrackItem, rootView.context)
                     }
                 } else {
                     textView.visibility = View.GONE
@@ -88,21 +85,21 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             }
             TrackColor.Elevation -> {
                 setUsedPoints(selectedCustomizeTrackItem.f)
-                addColorToTrack(paintBorder, selectedCustomizeTrackItem.f)
+                addColorToTrack(paintBorder, selectedCustomizeTrackItem)
             }
             TrackColor.Slope -> {
                 if (trackPoints.none { it.extension?.slope != null }) {
                     summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0, factor = 100)
                 }
                 setUsedPoints(selectedCustomizeTrackItem.f)
-                addColorToTrack(paintBorder, selectedCustomizeTrackItem.f)
+                addColorToTrack(paintBorder, selectedCustomizeTrackItem)
             }
             TrackColor.VerticalSpeed -> {
                 if (trackPoints.none { it.extension?.verticalVelocity != null }) {
                     summitSlope.calculateMaxVerticalVelocity()
                 }
                 setUsedPoints(selectedCustomizeTrackItem.f)
-                addColorToTrack(paintBorder, selectedCustomizeTrackItem.f)
+                addColorToTrack(paintBorder, selectedCustomizeTrackItem)
             }
             TrackColor.None -> {
                 setUsedPoints()
@@ -110,7 +107,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             }
             else -> {
                 setUsedPoints(selectedCustomizeTrackItem.f)
-                addColorToTrack(paintBorder, selectedCustomizeTrackItem.f)
+                addColorToTrack(paintBorder, selectedCustomizeTrackItem)
             }
         }
         osMapRoute?.setPoints(usedTrackGeoPoints)
@@ -130,24 +127,12 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
 
-    private fun setTextForDouble(trackPoint: TrackPoint, textView: TextView, unit: String, context: Context, digits: Int = 1, f: (TrackPoint) -> Double?) {
-        val value = f(trackPoint)
+    private fun setTextForDouble(trackPoint: TrackPoint, textView: TextView, trackColor: TrackColor, context: Context) {
+        val value = trackColor.f(trackPoint)
         if (value != null) {
-            textView.text = String.format(Locale.US, "%.${digits}f %s", f(trackPoint), unit)
+            textView.text = String.format(Locale.US, "%.${trackColor.digits}f %s", value, trackColor.unit)
             val fraction = (value - minForColorCoding) / (maxForColorCoding - minForColorCoding)
-            val rectangle = BitmapDrawable(context.resources, drawRectangle(interpolateColor(startColor, endColor, fraction.toFloat())))
-            textView.setCompoundDrawablesRelativeWithIntrinsicBounds(rectangle, null, null, null)
-        } else {
-            textView.visibility = View.GONE
-        }
-    }
-
-    private fun setTextForInt(trackPoint: TrackPoint, textView: TextView, unit: String, context: Context, f: (TrackPoint) -> Int?) {
-        val value = f(trackPoint)
-        if (value != null) {
-            textView.text = "${f(trackPoint)} ${unit}"
-            val fraction = (value - minForColorCoding) / (maxForColorCoding - minForColorCoding)
-            val rectangle = BitmapDrawable(context.resources, drawRectangle(interpolateColor(startColor, endColor, fraction)))
+            val rectangle = BitmapDrawable(context.resources, drawRectangle(interpolateColor(trackColor.minColor, trackColor.maxColor, fraction.toFloat())))
             textView.setCompoundDrawablesRelativeWithIntrinsicBounds(rectangle, null, null, null)
         } else {
             textView.visibility = View.GONE
@@ -172,13 +157,13 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         return bitmap
     }
 
-    private fun addColorToTrack(paintBorder: Paint, f: (TrackPoint) -> Double?) {
-        val values = usedTrackPoints.map(f).filterNotNull()
+    private fun addColorToTrack(paintBorder: Paint, trackColor: TrackColor) {
+        val values = usedTrackPoints.map(trackColor.f).filterNotNull()
         minForColorCoding = (values.minOrNull() ?: 0.0).toFloat()
         maxForColorCoding = (values.maxOrNull() ?: 0.0).toFloat()
-        val pointsExists = usedTrackPoints.any { f(it) != 0.0 }
+        val pointsExists = usedTrackPoints.any { trackColor.f(it) != 0.0 }
         if (pointsExists) {
-            val attributeColorList = AttitudeColorList(usedTrackPoints, minForColorCoding, maxForColorCoding, startColor, endColor, f)
+            val attributeColorList = AttitudeColorList(usedTrackPoints, minForColorCoding, maxForColorCoding, trackColor.minColor, trackColor.maxColor, trackColor.f)
             osMapRoute?.outlinePaintLists?.add(PolychromaticPaintList(paintBorder, attributeColorList, false))
         }
     }
@@ -272,7 +257,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         return trackPoints
     }
 
-    private fun setDistance() {
+    fun setDistance() {
         setDistanceFromPoints(trackPoints)
     }
 
@@ -306,21 +291,11 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
     fun getHighestElevation(): TrackPoint? {
-        if (trackPoints.isNotEmpty()) {
-            var highestPoint = trackPoints[0]
-            for (trackPoint in trackPoints) {
-                if (trackPoint.ele ?: 0.0 > highestPoint.ele ?: 0.0) {
-                    highestPoint = trackPoint
-                }
-            }
-            return highestPoint
-        } else {
-            return null
-        }
+        return trackPoints.maxByOrNull { it.ele?: 0.0 }
     }
 
     fun hasNoTrackPoints(): Boolean {
-        return trackPoints.size <= 0
+        return trackPoints.isNullOrEmpty()
     }
 
     fun hasOnlyZeroCoordinates(): Boolean {
@@ -419,8 +394,8 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             override fun doInBackground(vararg uri: Uri): Void? {
                 track = getTrack(fileToUse)
                 trackPoints = getTrackPoints(track)
-//                val summitSlope = SummitSlope(trackPoints)
-//                summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0, factor = 100)
+                val summitSlope = SummitSlope(trackPoints)
+                summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0, factor = 100)
 //                summitSlope.calculateMaxVerticalVelocity()
                 trackGeoPoints = getGeoPoints(trackPoints)
                 return null

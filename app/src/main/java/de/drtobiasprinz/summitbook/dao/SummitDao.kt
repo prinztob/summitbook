@@ -9,10 +9,13 @@ interface SummitDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addSummit(summit: Summit?): Long
 
-    @get:Query("select * from summit")
+    @get:Query("select * from summit where isBookmark = 0")
     val allSummit: List<Summit>?
 
-    @Query("select * from summit WHERE date >= :startDate")
+    @get:Query("select * from summit where isBookmark = 1")
+    val allBookmark: List<Summit>?
+
+    @Query("select * from summit WHERE date >= :startDate and isBookmark = 0")
     fun getAllSummitForYear(startDate: Long): List<Summit>?
 
     @Query("select * from summit where id = :id")

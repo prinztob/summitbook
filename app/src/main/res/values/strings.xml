@@ -107,6 +107,7 @@
     <string name="sensor_data">Sensor Data</string>
     <string name="max_hr">Max heart rate</string>
     <string name="calories">Calories</string>
+    <string name="kcal">kcal</string>
     <string name="aerobic_te">Aerobic Training Effect</string>
     <string name="anaerobic_te">Anaerobic Training Effect</string>
     <string name="flow">Flow (keep velocity)</string>
@@ -344,9 +345,32 @@
     <string name="gpx_viewer_not_installed">GPX viewer not installed</string>
     <string name="gpx_file_not_copied">GPX file could not be copied</string>
     <string name="add_position_to_summit">Adding a new position to summit %1$s was successful.</string>
+    <string name="add_position_to_summit_cancel">Adding a new position to summit %1$s was canceled.</string>
     <string name="no_email_prgram_installed">E-Mail program not installed</string>
     <string name="add_new_summit">Add new summit</string>
     <string name="change_map_type">Change map type</string>
     <string name="add_new_bookmark">Add new bookmark</string>
+    <string name="color_code_selection">Select value used for color code</string>
+    <string name="entry">Entry</string>
+    <string name="update">Update</string>
+    <string name="unit">Unit</string>
+    <string name="current">Current</string>
+    <string name="last_12_month">Last 12 Month</string>
+    <string name="last_3_month">Last 3 Month</string>
+    <string name="min">min</string>
+    <string name="max">max</string>
+    <string name="m">m</string>
+    <string name="sec">sec</string>
+    <string name="delete_coordinates">Delete coordinates and GPS track</string>
+    <string name="delete_coordinates_message">Are you sure you want to delete the selected coordinates and the added GPS track?</string>
+    <string name="filter_sort">Filter and sorting</string>
+    <string name="apply">apply</string>
+    <string name="set_to_default">Set to default</string>
+    <string name="set_user_pwd">Please set Username and Password for Garmin connect in settings</string>
+    <string name="date_garmin_connect">Please set a date to be able to retrieve data from Garmin connect</string>
+    <string name="indoor_hm_percent">Indoor height meter inclusion %</string>
+    <string name="start_date_sync_garmin">Start date for syncing Garmin Activities</string>
+    <string name="tool_tip_progress_new_garmin_activities">"Add summits %1$s and download its tracks. This may take a while."</string>
+    <string name="tool_tip_progress_merge_garmin_activities">"Merge summits %1$s and download its tracks. This may take a while."</string>
 
 </resources>

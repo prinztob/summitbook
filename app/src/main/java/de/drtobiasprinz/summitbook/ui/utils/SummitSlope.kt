@@ -14,6 +14,7 @@ class SummitSlope(val trackPoints: MutableList<TrackPoint>) {
     var maxVerticalVelocity: Double = 0.0
     var slopeGraph: MutableList<Entry> = mutableListOf()
     private val REQUIRED_R2 = 0.9
+    private val MAX_SLOPE = 0.45
 
     fun calculateMaxSlope(binSizeMeter: Double = 100.0, withRegression: Boolean = true, requiredR2: Double = REQUIRED_R2, factor: Int = 1): Double {
         if (trackPoints.size > 0 && trackPoints.first().extension?.distance == null) {
@@ -109,15 +110,18 @@ class SummitSlope(val trackPoints: MutableList<TrackPoint>) {
                     xSelector = { it.extension!!.distance!! - trackPointsForInterval.first().extension!!.distance!! },
                     ySelector = { it.ele!! }
             )
-            middleEntry.extension?.slope = regression.slope * factor
-            if (regression.rSquare > requiredR2) {
+            if (regression.rSquare > requiredR2 && regression.slope < MAX_SLOPE) {
+                middleEntry.extension?.slope = regression.slope * factor
                 slopeInMeterInterval.add(Triple(middleEntry, trackPointsForInterval.first(), trackPointsForInterval.last()))
             }
         } else {
             val elevation = (lastEntry.ele
                     ?: 0.0) - (firstEntry.ele ?: 0.0)
-            middleEntry.extension?.slope = if (distance == 0.0) 0.0 else elevation / distance
-            slopeInMeterInterval.add(Triple(middleEntry, trackPointsForInterval.first(), trackPointsForInterval.last()))
+            val slope = if (distance == 0.0) 0.0 else elevation / distance
+            if (slope < MAX_SLOPE) {
+                middleEntry.extension?.slope = slope
+                slopeInMeterInterval.add(Triple(middleEntry, trackPointsForInterval.first(), trackPointsForInterval.last()))
+            }
         }
     }
 

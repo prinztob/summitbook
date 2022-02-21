@@ -168,14 +168,14 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         }
     }
 
-    fun showDeleteEntryDialog(context: Context, entry: Summit, v: View): AlertDialog? {
+    private fun showDeleteEntryDialog(context: Context, entry: Summit, v: View): AlertDialog? {
         return AlertDialog.Builder(context)
                 .setTitle(String.format(context.resources.getString(R.string.delete_entry), entry.name))
                 .setMessage(context.resources.getString(R.string.delete_entry_text))
-                .setPositiveButton(android.R.string.yes) { _: DialogInterface?, _: Int ->
+                .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
                     deleteEntry(entry, v)
                 }
-                .setNegativeButton(android.R.string.no
+                .setNegativeButton(android.R.string.cancel
                 ) { _: DialogInterface?, _: Int ->
                     Toast.makeText(v.context, v.context.getString(R.string.delete_cancel),
                             Toast.LENGTH_SHORT).show()
@@ -185,19 +185,31 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
     }
 
     private fun deleteEntry(entry: Summit, v: View) {
-            sortFilterHelper.database.summitDao()?.delete(entry)
-            if (entry.hasGpsTrack()) {
-                entry.getGpsTrackPath().toFile()?.delete()
+        sortFilterHelper.database.summitDao()?.delete(entry)
+        if (entry.hasGpsTrack()) {
+            entry.getGpsTrackPath().toFile()?.delete()
+        }
+        if (entry.hasImagePath()) {
+            entry.imageIds.forEach {
+                entry.getImagePath(it).toFile().delete()
             }
-            if (entry.hasImagePath()) {
-                entry.imageIds.forEach {
-                    entry.getImagePath(it).toFile().delete()
-                }
-            }
-            sortFilterHelper.entries.remove(entry)
-            summitEntriesFiltered?.remove(entry)
-            notifyDataSetChanged()
-            Toast.makeText(v.context, v.context.getString(R.string.delete_entry, entry.name), Toast.LENGTH_SHORT).show()
+        }
+        sortFilterHelper.entries.remove(entry)
+        summitEntriesFiltered?.remove(entry)
+        notifyDataSetChanged()
+        Toast.makeText(v.context, v.context.getString(R.string.delete_entry, entry.name), Toast.LENGTH_SHORT).show()
+    }
+
+    fun updateIsPeak(entry: Summit, position: Int) {
+        entry.isPeak = !entry.isPeak
+        sortFilterHelper.database.summitDao()?.updateIsPeak(entry.id, entry.isPeak)
+        notifyItemChanged(position)
+    }
+
+    fun updateIsFavorite(entry: Summit, position: Int) {
+        entry.isFavorite = !entry.isFavorite
+        sortFilterHelper.database.summitDao()?.updateIsFavorite(entry.id, entry.isFavorite)
+        notifyItemChanged(position)
     }
 
     private fun addImage(entry: Summit, imageText: RelativeLayout, textViewName: TextView, image: ImageView, cardView: CardView) {
@@ -206,12 +218,12 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
             textViewName.setTextColor(Color.WHITE)
             image.visibility = View.VISIBLE
             cardView.context?.let {
-                    Glide.with(it)
-                            .load("file://" + entry.getImagePath(entry.imageIds.first()))
-                            .centerInside()
-                            .diskCacheStrategy(DiskCacheStrategy.NONE)
-                            .skipMemoryCache(true)
-                            .into(image)
+                Glide.with(it)
+                        .load("file://" + entry.getImagePath(entry.imageIds.first()))
+                        .centerInside()
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .into(image)
             }
         } else {
             imageText.setBackgroundColor(Color.TRANSPARENT)

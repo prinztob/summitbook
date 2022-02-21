@@ -111,7 +111,7 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, val garminPythonEx
         }
         if (garminDataSets.isNotEmpty()) {
             val activityIds: MutableList<String> = mutableListOf()
-            garminDataSets.forEach { it?.activityIds?.let { it1 -> activityIds.addAll(it1) } } //TODO
+            garminDataSets.forEach { it?.activityIds?.let { it1 -> activityIds.addAll(it1) } }
             return GarminData(
                     activityIds,
                     garminDataSets.sumByDouble { it?.calories?.toDouble() ?: 0.0 }.toFloat(),

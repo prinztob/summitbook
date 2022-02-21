@@ -31,6 +31,7 @@ class Summit(
         var imageIds: MutableList<Int>, @Embedded var garminData: GarminData?,
         @Embedded var trackBoundingBox: TrackBoundingBox?,
         var activityId: Long = System.currentTimeMillis(),
+        @ColumnInfo(defaultValue = "false") var isBookmark: Boolean = false
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0
@@ -84,12 +85,20 @@ class Summit(
 
     fun getGpsTrackPath(simplified: Boolean = false): Path {
         val fileName = if (simplified) "id_${activityId}_simplified.gpx" else "id_${activityId}.gpx"
-        return Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
+        if (isBookmark) {
+            return Paths.get(MainActivity.storage.toString(), subDirForGpsTracksBookmark, fileName)
+        } else {
+            return Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
+        }
     }
 
     fun getGpxPyPath(): Path {
         val fileName = "id_${activityId}_gpxpy.json"
-        return Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
+        if (isBookmark) {
+            return Paths.get(MainActivity.storage.toString(), subDirForGpsTracksBookmark, fileName)
+        } else {
+            return Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
+        }
     }
 
     @Throws(IOException::class)
@@ -306,6 +315,7 @@ class Summit(
         private const val NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY = 16
         private const val REFERENCE_VALUE_DATE = 946681200000f
         var subDirForGpsTracks: String = "summitbook_tracks"
+        var subDirForGpsTracksBookmark: String = "summitbook_tracks_bookmark"
         var subDirForImages: String = "summitbook_images"
 
         @Throws(Exception::class)

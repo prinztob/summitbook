@@ -102,115 +102,115 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
             } else {
                 statisticFragmentView.findViewById<View?>(R.id.achievementInfo)?.visibility = View.GONE
             }
-            setTextViewData(extremaValuesSummits?.kilometersMinMax?.second, R.id.layoutLongestDistance, R.id.textLongestDistance, R.id.textLongestDistanceInfo, "km",
+            setTextViewData(extremaValuesSummits?.kilometersMinMax?.second, R.id.layoutLongestDistance, R.id.textLongestDistance, R.id.textLongestDistanceInfo, getString(R.string.km),
                     getValueOrNull(extremaValuesSummits?.kilometersMinMax?.second) { e -> e.kilometers }, 1)
-            setTextViewData(extremaValuesSummits?.averageSpeedMinMax?.second, R.id.layoutHighestAverageSpeed, R.id.textHeighestAverageSpeed, R.id.textHeighestAverageSpeedInfo, "km/h",
+            setTextViewData(extremaValuesSummits?.averageSpeedMinMax?.second, R.id.layoutHighestAverageSpeed, R.id.textHeighestAverageSpeed, R.id.textHeighestAverageSpeedInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.averageSpeedMinMax?.second) { e -> e.velocityData.avgVelocity }, 1)
             setTextViewData(extremaValuesSummits?.durationMinMax?.second, R.id.layoutLongestDuration, R.id.textLongestDuration, R.id.textLongestDurationInfo, "h",
                     getValueOrNull(extremaValuesSummits?.durationMinMax?.second) { e -> e.duration }, 1)
-            setTextViewData(extremaValuesSummits?.topSpeedMinMax?.second, R.id.layoutTopSpeed, R.id.textTopSpeed, R.id.textTopSpeedInfo, "km/h",
+            setTextViewData(extremaValuesSummits?.topSpeedMinMax?.second, R.id.layoutTopSpeed, R.id.textTopSpeed, R.id.textTopSpeedInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.topSpeedMinMax?.second) { e -> e.velocityData.maxVelocity }, 1)
 
             setTextViewData(extremaValuesSummits?.topSlopeMinMax?.second, R.id.layoutMaxSlope, R.id.textMaxSlope, R.id.textMaxSlopeInfo, "%",
                     getValueOrNull(extremaValuesSummits?.topSlopeMinMax?.second) { e -> e.elevationData.maxSlope }, 1)
 
-            setTextViewData(extremaValuesSummits?.topVerticalVelocity1MinMinMax?.second, R.id.layoutMaxVerticalVelocity1Min, R.id.textMaxVerticalVelocity1Min, R.id.textMaxVerticalVelocity1MinInfo, "m",
+            setTextViewData(extremaValuesSummits?.topVerticalVelocity1MinMinMax?.second, R.id.layoutMaxVerticalVelocity1Min, R.id.textMaxVerticalVelocity1Min, R.id.textMaxVerticalVelocity1MinInfo, getString(R.string.m),
                     getValueOrNull(extremaValuesSummits?.topVerticalVelocity1MinMinMax?.second) { e -> e.elevationData.maxVerticalVelocity1Min }, factor = 60, digits = 0)
-            setTextViewData(extremaValuesSummits?.topVerticalVelocity10MinMinMax?.second, R.id.layoutMaxVerticalVelocity10Min, R.id.textMaxVerticalVelocity10Min, R.id.textMaxVerticalVelocity10MinInfo, "m",
+            setTextViewData(extremaValuesSummits?.topVerticalVelocity10MinMinMax?.second, R.id.layoutMaxVerticalVelocity10Min, R.id.textMaxVerticalVelocity10Min, R.id.textMaxVerticalVelocity10MinInfo, getString(R.string.m),
                     getValueOrNull(extremaValuesSummits?.topVerticalVelocity10MinMinMax?.second) { e -> e.elevationData.maxVerticalVelocity10Min }, factor = 600, digits = 0)
-            setTextViewData(extremaValuesSummits?.topVerticalVelocity1hMinMax?.second, R.id.layoutMaxVerticalVelocity1h, R.id.textMaxVerticalVelocity1h, R.id.textMaxVerticalVelocity1hInfo, "m",
+            setTextViewData(extremaValuesSummits?.topVerticalVelocity1hMinMax?.second, R.id.layoutMaxVerticalVelocity1h, R.id.textMaxVerticalVelocity1h, R.id.textMaxVerticalVelocity1hInfo, getString(R.string.m),
                     getValueOrNull(extremaValuesSummits?.topVerticalVelocity1hMinMax?.second) { e -> e.elevationData.maxVerticalVelocity1h }, factor = 3600, digits = 0)
 
-            setTextViewData(extremaValuesSummits?.oneKmMinMax?.second, R.id.layoutTopSpeed1Km, R.id.textTopSpeed1Km, R.id.textTopSpeed1KmInfo, "km/h",
+            setTextViewData(extremaValuesSummits?.oneKmMinMax?.second, R.id.layoutTopSpeed1Km, R.id.textTopSpeed1Km, R.id.textTopSpeed1KmInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.oneKmMinMax?.second) { e -> e.velocityData.oneKilometer }, 1)
-            setTextViewData(extremaValuesSummits?.fiveKmMinMax?.second, R.id.layoutTopSpeed5Km, R.id.textTopSpeed5Km, R.id.textTopSpeed5KmInfo, "km/h",
+            setTextViewData(extremaValuesSummits?.fiveKmMinMax?.second, R.id.layoutTopSpeed5Km, R.id.textTopSpeed5Km, R.id.textTopSpeed5KmInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.fiveKmMinMax?.second) { e -> e.velocityData.fiveKilometer }, 1)
-            setTextViewData(extremaValuesSummits?.tenKmMinMax?.second, R.id.layoutTopSpeed10Km, R.id.textTopSpeed10Km, R.id.textTopSpeed10KmInfo, "km/h",
+            setTextViewData(extremaValuesSummits?.tenKmMinMax?.second, R.id.layoutTopSpeed10Km, R.id.textTopSpeed10Km, R.id.textTopSpeed10KmInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.tenKmMinMax?.second) { e -> e.velocityData.tenKilometers }, 1)
-            setTextViewData(extremaValuesSummits?.fifteenKmMinMax?.second, R.id.layoutTopSpeed15Km, R.id.textTopSpeed15Km, R.id.textTopSpeed15KmInfo, "km/h",
+            setTextViewData(extremaValuesSummits?.fifteenKmMinMax?.second, R.id.layoutTopSpeed15Km, R.id.textTopSpeed15Km, R.id.textTopSpeed15KmInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.fifteenKmMinMax?.second) { e -> e.velocityData.fifteenKilometers }, 1)
-            setTextViewData(extremaValuesSummits?.twentyKmMinMax?.second, R.id.layoutTopSpeed20Km, R.id.textTopSpeed20Km, R.id.textTopSpeed20KmInfo, "km/h",
+            setTextViewData(extremaValuesSummits?.twentyKmMinMax?.second, R.id.layoutTopSpeed20Km, R.id.textTopSpeed20Km, R.id.textTopSpeed20KmInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.twentyKmMinMax?.second) { e -> e.velocityData.twentyKilometers }, 1)
-            setTextViewData(extremaValuesSummits?.thirtyKmMinMax?.second, R.id.layoutTopSpeed30Km, R.id.textTopSpeed30Km, R.id.textTopSpeed30KmInfo, "km/h",
+            setTextViewData(extremaValuesSummits?.thirtyKmMinMax?.second, R.id.layoutTopSpeed30Km, R.id.textTopSpeed30Km, R.id.textTopSpeed30KmInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.thirtyKmMinMax?.second) { e -> e.velocityData.thirtyKilometers }, 1)
-            setTextViewData(extremaValuesSummits?.fortyKmMinMax?.second, R.id.layoutTopSpeed40Km, R.id.textTopSpeed40Km, R.id.textTopSpeed40KmInfo, "km/h",
+            setTextViewData(extremaValuesSummits?.fortyKmMinMax?.second, R.id.layoutTopSpeed40Km, R.id.textTopSpeed40Km, R.id.textTopSpeed40KmInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.fortyKmMinMax?.second) { e -> e.velocityData.fortyKilometers }, 1)
-            setTextViewData(extremaValuesSummits?.fiftyKmMinMax?.second, R.id.layoutTopSpeed50Km, R.id.textTopSpeed50Km, R.id.textTopSpeed50KmInfo, "km/h",
+            setTextViewData(extremaValuesSummits?.fiftyKmMinMax?.second, R.id.layoutTopSpeed50Km, R.id.textTopSpeed50Km, R.id.textTopSpeed50KmInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.fiftyKmMinMax?.second) { e -> e.velocityData.fiftyKilometers }, 1)
-            setTextViewData(extremaValuesSummits?.seventyFiveKmMinMax?.second, R.id.layoutTopSpeed75Km, R.id.textTopSpeed75Km, R.id.textTopSpeed75KmInfo, "km/h",
+            setTextViewData(extremaValuesSummits?.seventyFiveKmMinMax?.second, R.id.layoutTopSpeed75Km, R.id.textTopSpeed75Km, R.id.textTopSpeed75KmInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.seventyFiveKmMinMax?.second) { e -> e.velocityData.seventyFiveKilometers }, 1)
-            setTextViewData(extremaValuesSummits?.hundredKmMinMax?.second, R.id.layoutTopSpeed100Km, R.id.textTopSpeed100Km, R.id.textTopSpeed100KmInfo, "km/h",
+            setTextViewData(extremaValuesSummits?.hundredKmMinMax?.second, R.id.layoutTopSpeed100Km, R.id.textTopSpeed100Km, R.id.textTopSpeed100KmInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.hundredKmMinMax?.second) { e -> e.velocityData.hundredKilometers }, 1)
 
-            setTextViewData(extremaValuesSummits?.heightMetersMinMax?.second, R.id.layoutMostHeightMeter, R.id.textMostHeightMeter, R.id.textMostHeightMeterInfo, "m",
+            setTextViewData(extremaValuesSummits?.heightMetersMinMax?.second, R.id.layoutMostHeightMeter, R.id.textMostHeightMeter, R.id.textMostHeightMeterInfo, getString(R.string.m),
                     getValueOrNull(extremaValuesSummits?.heightMetersMinMax?.second) { e -> e.elevationData.elevationGain.toDouble() })
-            setTextViewData(extremaValuesSummits?.topElevationMinMax?.second, R.id.layoutHighestPeak, R.id.textHighestPeak, R.id.textHighestPeakInfo, "m.a.s.l.",
+            setTextViewData(extremaValuesSummits?.topElevationMinMax?.second, R.id.layoutHighestPeak, R.id.textHighestPeak, R.id.textHighestPeakInfo, getString(R.string.masl),
                     getValueOrNull(extremaValuesSummits?.topElevationMinMax?.second) { e -> e.elevationData.maxElevation.toDouble() })
-            setTextViewData(extremaValuesSummits?.normPowerMinMax?.second, R.id.layoutHighestPower, R.id.textHeighestPower, R.id.textHeighestPowerInfo, "W",
+            setTextViewData(extremaValuesSummits?.normPowerMinMax?.second, R.id.layoutHighestPower, R.id.textHeighestPower, R.id.textHeighestPowerInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.normPowerMinMax?.second) { e ->
                         e.garminData?.power?.normPower?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power1sMinMax?.second, R.id.layoutHighestPower1sec, R.id.textHeighestPower1sec, R.id.textHeighestPower1secInfo, "W",
+            setTextViewData(extremaValuesSummits?.power1sMinMax?.second, R.id.layoutHighestPower1sec, R.id.textHeighestPower1sec, R.id.textHeighestPower1secInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power1sMinMax?.second) { e ->
                         e.garminData?.power?.oneSec?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power2sMinMax?.second, R.id.layoutHighestPower2sec, R.id.textHeighestPower2sec, R.id.textHeighestPower2secInfo, "W",
+            setTextViewData(extremaValuesSummits?.power2sMinMax?.second, R.id.layoutHighestPower2sec, R.id.textHeighestPower2sec, R.id.textHeighestPower2secInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power2sMinMax?.second) { e ->
                         e.garminData?.power?.twoSec?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power5sMinMax?.second, R.id.layoutHighestPower5sec, R.id.textHeighestPower5sec, R.id.textHeighestPower5secInfo, "W",
+            setTextViewData(extremaValuesSummits?.power5sMinMax?.second, R.id.layoutHighestPower5sec, R.id.textHeighestPower5sec, R.id.textHeighestPower5secInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power5sMinMax?.second) { e ->
                         e.garminData?.power?.fiveSec?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power10sMinMax?.second, R.id.layoutHighestPower10sec, R.id.textHeighestPower10sec, R.id.textHeighestPower10secInfo, "W",
+            setTextViewData(extremaValuesSummits?.power10sMinMax?.second, R.id.layoutHighestPower10sec, R.id.textHeighestPower10sec, R.id.textHeighestPower10secInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power10sMinMax?.second) { e ->
                         e.garminData?.power?.tenSec?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power20sMinMax?.second, R.id.layoutHighestPower20sec, R.id.textHeighestPower20sec, R.id.textHeighestPower20secInfo, "W",
+            setTextViewData(extremaValuesSummits?.power20sMinMax?.second, R.id.layoutHighestPower20sec, R.id.textHeighestPower20sec, R.id.textHeighestPower20secInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power20sMinMax?.second) { e ->
                         e.garminData?.power?.twentySec?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power30sMinMax?.second, R.id.layoutHighestPower30sec, R.id.textHeighestPower30sec, R.id.textHeighestPower30secInfo, "W",
+            setTextViewData(extremaValuesSummits?.power30sMinMax?.second, R.id.layoutHighestPower30sec, R.id.textHeighestPower30sec, R.id.textHeighestPower30secInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power30sMinMax?.second) { e ->
                         e.garminData?.power?.thirtySec?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power1minMinMax?.second, R.id.layoutHighestPower1min, R.id.textHeighestPower1min, R.id.textHeighestPower1minInfo, "W",
+            setTextViewData(extremaValuesSummits?.power1minMinMax?.second, R.id.layoutHighestPower1min, R.id.textHeighestPower1min, R.id.textHeighestPower1minInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power1minMinMax?.second) { e ->
                         e.garminData?.power?.oneMin?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power2minMinMax?.second, R.id.layoutHighestPower2min, R.id.textHeighestPower2min, R.id.textHeighestPower2minInfo, "W",
+            setTextViewData(extremaValuesSummits?.power2minMinMax?.second, R.id.layoutHighestPower2min, R.id.textHeighestPower2min, R.id.textHeighestPower2minInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power2minMinMax?.second) { e ->
                         e.garminData?.power?.twoMin?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power5minMinMax?.second, R.id.layoutHighestPower5min, R.id.textHeighestPower5min, R.id.textHeighestPower5minInfo, "W",
+            setTextViewData(extremaValuesSummits?.power5minMinMax?.second, R.id.layoutHighestPower5min, R.id.textHeighestPower5min, R.id.textHeighestPower5minInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power5minMinMax?.second) { e ->
                         e.garminData?.power?.fiveMin?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power10minMinMax?.second, R.id.layoutHighestPower10min, R.id.textHeighestPower10min, R.id.textHeighestPower10minInfo, "W",
+            setTextViewData(extremaValuesSummits?.power10minMinMax?.second, R.id.layoutHighestPower10min, R.id.textHeighestPower10min, R.id.textHeighestPower10minInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power10minMinMax?.second) { e ->
                         e.garminData?.power?.tenMin?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power20minMinMax?.second, R.id.layoutHighestPower20min, R.id.textHeighestPower20min, R.id.textHeighestPower20minInfo, "W",
+            setTextViewData(extremaValuesSummits?.power20minMinMax?.second, R.id.layoutHighestPower20min, R.id.textHeighestPower20min, R.id.textHeighestPower20minInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power20minMinMax?.second) { e ->
                         e.garminData?.power?.twentyMin?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power30minMinMax?.second, R.id.layoutHighestPower30min, R.id.textHeighestPower30min, R.id.textHeighestPower30minInfo, "W",
+            setTextViewData(extremaValuesSummits?.power30minMinMax?.second, R.id.layoutHighestPower30min, R.id.textHeighestPower30min, R.id.textHeighestPower30minInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power30minMinMax?.second) { e ->
                         e.garminData?.power?.thirtyMin?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power1hMinMax?.second, R.id.layoutHighestPower1h, R.id.textHeighestPower1h, R.id.textHeighestPower1hInfo, "W",
+            setTextViewData(extremaValuesSummits?.power1hMinMax?.second, R.id.layoutHighestPower1h, R.id.textHeighestPower1h, R.id.textHeighestPower1hInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power1hMinMax?.second) { e ->
                         e.garminData?.power?.oneHour?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power2hMinMax?.second, R.id.layoutHighestPower2h, R.id.textHeighestPower2h, R.id.textHeighestPower2hInfo, "W",
+            setTextViewData(extremaValuesSummits?.power2hMinMax?.second, R.id.layoutHighestPower2h, R.id.textHeighestPower2h, R.id.textHeighestPower2hInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power2hMinMax?.second) { e ->
                         e.garminData?.power?.twoHours?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.power5hMinMax?.second, R.id.layoutHighestPower5h, R.id.textHeighestPower5h, R.id.textHeighestPower5hInfo, "W",
+            setTextViewData(extremaValuesSummits?.power5hMinMax?.second, R.id.layoutHighestPower5h, R.id.textHeighestPower5h, R.id.textHeighestPower5hInfo, getString(R.string.watt),
                     getValueOrNull(extremaValuesSummits?.power5hMinMax?.second) { e ->
                         e.garminData?.power?.fiveHours?.toDouble() ?: 0.0
                     })
-            setTextViewData(extremaValuesSummits?.averageHRMinMax?.second, R.id.layoutHighestAverageHR, R.id.textHeighestAverageHR, R.id.textHeighestAverageHRInfo, "bpm",
+            setTextViewData(extremaValuesSummits?.averageHRMinMax?.second, R.id.layoutHighestAverageHR, R.id.textHeighestAverageHR, R.id.textHeighestAverageHRInfo, getString(R.string.bpm),
                     getValueOrNull(extremaValuesSummits?.averageHRMinMax?.second) { e ->
                         e.garminData?.averageHR?.toDouble() ?: 0.0
                     })

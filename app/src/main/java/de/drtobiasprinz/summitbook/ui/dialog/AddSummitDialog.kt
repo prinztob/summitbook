@@ -223,7 +223,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             Toast.makeText(v.context, text, Toast.LENGTH_SHORT).show()
         }
 
-        val addGarminActivityButton = view.findViewById<ImageButton>(R.id.add_garmin_activity)
+        val addGarminActivityButton = view.findViewById<ImageButton>(R.id.add_track)
         addGarminActivityButton.setOnClickListener {
             val dateAsString = date.text.toString()
             val contextLocal = context
@@ -233,11 +233,11 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                     AsyncDownloadJsonViaPython(pythonExecutor, dateAsString, this).execute()
                 } else {
                     Toast.makeText(context,
-                            "Please set Username and Password for Garmin connect in settings", Toast.LENGTH_LONG).show()
+                            getString(R.string.set_user_pwd), Toast.LENGTH_LONG).show()
                 }
             } else {
                 Toast.makeText(context,
-                        "Please set a date to be able to retrieve data from Garmin connect", Toast.LENGTH_LONG).show()
+                        getString(R.string.date_garmin_connect), Toast.LENGTH_LONG).show()
             }
         }
     }

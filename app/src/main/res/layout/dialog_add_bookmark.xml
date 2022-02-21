@@ -8,12 +8,13 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="20dp">
+
         <RelativeLayout
             android:id="@+id/loadingPanel"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone"
-            android:gravity="center" >
+            android:gravity="center"
+            android:visibility="gone">
 
             <ProgressBar
                 android:layout_width="wrap_content"
@@ -32,22 +33,51 @@
             android:importantForAutofill="no"
             android:inputType="text" />
 
+
+
         <Spinner
             android:id="@+id/activities"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp" />
 
-        <EditText
-            android:id="@+id/height_meter"
+
+        <ImageButton
+            android:id="@+id/add_gps_track"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:drawableStart="@drawable/ic_trending_up_black_24dp"
-            android:drawablePadding="10dp"
-            android:hint="@string/height_meter_hint"
-            android:importantForAutofill="no"
-            android:inputType="number" />
+            android:layout_margin="5dp"
+            android:layout_marginBottom="5dp"
+            android:layout_gravity="end"
+            android:background="@color/color_white"
+            android:contentDescription="@string/addGpsTrack"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:src="@drawable/ic_baseline_upload_file_24" />
 
+
+
+        <RelativeLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/height_meter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawableStart="@drawable/ic_trending_up_black_24dp"
+                android:drawablePadding="10dp"
+                android:hint="@string/height_meter_hint"
+                android:importantForAutofill="no"
+                android:inputType="number" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerInParent="true"
+                android:text="@string/hm" />
+        </RelativeLayout>
         <RelativeLayout
             android:layout_width="fill_parent"
             android:layout_height="wrap_content">

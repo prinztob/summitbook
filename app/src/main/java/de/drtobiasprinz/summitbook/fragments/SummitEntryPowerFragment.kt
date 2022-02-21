@@ -65,9 +65,8 @@ class SummitEntryPowerFragment : Fragment() {
             }
         }
         timeRangeSpinner = root.findViewById(R.id.spinner_time_range)
-        //TODO: translate
         val timeRangeAdapter = ArrayAdapter(requireContext(),
-                android.R.layout.simple_spinner_item, listOf("All", "current year", "last 3 month", "last 12 month"))
+                android.R.layout.simple_spinner_item, listOf(getString(R.string.all), getString(R.string.current_year), getString(R.string.last_3_month), getString(R.string.last_12_month)))
         timeRangeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         timeRangeSpinner?.adapter = timeRangeAdapter
 
@@ -265,7 +264,7 @@ class SummitEntryPowerFragment : Fragment() {
         xAxis?.position = XAxis.XAxisPosition.BOTTOM
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return String.format(Locale.ENGLISH, "%s sec", unScaleCbr(round(value.toDouble())).toInt())
+                return String.format(Locale.ENGLISH, "%s ${getString(R.string.sec)}", unScaleCbr(round(value.toDouble())).toInt())
             }
         }
         xAxis.axisMinimum = scaleCbr(1.0)

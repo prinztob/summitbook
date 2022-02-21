@@ -83,7 +83,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
         addSummitsButton.setOnClickListener {
             if (pythonExecutor != null && areEntriesChecked()) {
                 progressBar?.visibility = View.VISIBLE
-                progressBar?.tooltipText = "Add summits ${entriesWithoutIgnored.filter { summit -> summit.isSelected }.map { it.name }.joinToString(", ")} and download its tracks. This may take a while."
+                progressBar?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.map { it.name }.joinToString(", "))
                 entriesWithoutIgnored.filter { summit -> summit.isSelected }.forEach { entry ->
                     GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(pythonExecutor, listOf(entry), sortFilterHelper, useTcx, this).execute()
                 }
@@ -95,7 +95,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
         mergeSummitsButton.setOnClickListener {
             if (pythonExecutor != null && canSelectedSummitsBeMerged()) {
                 progressBar?.visibility = View.VISIBLE
-                progressBar?.tooltipText = "Merge summits ${entriesWithoutIgnored.filter { summit -> summit.isSelected }.map { it.name }.joinToString(", ")} and downloaded tracks. This may take a while."
+                progressBar?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.map { it.name }.joinToString(", "))
                 GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(pythonExecutor, entriesWithoutIgnored.filter { summit -> summit.isSelected }, sortFilterHelper, useTcx, this).execute()
             }
             dialog?.cancel()

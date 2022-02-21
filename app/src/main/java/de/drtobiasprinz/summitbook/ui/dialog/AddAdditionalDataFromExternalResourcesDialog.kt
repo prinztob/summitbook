@@ -193,7 +193,7 @@ class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summ
                 val pace = distance / movingDuration * 3600
                 tableEntries.add(TableEntry(getString(R.string.pace_hint),
                         pace,
-                        "hm/h", abs(summitEntry.velocityData.avgVelocity - pace) < 0.05,
+                        "km/h", abs(summitEntry.velocityData.avgVelocity - pace) < 0.05,
                         { e -> summitEntry.velocityData.avgVelocity = e },
                         summitEntry.velocityData.avgVelocity)
                 )
@@ -254,11 +254,10 @@ class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summ
         tableRowHead.setBackgroundColor(Color.WHITE)
         tableRowHead.layoutParams = TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT)
-        addLabel(view, tableRowHead, 20, "Entry", Color.GRAY)
-        //TODO: i8
-        addLabel(view, tableRowHead, 21, "update", Color.GRAY)
-        addLabel(view, tableRowHead, 22, "current", Color.GRAY)
-        addLabel(view, tableRowHead, 23, "unit", Color.GRAY)
+        addLabel(view, tableRowHead, 20, getString(R.string.entry), Color.GRAY)
+        addLabel(view, tableRowHead, 21, getString(R.string.update), Color.GRAY)
+        addLabel(view, tableRowHead, 22, getString(R.string.current), Color.GRAY)
+        addLabel(view, tableRowHead, 23, getString(R.string.unit), Color.GRAY)
         addLabel(view, tableRowHead, 24, "", Color.GRAY)
 
         tl.addView(tableRowHead, TableLayout.LayoutParams(
