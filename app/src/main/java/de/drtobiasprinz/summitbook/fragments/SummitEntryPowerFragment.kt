@@ -9,6 +9,7 @@ import android.widget.*
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import com.chivorn.smartmaterialspinner.SmartMaterialSpinner
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.MarkerView
 import com.github.mikephil.charting.components.XAxis
@@ -42,6 +43,7 @@ class SummitEntryPowerFragment : Fragment() {
     private var database: AppDatabase? = null
     private var timeRangeSpinner: Spinner? = null
     private var selectedTimeRangeSpinner: Int = 0
+    private var summitsToCompare: List<Summit> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,6 +75,14 @@ class SummitEntryPowerFragment : Fragment() {
 
         val localSummit = summitEntry
         if (localSummit != null) {
+            if (localSummit.isBookmark) {
+                root.findViewById<SmartMaterialSpinner<String>>(R.id.summit_name_to_compare).visibility = View.GONE
+            } else {
+                summitsToCompare = database?.summitDao()?.getAllSummitWithSameSportType(localSummit.sportType)
+                        ?: emptyList()
+                prepareCompareAutoComplete(localSummit)
+            }
+
             val textViewName = root.findViewById<TextView>(R.id.summit_name)
             textViewName.text = localSummit.name
             val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
@@ -91,17 +101,55 @@ class SummitEntryPowerFragment : Fragment() {
         return root
     }
 
-    private fun drawChart(entry: Summit) {
+    private fun prepareCompareAutoComplete(summit: Summit) {
+        val summitToCompareAutoComplete: SmartMaterialSpinner<String> = root.findViewById(R.id.summit_name_to_compare)
+        val items = getSummitsSuggestions(summit)
+        summitToCompareAutoComplete.item = items
+
+        summitToCompareAutoComplete.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(adapterView: AdapterView<*>, view: View, position: Int, id: Long) {
+                val text = items[position]
+                if (text != "") {
+                    val compareEntry = summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
+                    if (compareEntry != null && compareEntry.garminData?.power?.hasPowerData() == true) {
+                        drawChart(summit, compareEntry)
+                    } else {
+                        drawChart(summit)
+                    }
+                } else {
+                    drawChart(summit)
+                }
+            }
+
+            override fun onNothingSelected(adapterView: AdapterView<*>) {
+                drawChart(summit)
+            }
+        }
+    }
+
+    private fun getSummitsSuggestions(localSummit: Summit): ArrayList<String> {
+        val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
+        val summitsWithoutSimilarName = summitsToCompare.filter { it.name != localSummit.name && it.hasGpsTrack() }.sortedByDescending { it.date }
+        val summitsWithSimilarName = summitsToCompare.filter { it.name == localSummit.name && it != localSummit }.sortedByDescending { it.date }
+        summitsToCompare = summitsWithSimilarName + summitsWithoutSimilarName
+        summitsToCompare.forEach {
+            suggestions.add("${it.getDateAsString()} ${it.name}")
+        }
+        return suggestions as ArrayList
+    }
+
+
+    private fun drawChart(entry: Summit, compareEntry: Summit? = null) {
+        val lineChart = root.findViewById<LineChart>(R.id.lineChart)
+        lineChart.invalidate()
         val power = entry.garminData?.power
         if (power != null) {
-
-            val lineChart = root.findViewById<LineChart>(R.id.lineChart)
             setXAxis(lineChart)
             lineChart.axisLeft.axisMinimum = 0f
             lineChart.axisRight.axisMinimum = 0f
 
             val params = lineChart.layoutParams
-            params.height = (metrics.heightPixels * 0.7).toInt()
+            params.height = (metrics.heightPixels * 0.65).toInt()
             lineChart.layoutParams = params
 
             val dataSets: MutableList<ILineDataSet?> = ArrayList()
@@ -109,6 +157,13 @@ class SummitEntryPowerFragment : Fragment() {
             val dataSet = LineDataSet(chartEntries, getString(R.string.power_profile_label))
             setGraphView(dataSet, false)
 
+            val powerToCompare = compareEntry?.garminData?.power
+            if (powerToCompare != null) {
+                val chartEntriesComparator = getLineChartEntriesMax(powerToCompare)
+                val dataSetComparator = LineDataSet(chartEntriesComparator, getString(R.string.power_profile_compare_label))
+                setGraphView(dataSetComparator, true, color = Color.GRAY)
+                dataSets.add(dataSetComparator)
+            }
             val summits = MainActivity.extremaValuesAllSummits?.entries
             if (summits != null) {
                 val filteredSummits = getFilteredSummits(summits)
@@ -272,18 +327,18 @@ class SummitEntryPowerFragment : Fragment() {
         xAxis.setLabelCount(6, true)
     }
 
-    private fun setGraphView(set1: LineDataSet?, filled: Boolean = true) {
+    private fun setGraphView(set1: LineDataSet?, filled: Boolean = true, color: Int = Color.BLUE) {
         set1?.mode = LineDataSet.Mode.LINEAR
         set1?.circleRadius = 7.0f
         set1?.setDrawValues(false)
         if (filled) {
             set1?.cubicIntensity = 20f
             set1?.lineWidth = 2.5f
-            set1?.setCircleColor(Color.BLUE)
-            set1?.color = Color.BLUE
+            set1?.setCircleColor(color)
+            set1?.color = color
             set1?.highLightColor = Color.rgb(244, 117, 117)
             set1?.setDrawFilled(true)
-            set1?.fillColor = Color.BLUE
+            set1?.fillColor = color
             set1?.fillAlpha = 50
         } else {
             set1?.lineWidth = 4.8f

@@ -20,16 +20,7 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_summit_entry_details)
         database = AppDatabase.getDatabase(applicationContext)
-        val toolbar = findViewById<Toolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
-        val supportActionBarLocal = supportActionBar
-        if (supportActionBarLocal != null) {
-            supportActionBarLocal.setDisplayHomeAsUpEnabled(true)
-            supportActionBarLocal.setDisplayShowHomeEnabled(true)
-            if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                supportActionBarLocal.hide()
-            }
-        }
+        setActionBar()
         val bundle = intent.extras
         if (bundle != null) {
             val summitEntryId = intent.extras?.getLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
@@ -44,6 +35,19 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
             viewPager.adapter = tabsPagerAdapter
             val tabs = findViewById<TabLayout>(R.id.tabs)
             tabs.setupWithViewPager(viewPager)
+        }
+    }
+
+    private fun setActionBar() {
+        val toolbar = findViewById<Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        val supportActionBarLocal = supportActionBar
+        if (supportActionBarLocal != null) {
+            supportActionBarLocal.setDisplayHomeAsUpEnabled(true)
+            supportActionBarLocal.setDisplayShowHomeEnabled(true)
+            if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                supportActionBarLocal.hide()
+            }
         }
     }
 

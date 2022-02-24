@@ -16,6 +16,7 @@
     <string name="type">Type</string>
     <string name="accept">Accept</string>
     <string name="summit_name_hint">Name of summit</string>
+    <string name="summit_name_compare_hint">Compare with summit</string>
     <string name="height_meter_hint">Elevation gain</string>
     <string name="action_share">share</string>
     <string name="capricorn_caption">Capricorn in the alps</string>
@@ -188,6 +189,7 @@
     <string name="speed_profile_label">"Speed profile"</string>
     <string name="vertical_speed_profile_label">"Vertical speed profile"</string>
     <string name="power_profile_label">"Current summit"</string>
+    <string name="power_profile_compare_label">"Summit to compare"</string>
     <string name="power_profile_max_label">"Record"</string>
     <string name="power_profile_min_label">"Negative Record"</string>
     <string name="delete_image">"Deleted image for entry %1$s."</string>

@@ -48,6 +48,22 @@
 
             </RelativeLayout>
 
+            <com.chivorn.smartmaterialspinner.SmartMaterialSpinner
+                android:id="@+id/summit_name_to_compare"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/summit_name_compare_hint"
+                app:smsp_searchHeaderText="@string/select_item"
+                app:smsp_searchHint="@string/summit_name_compare_hint"
+                app:smsp_hint="@string/summit_name_compare_hint"
+                app:smsp_itemColor="#512DA8"
+                app:smsp_itemListColor="#7C4DFF"
+                app:smsp_itemListHintBackgroundColor="#808080"
+                app:smsp_isSearchable="true"
+                app:smsp_enableErrorLabel="false"
+                app:smsp_enableFloatingLabel="false"
+                app:smsp_selectedItemListColor="#FF5252" />
+
             <RelativeLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">

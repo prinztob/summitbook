@@ -250,6 +250,9 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         if (loadFullTrackAsynchronous && fileToUse != gpsTrackPath.toFile()) {
             AsyncLoadGpxTrack(gpsTrackPath.toFile(), this).execute()
         }
+        if (trackPoints.size > 0 && trackPoints.first().extension?.distance == null) {
+            setDistance()
+        }
     }
 
 
@@ -394,8 +397,9 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             override fun doInBackground(vararg uri: Uri): Void? {
                 track = getTrack(fileToUse)
                 trackPoints = getTrackPoints(track)
-                val summitSlope = SummitSlope(trackPoints)
-                summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0, factor = 100)
+//              TODO: fix stackOverflow Exception
+//                val summitSlope = SummitSlope(trackPoints)
+//                summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0, factor = 100)
 //                summitSlope.calculateMaxVerticalVelocity()
                 trackGeoPoints = getGeoPoints(trackPoints)
                 return null
@@ -405,11 +409,14 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                 gpsTrack.gpxTrack = track
                 gpsTrack.trackGeoPoints = trackGeoPoints
                 gpsTrack.trackPoints = trackPoints
+                if (gpsTrack.trackPoints.size > 0 && gpsTrack.trackPoints.first().extension?.distance == null) {
+                    gpsTrack.setDistance()
+                }
                 Log.i("AsyncLoadGpxTrack", "Successfully loaded gpx track asynchronous.")
             }
         }
 
-        fun interpolate(a: Float, b: Float, proportion: Float): Float {
+        private fun interpolate(a: Float, b: Float, proportion: Float): Float {
             return a + (b - a) * proportion
         }
 

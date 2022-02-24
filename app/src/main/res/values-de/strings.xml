@@ -16,6 +16,7 @@
     <string name="type">Sportart</string>
     <string name="accept">Akzeptiere</string>
     <string name="summit_name_hint">Name des Gipfel</string>
+    <string name="summit_name_compare_hint">Vergleiche mit Gipfel</string>
     <string name="height_meter_hint">Höhenmeter</string>
     <string name="activity_hint">Aktivitäten</string>
     <string name="action_share">Teilen</string>
@@ -192,6 +193,7 @@ von
     <string name="speed_profile_label">"Geschwindigkeitsprofil"</string>
     <string name="vertical_speed_profile_label">"Profil der Vertikale Geschw."</string>
     <string name="power_profile_label">"Aktueller Gipfel"</string>
+    <string name="power_profile_compare_label">"Vergleichsgipfel"</string>
     <string name="power_profile_max_label">"Rekord"</string>
     <string name="power_profile_min_label">"Negativrekord"</string>
     <string name="delete_image">"Lösche Bild von Gipfel %1$s."</string>

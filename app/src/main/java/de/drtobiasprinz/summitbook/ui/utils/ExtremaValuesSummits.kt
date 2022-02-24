@@ -72,6 +72,8 @@ class ExtremaValuesSummits(val entries: List<Summit>, val shouldIndoorActivityBe
     var flowMinMax = getMinMax { e -> e.garminData?.flow ?: 0 }
     var gritMinMax = getMinMax { e -> e.garminData?.grit ?: 0 }
     var trainingsLoadMinMax = getMinMax { e -> e.garminData?.trainingLoad ?: 0 }
+    var aerobicTrainingEffectMinMax = getMinMax { e -> e.garminData?.aerobicTrainingEffect ?: 0 }
+    var anaerobicTrainingEffectMinMax = getMinMax { e -> e.garminData?.anaerobicTrainingEffect ?: 0 }
 
     private fun getMinMax(shouldIndoorActivityBeExcluded: Boolean = false, f: (Summit) -> Number): Pair<Summit, Summit>? {
         val filteredEntries = if (shouldIndoorActivityBeExcluded) entries.filter { it.sportType != SportType.IndoorTrainer } else entries

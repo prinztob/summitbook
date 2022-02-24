@@ -12,6 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import com.chivorn.smartmaterialspinner.SmartMaterialSpinner
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.LegendEntry
@@ -60,6 +61,9 @@ class SummitEntryTrackFragment : Fragment() {
     private var trackSlopeGraphBinSize: Double = 100.0
     private var gpsTrack: GpsTrack? = null
     private var usedItemsForColorCode: List<TrackColor> = emptyList()
+    private var summitsToCompare: List<Summit> = emptyList()
+    private var summitToCompare: Summit? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
@@ -82,8 +86,15 @@ class SummitEntryTrackFragment : Fragment() {
         }
         val localSummit = summitEntry
         if (localSummit != null) {
-            setGpsTrack(localSummit, loadFullTrackAsynchronous = true)
-            setUsedItemsForColorCode()
+            if (localSummit.isBookmark) {
+                root.findViewById<SmartMaterialSpinner<String>>(R.id.summit_name_to_compare).visibility = View.GONE
+            } else {
+                summitsToCompare = database?.summitDao()?.getAllSummitWithSameSportType(localSummit.sportType)
+                        ?: emptyList()
+                prepareCompareAutoComplete(localSummit)
+            }
+            setGpsTrack(localSummit)
+            setUsedItemsForColorCode(true)
             val textViewName = root.findViewById<TextView>(R.id.summit_name)
             textViewName.text = localSummit.name
             val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
@@ -137,12 +148,46 @@ class SummitEntryTrackFragment : Fragment() {
         return root
     }
 
-    private fun setGpsTrack(localSummit: Summit, loadFullTrackAsynchronous: Boolean = false) {
+    private fun prepareCompareAutoComplete(summit: Summit) {
+        val summitToCompareAutoComplete: SmartMaterialSpinner<String> = root.findViewById(R.id.summit_name_to_compare)
+        val items = getSummitsSuggestions(summit)
+        summitToCompareAutoComplete.item = items
+
+        summitToCompareAutoComplete.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(adapterView: AdapterView<*>, view: View, position: Int, id: Long) {
+                val text = items[position]
+                if (text != "") {
+                    val selectedSummit = summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
+                    if (selectedSummit != null && selectedSummit.hasGpsTrack()) {
+                        summitToCompare = selectedSummit
+                    }
+                }
+                setOpenStreetMap(summit)
+            }
+
+            override fun onNothingSelected(adapterView: AdapterView<*>) {
+                setOpenStreetMap(summit)
+            }
+        }
+    }
+
+    private fun getSummitsSuggestions(localSummit: Summit): ArrayList<String> {
+        val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
+        val summitsWithoutSimilarName = summitsToCompare.filter { it.name != localSummit.name && it.hasGpsTrack() }.sortedByDescending { it.date }
+        val summitsWithSimilarName = summitsToCompare.filter { it.name == localSummit.name && it != localSummit }.sortedByDescending { it.date }
+        summitsToCompare = summitsWithSimilarName + summitsWithoutSimilarName
+        summitsToCompare.forEach {
+            suggestions.add("${it.getDateAsString()} ${it.name}")
+        }
+        return suggestions as ArrayList
+    }
+
+    private fun setGpsTrack(localSummit: Summit) {
         if (localSummit.hasGpsTrack()) {
-            localSummit.setGpsTrack(loadFullTrackAsynchronous = loadFullTrackAsynchronous)
+            localSummit.setGpsTrack(loadFullTrackAsynchronous = true)
             gpsTrack = localSummit.gpsTrack
             if (gpsTrack?.hasNoTrackPoints() == true) {
-                gpsTrack?.parseTrack(loadFullTrackAsynchronous = loadFullTrackAsynchronous)
+                gpsTrack?.parseTrack(loadFullTrackAsynchronous = true)
             }
             val localGpsTrack = gpsTrack
             if (localGpsTrack?.trackPoints?.isNotEmpty() == true && trackSlopeGraph.isNullOrEmpty()) {
@@ -230,13 +275,14 @@ class SummitEntryTrackFragment : Fragment() {
         val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || localSummit.latLng != null
 
         osMap = root.findViewById(R.id.osmap)
+        osMap.overlays?.clear()
         OpenStreetMapUtils.setTileSource(OpenStreetMapUtils.selectedItem, osMap)
         val changeMapTypeFab: ImageButton = root.findViewById(R.id.change_map_type)
         changeMapTypeFab.setImageResource(R.drawable.ic_more_vert_black_24dp)
         changeMapTypeFab.setOnClickListener { OpenStreetMapUtils.showMapTypeSelectorDialog(requireContext(), osMap) }
         OpenStreetMapUtils.addDefaultSettings(requireContext(), osMap, requireActivity())
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-        val height = if (hasPoints) 0.75 else 0.0
+        val height = if (hasPoints) 0.7 else 0.0
         val params = osMap.layoutParams
         params?.height = (metrics.heightPixels * height).toInt()
         osMap.layoutParams = params
@@ -245,9 +291,15 @@ class SummitEntryTrackFragment : Fragment() {
         if (hasPoints && databaseLocal != null) {
             val connectedEntries = mutableListOf<Summit>()
             localSummit.setConnectedEntries(connectedEntries, databaseLocal)
-            for (entry in connectedEntries) {
-                OpenStreetMapUtils.drawTrack(entry, false, osMap, TrackColor.None, color = Color.BLACK)
+            val localSummitToCompare = summitToCompare
+            if (localSummitToCompare != null) {
+                OpenStreetMapUtils.drawTrack(localSummitToCompare, true, osMap, TrackColor.None, color = Color.BLACK)
+            } else {
+                for (entry in connectedEntries) {
+                    OpenStreetMapUtils.drawTrack(entry, true, osMap, TrackColor.None, color = Color.BLACK)
+                }
             }
+
             marker = OpenStreetMapUtils.addTrackAndMarker(localSummit, osMap, requireContext(), true, selectedCustomizeTrackItem, true, rootView = root)
             customizeTrackButton.setOnClickListener {
                 customizeTrackDialog()
@@ -268,8 +320,7 @@ class SummitEntryTrackFragment : Fragment() {
             builder.setTitle(fDialogTitle)
             builder.setSingleChoiceItems(usedItemsForColorCode.map { resources.getString(it.nameId) }.toTypedArray(), selectedCustomizeTrackItem.spinnerId) { dialog: DialogInterface, item: Int ->
                 selectedCustomizeTrackItem = usedItemsForColorCode[item]
-                osMap.overlays?.clear()
-                localSummit.let { OpenStreetMapUtils.addTrackAndMarker(it, osMap, requireContext(), true, selectedCustomizeTrackItem, true, rootView = root) }
+                setOpenStreetMap(localSummit)
                 drawChart(localSummit)
                 dialog.dismiss()
             }
@@ -280,7 +331,7 @@ class SummitEntryTrackFragment : Fragment() {
         }
     }
 
-    private fun setUsedItemsForColorCode() {
+    private fun setUsedItemsForColorCode(setDefault: Boolean = false) {
         usedItemsForColorCode = TrackColor.values().filter { trackColorEntry: TrackColor ->
             gpsTrack?.trackPoints?.any {
                 val value = trackColorEntry.f(it)
@@ -290,7 +341,7 @@ class SummitEntryTrackFragment : Fragment() {
             entry.spinnerId = i
             entry
         }
-        if (usedItemsForColorCode.size <= 2) {
+        if (setDefault && TrackColor.Elevation !in usedItemsForColorCode) {
             selectedCustomizeTrackItem = TrackColor.None
         }
     }
