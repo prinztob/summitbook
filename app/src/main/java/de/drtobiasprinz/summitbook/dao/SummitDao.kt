@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.dao
 
 import androidx.room.*
+import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
 
 
@@ -15,7 +16,10 @@ interface SummitDao {
     @get:Query("select * from summit where isBookmark = 1")
     val allBookmark: List<Summit>?
 
-    @Query("select * from summit WHERE date >= :startDate and isBookmark = 0")
+    @Query("select * from summit where sportType == :sportType and isBookmark = 0")
+    fun getAllSummitWithSameSportType(sportType: SportType): List<Summit>?
+
+    @Query("select * from summit where date >= :startDate and isBookmark = 0")
     fun getAllSummitForYear(startDate: Long): List<Summit>?
 
     @Query("select * from summit where id = :id")
