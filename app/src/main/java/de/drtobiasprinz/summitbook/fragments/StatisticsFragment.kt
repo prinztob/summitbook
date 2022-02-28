@@ -70,8 +70,8 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
     private fun setTextViews(extremaValuesSummits: ExtremaValuesSummits?) {
         if (statisticEntry.getTotalSummits() > 0) {
             textTotalSummits.text = String.format("%s", statisticEntry.getTotalSummits())
-            textTotalKm.text = String.format(Locale.ENGLISH, "%.1f km", statisticEntry.totalKm)
-            textTotalHm.text = String.format(Locale.ENGLISH, "%s hm", statisticEntry.totalHm)
+            textTotalKm.text = String.format(requireContext().resources.configuration.locales[0], "%.1f km", statisticEntry.totalKm)
+            textTotalHm.text = String.format(requireContext().resources.configuration.locales[0], "%s hm", statisticEntry.totalHm)
             val currentYear: Int = (Calendar.getInstance())[Calendar.YEAR]
             val currentMonth: Int = (Calendar.getInstance())[Calendar.MONTH] + 1
             if (sortFilterHelper.selectedYear == currentYear.toString()) {
@@ -98,7 +98,7 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
             }
             if (sortFilterHelper.selectedYear != "") {
                 statisticFragmentView.findViewById<View?>(R.id.achievementInfo)?.visibility = View.VISIBLE
-                textAchievement.text = String.format(Locale.ENGLISH, "%.1f %%", statisticEntry.getAchievement())
+                textAchievement.text = String.format(requireContext().resources.configuration.locales[0], "%.1f %%", statisticEntry.getAchievement())
             } else {
                 statisticFragmentView.findViewById<View?>(R.id.achievementInfo)?.visibility = View.GONE
             }
@@ -252,16 +252,16 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
             layout?.setOnClickListener { v: View ->
                 val context = v.context
                 val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-                intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, entry.id)
+                intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entry.id)
                 context.startActivity(intent)
             }
             layout?.visibility = View.VISIBLE
             if (digits > 0) {
-                data?.text = String.format(Locale.ENGLISH, "%." + digits + "f %s", value * factor, unit)
+                data?.text = String.format(requireContext().resources.configuration.locales[0], "%." + digits + "f %s", value * factor, unit)
             } else {
-                data?.text = String.format(Locale.ENGLISH, "%s %s", (value * factor).roundToLong(), unit)
+                data?.text = String.format(requireContext().resources.configuration.locales[0], "%s %s", (value * factor).roundToLong(), unit)
             }
-            info?.text = String.format(Locale.ENGLISH, "%s: %s\n%s: %s", getString(R.string.name), entry.name, getString(R.string.tour_date), entry.getDateAsString())
+            info?.text = String.format(requireContext().resources.configuration.locales[0], "%s: %s\n%s: %s", getString(R.string.name), entry.name, getString(R.string.tour_date), entry.getDateAsString())
         } else {
             layout?.visibility = View.GONE
         }

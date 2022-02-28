@@ -39,7 +39,7 @@ class SummitEntryImagesFragment : Fragment() {
         val root: View = inflater.inflate(R.layout.fragment_summit_entry_images, container, false)
         database = context?.let { AppDatabase.getDatabase(it) }
         if (summitEntry == null && savedInstanceState != null) {
-            val summitEntryId = savedInstanceState.getLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
+            val summitEntryId = savedInstanceState.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
             if (summitEntryId != 0L) {
                 summitEntry = database?.summitDao()?.getSummit(summitEntryId)
             }
@@ -92,7 +92,7 @@ class SummitEntryImagesFragment : Fragment() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        summitEntry?.id?.let { outState.putLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
+        summitEntry?.id?.let { outState.putLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
     }
 
     override fun onDestroy() {

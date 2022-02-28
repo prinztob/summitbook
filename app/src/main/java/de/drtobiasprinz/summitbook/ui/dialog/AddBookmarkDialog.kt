@@ -314,13 +314,14 @@ class AddBookmarkDialog : DialogFragment() {
                         }
 
                         var distance = gpxPyJson.getAsJsonPrimitive("moving_distance").asDouble / 1000
-                        if (distance == 0.0 && gpsTrack != null)  {
-                            distance = (gpsTrack.trackPoints.last().extension?.distance?:0.0)/ 1000
+                        if (distance == 0.0 && gpsTrack != null) {
+                            distance = (gpsTrack.trackPoints.last().extension?.distance
+                                    ?: 0.0) / 1000
                         }
                         entry.kilometers = distance
                         val kmText = view.findViewById<EditText>(R.id.kilometers)
                         kmText.filters = arrayOf()
-                        kmText.setText(String.format(Locale.ENGLISH, "%.1f", distance))
+                        kmText.setText(String.format(view.context.resources.configuration.locales[0], "%.1f", distance))
                         kmText.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
 
                         val movingDuration = gpxPyJson.getAsJsonPrimitive("moving_time").asDouble

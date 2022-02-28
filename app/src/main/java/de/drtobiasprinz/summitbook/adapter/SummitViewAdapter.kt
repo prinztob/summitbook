@@ -82,7 +82,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         addImageButton.setOnClickListener { v: View? ->
             val context = v?.context
             val intent = Intent(context, AddImagesActivity::class.java)
-            intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
+            intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
             intent.putExtra(SelectOnOsMapActivity.SUMMIT_POSITION, position)
             v?.context?.startActivity(intent)
         }
@@ -122,14 +122,14 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         addPosition?.setOnClickListener { v: View? ->
             val context = v?.context
             val intent = Intent(context, SelectOnOsMapActivity::class.java)
-            intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
+            intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
             intent.putExtra(SelectOnOsMapActivity.SUMMIT_POSITION, position)
             v?.context?.startActivity(intent)
         }
         cardView.setOnClickListener { v: View? ->
             val context = v?.context
             val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-            intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
+            intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
             v?.context?.startActivity(intent)
         }
     }

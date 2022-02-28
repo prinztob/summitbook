@@ -66,7 +66,7 @@ class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Con
     private fun startIntent() {
         try {
             val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-            intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, entry.id)
+            intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entry.id)
             context.startActivity(intent)
         } catch (e: NullPointerException) {
             // DO NOTHING

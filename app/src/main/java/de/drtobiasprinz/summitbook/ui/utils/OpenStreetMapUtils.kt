@@ -7,7 +7,11 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
-import de.drtobiasprinz.summitbook.models.*
+import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.models.GpsTrack
+import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.models.TrackBoundingBox
+import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import org.osmdroid.tileprovider.tilesource.ITileSource
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -102,29 +106,35 @@ object OpenStreetMapUtils {
     }
 
     @JvmStatic
-    fun addMarker(mMapView: MapView, context: Context, startPoint: GeoPoint?, entry: Summit, addToOverlay: Boolean = true, alwaysShowTrackOnMap: Boolean = false): Marker {
-        val marker = Marker(mMapView)
-        marker.position = startPoint
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-        marker.title = entry.id.toString()
-        if (entry.hasGpsTrack()) {
-            marker.icon = ResourcesCompat.getDrawable(context.resources, entry.sportType.markerIdWithGpx, null)
-        } else {
-            marker.icon = ResourcesCompat.getDrawable(context.resources, entry.sportType.markerIdWithoutGpx, null)
-        }
-        marker.infoWindow = MapCustomInfoBubble(mMapView, entry, context, alwaysShowTrackOnMap)
-        marker.setOnMarkerClickListener { marker1, _ ->
-            if (!marker1.isInfoWindowShown) {
-                marker1.showInfoWindow()
+    fun addMarker(mMapView: MapView, context: Context, startPoint: GeoPoint?, entry: Summit, addToOverlay: Boolean = true, alwaysShowTrackOnMap: Boolean = false): Marker? {
+        try {
+
+            val marker = Marker(mMapView)
+            marker.position = startPoint
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            marker.title = entry.id.toString()
+            if (entry.hasGpsTrack()) {
+                marker.icon = ResourcesCompat.getDrawable(context.resources, entry.sportType.markerIdWithGpx, null)
             } else {
-                marker1.closeInfoWindow()
+                marker.icon = ResourcesCompat.getDrawable(context.resources, entry.sportType.markerIdWithoutGpx, null)
             }
-            false
+            marker.infoWindow = MapCustomInfoBubble(mMapView, entry, context, alwaysShowTrackOnMap)
+            marker.setOnMarkerClickListener { marker1, _ ->
+                if (!marker1.isInfoWindowShown) {
+                    marker1.showInfoWindow()
+                } else {
+                    marker1.closeInfoWindow()
+                }
+                false
+            }
+            if (addToOverlay) {
+                mMapView.overlays.add(marker)
+            }
+            return marker
+        } catch (e: NullPointerException) {
+            e.printStackTrace()
+            return null
         }
-        if (addToOverlay) {
-            mMapView.overlays.add(marker)
-        }
-        return marker
     }
 
     @JvmStatic
@@ -147,10 +157,11 @@ object OpenStreetMapUtils {
     fun addDefaultSettings(context: Context, mMapView: MapView, fragmentActivity: FragmentActivity) {
 
         val dm = context.resources.displayMetrics
-        val mCompassOverlay = CompassOverlay(context, InternalCompassOrientationProvider(context),
-                mMapView)
-        mCompassOverlay.enableCompass()
-        mMapView.overlays.add(mCompassOverlay)
+        //TODO: fix java.lang.IllegalStateException: register failed, the sensor listeners size has exceeded the maximum limit 128
+//        val mCompassOverlay = CompassOverlay(context, InternalCompassOrientationProvider(context),
+//                mMapView)
+//        mCompassOverlay.enableCompass()
+//        mMapView.overlays.add(mCompassOverlay)
 
         //map scale
         val mScaleBarOverlay = ScaleBarOverlay(mMapView)
@@ -175,9 +186,7 @@ object OpenStreetMapUtils {
 
     @JvmStatic
     fun showMapTypeSelectorDialog(context: Context, mapView: MapView) {
-        // Prepare the dialog by setting up a Builder.
-        // TODO: translate
-        val fDialogTitle = "Select Map Type"
+        val fDialogTitle = context.getString(R.string.select_map_type)
         val builder = AlertDialog.Builder(context)
         builder.setTitle(fDialogTitle)
         builder.setSingleChoiceItems(

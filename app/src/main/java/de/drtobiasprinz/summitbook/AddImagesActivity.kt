@@ -31,7 +31,7 @@ class AddImagesActivity : AppCompatActivity() {
         database = AppDatabase.getDatabase(applicationContext)
         val bundle = intent.extras
         if (bundle != null) {
-            val summitEntryId = bundle.getLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
+            val summitEntryId = bundle.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
             summitEntry = database?.summitDao()?.getSummit(summitEntryId)
         }
         val localSummit = summitEntry
@@ -183,8 +183,7 @@ class AddImagesActivity : AppCompatActivity() {
                             val file: File? = ImagePicker.getFile(data)
                             if (file != null) {
                                 file.copyTo(localSummit.getNextImagePath(true).toFile(), overwrite = true)
-                                database?.summitDao()?.updateImageIds(localSummit.id, localSummit.imageIds)
-                                SummitViewFragment.adapter.notifyDataSetChanged()
+                                updateAdapterAndDatabase(localSummit)
                                 layout.removeAllViewsInLayout()
                                 drawLayout(localSummit, layout)
                             }
@@ -232,7 +231,7 @@ class AddImagesActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        summitEntry?.id?.let { outState.putLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
+        summitEntry?.id?.let { outState.putLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
     }
 
     override fun onDestroy() {

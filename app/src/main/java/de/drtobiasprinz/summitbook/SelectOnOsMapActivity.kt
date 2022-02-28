@@ -77,7 +77,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
         StrictMode.setThreadPolicy(policy)
         val bundle = intent.extras
         if (bundle != null) {
-            summitEntryId = bundle.getLong(SUMMIT_ID_EXTRA_IDENTIFIER)
+            summitEntryId = bundle.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
             summitEntryPosition = bundle.getInt(SUMMIT_POSITION)
             summitEntry = database?.summitDao()?.getSummit(summitEntryId)
 
@@ -335,6 +335,5 @@ class SelectOnOsMapActivity : FragmentActivity() {
     companion object {
         const val SUMMIT_POSITION = "SUMMIT_POSITION"
         const val PICK_GPX_FILE = 103
-        var SUMMIT_ID_EXTRA_IDENTIFIER = "SUMMIT_ID"
     }
 }

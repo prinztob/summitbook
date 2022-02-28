@@ -65,7 +65,7 @@ class BookmarkViewAdapter(var bookmarks: MutableList<Summit>) : RecyclerView.Ada
             cardView.setOnClickListener { v: View? ->
                 val context = v?.context
                 val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-                intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, entry.id)
+                intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entry.id)
                 intent.putExtra(SUMMIT_IS_BOOKMARK_IDENTIFIERS, true)
                 v?.context?.startActivity(intent)
             }

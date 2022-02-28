@@ -35,7 +35,7 @@ class CustomMarkerView(context: Context?, layoutResource: Int) : MarkerView(cont
     fun startIntent() {
         try {
             val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-            intent.putExtra(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
+            intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
             context.startActivity(intent)
         } catch (e: NullPointerException) {
             // DO NOTHING

@@ -317,6 +317,7 @@ von
     <string name="max_verticalVelocity_10Min">vert. Geschw. 10min</string>
     <string name="max_verticalVelocity_1h">vert. Geschw. 1h</string>
     <string name="forecast">Schätzung</string>
+    <string name="forecast_abbr">Erw.</string>
     <string name="january">Januar</string>
     <string name="february">Februar</string>
     <string name="march">März</string>
@@ -375,6 +376,7 @@ von
     <string name="start_date_sync_garmin">Startdatum für Synchronisierung von Garmin Activitäten</string>
     <string name="tool_tip_progress_new_garmin_activities">"Füge Gipfel %1$s hinzu und download seine Tracks. Das kann etwas dauern."</string>
     <string name="tool_tip_progress_merge_garmin_activities">"Merge Gipfel %1$s in einen einzelnen Gipfel und download seine Tracks. Das kann etwas dauern."</string>
+    <string name="select_map_type">Wähle Kartentyp aus</string>
 
 
 </resources>

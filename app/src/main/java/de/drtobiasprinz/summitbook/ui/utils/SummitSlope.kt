@@ -3,7 +3,6 @@ package de.drtobiasprinz.summitbook.ui.utils
 import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.gpx.Gpx
 import de.drtobiasprinz.gpx.TrackPoint
-import de.drtobiasprinz.summitbook.models.GpsTrack
 import org.nield.kotlinstatistics.simpleRegression
 import kotlin.math.abs
 import kotlin.math.sign
@@ -18,10 +17,12 @@ class SummitSlope(val trackPoints: MutableList<TrackPoint>) {
 
     fun calculateMaxSlope(binSizeMeter: Double = 100.0, withRegression: Boolean = true, requiredR2: Double = REQUIRED_R2, factor: Int = 1): Double {
         if (trackPoints.size > 0 && trackPoints.first().extension?.distance == null) {
-            GpsTrack.setDistanceFromPoints(trackPoints)
+            GpsUtils.setDistanceFromPoints(trackPoints)
         }
-        val slopeInMeterInterval = getMaximalValues(binSizeMeter, trackPoints, withRegression, requiredR2, factor=factor)
-        val maxSlopeTrackPoint = slopeInMeterInterval.maxByOrNull { it.first.extension?.slope ?: 0.0 }
+        val slopeInMeterInterval = getMaximalValues(binSizeMeter, trackPoints, withRegression, requiredR2, factor = factor)
+        val maxSlopeTrackPoint = slopeInMeterInterval.maxByOrNull {
+            it.first.extension?.slope ?: 0.0
+        }
         maxSlope = (maxSlopeTrackPoint?.first?.extension?.slope ?: 0.0) * 100
         slopeGraph = slopeInMeterInterval.map {
             Entry(it.first.extension?.distance?.toFloat()
@@ -33,7 +34,7 @@ class SummitSlope(val trackPoints: MutableList<TrackPoint>) {
 
     fun calculateMaxVerticalVelocity(binSizeSeconds: Double = 60.0, minimalDelta: Int = 10): Double {
         if (trackPoints.size > 0 && trackPoints.first().extension?.distance == null) {
-            GpsTrack.setDistanceFromPoints(trackPoints)
+            GpsUtils.setDistanceFromPoints(trackPoints)
         }
         val verticalVelocityInSecondsInterval = getMaximalValues(binSizeSeconds, trackPoints, false, useSecondsForBinning = true, minimalDelta = minimalDelta)
         val maxVerticalVelocityTrackPoint = verticalVelocityInSecondsInterval.maxByOrNull {

@@ -525,7 +525,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             }
         }
         val picker = DatePickerDialog(context, R.style.CustomDatePickerDialogTheme,
-                { view: DatePicker, yearSelected: Int, monthSelected: Int, daySelected: Int -> eText.setText(view.context.getString(R.string.date_format, String.format(Locale.ENGLISH, "%02d", daySelected), String.format(Locale.ENGLISH, "%02d", monthSelected + 1), String.format(Locale.ENGLISH, "%02d", yearSelected))) }, year, month, day)
+                { view: DatePicker, yearSelected: Int, monthSelected: Int, daySelected: Int -> eText.setText(view.context.getString(R.string.date_format, String.format(requireContext().resources.configuration.locales[0], "%02d", daySelected), String.format(requireContext().resources.configuration.locales[0], "%02d", monthSelected + 1), String.format(requireContext().resources.configuration.locales[0], "%02d", yearSelected))) }, year, month, day)
         picker.show()
     }
 
@@ -565,7 +565,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
 
     fun getTempGpsFilePath(date: Date): Path {
         val tag = SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(date)
-        val fileName = String.format(Locale.ENGLISH, "track_from_%s.gpx", tag)
+        val fileName = String.format(requireContext().resources.configuration.locales[0], "track_from_%s.gpx", tag)
         return Paths.get(MainActivity.cache.toString(), fileName)
     }
 

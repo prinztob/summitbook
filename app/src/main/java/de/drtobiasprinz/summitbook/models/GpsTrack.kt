@@ -3,7 +3,6 @@ package de.drtobiasprinz.summitbook.models
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
-import android.location.Location
 import android.net.Uri
 import android.os.AsyncTask
 import android.util.Log
@@ -12,9 +11,10 @@ import android.widget.TextView
 import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.gpx.GPXParser
 import de.drtobiasprinz.gpx.Gpx
-import de.drtobiasprinz.gpx.PointExtension
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.getDistance
+import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.setDistanceFromPoints
 import de.drtobiasprinz.summitbook.ui.utils.SummitSlope
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -30,7 +30,6 @@ import java.io.InputStream
 import java.nio.file.Path
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.math.abs
 import kotlin.math.roundToLong
 
 
@@ -46,73 +45,78 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     private var maxForColorCoding = 0f
 
     fun addGpsTrack(mMapView: MapView?, selectedCustomizeTrackItem: TrackColor = TrackColor.None, color: Int = COLOR_POLYLINE_STATIC, rootView: View? = null) {
-        osMapRoute = Polyline(mMapView)
-        val textView: TextView? = rootView?.findViewById(R.id.track_value)
-        val defaultText = "${trackPoints.size} ${rootView?.resources?.getString(R.string.pts)}"
-        textView?.visibility = View.VISIBLE
-        textView?.text = defaultText
-        osMapRoute?.setOnClickListener { _, _, eventPos ->
-            if (textView != null) {
-                textView.visibility = View.VISIBLE
-                val trackPoint = usedTrackPoints.minByOrNull { getDistance(it, TrackPoint(eventPos.latitude, eventPos.longitude)) }
-                if (trackPoint != null && (minForColorCoding != 0f || maxForColorCoding != 0f)) {
-                    if (selectedCustomizeTrackItem == TrackColor.None) {
-                        textView.visibility = View.GONE
+        try {
+            osMapRoute = Polyline(mMapView)
+            val textView: TextView? = rootView?.findViewById(R.id.track_value)
+            val defaultText = "${trackPoints.size} ${rootView?.resources?.getString(R.string.pts)}"
+            textView?.visibility = View.VISIBLE
+            textView?.text = defaultText
+            osMapRoute?.setOnClickListener { _, _, eventPos ->
+                if (textView != null) {
+                    textView.visibility = View.VISIBLE
+                    val trackPoint = usedTrackPoints.minByOrNull { getDistance(it, TrackPoint(eventPos.latitude, eventPos.longitude)) }
+                    if (trackPoint != null && (minForColorCoding != 0f || maxForColorCoding != 0f)) {
+                        if (selectedCustomizeTrackItem == TrackColor.None) {
+                            textView.visibility = View.GONE
+                        } else {
+                            setTextForDouble(trackPoint, textView, selectedCustomizeTrackItem, rootView.context)
+                        }
                     } else {
-                        setTextForDouble(trackPoint, textView, selectedCustomizeTrackItem, rootView.context)
+                        textView.visibility = View.GONE
                     }
-                } else {
-                    textView.visibility = View.GONE
+                }
+                return@setOnClickListener true
+            }
+            osMapRoute?.outlinePaint?.color = color
+            osMapRoute?.outlinePaint?.strokeWidth = LINE_WIDTH_BIG
+            osMapRoute?.outlinePaint?.strokeCap = Paint.Cap.ROUND
+            val paintBorder = Paint()
+            paintBorder.strokeWidth = 20F
+            val summitSlope = SummitSlope(trackPoints)
+            when (selectedCustomizeTrackItem) {
+                TrackColor.Mileage -> {
+                    setUsedPoints()
+                    val managers: MutableList<MilestoneManager> = ArrayList()
+                    val slicerForPath = MilestoneMeterDistanceSliceLister()
+                    managers.add(getAnimatedPathManager(slicerForPath))
+                    managers.add(getHalfKilometerManager())
+                    managers.add(getKilometerManager())
+                    osMapRoute?.setMilestoneManagers(managers)
+                }
+                TrackColor.Elevation -> {
+                    setUsedPoints(selectedCustomizeTrackItem.f)
+                    addColorToTrack(paintBorder, selectedCustomizeTrackItem)
+                }
+                TrackColor.Slope -> {
+                    if (trackPoints.none { it.extension?.slope != null }) {
+                        summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0, factor = 100)
+                    }
+                    setUsedPoints(selectedCustomizeTrackItem.f)
+                    addColorToTrack(paintBorder, selectedCustomizeTrackItem)
+                }
+                TrackColor.VerticalSpeed -> {
+                    if (trackPoints.none { it.extension?.verticalVelocity != null }) {
+                        summitSlope.calculateMaxVerticalVelocity()
+                    }
+                    setUsedPoints(selectedCustomizeTrackItem.f)
+                    addColorToTrack(paintBorder, selectedCustomizeTrackItem)
+                }
+                TrackColor.None -> {
+                    setUsedPoints()
+                    Log.i(TAG, "Nothing to do, selectedCustomizeTrackItem is set to 0")
+                }
+                else -> {
+                    setUsedPoints(selectedCustomizeTrackItem.f)
+                    addColorToTrack(paintBorder, selectedCustomizeTrackItem)
                 }
             }
-            return@setOnClickListener true
+            osMapRoute?.setPoints(usedTrackGeoPoints)
+            mMapView?.overlayManager?.add(osMapRoute)
+            isShownOnMap = true
+
+        } catch (e: NullPointerException) {
+            e.printStackTrace()
         }
-        osMapRoute?.outlinePaint?.color = color
-        osMapRoute?.outlinePaint?.strokeWidth = LINE_WIDTH_BIG
-        osMapRoute?.outlinePaint?.strokeCap = Paint.Cap.ROUND
-        val paintBorder = Paint()
-        paintBorder.strokeWidth = 20F
-        val summitSlope = SummitSlope(trackPoints)
-        when (selectedCustomizeTrackItem) {
-            TrackColor.Mileage -> {
-                setUsedPoints()
-                val managers: MutableList<MilestoneManager> = ArrayList()
-                val slicerForPath = MilestoneMeterDistanceSliceLister()
-                managers.add(getAnimatedPathManager(slicerForPath))
-                managers.add(getHalfKilometerManager())
-                managers.add(getKilometerManager())
-                osMapRoute?.setMilestoneManagers(managers)
-            }
-            TrackColor.Elevation -> {
-                setUsedPoints(selectedCustomizeTrackItem.f)
-                addColorToTrack(paintBorder, selectedCustomizeTrackItem)
-            }
-            TrackColor.Slope -> {
-                if (trackPoints.none { it.extension?.slope != null }) {
-                    summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0, factor = 100)
-                }
-                setUsedPoints(selectedCustomizeTrackItem.f)
-                addColorToTrack(paintBorder, selectedCustomizeTrackItem)
-            }
-            TrackColor.VerticalSpeed -> {
-                if (trackPoints.none { it.extension?.verticalVelocity != null }) {
-                    summitSlope.calculateMaxVerticalVelocity()
-                }
-                setUsedPoints(selectedCustomizeTrackItem.f)
-                addColorToTrack(paintBorder, selectedCustomizeTrackItem)
-            }
-            TrackColor.None -> {
-                setUsedPoints()
-                Log.i(TAG, "Nothing to do, selectedCustomizeTrackItem is set to 0")
-            }
-            else -> {
-                setUsedPoints(selectedCustomizeTrackItem.f)
-                addColorToTrack(paintBorder, selectedCustomizeTrackItem)
-            }
-        }
-        osMapRoute?.setPoints(usedTrackGeoPoints)
-        mMapView?.overlayManager?.add(osMapRoute)
-        isShownOnMap = true
     }
 
     private fun setUsedPoints(f: (TrackPoint) -> Double?) {
@@ -294,7 +298,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
     fun getHighestElevation(): TrackPoint? {
-        return trackPoints.maxByOrNull { it.ele?: 0.0 }
+        return trackPoints.maxByOrNull { it.ele ?: 0.0 }
     }
 
     fun hasNoTrackPoints(): Boolean {
@@ -315,45 +319,6 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         private const val TEXT_SIZE = 20f
         private const val TAG = "GpsTrack"
 
-        fun setDistanceFromPoints(trackPoints: List<TrackPoint?>) {
-            var lastTrackPoint: TrackPoint? = null
-            for (trackPoint in trackPoints) {
-                if (trackPoint != null) {
-                    if (lastTrackPoint == null) {
-                        setDistance(trackPoint)
-                        lastTrackPoint = trackPoint
-                    } else {
-                        val distance = lastTrackPoint.extension?.distance
-                        if (distance != null) {
-                            setDistance(trackPoint, distance + abs(getDistance(trackPoint, lastTrackPoint)).toDouble())
-                            lastTrackPoint = trackPoint
-                        }
-                    }
-                }
-            }
-        }
-
-        private fun setDistance(trackPoint: TrackPoint, distance: Double = 0.0) {
-            if (trackPoint.extension == null) {
-                trackPoint.extension = PointExtension(distance = distance)
-            } else {
-                trackPoint.extension?.distance = distance
-            }
-        }
-
-        private fun getDistance(trackPoint1: TrackPoint, trackPoint2: TrackPoint): Float {
-            val location1 = getLocationFromTrackPoint(trackPoint1)
-            val location2 = getLocationFromTrackPoint(trackPoint2)
-            return location1.distanceTo(location2)
-        }
-
-        private fun getLocationFromTrackPoint(trackPoint: TrackPoint): Location {
-            val location = Location(trackPoint.name)
-            location.latitude = trackPoint.lat
-            location.longitude = trackPoint.lon
-            location.altitude = trackPoint.ele ?: 0.0
-            return location
-        }
 
         private fun getTrackPoints(gpxTrackLocal: Gpx?): MutableList<TrackPoint> {
             val trackPoints = mutableListOf<TrackPoint>()

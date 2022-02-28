@@ -173,7 +173,10 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
             }
         }
         val picker = DatePickerDialog(context, R.style.CustomDatePickerDialogTheme,
-                { view: DatePicker, yearSelected: Int, monthSelected: Int, daySelected: Int -> eText.setText(view.context.getString(R.string.date_format, String.format(Locale.ENGLISH, "%02d", daySelected), String.format(Locale.ENGLISH, "%02d", monthSelected + 1), String.format(Locale.ENGLISH, "%02d", yearSelected))) }, year, month, day)
+                { view: DatePicker, yearSelected: Int, monthSelected: Int, daySelected: Int ->
+                    eText.setText(view.context.getString(R.string.date_format, String.format(context.resources.configuration.locales[0], "%02d", daySelected),
+                            String.format(context.resources.configuration.locales[0], "%02d", monthSelected + 1),
+                            String.format(context.resources.configuration.locales[0], "%02d", yearSelected))) }, year, month, day)
         picker.show()
     }
 
@@ -644,11 +647,14 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
 
     @Throws(ParseException::class)
     private fun setDateFromPosition(position: Int) {
-        selectedYear = uniqueYearsOfSummit[position - 2]
-        val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
-        df.isLenient = false
-        startDate = df.parse(String.format("%s-01-01 00:00:00", selectedYear))
-        endDate = df.parse(String.format("%s-12-31 23:59:59", selectedYear))
+        val positionToSelect = position - 2
+        if (uniqueYearsOfSummit.size > positionToSelect) {
+            selectedYear = uniqueYearsOfSummit[positionToSelect]
+            val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
+            df.isLenient = false
+            startDate = df.parse(String.format("%s-01-01 00:00:00", selectedYear))
+            endDate = df.parse(String.format("%s-12-31 23:59:59", selectedYear))
+        }
     }
 
     fun setSelectedDateItemDefault(selectedDateItemDefault: Int) {

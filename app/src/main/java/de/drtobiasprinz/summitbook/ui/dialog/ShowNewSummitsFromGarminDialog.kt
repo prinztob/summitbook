@@ -156,8 +156,8 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
                 TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT)
         addLabel(view, tr, 200 + i, date, padding = 2, isHtml = true)
         addLabel(view, tr, 200 + i, name, padding = 2)
-        addLabel(view, tr, 200 + i, String.format(Locale.ENGLISH, "%.1f km", kilometers), padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
-        addLabel(view, tr, 200 + i, String.format(Locale.ENGLISH, "%s m", heightMeters), padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
+        addLabel(view, tr, 200 + i, String.format(requireContext().resources.configuration.locales[0], "%.1f km", kilometers), padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
+        addLabel(view, tr, 200 + i, String.format(requireContext().resources.configuration.locales[0], "%s m", heightMeters), padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
         val box = CheckBox(view.context)
         box.setOnCheckedChangeListener { _, arg1 ->
             entry.isSelected = arg1

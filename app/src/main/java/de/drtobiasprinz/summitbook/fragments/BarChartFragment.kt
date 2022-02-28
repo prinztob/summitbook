@@ -35,8 +35,8 @@ import de.drtobiasprinz.summitbook.ui.utils.BarChartCustomRenderer
 import de.drtobiasprinz.summitbook.ui.utils.CustomBarChart
 import de.drtobiasprinz.summitbook.ui.utils.IntervalHelper
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
+import java.text.DateFormatSymbols
 import java.text.ParseException
-import java.time.Month
 import java.util.*
 import java.util.function.Supplier
 import java.util.stream.Stream
@@ -75,11 +75,11 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         sortFilterHelper.fragment = this
         forecasts = sortFilterHelper.database.forecastDao()?.allForecasts as java.util.ArrayList<Forecast>
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        indoorHeightMeterPercent = sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0
+        indoorHeightMeterPercent = sharedPreferences.getInt("indoor_height_meter_per_cent", 0)
         fillDateSpinner()
         summitEntries = sortFilterHelper.entries
         intervalHelper = IntervalHelper(summitEntries)
-        barChart = barChartView?.findViewById(R.id.barChart) // Fragment
+        barChart = barChartView?.findViewById(R.id.barChart)
         val barChartCustomRenderer = BarChartCustomRenderer(barChart, barChart?.animator, barChart?.viewPortHandler)
         barChart?.renderer = barChartCustomRenderer
         barChart?.setDrawValueAboveBar(false)
@@ -150,7 +150,14 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
                     1 -> String.format("%s", ((value + 0.5) * IntervalHelper.kilometersStep).toInt())
                     2 -> String.format("%s", ((value + 0.5) * IntervalHelper.elevationGainStep).toInt())
                     3 -> String.format("%s", ((value + 0.5) * IntervalHelper.topElevationStep).toInt())
-                    else -> if (sortFilterHelper.selectedYear == "" || value > 12f || value == 0f) String.format("%s", value.toInt()) else String.format("%s", Month.of(if (value <1 || value > 12) 1 else value.toInt()))
+                    else -> {
+                        if (sortFilterHelper.selectedYear == "" || value > 12f || value == 0f) {
+                            String.format("%s", value.toInt())
+                        } else {
+                            val month = if (value < 1 || value > 12) 0 else value.toInt() - 1
+                            String.format("%s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month])
+                        }
+                    }
                 }
             }
         }
@@ -160,7 +167,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     private fun setYAxis(yAxis: YAxis?) {
         yAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return String.format(Locale.ENGLISH, "%.0f %s", value, unit)
+                return String.format(requireContext().resources.configuration.locales[0], "%.0f %s", value, unit)
             }
         }
     }
@@ -197,15 +204,9 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         lineChartEntriesForecast.clear()
         try {
             var annualTarget: Float = when (selectedDataSpinner) {
-                1 -> {
-                    sharedPreferences.getString("annual_target_km", "1200")?.toFloat() ?: 1200f
-                }
-                2 -> {
-                    sharedPreferences.getString("annual_target", "50000")?.toFloat() ?: 50000f
-                }
-                else -> {
-                    sharedPreferences.getString("annual_target_activities", "52")?.toFloat() ?: 52f
-                }
+                1 -> sharedPreferences.getString("annual_target_km", "1200")?.toFloat() ?: 1200f
+                2 -> sharedPreferences.getString("annual_target", "50000")?.toFloat() ?: 50000f
+                else -> sharedPreferences.getString("annual_target_activities", "52")?.toFloat() ?: 52f
             }
             if (sortFilterHelper.selectedYear != "") {
                 annualTarget /= 12f
@@ -397,11 +398,13 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     private fun getElevationGainsFromStream(stream: Stream<Summit?>?): Float {
         return stream
-                ?.mapToInt { if (it?.sportType == SportType.IndoorTrainer) {
-                    it.elevationData.elevationGain * indoorHeightMeterPercent/100
-                } else {
-                    it?.elevationData?.elevationGain ?: 0
-                }}
+                ?.mapToInt {
+                    if (it?.sportType == SportType.IndoorTrainer) {
+                        it.elevationData.elevationGain * indoorHeightMeterPercent / 100
+                    } else {
+                        it?.elevationData?.elevationGain ?: 0
+                    }
+                }
                 ?.sum()?.toFloat() ?: 0.0f
     }
 
@@ -450,12 +453,31 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
                         1 -> String.format("%s - %s km", (e.x * IntervalHelper.kilometersStep).toInt(), ((e.x + 1) * IntervalHelper.kilometersStep).toInt())
                         2 -> String.format("%s - %s m", (e.x * IntervalHelper.elevationGainStep).toInt(), ((e.x + 1) * IntervalHelper.elevationGainStep).toInt())
                         3 -> String.format("%s - %s m", (e.x * IntervalHelper.topElevationStep).toInt(), ((e.x + 1) * IntervalHelper.topElevationStep).toInt())
-                        else -> if (e.x > 12 || sortFilterHelper.selectedYear == "") String.format("%s", e.x.toInt()) else String.format("%s %s", Month.of(e.x.toInt()), sortFilterHelper.selectedYear)
+                        else -> {
+                            if (e.x > 12 || sortFilterHelper.selectedYear == "") {
+                                String.format("%s", e.x.toInt())
+                            } else {
+                                val month = if (e.x < 1 || e.x > 12) 0 else e.x.toInt() - 1
+                                String.format("%s %s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month], sortFilterHelper.selectedYear)
+                            }
+                        }
                     }
+                    val currentYear = Calendar.getInstance()[Calendar.YEAR].toString()
+                    val forecast = forecasts.firstOrNull { it.month == e.x.toInt() && it.year.toString() == currentYear }
+
                     val selectedValue = (e as BarEntry).yVals[highlight.stackIndex].toInt()
                     val unitString = if (unit == "") "" else " $unit"
                     if (selectedValue == 0) {
-                        tvContent?.text = String.format("%s%s\n%s", e.getY().toInt(), unitString, value)
+                        val forecastValue = when (selectedDataSpinner) {
+                            1 -> forecast?.forecastDistance?: 0
+                            2 -> forecast?.forecastHeightMeter?: 0
+                            else -> forecast?.forecastNumberActivities?: 0
+                        }
+                        tvContent?.text = if (forecastValue > 0) {
+                            String.format("%s%s\n%s\n%s: %s%s", e.getY().toInt(), unitString, value, getString(R.string.forecast_abbr), forecastValue, unitString)
+                        } else {
+                            String.format("%s%s\n%s", e.getY().toInt(), unitString, value)
+                        }
                     } else {
                         tvContent?.text = String.format("%s/%s%s\n%s\n%s", selectedValue, e.getY().toInt(), unitString, value, SportType.values()[highlight.stackIndex].name)
                     }
@@ -466,11 +488,12 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
                 ex.printStackTrace()
             }
         }
+
         private val uiScreenWidth = resources.displayMetrics.widthPixels
         override fun draw(canvas: Canvas?, posX: Float, posY: Float) {
             var newPosX = posX
-            if ((uiScreenWidth - posX) < width/2f) {
-                newPosX = uiScreenWidth - width/2f - 25f
+            if ((uiScreenWidth - posX) < width / 2f) {
+                newPosX = uiScreenWidth - width / 2f - 25f
             }
             if (tvContent?.text != "") {
                 super.draw(canvas, newPosX, posY)

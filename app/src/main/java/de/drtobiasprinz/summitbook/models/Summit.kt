@@ -311,9 +311,11 @@ class Summit(
         const val DATE_FORMAT: String = "yyyy-MM-dd"
         const val DATETIME_FORMAT: String = "yyyy-MM-dd HH:mm:ss"
         const val CONNECTED_ACTIVITY_PREFIX: String = "ac_id:"
+        const val SUMMIT_ID_EXTRA_IDENTIFIER = "SUMMIT_ID"
         private const val NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY = 28
         private const val NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY = 16
         private const val REFERENCE_VALUE_DATE = 946681200000f
+
         var subDirForGpsTracks: String = "summitbook_tracks"
         var subDirForGpsTracksBookmark: String = "summitbook_tracks_bookmark"
         var subDirForImages: String = "summitbook_images"

@@ -121,7 +121,7 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
         xAxis?.position = XAxis.XAxisPosition.BOTTOM
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String? {
-                return SimpleDateFormat(Summit.DATE_FORMAT, Locale.ENGLISH)
+                return SimpleDateFormat(Summit.DATE_FORMAT, requireContext().resources.configuration.locales[0])
                         .format(Summit.getDateFromFloat(value))
             }
         }
@@ -130,7 +130,7 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
     private fun setYAxis(yAxis: YAxis?) {
         yAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return String.format(Locale.ENGLISH, "%.0f %s", value, lineChartSpinnerEntry.unit)
+                return String.format(requireContext().resources.configuration.locales[0], "%.0f %s", value, lineChartSpinnerEntry.unit)
             }
         }
     }

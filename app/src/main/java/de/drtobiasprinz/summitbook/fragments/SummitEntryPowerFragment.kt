@@ -6,9 +6,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.annotation.Px
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import androidx.viewpager.widget.ViewPager
 import com.chivorn.smartmaterialspinner.SmartMaterialSpinner
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.MarkerView
@@ -22,8 +24,8 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.models.MyResultReceiver
 import de.drtobiasprinz.summitbook.models.PowerData
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.PageViewModel
@@ -37,16 +39,19 @@ import kotlin.math.round
 
 class SummitEntryPowerFragment : Fragment() {
     private var pageViewModel: PageViewModel? = null
-    private var summitEntry: Summit? = null
+    private lateinit var summitEntry: Summit
     private lateinit var root: View
     private lateinit var metrics: DisplayMetrics
     private var database: AppDatabase? = null
     private var timeRangeSpinner: Spinner? = null
     private var selectedTimeRangeSpinner: Int = 0
+    private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
+    private lateinit var resultreceiver: MyResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        resultreceiver = context as MyResultReceiver
         pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
         pageViewModel?.setIndex(TAG)
     }
@@ -57,80 +62,84 @@ class SummitEntryPowerFragment : Fragment() {
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_power, container, false)
         database = context?.let { AppDatabase.getDatabase(it) }
+        summitEntry = resultreceiver.getSummit()
+        summitToCompare = resultreceiver.getSelectedSummitForComparison()
+        summitsToCompare = resultreceiver.getSummitsForComparison()
         metrics = DisplayMetrics()
         val mainActivity = MainActivity.mainActivity
         mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
-        if (summitEntry == null && savedInstanceState != null) {
-            val summitEntryId = savedInstanceState.getLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER)
-            if (summitEntryId != 0L) {
-                summitEntry = database?.summitDao()?.getSummit(summitEntryId)
-            }
-        }
         timeRangeSpinner = root.findViewById(R.id.spinner_time_range)
         val timeRangeAdapter = ArrayAdapter(requireContext(),
                 android.R.layout.simple_spinner_item, listOf(getString(R.string.all), getString(R.string.current_year), getString(R.string.last_3_month), getString(R.string.last_12_month)))
         timeRangeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         timeRangeSpinner?.adapter = timeRangeAdapter
 
+        if (summitEntry.isBookmark) {
+            root.findViewById<Spinner>(R.id.summit_name_to_compare).visibility = View.GONE
+        } else {
+            prepareCompareAutoComplete()
+        }
 
-        val localSummit = summitEntry
-        if (localSummit != null) {
-            if (localSummit.isBookmark) {
-                root.findViewById<SmartMaterialSpinner<String>>(R.id.summit_name_to_compare).visibility = View.GONE
-            } else {
-                summitsToCompare = database?.summitDao()?.getAllSummitWithSameSportType(localSummit.sportType)
-                        ?: emptyList()
-                prepareCompareAutoComplete(localSummit)
+        val textViewName = root.findViewById<TextView>(R.id.summit_name)
+        textViewName.text = summitEntry.name
+        val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
+        imageViewSportType.setImageResource(summitEntry.sportType.imageIdBlack)
+        drawChart()
+
+        timeRangeSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
+                selectedTimeRangeSpinner = i
+                drawChart()
             }
 
-            val textViewName = root.findViewById<TextView>(R.id.summit_name)
-            textViewName.text = localSummit.name
-            val imageViewSportType = root.findViewById<ImageView>(R.id.sport_type_image)
-            imageViewSportType.setImageResource(localSummit.sportType.imageIdBlack)
-            drawChart(localSummit)
-
-            timeRangeSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
-                    selectedTimeRangeSpinner = i
-                    drawChart(localSummit)
-                }
-
-                override fun onNothingSelected(adapterView: AdapterView<*>?) {}
-            }
+            override fun onNothingSelected(adapterView: AdapterView<*>?) {}
         }
         return root
     }
 
-    private fun prepareCompareAutoComplete(summit: Summit) {
-        val summitToCompareAutoComplete: SmartMaterialSpinner<String> = root.findViewById(R.id.summit_name_to_compare)
-        val items = getSummitsSuggestions(summit)
-        summitToCompareAutoComplete.item = items
+    private fun prepareCompareAutoComplete() {
+        val summitToCompareSpinner: SmartMaterialSpinner<String> = root.findViewById(R.id.summit_name_to_compare)
+        val items = getSummitsSuggestions(summitEntry)
+        summitToCompareSpinner.item = items
+        resultreceiver.getViewPager().addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+            override fun onPageScrolled(position: Int, positionOffset: Float, @Px positionOffsetPixels: Int) {}
 
-        summitToCompareAutoComplete.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(adapterView: AdapterView<*>, view: View, position: Int, id: Long) {
-                val text = items[position]
-                if (text != "") {
-                    val compareEntry = summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
-                    if (compareEntry != null && compareEntry.garminData?.power?.hasPowerData() == true) {
-                        drawChart(summit, compareEntry)
-                    } else {
-                        drawChart(summit)
-                    }
-                } else {
-                    drawChart(summit)
+            override fun onPageSelected(position: Int) {
+                val summitToCompareLocal = resultreceiver.getSelectedSummitForComparison()
+                if (summitToCompareLocal != null) {
+                    val name = "${summitToCompareLocal.getDateAsString()} ${summitToCompareLocal.name}"
+                    val index = items.indexOf(name)
+                    summitToCompareSpinner.setSelection(index)
+                    drawChart()
                 }
             }
 
-            override fun onNothingSelected(adapterView: AdapterView<*>) {
-                drawChart(summit)
+            override fun onPageScrollStateChanged(state: Int) {}
+        })
+
+        summitToCompareSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (view != null) {
+                    val text = items[position]
+                    if (text != "") {
+                        summitToCompare = summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
+                        resultreceiver.setSelectedSummitForComparison(summitToCompare)
+                    }
+                    drawChart()
+                }
+            }
+
+            override fun onNothingSelected(adapterView: AdapterView<*>?) {
+                drawChart()
             }
         }
     }
 
     private fun getSummitsSuggestions(localSummit: Summit): ArrayList<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
-        val summitsWithoutSimilarName = summitsToCompare.filter { it.name != localSummit.name && it.hasGpsTrack() }.sortedByDescending { it.date }
-        val summitsWithSimilarName = summitsToCompare.filter { it.name == localSummit.name && it != localSummit }.sortedByDescending { it.date }
+        val summitsToCompareFromActivity = resultreceiver.getSummitsForComparison()
+        val summitsWithoutSimilarName = summitsToCompareFromActivity.filter { it.name != localSummit.name && it.garminData?.power?.hasPowerData() == true }.sortedByDescending { it.date }
+        val summitsWithSimilarName = summitsToCompareFromActivity.filter { it.name == localSummit.name && it != localSummit }.sortedByDescending { it.date }
         summitsToCompare = summitsWithSimilarName + summitsWithoutSimilarName
         summitsToCompare.forEach {
             suggestions.add("${it.getDateAsString()} ${it.name}")
@@ -139,10 +148,10 @@ class SummitEntryPowerFragment : Fragment() {
     }
 
 
-    private fun drawChart(entry: Summit, compareEntry: Summit? = null) {
+    private fun drawChart() {
         val lineChart = root.findViewById<LineChart>(R.id.lineChart)
         lineChart.invalidate()
-        val power = entry.garminData?.power
+        val power = summitEntry.garminData?.power
         if (power != null) {
             setXAxis(lineChart)
             lineChart.axisLeft.axisMinimum = 0f
@@ -157,7 +166,7 @@ class SummitEntryPowerFragment : Fragment() {
             val dataSet = LineDataSet(chartEntries, getString(R.string.power_profile_label))
             setGraphView(dataSet, false)
 
-            val powerToCompare = compareEntry?.garminData?.power
+            val powerToCompare = summitToCompare?.garminData?.power
             if (powerToCompare != null) {
                 val chartEntriesComparator = getLineChartEntriesMax(powerToCompare)
                 val dataSetComparator = LineDataSet(chartEntriesComparator, getString(R.string.power_profile_compare_label))
@@ -319,7 +328,7 @@ class SummitEntryPowerFragment : Fragment() {
         xAxis?.position = XAxis.XAxisPosition.BOTTOM
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return String.format(Locale.ENGLISH, "%s ${getString(R.string.sec)}", unScaleCbr(round(value.toDouble())).toInt())
+                return String.format(requireContext().resources.configuration.locales[0], "%s ${getString(R.string.sec)}", unScaleCbr(round(value.toDouble())).toInt())
             }
         }
         xAxis.axisMinimum = scaleCbr(1.0)
@@ -351,7 +360,7 @@ class SummitEntryPowerFragment : Fragment() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        summitEntry?.id?.let { outState.putLong(SelectOnOsMapActivity.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
+        outState.putLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry.id)
     }
 
     override fun onDestroy() {

@@ -233,8 +233,8 @@ class AddAdditionalDataFromExternalResourcesDialog(private val summitEntry: Summ
         tr.layoutParams = TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT)
         addLabel(view, tr, 200 + i, name, padding = 2)
-        addLabel(view, tr, 201 + i, String.format(Locale.ENGLISH, "%.1f", entry.value), padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
-        val defaultValueAsString = if (abs(entry.defaultValue) < 0.05 || abs(entry.value - entry.defaultValue) < 0.05) "-" else String.format(Locale.ENGLISH, "%.1f", entry.defaultValue)
+        addLabel(view, tr, 201 + i, String.format(requireContext().resources.configuration.locales[0], "%.1f", entry.value), padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
+        val defaultValueAsString = if (abs(entry.defaultValue) < 0.05 || abs(entry.value - entry.defaultValue) < 0.05) "-" else String.format(requireContext().resources.configuration.locales[0], "%.1f", entry.defaultValue)
         addLabel(view, tr, 202 + i, defaultValueAsString, padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
         addLabel(view, tr, 203 + i, entry.unit, padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
         val box = CheckBox(view.context)
