@@ -20,6 +20,7 @@
     <string name="height_meter_hint">Elevation gain</string>
     <string name="action_share">share</string>
     <string name="capricorn_caption">Capricorn in the alps</string>
+    <string name="date">Date</string>
     <string name="tour_date">Activity date</string>
     <string name="date_format">%3$s-%2$s-%1$s</string>
     <string name="saveButtonText">Save</string>
@@ -49,6 +50,7 @@
     <string name="top_slope_hint">Max slope</string>
 
     <string name="action_search">Search</string>
+    <string name="empty" />
     <string name="km">km</string>
     <string name="kmh">km/h</string>
     <string name="hm">hm</string>
@@ -123,19 +125,6 @@
     <string-array name="date_array">
         <item>Total</item>
         <item>Custom</item>
-    </string-array>
-
-    <string-array name="bar_chart_spinner">
-        <item>Count</item>
-        <item>Kilometers</item>
-        <item>Elevation gain</item>
-    </string-array>
-
-    <string-array name="bar_chart_spinner_x_axis">
-        <item>Date</item>
-        <item>Kilometers</item>
-        <item>Elevation gain</item>
-        <item>Top elevation</item>
     </string-array>
 
     <string name="tab_text_1">Data</string>
@@ -376,5 +365,6 @@
     <string name="tool_tip_progress_new_garmin_activities">"Add summits %1$s and download its tracks. This may take a while."</string>
     <string name="tool_tip_progress_merge_garmin_activities">"Merge summits %1$s and download its tracks. This may take a while."</string>
     <string name="select_map_type">Select Map Type</string>
+    <string name="count">Count</string>
 
 </resources>

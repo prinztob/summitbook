@@ -8,20 +8,22 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.ceil
 
-class IntervalHelper(summitEntries: List<Summit>?) {
+class IntervalHelper(private val summitEntries: List<Summit>) {
     private var selectedYear: String? = null
-    private val allYears: ArrayList<String> = StatisticsFragment.getAllYears(summitEntries)
-    private val extremaValuesSummits: ExtremaValuesSummits? = summitEntries?.let { ExtremaValuesSummits(it) }
-    var dates: ArrayList<Date> = ArrayList()
+    private val allYears: List<String> = StatisticsFragment.getAllYears(summitEntries).sorted()
+    private val extremaValuesSummits: ExtremaValuesSummits = ExtremaValuesSummits(summitEntries)
+    var dates: MutableList<Date> = mutableListOf()
         private set
-    var dateAnnotation = ArrayList<Float>()
+    var dateAnnotation: MutableList<Float> = mutableListOf()
         private set
-    val topElevations = ArrayList<Float>()
-    val topElevationAnnotation = ArrayList<Float>()
-    val kilometers = ArrayList<Float>()
-    val kilometerAnnotation = ArrayList<Float>()
-    val elevationGains = ArrayList<Float>()
-    val elevationGainAnnotation = ArrayList<Float>()
+    val topElevations: MutableList<Float> = mutableListOf()
+    val topElevationAnnotation: MutableList<Float> = mutableListOf()
+    val kilometers: MutableList<Float> = mutableListOf()
+    val kilometerAnnotation: MutableList<Float> = mutableListOf()
+    val elevationGains: MutableList<Float> = mutableListOf()
+    val elevationGainAnnotation: MutableList<Float> = mutableListOf()
+    var participants: MutableList<String> = mutableListOf()
+    var participantsAnnotation: MutableList<Float> = mutableListOf()
     fun setSelectedYear(selectedYear: String?) {
         this.selectedYear = selectedYear
     }
@@ -32,11 +34,12 @@ class IntervalHelper(summitEntries: List<Summit>?) {
         calculateTopElevation()
         calculateElevationGain()
         calculateKilometers()
+        calculateKParticipants()
     }
 
     private fun calculateTopElevation() {
-        if (topElevationAnnotation.size == 0) {
-            val intervals = ceil((extremaValuesSummits?.maxTopElevation ?: 0) / topElevationStep).toInt()
+        if (topElevationAnnotation.isEmpty()) {
+            val intervals = ceil(extremaValuesSummits.maxTopElevation / topElevationStep).toInt()
             for (i in 0..intervals) {
                 topElevations.add((i * topElevationStep).toFloat())
                 topElevationAnnotation.add(i.toFloat())
@@ -45,8 +48,8 @@ class IntervalHelper(summitEntries: List<Summit>?) {
     }
 
     private fun calculateElevationGain() {
-        if (elevationGains.size == 0) {
-            val intervals = ceil((extremaValuesSummits?.maxHeightMeters ?: 0) / elevationGainStep).toInt()
+        if (elevationGains.isEmpty()) {
+            val intervals = ceil(extremaValuesSummits.maxHeightMeters / elevationGainStep).toInt()
             for (i in 0..intervals) {
                 elevationGains.add((i * elevationGainStep).toFloat())
                 elevationGainAnnotation.add(i.toFloat())
@@ -55,8 +58,8 @@ class IntervalHelper(summitEntries: List<Summit>?) {
     }
 
     private fun calculateKilometers() {
-        if (kilometers.size == 0) {
-            val intervals = ceil((extremaValuesSummits?.maxKilometers ?: 0.0) / kilometersStep).toInt()
+        if (kilometers.isEmpty()) {
+            val intervals = ceil(extremaValuesSummits.maxKilometers / kilometersStep).toInt()
             for (i in 0..intervals) {
                 kilometers.add((i * kilometersStep).toFloat())
                 kilometerAnnotation.add(i.toFloat())
@@ -64,13 +67,24 @@ class IntervalHelper(summitEntries: List<Summit>?) {
         }
     }
 
+    private fun calculateKParticipants() {
+        if (participants.isEmpty()) {
+            val allParticipants = summitEntries.flatMap { it.participants }.filter { it != "" }
+            val countsPerParticipants = allParticipants.toSet().map { name ->
+                name to allParticipants.filter { it == name }.count()
+            }
+            participants = countsPerParticipants.toList().sortedByDescending { (_, value) -> value }.take(12).toMap().map { (key, _) -> key } as MutableList<String>
+            participants.add("")
+            participantsAnnotation = (0 until participants.size).map { it.toFloat() } as MutableList<Float>
+        }
+    }
+
     @get:Throws(ParseException::class)
-    private val datesPerAllYear: ArrayList<Date>
+    private val datesPerAllYear: MutableList<Date>
         get() {
-            dateAnnotation = ArrayList()
+            dateAnnotation = mutableListOf()
             val size = allYears.size
-            allYears.sort()
-            val dates = ArrayList<Date>(size + 1)
+            val dates = mutableListOf<Date>()
             val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
             for (i in 0 until size) {
                 allYears[i].toFloat().let { dateAnnotation.add(it) }
@@ -82,7 +96,7 @@ class IntervalHelper(summitEntries: List<Summit>?) {
             return dates
         }
 
-    private fun addDate(df: DateFormat, year: String, dates: ArrayList<Date>) {
+    private fun addDate(df: DateFormat, year: String, dates: MutableList<Date>) {
         val addDate = df.parse(year)
         if (addDate != null) {
             dates.add(addDate)
@@ -90,11 +104,11 @@ class IntervalHelper(summitEntries: List<Summit>?) {
     }
 
     @get:Throws(ParseException::class)
-    private val monthPerYear: ArrayList<Date>
+    private val monthPerYear: MutableList<Date>
         get() {
-            dateAnnotation = ArrayList()
+            dateAnnotation = mutableListOf()
             val size = 12
-            val dates = ArrayList<Date>(size + 1)
+            val dates = mutableListOf<Date>()
             val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
             for (i in 0 until size) {
                 dateAnnotation.add((i + 1).toFloat())
@@ -109,8 +123,10 @@ class IntervalHelper(summitEntries: List<Summit>?) {
     companion object {
         @JvmField
         var topElevationStep = 500.0
+
         @JvmField
         var kilometersStep = 10.0
+
         @JvmField
         var elevationGainStep = 250.0
     }

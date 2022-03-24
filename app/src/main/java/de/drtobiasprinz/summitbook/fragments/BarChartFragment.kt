@@ -40,24 +40,23 @@ import java.text.ParseException
 import java.util.*
 import java.util.function.Supplier
 import java.util.stream.Stream
-import kotlin.collections.ArrayList
 
 
 class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragment(), SummationFragment {
     private var summitEntries: ArrayList<Summit>? = null
     private var filteredEntries: ArrayList<Summit>? = null
-    private var dataSpinner: Spinner? = null
-    private var selectedDataSpinner = 0
+    private var yAxisSpinner: Spinner? = null
+    private var selectedYAxisSpinnerEntry: YAxisSelector = YAxisSelector.Count
     private var indoorHeightMeterPercent = 0
     private var xAxisSpinner: Spinner? = null
-    private var selectedXAxisSpinner = 0
+    private var selectedXAxisSpinnerEntry: XAxisSelector = XAxisSelector.Date
     private var barChartView: View? = null
     private var barChartEntries: MutableList<BarEntry?> = mutableListOf()
     private var lineChartEntriesForecast: MutableList<Entry?> = mutableListOf()
     private var unit: String? = "hm"
     private var label: String? = "Height meters"
     private var barChart: CustomBarChart? = null
-    private lateinit var intervalHelper: IntervalHelper
+    private var intervalHelper: IntervalHelper = IntervalHelper(sortFilterHelper.filteredEntries)
     private lateinit var forecasts: ArrayList<Forecast>
     private lateinit var sharedPreferences: SharedPreferences
 
@@ -73,12 +72,11 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         barChartView = inflater.inflate(R.layout.fragment_bar_chart, container, false)
         setHasOptionsMenu(true)
         sortFilterHelper.fragment = this
-        forecasts = sortFilterHelper.database.forecastDao()?.allForecasts as java.util.ArrayList<Forecast>
+        forecasts = sortFilterHelper.database.forecastDao()?.allForecasts as ArrayList<Forecast>
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         indoorHeightMeterPercent = sharedPreferences.getInt("indoor_height_meter_per_cent", 0)
         fillDateSpinner()
         summitEntries = sortFilterHelper.entries
-        intervalHelper = IntervalHelper(summitEntries)
         barChart = barChartView?.findViewById(R.id.barChart)
         val barChartCustomRenderer = BarChartCustomRenderer(barChart, barChart?.animator, barChart?.viewPortHandler)
         barChart?.renderer = barChartCustomRenderer
@@ -142,22 +140,25 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         val xAxis = barChart?.xAxis
         val max = barChartEntries.maxByOrNull { it?.x ?: 0f }?.x ?: 0f
         val min = barChartEntries.minByOrNull { it?.x ?: 0f }?.x ?: 0f
-        xAxis?.axisMaximum = max + 0.5f
+        xAxis?.axisMaximum = if (selectedXAxisSpinnerEntry == XAxisSelector.Participants && max < 10) 10.5f else max + 0.5f
         xAxis?.axisMinimum = min - 0.5f
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return when (selectedXAxisSpinner) {
-                    1 -> String.format("%s", ((value + 0.5) * IntervalHelper.kilometersStep).toInt())
-                    2 -> String.format("%s", ((value + 0.5) * IntervalHelper.elevationGainStep).toInt())
-                    3 -> String.format("%s", ((value + 0.5) * IntervalHelper.topElevationStep).toInt())
-                    else -> {
-                        if (sortFilterHelper.selectedYear == "" || value > 12f || value == 0f) {
-                            String.format("%s", value.toInt())
-                        } else {
-                            val month = if (value < 1 || value > 12) 0 else value.toInt() - 1
-                            String.format("%s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month])
-                        }
+                return if (selectedXAxisSpinnerEntry == XAxisSelector.Date) {
+                    if (sortFilterHelper.selectedYear == "" || value > 12f || value == 0f) {
+                        String.format("%s", value.toInt())
+                    } else {
+                        val month = if (value < 1 || value > 12) 0 else value.toInt() - 1
+                        String.format("%s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month])
                     }
+                } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants) {
+                    if (value.toInt() < selectedXAxisSpinnerEntry.getIntervals(intervalHelper).size) {
+                        selectedXAxisSpinnerEntry.getIntervals(intervalHelper)[value.toInt()].toString()
+                    } else {
+                        ""
+                    }
+                } else {
+                    String.format("%s", ((value + 0.5) * selectedXAxisSpinnerEntry.stepsSize).toInt())
                 }
             }
         }
@@ -203,215 +204,62 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         barChartEntries.clear()
         lineChartEntriesForecast.clear()
         try {
-            var annualTarget: Float = when (selectedDataSpinner) {
-                1 -> sharedPreferences.getString("annual_target_km", "1200")?.toFloat() ?: 1200f
-                2 -> sharedPreferences.getString("annual_target", "50000")?.toFloat() ?: 50000f
-                else -> sharedPreferences.getString("annual_target_activities", "52")?.toFloat() ?: 52f
-            }
+            var annualTarget: Float = sharedPreferences.getString(selectedYAxisSpinnerEntry.sharedPreferenceKey, selectedYAxisSpinnerEntry.defaultAnnualTarget.toString())?.toFloat()
+                    ?: selectedYAxisSpinnerEntry.defaultAnnualTarget.toFloat()
             if (sortFilterHelper.selectedYear != "") {
                 annualTarget /= 12f
             }
             val line1 = LimitLine(annualTarget)
             barChart?.axisLeft?.addLimitLine(line1)
             barChart?.setSafeZoneColor(ContextCompat.getColor(requireContext(), R.color.red_50), ContextCompat.getColor(requireContext(), R.color.green_50))
-
-            when (selectedXAxisSpinner) {
-                1 -> updateBarChartWithKilometersAsXAxis()
-                2 -> updateBarChartWithElevationGainAsXAxis()
-                3 -> updateBarChartWithTopElevationAsXAxis()
-                else -> updateBarChartWithDateAsXAxis()
-            }
+            updateBarChart()
         } catch (e: ParseException) {
             e.printStackTrace()
         }
     }
 
-    @Throws(ParseException::class)
-    private fun updateBarChartWithDateAsXAxis() {
-        intervalHelper.setSelectedYear(sortFilterHelper.selectedYear)
-        intervalHelper.calculate()
+    private fun updateDataForChart(xValue: Float, streamSupplier: Supplier<Stream<Summit?>?>) {
         val now = Calendar.getInstance()
         val currentYear = now[Calendar.YEAR].toString()
-
-        for (i in 0 until intervalHelper.dates.size - 1) {
-            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenDates(filteredEntries, intervalHelper.dates[i], intervalHelper.dates[i + 1]) }
-            val xValue = intervalHelper.dateAnnotation[i]
-            when (selectedDataSpinner) {
-                1 -> {
-                    label = "Kilometers"
-                    unit = "km"
-                    barChartEntries.add(BarEntry(xValue, getKilometerPerSportType(streamSupplier)))
-                }
-                2 -> {
-                    label = "Elevation Gain"
-                    unit = "m"
-                    barChartEntries.add(BarEntry(xValue, getElevationGainsPerSportType(streamSupplier)))
-                }
-                else -> {
-                    label = "Count"
-                    unit = ""
-                    barChartEntries.add(BarEntry(xValue, getCountsPerSportType(streamSupplier)))
-                }
-            }
-            if (sortFilterHelper.selectedYear == currentYear) {
-                val forecast = forecasts.firstOrNull { it.month == xValue.toInt() && it.year.toString() == currentYear }
-                if (forecast != null) {
-                    when (selectedDataSpinner) {
-                        1 -> lineChartEntriesForecast.add(Entry(xValue - 0.5F, forecast.forecastDistance.toFloat()))
-                        2 -> lineChartEntriesForecast.add(Entry(xValue - 0.5F, forecast.forecastHeightMeter.toFloat()))
-                        else -> lineChartEntriesForecast.add(Entry(xValue - 0.5F, forecast.forecastNumberActivities.toFloat()))
-                    }
-                }
+        label = getString(selectedYAxisSpinnerEntry.nameId)
+        unit = getString(selectedYAxisSpinnerEntry.unitId)
+        barChartEntries.add(BarEntry(xValue, getValueForEntry(streamSupplier)))
+        if (sortFilterHelper.selectedYear == currentYear && selectedXAxisSpinnerEntry == XAxisSelector.Date) {
+            val forecast = forecasts.firstOrNull { it.month == xValue.toInt() && it.year.toString() == currentYear }
+            if (forecast != null) {
+                lineChartEntriesForecast.add(Entry(xValue - 0.5F, selectedYAxisSpinnerEntry.getForecastValue(forecast)))
             }
         }
     }
+
 
     @Throws(ParseException::class)
-    private fun updateBarChartWithElevationGainAsXAxis() {
+    private fun updateBarChart() {
+        intervalHelper = IntervalHelper(sortFilterHelper.filteredEntries)
+        intervalHelper.setSelectedYear(sortFilterHelper.selectedYear)
         intervalHelper.calculate()
-        for (i in 0 until intervalHelper.elevationGains.size - 1) {
-            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenElevationGains(filteredEntries, intervalHelper.elevationGains[i], intervalHelper.elevationGains[i + 1]) }
-            val xValue = intervalHelper.elevationGainAnnotation[i]
-            when (selectedDataSpinner) {
-                1 -> {
-                    label = "Kilometers"
-                    unit = "km"
-                    barChartEntries.add(BarEntry(xValue, getKilometerPerSportType(streamSupplier)))
-                }
-                2 -> {
-                    label = "Elevation Gain"
-                    unit = "m"
-                    barChartEntries.add(BarEntry(xValue, getElevationGainsPerSportType(streamSupplier)))
-                }
-                else -> {
-                    label = "Count"
-                    unit = ""
-                    barChartEntries.add(BarEntry(xValue, getCountsPerSportType(streamSupplier)))
-                }
+        val interval = selectedXAxisSpinnerEntry.getIntervals(intervalHelper)
+        val annotation = selectedXAxisSpinnerEntry.getAnnotation(intervalHelper)
+        for (i in 0 until interval.size - 1) {
+            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier {
+                selectedXAxisSpinnerEntry.getStream(filteredEntries, interval[i], interval[i + 1])
             }
+            val xValue = annotation[i]
+            updateDataForChart(xValue, streamSupplier)
         }
     }
 
-    @Throws(ParseException::class)
-    private fun updateBarChartWithKilometersAsXAxis() {
-        intervalHelper.calculate()
-        for (i in 0 until intervalHelper.kilometers.size - 1) {
-            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenKilometers(filteredEntries, intervalHelper.kilometers[i], intervalHelper.kilometers[i + 1]) }
-            val xValue = intervalHelper.kilometerAnnotation[i]
-            when (selectedDataSpinner) {
-                1 -> {
-                    label = "Kilometers"
-                    unit = "km"
-                    barChartEntries.add(BarEntry(xValue, getKilometerPerSportType(streamSupplier)))
-                }
-                2 -> {
-                    label = "Elevation Gain"
-                    unit = "m"
-                    barChartEntries.add(BarEntry(xValue, getElevationGainsPerSportType(streamSupplier)))
-                }
-                else -> {
-                    label = "Count"
-                    unit = ""
-                    barChartEntries.add(BarEntry(xValue, getCountsPerSportType(streamSupplier)))
-                }
-            }
-        }
-    }
-
-    @Throws(ParseException::class)
-    private fun updateBarChartWithTopElevationAsXAxis() {
-        intervalHelper.calculate()
-        for (i in 0 until intervalHelper.topElevations.size - 1) {
-            val streamSupplier: Supplier<Stream<Summit?>?> = Supplier { getEntriesBetweenTopElevation(filteredEntries, intervalHelper.topElevations[i], intervalHelper.topElevations[i + 1]) }
-            val xValue = intervalHelper.topElevationAnnotation[i]
-            when (selectedDataSpinner) {
-                1 -> {
-                    label = "Kilometers"
-                    unit = "km"
-                    barChartEntries.add(BarEntry(xValue, getKilometerPerSportType(streamSupplier)))
-                }
-                2 -> {
-                    label = "Elevation Gain"
-                    unit = "m"
-                    barChartEntries.add(BarEntry(xValue, getElevationGainsPerSportType(streamSupplier)))
-                }
-                else -> {
-                    label = "Count"
-                    unit = ""
-                    barChartEntries.add(BarEntry(xValue, getCountsPerSportType(streamSupplier)))
-                }
-            }
-        }
-    }
-
-    private fun getCountsPerSportType(entriesSupplier: Supplier<Stream<Summit?>?>): FloatArray {
+    private fun getValueForEntry(entriesSupplier: Supplier<Stream<Summit?>?>): FloatArray {
         val list: MutableList<Float> = mutableListOf()
-        SportType.values().forEach { sportType -> list.add(getCountsFromStream(entriesSupplier.get()?.filter { it?.sportType == sportType })) }
+        SportType.values().forEach { sportType -> list.add(selectedYAxisSpinnerEntry.f(entriesSupplier.get()?.filter { it?.sportType == sportType }, indoorHeightMeterPercent)) }
         return list.toFloatArray()
     }
 
-    private fun getKilometerPerSportType(entriesSupplier: Supplier<Stream<Summit?>?>): FloatArray {
-        val list: MutableList<Float> = mutableListOf()
-        SportType.values().forEach { sportType -> list.add(getKilometersFromStream(entriesSupplier.get()?.filter { it?.sportType == sportType })) }
-        return list.toFloatArray()
-    }
-
-    private fun getElevationGainsPerSportType(entriesSupplier: Supplier<Stream<Summit?>?>): FloatArray {
-        val list: MutableList<Float> = mutableListOf()
-        SportType.values().forEach { sportType -> list.add(getElevationGainsFromStream(entriesSupplier.get()?.filter { it?.sportType == sportType })) }
-        return list.toFloatArray()
-    }
-
-    private fun getEntriesBetweenDates(entries: List<Summit>?, start: Date?, end: Date?): Stream<Summit?>? {
-        return entries
-                ?.stream()
-                ?.filter { o: Summit? -> o?.date?.after(start) ?: false && o?.date?.before(end) ?: false }
-    }
-
-    private fun getEntriesBetweenTopElevation(entries: List<Summit>?, start: Float, end: Float): Stream<Summit?>? {
-        return entries
-                ?.stream()
-                ?.filter { o: Summit? -> o != null && o.elevationData.maxElevation >= start && o.elevationData.maxElevation < end }
-    }
-
-    private fun getEntriesBetweenElevationGains(entries: List<Summit>?, start: Float, end: Float): Stream<Summit?>? {
-        return entries
-                ?.stream()
-                ?.filter { o: Summit? -> o != null && o.elevationData.elevationGain >= start && o.elevationData.elevationGain < end }
-    }
-
-    private fun getEntriesBetweenKilometers(entries: List<Summit>?, start: Float, end: Float): Stream<Summit?>? {
-        return entries
-                ?.stream()
-                ?.filter { o: Summit? -> o != null && o.kilometers >= start && o.kilometers < end }
-    }
-
-    private fun getCountsFromStream(stream: Stream<Summit?>?): Float {
-        return stream?.count()?.toFloat() ?: 0.0f
-    }
-
-    private fun getKilometersFromStream(stream: Stream<Summit?>?): Float {
-        return stream
-                ?.mapToInt { o: Summit? -> o?.kilometers?.toInt() ?: 0 }
-                ?.sum()?.toFloat() ?: 0.0f
-    }
-
-    private fun getElevationGainsFromStream(stream: Stream<Summit?>?): Float {
-        return stream
-                ?.mapToInt {
-                    if (it?.sportType == SportType.IndoorTrainer) {
-                        it.elevationData.elevationGain * indoorHeightMeterPercent / 100
-                    } else {
-                        it?.elevationData?.elevationGain ?: 0
-                    }
-                }
-                ?.sum()?.toFloat() ?: 0.0f
-    }
 
     private fun listenOnDataSpinner() {
-        dataSpinner?.onItemSelectedListener = object : OnItemSelectedListener {
+        yAxisSpinner?.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
-                selectedDataSpinner = i
+                selectedYAxisSpinnerEntry = YAxisSelector.values()[i]
                 selectedDataSpinner()
                 drawChart()
             }
@@ -420,7 +268,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         }
         xAxisSpinner?.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
-                selectedXAxisSpinner = i
+                selectedXAxisSpinnerEntry = XAxisSelector.values()[i]
                 selectedDataSpinner()
                 drawChart()
             }
@@ -431,12 +279,14 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     private fun fillDateSpinner() {
         val dateAdapter = ArrayAdapter(requireContext(),
-                android.R.layout.simple_spinner_item, ArrayList(listOf(*resources.getStringArray(R.array.bar_chart_spinner))))
+                android.R.layout.simple_spinner_item,
+                YAxisSelector.values().map { resources.getString(it.nameId) }.toTypedArray())
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        dataSpinner = barChartView?.findViewById(R.id.bar_chart_spinner_data)
-        dataSpinner?.adapter = dateAdapter
+        yAxisSpinner = barChartView?.findViewById(R.id.bar_chart_spinner_data)
+        yAxisSpinner?.adapter = dateAdapter
         val xAxisAdapter = ArrayAdapter(requireContext(),
-                android.R.layout.simple_spinner_item, ArrayList(listOf(*resources.getStringArray(R.array.bar_chart_spinner_x_axis))))
+                android.R.layout.simple_spinner_item,
+                XAxisSelector.values().map { resources.getString(it.nameId) }.toTypedArray())
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         xAxisSpinner = barChartView?.findViewById(R.id.bar_chart_spinner_x_axis)
         xAxisSpinner?.adapter = xAxisAdapter
@@ -449,18 +299,22 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
             try {
                 val value: String
                 if (e != null && highlight != null) {
-                    value = when (selectedXAxisSpinner) {
-                        1 -> String.format("%s - %s km", (e.x * IntervalHelper.kilometersStep).toInt(), ((e.x + 1) * IntervalHelper.kilometersStep).toInt())
-                        2 -> String.format("%s - %s m", (e.x * IntervalHelper.elevationGainStep).toInt(), ((e.x + 1) * IntervalHelper.elevationGainStep).toInt())
-                        3 -> String.format("%s - %s m", (e.x * IntervalHelper.topElevationStep).toInt(), ((e.x + 1) * IntervalHelper.topElevationStep).toInt())
-                        else -> {
-                            if (e.x > 12 || sortFilterHelper.selectedYear == "") {
-                                String.format("%s", e.x.toInt())
-                            } else {
-                                val month = if (e.x < 1 || e.x > 12) 0 else e.x.toInt() - 1
-                                String.format("%s %s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month], sortFilterHelper.selectedYear)
-                            }
+                    value = if (selectedXAxisSpinnerEntry == XAxisSelector.Date) {
+                        if (e.x > 12 || sortFilterHelper.selectedYear == "") {
+                            String.format("%s", e.x.toInt())
+                        } else {
+                            val month = if (e.x < 1 || e.x > 12) 0 else e.x.toInt() - 1
+                            String.format("%s %s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month], sortFilterHelper.selectedYear)
                         }
+                    } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants) {
+                        if (e.x.toInt() < selectedXAxisSpinnerEntry.getIntervals(intervalHelper).size) {
+                            selectedXAxisSpinnerEntry.getIntervals(intervalHelper)[e.x.toInt()].toString()
+                        } else {
+                            ""
+                        }
+                    } else {
+                        String.format("%s - %s %s", (e.x * selectedXAxisSpinnerEntry.stepsSize).toInt(), ((e.x + 1) * selectedXAxisSpinnerEntry.stepsSize).toInt(), getString(selectedXAxisSpinnerEntry.unitId))
+
                     }
                     val currentYear = Calendar.getInstance()[Calendar.YEAR].toString()
                     val forecast = forecasts.firstOrNull { it.month == e.x.toInt() && it.year.toString() == currentYear }
@@ -468,13 +322,10 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
                     val selectedValue = (e as BarEntry).yVals[highlight.stackIndex].toInt()
                     val unitString = if (unit == "") "" else " $unit"
                     if (selectedValue == 0) {
-                        val forecastValue = when (selectedDataSpinner) {
-                            1 -> forecast?.forecastDistance?: 0
-                            2 -> forecast?.forecastHeightMeter?: 0
-                            else -> forecast?.forecastNumberActivities?: 0
-                        }
-                        tvContent?.text = if (forecastValue > 0) {
-                            String.format("%s%s\n%s\n%s: %s%s", e.getY().toInt(), unitString, value, getString(R.string.forecast_abbr), forecastValue, unitString)
+                        val forecastValue = forecast?.let { selectedYAxisSpinnerEntry.getForecastValue(it) }
+                                ?: 0f
+                        tvContent?.text = if (forecastValue > 0 && selectedXAxisSpinnerEntry == XAxisSelector.Date) {
+                            String.format("%s%s\n%s\n%s: %s%s", e.getY().toInt(), unitString, value, getString(R.string.forecast_abbr), forecastValue.toInt(), unitString)
                         } else {
                             String.format("%s%s\n%s", e.getY().toInt(), unitString, value)
                         }
@@ -503,6 +354,59 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         override fun getOffset(): MPPointF {
             return MPPointF(-(width / 2f), (-height).toFloat())
         }
+
+    }
+
+    enum class XAxisSelector(val nameId: Int, val unitId: Int, val stepsSize: Double, val getStream: (entries: List<Summit>?, start: Any, end: Any) -> Stream<Summit?>?,
+                             val getIntervals: (IntervalHelper) -> List<Any>, val getAnnotation: (IntervalHelper) -> List<Float>) {
+        Date(R.string.date, R.string.empty, 0.0, { entries, start, end ->
+            entries
+                    ?.stream()
+                    ?.filter { o: Summit? -> o?.date?.after(start as java.util.Date) ?: false && o?.date?.before(end as java.util.Date) ?: false }
+        }, { e -> e.dates}, { e -> e.dateAnnotation }),
+        Kilometers(R.string.kilometers_hint, R.string.km, IntervalHelper.kilometersStep, { entries, start, end ->
+            entries
+                    ?.stream()
+                    ?.filter { o: Summit? -> o != null && o.kilometers >= start as Float && o.kilometers < end as Float }
+        }, { e -> e.kilometers }, { e -> e.kilometerAnnotation }),
+        ElevationGain(R.string.height_meter_hint, R.string.hm, IntervalHelper.elevationGainStep, { entries, start, end ->
+            entries
+                    ?.stream()
+                    ?.filter { o: Summit? -> o != null && o.elevationData.elevationGain >= start as Float && o.elevationData.elevationGain < end as Float }
+        }, { e -> e.elevationGains }, { e -> e.elevationGainAnnotation }),
+        TopElevation(R.string.top_elevation_hint, R.string.masl, IntervalHelper.topElevationStep, { entries, start, end ->
+            entries
+                    ?.stream()
+                    ?.filter { o: Summit? -> o != null && o.elevationData.maxElevation >= start as Float && o.elevationData.maxElevation < end as Float }
+        }, { e -> e.topElevations }, { e -> e.topElevationAnnotation }),
+        Participants(R.string.participants, R.string.empty, 1.0, { entries, start, end ->
+            entries
+                    ?.stream()
+                    ?.filter { o: Summit? -> o != null && o.participants.contains(start) }
+        }, { e -> e.participants }, { e -> e.participantsAnnotation })
+    }
+
+    enum class YAxisSelector(val nameId: Int, val unitId: Int, val sharedPreferenceKey: String, val defaultAnnualTarget: Int,
+                             val f: (Stream<Summit?>?, Int) -> Float, val getForecastValue: (Forecast) -> Float) {
+        Count(R.string.count, R.string.empty, "annual_target_activities", 52, { stream, i ->
+            stream?.count()?.toFloat() ?: 0f
+        }, { forecast -> forecast.forecastNumberActivities.toFloat() }),
+        Kilometers(R.string.kilometers_hint, R.string.km, "annual_target_km", 1200, { stream, i ->
+            stream
+                    ?.mapToInt { o: Summit? -> o?.kilometers?.toInt() ?: 0 }
+                    ?.sum()?.toFloat() ?: 0.0f
+        }, { forecast -> forecast.forecastDistance.toFloat() }),
+        ElevationGain(R.string.height_meter_hint, R.string.hm, "annual_target", 50000, { stream, indoorHeightMeterPercent ->
+            stream
+                    ?.mapToInt {
+                        if (it?.sportType == SportType.IndoorTrainer) {
+                            it.elevationData.elevationGain * indoorHeightMeterPercent / 100
+                        } else {
+                            it?.elevationData?.elevationGain ?: 0
+                        }
+                    }
+                    ?.sum()?.toFloat() ?: 0.0f
+        }, { forecast -> forecast.forecastHeightMeter.toFloat() })
 
     }
 

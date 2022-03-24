@@ -21,6 +21,7 @@
     <string name="activity_hint">Aktivitäten</string>
     <string name="action_share">Teilen</string>
     <string name="capricorn_caption">Steinbock in den Alpen</string>
+    <string name="date">Datum</string>
     <string name="tour_date">Gipfel Datum</string>
     <string name="date_format">%3$s-%2$s-%1$s</string>
     <string name="saveButtonText">Speichern</string>
@@ -50,6 +51,7 @@
     <string name="top_slope_hint">Maximale Steigung</string>
 
     <string name="action_search">Suche</string>
+    <string name="empty" />
     <string name="km">km</string>
     <string name="kmh">km/h</string>
     <string name="hm">hm</string>
@@ -127,19 +129,6 @@ von
     <string-array name="date_array">
         <item>Gesamt</item>
         <item>Benutzerdefiniert</item>
-    </string-array>
-
-    <string-array name="bar_chart_spinner">
-        <item>Anzahl</item>
-        <item>Kilometer</item>
-        <item>Höhenmeter</item>
-    </string-array>
-
-    <string-array name="bar_chart_spinner_x_axis">
-        <item>Datum</item>
-        <item>Kilometer</item>
-        <item>Höhenmeter</item>
-        <item>Höchster Punkt</item>
     </string-array>
 
     <string name="tab_text_1">Daten</string>
@@ -377,6 +366,7 @@ von
     <string name="tool_tip_progress_new_garmin_activities">"Füge Gipfel %1$s hinzu und download seine Tracks. Das kann etwas dauern."</string>
     <string name="tool_tip_progress_merge_garmin_activities">"Merge Gipfel %1$s in einen einzelnen Gipfel und download seine Tracks. Das kann etwas dauern."</string>
     <string name="select_map_type">Wähle Kartentyp aus</string>
+    <string name="count">Anzahl</string>
 
 
 </resources>

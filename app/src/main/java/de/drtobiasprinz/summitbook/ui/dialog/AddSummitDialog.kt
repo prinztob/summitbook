@@ -22,6 +22,7 @@ import com.hootsuite.nachos.terminator.ChipTerminatorHandler
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.fragments.BarChartFragment
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
@@ -44,7 +45,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     var temporaryGpxFile: File? = null
     var latlngHightestPoint: TrackPoint? = null
     private lateinit var currentContext: Context
-    private lateinit var sportTypeAdapter: ArrayAdapter<SportType>
+    private lateinit var sportTypeAdapter: ArrayAdapter<String>
     private var currentSummit: Summit? = null
     private var connectedSummits: MutableList<Summit> = mutableListOf()
     private var mDialog: AlertDialog? = null
@@ -120,7 +121,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         summitName.setAdapter(getPlacesSuggestions(false))
         sportTypeSpinner = view.findViewById(R.id.activities)
         sportTypeAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item,
-                SportType.values())
+                SportType.values().map { resources.getString(it.sportNameStringId) }.toTypedArray())
         sportTypeSpinner.adapter = sportTypeAdapter
         addPlaces(view)
         addCountries(view)
@@ -190,7 +191,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
 
         //save the summit
         saveEntryButton.setOnClickListener {
-            val sportType = SportType.valueOf(sportTypeSpinner.selectedItem.toString())
+            val sportType = SportType.values()[sportTypeSpinner.selectedItemPosition]
             parseSummit(sportType)
             val entry = currentSummit
             if (entry != null) {
@@ -450,11 +451,9 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         return places
     }
 
-    fun updateDialogFields(entry: Summit?, updateSpinner: Boolean) {
+    private fun updateDialogFields(entry: Summit?, updateSpinner: Boolean) {
         if (updateSpinner) {
-            val sportTypeString = SportType.valueOf(entry?.sportType.toString())
-            val spinnerPosition = sportTypeAdapter.getPosition(sportTypeString)
-            spinnerPosition.let { sportTypeSpinner.setSelection(it) }
+            sportTypeSpinner.setSelection(SportType.values().indexOf(entry?.sportType))
         }
         if (entry != null) {
             entry.getDateAsString()?.let { setTextIfNotAlreadySet(date, it) }
