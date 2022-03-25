@@ -84,6 +84,10 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     private lateinit var participantsView: NachoTextView
     private lateinit var equipmentsView: NachoTextView
     private lateinit var saveEntryButton: Button
+    private val suggestionEquipments: List<String> = sortFilterHelper.entries.flatMap { it.equipments }.distinct()
+    private val suggestionParticipants: List<String> = sortFilterHelper.entries.flatMap { it.participants }.distinct()
+
+
     private val watcher: TextWatcher = object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
         override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
@@ -298,15 +302,13 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     }
 
     private fun addParticipants(view: View) {
-        val suggestions: List<String> = sortFilterHelper.entries.flatMap { it.participants }.distinct()
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions)
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestionParticipants)
         participantsView = view.findViewById(R.id.participants)
         addChipWithSuggestions(participantsView, adapter)
     }
 
     private fun addEquipments(view: View) {
-        val suggestions: List<String> = sortFilterHelper.entries.flatMap { it.equipments }.distinct()
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions)
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestionEquipments)
         equipmentsView = view.findViewById(R.id.equipments)
         addChipWithSuggestions(equipmentsView, adapter)
     }

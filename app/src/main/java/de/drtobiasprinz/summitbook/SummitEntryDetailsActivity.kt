@@ -10,6 +10,7 @@ import com.google.android.material.tabs.TabLayout
 import de.drtobiasprinz.summitbook.adapter.TabsPagerAdapter
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.MyResultReceiver
+import de.drtobiasprinz.summitbook.models.SportGroup
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.HackyViewPager
 
@@ -34,8 +35,16 @@ class SummitEntryDetailsActivity : AppCompatActivity(), MyResultReceiver {
                 val entry = database?.summitDao()?.getSummit(summitEntryId)
                 if (entry != null) {
                     summitEntry = entry
-                    summitsToCompare = database?.summitDao()?.getAllSummitWithSameSportType(summitEntry.sportType)
-                            ?: emptyList()
+                    val sportGroup = SportGroup.values().filter { summitEntry.sportType in it.sportTypes }
+                    summitsToCompare = if (sportGroup.size == 1) {
+                        sportGroup.first().sportTypes.flatMap {
+                            database?.summitDao()?.getAllSummitWithSameSportType(it)
+                                ?: emptyList()
+                        }
+                    } else {
+                        database?.summitDao()?.getAllSummitWithSameSportType(summitEntry.sportType)
+                                ?: emptyList()
+                    }
                 }
             }
             val tabsPagerAdapter = TabsPagerAdapter(this, supportFragmentManager, summitEntry)

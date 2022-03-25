@@ -19,3 +19,8 @@ enum class SportType(val sportNameStringId: Int, val imageIdBlack: Int, val imag
     }
 
 }
+
+enum class SportGroup(val sportTypes: List<SportType>) {
+    Bike(listOf(SportType.Bicycle, SportType.Racer, SportType.IndoorTrainer, SportType.Mountainbike)),
+    Foot(listOf(SportType.Climb, SportType.Hike, SportType.Skitour))
+}
