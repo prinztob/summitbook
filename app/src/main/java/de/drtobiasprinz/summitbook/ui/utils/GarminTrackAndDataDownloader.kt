@@ -93,6 +93,7 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, val garminPythonEx
                         entries.maxByOrNull { it.velocityData.maxVelocity }?.velocityData?.maxVelocity ?: 0.0),
                 null, null,
                 entries.map { it.participants }.flatten(),
+                entries.map { it.equipments }.flatten(),
                 false,
                 false,
                 mutableListOf(),

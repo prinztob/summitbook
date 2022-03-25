@@ -146,6 +146,7 @@ von
     <string name="search">Suche</string>
     <string name="my_position">Location</string>
     <string name="participants">Teilnehmer</string>
+    <string name="equipments">Ausrüstung</string>
 
     <string name="shared_gpx_subject">"Teile GPX Track"</string>
     <string name="shared_gpx_text">"Teile GPX Track für Bookmark %1$s.\nHöhenmeter: %2$s hm\nEntfernung: %3$s km"</string>

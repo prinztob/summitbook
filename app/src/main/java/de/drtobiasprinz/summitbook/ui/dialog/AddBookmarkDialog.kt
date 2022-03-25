@@ -210,7 +210,7 @@ class AddBookmarkDialog : DialogFragment() {
                 ElevationData.parse(0, getTextWithDefault(heightMeterText, 0)),
                 getTextWithDefault(kmText, 0.0),
                 VelocityData.parse(0.0, 0.0),
-                0.0, 0.0, emptyList(), false, false, mutableListOf(), null, null,
+                0.0, 0.0, emptyList(), emptyList(), false, false, mutableListOf(), null, null,
                 isBookmark = true
         )
     }

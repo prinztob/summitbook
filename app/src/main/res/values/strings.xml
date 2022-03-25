@@ -142,6 +142,7 @@
     <string name="search">Search</string>
     <string name="my_position">Location</string>
     <string name="participants">Participants</string>
+    <string name="equipments">Equipments</string>
 
     <string name="shared_gpx_subject">"Shared gpx file"</string>
     <string name="shared_gpx_text">"Sharing gpx file for bookmark %1$s.\nElevation gain: %2$s hm\nDistance: %3$s km"</string>

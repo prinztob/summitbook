@@ -140,7 +140,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         val xAxis = barChart?.xAxis
         val max = barChartEntries.maxByOrNull { it?.x ?: 0f }?.x ?: 0f
         val min = barChartEntries.minByOrNull { it?.x ?: 0f }?.x ?: 0f
-        xAxis?.axisMaximum = if (selectedXAxisSpinnerEntry == XAxisSelector.Participants && max < 10) 10.5f else max + 0.5f
+        xAxis?.axisMaximum = if ((selectedXAxisSpinnerEntry == XAxisSelector.Participants || selectedXAxisSpinnerEntry == XAxisSelector.Equipments) && max < 10) 10.5f else max + 0.5f
         xAxis?.axisMinimum = min - 0.5f
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
@@ -151,7 +151,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
                         val month = if (value < 1 || value > 12) 0 else value.toInt() - 1
                         String.format("%s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month])
                     }
-                } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants) {
+                } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants || selectedXAxisSpinnerEntry == XAxisSelector.Equipments) {
                     if (value.toInt() < selectedXAxisSpinnerEntry.getIntervals(intervalHelper).size) {
                         selectedXAxisSpinnerEntry.getIntervals(intervalHelper)[value.toInt()].toString()
                     } else {
@@ -306,7 +306,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
                             val month = if (e.x < 1 || e.x > 12) 0 else e.x.toInt() - 1
                             String.format("%s %s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month], sortFilterHelper.selectedYear)
                         }
-                    } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants) {
+                    } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants || selectedXAxisSpinnerEntry == XAxisSelector.Equipments) {
                         if (e.x.toInt() < selectedXAxisSpinnerEntry.getIntervals(intervalHelper).size) {
                             selectedXAxisSpinnerEntry.getIntervals(intervalHelper)[e.x.toInt()].toString()
                         } else {
@@ -379,19 +379,24 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.elevationData.maxElevation >= start as Float && o.elevationData.maxElevation < end as Float }
         }, { e -> e.topElevations }, { e -> e.topElevationAnnotation }),
-        Participants(R.string.participants, R.string.empty, 1.0, { entries, start, end ->
+        Participants(R.string.participants, R.string.empty, 1.0, { entries, start, _ ->
             entries
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.participants.contains(start) }
-        }, { e -> e.participants }, { e -> e.participantsAnnotation })
+        }, { e -> e.participants }, { e -> e.participantsAnnotation }),
+        Equipments(R.string.equipments, R.string.empty, 1.0, { entries, start, _ ->
+            entries
+                    ?.stream()
+                    ?.filter { o: Summit? -> o != null && o.equipments.contains(start) }
+        }, { e -> e.equipments }, { e -> e.equipmentsAnnotation })
     }
 
     enum class YAxisSelector(val nameId: Int, val unitId: Int, val sharedPreferenceKey: String, val defaultAnnualTarget: Int,
                              val f: (Stream<Summit?>?, Int) -> Float, val getForecastValue: (Forecast) -> Float) {
-        Count(R.string.count, R.string.empty, "annual_target_activities", 52, { stream, i ->
+        Count(R.string.count, R.string.empty, "annual_target_activities", 52, { stream, _ ->
             stream?.count()?.toFloat() ?: 0f
         }, { forecast -> forecast.forecastNumberActivities.toFloat() }),
-        Kilometers(R.string.kilometers_hint, R.string.km, "annual_target_km", 1200, { stream, i ->
+        Kilometers(R.string.kilometers_hint, R.string.km, "annual_target_km", 1200, { stream, _ ->
             stream
                     ?.mapToInt { o: Summit? -> o?.kilometers?.toInt() ?: 0 }
                     ?.sum()?.toFloat() ?: 0.0f

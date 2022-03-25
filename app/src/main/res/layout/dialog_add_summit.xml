@@ -220,7 +220,6 @@
                 android:inputType="text"
                 android:visibility="gone" />
 
-
             <com.hootsuite.nachos.NachoTextView
                 android:id="@+id/participants"
                 android:layout_width="match_parent"
@@ -228,6 +227,16 @@
                 android:drawableStart="@drawable/ic_baseline_people_24"
                 android:drawablePadding="10dp"
                 android:hint="@string/participants"
+                android:importantForAutofill="no"
+                android:inputType="text" />
+
+            <com.hootsuite.nachos.NachoTextView
+                android:id="@+id/equipments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawableStart="@drawable/ic_baseline_handyman_24"
+                android:drawablePadding="10dp"
+                android:hint="@string/equipments"
                 android:importantForAutofill="no"
                 android:inputType="text" />
 

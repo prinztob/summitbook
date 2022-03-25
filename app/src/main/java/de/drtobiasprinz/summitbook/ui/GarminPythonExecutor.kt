@@ -223,6 +223,7 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
                         if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
                     null, null,
                     emptyList(),
+                    emptyList(),
                     false,
                     false,
                     mutableListOf(),

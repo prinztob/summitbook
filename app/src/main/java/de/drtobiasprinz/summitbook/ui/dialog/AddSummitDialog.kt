@@ -22,7 +22,6 @@ import com.hootsuite.nachos.terminator.ChipTerminatorHandler
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.fragments.BarChartFragment
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
@@ -83,6 +82,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     private lateinit var power2hText: EditText
     private lateinit var power5hText: EditText
     private lateinit var participantsView: NachoTextView
+    private lateinit var equipmentsView: NachoTextView
     private lateinit var saveEntryButton: Button
     private val watcher: TextWatcher = object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
@@ -158,6 +158,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         power2hText = view.findViewById(R.id.power2h)
         power5hText = view.findViewById(R.id.power5h)
         addParticipants(view)
+        addEquipments(view)
         if (isUpdate) {
             saveEntryButton.setText(R.string.updateButtonText)
             updateDialogFields(currentSummit, true)
@@ -189,7 +190,6 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             }
         }
 
-        //save the summit
         saveEntryButton.setOnClickListener {
             val sportType = SportType.values()[sportTypeSpinner.selectedItemPosition]
             parseSummit(sportType)
@@ -298,13 +298,17 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     }
 
     private fun addParticipants(view: View) {
-        val suggestions: MutableList<String> = mutableListOf()
-        sortFilterHelper.entries.forEach {
-            suggestions.addAll(it.participants)
-        }
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions.distinct())
+        val suggestions: List<String> = sortFilterHelper.entries.flatMap { it.participants }.distinct()
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions)
         participantsView = view.findViewById(R.id.participants)
         addChipWithSuggestions(participantsView, adapter)
+    }
+
+    private fun addEquipments(view: View) {
+        val suggestions: List<String> = sortFilterHelper.entries.flatMap { it.equipments }.distinct()
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions)
+        equipmentsView = view.findViewById(R.id.equipments)
+        addChipWithSuggestions(equipmentsView, adapter)
     }
 
     private fun updatePower(powerData: JsonObject, power: PowerData) {
@@ -389,6 +393,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                 entry.velocityData.maxVelocity = getTextWithDefaultDouble(topSpeedText)
                 entry.elevationData.maxElevation = getTextWithDefaultInt(topElevationText)
                 entry.participants = participantsView.chipValues
+                entry.equipments = equipmentsView.chipValues
                 entry.garminData = garminDataFromGarminConnect
             } else {
                 currentSummit = Summit(
@@ -403,6 +408,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                         VelocityData.parse(getTextWithDefaultDouble(paceText), getTextWithDefaultDouble(topSpeedText)),
                         latlngHightestPoint?.lat, latlngHightestPoint?.lon,
                         participantsView.chipValues,
+                        equipmentsView.chipValues,
                         false,
                         false,
                         mutableListOf(),
@@ -462,6 +468,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             setTextIfNotAlreadySet(countriesView, entry.countries.joinToString(",") + ",")
             setTextIfNotAlreadySet(commentText, entry.comments)
             setTextIfNotAlreadySet(participantsView, entry.participants.joinToString(",") + ",")
+            setTextIfNotAlreadySet(equipmentsView, entry.equipments.joinToString(",") + ",")
             setTextIfNotAlreadySet(heightMeterText, entry.elevationData.elevationGain.toString())
             setTextIfNotAlreadySet(kmText, entry.kilometers.toString())
             setTextIfNotAlreadySet(paceText, entry.velocityData.avgVelocity.toString())

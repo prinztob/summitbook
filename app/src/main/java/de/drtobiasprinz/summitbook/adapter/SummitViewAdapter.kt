@@ -98,7 +98,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         } else {
             addVelocityData?.visibility = View.VISIBLE
         }
-        addVelocityData?.setOnClickListener { v: View? ->
+        addVelocityData?.setOnClickListener { _: View? ->
             if (pythonExecutor != null) {
                 AddAdditionalDataFromExternalResourcesDialog(summit, pythonExecutor, sortFilterHelper, addVelocityData)
                         .show((context as FragmentActivity).supportFragmentManager, "Show addition data")

@@ -24,6 +24,8 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
     val elevationGainAnnotation: MutableList<Float> = mutableListOf()
     var participants: MutableList<String> = mutableListOf()
     var participantsAnnotation: MutableList<Float> = mutableListOf()
+    var equipments: MutableList<String> = mutableListOf()
+    var equipmentsAnnotation: MutableList<Float> = mutableListOf()
     fun setSelectedYear(selectedYear: String?) {
         this.selectedYear = selectedYear
     }
@@ -34,7 +36,7 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
         calculateTopElevation()
         calculateElevationGain()
         calculateKilometers()
-        calculateKParticipants()
+        calculateKParticipantsAndEquipments()
     }
 
     private fun calculateTopElevation() {
@@ -67,7 +69,7 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
         }
     }
 
-    private fun calculateKParticipants() {
+    private fun calculateKParticipantsAndEquipments() {
         if (participants.isEmpty()) {
             val allParticipants = summitEntries.flatMap { it.participants }.filter { it != "" }
             val countsPerParticipants = allParticipants.toSet().map { name ->
@@ -76,6 +78,15 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
             participants = countsPerParticipants.toList().sortedByDescending { (_, value) -> value }.take(12).toMap().map { (key, _) -> key } as MutableList<String>
             participants.add("")
             participantsAnnotation = (0 until participants.size).map { it.toFloat() } as MutableList<Float>
+        }
+        if (equipments.isEmpty()) {
+            val allEquipments = summitEntries.flatMap { it.equipments }.filter { it != "" }
+            val countsPerEquipments = allEquipments.toSet().map { name ->
+                name to allEquipments.filter { it == name }.count()
+            }
+            equipments = countsPerEquipments.toList().sortedByDescending { (_, value) -> value }.take(12).toMap().map { (key, _) -> key } as MutableList<String>
+            equipments.add("")
+            equipmentsAnnotation = (0 until equipments.size).map { it.toFloat() } as MutableList<Float>
         }
     }
 

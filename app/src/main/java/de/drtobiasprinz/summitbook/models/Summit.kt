@@ -27,7 +27,7 @@ class Summit(
         var countries: List<String>, var comments: String,
         @Embedded var elevationData: ElevationData, var kilometers: Double,
         @Embedded var velocityData: VelocityData, var lat: Double?, var lng: Double?,
-        var participants: List<String>, var isFavorite: Boolean, @ColumnInfo(defaultValue = "false") var isPeak: Boolean,
+        var participants: List<String>, @ColumnInfo(defaultValue = "") var equipments: List<String>, var isFavorite: Boolean, @ColumnInfo(defaultValue = "false") var isPeak: Boolean,
         var imageIds: MutableList<Int>, @Embedded var garminData: GarminData?,
         @Embedded var trackBoundingBox: TrackBoundingBox?,
         var activityId: Long = System.currentTimeMillis(),
@@ -203,7 +203,7 @@ class Summit(
                 elevationData.maxElevation + ';' +
                 lat + ';' +
                 lng + ';' +
-                participants.joinToString(",") + ';' +
+                participants.joinToString(",") + ',' + equipments.map { "${it}${EQUIPMENT_SUFFIX}" }.joinToString(",")+ ';' +
                 activityId + ';'
         entryToString += if (exportThirdPartyData && garminData != null) {
             garminData.toString()
@@ -309,6 +309,7 @@ class Summit(
 
     companion object {
         const val DATE_FORMAT: String = "yyyy-MM-dd"
+        const val EQUIPMENT_SUFFIX: String = ":eq"
         const val DATETIME_FORMAT: String = "yyyy-MM-dd HH:mm:ss"
         const val CONNECTED_ACTIVITY_PREFIX: String = "ac_id:"
         const val SUMMIT_ID_EXTRA_IDENTIFIER = "SUMMIT_ID"
@@ -336,7 +337,7 @@ class Summit(
             val topSpeed: Double = (if (splitLine[9].trim { it <= ' ' } != "") splitLine[9].toDouble() else 0.0)
             val countries = splitLine[3].split(",")
             val places = splitLine[4].split(",")
-            val participants = splitLine[13].split(",")
+            val participantsAndEquipments = splitLine[13].split(",")
             val activityId = if (splitLine[14].trim { it <= ' ' } != "") splitLine[14].toLong() else System.currentTimeMillis()
             val garminData = getGarminData(splitLine)
             val latLng = if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") splitLine[11].toDouble().let { TrackPoint(it, splitLine[12].toDouble()) } else null
@@ -354,7 +355,8 @@ class Summit(
                     km,
                     VelocityData.parse(splitLine[8].split(","), topSpeed),
                     latLng?.lat, latLng?.lon,
-                    participants,
+                    participantsAndEquipments.filter { !it.contains(EQUIPMENT_SUFFIX) },
+                    participantsAndEquipments.filter { it.contains(EQUIPMENT_SUFFIX) }.map { it.replace(EQUIPMENT_SUFFIX, "") },
                     isFavorite,
                     isPeak,
                     mutableListOf(),

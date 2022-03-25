@@ -113,6 +113,7 @@ class SummitEntryDataFragment : Fragment() {
         database?.let { setChipsText(R.id.places, summitEntry.getPlacesWithConnectedEntryString(requireContext(), it), R.drawable.ic_place_black_24dp) }
         setChipsText(R.id.countries, summitEntry.countries, R.drawable.ic_baseline_flag_24)
         setChipsText(R.id.participants, summitEntry.participants, R.drawable.ic_baseline_people_24)
+        setChipsText(R.id.equipments, summitEntry.equipments, R.drawable.ic_baseline_handyman_24)
     }
 
     private fun setThirdPartyData(extrema: ExtremaValuesSummits?) {

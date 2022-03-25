@@ -29,7 +29,7 @@ class MaxVelocitySummit() {
                 velocitiesInKilometerInterval.add(sumKilometers / sumDurationHours)
             }
         }
-        return velocitiesInKilometerInterval.max() ?: 0.0
+        return velocitiesInKilometerInterval.maxOrNull() ?: 0.0
     }
 }
 
@@ -47,8 +47,8 @@ class VelocityEntry(val meter: Double, val seconds: Double) {
     }
 
     override fun hashCode(): Int {
-        var result = meter?.hashCode() ?: 0
-        result = 31 * result + (seconds?.hashCode() ?: 0)
+        var result = meter.hashCode()
+        result = 31 * result + seconds.hashCode()
         return result
     }
 }
