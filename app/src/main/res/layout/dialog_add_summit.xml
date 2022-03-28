@@ -199,46 +199,50 @@
                     android:text="@string/kmh" />
             </RelativeLayout>
 
-            <com.hootsuite.nachos.NachoTextView
-                android:id="@+id/places"
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_place_black_24dp"
-                android:drawablePadding="10dp"
-                android:hint="@string/place_hint"
-                android:importantForAutofill="no"
-                android:inputType="text" />
+                android:orientation="vertical">
 
-            <com.hootsuite.nachos.NachoTextView
-                android:id="@+id/countries"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_baseline_flag_24"
-                android:drawablePadding="10dp"
-                android:hint="@string/country_hint"
-                android:importantForAutofill="no"
-                android:inputType="text"
-                android:visibility="gone" />
+                <com.hootsuite.nachos.NachoTextView
+                    android:id="@+id/places"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:drawableStart="@drawable/ic_place_black_24dp"
+                    android:drawablePadding="10dp"
+                    android:hint="@string/place_hint"
+                    android:inputType="text" />
 
-            <com.hootsuite.nachos.NachoTextView
-                android:id="@+id/participants"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_baseline_people_24"
-                android:drawablePadding="10dp"
-                android:hint="@string/participants"
-                android:importantForAutofill="no"
-                android:inputType="text" />
+                <com.hootsuite.nachos.NachoTextView
+                    android:id="@+id/countries"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:drawableStart="@drawable/ic_baseline_flag_24"
+                    android:drawablePadding="10dp"
+                    android:hint="@string/country_hint"
+                    android:layout_below="@+id/places"
+                    android:inputType="text" />
 
-            <com.hootsuite.nachos.NachoTextView
-                android:id="@+id/equipments"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_baseline_handyman_24"
-                android:drawablePadding="10dp"
-                android:hint="@string/equipments"
-                android:importantForAutofill="no"
-                android:inputType="text" />
+                <com.hootsuite.nachos.NachoTextView
+                    android:id="@+id/participants"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:drawableStart="@drawable/ic_baseline_people_24"
+                    android:drawablePadding="10dp"
+                    android:hint="@string/participants"
+                    android:layout_below="@+id/countries"
+                    android:inputType="text" />
+
+                <com.hootsuite.nachos.NachoTextView
+                    android:id="@+id/equipments"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:drawableStart="@drawable/ic_baseline_handyman_24"
+                    android:drawablePadding="10dp"
+                    android:hint="@string/equipments"
+                    android:layout_below="@+id/participants"
+                    android:inputType="text" />
+            </RelativeLayout>
 
             <EditText
                 android:id="@+id/comments"
@@ -411,7 +415,7 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_centerInParent="true"
-                    android:text= "" />
+                    android:text="" />
             </RelativeLayout>
 
             <RelativeLayout
@@ -440,7 +444,7 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_centerInParent="true"
-                    android:text= "@string/watt" />
+                    android:text="@string/watt" />
             </RelativeLayout>
 
             <RelativeLayout
@@ -469,7 +473,7 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_centerInParent="true"
-                    android:text= "@string/watt" />
+                    android:text="@string/watt" />
             </RelativeLayout>
 
             <RelativeLayout

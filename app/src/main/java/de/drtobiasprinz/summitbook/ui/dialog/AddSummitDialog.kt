@@ -84,8 +84,9 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     private lateinit var participantsView: NachoTextView
     private lateinit var equipmentsView: NachoTextView
     private lateinit var saveEntryButton: Button
-    private val suggestionEquipments: List<String> = sortFilterHelper.entries.flatMap { it.equipments }.distinct()
-    private val suggestionParticipants: List<String> = sortFilterHelper.entries.flatMap { it.participants }.distinct()
+    private val suggestionEquipments: List<String> = sortFilterHelper.entries.flatMap { it.equipments }.distinct().filter { it != "" }
+    private val suggestionParticipants: List<String> = sortFilterHelper.entries.flatMap { it.participants }.distinct().filter { it != "" }
+    private val suggestionCountries: List<String> = sortFilterHelper.entries.flatMap { it.countries }.distinct().filter { it != "" }
 
 
     private val watcher: TextWatcher = object : TextWatcher {
@@ -109,6 +110,10 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         currentContext = requireContext()
+        addPlaces(view)
+        addCountries(view)
+        addParticipants(view)
+        addEquipments(view)
         saveEntryButton = view.findViewById(R.id.add_summit_save)
         saveEntryButton.isEnabled = false
         val closeDialogButton = view.findViewById<Button>(R.id.add_summit_cancel)
@@ -127,8 +132,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         sportTypeAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item,
                 SportType.values().map { resources.getString(it.sportNameStringId) }.toTypedArray())
         sportTypeSpinner.adapter = sportTypeAdapter
-        addPlaces(view)
-        addCountries(view)
+
         commentText = view.findViewById(R.id.comments)
         heightMeterText = view.findViewById(R.id.height_meter)
         heightMeterText.addTextChangedListener(watcher)
@@ -161,8 +165,6 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         power1hText = view.findViewById(R.id.power1h)
         power2hText = view.findViewById(R.id.power2h)
         power5hText = view.findViewById(R.id.power5h)
-        addParticipants(view)
-        addEquipments(view)
         if (isUpdate) {
             saveEntryButton.setText(R.string.updateButtonText)
             updateDialogFields(currentSummit, true)
@@ -337,11 +339,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     }
 
     private fun addCountries(view: View) {
-        val suggestions: MutableList<String> = mutableListOf()
-        sortFilterHelper.entries.forEach {
-            suggestions.addAll(it.countries)
-        }
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions.distinct())
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestionCountries)
         countriesView = view.findViewById(R.id.countries)
         addChipWithSuggestions(countriesView, adapter)
     }
@@ -374,6 +372,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     private fun addChipWithSuggestions(view: NachoTextView, adapter: ArrayAdapter<String>) {
         view.setAdapter(adapter)
         view.addChipTerminator(',', ChipTerminatorHandler.BEHAVIOR_CHIPIFY_TO_TERMINATOR)
+        view.addChipTerminator('\n', ChipTerminatorHandler.BEHAVIOR_CHIPIFY_ALL)
         view.enableEditChipOnTouch(false, true)
     }
 
