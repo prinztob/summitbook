@@ -12,7 +12,6 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.stfalcon.imageviewer.StfalconImageViewer
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.PageViewModel

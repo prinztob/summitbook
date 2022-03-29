@@ -27,7 +27,7 @@
     <string name="cancelButtonText">Cancel</string>
     <string name="updateButtonText">Update</string>
     <string name="place">Places visited</string>
-    <string name="place_hint">Places visited on the way to Summit</string>
+    <string name="place_hint">All places visited</string>
     <string name="country_hint">country</string>
     <string name="comment_hint">comment, e.g. other places visited in trip, people joined, etc.</string>
     <string name="kilometers_hint">Distance</string>
@@ -67,7 +67,7 @@
     <string name="is_favorite">Mark this entry as favorite summit</string>
     <string name="choose_data_source">Choose data source</string>
     <string name="addGpsTrack">add GPS track</string>
-    <string name="useGpsTrack">fill using GPS track</string>
+    <string name="useGpsTrack">fill using GPS track</string>RPlease
     <string name="add_activity">Add Garmin activity</string>
     <string name="sort_entries">Sort entries</string>
     <string name="descending">Descending</string>

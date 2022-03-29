@@ -81,10 +81,12 @@
                 android:drawableStart="@drawable/icons8_map_pinpoint_20"
                 android:drawablePadding="10dp"
                 android:hint="@string/kilometers_hint"
+                android:layout_toStartOf="@id/kilometers_text"
                 android:importantForAutofill="no"
                 android:inputType="numberDecimal" />
 
             <TextView
+                android:id="@+id/kilometers_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
@@ -103,10 +105,12 @@
                 android:drawableStart="@drawable/ic_trending_up_black_24dp"
                 android:drawablePadding="10dp"
                 android:hint="@string/height_meter_hint"
+                android:layout_toStartOf="@id/height_meter_text"
                 android:importantForAutofill="no"
                 android:inputType="number" />
 
             <TextView
+                android:id="@+id/height_meter_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
@@ -140,10 +144,12 @@
                     android:drawableStart="@drawable/icons8_mountain_20"
                     android:drawablePadding="10dp"
                     android:hint="@string/top_elevation_hint"
+                    android:layout_toStartOf="@id/top_elevation_text"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/top_elevation_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -164,10 +170,12 @@
                     android:drawableStart="@drawable/icons8_speed_20"
                     android:drawablePadding="10dp"
                     android:hint="@string/pace_hint"
+                    android:layout_toStartOf="@id/pace_text"
                     android:importantForAutofill="no"
                     android:inputType="numberDecimal" />
 
                 <TextView
+                    android:id="@+id/pace_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -187,11 +195,13 @@
                     android:drawableStart="@drawable/icons8_speed_20"
                     android:drawablePadding="10dp"
                     android:hint="@string/top_speed_hint"
+                    android:layout_toStartOf="@id/top_speed_text"
                     android:importantForAutofill="no"
                     android:inputType="numberDecimal"
                     android:maxLength="4" />
 
                 <TextView
+                    android:id="@+id/top_speed_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -199,50 +209,126 @@
                     android:text="@string/kmh" />
             </RelativeLayout>
 
+            <!-- PARTICIPANTS START       -->
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_height="wrap_content">
 
-                <com.hootsuite.nachos.NachoTextView
-                    android:id="@+id/places"
+                <ImageView
+                    android:id="@+id/imageParticipants"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:contentDescription="@string/participants"
+                    android:src="@drawable/ic_baseline_people_24" />
+
+                <AutoCompleteTextView
+                    android:id="@+id/autoCompleteTextViewParticipants"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/ic_place_black_24dp"
-                    android:drawablePadding="10dp"
-                    android:hint="@string/place_hint"
-                    android:inputType="text" />
-
-                <com.hootsuite.nachos.NachoTextView
-                    android:id="@+id/countries"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/ic_baseline_flag_24"
-                    android:drawablePadding="10dp"
-                    android:hint="@string/country_hint"
-                    android:layout_below="@+id/places"
-                    android:inputType="text" />
-
-                <com.hootsuite.nachos.NachoTextView
-                    android:id="@+id/participants"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/ic_baseline_people_24"
-                    android:drawablePadding="10dp"
                     android:hint="@string/participants"
-                    android:layout_below="@+id/countries"
-                    android:inputType="text" />
+                    android:completionThreshold="1"
+                    android:layout_toEndOf="@+id/imageParticipants"/>
 
-                <com.hootsuite.nachos.NachoTextView
-                    android:id="@+id/equipments"
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupParticipants"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/ic_baseline_handyman_24"
-                    android:drawablePadding="10dp"
-                    android:hint="@string/equipments"
-                    android:layout_below="@+id/participants"
-                    android:inputType="text" />
+                    android:layout_below="@+id/imageParticipants"
+                    android:layout_marginTop="8dp"
+                    app:chipSpacingVertical="4dp" />
             </RelativeLayout>
+            <!-- PARTICIPANTS END       -->
+            <!-- PLACES START       -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/imagePlaces"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:contentDescription="@string/place_hint"
+                    android:src="@drawable/ic_place_black_24dp" />
+
+                <AutoCompleteTextView
+                    android:id="@+id/autoCompleteTextViewPlaces"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/place_hint"
+                    android:completionThreshold="1"
+                    android:layout_toEndOf="@+id/imagePlaces" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupPlaces"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/imagePlaces"
+                    android:layout_marginTop="8dp"
+                    app:chipSpacingVertical="4dp" />
+            </RelativeLayout>
+            <!-- PLACES END       -->
+            <!-- COUNTRIES START       -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/imageCountries"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:contentDescription="@string/country_hint"
+                    android:src="@drawable/ic_baseline_flag_24" />
+
+                <AutoCompleteTextView
+                    android:id="@+id/autoCompleteTextViewCountries"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/country_hint"
+                    android:completionThreshold="1"
+                    android:layout_toEndOf="@+id/imageCountries"/>
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupCountries"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/imageCountries"
+                    android:layout_marginTop="8dp"
+                    app:chipSpacingVertical="4dp" />
+            </RelativeLayout>
+            <!-- COUNTRIES END       -->
+            <!-- EQUIPMENTS START       -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/imageEquipments"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:contentDescription="@string/equipments"
+                    android:src="@drawable/ic_baseline_handyman_24" />
+
+                <AutoCompleteTextView
+                    android:id="@+id/autoCompleteTextViewEquipments"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/equipments"
+                    android:completionThreshold="1"
+                    android:layout_toEndOf="@+id/imageEquipments"/>
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupEquipments"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/imageEquipments"
+                    android:layout_marginTop="8dp"
+                    app:chipSpacingVertical="4dp" />
+            </RelativeLayout>
+            <!-- EQUIPMENTS END       -->
 
             <EditText
                 android:id="@+id/comments"
@@ -293,13 +379,6 @@
                     android:hint="@string/calories"
                     android:importantForAutofill="no"
                     android:inputType="number" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerInParent="true"
-                    android:text="@string/calories" />
             </RelativeLayout>
 
             <RelativeLayout
@@ -319,11 +398,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/averageHr_text"
+                    android:layout_toStartOf="@+id/averageHr_unit"
                     android:hint="@string/average_hr"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/averageHr_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -348,11 +429,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/maxHr_text"
+                    android:layout_toStartOf="@+id/maxHr_unit"
                     android:hint="@string/max_hr"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/maxHr_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -377,11 +460,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/ftp_text"
+                    android:layout_toStartOf="@+id/ftp_unit"
                     android:hint="@string/ftp"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/ftp_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -409,13 +494,6 @@
                     android:hint="@string/vo2Max"
                     android:importantForAutofill="no"
                     android:inputType="number" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerInParent="true"
-                    android:text="" />
             </RelativeLayout>
 
             <RelativeLayout
@@ -435,11 +513,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/normPower_text"
+                    android:layout_toStartOf="@+id/normPower_unit"
                     android:hint="@string/normalized_power"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/normPower_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -464,11 +544,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/avgPower_text"
+                    android:layout_toStartOf="@+id/avgPower_unit"
                     android:hint="@string/average_power"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/avgPower_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -493,11 +575,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_1s_text"
+                    android:layout_toStartOf="@+id/power_1s_unit"
                     android:hint="@string/power_1sec"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_1s_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -522,11 +606,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_2s_text"
+                    android:layout_toStartOf="@+id/power_2s_unit"
                     android:hint="@string/power_2sec"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_2s_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -551,11 +637,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_5s_text"
+                    android:layout_toStartOf="@+id/power_5s_unit"
                     android:hint="@string/power_5sec"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_5s_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -580,11 +668,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_10s_text"
+                    android:layout_toStartOf="@+id/power_10s_unit"
                     android:hint="@string/power_10sec"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_10s_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -609,11 +699,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_20s_text"
+                    android:layout_toStartOf="@+id/power_20s_unit"
                     android:hint="@string/power_20sec"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_20s_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -638,11 +730,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_30s_text"
+                    android:layout_toStartOf="@+id/power_30s_unit"
                     android:hint="@string/power_30sec"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_30s_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -667,11 +761,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_1min_text"
+                    android:layout_toStartOf="@+id/power_1min_unit"
                     android:hint="@string/power_1min"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_1min_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -696,11 +792,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_2min_text"
+                    android:layout_toStartOf="@+id/power_2min_unit"
                     android:hint="@string/power_2min"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_2min_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -725,11 +823,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_5min_text"
+                    android:layout_toStartOf="@+id/power_5min_unit"
                     android:hint="@string/power_5min"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_5min_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -754,11 +854,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_10min_text"
+                    android:layout_toStartOf="@+id/power_10min_unit"
                     android:hint="@string/power_10min"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_10min_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -783,11 +885,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_20min_text"
+                    android:layout_toStartOf="@+id/power_20min_unit"
                     android:hint="@string/power_20min"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_20min_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -812,11 +916,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_30min_text"
+                    android:layout_toStartOf="@+id/power_30min_unit"
                     android:hint="@string/power_30min"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_30min_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -841,11 +947,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_1h_text"
+                    android:layout_toStartOf="@+id/power_1h_unit"
                     android:hint="@string/power_1h"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_1h_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -870,11 +978,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_2h_text"
+                    android:layout_toStartOf="@+id/power_2h_unit"
                     android:hint="@string/power_2h"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_2h_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -899,11 +1009,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@+id/power_5h_text"
+                    android:layout_toStartOf="@+id/power_5h_unit"
                     android:hint="@string/power_5h"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
                 <TextView
+                    android:id="@+id/power_5h_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -911,20 +1023,6 @@
                     android:text="@string/watt" />
             </RelativeLayout>
         </LinearLayout>
-
-        <RelativeLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="35dp"
-            android:orientation="vertical">
-
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="20dp"
-                android:text="@string/useGpsTrack"
-                android:visibility="gone" />
-        </RelativeLayout>
 
         <RelativeLayout
             android:layout_width="fill_parent"

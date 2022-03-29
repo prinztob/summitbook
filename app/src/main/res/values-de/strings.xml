@@ -110,7 +110,7 @@
     <string name="heightest_flow">Höchster flow</string>
     <string name="heightest_trainig_load">Höchste Trainingsbelastung</string>
     <string name="open_with">Öffne mit</string>
-    <string name="average_hr">Durchschn. Herzfreq</string>
+    <string name="average_hr">Herzfreq. i. D.</string>
     <string name="sensor_data">Sensordaten</string>
     <string name="max_hr">Max. Herzfreq.</string>
     <string name="calories">Kalorien</string>
@@ -125,7 +125,7 @@
     <string name="set_date">Setzte Datum</string>
     <string name="set_activity">Setzte Aktivität</string>
     <string name="end_of">Ende von</string>
-von
+
     <string-array name="date_array">
         <item>Gesamt</item>
         <item>Benutzerdefiniert</item>
@@ -262,7 +262,7 @@ von
 
     <string name="average_power">Durchschn. Leistung</string>
     <string name="max_power">Maximale Leistung</string>
-    <string name="normalized_power">Normalisiert Leistung</string>
+    <string name="normalized_power">Norm. Leistung</string>
     <string name="power_1sec">Leistung 1s</string>
     <string name="power_2sec">Leistung 2s</string>
     <string name="power_5sec">Leistung 5s</string>
