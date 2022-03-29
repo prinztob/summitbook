@@ -12,9 +12,10 @@ import android.view.ViewGroup
 import android.widget.*
 import android.widget.AdapterView.OnItemSelectedListener
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.children
 import co.ceryle.segmentedbutton.SegmentedButtonGroup
-import com.hootsuite.nachos.NachoTextView
-import com.hootsuite.nachos.terminator.ChipTerminatorHandler
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
@@ -23,6 +24,7 @@ import de.drtobiasprinz.summitbook.fragments.SummationFragment
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import io.apptik.widget.MultiSlider
 import io.apptik.widget.MultiSlider.SimpleChangeListener
 import io.apptik.widget.MultiSlider.Thumb
@@ -58,7 +60,6 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private var selectedSegmentedSortAscDesc = 1
     private var selectedSegmentedSortBy = 0
     private var selectedSportTypeItem = 0
-    private var participantsSize = 0
     private var selectedSegmentedWithPosition = 1
     private var selectedSegmentedWithGpx = 1
     private var selectedSegmentedWithImage = 1
@@ -72,7 +73,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private lateinit var multiSliderAverageSpeed: MultiSlider
     private lateinit var sportTypeSpinner: Spinner
     private lateinit var dateSpinner: Spinner
-    private lateinit var participants: NachoTextView
+    private lateinit var participantsChips: ChipGroup
     var areSharedPrefInitialized: Boolean = false
 
     private fun setExtremeValues() {
@@ -147,16 +148,12 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     private fun addParticipantsFilter() {
-        participants = filterAndSortView.findViewById(R.id.participants)
-        val suggestions: MutableList<String> = mutableListOf()
-        entries.forEach {
-            suggestions.addAll(it.participants)
-        }
-        val adapter = ArrayAdapter<String>(context, android.R.layout.simple_dropdown_item_1line, suggestions.distinct())
-        participants.setAdapter(adapter)
-        participants.addChipTerminator(',', ChipTerminatorHandler.BEHAVIOR_CHIPIFY_TO_TERMINATOR)
-        participants.enableEditChipOnTouch(false, true)
-        participantsSize = participants.chipValues.size
+        participantsChips = filterAndSortView.findViewById(R.id.chipGroupParticipants)
+        val participantsView = filterAndSortView.findViewById<AutoCompleteTextView>(R.id.autoCompleteTextViewParticipants)
+        val suggestions = entries.flatMap { it.participants }.distinct()
+        val adapter = ArrayAdapter(context, android.R.layout.simple_dropdown_item_1line, suggestions)
+        val chips = CustomAutoCompleteChips(filterAndSortView)
+        chips.addChips(adapter, emptyList(), participantsView, participantsChips)
     }
 
     private fun showDatePicker(eText: EditText, context: Context) {
@@ -250,7 +247,6 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         multiSliderAverageSpeed.repositionThumbs()
         startDateText.setText("")
         endDateText.setText("")
-        participants.setText("")
         sortAndFilter()
     }
 
@@ -510,7 +506,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     }
 
     private fun filterByParticipants() {
-        val selectedParticipants = participants.chipValues
+        val selectedParticipants = participantsChips.children.toList().map { (it as Chip).text.toString() }
         val entries = ArrayList<Summit>()
         if (selectedParticipants.size != 0) {
             for (entry in filteredEntries) {
