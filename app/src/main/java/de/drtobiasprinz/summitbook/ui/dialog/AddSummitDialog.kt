@@ -13,17 +13,19 @@ import android.view.View.OnFocusChangeListener
 import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.hootsuite.nachos.NachoTextView
-import com.hootsuite.nachos.terminator.ChipTerminatorHandler
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.*
+import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
@@ -51,8 +53,6 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     private var listItemsGpsDownloadSuccessful: BooleanArray? = null
     private lateinit var date: EditText
     private lateinit var summitName: AutoCompleteTextView
-    private lateinit var placesView: NachoTextView
-    private lateinit var countriesView: NachoTextView
     private lateinit var commentText: EditText
     private lateinit var heightMeterText: EditText
     private lateinit var kmText: EditText
@@ -81,12 +81,15 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     private lateinit var power1hText: EditText
     private lateinit var power2hText: EditText
     private lateinit var power5hText: EditText
-    private lateinit var participantsView: NachoTextView
-    private lateinit var equipmentsView: NachoTextView
     private lateinit var saveEntryButton: Button
-    private val suggestionEquipments: List<String> = sortFilterHelper.entries.flatMap { it.equipments }.distinct()
-    private val suggestionParticipants: List<String> = sortFilterHelper.entries.flatMap { it.participants }.distinct()
 
+    private lateinit var participantsChips: ChipGroup
+    private lateinit var equipmentsChips: ChipGroup
+    private lateinit var placesChips: ChipGroup
+    private lateinit var countriesChips: ChipGroup
+
+    private val suggestionEquipments: List<String> = sortFilterHelper.entries.flatMap { it.equipments }.distinct().filter { it != "" }
+    private val suggestionParticipants: List<String> = sortFilterHelper.entries.flatMap { it.participants }.distinct().filter { it != "" }
 
     private val watcher: TextWatcher = object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
@@ -301,18 +304,6 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         mDialog?.show()
     }
 
-    private fun addParticipants(view: View) {
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestionParticipants)
-        participantsView = view.findViewById(R.id.participants)
-        addChipWithSuggestions(participantsView, adapter)
-    }
-
-    private fun addEquipments(view: View) {
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestionEquipments)
-        equipmentsView = view.findViewById(R.id.equipments)
-        addChipWithSuggestions(equipmentsView, adapter)
-    }
-
     private fun updatePower(powerData: JsonObject, power: PowerData) {
         powerData["entries"].asJsonArray.forEach {
             val element = it.asJsonObject
@@ -336,19 +327,37 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         }
     }
 
+    private fun addParticipants(view: View) {
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestionParticipants)
+        val participantsView = view.findViewById<AutoCompleteTextView>(R.id.autoCompleteTextViewParticipants)
+        participantsChips = view.findViewById(R.id.chipGroupParticipants)
+        val chips = CustomAutoCompleteChips(view)
+        chips.addChips(adapter, currentSummit?.participants, participantsView, participantsChips)
+    }
+
+    private fun addEquipments(view: View) {
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestionEquipments)
+        val equipmentsView = view.findViewById<AutoCompleteTextView>(R.id.autoCompleteTextViewEquipments)
+        equipmentsChips = view.findViewById(R.id.chipGroupEquipments)
+        val chips = CustomAutoCompleteChips(view)
+        chips.addChips(adapter, currentSummit?.equipments, equipmentsView, equipmentsChips)
+    }
+
     private fun addCountries(view: View) {
-        val suggestions: MutableList<String> = mutableListOf()
-        sortFilterHelper.entries.forEach {
-            suggestions.addAll(it.countries)
-        }
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions.distinct())
-        countriesView = view.findViewById(R.id.countries)
-        addChipWithSuggestions(countriesView, adapter)
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, getSuggestionCountries())
+        val countriesView = view.findViewById<AutoCompleteTextView>(R.id.autoCompleteTextViewCountries)
+        countriesChips = view.findViewById(R.id.chipGroupCountries)
+        val chips = CustomAutoCompleteChips(view)
+        chips.addChips(adapter, currentSummit?.countries, countriesView, countriesChips)
     }
 
     private fun addPlaces(view: View) {
-        placesView = view.findViewById(R.id.places)
-        addChipWithSuggestions(placesView, getPlacesSuggestions())
+        val placesView = view.findViewById<AutoCompleteTextView>(R.id.autoCompleteTextViewPlaces)
+        val placesSuggestions = getPlacesSuggestions()
+        placesChips = view.findViewById(R.id.chipGroupPlaces)
+        val chips = CustomAutoCompleteChips(view)
+        chips.addChips(placesSuggestions, currentSummit?.getPlacesWithConnectedEntryString(requireContext(), sortFilterHelper.database),
+                placesView, placesChips)
     }
 
     private fun getPlacesSuggestions(addConnectedEntryString: Boolean = true): ArrayAdapter<String> {
@@ -371,12 +380,6 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         return ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions.distinct())
     }
 
-    private fun addChipWithSuggestions(view: NachoTextView, adapter: ArrayAdapter<String>) {
-        view.setAdapter(adapter)
-        view.addChipTerminator(',', ChipTerminatorHandler.BEHAVIOR_CHIPIFY_TO_TERMINATOR)
-        view.enableEditChipOnTouch(false, true)
-    }
-
     private fun parseSummit(sportType: SportType) {
         val places = updatePlacesChipValuesWithId()
         parseGarminData()
@@ -387,15 +390,15 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                 entry.name = summitName.text.toString()
                 entry.sportType = sportType
                 entry.places = places
-                entry.countries = countriesView.chipValues
+                entry.countries = countriesChips.children.toList().map { (it as Chip).text.toString() }
                 entry.comments = commentText.text.toString()
                 entry.elevationData.elevationGain = heightMeterText.text.toString().toInt()
                 entry.kilometers = getTextWithDefaultDouble(kmText)
                 entry.velocityData.avgVelocity = getTextWithDefaultDouble(paceText)
                 entry.velocityData.maxVelocity = getTextWithDefaultDouble(topSpeedText)
                 entry.elevationData.maxElevation = getTextWithDefaultInt(topElevationText)
-                entry.participants = participantsView.chipValues
-                entry.equipments = equipmentsView.chipValues
+                entry.participants = participantsChips.children.toList().map { (it as Chip).text.toString() }
+                entry.equipments = equipmentsChips.children.toList().map { (it as Chip).text.toString() }
                 entry.garminData = garminDataFromGarminConnect
             } else {
                 currentSummit = Summit(
@@ -403,14 +406,14 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                         summitName.text.toString(),
                         sportType,
                         places,
-                        countriesView.chipValues,
+                        countriesChips.children.toList().map { (it as Chip).text.toString() },
                         commentText.text.toString(),
                         ElevationData.parse(getTextWithDefaultInt(topElevationText), heightMeterText.text.toString().toInt()),
                         getTextWithDefaultDouble(kmText),
                         VelocityData.parse(getTextWithDefaultDouble(paceText), getTextWithDefaultDouble(topSpeedText)),
                         latlngHightestPoint?.lat, latlngHightestPoint?.lon,
-                        participantsView.chipValues,
-                        equipmentsView.chipValues,
+                        participantsChips.children.toList().map { (it as Chip).text.toString() },
+                        equipmentsChips.children.toList().map { (it as Chip).text.toString() },
                         false,
                         false,
                         mutableListOf(),
@@ -449,7 +452,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     }
 
     private fun updatePlacesChipValuesWithId(): MutableList<String> {
-        val places = placesView.chipValues
+        val places = placesChips.children.toList().map { (it as Chip).text.toString() }.toMutableList()
         for ((i, place) in places.withIndex()) {
             for (connectedSummit in connectedSummits)
                 if (place == connectedSummit.getConnectedEntryString(requireContext())) {
@@ -466,11 +469,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         if (entry != null) {
             entry.getDateAsString()?.let { setTextIfNotAlreadySet(date, it) }
             setTextIfNotAlreadySet(summitName, entry.name)
-            setTextIfNotAlreadySet(placesView, entry.getPlacesWithConnectedEntryString(requireContext(), sortFilterHelper.database).joinToString(",") + ",")
-            setTextIfNotAlreadySet(countriesView, entry.countries.joinToString(",") + ",")
             setTextIfNotAlreadySet(commentText, entry.comments)
-            setTextIfNotAlreadySet(participantsView, entry.participants.joinToString(",") + ",")
-            setTextIfNotAlreadySet(equipmentsView, entry.equipments.joinToString(",") + ",")
             setTextIfNotAlreadySet(heightMeterText, entry.elevationData.elevationGain.toString())
             setTextIfNotAlreadySet(kmText, entry.kilometers.toString())
             setTextIfNotAlreadySet(paceText, entry.velocityData.avgVelocity.toString())
@@ -571,10 +570,23 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         }
     }
 
-    fun getTempGpsFilePath(date: Date): Path {
+    private fun getTempGpsFilePath(date: Date): Path {
         val tag = SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(date)
         val fileName = String.format(requireContext().resources.configuration.locales[0], "track_from_%s.gpx", tag)
         return Paths.get(MainActivity.cache.toString(), fileName)
+    }
+
+
+    private fun getSuggestionCountries(): List<String> {
+        val locales = Locale.getAvailableLocales()
+        val countries = mutableListOf<String>()
+        locales.forEach {
+            val country = it.displayCountry
+            if (country.trim().isNotEmpty() && !countries.contains(country)) {
+                countries.add(country)
+            }
+        }
+        return countries
     }
 
     companion object {

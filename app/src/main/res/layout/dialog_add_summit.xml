@@ -127,7 +127,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:visibility="visible">
 
             <RelativeLayout
                 android:layout_width="fill_parent"
@@ -199,46 +199,126 @@
                     android:text="@string/kmh" />
             </RelativeLayout>
 
-            <com.hootsuite.nachos.NachoTextView
-                android:id="@+id/places"
+            <!-- PARTICIPANTS START       -->
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_place_black_24dp"
-                android:drawablePadding="10dp"
-                android:hint="@string/place_hint"
-                android:importantForAutofill="no"
-                android:inputType="text" />
+                android:layout_height="wrap_content">
 
-            <com.hootsuite.nachos.NachoTextView
-                android:id="@+id/countries"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_baseline_flag_24"
-                android:drawablePadding="10dp"
-                android:hint="@string/country_hint"
-                android:importantForAutofill="no"
-                android:inputType="text"
-                android:visibility="gone" />
+                <ImageView
+                    android:id="@+id/imageParticipants"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:contentDescription="@string/participants"
+                    android:src="@drawable/ic_baseline_people_24" />
 
-            <com.hootsuite.nachos.NachoTextView
-                android:id="@+id/participants"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_baseline_people_24"
-                android:drawablePadding="10dp"
-                android:hint="@string/participants"
-                android:importantForAutofill="no"
-                android:inputType="text" />
+                <AutoCompleteTextView
+                    android:id="@+id/autoCompleteTextViewParticipants"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/participants"
+                    android:imeOptions="actionDone"
+                    android:layout_toEndOf="@+id/imageParticipants"
+                    android:inputType="textCapWords" />
 
-            <com.hootsuite.nachos.NachoTextView
-                android:id="@+id/equipments"
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupParticipants"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/imageParticipants"
+                    app:chipSpacingVertical="4dp" />
+            </RelativeLayout>
+            <!-- PARTICIPANTS END       -->
+            <!-- PLACES START       -->
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_baseline_handyman_24"
-                android:drawablePadding="10dp"
-                android:hint="@string/equipments"
-                android:importantForAutofill="no"
-                android:inputType="text" />
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/imagePlaces"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:contentDescription="@string/place_hint"
+                    android:src="@drawable/ic_place_black_24dp" />
+
+                <AutoCompleteTextView
+                    android:id="@+id/autoCompleteTextViewPlaces"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/place_hint"
+                    android:imeOptions="actionDone"
+                    android:layout_toEndOf="@+id/imagePlaces"
+                    android:inputType="textCapWords" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupPlaces"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/imagePlaces"
+                    app:chipSpacingVertical="4dp" />
+            </RelativeLayout>
+            <!-- PLACES END       -->
+            <!-- COUNTRIES START       -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/imageCountries"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:contentDescription="@string/country_hint"
+                    android:src="@drawable/ic_baseline_flag_24" />
+
+                <AutoCompleteTextView
+                    android:id="@+id/autoCompleteTextViewCountries"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/country_hint"
+                    android:imeOptions="actionDone"
+                    android:layout_toEndOf="@+id/imageCountries"
+                    android:inputType="textCapWords" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupCountries"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/imageCountries"
+                    app:chipSpacingVertical="4dp" />
+            </RelativeLayout>
+            <!-- COUNTRIES END       -->
+            <!-- EQUIPMENTS START       -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/imageEquipments"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:contentDescription="@string/equipments"
+                    android:src="@drawable/ic_baseline_handyman_24" />
+
+                <AutoCompleteTextView
+                    android:id="@+id/autoCompleteTextViewEquipments"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/equipments"
+                    android:imeOptions="actionDone"
+                    android:layout_toEndOf="@+id/imageEquipments"
+                    android:inputType="textCapWords" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupEquipments"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/imageEquipments"
+                    app:chipSpacingVertical="4dp" />
+            </RelativeLayout>
+            <!-- EQUIPMENTS END       -->
 
             <EditText
                 android:id="@+id/comments"
@@ -411,7 +491,7 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_centerInParent="true"
-                    android:text= "" />
+                    android:text="" />
             </RelativeLayout>
 
             <RelativeLayout
@@ -440,7 +520,7 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_centerInParent="true"
-                    android:text= "@string/watt" />
+                    android:text="@string/watt" />
             </RelativeLayout>
 
             <RelativeLayout
@@ -469,7 +549,7 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_centerInParent="true"
-                    android:text= "@string/watt" />
+                    android:text="@string/watt" />
             </RelativeLayout>
 
             <RelativeLayout

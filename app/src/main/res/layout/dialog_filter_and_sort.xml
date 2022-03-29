@@ -84,23 +84,36 @@
 
     </LinearLayout>
 
-    <LinearLayout
+    <!-- PARTICIPANTS START       -->
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="0"
-        android:background="#fff"
-        android:orientation="horizontal"
-        android:padding="3dp">
-        <com.hootsuite.nachos.NachoTextView
-            android:id="@+id/participants"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/imageParticipants"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:contentDescription="@string/participants"
+            android:src="@drawable/ic_baseline_people_24" />
+
+        <AutoCompleteTextView
+            android:id="@+id/autoCompleteTextViewParticipants"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:drawableStart="@drawable/ic_baseline_people_24"
-            android:drawablePadding="10dp"
             android:hint="@string/participants"
-            android:importantForAutofill="no"
-            android:inputType="text" />
-    </LinearLayout>
+            android:imeOptions="actionDone"
+            android:layout_toEndOf="@+id/imageParticipants"
+            android:inputType="textCapWords" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupParticipants"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/imageParticipants"
+            app:chipSpacingVertical="4dp" />
+    </RelativeLayout>
+    <!-- PARTICIPANTS END       -->
 
     <LinearLayout
         android:layout_width="match_parent"
