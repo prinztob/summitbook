@@ -16,7 +16,7 @@ import com.google.android.material.chip.ChipGroup
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.MyResultReceiver
+import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
@@ -31,11 +31,11 @@ class SummitEntryDataFragment : Fragment() {
     private var database: AppDatabase? = null
     private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
-    private lateinit var resultreceiver: MyResultReceiver
+    private lateinit var resultreceiver: SummitEntryResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultreceiver = context as MyResultReceiver
+        resultreceiver = context as SummitEntryResultReceiver
         pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
         pageViewModel?.setIndex(TAG)
     }

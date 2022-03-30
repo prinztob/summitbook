@@ -37,12 +37,12 @@ import com.google.android.material.navigation.NavigationView
 import com.stfalcon.imageviewer.StfalconImageViewer
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.*
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.PosterOverlayView
-import de.drtobiasprinz.summitbook.ui.dialog.AddBookmarkDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
@@ -59,7 +59,7 @@ import java.util.zip.ZipOutputStream
 import kotlin.math.round
 
 
-class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, FragmentResultReceiver {
     private var allImages: MutableList<Poster> = mutableListOf()
     private lateinit var database: AppDatabase
     private lateinit var sharedPreferences: SharedPreferences
@@ -75,6 +75,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var currentPosition: Int = 0
     private var indoorHeightMeterPercent: Int = 0
     private var viewer: StfalconImageViewer<Poster>? = null
+
+    private var selectedSummitInAdapter: Summit? = null
+    private val allEntriesFromGarmin = mutableListOf<Summit>()
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!Python.isStarted()) {
@@ -87,15 +92,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         verifyStoragePermissions(this)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         indoorHeightMeterPercent = sharedPreferences.getInt("indoor_height_meter_per_cent", 0)
-        val username = sharedPreferences.getString("garmin_username", null) ?: ""
-        val password = sharedPreferences.getString("garmin_password", null) ?: ""
-        if (username != "" && password != "") {
-            pythonExecutor = GarminPythonExecutor(pythonInstance, username, password)
-        }
+        setPythonExecutor()
         mainActivity = this
         setContentView(R.layout.activity_main)
         cache = applicationContext.cacheDir
         storage = applicationContext.filesDir
+        activitiesDir = File(storage, "activities")
         File(storage, Summit.subDirForGpsTracks).mkdirs()
         File(storage, Summit.subDirForGpsTracksBookmark).mkdirs()
         File(storage, Summit.subDirForImages).mkdirs()
@@ -104,7 +106,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (viewedFragment != null && viewedFragment is SummationFragment) {
             sortFilterHelper.fragment = viewedFragment
         } else {
-            summitViewFragment = SummitViewFragment(sortFilterHelper, pythonExecutor)
+            summitViewFragment = SummitViewFragment()
             sortFilterHelper.fragment = summitViewFragment
         }
 
@@ -179,7 +181,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 sortFilterHelper.allEntriesRequested = true
             }
         }
-        SummitViewFragment.updateNewSummits(SummitViewFragment.activitiesDir, sortFilterHelper.entries, mainActivity)
+        SummitViewFragment.updateNewSummits(getAllActivitiesFromThirdParty(), sortFilterHelper.entries, mainActivity)
+    }
+
+    private fun setPythonExecutor() {
+        if (pythonExecutor == null) {
+            val username = sharedPreferences.getString("garmin_username", null) ?: ""
+            val password = sharedPreferences.getString("garmin_password", null) ?: ""
+            if (username != "" && password != "") {
+                pythonExecutor = GarminPythonExecutor(pythonInstance, username, password)
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -219,19 +231,19 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 commitFragment(BookmarkViewFragment())
             }
             R.id.nav_statistics -> {
-                commitFragment(StatisticsFragment(sortFilterHelper))
+                commitFragment(StatisticsFragment())
             }
             R.id.nav_diagrams -> {
-                commitFragment(LineChartFragment(sortFilterHelper))
+                commitFragment(LineChartFragment())
             }
             R.id.nav_barChart -> {
-                commitFragment(BarChartFragment(sortFilterHelper))
+                commitFragment(BarChartFragment())
             }
             R.id.nav_osmap -> {
-                commitFragment(OpenStreetMapFragment(sortFilterHelper))
+                commitFragment(OpenStreetMapFragment())
             }
             R.id.nav_forecast -> {
-                ForecastDialog(indoorHeightMeterPercent).show(this.supportFragmentManager, "ForecastDialog")
+                ForecastDialog().show(this.supportFragmentManager, "ForecastDialog")
             }
             R.id.nav_diashow -> {
                 openViewer()
@@ -268,7 +280,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 startActivity(intent)
             }
             else -> {
-                commitFragment(SummitViewFragment(sortFilterHelper, pythonExecutor))
+                commitFragment(SummitViewFragment())
             }
         }
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
@@ -374,7 +386,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     fun onAddSummit(view: View?) {
-        val addSummit = AddSummitDialog(sortFilterHelper, pythonExecutor)
+        val addSummit = AddSummitDialog()
         addSummit.show(this.supportFragmentManager, "Summits")
     }
 
@@ -384,7 +396,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             return true
         }
         if (id == R.id.action_show_new_summits) {
-            ShowNewSummitsFromGarminDialog(SummitViewFragment.allEntriesFromGarmin, sortFilterHelper, pythonExecutor, findViewById(R.id.progressBarDownload)).show(supportFragmentManager, "Show new summits from Garmin")
+            ShowNewSummitsFromGarminDialog().show(supportFragmentManager, "Show new summits from Garmin")
         }
         if (id == R.id.action_sort) {
             if (sortFilterHelper.entries.size > 0) {
@@ -400,6 +412,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onSaveInstanceState(outState)
         outState.putBoolean(KEY_IS_DIALOG_SHOWN, isDialogShown)
         outState.putInt(KEY_CURRENT_POSITION, currentPosition)
+        selectedSummitInAdapter?.id?.let { outState.putLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
         sortFilterHelper.onSaveInstanceState(outState)
     }
 
@@ -408,7 +421,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onRestoreInstanceState(savedInstanceState)
         isDialogShown = savedInstanceState.getBoolean(KEY_IS_DIALOG_SHOWN)
         currentPosition = savedInstanceState.getInt(KEY_CURRENT_POSITION)
-
+        val summitEntryId = savedInstanceState.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
+        selectedSummitInAdapter = database.summitDao()?.getSummit(summitEntryId)
         if (isDialogShown) {
             openViewer()
         }
@@ -443,6 +457,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         @kotlin.jvm.JvmField
         var cache: File? = null
+
+        @kotlin.jvm.JvmField
+        var activitiesDir: File? = null
 
         lateinit var pythonInstance: Python
 
@@ -643,5 +660,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
 
     }
+
+    override fun getSortFilterHelper(): SortFilterHelper {
+        return sortFilterHelper
+    }
+
+
+    override fun getSharedPreference(): SharedPreferences {
+        return PreferenceManager.getDefaultSharedPreferences(this)
+    }
+
+    override fun getPythonExecutor(): GarminPythonExecutor? {
+        setPythonExecutor()
+        return pythonExecutor
+    }
+
+    override fun getAllActivitiesFromThirdParty(): MutableList<Summit> {
+        allEntriesFromGarmin.clear()
+        allEntriesFromGarmin.addAll(GarminPythonExecutor.getAllDownloadedSummitsFromGarmin(activitiesDir))
+        return allEntriesFromGarmin
+    }
+
+    override fun getProgressBar(): ProgressBar = findViewById(R.id.progressBarDownload)
 
 }

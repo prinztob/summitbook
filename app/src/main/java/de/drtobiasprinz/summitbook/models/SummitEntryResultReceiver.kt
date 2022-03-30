@@ -2,7 +2,7 @@ package de.drtobiasprinz.summitbook.models
 
 import de.drtobiasprinz.summitbook.ui.HackyViewPager
 
-interface MyResultReceiver {
+interface SummitEntryResultReceiver {
 
     fun getSummit(): Summit
 

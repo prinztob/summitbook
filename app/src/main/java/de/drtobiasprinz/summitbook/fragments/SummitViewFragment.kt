@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
@@ -28,14 +29,15 @@ import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.io.File
 
 
-class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : Fragment(), SummationFragment, OnSharedPreferenceChangeListener {
+class SummitViewFragment() : Fragment(), SummationFragment, OnSharedPreferenceChangeListener {
     private lateinit var summitEntries: List<Summit>
     private lateinit var myContext: FragmentActivity
     private var filteredEntries: List<Summit>? = null
+    private lateinit var resultreceiver: FragmentResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setRetainInstance(true)
+        resultreceiver = context as FragmentResultReceiver
     }
 
     override fun onCreateView(
@@ -45,19 +47,18 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
         summitRecycler = inflater.inflate(
                 R.layout.fragment_summit_view, container, false) as RecyclerView
         setHasOptionsMenu(true)
-        sortFilterHelper.fragment = this
-        summitEntries = sortFilterHelper.entries
-        adapter = SummitViewAdapter(sortFilterHelper, pythonExecutor)
-        filteredEntries = sortFilterHelper.filteredEntries
+        resultreceiver.getSortFilterHelper().fragment = this
+        summitEntries = resultreceiver.getSortFilterHelper().entries
+        adapter = SummitViewAdapter(resultreceiver.getSortFilterHelper(), resultreceiver.getPythonExecutor())
+        filteredEntries = resultreceiver.getSortFilterHelper().filteredEntries
         update(filteredEntries)
         summitRecycler.adapter = adapter
         val layoutManager = LinearLayoutManager(activity)
         summitRecycler.layoutManager = layoutManager
         val itemTouchHelper = ItemTouchHelper(SwipeToMarkCallback(adapter, requireContext()))
         itemTouchHelper.attachToRecyclerView(summitRecycler)
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        sharedPreferences.registerOnSharedPreferenceChangeListener(this)
-        sortFilterHelper.apply()
+        resultreceiver.getSharedPreference().registerOnSharedPreferenceChangeListener(this)
+        resultreceiver.getSortFilterHelper().apply()
         return summitRecycler
     }
 
@@ -75,23 +76,23 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        sortFilterHelper.areSharedPrefInitialized = false
+        resultreceiver.getSortFilterHelper().areSharedPrefInitialized = false
         if (key == "current_year_switch" || key == "indoor_height_meter_per_cent") {
             readSharedPreference(sharedPreferences)
         }
     }
 
     private fun readSharedPreference(sharedPreferences: SharedPreferences?) {
-        if (!sortFilterHelper.areSharedPrefInitialized) {
-            sortFilterHelper.areSharedPrefInitialized = true
+        if (!resultreceiver.getSortFilterHelper().areSharedPrefInitialized) {
+            resultreceiver.getSortFilterHelper().areSharedPrefInitialized = true
             if (sharedPreferences?.getBoolean("current_year_switch", false) == true) {
-                sortFilterHelper.setSelectedDateItemDefault(2)
+                resultreceiver.getSortFilterHelper().setSelectedDateItemDefault(2)
             } else {
-                sortFilterHelper.setSelectedDateItemDefault(0)
+                resultreceiver.getSortFilterHelper().setSelectedDateItemDefault(0)
             }
-            sortFilterHelper.setIndoorHeightMeterPercent(sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0)
-            sortFilterHelper.setDataSpinnerToDefault()
-            sortFilterHelper.apply()
+            resultreceiver.getSortFilterHelper().setIndoorHeightMeterPercent(sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0)
+            resultreceiver.getSortFilterHelper().setDataSpinnerToDefault()
+            resultreceiver.getSortFilterHelper().apply()
         }
     }
 
@@ -99,18 +100,13 @@ class SummitViewFragment(private val sortFilterHelper: SortFilterHelper, private
     companion object {
         lateinit var summitRecycler: RecyclerView
         private var optionMenu: Menu? = null
-        val allEntriesFromGarmin = mutableListOf<Summit>()
-
-        val activitiesDir = File(MainActivity.storage, "activities")
 
         @SuppressLint("StaticFieldLeak")
         lateinit var adapter: SummitViewAdapter
 
-        fun updateNewSummits(activitiesDir: File, summits: List<Summit>, context: Context?) {
-            allEntriesFromGarmin.clear()
-            val activitiesIdOfAllSummits = summits.filter { it.garminData != null && it.garminData?.activityIds?.isNotEmpty() == true }.map { it.garminData?.activityIds as List<String> }.flatten().toMutableList()
-            allEntriesFromGarmin.addAll(getAllDownloadedSummitsFromGarmin(activitiesDir))
+        fun updateNewSummits(allEntriesFromGarmin: List<Summit>, summits: List<Summit>, context: Context?) {
             if (allEntriesFromGarmin.isNotEmpty()) {
+                val activitiesIdOfAllSummits = summits.filter { it.garminData != null && it.garminData?.activityIds?.isNotEmpty() == true }.map { it.garminData?.activityIds as List<String> }.flatten().toMutableList()
                 val newEntriesFromGarmin = allEntriesFromGarmin.filter { !(it.garminData?.activityId in activitiesIdOfAllSummits) }
                 when (newEntriesFromGarmin.size) {
                     0 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_none_24, null) }

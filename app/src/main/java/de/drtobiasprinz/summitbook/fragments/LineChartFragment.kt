@@ -23,6 +23,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.LineChartSpinnerEntry
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
@@ -33,7 +34,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
 
-class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragment(), SummationFragment {
+class LineChartFragment : Fragment(), SummationFragment {
     private var summitEntries: List<Summit>? = null
     private var filteredEntries: List<Summit>? = null
     private var dataSpinner: Spinner? = null
@@ -42,10 +43,12 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
     private var lineChartEntries: MutableList<Entry?> = ArrayList()
     private var lineChartColors: List<Int>? = mutableListOf()
     private var lineChart: CustomMarkerLineChart? = null
+    private lateinit var resultreceiver: FragmentResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setRetainInstance(true)
+        resultreceiver = context as FragmentResultReceiver
+
     }
 
     override fun onCreateView(
@@ -54,12 +57,12 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
     ): View? {
         lineChartView = inflater.inflate(R.layout.fragment_line_chart, container, false)
         setHasOptionsMenu(true)
-        sortFilterHelper.fragment = this
+        resultreceiver.getSortFilterHelper().fragment = this
         fillDateSpinner()
-        summitEntries = sortFilterHelper.entries
+        summitEntries = resultreceiver.getSortFilterHelper().entries
         lineChart = lineChartView?.findViewById(R.id.lineChart) // Fragment
         resizeChart()
-        filteredEntries = sortFilterHelper.filteredEntries
+        filteredEntries = resultreceiver.getSortFilterHelper().filteredEntries
         update(filteredEntries)
         listenOnDataSpinner()
         drawLineChart()

@@ -14,20 +14,19 @@ import android.widget.*
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
 import com.google.android.material.button.MaterialButton
+import de.drtobiasprinz.summitbook.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.updateNewSummits
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.IgnoredActivity
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
-import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
 
 
-class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>, val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?, private val progressBar: ProgressBar? = null) : DialogFragment(), BaseDialog {
+class ShowNewSummitsFromGarminDialog() : DialogFragment(), BaseDialog {
 
     private lateinit var addSummitsButton: Button
     private lateinit var currentContext: Context
@@ -41,9 +40,10 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
     private lateinit var tableLayout: TableLayout
     private lateinit var database: AppDatabase
     private var activitiesIdIgnored: List<String> = emptyList()
+    private lateinit var resultreceiver: FragmentResultReceiver
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        setRetainInstance(true)
+        resultreceiver = context as FragmentResultReceiver
         return inflater.inflate(R.layout.dialog_show_new_summit_from_garmin, container)
     }
 
@@ -58,12 +58,12 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
         updateSummitsButton = view.findViewById(R.id.update_new_summits)
         updateSummitsButton.setOnClickListener {
             val startDate = sharedPreferences.getString("garmin_start_date", null) ?: ""
-            if (pythonExecutor != null) {
+            if (resultreceiver.getPythonExecutor() != null) {
                 val current = LocalDateTime.now()
                 val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
                 val endDate = current.format(formatter)
                 view.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
-                AsyncDownloadActivities(sortFilterHelper.entries, pythonExecutor, startDate, endDate, this).execute()
+                AsyncDownloadActivities(resultreceiver.getSortFilterHelper().entries, resultreceiver.getAllActivitiesFromThirdParty(), resultreceiver.getPythonExecutor(), startDate, endDate, this).execute()
             }
         }
         showAllButton = view.findViewById(R.id.show_all)
@@ -81,11 +81,12 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
         addSummitsButton = view.findViewById(R.id.update_data)
         addSummitsButton.isEnabled = false
         addSummitsButton.setOnClickListener {
-            if (pythonExecutor != null && areEntriesChecked()) {
-                progressBar?.visibility = View.VISIBLE
-                progressBar?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.map { it.name }.joinToString(", "))
+            if (resultreceiver.getPythonExecutor() != null && areEntriesChecked()) {
+                resultreceiver.getProgressBar()?.visibility = View.VISIBLE
+                resultreceiver.getProgressBar()?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.map { it.name }.joinToString(", "))
                 entriesWithoutIgnored.filter { summit -> summit.isSelected }.forEach { entry ->
-                    GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(pythonExecutor, listOf(entry), sortFilterHelper, useTcx, this).execute()
+                    GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(resultreceiver.getPythonExecutor(),
+                            listOf(entry), resultreceiver.getAllActivitiesFromThirdParty(), resultreceiver.getSortFilterHelper(), useTcx, this).execute()
                 }
             }
             dialog?.cancel()
@@ -93,10 +94,11 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
         mergeSummitsButton = view.findViewById(R.id.add_summit_merge)
         mergeSummitsButton.isEnabled = false
         mergeSummitsButton.setOnClickListener {
-            if (pythonExecutor != null && canSelectedSummitsBeMerged()) {
-                progressBar?.visibility = View.VISIBLE
-                progressBar?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.map { it.name }.joinToString(", "))
-                GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(pythonExecutor, entriesWithoutIgnored.filter { summit -> summit.isSelected }, sortFilterHelper, useTcx, this).execute()
+            if (resultreceiver.getPythonExecutor() != null && canSelectedSummitsBeMerged()) {
+                resultreceiver.getProgressBar()?.visibility = View.VISIBLE
+                resultreceiver.getProgressBar()?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.map { it.name }.joinToString(", "))
+                GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(resultreceiver.getPythonExecutor(),
+                        entriesWithoutIgnored.filter { summit -> summit.isSelected }, resultreceiver.getAllActivitiesFromThirdParty(), resultreceiver.getSortFilterHelper(), useTcx, this).execute()
             }
             dialog?.cancel()
         }
@@ -106,7 +108,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
             if (areEntriesChecked()) {
                 entriesWithoutIgnored.filter { summit -> summit.isSelected }.forEach {
                     entriesWithoutIgnored.remove(it)
-                    it.garminData?.activityId?.let { ignoredEntry -> database.ignoredActivityDao()?.addActivity(IgnoredActivity(ignoredEntry) ) }
+                    it.garminData?.activityId?.let { ignoredEntry -> database.ignoredActivityDao()?.addActivity(IgnoredActivity(ignoredEntry)) }
                 }
             }
             tableLayout.removeAllViews()
@@ -123,12 +125,13 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
     }
 
     private fun updateEntriesWithoutIgnored(showAll: Boolean = false) {
-        activitiesIdIgnored = database.ignoredActivityDao()?.allIgnoredActivities?.map { it.activityId }?: emptyList()
-        val activityIdsInSummitBook = sortFilterHelper.entries.filter { !it.garminData?.activityIds.isNullOrEmpty() }.map { it.garminData?.activityIds as List<String> }.flatten()
+        activitiesIdIgnored = database.ignoredActivityDao()?.allIgnoredActivities?.map { it.activityId }
+                ?: emptyList()
+        val activityIdsInSummitBook = resultreceiver.getSortFilterHelper().entries.filter { !it.garminData?.activityIds.isNullOrEmpty() }.map { it.garminData?.activityIds as List<String> }.flatten()
         if (showAll) {
-            entriesWithoutIgnored = allEntries.filter { it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
+            entriesWithoutIgnored = resultreceiver.getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
         } else {
-            entriesWithoutIgnored = allEntries.filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
+            entriesWithoutIgnored = resultreceiver.getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
         }
     }
 
@@ -218,11 +221,11 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
 
     companion object {
 
-        class AsyncDownloadActivities(private val summits: List<Summit>, private val pythonExecutor: GarminPythonExecutor, private val startDate: String, private val endDate: String, val dialog: ShowNewSummitsFromGarminDialog) : AsyncTask<Void?, Void?, Void?>() {
+        class AsyncDownloadActivities(private val summits: List<Summit>, private val allActivitiesFromThirdParty: List<Summit>, private val pythonExecutor: GarminPythonExecutor?, private val startDate: String, private val endDate: String, val dialog: ShowNewSummitsFromGarminDialog) : AsyncTask<Void?, Void?, Void?>() {
 
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
-                    pythonExecutor.downloadActivitiesByDate(activitiesDir, startDate, endDate)
+                    activitiesDir?.let { pythonExecutor?.downloadActivitiesByDate(it, startDate, endDate) }
                 } catch (e: java.lang.RuntimeException) {
                     Log.e("AsyncDownloadActivities", e.message ?: "")
                 }
@@ -230,9 +233,9 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
             }
 
             override fun onPostExecute(param: Void?) {
-                updateNewSummits(activitiesDir, summits, dialog.requireContext())
-                if (activitiesDir.exists() && activitiesDir.isDirectory) {
-                    val files = activitiesDir.listFiles()
+                updateNewSummits(allActivitiesFromThirdParty, summits, dialog.requireContext())
+                if (activitiesDir?.exists() == true && activitiesDir?.isDirectory == true) {
+                    val files = activitiesDir?.listFiles()
                     if (files?.isNotEmpty() == true) {
                         val edit = PreferenceManager.getDefaultSharedPreferences(dialog.requireContext()).edit()
                         edit.putString("garmin_start_date", endDate)
@@ -255,7 +258,7 @@ class ShowNewSummitsFromGarminDialog(private val allEntries: MutableList<Summit>
     }
 
     override fun getProgressBarForAsyncTask(): ProgressBar? {
-        return progressBar
+        return resultreceiver.getProgressBar()
     }
 
     override fun isStepByStepDownload(): Boolean {

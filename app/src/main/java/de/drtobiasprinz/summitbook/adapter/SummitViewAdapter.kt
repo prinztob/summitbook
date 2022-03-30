@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import de.drtobiasprinz.summitbook.*
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
@@ -28,6 +29,9 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
     val summitEntries = sortFilterHelper.entries
     lateinit var context: Context
     var summitEntriesFiltered: ArrayList<Summit>?
+    private lateinit var resultreceiver: FragmentResultReceiver
+
+
     override fun getItemCount(): Int {
         return summitEntriesFiltered?.size ?: 0
     }
@@ -99,11 +103,8 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
             addVelocityData?.visibility = View.VISIBLE
         }
         addVelocityData?.setOnClickListener { _: View? ->
-            if (pythonExecutor != null) {
-                AddAdditionalDataFromExternalResourcesDialog(summit, pythonExecutor, sortFilterHelper, addVelocityData)
-                        .show((context as FragmentActivity).supportFragmentManager, "Show addition data")
-            }
-
+            AddAdditionalDataFromExternalResourcesDialog.getInstance(summit)
+                    .show((context as FragmentActivity).supportFragmentManager, "Show addition data")
         }
         val removeButton = cardView.findViewById<ImageButton?>(R.id.entry_delete)
         //delete a summit entry
@@ -114,7 +115,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         }
         val editButton = cardView.findViewById<ImageButton?>(R.id.entry_edit)
         editButton?.setOnClickListener { _: View? ->
-            val updateDialog = sortFilterHelper.let { updateInstance(summit, it, pythonExecutor) }
+            val updateDialog = sortFilterHelper.let { updateInstance(summit) }
             MainActivity.mainActivity?.supportFragmentManager?.let { updateDialog.show(it, "Summits") }
         }
         val addPosition = cardView.findViewById<ImageButton?>(R.id.entry_add_coordinate)

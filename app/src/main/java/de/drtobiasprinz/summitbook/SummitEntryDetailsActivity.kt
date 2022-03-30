@@ -9,13 +9,13 @@ import androidx.appcompat.widget.Toolbar
 import com.google.android.material.tabs.TabLayout
 import de.drtobiasprinz.summitbook.adapter.TabsPagerAdapter
 import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.MyResultReceiver
+import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
 import de.drtobiasprinz.summitbook.models.SportGroup
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.HackyViewPager
 
 
-class SummitEntryDetailsActivity : AppCompatActivity(), MyResultReceiver {
+class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceiver {
     lateinit var summitEntry: Summit
     private lateinit var viewPager: HackyViewPager
     private var summitToCompare: Summit? = null

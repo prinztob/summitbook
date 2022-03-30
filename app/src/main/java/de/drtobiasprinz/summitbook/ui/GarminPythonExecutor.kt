@@ -11,6 +11,7 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.MainActivity
+import de.drtobiasprinz.summitbook.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.dialog.BaseDialog
@@ -78,11 +79,11 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
         checkOutput(result)
     }
 
-    fun downloadSpeedDataForActivity(activitiesDir: File, activityId: String): JsonObject {
+    fun downloadSpeedDataForActivity(activityId: String): JsonObject {
         if (client == null) {
             login()
         }
-        val result = pythonModule?.callAttr("get_split_data", client, activityId, activitiesDir.absolutePath)
+        val result = pythonModule?.callAttr("get_split_data", client, activityId, activitiesDir?.absolutePath)
         checkOutput(result)
         return JsonParser().parse(result.toString()) as JsonObject
     }
@@ -116,8 +117,11 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
 
     companion object {
 
-        class AsyncDownloadGpxViaPython(garminPythonExecutor: GarminPythonExecutor, entries: List<Summit>, private val sortFilterHelper: SortFilterHelper, useTcx: Boolean = false, private val dialog: BaseDialog, private val index: Int = -1) : AsyncTask<Void?, Void?, Void?>() {
-            private val downloader = GarminTrackAndDataDownloader(entries, garminPythonExecutor, useTcx)
+        class AsyncDownloadGpxViaPython(garminPythonExecutor: GarminPythonExecutor?, summits: List<Summit>,
+                                        private val allActivitiesFromThirdParty: List<Summit>,
+                                        private val sortFilterHelper: SortFilterHelper, useTcx: Boolean = false,
+                                        private val dialog: BaseDialog, private val index: Int = -1) : AsyncTask<Void?, Void?, Void?>() {
+            private val downloader = GarminTrackAndDataDownloader(summits, garminPythonExecutor, useTcx)
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
                     downloader.downloadTracks()
@@ -145,7 +149,7 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
                 } catch (e: RuntimeException) {
                     Log.e("AsyncDownloadGpxViaPython", e.message ?: "")
                 } finally {
-                    SummitViewFragment.updateNewSummits(SummitViewFragment.activitiesDir, sortFilterHelper.entries, dialog.getDialogContext())
+                    SummitViewFragment.updateNewSummits(allActivitiesFromThirdParty, sortFilterHelper.entries, dialog.getDialogContext())
                     val progressBar = dialog.getProgressBarForAsyncTask()
                     if (progressBar != null) {
                         progressBar.visibility = View.GONE
@@ -168,9 +172,9 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
             return entries
         }
 
-        fun getAllDownloadedSummitsFromGarmin(directory: File): MutableList<Summit> {
+        fun getAllDownloadedSummitsFromGarmin(directory: File?): MutableList<Summit> {
             val entries = mutableListOf<Summit>()
-            if (directory.exists() && directory.isDirectory) {
+            if (directory != null && directory.exists() && directory.isDirectory) {
                 val files = directory.listFiles()
                 if (files?.isNotEmpty() == true) {
                     files.forEach {

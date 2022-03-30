@@ -59,38 +59,9 @@ class AddBookmarkDialog : DialogFragment() {
     private lateinit var saveEntryButton: Button
     private lateinit var addTrack: ImageButton
 
-    private var resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { resultData ->
-        temporaryGpxFile = getTempGpsFilePath(SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(Date())).toFile()
-        if (resultData.resultCode == Activity.RESULT_OK) {
-            resultData?.data?.data.also { uri ->
-                val bookmark = currentBookmark
-                if (uri != null && bookmark != null) {
-                    context?.contentResolver?.openInputStream(uri)?.use { inputStream ->
-                        uploadGpxFile(inputStream, bookmark, view)
-                        usedView.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
-                        database?.let { AsyncAnalyzeGpaTracks(currentBookmark, MainActivity.pythonInstance, it, usedView).execute() }
-                    }
-                }
-            }
-        }
-    }
-
-    private val watcher: TextWatcher = object : TextWatcher {
-        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-        override fun afterTextChanged(s: Editable) {
-            saveEntryButton.isEnabled = !(isEmpty(bookmarkName) || isEmpty(heightMeterText) || isEmpty(kmText))
-        }
-
-        private fun isEmpty(editText: EditText): Boolean {
-            return TextUtils.isEmpty(editText.text.toString().trim { it <= ' ' })
-        }
-    }
-
     private var sportTypeSpinner: Spinner? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        setRetainInstance(true)
         return inflater.inflate(R.layout.dialog_add_bookmark, container)
     }
 
@@ -249,6 +220,36 @@ class AddBookmarkDialog : DialogFragment() {
         super.onDestroyView()
         database?.close()
     }
+
+
+    private var resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { resultData ->
+        temporaryGpxFile = getTempGpsFilePath(SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(Date())).toFile()
+        if (resultData.resultCode == Activity.RESULT_OK) {
+            resultData?.data?.data.also { uri ->
+                val bookmark = currentBookmark
+                if (uri != null && bookmark != null) {
+                    context?.contentResolver?.openInputStream(uri)?.use { inputStream ->
+                        uploadGpxFile(inputStream, bookmark, view)
+                        usedView.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
+                        database?.let { AsyncAnalyzeGpaTracks(currentBookmark, MainActivity.pythonInstance, it, usedView).execute() }
+                    }
+                }
+            }
+        }
+    }
+
+    private val watcher: TextWatcher = object : TextWatcher {
+        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+        override fun afterTextChanged(s: Editable) {
+            saveEntryButton.isEnabled = !(isEmpty(bookmarkName) || isEmpty(heightMeterText) || isEmpty(kmText))
+        }
+
+        private fun isEmpty(editText: EditText): Boolean {
+            return TextUtils.isEmpty(editText.text.toString().trim { it <= ' ' })
+        }
+    }
+
 
     companion object {
         @JvmStatic

@@ -22,6 +22,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.MainActivity
+import de.drtobiasprinz.summitbook.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.*
@@ -42,7 +43,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.round
 
 
-class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : DialogFragment(), BaseDialog {
+class AddSummitDialog() : DialogFragment(), BaseDialog {
     var isUpdate = false
     var temporaryGpxFile: File? = null
     var latlngHightestPoint: TrackPoint? = null
@@ -89,9 +90,9 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     private lateinit var placesChips: ChipGroup
     private lateinit var countriesChips: ChipGroup
 
-    private val suggestionEquipments: List<String> = sortFilterHelper.entries.flatMap { it.equipments }.distinct().filter { it != "" }
+    private lateinit var resultreceiver: FragmentResultReceiver
+
     private lateinit var equipmentsAdapter: ArrayAdapter<String>
-    private val suggestionParticipants: List<String> = sortFilterHelper.entries.flatMap { it.participants }.distinct().filter { it != "" }
     private lateinit var participantsAdapter: ArrayAdapter<String>
     private lateinit var placesAdapter: ArrayAdapter<String>
 
@@ -109,15 +110,15 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     private lateinit var sportTypeSpinner: Spinner
     private var garminDataFromGarminConnect: GarminData? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        setRetainInstance(true)
+        resultreceiver = context as FragmentResultReceiver
         return inflater.inflate(R.layout.dialog_add_summit, container)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         currentContext = requireContext()
-        participantsAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestionParticipants)
-        equipmentsAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestionEquipments)
+        participantsAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, resultreceiver.getSortFilterHelper().entries.flatMap { it.participants }.distinct().filter { it != "" })
+        equipmentsAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, resultreceiver.getSortFilterHelper().entries.flatMap { it.equipments }.distinct().filter { it != "" })
         placesAdapter = getPlacesSuggestions()
         addPlaces(view)
         addCountries(view)
@@ -223,11 +224,11 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                 entry.setBoundingBoxFromTrack()
                 val adapter = SummitViewFragment.adapter
                 if (isUpdate) {
-                    sortFilterHelper.database.summitDao()?.updateSummit(entry)
+                    resultreceiver.getSortFilterHelper().database.summitDao()?.updateSummit(entry)
                 } else {
-                    entry.id = sortFilterHelper.database.summitDao()?.addSummit(entry) ?: 0L
-                    sortFilterHelper.entries.add(entry)
-                    sortFilterHelper.update(sortFilterHelper.entries)
+                    entry.id = resultreceiver.getSortFilterHelper().database.summitDao()?.addSummit(entry) ?: 0L
+                    resultreceiver.getSortFilterHelper().entries.add(entry)
+                    resultreceiver.getSortFilterHelper().update(resultreceiver.getSortFilterHelper().entries)
                 }
                 adapter.notifyDataSetChanged()
                 dialog?.cancel()
@@ -244,6 +245,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             val dateAsString = date.text.toString()
             val contextLocal = context
             if (dateAsString != "" && contextLocal != null) {
+                val pythonExecutor = resultreceiver.getPythonExecutor()
                 if (pythonExecutor != null) {
                     view.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
                     AsyncDownloadJsonViaPython(pythonExecutor, dateAsString, this).execute()
@@ -362,7 +364,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         val placesView = view.findViewById<AutoCompleteTextView>(R.id.autoCompleteTextViewPlaces)
         placesChips = view.findViewById(R.id.chipGroupPlaces)
         val chips = CustomAutoCompleteChips(view)
-        chips.addChips(placesAdapter, currentSummit?.getPlacesWithConnectedEntryString(requireContext(), sortFilterHelper.database),
+        chips.addChips(placesAdapter, currentSummit?.getPlacesWithConnectedEntryString(requireContext(), resultreceiver.getSortFilterHelper().database),
                 placesView, placesChips)
     }
 
@@ -375,11 +377,11 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     }
 
     private fun getPlacesSuggestions(addConnectedEntryString: Boolean = true): ArrayAdapter<String> {
-        val suggestions: MutableList<String> = (sortFilterHelper.entries.flatMap { it.places } +
-                sortFilterHelper.entries.map { it.name }).filter { !it.startsWith(CONNECTED_ACTIVITY_PREFIX) } as MutableList<String>
+        val suggestions: MutableList<String> = (resultreceiver.getSortFilterHelper().entries.flatMap { it.places } +
+                resultreceiver.getSortFilterHelper().entries.map { it.name }).filter { !it.startsWith(CONNECTED_ACTIVITY_PREFIX) } as MutableList<String>
         val localSummit = currentSummit
         if (addConnectedEntryString && localSummit != null) {
-            for (entry in sortFilterHelper.entries.filter { it != currentSummit }) {
+            for (entry in resultreceiver.getSortFilterHelper().entries.filter { it != currentSummit }) {
                 val differenceInMilliSec: Long = localSummit.date.time - entry.date.time
                 val differenceInDays: Double = round(TimeUnit.MILLISECONDS.toDays(differenceInMilliSec).toDouble())
                 if (differenceInDays in 0.0..1.0) {
@@ -557,7 +559,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                 }
                 updateMultiSpotActivityIds(pythonExecutor, entry)
             }
-            GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(pythonExecutor, listOf(entry), sortFilterHelper, useTcx, this, index).execute()
+            GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(pythonExecutor, listOf(entry), resultreceiver.getAllActivitiesFromThirdParty(), resultreceiver.getSortFilterHelper(), useTcx, this, index).execute()
         } catch (e: java.lang.RuntimeException) {
             Log.e("AsyncDownloadActivities", e.message ?: "")
         }
@@ -566,7 +568,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     private fun updateMultiSpotActivityIds(pythonExecutor: GarminPythonExecutor, entry: Summit) {
         val activityId = entry.garminData?.activityId
         if (activityId != null) {
-            val activityJsonFile = File(SummitViewFragment.activitiesDir, "acivity_${activityId}.json")
+            val activityJsonFile = File(activitiesDir, "acivity_${activityId}.json")
             if (activityJsonFile.exists()) {
                 val gson = JsonParser().parse(activityJsonFile.readText()) as JsonObject
                 val parsedEntry = GarminPythonExecutor.parseJsonObject(gson)
@@ -604,8 +606,8 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     companion object {
 
         @JvmStatic
-        fun updateInstance(entry: Summit?, sortFilterHelper: SortFilterHelper, pythonExecutor: GarminPythonExecutor?): AddSummitDialog {
-            val add = AddSummitDialog(sortFilterHelper, pythonExecutor)
+        fun updateInstance(entry: Summit?): AddSummitDialog {
+            val add = AddSummitDialog()
             add.isUpdate = true
             add.currentSummit = entry
             return add
@@ -630,7 +632,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
 
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
-                    val allKnownEntries = getAllDownloadedSummitsFromGarmin(SummitViewFragment.activitiesDir)
+                    val allKnownEntries = getAllDownloadedSummitsFromGarmin(activitiesDir)
                     val firstDate = allKnownEntries.minByOrNull { it.getDateAsFloat() }?.getDateAsString()
                     val lastDate = allKnownEntries.maxByOrNull { it.getDateAsFloat() }?.getDateAsString()
                     val knownEntriesOnDate = allKnownEntries.filter { it.getDateAsString() == dateAsString }

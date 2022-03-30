@@ -16,12 +16,13 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.Forecast
 import de.drtobiasprinz.summitbook.models.Forecast.Companion.getSumForYear
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
 import java.util.*
 import kotlin.math.round
 
 
-class ForecastDialog(val indoorHeightMeterPercent: Int) : DialogFragment() {
+class ForecastDialog : DialogFragment() {
 
     private lateinit var currentContext: Context
     private lateinit var forecasts: ArrayList<Forecast>
@@ -36,22 +37,24 @@ class ForecastDialog(val indoorHeightMeterPercent: Int) : DialogFragment() {
     private var annualTargetActivity: String = ""
     private var annualTargetKm: String = ""
     private var annualTargetHm: String = ""
+    private lateinit var resultreceiver: FragmentResultReceiver
+    private var indoorHeightMeterPercent = 0
 
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?,
     ): View? {
+        resultreceiver = context as FragmentResultReceiver
         return inflater.inflate(R.layout.dialog_forecast, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         currentContext = requireContext()
-
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        annualTargetActivity = sharedPreferences.getString("annual_target_activities", "52") ?: "52"
-        annualTargetKm = sharedPreferences.getString("annual_target_km", "1200") ?: "1200"
-        annualTargetHm = sharedPreferences.getString("annual_target", "50000") ?: "50000"
+        indoorHeightMeterPercent = resultreceiver.getSharedPreference().getInt("indoor_height_meter_per_cent", 0)
+        annualTargetActivity = resultreceiver.getSharedPreference().getString("annual_target_activities", "52") ?: "52"
+        annualTargetKm = resultreceiver.getSharedPreference().getString("annual_target_km", "1200") ?: "1200"
+        annualTargetHm = resultreceiver.getSharedPreference().getString("annual_target", "50000") ?: "50000"
 
         segmentedYear = view.findViewById(R.id.group_year)
         segmentedForecastProperty = view.findViewById(R.id.group_forecast_property)

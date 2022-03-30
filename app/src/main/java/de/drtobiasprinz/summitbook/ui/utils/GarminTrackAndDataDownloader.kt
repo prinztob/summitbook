@@ -9,7 +9,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 
-class GarminTrackAndDataDownloader(var entries: List<Summit>, val garminPythonExecutor: GarminPythonExecutor, var useTcx: Boolean = false) {
+class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garminPythonExecutor: GarminPythonExecutor?, var useTcx: Boolean = false) {
 
     val downloadedTracks: MutableList<File> = mutableListOf()
     var finalEntry: Summit? = null
@@ -24,9 +24,9 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, val garminPythonEx
                     val file = getTempGpsFilePath(activityId, useTcx).toFile()
                     if (!(isAlreadyDownloaded || file.exists())) {
                         if (useTcx) {
-                            garminPythonExecutor.downloadTcxFile(activityId, file.absolutePath)
+                            garminPythonExecutor?.downloadTcxFile(activityId, file.absolutePath)
                         } else {
-                            garminPythonExecutor.downloadGpxFile(activityId, file.absolutePath)
+                            garminPythonExecutor?.downloadGpxFile(activityId, file.absolutePath)
                         }
                     }
                     downloadedTracks.add(file)

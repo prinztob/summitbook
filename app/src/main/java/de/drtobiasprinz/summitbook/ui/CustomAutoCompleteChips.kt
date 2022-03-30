@@ -17,7 +17,7 @@ class CustomAutoCompleteChips(private val mView: View, private val chipIconId: I
 
     fun addChips(suggestionsAdapter: ArrayAdapter<String>, entries: List<String>?, autoCompleteTextView: AutoCompleteTextView, chipGroup: ChipGroup) {
         autoCompleteTextView.setAdapter(suggestionsAdapter)
-        autoCompleteTextView.setOnItemClickListener { parent, arg1, position, arg3 ->
+        autoCompleteTextView.setOnItemClickListener { parent, _, position, _ ->
             autoCompleteTextView.text = null
             val chipNames = chipGroup.children.toList().map { (it as Chip).text.toString() }
             val selected = parent.getItemAtPosition(position) as String

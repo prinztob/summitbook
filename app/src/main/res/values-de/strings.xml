@@ -368,6 +368,7 @@
     <string name="tool_tip_progress_merge_garmin_activities">"Merge Gipfel %1$s in einen einzelnen Gipfel und download seine Tracks. Das kann etwas dauern."</string>
     <string name="select_map_type">Wähle Kartentyp aus</string>
     <string name="count">Anzahl</string>
+    <string name="Additional_data">Show additional data</string>
 
 
 </resources>

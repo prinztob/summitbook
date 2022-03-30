@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
@@ -31,7 +32,7 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.util.*
 
-class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper? = null) : Fragment(), SummationFragment {
+class OpenStreetMapFragment() : Fragment(), SummationFragment {
     private var mGeoPoints: MutableList<GeoPoint?> = ArrayList()
     private var mMarkers: MutableList<Marker?> = ArrayList()
     private var mMarkersShown: MutableList<Marker?> = ArrayList()
@@ -41,30 +42,24 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper? = null) : Fr
     private var mMapView: MapView? = null
     private lateinit var root: View
     private var maxPointsToShow: Int = 10000
+    private lateinit var resultreceiver: FragmentResultReceiver
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        resultreceiver = context as FragmentResultReceiver
         setHasOptionsMenu(true)
         val context = requireContext()
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        if (sortFilterHelper == null) {
-            val database = AppDatabase.getDatabase(context)
-            val entries = database.summitDao()?.allSummit
-            sortFilterHelper = SortFilterHelper.getInstance(context, entries as ArrayList<Summit>, database, savedInstanceState, sharedPreferences)
-            sortFilterHelper?.fragment = this
-            sortFilterHelper?.apply()
-        }
-        maxPointsToShow = (sharedPreferences.getString("max_number_points", maxPointsToShow.toString())?: maxPointsToShow.toString()).toInt()
+        maxPointsToShow = (resultreceiver.getSharedPreference().getString("max_number_points", maxPointsToShow.toString())?: maxPointsToShow.toString()).toInt()
         Configuration.getInstance().load(context, PreferenceManager.getDefaultSharedPreferences(context))
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         root = inflater.inflate(R.layout.fragment_open_street_map, container, false)
         setHasOptionsMenu(true)
-        sortFilterHelper?.fragment = this
-        summitEntries = sortFilterHelper?.entries
-        filteredEntries = sortFilterHelper?.filteredEntries?.filter { it.sportType != SportType.IndoorTrainer }
+        resultreceiver.getSortFilterHelper().fragment = this
+        summitEntries = resultreceiver.getSortFilterHelper().entries
+        filteredEntries = resultreceiver.getSortFilterHelper().filteredEntries.filter { it.sportType != SportType.IndoorTrainer }
         setMap()
         Log.d(TAG, "onCreateView")
         return root
@@ -212,11 +207,6 @@ class OpenStreetMapFragment(var sortFilterHelper: SortFilterHelper? = null) : Fr
             filteredEntries = filteredSummitEntries?.filter { it.sportType != SportType.IndoorTrainer }
             addAllMarkers()
         }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        sortFilterHelper?.onSaveInstanceState(outState)
     }
 
     companion object {

@@ -367,5 +367,6 @@
     <string name="tool_tip_progress_merge_garmin_activities">"Merge summits %1$s and download its tracks. This may take a while."</string>
     <string name="select_map_type">Select Map Type</string>
     <string name="count">Count</string>
+    <string name="Additional_data">Show additional data</string>
 
 </resources>

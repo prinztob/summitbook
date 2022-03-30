@@ -35,7 +35,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
-import de.drtobiasprinz.summitbook.models.MyResultReceiver
+import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowSrolling
@@ -45,7 +45,6 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
 import java.io.IOException
-import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.math.roundToLong
 
@@ -65,11 +64,11 @@ class SummitEntryTrackFragment : Fragment() {
     private var usedItemsForColorCode: List<TrackColor> = emptyList()
     private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
-    private lateinit var resultreceiver: MyResultReceiver
+    private lateinit var resultreceiver: SummitEntryResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultreceiver = context as MyResultReceiver
+        resultreceiver = context as SummitEntryResultReceiver
         pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
         pageViewModel?.setIndex(TAG)
     }
