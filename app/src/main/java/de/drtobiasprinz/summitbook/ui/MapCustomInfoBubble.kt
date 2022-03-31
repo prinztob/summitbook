@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.widget.TextView
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.models.TrackColor

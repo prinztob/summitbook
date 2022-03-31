@@ -25,9 +25,9 @@ import java.util.*
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
-class GarminPythonExecutor(var pythonInstance: Python?, val username: String, val password: String) {
+class GarminPythonExecutor(private var pythonInstance: Python?, private val username: String, private val password: String) {
     private var pythonModule: PyObject? = null
-    var client: PyObject? = null
+    private var client: PyObject? = null
 
     private fun login() {
         if (client == null) {
@@ -228,11 +228,11 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
                     null, null,
                     emptyList(),
                     emptyList(),
-                    false,
-                    false,
-                    mutableListOf(),
-                    garminData,
-                    null
+                    isFavorite = false,
+                    isPeak = false,
+                    imageIds = mutableListOf(),
+                    garminData = garminData,
+                    trackBoundingBox = null
             )
         }
 

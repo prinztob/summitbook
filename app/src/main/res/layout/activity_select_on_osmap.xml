@@ -37,7 +37,7 @@
         android:orientation="horizontal">
     </LinearLayout>
 
-    <de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowSrolling
+    <de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
         android:id="@+id/osmap"
         android:layout_below="@id/expander"
         android:layout_width="match_parent"

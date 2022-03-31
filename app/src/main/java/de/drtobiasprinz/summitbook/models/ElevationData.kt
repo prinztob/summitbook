@@ -51,16 +51,20 @@ class ElevationData constructor(
     companion object {
 
         fun parse(inputData: List<String>, maxElevation: Int): ElevationData {
-            if (inputData.size == 3) {
-                return ElevationData(maxElevation, inputData[0].toInt(),
-                        inputData[1].toDouble(), inputData[2].toDouble())
-            } else if (inputData.size == 5) {
-                return ElevationData(maxElevation, inputData[0].toInt(),
-                        inputData[1].toDouble(), inputData[2].toDouble(), inputData[3].toDouble(),
-                        inputData[4].toDouble())
-            } else {
-                val elevationGain = if (inputData.size == 1) inputData.first().toInt() else 0
-                return ElevationData(maxElevation, elevationGain)
+            return when (inputData.size) {
+                3 -> {
+                    ElevationData(maxElevation, inputData[0].toInt(),
+                            inputData[1].toDouble(), inputData[2].toDouble())
+                }
+                5 -> {
+                    ElevationData(maxElevation, inputData[0].toInt(),
+                            inputData[1].toDouble(), inputData[2].toDouble(), inputData[3].toDouble(),
+                            inputData[4].toDouble())
+                }
+                else -> {
+                    val elevationGain = if (inputData.size == 1) inputData.first().toInt() else 0
+                    ElevationData(maxElevation, elevationGain)
+                }
             }
         }
 

@@ -26,7 +26,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 
-class ShowNewSummitsFromGarminDialog() : DialogFragment(), BaseDialog {
+class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
 
     private lateinit var addSummitsButton: Button
     private lateinit var currentContext: Context
@@ -40,10 +40,10 @@ class ShowNewSummitsFromGarminDialog() : DialogFragment(), BaseDialog {
     private lateinit var tableLayout: TableLayout
     private lateinit var database: AppDatabase
     private var activitiesIdIgnored: List<String> = emptyList()
-    private lateinit var resultreceiver: FragmentResultReceiver
+    private lateinit var resultReceiver: FragmentResultReceiver
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        resultreceiver = context as FragmentResultReceiver
+        resultReceiver = context as FragmentResultReceiver
         return inflater.inflate(R.layout.dialog_show_new_summit_from_garmin, container)
     }
 
@@ -58,12 +58,12 @@ class ShowNewSummitsFromGarminDialog() : DialogFragment(), BaseDialog {
         updateSummitsButton = view.findViewById(R.id.update_new_summits)
         updateSummitsButton.setOnClickListener {
             val startDate = sharedPreferences.getString("garmin_start_date", null) ?: ""
-            if (resultreceiver.getPythonExecutor() != null) {
+            if (resultReceiver.getPythonExecutor() != null) {
                 val current = LocalDateTime.now()
                 val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
                 val endDate = current.format(formatter)
                 view.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
-                AsyncDownloadActivities(resultreceiver.getSortFilterHelper().entries, resultreceiver.getAllActivitiesFromThirdParty(), resultreceiver.getPythonExecutor(), startDate, endDate, this).execute()
+                AsyncDownloadActivities(resultReceiver.getSortFilterHelper().entries, resultReceiver.getAllActivitiesFromThirdParty(), resultReceiver.getPythonExecutor(), startDate, endDate, this).execute()
             }
         }
         showAllButton = view.findViewById(R.id.show_all)
@@ -81,12 +81,12 @@ class ShowNewSummitsFromGarminDialog() : DialogFragment(), BaseDialog {
         addSummitsButton = view.findViewById(R.id.update_data)
         addSummitsButton.isEnabled = false
         addSummitsButton.setOnClickListener {
-            if (resultreceiver.getPythonExecutor() != null && areEntriesChecked()) {
-                resultreceiver.getProgressBar()?.visibility = View.VISIBLE
-                resultreceiver.getProgressBar()?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.map { it.name }.joinToString(", "))
+            if (resultReceiver.getPythonExecutor() != null && areEntriesChecked()) {
+                resultReceiver.getProgressBar()?.visibility = View.VISIBLE
+                resultReceiver.getProgressBar()?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.joinToString(", ") { it.name })
                 entriesWithoutIgnored.filter { summit -> summit.isSelected }.forEach { entry ->
-                    GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(resultreceiver.getPythonExecutor(),
-                            listOf(entry), resultreceiver.getAllActivitiesFromThirdParty(), resultreceiver.getSortFilterHelper(), useTcx, this).execute()
+                    GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(resultReceiver.getPythonExecutor(),
+                            listOf(entry), resultReceiver.getAllActivitiesFromThirdParty(), resultReceiver.getSortFilterHelper(), useTcx, this).execute()
                 }
             }
             dialog?.cancel()
@@ -94,11 +94,11 @@ class ShowNewSummitsFromGarminDialog() : DialogFragment(), BaseDialog {
         mergeSummitsButton = view.findViewById(R.id.add_summit_merge)
         mergeSummitsButton.isEnabled = false
         mergeSummitsButton.setOnClickListener {
-            if (resultreceiver.getPythonExecutor() != null && canSelectedSummitsBeMerged()) {
-                resultreceiver.getProgressBar()?.visibility = View.VISIBLE
-                resultreceiver.getProgressBar()?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.map { it.name }.joinToString(", "))
-                GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(resultreceiver.getPythonExecutor(),
-                        entriesWithoutIgnored.filter { summit -> summit.isSelected }, resultreceiver.getAllActivitiesFromThirdParty(), resultreceiver.getSortFilterHelper(), useTcx, this).execute()
+            if (resultReceiver.getPythonExecutor() != null && canSelectedSummitsBeMerged()) {
+                resultReceiver.getProgressBar()?.visibility = View.VISIBLE
+                resultReceiver.getProgressBar()?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.joinToString(", ") { it.name })
+                GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(resultReceiver.getPythonExecutor(),
+                        entriesWithoutIgnored.filter { summit -> summit.isSelected }, resultReceiver.getAllActivitiesFromThirdParty(), resultReceiver.getSortFilterHelper(), useTcx, this).execute()
             }
             dialog?.cancel()
         }
@@ -127,11 +127,11 @@ class ShowNewSummitsFromGarminDialog() : DialogFragment(), BaseDialog {
     private fun updateEntriesWithoutIgnored(showAll: Boolean = false) {
         activitiesIdIgnored = database.ignoredActivityDao()?.allIgnoredActivities?.map { it.activityId }
                 ?: emptyList()
-        val activityIdsInSummitBook = resultreceiver.getSortFilterHelper().entries.filter { !it.garminData?.activityIds.isNullOrEmpty() }.map { it.garminData?.activityIds as List<String> }.flatten()
-        if (showAll) {
-            entriesWithoutIgnored = resultreceiver.getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
+        val activityIdsInSummitBook = resultReceiver.getSortFilterHelper().entries.filter { !it.garminData?.activityIds.isNullOrEmpty() }.map { it.garminData?.activityIds as List<String> }.flatten()
+        entriesWithoutIgnored = if (showAll) {
+            resultReceiver.getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
         } else {
-            entriesWithoutIgnored = resultreceiver.getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
+            resultReceiver.getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
         }
     }
 
@@ -258,7 +258,7 @@ class ShowNewSummitsFromGarminDialog() : DialogFragment(), BaseDialog {
     }
 
     override fun getProgressBarForAsyncTask(): ProgressBar? {
-        return resultreceiver.getProgressBar()
+        return resultReceiver.getProgressBar()
     }
 
     override fun isStepByStepDownload(): Boolean {

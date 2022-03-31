@@ -79,10 +79,10 @@ class GarminData(
         }
 
         fun emptyLine(exportThirdPartyData: Boolean = true): String {
-            if (exportThirdPartyData) {
-                return ";;;;;;;;;;;"
+            return if (exportThirdPartyData) {
+                ";;;;;;;;;;;"
             } else {
-                return ""
+                ""
             }
         }
     }

@@ -37,32 +37,4 @@ class DatePreference(context: Context?, attrs: AttributeSet?) : DialogPreference
         }
 
 
-    class SimpleSummaryProvider private constructor() : SummaryProvider<DatePreference> {
-        override fun provideSummary(preference: DatePreference): CharSequence {
-            return if (preference.date != null || preference.date == "") {
-                preference.context.getString(R.string.not_set)
-            } else {
-                preference.date ?: ""
-            }
-        }
-
-        companion object {
-            private var sSimpleSummaryProvider: SimpleSummaryProvider? = null
-
-            /**
-             * Retrieve a singleton instance of this simple
-             * [androidx.preference.Preference.SummaryProvider] implementation.
-             *
-             * @return a singleton instance of this simple
-             * [androidx.preference.Preference.SummaryProvider] implementation
-             */
-            val instance: SimpleSummaryProvider?
-                get() {
-                    if (sSimpleSummaryProvider == null) {
-                        sSimpleSummaryProvider = SimpleSummaryProvider()
-                    }
-                    return sSimpleSummaryProvider
-                }
-        }
-    }
 }

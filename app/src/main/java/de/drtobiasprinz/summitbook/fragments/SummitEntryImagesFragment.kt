@@ -1,3 +1,5 @@
+package de.drtobiasprinz.summitbook.fragments
+
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.view.LayoutInflater
@@ -12,7 +14,6 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.stfalcon.imageviewer.StfalconImageViewer
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.PageViewModel
@@ -20,7 +21,6 @@ import kotlinx.android.synthetic.*
 import org.imaginativeworld.whynotimagecarousel.ImageCarousel
 import org.imaginativeworld.whynotimagecarousel.listener.CarouselListener
 import org.imaginativeworld.whynotimagecarousel.model.CarouselItem
-
 
 class SummitEntryImagesFragment : Fragment() {
     private var pageViewModel: PageViewModel? = null

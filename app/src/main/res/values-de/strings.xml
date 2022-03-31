@@ -27,7 +27,6 @@
     <string name="saveButtonText">Speichern</string>
     <string name="cancelButtonText">Abbrechen</string>
     <string name="updateButtonText">Aktualisieren</string>
-    <string name="place">Stationene</string>
     <string name="place_hint">Besuchte Orte</string>
     <string name="country_hint">Land</string>
     <string name="comment_hint">Kommentare</string>
@@ -48,7 +47,6 @@
     <string name="top_speed_75km_hint">Max. Geschw. 75 km</string>
     <string name="top_speed_100km_hint">Max. Geschw. 100 km</string>
     <string name="top_elevation_hint">Maximale Höhe</string>
-    <string name="top_slope_hint">Maximale Steigung</string>
 
     <string name="action_search">Suche</string>
     <string name="empty" />
@@ -63,12 +61,10 @@
     <string name="sport_type">Sportart</string>
     <string name="delete_icon">Löschicon</string>
     <string name="edit_icon">Modifiziere Icon</string>
-    <string name="edit">Modifiziere</string>
     <string name="add_coordinate">Füge Koordinaten hinzu</string>
     <string name="is_favorite">Markiere diesen Gipfel als Favorit</string>
     <string name="choose_data_source">Wähle Datenquelle</string>
     <string name="addGpsTrack">Füge GPS Track hinzu</string>
-    <string name="useGpsTrack">Benütze GPS track</string>
     <string name="add_activity">Füge Garminaktivität hinzu</string>
     <string name="sort_entries">Sortiere Gipfel</string>
     <string name="descending">Absteigend</string>
@@ -77,7 +73,7 @@
     <string name="by_date">Datum</string>
     <string name="by_height_meter">hm</string>
     <string name="by_km">km</string>
-    <string name="seperator">- </string>
+    <string name="separator">- </string>
     <string name="filter_by_kilometer">Kilometern</string>
     <string name="filterByHm">Höhenmetern</string>
     <string name="filterByTopSpeed">Höchstgeschw.</string>
@@ -105,10 +101,10 @@
     <string name="highest_power">Höchste normalisierte Leistung</string>
     <string name="highest_power_20min">Höchste Leistung in 20 Min.</string>
     <string name="highest_power_1h">Höchste Leistung in 1 St.</string>
-    <string name="heightest_hr">Höchste durchschn. Herzfreq</string>
-    <string name="heightest_grit">Höchster grit</string>
-    <string name="heightest_flow">Höchster flow</string>
-    <string name="heightest_trainig_load">Höchste Trainingsbelastung</string>
+    <string name="highest_hr">Höchste durchschn. Herzfreq</string>
+    <string name="highest_grit">Höchster grit</string>
+    <string name="highest_flow">Höchster flow</string>
+    <string name="highest_training_load">Höchste Trainingsbelastung</string>
     <string name="open_with">Öffne mit</string>
     <string name="average_hr">Herzfreq. i. D.</string>
     <string name="sensor_data">Sensordaten</string>
@@ -140,7 +136,6 @@
     <string name="overview">Überblick</string>
     <string name="action_settings">Einstellungen</string>
     <string name="vs">vs</string>
-    <string name="show_milage">Zeige Entfernung</string>
     <string name="map_type">Wechsle Kartentyp</string>
     <string name="bookmarks">Bookmarks</string>
     <string name="search">Suche</string>
@@ -149,37 +144,30 @@
     <string name="equipments">Ausrüstung</string>
 
     <string name="shared_gpx_subject">"Teile GPX Track"</string>
-    <string name="shared_gpx_text">"Teile GPX Track für Bookmark %1$s.\nHöhenmeter: %2$s hm\nEntfernung: %3$s km"</string>
     <string name="shared_summit_gpx_text">"Teile GPX Track for %1$s.\nDatum: %2$s\nHöhenmeter: %3$s hm\nEntfernung: %4$s km",</string>
     <string name="base_info">"%1$s Gipfel mit %2$s km und %3$s m Höhenmeter."</string>
     <string name="forecast_info_hm">"%1$s: Schätzung Höhenmeter: %2$s hm (Ziel: %3$s hm)."</string>
     <string name="forecast_info_km">"%1$s: Schätzung Entfernung: %2$s km (Ziel: %3$s km)."</string>
     <string name="forecast_info_activities">"%1$s: Schätzung Gipfel: %2$s m (Ziel: %3$s)."</string>
-    <string name="import_string_titel">"Import erfolgreich"</string>
+    <string name="import_string_title">"Import erfolgreich"</string>
     <string name="import_string">"Der Import der Zip Datei ist abgeschlossen mit Zeilen in CSV Datei: %1$s\nImportierte Gipfel: %2$s\nInvalide Gipfel: %3$s\nDuplizierte Gipfel: %4$s"</string>
     <string name="current_estimate">"Aktuelle Hochrechnung für Jahresziel: %1$s hm."</string>
-    <string name="found_adress">"Adresse für %1$s gefunden."</string>
+    <string name="found_address">"Adresse für %1$s gefunden."</string>
     <string name="delete_gps">"Koordinaten and GPX track des Gipfels %1$s wurden gelöscht."</string>
     <string name="delete_cancel">"Löschen wurde abgebrochen."</string>
-    <string name="speed_data_failed">"Geschwindigkeitsdaten könenn nicht heruntergeladen werden, da der Gipfel nicht mit Garmin verbunden ist."</string>
     <string name="not_found">"Konnte %1$s nicht finden."</string>
     <string name="delete_entry">"Gipfel %1$s wurde gelöscht."</string>
     <string name="delete_entry_text">"Sind Sie sicher, dass sie den Gipfel löschen möchten?"</string>
-    <string name="download_gps_failed">"Der GPX Track konnte nicht heruntergeladen werden. Fehler: %1$s."</string>
-    <string name="try_again">"Ein Fehler ist aufgetreten, bitte versuchen Sie es erneut."</string>
     <string name="add_gpx_successful">"Das Hinzufügen eines neuen GPX Track zu Gipfel %1$s war erfolgreich."</string>
     <string name="add_gpx_failed">"Das Hinzufügen eines neuen GPX Track zu Gipfel %1$s ist fehlgeschlagen."</string>
     <string name="garmin_add_cancel">"Hinzufügen einer Garmin Connect Aktivität wurde abgebrochen."</string>
     <string name="garmin_add_successful">"Erfolgreich Gipfel %1$s von Garmin Connect abgefragt"</string>
     <string name="choose_item">"Wähle ein Item aus"</string>
-    <string name="download_complete">"Download der GPX Datei ist komplett."</string>
     <string name="update_summit_cancel">"Aktualisierung des Gipfels wurde abgebrochen."</string>
     <string name="add_new_summit_cancel">"Das Hinzufügen eines neuen Gipfels wure abgebrochen."</string>
     <string name="heart_rate_profile_label">"Herzfrequenzprofil"</string>
     <string name="slope_profile_label">"Neigung"</string>
     <string name="cadence_profile_label">"Kadenceprofil"</string>
-    <string name="height_profile_label">"Höhenprofil"</string>
-    <string name="power_profile_chart_label">"Leisungsprofil"</string>
     <string name="speed_profile_label">"Geschwindigkeitsprofil"</string>
     <string name="vertical_speed_profile_label">"Profil der Vertikale Geschw."</string>
     <string name="power_profile_label">"Aktueller Gipfel"</string>
@@ -216,36 +204,26 @@
     <string name="annual_target_activities_title">Jahresziel an Aktivitäten</string>
     <string name="export_csv_dialog">Export von Gipfel?</string>
     <string name="export_csv_dialog_text">Export alle oder gerade gefilterte summits?</string>
-    <string name="export_csv_dialog_positiv">Alle Gipfel</string>
+    <string name="export_csv_dialog_positive">Alle Gipfel</string>
     <string name="export_csv_dialog_neutral">Gefilterte Gipfel</string>
     <string name="export_csv_dialog_negative_text">Export ist agebrochen worden</string>
-    <string name="export_csv_summary_titel">"Export war erfolgreich"</string>
+    <string name="export_csv_summary_title">"Export war erfolgreich"</string>
     <string name="export_csv_summary_text">"Anzahl an Gipfel exportiert in Datei: %1$s\nGipfel mit gps Datei: %2$s\nGipfel mit Bildern: %3$s"</string>
 
     <string name="bicycle">Fahrrad</string>
-    <string name="bicycle_short">Rad</string>
     <string name="mountainbike">Mountainbike</string>
-    <string name="mountainbike_short">MTB</string>
     <string name="bikeAndHike">Bike&amp;Hike</string>
-    <string name="bikeAndHike_short">B&amp;H</string>
     <string name="climb">Klettern</string>
-    <string name="climb_short">Klettern</string>
     <string name="hike">Wandern</string>
-    <string name="hike_short">Wandern</string>
     <string name="skitour">Skitour</string>
-    <string name="skitour_short">Ski</string>
     <string name="racer">Rennrad</string>
-    <string name="racer_short">RR</string>
     <string name="indoor_trainer">Indoor Trainer</string>
-    <string name="indoor_trainer_short">Trainer</string>
     <string name="running">Laufen</string>
-    <string name="running_short">Laufen</string>
     <string name="other">Andere</string>
-    <string name="other_short">Andere</string>
     <string name="of">von</string>
     <string name="show_all_tracks">Show all tracks</string>
-    <string name="heighest_VO2MAX">Höchstes Vo2max</string>
-    <string name="heighest_FTP">Höchste FTP</string>
+    <string name="highest_VO2MAX">Höchstes Vo2max</string>
+    <string name="highest_FTP">Höchste FTP</string>
     <string name="highest_power_5h">Höchste Leitung 5h</string>
     <string name="highest_power_2h">Höchste Leistung 2h</string>
     <string name="highest_power_30min">Höchste Leitung 30min</string>
@@ -323,7 +301,6 @@
     <string name="next_year">Nächstes Jahr</string>
     <string name="current_year">Aktuelles Jahr</string>
     <string name="customize_track_color">Track Farbe anpassen</string>
-    <string name="track_color">Track Farbe</string>
     <string name="none">Keine</string>
     <string name="mileage">Mileage</string>
     <string name="speed">Geschwindigkeit</string>
@@ -338,9 +315,8 @@
     <string name="no_image_selected">Kein Bild ausgewählt</string>
     <string name="gpx_viewer_not_installed">GPX viewer nicht installiert</string>
     <string name="gpx_file_not_copied">GPX Datei konnte nicht kopiert werden</string>
-    <string name="add_position_to_summit">Hinzufügen einer neuen position zu Gipfel %1$s war erfolgreich.</string>
     <string name="add_position_to_summit_cancel">Hinzufügen einer neuen position zu Gipfel %1$s wurde abgebrochen.</string>
-    <string name="no_email_prgram_installed">E-Mail program not installed</string>
+    <string name="no_email_program_installed">E-Mail program not installed</string>
     <string name="add_new_summit">Füge neuen Gipfel hinzu</string>
     <string name="change_map_type">Ändere Kartentyp</string>
     <string name="add_new_bookmark">Füge neues Lesezeichen hinzu</string>
@@ -365,10 +341,8 @@
     <string name="indoor_hm_percent">Prozentuale Einbeziehung von Indoor Höhenmetern</string>
     <string name="start_date_sync_garmin">Startdatum für Synchronisierung von Garmin Activitäten</string>
     <string name="tool_tip_progress_new_garmin_activities">"Füge Gipfel %1$s hinzu und download seine Tracks. Das kann etwas dauern."</string>
-    <string name="tool_tip_progress_merge_garmin_activities">"Merge Gipfel %1$s in einen einzelnen Gipfel und download seine Tracks. Das kann etwas dauern."</string>
     <string name="select_map_type">Wähle Kartentyp aus</string>
     <string name="count">Anzahl</string>
-    <string name="Additional_data">Show additional data</string>
 
 
 </resources>

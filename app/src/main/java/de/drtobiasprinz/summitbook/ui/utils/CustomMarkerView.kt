@@ -9,7 +9,6 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.models.Summit
 

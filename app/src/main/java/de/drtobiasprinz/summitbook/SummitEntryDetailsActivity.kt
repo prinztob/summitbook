@@ -19,7 +19,7 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
     lateinit var summitEntry: Summit
     private lateinit var viewPager: HackyViewPager
     private var summitToCompare: Summit? = null
-    var summitsToCompare: List<Summit> = emptyList()
+    private var summitsToCompare: List<Summit> = emptyList()
     private var database: AppDatabase? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {

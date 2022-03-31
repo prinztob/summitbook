@@ -159,7 +159,6 @@
 
 
             <RelativeLayout
-                android:id="@+id/pace_view"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content">
 
@@ -184,7 +183,6 @@
             </RelativeLayout>
 
             <RelativeLayout
-                android:id="@+id/top_speed_view"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content">
 

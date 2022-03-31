@@ -64,7 +64,7 @@ class AddImagesActivity : AppCompatActivity() {
 
     private fun addImage(localSummit: Summit, imageId: Int, layout: RelativeLayout, id: Int, position: Int): Int {
         val localSummitImage = PhotoView(this)
-        val isVerticalImageOnNextPosition = (position == 0 && localSummit.imageIds.size > 1 && canImageBeOnFirstPosition?.get(localSummit.imageIds.get(1)) == false)
+        val isVerticalImageOnNextPosition = (position == 0 && localSummit.imageIds.size > 1 && canImageBeOnFirstPosition?.get(localSummit.imageIds[1]) == false)
 
         localSummitImage.visibility = View.VISIBLE
         Glide.with(this)
@@ -172,7 +172,7 @@ class AddImagesActivity : AppCompatActivity() {
 
     private fun addImageOnClickListener(localSummit: Summit, layout: RelativeLayout, button: ImageButton,
                                         localSummitImage: PhotoView, cropX: Float, cropY: Float, idOtherButton: Int = 0) {
-        button.setOnClickListener { _ ->
+        button.setOnClickListener {
             ImagePicker.with(this)
                     .crop(cropX, cropY)
                     .compress(1024)

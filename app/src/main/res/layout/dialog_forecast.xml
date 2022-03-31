@@ -134,7 +134,6 @@
                 android:text="@string/january" />
 
             <TextView
-                android:id="@+id/fulfilled_forecast_month1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_toEndOf="@+id/text_month1"
@@ -167,7 +166,6 @@
                 android:text="@string/february" />
 
             <TextView
-                android:id="@+id/fulfilled_forecast_month2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month1"
@@ -200,7 +198,6 @@
                 android:text="@string/march" />
 
             <TextView
-                android:id="@+id/fulfilled_forecast_month3"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month2"
@@ -233,7 +230,6 @@
                 android:text="@string/april" />
 
             <TextView
-                android:id="@+id/fulfilled_forecast_month4"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month3"
@@ -266,7 +262,6 @@
                 android:text="@string/may" />
 
             <TextView
-                android:id="@+id/fulfilled_forecast_month5"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month4"
@@ -299,7 +294,6 @@
                 android:text="@string/june" />
 
             <TextView
-                android:id="@+id/fulfilled_forecast_month6"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month5"
@@ -332,7 +326,6 @@
                 android:text="@string/july" />
 
             <TextView
-                android:id="@+id/fulfilled_forecast_month7"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month6"
@@ -365,7 +358,6 @@
                 android:text="@string/august" />
 
             <TextView
-                android:id="@+id/fulfilled_forecast_month8"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month7"
@@ -398,7 +390,6 @@
                 android:text="@string/september" />
 
             <TextView
-                android:id="@+id/fulfilled_forecast_month9"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month8"
@@ -431,7 +422,6 @@
                 android:text="@string/october" />
 
             <TextView
-                android:id="@+id/fulfilled_forecast_month10"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month9"
@@ -464,7 +454,6 @@
                 android:text="@string/november" />
 
             <TextView
-                android:id="@+id/fulfilled_forecast_month11"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month10"
@@ -497,7 +486,6 @@
                 android:text="@string/december" />
 
             <TextView
-                android:id="@+id/fulfilled_forecast_month12"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month11"

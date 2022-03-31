@@ -134,7 +134,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     database?.summitDao()?.updateLng(entry.id, position.lon)
                     entry.latLng = latLngSelectedPosition
                     finish()
-                    Toast.makeText(v.context, String.format(getString(R.string.no_email_prgram_installed), entry.name), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(v.context, String.format(getString(R.string.no_email_program_installed), entry.name), Toast.LENGTH_SHORT).show()
                 }
                 val localSelectedPath = selectedGpsPath
                 if (localSelectedPath != null) {
@@ -211,7 +211,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
         val foundAddresses: List<Address> = geoCoder.getFromLocationName(locationAddress, 1,
                 viewBox.latSouth, viewBox.lonEast, viewBox.latNorth, viewBox.lonWest, false)
         if (foundAddresses.isNotEmpty()) {
-            Toast.makeText(applicationContext, getString(R.string.found_adress, locationAddress), Toast.LENGTH_SHORT).show()
+            Toast.makeText(applicationContext, getString(R.string.found_address, locationAddress), Toast.LENGTH_SHORT).show()
             val address = foundAddresses[0]
             val geoPoint = GeoPoint(address.latitude, address.longitude)
             val poiIcon: Drawable? = ResourcesCompat.getDrawable(resources, R.drawable.ic_filled_location_black_48, null)

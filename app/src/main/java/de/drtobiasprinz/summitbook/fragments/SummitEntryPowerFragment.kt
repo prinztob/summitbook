@@ -1,3 +1,5 @@
+package de.drtobiasprinz.summitbook.fragments
+
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
@@ -33,6 +35,7 @@ import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
 import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
 import java.util.*
+import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.round
 
@@ -47,11 +50,11 @@ class SummitEntryPowerFragment : Fragment() {
     private var selectedTimeRangeSpinner: Int = 0
     private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
-    private lateinit var resultreceiver: SummitEntryResultReceiver
+    private lateinit var resultReceiver: SummitEntryResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultreceiver = context as SummitEntryResultReceiver
+        resultReceiver = context as SummitEntryResultReceiver
         pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
         pageViewModel?.setIndex(TAG)
     }
@@ -62,9 +65,9 @@ class SummitEntryPowerFragment : Fragment() {
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_power, container, false)
         database = context?.let { AppDatabase.getDatabase(it) }
-        summitEntry = resultreceiver.getSummit()
-        summitToCompare = resultreceiver.getSelectedSummitForComparison()
-        summitsToCompare = resultreceiver.getSummitsForComparison()
+        summitEntry = resultReceiver.getSummit()
+        summitToCompare = resultReceiver.getSelectedSummitForComparison()
+        summitsToCompare = resultReceiver.getSummitsForComparison()
         metrics = DisplayMetrics()
         val mainActivity = MainActivity.mainActivity
         mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
@@ -101,11 +104,11 @@ class SummitEntryPowerFragment : Fragment() {
         val summitToCompareSpinner: SmartMaterialSpinner<String> = root.findViewById(R.id.summit_name_to_compare)
         val items = getSummitsSuggestions(summitEntry)
         summitToCompareSpinner.item = items
-        resultreceiver.getViewPager().addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+        resultReceiver.getViewPager().addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(position: Int, positionOffset: Float, @Px positionOffsetPixels: Int) {}
 
             override fun onPageSelected(position: Int) {
-                val summitToCompareLocal = resultreceiver.getSelectedSummitForComparison()
+                val summitToCompareLocal = resultReceiver.getSelectedSummitForComparison()
                 if (summitToCompareLocal != null) {
                     val name = "${summitToCompareLocal.getDateAsString()} ${summitToCompareLocal.name}"
                     val index = items.indexOf(name)
@@ -123,7 +126,7 @@ class SummitEntryPowerFragment : Fragment() {
                     val text = items[position]
                     if (text != "") {
                         summitToCompare = summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
-                        resultreceiver.setSelectedSummitForComparison(summitToCompare)
+                        resultReceiver.setSelectedSummitForComparison(summitToCompare)
                     }
                     drawChart()
                 }
@@ -137,7 +140,7 @@ class SummitEntryPowerFragment : Fragment() {
 
     private fun getSummitsSuggestions(localSummit: Summit): ArrayList<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
-        val summitsToCompareFromActivity = resultreceiver.getSummitsForComparison()
+        val summitsToCompareFromActivity = resultReceiver.getSummitsForComparison()
         val summitsWithoutSimilarName = summitsToCompareFromActivity.filter { it.name != localSummit.name && it.garminData?.power?.hasPowerData() == true }.sortedByDescending { it.date }
         val summitsWithSimilarName = summitsToCompareFromActivity.filter { it.name == localSummit.name && it != localSummit }.sortedByDescending { it.date }
         summitsToCompare = summitsWithSimilarName + summitsWithoutSimilarName
@@ -295,11 +298,11 @@ class SummitEntryPowerFragment : Fragment() {
     }
 
     private fun scaleCbr(cbr: Double): Float {
-        return Math.log10(cbr).toFloat()
+        return log10(cbr).toFloat()
     }
 
     private fun unScaleCbr(cbr: Double): Float {
-        val calcVal = Math.pow(10.0, cbr)
+        val calcVal = 10.0.pow(cbr)
         return calcVal.toFloat()
     }
 
@@ -370,7 +373,7 @@ class SummitEntryPowerFragment : Fragment() {
 
 
     companion object {
-        private const val TAG = "SummitEntryPowerFragement"
+        private const val TAG = "SummitEntryPowerFragment"
 
         fun newInstance(summitEntry: Summit): SummitEntryPowerFragment {
             val fragment = SummitEntryPowerFragment()
@@ -384,8 +387,7 @@ class SummitEntryPowerFragment : Fragment() {
         private val tvContent: TextView? = findViewById(R.id.tvContent)
 
         override fun refreshContent(e: Entry, highlight: Highlight?) {
-            val value = 10f.pow(e.x)
-            val xText = when (value) {
+            val xText = when (val value = 10f.pow(e.x)) {
                 in 0f..59f -> "${round(value).toInt()} sec"
                 in 60f..3599f -> "${round(value / 60f).toInt()} min"
                 else -> "${round(value / 3660f).toInt()} h"

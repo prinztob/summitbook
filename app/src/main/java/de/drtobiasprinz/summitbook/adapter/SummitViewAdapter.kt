@@ -17,19 +17,17 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import de.drtobiasprinz.summitbook.*
 import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
-import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog.Companion.updateInstance
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.util.*
 
 
-class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : RecyclerView.Adapter<SummitViewAdapter.ViewHolder?>(), Filterable {
-    var cardView: CardView? = null
+class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper) : RecyclerView.Adapter<SummitViewAdapter.ViewHolder?>(), Filterable {
+    private var cardView: CardView? = null
     val summitEntries = sortFilterHelper.entries
     lateinit var context: Context
     var summitEntriesFiltered: ArrayList<Summit>?
-    private lateinit var resultreceiver: FragmentResultReceiver
 
 
     override fun getItemCount(): Int {
@@ -115,7 +113,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         }
         val editButton = cardView.findViewById<ImageButton?>(R.id.entry_edit)
         editButton?.setOnClickListener { _: View? ->
-            val updateDialog = sortFilterHelper.let { updateInstance(summit) }
+            val updateDialog = updateInstance(summit)
             MainActivity.mainActivity?.supportFragmentManager?.let { updateDialog.show(it, "Summits") }
         }
         val addPosition = cardView.findViewById<ImageButton?>(R.id.entry_add_coordinate)
@@ -158,7 +156,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         } else {
             mountainButton.setImageResource(R.drawable.icons8_valley_24)
         }
-        mountainButton.setOnClickListener { _: View? ->
+        mountainButton.setOnClickListener {
             if (summit.isPeak) {
                 mountainButton.setImageResource(R.drawable.icons8_valley_24)
             } else {

@@ -22,7 +22,7 @@ import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import java.util.*
 import kotlin.math.roundToLong
 
-class StatisticsFragment() : Fragment(), SummationFragment {
+class StatisticsFragment : Fragment(), SummationFragment {
     private var summitEntries: List<Summit>? = null
     private var filteredEntries: List<Summit>? = null
     private var textTotalSummits: TextView? = null
@@ -37,22 +37,22 @@ class StatisticsFragment() : Fragment(), SummationFragment {
     private var annualTargetKm: String = ""
     private var annualTargetHm: String = ""
     private var indoorHeightMeterPercent: Int = 0
-    private lateinit var resultreceiver: FragmentResultReceiver
+    private lateinit var resultReceiver: FragmentResultReceiver
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultreceiver = context as FragmentResultReceiver
-        annualTargetActivity = resultreceiver.getSharedPreference().getString("annual_target_activities", "52") ?: "52"
-        annualTargetKm = resultreceiver.getSharedPreference().getString("annual_target_km", "1200") ?: "1200"
-        annualTargetHm = resultreceiver.getSharedPreference().getString("annual_target", "50000") ?: "50000"
+        resultReceiver = context as FragmentResultReceiver
+        annualTargetActivity = resultReceiver.getSharedPreference().getString("annual_target_activities", "52") ?: "52"
+        annualTargetKm = resultReceiver.getSharedPreference().getString("annual_target_km", "1200") ?: "1200"
+        annualTargetHm = resultReceiver.getSharedPreference().getString("annual_target", "50000") ?: "50000"
     }
 
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?,
     ): View {
-        resultreceiver.getSortFilterHelper().fragment = this
+        resultReceiver.getSortFilterHelper().fragment = this
         val view = inflater.inflate(R.layout.fragment_statistics, container, false)
         this.statisticFragmentView = view
         setHasOptionsMenu(true)
@@ -64,8 +64,8 @@ class StatisticsFragment() : Fragment(), SummationFragment {
             textTotalHmForecastInfo = view.findViewById(R.id.textTotalHmForecastInfo)
             textAchievement = view.findViewById(R.id.textAchievement)
         }
-        summitEntries = resultreceiver.getSortFilterHelper().entries
-        filteredEntries = resultreceiver.getSortFilterHelper().filteredEntries
+        summitEntries = resultReceiver.getSortFilterHelper().entries
+        filteredEntries = resultReceiver.getSortFilterHelper().filteredEntries
         update(filteredEntries)
         return view
     }
@@ -77,8 +77,8 @@ class StatisticsFragment() : Fragment(), SummationFragment {
             textTotalHm?.text = String.format(requireContext().resources.configuration.locales[0], "%s hm", statisticEntry.totalHm)
             val currentYear: Int = (Calendar.getInstance())[Calendar.YEAR]
             val currentMonth: Int = (Calendar.getInstance())[Calendar.MONTH] + 1
-            if (resultreceiver.getSortFilterHelper().selectedYear == currentYear.toString()) {
-                val forecasts = resultreceiver.getSortFilterHelper().database.forecastDao()?.allForecasts
+            if (resultReceiver.getSortFilterHelper().selectedYear == currentYear.toString()) {
+                val forecasts = resultReceiver.getSortFilterHelper().database.forecastDao()?.allForecasts
                 forecasts?.forEach { summitEntries?.let { it1 -> it.setActual(it1, indoorHeightMeterPercent) } }
                 val sumCurrentYear = forecasts?.let { Forecast.getSumForYear(currentYear, it, 0, currentYear, currentMonth) }
                 if ((sumCurrentYear ?: 0) > 0) {
@@ -99,7 +99,7 @@ class StatisticsFragment() : Fragment(), SummationFragment {
                 textTotalHmInfo?.visibility = View.GONE
                 textTotalHmForecastInfo?.visibility = View.GONE
             }
-            if (resultreceiver.getSortFilterHelper().selectedYear != "") {
+            if (resultReceiver.getSortFilterHelper().selectedYear != "") {
                 statisticFragmentView?.findViewById<View?>(R.id.achievementInfo)?.visibility = View.VISIBLE
                 textAchievement?.text = String.format(requireContext().resources.configuration.locales[0], "%.1f %%", statisticEntry.getAchievement())
             } else {
@@ -288,8 +288,8 @@ class StatisticsFragment() : Fragment(), SummationFragment {
 
     private fun setProgressBar() {
         val simpleProgressBar = statisticFragmentView?.findViewById<ProgressBar?>(R.id.vprogressbar)
-        if (resultreceiver.getSortFilterHelper().selectedYear != "") {
-            val expectedAchievement = if (resultreceiver.getSortFilterHelper().selectedYear == getCurrentYear()) statisticEntry.getExpectedAchievementHmPercent() else 100.0
+        if (resultReceiver.getSortFilterHelper().selectedYear != "") {
+            val expectedAchievement = if (resultReceiver.getSortFilterHelper().selectedYear == getCurrentYear()) statisticEntry.getExpectedAchievementHmPercent() else 100.0
             simpleProgressBar?.visibility = View.VISIBLE
             simpleProgressBar?.max = 100
             simpleProgressBar?.progress = statisticEntry.getAchievement().toInt()

@@ -9,7 +9,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 
-class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garminPythonExecutor: GarminPythonExecutor?, var useTcx: Boolean = false) {
+class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garminPythonExecutor: GarminPythonExecutor?, private var useTcx: Boolean = false) {
 
     val downloadedTracks: MutableList<File> = mutableListOf()
     var finalEntry: Summit? = null
@@ -36,10 +36,10 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
     }
 
     private fun getIds(garminData: GarminData, isAlreadyDownloaded: Boolean): MutableList<String> {
-        if (garminData.activityIds.size > 1) {
-            return if (isAlreadyDownloaded) mutableListOf(garminData.activityId) else garminData.activityIds.subList(1, garminData.activityIds.size)
+        return if (garminData.activityIds.size > 1) {
+            if (isAlreadyDownloaded) mutableListOf(garminData.activityId) else garminData.activityIds.subList(1, garminData.activityIds.size)
         } else {
-            return garminData.activityIds
+            garminData.activityIds
         }
     }
 
@@ -86,7 +86,7 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
                 entries.first().sportType,
                 entries.map { it.places }.flatten(),
                 entries.map { it.countries }.flatten(),
-                if (entries.size > 1) "merge of " + entries.map { it.name }.joinToString (", ") else "",
+                if (entries.size > 1) "merge of " + entries.joinToString(", ") { it.name } else "",
                 ElevationData.parse(entries.maxByOrNull { it.elevationData.maxElevation }?.elevationData?.maxElevation ?: 0, entries.sumBy { it.elevationData.elevationGain }),
                 entries.sumByDouble { it.kilometers },
                 VelocityData.parse( entries.sumByDouble { it.kilometers } / activityDuration.sum(),
@@ -94,11 +94,11 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
                 null, null,
                 entries.map { it.participants }.flatten(),
                 entries.map { it.equipments }.flatten(),
-                false,
-                false,
-                mutableListOf(),
-                getGarminData(),
-                null
+                isFavorite = false,
+                isPeak = false,
+                imageIds = mutableListOf(),
+                garminData = getGarminData(),
+                trackBoundingBox = null
         )
     }
 

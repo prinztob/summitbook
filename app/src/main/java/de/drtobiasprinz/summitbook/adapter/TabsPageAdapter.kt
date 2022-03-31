@@ -1,14 +1,14 @@
 package de.drtobiasprinz.summitbook.adapter
 
-import SummitEntryDataFragment
-import SummitEntryImagesFragment
-import SummitEntryPowerFragment
-import SummitEntryTrackFragment
 import android.content.Context
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.fragments.SummitEntryDataFragment
+import de.drtobiasprinz.summitbook.fragments.SummitEntryImagesFragment
+import de.drtobiasprinz.summitbook.fragments.SummitEntryPowerFragment
+import de.drtobiasprinz.summitbook.fragments.SummitEntryTrackFragment
 import de.drtobiasprinz.summitbook.models.Summit
 
 
@@ -35,17 +35,17 @@ class TabsPagerAdapter(private val mContext: Context, fm: FragmentManager?, priv
     }
 
     override fun getPageTitle(position: Int): CharSequence {
-        val TAB_TITLES = mutableListOf(R.string.tab_text_1)
+        val tabTitles = mutableListOf(R.string.tab_text_1)
         if (summitEntry.hasImagePath()) {
-            TAB_TITLES.add(R.string.tab_text_2)
+            tabTitles.add(R.string.tab_text_2)
         }
         if (summitEntry.hasGpsTrack()) {
-            TAB_TITLES.add(R.string.tab_text_3)
+            tabTitles.add(R.string.tab_text_3)
         }
         if (summitEntry.garminData?.power != null && summitEntry.garminData?.power?.hasPowerData() == true) {
-            TAB_TITLES.add(R.string.tab_text_4)
+            tabTitles.add(R.string.tab_text_4)
         }
-        return mContext.resources.getString(TAB_TITLES[position])
+        return mContext.resources.getString(tabTitles[position])
     }
 
     override fun getCount(): Int {

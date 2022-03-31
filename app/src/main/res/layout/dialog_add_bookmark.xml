@@ -67,11 +67,13 @@
                 android:layout_height="wrap_content"
                 android:drawableStart="@drawable/ic_trending_up_black_24dp"
                 android:drawablePadding="10dp"
+                android:layout_toStartOf="@+id/height_meter_unit"
                 android:hint="@string/height_meter_hint"
                 android:importantForAutofill="no"
                 android:inputType="number" />
 
             <TextView
+                android:id="@+id/height_meter_unit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
@@ -88,11 +90,13 @@
                 android:layout_height="wrap_content"
                 android:drawableStart="@drawable/icons8_map_pinpoint_20"
                 android:drawablePadding="10dp"
+                android:layout_toStartOf="@+id/kilometers_unit"
                 android:hint="@string/kilometers_hint"
                 android:importantForAutofill="no"
                 android:inputType="numberDecimal" />
 
             <TextView
+                android:id="@+id/kilometers_unit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"

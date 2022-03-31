@@ -6,14 +6,15 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 class StatisticEntry {
     private var totalSummits = 0
     var totalHm = 0
     var totalKm = 0.0
-    var achievementHm = 0.0
-    var achievementKm = 0.0
-    var achievementActivity = 0.0
+    private var achievementHm = 0.0
+    private var achievementKm = 0.0
+    private var achievementActivity = 0.0
     var expectedAchievementActivityAbsolute = 0.0
     var expectedAchievementHmAbsolute = 0.0
     var expectedAchievementKmAbsolute = 0.0
@@ -47,7 +48,7 @@ class StatisticEntry {
             }
         }?.sum() ?: 0
         totalKm = filteredSummitEntries?.map { it.kilometers }?.sum() ?: 0.0
-        achievementActivity = round(totalSummits * 100.0 / activitiesPerYear).toDouble()
+        achievementActivity = (totalSummits * 100.0 / activitiesPerYear).roundToInt().toDouble()
         achievementKm = totalKm * 100.0 / kilometerPerYear
         achievementHm = totalHm * 100.0 / elevationGainPerYear
         setExpectedAchievement()

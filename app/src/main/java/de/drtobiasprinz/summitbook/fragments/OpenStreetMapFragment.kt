@@ -10,7 +10,6 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
@@ -21,7 +20,6 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBounding
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
-import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.util.GeoPoint
@@ -32,7 +30,7 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.util.*
 
-class OpenStreetMapFragment() : Fragment(), SummationFragment {
+ class OpenStreetMapFragment : Fragment(), SummationFragment {
     private var mGeoPoints: MutableList<GeoPoint?> = ArrayList()
     private var mMarkers: MutableList<Marker?> = ArrayList()
     private var mMarkersShown: MutableList<Marker?> = ArrayList()
@@ -42,24 +40,24 @@ class OpenStreetMapFragment() : Fragment(), SummationFragment {
     private var mMapView: MapView? = null
     private lateinit var root: View
     private var maxPointsToShow: Int = 10000
-    private lateinit var resultreceiver: FragmentResultReceiver
+    private lateinit var resultReceiver: FragmentResultReceiver
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultreceiver = context as FragmentResultReceiver
+        resultReceiver = context as FragmentResultReceiver
         setHasOptionsMenu(true)
         val context = requireContext()
-        maxPointsToShow = (resultreceiver.getSharedPreference().getString("max_number_points", maxPointsToShow.toString())?: maxPointsToShow.toString()).toInt()
+        maxPointsToShow = (resultReceiver.getSharedPreference().getString("max_number_points", maxPointsToShow.toString())?: maxPointsToShow.toString()).toInt()
         Configuration.getInstance().load(context, PreferenceManager.getDefaultSharedPreferences(context))
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         root = inflater.inflate(R.layout.fragment_open_street_map, container, false)
         setHasOptionsMenu(true)
-        resultreceiver.getSortFilterHelper().fragment = this
-        summitEntries = resultreceiver.getSortFilterHelper().entries
-        filteredEntries = resultreceiver.getSortFilterHelper().filteredEntries.filter { it.sportType != SportType.IndoorTrainer }
+        resultReceiver.getSortFilterHelper().fragment = this
+        summitEntries = resultReceiver.getSortFilterHelper().entries
+        filteredEntries = resultReceiver.getSortFilterHelper().filteredEntries.filter { it.sportType != SportType.IndoorTrainer }
         setMap()
         Log.d(TAG, "onCreateView")
         return root

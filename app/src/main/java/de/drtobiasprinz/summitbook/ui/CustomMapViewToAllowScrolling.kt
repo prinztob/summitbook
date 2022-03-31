@@ -5,7 +5,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import org.osmdroid.views.MapView
 
-class CustomMapViewToAllowSrolling : MapView {
+class CustomMapViewToAllowScrolling : MapView {
     constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
     constructor(context: Context?) : super(context)
 

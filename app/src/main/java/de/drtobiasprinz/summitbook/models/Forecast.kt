@@ -44,10 +44,10 @@ class Forecast(
             var sum = 0
             forecasts.forEach {
                 if (it.year == year) {
-                    when (selectedSegmentedForecastProperty) {
-                        1 -> sum += getSumPerYear(it, { e -> e.forecastDistance }, { e -> e.actualDistance }, currentYear, currentMonth)
-                        2 -> sum += getSumPerYear(it, { e -> e.forecastNumberActivities }, { e -> e.actualNumberActivities }, currentYear, currentMonth)
-                        else -> sum += getSumPerYear(it, { e -> e.forecastHeightMeter }, { e -> e.actualHeightMeter }, currentYear, currentMonth)
+                    sum += when (selectedSegmentedForecastProperty) {
+                        1 -> getSumPerYear(it, { e -> e.forecastDistance }, { e -> e.actualDistance }, currentYear, currentMonth)
+                        2 -> getSumPerYear(it, { e -> e.forecastNumberActivities }, { e -> e.actualNumberActivities }, currentYear, currentMonth)
+                        else -> getSumPerYear(it, { e -> e.forecastHeightMeter }, { e -> e.actualHeightMeter }, currentYear, currentMonth)
                     }
                 }
             }
@@ -55,16 +55,16 @@ class Forecast(
         }
 
         private fun getSumPerYear(forecast: Forecast, getForecast: (Forecast) -> Int, getActual: (Forecast) -> Int, currentYear: Int, currentMonth: Int): Int {
-            if (forecast.year == currentYear) {
+            return if (forecast.year == currentYear) {
                 if (forecast.month < currentMonth) {
-                    return getActual(forecast)
+                    getActual(forecast)
                 } else if (forecast.month == currentMonth) {
-                    if (getForecast(forecast) < getActual(forecast)) return getActual(forecast) else return getForecast(forecast)
+                    if (getForecast(forecast) < getActual(forecast)) getActual(forecast) else getForecast(forecast)
                 } else {
-                    return getForecast(forecast)
+                    getForecast(forecast)
                 }
             } else {
-                return getForecast(forecast)
+                getForecast(forecast)
             }
         }
 

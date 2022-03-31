@@ -50,10 +50,10 @@ class Summit(
 
     private fun getWellDefinedDuration(): Double {
         val dur = if (velocityData.avgVelocity > 0) kilometers / velocityData.avgVelocity else 0.0
-        if (dur < 24) {
-            return dur
+        return if (dur < 24) {
+            dur
         } else {
-            return 0.0
+            0.0
         }
     }
 
@@ -85,19 +85,19 @@ class Summit(
 
     fun getGpsTrackPath(simplified: Boolean = false): Path {
         val fileName = if (simplified) "id_${activityId}_simplified.gpx" else "id_${activityId}.gpx"
-        if (isBookmark) {
-            return Paths.get(MainActivity.storage.toString(), subDirForGpsTracksBookmark, fileName)
+        return if (isBookmark) {
+            Paths.get(MainActivity.storage.toString(), subDirForGpsTracksBookmark, fileName)
         } else {
-            return Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
+            Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
         }
     }
 
     fun getGpxPyPath(): Path {
         val fileName = "id_${activityId}_gpxpy.json"
-        if (isBookmark) {
-            return Paths.get(MainActivity.storage.toString(), subDirForGpsTracksBookmark, fileName)
+        return if (isBookmark) {
+            Paths.get(MainActivity.storage.toString(), subDirForGpsTracksBookmark, fileName)
         } else {
-            return Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
+            Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
         }
     }
 
@@ -203,7 +203,7 @@ class Summit(
                 elevationData.maxElevation + ';' +
                 lat + ';' +
                 lng + ';' +
-                participants.joinToString(",") + ',' + equipments.map { "${it}${EQUIPMENT_SUFFIX}" }.joinToString(",")+ ';' +
+                participants.joinToString(",") + ',' + equipments.joinToString(",") { "${it}${EQUIPMENT_SUFFIX}" } + ';' +
                 activityId + ';'
         entryToString += if (exportThirdPartyData && garminData != null) {
             garminData.toString()
@@ -280,10 +280,10 @@ class Summit(
 
     fun isInBoundingBox(boundingBox: BoundingBox): Boolean {
         val latLngLocal = latLng
-        if (latLngLocal != null && hasGpsTrack()) {
-            return boundingBox.contains(GeoPoint(latLngLocal.lat, latLngLocal.lon)) || trackBoundingBox?.intersects(boundingBox) == true
+        return if (latLngLocal != null && hasGpsTrack()) {
+            boundingBox.contains(GeoPoint(latLngLocal.lat, latLngLocal.lon)) || trackBoundingBox?.intersects(boundingBox) == true
         } else {
-            return false
+            false
         }
     }
 
@@ -340,7 +340,7 @@ class Summit(
             val participantsAndEquipments = splitLine[13].split(",")
             val activityId = if (splitLine[14].trim { it <= ' ' } != "") splitLine[14].toLong() else System.currentTimeMillis()
             val garminData = getGarminData(splitLine)
-            val latLng = if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") splitLine[11].toDouble().let { TrackPoint(it, splitLine[12].toDouble()) } else null
+            val latLng = if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") TrackPoint(splitLine[11].toDouble(), splitLine[12].toDouble()) else null
             val isFavoriteAndOrPeak = (if (splitLine.size == NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY) splitLine[27] else (if (splitLine.size == NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY) splitLine[15] else splitLine[29])).split(",")
             val isFavorite = if (isFavoriteAndOrPeak.isEmpty()) false else isFavoriteAndOrPeak[0] == "1"
             val isPeak = if (isFavoriteAndOrPeak.size <2) false else isFavoriteAndOrPeak[1] == "1"

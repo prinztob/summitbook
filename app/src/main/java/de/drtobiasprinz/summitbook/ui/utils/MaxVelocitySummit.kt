@@ -2,7 +2,7 @@ package de.drtobiasprinz.summitbook.ui.utils
 
 import com.google.gson.JsonObject
 
-class MaxVelocitySummit() {
+class MaxVelocitySummit {
 
     fun parseFomGarmin(inputJson: JsonObject): List<VelocityEntry> {
         val velocityEntries = mutableListOf<VelocityEntry>()
@@ -21,8 +21,8 @@ class MaxVelocitySummit() {
             var sumDurationHours = 0.0
             var j = i
             while (sumKilometers < kilometer && j < velocityEntries.size) {
-                sumKilometers += velocityEntries.get(j).meter / 1000
-                sumDurationHours += velocityEntries.get(j).seconds / 3600
+                sumKilometers += velocityEntries[j].meter / 1000
+                sumDurationHours += velocityEntries[j].seconds / 3600
                 j += 1
             }
             if (sumKilometers >= kilometer) {

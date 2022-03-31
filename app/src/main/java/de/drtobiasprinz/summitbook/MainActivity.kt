@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var pythonExecutor: GarminPythonExecutor? = null
 
     private var overlayView: PosterOverlayView? = null
-    private var entriesToExcludeForBoundingboxCalculation: MutableList<Summit> = mutableListOf()
+    private var entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
 
     private var isDialogShown = false
     private var currentPosition: Int = 0
@@ -127,7 +127,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val schedulerBoundingBox = Executors.newSingleThreadScheduledExecutor()
         schedulerBoundingBox.schedule({
             val entriesWithoutBoundingBox = sortFilterHelper.entries.filter {
-                it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingboxCalculation
+                it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingBoxCalculation
             }
             if (entriesWithoutBoundingBox.isNotEmpty()) {
                 val entryToCheck = entriesWithoutBoundingBox.first()
@@ -137,7 +137,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     Log.i("Scheduler", "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining.")
                 } else {
                     Log.i("Scheduler", "Updated bounding box for ${entryToCheck.name} failed, remove it from update list.")
-                    entriesToExcludeForBoundingboxCalculation.add(entryToCheck)
+                    entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
                 }
             } else {
                 Log.i("Scheduler", "No more bounding boxes to calculate.")
@@ -260,7 +260,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 AlertDialog.Builder(this)
                         .setTitle(getString(R.string.export_csv_dialog))
                         .setMessage(getString(R.string.export_csv_dialog_text))
-                        .setPositiveButton(R.string.export_csv_dialog_positiv) { _: DialogInterface?, _: Int ->
+                        .setPositiveButton(R.string.export_csv_dialog_positive) { _: DialogInterface?, _: Int ->
                             startFileSelectorAndExportSummits(String.format("%s_summitbook_backup_ALL.zip", LocalDate.now()), CREATE_ZIP_FILE_ALL_SUMMITS)
                         }
                         .setNeutralButton(R.string.export_csv_dialog_neutral
@@ -526,7 +526,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 mainActivity.sortFilterHelper.apply()
                 SummitViewFragment.adapter.notifyDataSetChanged()
                 AlertDialog.Builder(mainActivity)
-                        .setTitle(mainActivity.getString(R.string.import_string_titel))
+                        .setTitle(mainActivity.getString(R.string.import_string_title))
                         .setMessage(mainActivity.getString(R.string.import_string,
                                 (reader.successful + reader.unsuccessful + reader.duplicate).toString(), reader.successful.toString(), reader.unsuccessful.toString(), reader.duplicate.toString()))
                         .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
@@ -537,7 +537,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         class AsyncSimplifyGpaTracks(private val summitsWithoutSimplifiedTracks: List<Summit>, private val pythonInstance: Python) : AsyncTask<Uri, Int?, Void?>() {
 
-            var numberSimplifiedGpxTracks = 0
+            private var numberSimplifiedGpxTracks = 0
             override fun doInBackground(vararg uri: Uri): Void? {
                 if (summitsWithoutSimplifiedTracks.isNotEmpty()) {
                     summitsWithoutSimplifiedTracks.forEach {
@@ -556,7 +556,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             override fun onPostExecute(param: Void?) {
-                Log.i("AsyncSimplifyGpaTracks", "${numberSimplifiedGpxTracks} gpx tracks simplified.")
+                Log.i("AsyncSimplifyGpaTracks", "$numberSimplifiedGpxTracks gpx tracks simplified.")
             }
         }
 
@@ -566,9 +566,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                  val entries: List<Summit>, private val resultData: Intent?,
                                  private val exportThirdPartyData: Boolean = true,
                                  private val exportCalculatedData: Boolean = true) : AsyncTask<Uri, Int?, Void?>() {
-            var entryNumber = 0
-            var withImages = 0
-            var withGpsFile = 0
+            private var entryNumber = 0
+            private var withImages = 0
+            private var withGpsFile = 0
 
             override fun doInBackground(vararg uri: Uri): Void? {
                 writeToZipFile(entries, resultData, context.resources, exportThirdPartyData, exportCalculatedData)
@@ -586,7 +586,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             override fun onPostExecute(param: Void?) {
                 progressBar.visibility = View.GONE
                 AlertDialog.Builder(context)
-                        .setTitle(context.getString(R.string.export_csv_summary_titel))
+                        .setTitle(context.getString(R.string.export_csv_summary_title))
                         .setMessage(context.getString(R.string.export_csv_summary_text,
                                 entries.size.toString(), withGpsFile.toString(), withImages.toString()))
                         .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }

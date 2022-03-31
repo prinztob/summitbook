@@ -19,14 +19,14 @@ class PowerData constructor(
     companion object {
 
         fun parse(data: List<String>): PowerData {
-            if (data.size == 18) {
-                return PowerData(data[0].toFloat(), data[1].toFloat(), data[2].toFloat(),
+            return if (data.size == 18) {
+                PowerData(data[0].toFloat(), data[1].toFloat(), data[2].toFloat(),
                         data[3].toInt(), data[4].toInt(), data[5].toInt(), data[6].toInt(),
                         data[7].toInt(), data[8].toInt(), data[9].toInt(), data[10].toInt(),
                         data[11].toInt(), data[12].toInt(), data[13].toInt(), data[14].toInt(),
                         data[15].toInt(), data[16].toInt(), data[17].toInt())
             } else {
-                return PowerData(0f,0f,0f,0, 0, 0, 0,0,0,0,0,0,0,0,0,0,0,0)
+                PowerData(0f,0f,0f,0, 0, 0, 0,0,0,0,0,0,0,0,0,0,0,0)
             }
         }
     }

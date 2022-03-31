@@ -28,11 +28,9 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
                     if (!dir.isDirectory && !dir.mkdirs()) throw FileNotFoundException("Failed to ensure directory: " +
                             dir.absolutePath)
                     if (ze?.isDirectory == true) continue
-                    val fout = FileOutputStream(file)
-                    try {
-                        while (zis.read(buffer).also { count = it } != -1) fout.write(buffer, 0, count)
-                    } finally {
-                        fout.close()
+                    val outputStream = FileOutputStream(file)
+                    outputStream.use { it ->
+                        while (zis.read(buffer).also { count = it } != -1) it.write(buffer, 0, count)
                     }
                 }
             }

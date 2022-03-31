@@ -36,14 +36,12 @@ import java.util.*
 class GPXParser {
     @Throws(XmlPullParserException::class, IOException::class)
     fun parse(`in`: InputStream): Gpx {
-        return try {
+        return `in`.use { `in` ->
             val parser = Xml.newPullParser()
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
             parser.setInput(`in`, null)
             parser.nextTag()
             readGpx(parser)
-        } finally {
-            `in`.close()
         }
     }
 
@@ -59,8 +57,7 @@ class GPXParser {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
                 TAG_METADATA -> builder.metadata = readMetadata(parser)
                 TAG_WAY_POINT -> wayPoints.add(readWaypoint(parser))
                 TAG_ROUTE -> routes.add(readRoute(parser))
@@ -86,8 +83,7 @@ class GPXParser {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
                 TAG_NAME -> trackBuilder.name = readName(parser)
                 TAG_SEGMENT -> segments.add(readSegment(parser))
                 TAG_DESC -> trackBuilder.desc = readDesc(parser)
@@ -134,8 +130,7 @@ class GPXParser {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
                 TAG_ROUTE_POINT -> points.add(readRoutePoint(parser))
                 TAG_NAME -> routeBuilder.routeName = readName(parser)
                 else -> skip(parser)
@@ -162,8 +157,7 @@ class GPXParser {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
                 TAG_NAME -> builder.name = readName(parser)
                 TAG_ELEVATION -> builder.elevation = readElevation(parser)
                 TAG_TIME -> builder.time = readTime(parser)
@@ -183,8 +177,7 @@ class GPXParser {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
                 TAG_NAME -> metadataBuilder.name = readName(parser)
                 TAG_DESC -> metadataBuilder.desc = readDesc(parser)
                 TAG_AUTHOR -> metadataBuilder.author = readAuthor(parser)
@@ -202,8 +195,7 @@ class GPXParser {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
                 TAG_NAME -> return readString(parser, TAG_NAME)
                 else -> skip(parser)
             }
@@ -239,11 +231,6 @@ class GPXParser {
         return readString(parser, TAG_DESC)
     }
 
-    @Throws(IOException::class, XmlPullParserException::class)
-    private fun readType(parser: XmlPullParser): String {
-        return readString(parser, TAG_TYPE)
-    }
-
     @Throws(XmlPullParserException::class, IOException::class)
     private fun readExtension(parser: XmlPullParser): PointExtension {
         val extensionBuilder: PointExtension.Builder = PointExtension.Builder()
@@ -252,8 +239,7 @@ class GPXParser {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
                 TAG_TRACK_POINT_EXTENSIONS -> readTrackPointExtensions(parser, extensionBuilder, parser.prefix)
                 else -> skip(parser)
             }
@@ -271,8 +257,7 @@ class GPXParser {
             if (parser.prefix != extensionNamespace) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
                 TAG_CADENCE -> extensionBuilder.cadence = readString(parser, TAG_CADENCE).toInt()
                 TAG_DISTANCE -> extensionBuilder.distanceMeters = readString(parser, TAG_DISTANCE).toDouble()
                 TAG_HR -> extensionBuilder.heartRate = readString(parser, TAG_HR).toInt()

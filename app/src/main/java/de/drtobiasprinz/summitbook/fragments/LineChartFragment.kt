@@ -29,10 +29,7 @@ import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerLineChart
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerView
-import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.text.SimpleDateFormat
-import java.util.*
-import kotlin.collections.ArrayList
 
 class LineChartFragment : Fragment(), SummationFragment {
     private var summitEntries: List<Summit>? = null
@@ -43,11 +40,11 @@ class LineChartFragment : Fragment(), SummationFragment {
     private var lineChartEntries: MutableList<Entry?> = ArrayList()
     private var lineChartColors: List<Int>? = mutableListOf()
     private var lineChart: CustomMarkerLineChart? = null
-    private lateinit var resultreceiver: FragmentResultReceiver
+    private lateinit var resultReceiver: FragmentResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultreceiver = context as FragmentResultReceiver
+        resultReceiver = context as FragmentResultReceiver
 
     }
 
@@ -57,12 +54,12 @@ class LineChartFragment : Fragment(), SummationFragment {
     ): View? {
         lineChartView = inflater.inflate(R.layout.fragment_line_chart, container, false)
         setHasOptionsMenu(true)
-        resultreceiver.getSortFilterHelper().fragment = this
+        resultReceiver.getSortFilterHelper().fragment = this
         fillDateSpinner()
-        summitEntries = resultreceiver.getSortFilterHelper().entries
+        summitEntries = resultReceiver.getSortFilterHelper().entries
         lineChart = lineChartView?.findViewById(R.id.lineChart) // Fragment
         resizeChart()
-        filteredEntries = resultreceiver.getSortFilterHelper().filteredEntries
+        filteredEntries = resultReceiver.getSortFilterHelper().filteredEntries
         update(filteredEntries)
         listenOnDataSpinner()
         drawLineChart()

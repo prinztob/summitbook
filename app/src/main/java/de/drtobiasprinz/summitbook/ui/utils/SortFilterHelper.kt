@@ -77,8 +77,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     var areSharedPrefInitialized: Boolean = false
 
     private fun setExtremeValues() {
-        extremaValuesAllSummits = entries.let { ExtremaValuesSummits(it) }
-        extremaValuesFilteredSummits = entries.let { ExtremaValuesSummits(it) }
+        extremaValuesAllSummits = ExtremaValuesSummits(entries)
+        extremaValuesFilteredSummits = ExtremaValuesSummits(entries)
     }
 
     private fun setMultiSliders() {
@@ -508,7 +508,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private fun filterByParticipants() {
         val selectedParticipants = participantsChips.children.toList().map { (it as Chip).text.toString() }
         val entries = ArrayList<Summit>()
-        if (selectedParticipants.size != 0) {
+        if (selectedParticipants.isNotEmpty()) {
             for (entry in filteredEntries) {
                 for (participant in selectedParticipants) {
                     if (participant in entry.participants) {

@@ -37,9 +37,9 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     var osMapRoute: Polyline? = null
     var isShownOnMap: Boolean = false
     var trackGeoPoints: MutableList<GeoPoint> = mutableListOf()
-    var usedTrackGeoPoints: MutableList<GeoPoint> = mutableListOf()
+    private var usedTrackGeoPoints: MutableList<GeoPoint> = mutableListOf()
     var trackPoints: MutableList<TrackPoint> = mutableListOf()
-    var usedTrackPoints: MutableList<TrackPoint> = mutableListOf()
+    private var usedTrackPoints: MutableList<TrackPoint> = mutableListOf()
     var gpxTrack: Gpx? = null
     private var minForColorCoding = 0f
     private var maxForColorCoding = 0f
@@ -162,7 +162,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
     private fun addColorToTrack(paintBorder: Paint, trackColor: TrackColor) {
-        val values = usedTrackPoints.map(trackColor.f).filterNotNull()
+        val values = usedTrackPoints.mapNotNull(trackColor.f)
         minForColorCoding = (values.minOrNull() ?: 0.0).toFloat()
         maxForColorCoding = (values.maxOrNull() ?: 0.0).toFloat()
         val pointsExists = usedTrackPoints.any { trackColor.f(it) != 0.0 }
@@ -354,7 +354,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         }
 
 
-        internal class AsyncLoadGpxTrack(private val fileToUse: File, val gpsTrack: GpsTrack) : AsyncTask<Uri, Int?, Void?>() {
+        internal class AsyncLoadGpxTrack(private val fileToUse: File, private val gpsTrack: GpsTrack) : AsyncTask<Uri, Int?, Void?>() {
             private var trackGeoPoints: MutableList<GeoPoint> = mutableListOf()
             private var trackPoints: MutableList<TrackPoint> = mutableListOf()
             private var track: Gpx? = null
@@ -399,7 +399,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
 
-    internal class AttitudeColorList(val points: List<TrackPoint>, val trackMin: Float, val trackMax: Float, val startColor: Int, val endColor: Int, val f: (TrackPoint) -> Double?) : ColorMapping {
+    internal class AttitudeColorList(private val points: List<TrackPoint>, private val trackMin: Float, private val trackMax: Float, private val startColor: Int, private val endColor: Int, val f: (TrackPoint) -> Double?) : ColorMapping {
         override fun getColorForIndex(pSegmentIndex: Int): Int {
             return if (pSegmentIndex < points.size) {
                 val value = f(points[pSegmentIndex])

@@ -1,3 +1,5 @@
+package de.drtobiasprinz.summitbook.fragments
+
 import android.os.Bundle
 import android.text.Html
 import android.text.method.LinkMovementMethod
@@ -31,11 +33,11 @@ class SummitEntryDataFragment : Fragment() {
     private var database: AppDatabase? = null
     private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
-    private lateinit var resultreceiver: SummitEntryResultReceiver
+    private lateinit var resultReceiver: SummitEntryResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultreceiver = context as SummitEntryResultReceiver
+        resultReceiver = context as SummitEntryResultReceiver
         pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
         pageViewModel?.setIndex(TAG)
     }
@@ -47,9 +49,9 @@ class SummitEntryDataFragment : Fragment() {
         root = inflater.inflate(R.layout.fragment_summit_entry_data, container, false)
         database = context?.let { AppDatabase.getDatabase(it) }
         val extrema = MainActivity.extremaValuesAllSummits
-        summitEntry = resultreceiver.getSummit()
-        summitToCompare = resultreceiver.getSelectedSummitForComparison()
-        summitsToCompare = resultreceiver.getSummitsForComparison()
+        summitEntry = resultReceiver.getSummit()
+        summitToCompare = resultReceiver.getSelectedSummitForComparison()
+        summitsToCompare = resultReceiver.getSummitsForComparison()
         if (summitEntry.isBookmark) {
             root.findViewById<Spinner>(R.id.summit_name_to_compare).visibility = View.GONE
         } else {
@@ -184,11 +186,11 @@ class SummitEntryDataFragment : Fragment() {
         val summitToCompareSpinner: SmartMaterialSpinner<String> = root.findViewById(R.id.summit_name_to_compare)
         val items = getSummitsSuggestions(summitEntry)
         summitToCompareSpinner.item = items
-        resultreceiver.getViewPager().addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+        resultReceiver.getViewPager().addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(position: Int, positionOffset: Float, @Px positionOffsetPixels: Int) {}
 
             override fun onPageSelected(position: Int) {
-                val summitToCompareLocal = resultreceiver.getSelectedSummitForComparison()
+                val summitToCompareLocal = resultReceiver.getSelectedSummitForComparison()
                 if (summitToCompareLocal != null) {
                     val name = "${summitToCompareLocal.getDateAsString()} ${summitToCompareLocal.name}"
                     val index = items.indexOf(name)
@@ -207,7 +209,7 @@ class SummitEntryDataFragment : Fragment() {
                     val text = items[position]
                     if (text != "") {
                         summitToCompare = summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
-                        resultreceiver.setSelectedSummitForComparison(summitToCompare)
+                        resultReceiver.setSelectedSummitForComparison(summitToCompare)
                     }
                     setBaseData(extrema)
                     setThirdPartyData(extrema)
@@ -223,7 +225,7 @@ class SummitEntryDataFragment : Fragment() {
 
     private fun getSummitsSuggestions(localSummit: Summit): ArrayList<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
-        val summitsToCompareFromActivity = resultreceiver.getSummitsForComparison()
+        val summitsToCompareFromActivity = resultReceiver.getSummitsForComparison()
         val summitsWithoutSimilarName = summitsToCompareFromActivity.filter { it.name != localSummit.name }.sortedByDescending { it.date }
         val summitsWithSimilarName = summitsToCompareFromActivity.filter { it.name == localSummit.name && it != localSummit }.sortedByDescending { it.date }
         summitsToCompare = summitsWithSimilarName + summitsWithoutSimilarName

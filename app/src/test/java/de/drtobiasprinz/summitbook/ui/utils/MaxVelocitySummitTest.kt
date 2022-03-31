@@ -25,7 +25,7 @@ class MaxVelocitySummitTest {
 
     @Test
     @Throws(ParseException::class)
-    fun getMaxVelocityInKilometerIntervall1() {
+    fun getMaxVelocityInKilometerInterval1() {
         val resource = this.javaClass.classLoader?.getResource("splits_1.json")
         if (resource != null) {
             val splits = File(resource.path)
@@ -41,7 +41,7 @@ class MaxVelocitySummitTest {
 
     @Test
     @Throws(ParseException::class)
-    fun getMaxVelocityInKilometerIntervall2() {
+    fun getMaxVelocityInKilometerInterval2() {
         val resource = this.javaClass.classLoader?.getResource("splits_2.json")
         if (resource != null) {
             val splits = File(resource.path)
@@ -58,7 +58,7 @@ class MaxVelocitySummitTest {
 
     @Test
     @Throws(ParseException::class)
-    fun getMaxVelocityInKilometerIntervall3() {
+    fun getMaxVelocityInKilometerInterval3() {
         val resource = this.javaClass.classLoader?.getResource("splits_3.json")
         if (resource != null) {
             val splits = File(resource.path)

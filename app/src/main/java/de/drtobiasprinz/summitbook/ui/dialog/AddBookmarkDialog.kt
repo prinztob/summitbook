@@ -47,7 +47,7 @@ import kotlin.math.roundToInt
 
 class AddBookmarkDialog : DialogFragment() {
     var isUpdate = false
-    var temporaryGpxFile: File? = null
+    private var temporaryGpxFile: File? = null
     private var database: AppDatabase? = null
     private var sportTypeAdapter: ArrayAdapter<SportType>? = null
     private var currentBookmark: Summit? = null
@@ -181,7 +181,7 @@ class AddBookmarkDialog : DialogFragment() {
                 ElevationData.parse(0, getTextWithDefault(heightMeterText, 0)),
                 getTextWithDefault(kmText, 0.0),
                 VelocityData.parse(0.0, 0.0),
-                0.0, 0.0, emptyList(), emptyList(), false, false, mutableListOf(), null, null,
+                0.0, 0.0, emptyList(), emptyList(), isFavorite = false, isPeak = false, imageIds = mutableListOf(), garminData = null, trackBoundingBox = null,
                 isBookmark = true
         )
     }
@@ -263,7 +263,7 @@ class AddBookmarkDialog : DialogFragment() {
         @SuppressLint("StaticFieldLeak")
         class AsyncAnalyzeGpaTracks(private val entry: Summit?, private val pythonInstance: Python,
                                     private val database: AppDatabase, private val view: View) : AsyncTask<Uri, Int?, Void?>() {
-            var highestElevation: TrackPoint? = null
+            private var highestElevation: TrackPoint? = null
             override fun doInBackground(vararg uri: Uri): Void? {
                 try {
                     if (entry?.hasGpsTrack() == true) {

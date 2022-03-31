@@ -37,11 +37,11 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
     private lateinit var backButton: Button
     private lateinit var tableLayout: TableLayout
     private var tableEntries: MutableList<TableEntry> = mutableListOf()
-    private lateinit var resultreceiver: FragmentResultReceiver
+    private lateinit var resultReceiver: FragmentResultReceiver
     private var summitEntry: Summit? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        resultreceiver = context as FragmentResultReceiver
+        resultReceiver = context as FragmentResultReceiver
         return inflater.inflate(R.layout.dialog_add_additional_data_from_external_resources, container)
     }
 
@@ -53,7 +53,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         backButton = view.findViewById(R.id.back)
         if (savedInstanceState != null &&  summitEntry == null) {
             val summitEntryId = savedInstanceState.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
-            summitEntry = resultreceiver.getSortFilterHelper().database.summitDao()?.getSummit(summitEntryId)
+            summitEntry = resultReceiver.getSortFilterHelper().database.summitDao()?.getSummit(summitEntryId)
         }
         val localSummitEntry = summitEntry
         if (localSummitEntry != null) {
@@ -61,13 +61,13 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                 val copyElevationData = localSummitEntry.elevationData.clone()
                 val copyVelocityData = localSummitEntry.velocityData.clone()
                 tableEntries.forEach { it.update() }
-                if (copyElevationData != localSummitEntry.elevationData || copyVelocityData != localSummitEntry.velocityData) resultreceiver.getSortFilterHelper().database.summitDao()?.updateSummit(localSummitEntry)
+                if (copyElevationData != localSummitEntry.elevationData || copyVelocityData != localSummitEntry.velocityData) resultReceiver.getSortFilterHelper().database.summitDao()?.updateSummit(localSummitEntry)
                 dialog?.cancel()
             }
             deleteDataButton.setOnClickListener {
                 localSummitEntry.velocityData = VelocityData(localSummitEntry.velocityData.avgVelocity, localSummitEntry.velocityData.maxVelocity, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 localSummitEntry.elevationData = ElevationData(localSummitEntry.elevationData.maxElevation, localSummitEntry.elevationData.elevationGain)
-                resultreceiver.getSortFilterHelper().database.summitDao()?.updateSummit(localSummitEntry)
+                resultReceiver.getSortFilterHelper().database.summitDao()?.updateSummit(localSummitEntry)
                 dialog?.cancel()
             }
             backButton.setOnClickListener {
@@ -154,7 +154,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                                 "km/h", localSummitEntry.velocityData.hundredKilometers > 0.0, { e -> localSummitEntry.velocityData.hundredKilometers = e }))
                     }
                 } else {
-                    AsyncDownloadSpeedDataForActivity(localSummitEntry, resultreceiver.getPythonExecutor(), resultreceiver.getSortFilterHelper()).execute()
+                    AsyncDownloadSpeedDataForActivity(localSummitEntry, resultReceiver.getPythonExecutor(), resultReceiver.getSortFilterHelper()).execute()
                 }
             }
             val gpxPyJsonFile = localSummitEntry.getGpxPyPath().toFile()
@@ -237,10 +237,10 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         tr.layoutParams = TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT)
         addLabel(view, tr, 200 + i, name, padding = 2)
-        addLabel(view, tr, 201 + i, String.format(requireContext().resources.configuration.locales[0], "%.1f", entry.value), padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
+        addLabel(view, tr, 201 + i, String.format(requireContext().resources.configuration.locales[0], "%.1f", entry.value), padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
         val defaultValueAsString = if (abs(entry.defaultValue) < 0.05 || abs(entry.value - entry.defaultValue) < 0.05) "-" else String.format(requireContext().resources.configuration.locales[0], "%.1f", entry.defaultValue)
-        addLabel(view, tr, 202 + i, defaultValueAsString, padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
-        addLabel(view, tr, 203 + i, entry.unit, padding = 2, aligment = View.TEXT_ALIGNMENT_TEXT_END)
+        addLabel(view, tr, 202 + i, defaultValueAsString, padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
+        addLabel(view, tr, 203 + i, entry.unit, padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
         val box = CheckBox(view.context)
         box.isChecked = entry.isChecked
         box.setOnCheckedChangeListener { _, arg1 ->
@@ -268,11 +268,12 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                 TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT))
     }
 
-    private fun addLabel(view: View, tr: TableRow, id: Int, text: String, color: Int = Color.WHITE, padding: Int = 5, aligment: Int = View.TEXT_ALIGNMENT_CENTER) {
+    private fun addLabel(view: View, tr: TableRow, id: Int, text: String, color: Int = Color.WHITE,
+                         padding: Int = 5, alignment: Int = View.TEXT_ALIGNMENT_CENTER) {
         val label = TextView(view.context)
         label.id = id
         label.text = text
-        label.gravity = aligment
+        label.gravity = alignment
         label.setTextColor(color)
         label.setPadding(padding, padding, padding, padding)
         tr.addView(label)
@@ -292,8 +293,8 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         }
 
         @SuppressLint("StaticFieldLeak")
-        class AsyncDownloadSpeedDataForActivity(private val summit: Summit, private val pythonExecutor: GarminPythonExecutor?, var sortFilterHelper: SortFilterHelper) : AsyncTask<Void?, Void?, Void?>() {
-            var json: JsonObject? = null
+        class AsyncDownloadSpeedDataForActivity(private val summit: Summit, private val pythonExecutor: GarminPythonExecutor?, private var sortFilterHelper: SortFilterHelper) : AsyncTask<Void?, Void?, Void?>() {
+            private var json: JsonObject? = null
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
                     summit.garminData?.activityId?.let { json = pythonExecutor?.downloadSpeedDataForActivity(it) }
