@@ -11,6 +11,7 @@
         layout="@layout/toolbar_main" />
 
     <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/activity_settings"
         android:name="de.drtobiasprinz.summitbook.fragments.SettingsFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

@@ -22,7 +22,8 @@ interface FragmentResultReceiver {
 
     fun getSummitViewAdapter(): SummitViewAdapter?
 
-    fun setSummitViewAdapter(summitViewAdapter: SummitViewAdapter)
+    fun setSummitViewAdapter(summitViewAdapter: SummitViewAdapter?)
+
     fun getResultLauncher(): ActivityResultLauncher<Intent>
 
 }

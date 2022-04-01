@@ -29,7 +29,7 @@ class Forecast(
             cal.get(Calendar.MONTH) + 1 == month && cal.get(Calendar.YEAR) == year
         }
         actualHeightMeter = summitsInMonth.sumBy {
-            if (it.sportType == SportType.IndoorTrainer) {
+            if (it.sportType != SportType.IndoorTrainer) {
                 it.elevationData.elevationGain
             } else {
                 it.elevationData.elevationGain * indoorHeightMeterPercent / 100

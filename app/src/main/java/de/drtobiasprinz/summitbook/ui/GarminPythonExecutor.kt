@@ -5,12 +5,10 @@ import android.util.Log
 import android.view.View
 import com.chaquo.python.PyObject
 import com.chaquo.python.Python
-import com.chaquo.python.android.AndroidPlatform
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.*
@@ -30,14 +28,13 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
 
     private fun login() {
         if (client == null) {
-            if (!Python.isStarted()) {
-                MainActivity.mainActivity?.let { AndroidPlatform(it) }?.let { Python.start(it) }
+            if (Python.isStarted()) {
+                pythonModule = pythonInstance?.getModule("start")
+                Log.i("GarminPythonExecutor", "do login")
+                val result = pythonModule?.callAttr("get_authenticated_client", username, password)
+                checkOutput(result)
+                client = result
             }
-            pythonModule = pythonInstance?.getModule("start")
-            Log.i("GarminPythonExecutor", "do login")
-            val result = pythonModule?.callAttr("get_authenticated_client", username, password)
-            checkOutput(result)
-            client = result
         }
     }
 
@@ -222,7 +219,7 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
                             getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt()),
                     round(convertMeterToKm(getJsonObjectEntryNotNull(jsonObject, "distance").toDouble()), 2),
                     VelocityData.parse(round(averageSpeed, 2),
-                        if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
+                            if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
                     null, null,
                     emptyList(),
                     emptyList(),

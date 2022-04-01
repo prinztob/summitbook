@@ -9,12 +9,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import de.drtobiasprinz.summitbook.*
+import de.drtobiasprinz.summitbook.AddImagesActivity
+import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
+import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
@@ -112,7 +116,7 @@ class SummitViewAdapter(private val resultReceiver: FragmentResultReceiver) : Re
         val editButton = cardView.findViewById<ImageButton?>(R.id.entry_edit)
         editButton?.setOnClickListener { _: View? ->
             val updateDialog = updateInstance(summit)
-            MainActivity.mainActivity?.supportFragmentManager?.let { updateDialog.show(it, "Summits") }
+            (context as AppCompatActivity).supportFragmentManager.let { updateDialog.show(it, "Summits") }
         }
         val addPosition = cardView.findViewById<ImageButton?>(R.id.entry_add_coordinate)
         setIconForPositionButton(addPosition, summit)
@@ -121,7 +125,7 @@ class SummitViewAdapter(private val resultReceiver: FragmentResultReceiver) : Re
             val intent = Intent(context, SelectOnOsMapActivity::class.java)
             intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
             intent.putExtra(SelectOnOsMapActivity.SUMMIT_POSITION, position)
-            v?.context?.startActivity(intent)
+            resultReceiver.getResultLauncher().launch(intent)
         }
         cardView.setOnClickListener { v: View? ->
             val context = v?.context

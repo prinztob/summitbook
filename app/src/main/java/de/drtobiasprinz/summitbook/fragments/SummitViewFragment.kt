@@ -24,7 +24,7 @@ class SummitViewFragment : Fragment(), SummationFragment, OnSharedPreferenceChan
     private lateinit var summitEntries: List<Summit>
     private var filteredEntries: List<Summit>? = null
     private lateinit var resultReceiver: FragmentResultReceiver
-    private lateinit var adapter: SummitViewAdapter
+    private var adapter: SummitViewAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,12 +54,12 @@ class SummitViewFragment : Fragment(), SummationFragment, OnSharedPreferenceChan
         return summitRecycler
     }
 
-    fun getAdapter(): SummitViewAdapter {
+    fun getAdapter(): SummitViewAdapter? {
         return adapter
     }
 
     override fun update(filteredSummitEntries: List<Summit>?) {
-        adapter.setFilteredSummitEntries(filteredSummitEntries)
+        adapter?.setFilteredSummitEntries(filteredSummitEntries)
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {

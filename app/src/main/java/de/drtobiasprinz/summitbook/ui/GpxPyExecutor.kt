@@ -4,8 +4,8 @@ import com.chaquo.python.PyObject
 import com.chaquo.python.Python
 import java.nio.file.Path
 
-class GpxPyExecutor(var pythonInstance: Python) {
-    lateinit var pythonModule: PyObject
+class GpxPyExecutor(private var pythonInstance: Python) {
+    private lateinit var pythonModule: PyObject
 
     fun createSimplifiedGpxTrack(originalGpxTrackPath: Path) {
         pythonModule = pythonInstance.getModule("start")

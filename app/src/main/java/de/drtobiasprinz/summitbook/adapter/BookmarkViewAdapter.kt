@@ -11,9 +11,9 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
-import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.database.AppDatabase
@@ -62,7 +62,7 @@ class BookmarkViewAdapter(var bookmarks: MutableList<Summit>) : RecyclerView.Ada
             val editButton = cardView.findViewById<ImageButton?>(R.id.entry_edit)
             editButton?.setOnClickListener { _: View? ->
                 val updateDialog = updateInstance(entry)
-                MainActivity.mainActivity?.supportFragmentManager?.let { updateDialog.show(it, "Update Bookmark") }
+                (context as AppCompatActivity).supportFragmentManager.let { updateDialog.show(it, "Update Bookmark") }
             }
             cardView.setOnClickListener { v: View? ->
                 val context = v?.context

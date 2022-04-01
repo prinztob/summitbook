@@ -60,7 +60,7 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
         }
     }
 
-    fun getPageTitle(position: Int): CharSequence {
+    private fun getPageTitle(position: Int): CharSequence {
         val tabTitles = mutableListOf(R.string.tab_text_1)
         if (summitEntry.hasImagePath()) {
             tabTitles.add(R.string.tab_text_2)

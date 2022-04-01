@@ -27,6 +27,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
+import java.lang.NumberFormatException
 import java.nio.file.Path
 import java.util.*
 import kotlin.collections.ArrayList
@@ -344,6 +345,8 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                 val inputStream: InputStream = FileInputStream(fileToUse)
                 return mParser.parse(inputStream)
             } catch (e: IOException) {
+                e.printStackTrace()
+            } catch (e: NumberFormatException) {
                 e.printStackTrace()
             } catch (e: XmlPullParserException) {
                 e.printStackTrace()

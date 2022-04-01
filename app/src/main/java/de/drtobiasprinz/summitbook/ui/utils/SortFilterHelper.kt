@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.*
 import android.widget.AdapterView.OnItemSelectedListener
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.children
 import co.ceryle.segmentedbutton.SegmentedButtonGroup
 import com.google.android.material.chip.Chip
@@ -173,7 +174,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
                 { view: DatePicker, yearSelected: Int, monthSelected: Int, daySelected: Int ->
                     eText.setText(view.context.getString(R.string.date_format, String.format(context.resources.configuration.locales[0], "%02d", daySelected),
                             String.format(context.resources.configuration.locales[0], "%02d", monthSelected + 1),
-                            String.format(context.resources.configuration.locales[0], "%02d", yearSelected))) }, year, month, day)
+                            String.format(context.resources.configuration.locales[0], "%02d", yearSelected)))
+                }, year, month, day)
         picker.show()
     }
 
@@ -692,7 +694,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
             }
         }
         updateDateSpinner()
-        overview = MainActivity.mainActivity!!.findViewById(R.id.overview)
+        overview = (context as AppCompatActivity).findViewById(R.id.overview)
         setOverviewText()
     }
 
@@ -718,7 +720,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
 
 
     companion object {
-        fun getInstance(context: Context, entries: ArrayList<Summit>,
+        fun getInstance(
+                context: Context, entries: ArrayList<Summit>,
                 database: AppDatabase, savedInstanceState: Bundle?,
                 sharedPreferences: SharedPreferences?,
         ): SortFilterHelper {
@@ -732,7 +735,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
                 } else {
                     sortFilterHelper.setSelectedDateItemDefault(0)
                 }
-                sortFilterHelper.setIndoorHeightMeterPercent(sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0)
+                sortFilterHelper.setIndoorHeightMeterPercent(sharedPreferences?.getInt("indoor_height_meter_per_cent", 0)
+                        ?: 0)
             }
             if (savedInstanceState != null) {
                 val uniqueYears = savedInstanceState.getString(SORT_FILTER_HELPER_UNIQUE_YEARS)?.split(",")

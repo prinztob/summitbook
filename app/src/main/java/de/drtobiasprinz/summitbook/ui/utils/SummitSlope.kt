@@ -10,7 +10,7 @@ import kotlin.math.sign
 class SummitSlope(private val trackPoints: MutableList<TrackPoint>) {
 
     var maxSlope: Double = 0.0
-    var maxVerticalVelocity: Double = 0.0
+    private var maxVerticalVelocity: Double = 0.0
     var slopeGraph: MutableList<Entry> = mutableListOf()
 
     fun calculateMaxSlope(binSizeMeter: Double = 100.0, withRegression: Boolean = true, requiredR2: Double = REQUIRED_R2, factor: Int = 1): Double {

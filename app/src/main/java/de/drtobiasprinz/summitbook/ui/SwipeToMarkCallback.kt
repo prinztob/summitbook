@@ -11,7 +11,7 @@ import de.drtobiasprinz.summitbook.models.Summit
 import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
 
 
-class SwipeToMarkCallback(private val mAdapter: SummitViewAdapter, val context: Context) :
+class SwipeToMarkCallback(private val mAdapter: SummitViewAdapter?, val context: Context) :
         ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
     private var summit: Summit? = null
     override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
@@ -20,15 +20,15 @@ class SwipeToMarkCallback(private val mAdapter: SummitViewAdapter, val context: 
 
     override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
         val position = viewHolder.bindingAdapterPosition
-        val entry = mAdapter.getItem(position)
+        val entry = mAdapter?.getItem(position)
         summit = entry
         if (entry != null) {
             when (direction) {
                 ItemTouchHelper.LEFT -> {
-                    mAdapter.updateIsPeak(entry, position)
+                    mAdapter?.updateIsPeak(entry, position)
                 }
                 ItemTouchHelper.RIGHT -> {
-                    mAdapter.updateIsFavorite(entry, position)
+                    mAdapter?.updateIsFavorite(entry, position)
                 }
             }
         }

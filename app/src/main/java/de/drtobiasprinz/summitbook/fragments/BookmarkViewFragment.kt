@@ -7,11 +7,11 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.BookmarkViewAdapter
 import de.drtobiasprinz.summitbook.database.AppDatabase
@@ -31,7 +31,7 @@ class BookmarkViewFragment : Fragment() {
                 R.layout.fragment_summit_view, container, false) as RecyclerView
         setHasOptionsMenu(true)
         val database = context?.let { AppDatabase.getDatabase(it) }
-        bookmarks = (database?.summitDao()?.allBookmark?: listOf()) as MutableList
+        bookmarks = (database?.summitDao()?.allBookmark ?: listOf()) as MutableList
         adapter = BookmarkViewAdapter(bookmarks)
         summitRecycler?.adapter = adapter
         val layoutManager = LinearLayoutManager(activity)
@@ -43,7 +43,7 @@ class BookmarkViewFragment : Fragment() {
         addBookmarkFab?.visibility = View.VISIBLE
         addBookmarkFab?.setOnClickListener { _: View? ->
             val addSummit = AddBookmarkDialog()
-            MainActivity.mainActivity?.supportFragmentManager?.let { addSummit.show(it, getString(R.string.add_new_bookmark)) }
+            (context as AppCompatActivity).supportFragmentManager.let { addSummit.show(it, getString(R.string.add_new_bookmark)) }
         }
 
         return summitRecycler
@@ -71,6 +71,7 @@ class BookmarkViewFragment : Fragment() {
     companion object {
         @SuppressLint("StaticFieldLeak")
         var summitRecycler: RecyclerView? = null
+
         @SuppressLint("StaticFieldLeak")
         var adapter: BookmarkViewAdapter? = null
     }
