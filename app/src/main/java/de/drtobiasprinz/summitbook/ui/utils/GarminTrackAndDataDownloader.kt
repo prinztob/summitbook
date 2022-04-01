@@ -44,13 +44,13 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
     }
 
 
-    fun updateFinalEntry(sortFilterHelper: SortFilterHelper) {
+    fun updateFinalEntry(resultReceiver: FragmentResultReceiver) {
         val finalEntryLocal = finalEntry
         if (finalEntryLocal != null) {
-            finalEntryLocal.id = sortFilterHelper.database.summitDao()?.addSummit(finalEntryLocal) ?: 0L
-            sortFilterHelper.entries.add(finalEntryLocal)
-            sortFilterHelper.update(sortFilterHelper.entries)
-            SummitViewFragment.adapter.notifyDataSetChanged()
+            finalEntryLocal.id = resultReceiver.getSortFilterHelper().database.summitDao()?.addSummit(finalEntryLocal) ?: 0L
+            resultReceiver.getSortFilterHelper().entries.add(finalEntryLocal)
+            resultReceiver.getSortFilterHelper().update(resultReceiver.getSortFilterHelper().entries)
+            resultReceiver.getSummitViewAdapter()?.notifyDataSetChanged()
         }
     }
 

@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.round
 
 
+@Suppress("DEPRECATION")
 class AddSummitDialog : DialogFragment(), BaseDialog {
     var isUpdate = false
     private var temporaryGpxFile: File? = null
@@ -221,7 +222,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     entry.latLng = latlngHighestPointLocal
                 }
                 entry.setBoundingBoxFromTrack()
-                val adapter = SummitViewFragment.adapter
+                val adapter = resultReceiver.getSummitViewAdapter()
                 if (isUpdate) {
                     resultReceiver.getSortFilterHelper().database.summitDao()?.updateSummit(entry)
                 } else {
@@ -230,7 +231,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     resultReceiver.getSortFilterHelper().entries.add(entry)
                     resultReceiver.getSortFilterHelper().update(resultReceiver.getSortFilterHelper().entries)
                 }
-                adapter.notifyDataSetChanged()
+                adapter?.notifyDataSetChanged()
                 dialog?.cancel()
             }
         }
@@ -248,6 +249,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 val pythonExecutor = resultReceiver.getPythonExecutor()
                 if (pythonExecutor != null) {
                     view.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
+                    @Suppress("DEPRECATION")
                     AsyncDownloadJsonViaPython(pythonExecutor, dateAsString, this).execute()
                 } else {
                     Toast.makeText(context,
@@ -559,7 +561,8 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 }
                 updateMultiSpotActivityIds(pythonExecutor, entry)
             }
-            GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(pythonExecutor, listOf(entry), resultReceiver.getAllActivitiesFromThirdParty(), resultReceiver.getSortFilterHelper(), useTcx, this, index).execute()
+            @Suppress("DEPRECATION")
+            GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(listOf(entry), resultReceiver, useTcx, this, index).execute()
         } catch (e: java.lang.RuntimeException) {
             Log.e("AsyncDownloadActivities", e.message ?: "")
         }

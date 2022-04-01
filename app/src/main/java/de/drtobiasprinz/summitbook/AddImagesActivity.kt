@@ -2,6 +2,7 @@ package de.drtobiasprinz.summitbook
 
 import android.app.Activity
 import android.content.DialogInterface
+import android.content.Intent
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.AsyncTask
@@ -17,14 +18,15 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import com.github.dhaval2404.imagepicker.ImagePicker
 import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.Summit
 import java.io.File
 
+@Suppress("DEPRECATION")
 class AddImagesActivity : AppCompatActivity() {
     private var database: AppDatabase? = null
     private var summitEntry: Summit? = null
     private var canImageBeOnFirstPosition: Map<Int, Boolean>? = emptyMap()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_images)
@@ -45,6 +47,11 @@ class AddImagesActivity : AppCompatActivity() {
             imageViewSportType.setImageResource(localSummit.sportType.imageIdBlack)
             val layout: RelativeLayout = findViewById(R.id.images)
             drawLayout(localSummit, layout)
+
+            val data = Intent()
+            data.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, localSummit.id)
+            setResult(Activity.RESULT_OK, data)
+
         }
     }
 
@@ -88,6 +95,7 @@ class AddImagesActivity : AppCompatActivity() {
         removeButton.id = View.generateViewId()
         removeButton.setImageResource(R.drawable.ic_delete_black_24dp)
         removeButton.setOnClickListener { v: View ->
+            @Suppress("DEPRECATION")
             AsyncClearCache(Glide.get(applicationContext)).execute()
             AlertDialog.Builder(v.context)
                     .setTitle(v.context.getString(R.string.delete_image, summitEntry?.name))
@@ -202,18 +210,7 @@ class AddImagesActivity : AppCompatActivity() {
     }
 
     private fun updateAdapterAndDatabase(localSummit: Summit) {
-        updateImageIds(localSummit, SummitViewFragment.adapter.summitEntries)
-        SummitViewFragment.adapter.summitEntriesFiltered?.let { updateImageIds(localSummit, it) }
         database?.summitDao()?.updateImageIds(localSummit.id, localSummit.imageIds)
-        SummitViewFragment.adapter.notifyDataSetChanged()
-    }
-
-    private fun updateImageIds(localSummit: Summit, summitEntries: List<Summit>) {
-        summitEntries.forEach {
-            if (it.id == localSummit.id) {
-                it.imageIds = localSummit.imageIds
-            }
-        }
     }
 
     private fun getLayoutParams(id: Int, alignment: Int, alignParentEnd: Boolean = true, idOtherButton: Int = 0): RelativeLayout.LayoutParams {

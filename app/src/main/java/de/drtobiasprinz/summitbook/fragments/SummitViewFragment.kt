@@ -1,7 +1,5 @@
 package de.drtobiasprinz.summitbook.fragments
 
-import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
@@ -12,7 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -25,9 +22,9 @@ import de.drtobiasprinz.summitbook.ui.SwipeToMarkCallback
 
 class SummitViewFragment : Fragment(), SummationFragment, OnSharedPreferenceChangeListener {
     private lateinit var summitEntries: List<Summit>
-    private lateinit var myContext: FragmentActivity
     private var filteredEntries: List<Summit>? = null
     private lateinit var resultReceiver: FragmentResultReceiver
+    private lateinit var adapter: SummitViewAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +40,8 @@ class SummitViewFragment : Fragment(), SummationFragment, OnSharedPreferenceChan
         setHasOptionsMenu(true)
         resultReceiver.getSortFilterHelper().fragment = this
         summitEntries = resultReceiver.getSortFilterHelper().entries
-        adapter = SummitViewAdapter(resultReceiver.getSortFilterHelper())
+        adapter = SummitViewAdapter(resultReceiver)
+        resultReceiver.setSummitViewAdapter(adapter)
         filteredEntries = resultReceiver.getSortFilterHelper().filteredEntries
         update(filteredEntries)
         summitRecycler.adapter = adapter
@@ -54,11 +52,6 @@ class SummitViewFragment : Fragment(), SummationFragment, OnSharedPreferenceChan
         resultReceiver.getSharedPreference().registerOnSharedPreferenceChangeListener(this)
         resultReceiver.getSortFilterHelper().apply()
         return summitRecycler
-    }
-
-    override fun onAttach(activity: Activity) {
-        super.onAttach(activity)
-        myContext = activity as FragmentActivity
     }
 
     fun getAdapter(): SummitViewAdapter {
@@ -84,7 +77,8 @@ class SummitViewFragment : Fragment(), SummationFragment, OnSharedPreferenceChan
             } else {
                 resultReceiver.getSortFilterHelper().setSelectedDateItemDefault(0)
             }
-            resultReceiver.getSortFilterHelper().setIndoorHeightMeterPercent(sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0)
+            resultReceiver.getSortFilterHelper().setIndoorHeightMeterPercent(sharedPreferences?.getInt("indoor_height_meter_per_cent", 0)
+                    ?: 0)
             resultReceiver.getSortFilterHelper().setDataSpinnerToDefault()
             resultReceiver.getSortFilterHelper().apply()
         }
@@ -94,9 +88,6 @@ class SummitViewFragment : Fragment(), SummationFragment, OnSharedPreferenceChan
     companion object {
         lateinit var summitRecycler: RecyclerView
         private var optionMenu: Menu? = null
-
-        @SuppressLint("StaticFieldLeak")
-        lateinit var adapter: SummitViewAdapter
 
         fun updateNewSummits(allEntriesFromGarmin: List<Summit>, summits: List<Summit>, context: Context?) {
             if (allEntriesFromGarmin.isNotEmpty()) {

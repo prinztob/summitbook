@@ -63,6 +63,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                 val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
                 val endDate = current.format(formatter)
                 view.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
+                @Suppress("DEPRECATION")
                 AsyncDownloadActivities(resultReceiver.getSortFilterHelper().entries, resultReceiver.getAllActivitiesFromThirdParty(), resultReceiver.getPythonExecutor(), startDate, endDate, this).execute()
             }
         }
@@ -85,8 +86,9 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                 resultReceiver.getProgressBar()?.visibility = View.VISIBLE
                 resultReceiver.getProgressBar()?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.joinToString(", ") { it.name })
                 entriesWithoutIgnored.filter { summit -> summit.isSelected }.forEach { entry ->
-                    GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(resultReceiver.getPythonExecutor(),
-                            listOf(entry), resultReceiver.getAllActivitiesFromThirdParty(), resultReceiver.getSortFilterHelper(), useTcx, this).execute()
+                    @Suppress("DEPRECATION")
+                    GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(
+                            listOf(entry), resultReceiver, useTcx, this).execute()
                 }
             }
             dialog?.cancel()
@@ -97,8 +99,8 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
             if (resultReceiver.getPythonExecutor() != null && canSelectedSummitsBeMerged()) {
                 resultReceiver.getProgressBar()?.visibility = View.VISIBLE
                 resultReceiver.getProgressBar()?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.joinToString(", ") { it.name })
-                GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(resultReceiver.getPythonExecutor(),
-                        entriesWithoutIgnored.filter { summit -> summit.isSelected }, resultReceiver.getAllActivitiesFromThirdParty(), resultReceiver.getSortFilterHelper(), useTcx, this).execute()
+                @Suppress("DEPRECATION")
+                GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(entriesWithoutIgnored.filter { summit -> summit.isSelected }, resultReceiver, useTcx, this).execute()
             }
             dialog?.cancel()
         }
@@ -221,6 +223,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
 
     companion object {
 
+        @Suppress("DEPRECATION")
         class AsyncDownloadActivities(private val summits: List<Summit>, private val allActivitiesFromThirdParty: List<Summit>, private val pythonExecutor: GarminPythonExecutor?, private val startDate: String, private val endDate: String, val dialog: ShowNewSummitsFromGarminDialog) : AsyncTask<Void?, Void?, Void?>() {
 
             override fun doInBackground(vararg params: Void?): Void? {

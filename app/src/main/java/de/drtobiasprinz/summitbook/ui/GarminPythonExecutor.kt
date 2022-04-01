@@ -17,7 +17,6 @@ import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.dialog.BaseDialog
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader.Companion.getTempGpsFilePath
-import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.io.File
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -117,11 +116,10 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
 
     companion object {
 
-        class AsyncDownloadGpxViaPython(garminPythonExecutor: GarminPythonExecutor?, summits: List<Summit>,
-                                        private val allActivitiesFromThirdParty: List<Summit>,
-                                        private val sortFilterHelper: SortFilterHelper, useTcx: Boolean = false,
+        @Suppress("DEPRECATION")
+        class AsyncDownloadGpxViaPython(summits: List<Summit>, private val resultReceiver: FragmentResultReceiver, useTcx: Boolean = false,
                                         private val dialog: BaseDialog, private val index: Int = -1) : AsyncTask<Void?, Void?, Void?>() {
-            private val downloader = GarminTrackAndDataDownloader(summits, garminPythonExecutor, useTcx)
+            private val downloader = GarminTrackAndDataDownloader(summits, resultReceiver.getPythonExecutor(), useTcx)
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
                     downloader.downloadTracks()
@@ -141,7 +139,7 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
                         }
                     } else {
                         downloader.composeFinalTrack()
-                        downloader.updateFinalEntry(sortFilterHelper)
+                        downloader.updateFinalEntry(resultReceiver)
                     }
                     if (index != -1) {
                         dialog.doInPostExecute(index, downloader.downloadedTracks.none { !it.exists() })
@@ -149,7 +147,7 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
                 } catch (e: RuntimeException) {
                     Log.e("AsyncDownloadGpxViaPython", e.message ?: "")
                 } finally {
-                    SummitViewFragment.updateNewSummits(allActivitiesFromThirdParty, sortFilterHelper.entries, dialog.getDialogContext())
+                    SummitViewFragment.updateNewSummits(resultReceiver.getAllActivitiesFromThirdParty(), resultReceiver.getSortFilterHelper().entries, dialog.getDialogContext())
                     val progressBar = dialog.getProgressBarForAsyncTask()
                     if (progressBar != null) {
                         progressBar.visibility = View.GONE

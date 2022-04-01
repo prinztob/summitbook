@@ -20,8 +20,8 @@ import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter.Companion.setIconForPositionButton
 import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.adapter
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.summitRecycler
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.models.TrackColor
@@ -59,8 +59,11 @@ class SelectOnOsMapActivity : FragmentActivity() {
     private var summitEntryId = 0L
     private var summitEntryPosition = 0
     private var wasBoundingBoxCalculated: Boolean = false
+    private lateinit var resultReceiver: FragmentResultReceiver
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        resultReceiver = this.parent as FragmentResultReceiver
         setContentView(R.layout.activity_select_on_osmap)
         database = AppDatabase.getDatabase(applicationContext)
         val searchPanel = findViewById<View>(R.id.search_panel)
@@ -149,7 +152,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                 if (entry.trackBoundingBox != null) {
                     database?.summitDao()?.updateSummit(entry)
                 }
-                val entries = adapter.summitEntries
+                val entries = resultReceiver.getSortFilterHelper().entries
                 if (entries.isNotEmpty()) {
                     for (i in entries.indices) {
                         if (entries[i].id == summitEntryId) {
