@@ -24,7 +24,6 @@ import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
-import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.models.Forecast
 import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
@@ -87,7 +86,15 @@ class BarChartFragment : Fragment(), SummationFragment {
 
     private fun resizeChart() {
         val metrics = DisplayMetrics()
-        MainActivity.mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            val display = activity?.display
+            display?.getRealMetrics(metrics)
+        } else {
+            @Suppress("DEPRECATION")
+            val display = activity?.windowManager?.defaultDisplay
+            @Suppress("DEPRECATION")
+            display?.getMetrics(metrics)
+        }
         barChart?.minimumHeight = (metrics.heightPixels * 0.7).toInt()
     }
 

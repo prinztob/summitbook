@@ -6,20 +6,23 @@ import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ImageView
+import android.widget.Spinner
+import android.widget.TextView
 import androidx.annotation.Px
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
-import androidx.viewpager.widget.ViewPager
+import androidx.lifecycle.ViewModelProvider
+import androidx.viewpager2.widget.ViewPager2
 import com.chivorn.smartmaterialspinner.SmartMaterialSpinner
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import java.util.*
@@ -38,7 +41,7 @@ class SummitEntryDataFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         resultReceiver = context as SummitEntryResultReceiver
-        pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
+        pageViewModel = ViewModelProvider(this).get(PageViewModel::class.java)
         pageViewModel?.setIndex(TAG)
     }
 
@@ -47,6 +50,7 @@ class SummitEntryDataFragment : Fragment() {
             savedInstanceState: Bundle?,
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_data, container, false)
+
         database = context?.let { AppDatabase.getDatabase(it) }
         val extrema = MainActivity.extremaValuesAllSummits
         summitEntry = resultReceiver.getSummit()
@@ -184,9 +188,10 @@ class SummitEntryDataFragment : Fragment() {
 
     private fun prepareCompareAutoComplete(extrema: ExtremaValuesSummits?) {
         val summitToCompareSpinner: SmartMaterialSpinner<String> = root.findViewById(R.id.summit_name_to_compare)
+        summitToCompareSpinner.visibility = View.VISIBLE
         val items = getSummitsSuggestions(summitEntry)
         summitToCompareSpinner.item = items
-        resultReceiver.getViewPager().addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+        resultReceiver.getViewPager().registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageScrolled(position: Int, positionOffset: Float, @Px positionOffsetPixels: Int) {}
 
             override fun onPageSelected(position: Int) {

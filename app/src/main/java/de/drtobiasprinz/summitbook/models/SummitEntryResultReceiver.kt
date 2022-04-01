@@ -1,6 +1,6 @@
 package de.drtobiasprinz.summitbook.models
 
-import de.drtobiasprinz.summitbook.ui.HackyViewPager
+import androidx.viewpager2.widget.ViewPager2
 
 interface SummitEntryResultReceiver {
 
@@ -12,6 +12,6 @@ interface SummitEntryResultReceiver {
 
     fun getSummitsForComparison(): List<Summit>
 
-    fun getViewPager(): HackyViewPager
+    fun getViewPager(): ViewPager2
 
 }

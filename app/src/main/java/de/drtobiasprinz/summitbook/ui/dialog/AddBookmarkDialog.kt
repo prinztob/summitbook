@@ -300,7 +300,7 @@ class AddBookmarkDialog : DialogFragment() {
                     }
                     val gpxPyJsonFile = entry.getGpxPyPath().toFile()
                     if (gpxPyJsonFile.exists()) {
-                        val gpxPyJson = JsonParser().parse(JsonUtils.getJsonData(gpxPyJsonFile)) as JsonObject
+                        val gpxPyJson = JsonParser.parseString(JsonUtils.getJsonData(gpxPyJsonFile)) as JsonObject
 
                         val elevationGain = gpxPyJson.getAsJsonPrimitive("elevation_gain").asDouble.roundToInt()
                         entry.elevationData.elevationGain = elevationGain

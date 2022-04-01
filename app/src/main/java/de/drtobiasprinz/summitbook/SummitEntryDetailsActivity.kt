@@ -6,18 +6,19 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 import de.drtobiasprinz.summitbook.adapter.TabsPagerAdapter
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
 import de.drtobiasprinz.summitbook.models.SportGroup
 import de.drtobiasprinz.summitbook.models.Summit
-import de.drtobiasprinz.summitbook.ui.HackyViewPager
 
 
 class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceiver {
     lateinit var summitEntry: Summit
-    private lateinit var viewPager: HackyViewPager
+    private lateinit var viewPager: ViewPager2
     private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
     private var database: AppDatabase? = null
@@ -47,12 +48,30 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
                     }
                 }
             }
-            val tabsPagerAdapter = TabsPagerAdapter(this, supportFragmentManager, summitEntry)
-            viewPager = findViewById(R.id.view_pager)
+            val tabsPagerAdapter = TabsPagerAdapter(this, summitEntry)
+            viewPager = findViewById(R.id.pager)
             viewPager.adapter = tabsPagerAdapter
+            viewPager.offscreenPageLimit = 4
             val tabs = findViewById<TabLayout>(R.id.tabs)
-            tabs.setupWithViewPager(viewPager)
+            TabLayoutMediator(tabs, viewPager) { tab, position ->
+                tab.text = getPageTitle(position)
+            }.attach()
+
         }
+    }
+
+    fun getPageTitle(position: Int): CharSequence {
+        val tabTitles = mutableListOf(R.string.tab_text_1)
+        if (summitEntry.hasImagePath()) {
+            tabTitles.add(R.string.tab_text_2)
+        }
+        if (summitEntry.hasGpsTrack()) {
+            tabTitles.add(R.string.tab_text_3)
+        }
+        if (summitEntry.garminData?.power != null && summitEntry.garminData?.power?.hasPowerData() == true) {
+            tabTitles.add(R.string.tab_text_4)
+        }
+        return resources.getString(tabTitles[position])
     }
 
     private fun setActionBar() {
@@ -101,7 +120,7 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
         return summitsToCompare
     }
 
-    override fun getViewPager(): HackyViewPager {
+    override fun getViewPager(): ViewPager2 {
         return viewPager
     }
 

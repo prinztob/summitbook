@@ -570,7 +570,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         if (activityId != null) {
             val activityJsonFile = File(activitiesDir, "activity_${activityId}.json")
             if (activityJsonFile.exists()) {
-                val gson = JsonParser().parse(activityJsonFile.readText()) as JsonObject
+                val gson = JsonParser.parseString(activityJsonFile.readText()) as JsonObject
                 val parsedEntry = GarminPythonExecutor.parseJsonObject(gson)
                 val ids = parsedEntry.garminData?.activityIds
                 if (ids != null) {

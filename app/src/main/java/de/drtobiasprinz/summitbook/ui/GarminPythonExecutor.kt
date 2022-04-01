@@ -48,7 +48,7 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
         }
         val result = pythonModule?.callAttr("get_activity_json_for_date", client, dateAsString)
         checkOutput(result)
-        val jsonResponse = JsonParser().parse(result.toString()) as JsonArray
+        val jsonResponse = JsonParser.parseString(result.toString()) as JsonArray
         return getSummitsAtDate(jsonResponse)
     }
 
@@ -85,7 +85,7 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
         }
         val result = pythonModule?.callAttr("get_split_data", client, activityId, activitiesDir?.absolutePath)
         checkOutput(result)
-        return JsonParser().parse(result.toString()) as JsonObject
+        return JsonParser.parseString(result.toString()) as JsonObject
     }
 
     fun getMultiSportData(activityId: String): JsonObject {
@@ -94,7 +94,7 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
         }
         val result = pythonModule?.callAttr("get_multi_sport_data", client, activityId)
         checkOutput(result)
-        return JsonParser().parse(result.toString()) as JsonObject
+        return JsonParser.parseString(result.toString()) as JsonObject
     }
 
     fun getMultiSportPowerData(dateAsString: String): JsonObject {
@@ -103,7 +103,7 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
         }
         val result = pythonModule?.callAttr("get_power_data", client, dateAsString)
         checkOutput(result)
-        return JsonParser().parse(result.toString()) as JsonObject
+        return JsonParser.parseString(result.toString()) as JsonObject
     }
 
     private fun checkOutput(result: PyObject?) {
@@ -180,7 +180,7 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
                     files.forEach {
                         if (it.name.startsWith("activity_") && !it.name.endsWith("_splits.json")) {
                             try {
-                                val gson = JsonParser().parse(it.readText()) as JsonObject
+                                val gson = JsonParser.parseString(it.readText()) as JsonObject
                                 entries.add(parseJsonObject(gson))
                             } catch (ex: IllegalArgumentException) {
                                 it.delete()

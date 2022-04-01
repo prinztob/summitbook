@@ -102,7 +102,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             if (localSummitEntry.garminData != null && localSummitEntry.garminData?.activityId != null) {
                 val splitsFile = File("${activitiesDir?.absolutePath}/activity_${localSummitEntry.garminData?.activityId}_splits.json")
                 if (splitsFile.exists()) {
-                    val json = JsonParser().parse(JsonUtils.getJsonData(splitsFile)) as JsonObject
+                    val json = JsonParser.parseString(JsonUtils.getJsonData(splitsFile)) as JsonObject
                     val maxVelocitySummit = MaxVelocitySummit()
                     val velocityEntries = maxVelocitySummit.parseFomGarmin(json)
                     tableEntries.add(TableEntry(getString(R.string.top_speed_1km_hint),
@@ -159,7 +159,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             }
             val gpxPyJsonFile = localSummitEntry.getGpxPyPath().toFile()
             if (gpxPyJsonFile.exists()) {
-                val gpxPyJson = JsonParser().parse(JsonUtils.getJsonData(gpxPyJsonFile)) as JsonObject
+                val gpxPyJson = JsonParser.parseString(JsonUtils.getJsonData(gpxPyJsonFile)) as JsonObject
 
                 val elevationGain = gpxPyJson.getAsJsonPrimitive("elevation_gain").asDouble.roundToInt()
                 if (elevationGain > 0) {
