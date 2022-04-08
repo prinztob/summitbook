@@ -8,10 +8,8 @@ import android.location.Address
 import android.os.Bundle
 import android.os.StrictMode
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.Toast
+import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
@@ -20,7 +18,6 @@ import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter.Companion.setIconForPositionButton
 import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.adapter
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.summitRecycler
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.Summit
@@ -112,6 +109,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                 }
             }
             localOsMap.overlays.add(MapEventsOverlay(mReceive))
+
         }
 
         val searchButton: Button = findViewById(R.id.buttonSearchLocation)
@@ -134,7 +132,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     database?.summitDao()?.updateLng(entry.id, position.lon)
                     entry.latLng = latLngSelectedPosition
                     finish()
-                    Toast.makeText(v.context, String.format(getString(R.string.no_email_prgram_installed), entry.name), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(v.context, String.format(getString(R.string.no_email_program_installed), entry.name), Toast.LENGTH_SHORT).show()
                 }
                 val localSelectedPath = selectedGpsPath
                 if (localSelectedPath != null) {
@@ -148,14 +146,6 @@ class SelectOnOsMapActivity : FragmentActivity() {
                 entry.setBoundingBoxFromTrack()
                 if (entry.trackBoundingBox != null) {
                     database?.summitDao()?.updateSummit(entry)
-                }
-                val entries = adapter.summitEntries
-                if (entries.isNotEmpty()) {
-                    for (i in entries.indices) {
-                        if (entries[i].id == summitEntryId) {
-                            entries[0] = entry
-                        }
-                    }
                 }
                 val holder = summitRecycler.findViewHolderForAdapterPosition(summitEntryPosition) as SummitViewAdapter.ViewHolder
                 val addButton = holder.cardView?.findViewById<ImageButton>(R.id.entry_add_coordinate)
@@ -201,8 +191,12 @@ class SelectOnOsMapActivity : FragmentActivity() {
                 addCategory(Intent.CATEGORY_OPENABLE)
                 type = "*/*"
             }
-            startActivityForResult(intent, PICK_GPX_FILE)
+            resultLauncherForAddingGpxTrack.launch(intent)
         }
+
+        val data = Intent()
+        data.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry?.id)
+        setResult(Activity.RESULT_OK, data)
     }
 
     private fun searchForAddress(localOsMap: MapView, locationAddress: String) {
@@ -211,7 +205,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
         val foundAddresses: List<Address> = geoCoder.getFromLocationName(locationAddress, 1,
                 viewBox.latSouth, viewBox.lonEast, viewBox.latNorth, viewBox.lonWest, false)
         if (foundAddresses.isNotEmpty()) {
-            Toast.makeText(applicationContext, getString(R.string.found_adress, locationAddress), Toast.LENGTH_SHORT).show()
+            Toast.makeText(applicationContext, getString(R.string.found_address, locationAddress), Toast.LENGTH_SHORT).show()
             val address = foundAddresses[0]
             val geoPoint = GeoPoint(address.latitude, address.longitude)
             val poiIcon: Drawable? = ResourcesCompat.getDrawable(resources, R.drawable.ic_filled_location_black_48, null)
@@ -228,19 +222,6 @@ class SelectOnOsMapActivity : FragmentActivity() {
             localOsMap.setExpectedCenter(geoPoint)
         } else {
             Toast.makeText(applicationContext, getString(R.string.not_found, locationAddress), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
-        super.onActivityResult(requestCode, resultCode, resultData)
-        if (requestCode == PICK_GPX_FILE && resultCode == Activity.RESULT_OK) {
-            val file = File(MainActivity.cache, "new_gpx_track.gpx")
-            resultData?.data?.also { uri ->
-                contentResolver.openInputStream(uri)?.use { inputStream ->
-                    copyGpxFileToCache(inputStream, file)
-                }
-            }
-            osMap?.let { addGpxTrack(file, GPXParser(), it) }
         }
     }
 
@@ -319,6 +300,18 @@ class SelectOnOsMapActivity : FragmentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         database?.close()
+    }
+
+    private val resultLauncherForAddingGpxTrack = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val file = File(MainActivity.cache, "new_gpx_track.gpx")
+            result?.data?.data?.also { uri ->
+                contentResolver.openInputStream(uri)?.use { inputStream ->
+                    copyGpxFileToCache(inputStream, file)
+                }
+            }
+            osMap?.let { addGpxTrack(file, GPXParser(), it) }
+        }
     }
 
     internal class CustomInfoWindow(mapView: MapView?) : MarkerInfoWindow(org.osmdroid.bonuspack.R.layout.bonuspack_bubble, mapView) {

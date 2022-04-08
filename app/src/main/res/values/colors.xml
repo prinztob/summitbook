@@ -31,11 +31,9 @@
     <!-- Indigo -->
 
     <!-- Blue -->
-    <color name="blue_200">#90CAF9</color>
     <color name="blue_300">#64B5F6</color>
     <color name="blue_400">#42A5F5</color>
     <color name="blue_500">#2196F3</color>
-    <color name="blue_700">#1976D2</color>
     <!-- Blue -->
 
     <!-- Light Blue -->
@@ -109,5 +107,4 @@
 
     <color name="translucent">#80000000</color>
     <color name="translucent70">#70000000</color>
-    <color name="translucent50">#50000000</color>
 </resources>

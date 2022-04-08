@@ -76,7 +76,7 @@
                     android:paddingStart="0dp"
                     android:paddingEnd="10dp">
 
-                    <de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowSrolling
+                    <de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
                         android:id="@+id/osmap"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent" />
@@ -135,7 +135,6 @@
                 </RelativeLayout>
 
                 <LinearLayout
-                    android:id="@+id/lineChartLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/osmapLayout"

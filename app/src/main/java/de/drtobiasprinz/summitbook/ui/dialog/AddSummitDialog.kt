@@ -1,8 +1,11 @@
 package de.drtobiasprinz.summitbook.ui.dialog
 
+import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
+import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
 import android.text.*
@@ -12,16 +15,19 @@ import android.view.View
 import android.view.View.OnFocusChangeListener
 import android.view.ViewGroup
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
+import com.chaquo.python.Python
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.MainActivity
+import de.drtobiasprinz.summitbook.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.*
@@ -31,10 +37,14 @@ import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
-import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
+import org.xmlpull.v1.XmlPullParserException
 import java.io.File
+import java.io.IOException
+import java.io.InputStream
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -42,10 +52,11 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.round
 
 
-class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : DialogFragment(), BaseDialog {
+@Suppress("DEPRECATION")
+class AddSummitDialog : DialogFragment(), BaseDialog {
     var isUpdate = false
-    var temporaryGpxFile: File? = null
-    var latlngHightestPoint: TrackPoint? = null
+    private var temporaryGpxFile: File? = null
+    private var latlngHighestPoint: TrackPoint? = null
     private lateinit var currentContext: Context
     private lateinit var sportTypeAdapter: ArrayAdapter<String>
     private var currentSummit: Summit? = null
@@ -83,41 +94,30 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     private lateinit var power2hText: EditText
     private lateinit var power5hText: EditText
     private lateinit var saveEntryButton: Button
+    private lateinit var addTrack: ImageButton
 
     private lateinit var participantsChips: ChipGroup
     private lateinit var equipmentsChips: ChipGroup
     private lateinit var placesChips: ChipGroup
     private lateinit var countriesChips: ChipGroup
 
-    private val suggestionEquipments: List<String> = sortFilterHelper.entries.flatMap { it.equipments }.distinct().filter { it != "" }
+    private lateinit var resultReceiver: FragmentResultReceiver
     private lateinit var equipmentsAdapter: ArrayAdapter<String>
-    private val suggestionParticipants: List<String> = sortFilterHelper.entries.flatMap { it.participants }.distinct().filter { it != "" }
     private lateinit var participantsAdapter: ArrayAdapter<String>
     private lateinit var placesAdapter: ArrayAdapter<String>
 
-    private val watcher: TextWatcher = object : TextWatcher {
-        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-        override fun afterTextChanged(s: Editable) {
-            saveEntryButton.isEnabled = !(isEmpty(summitName) || isEmpty(heightMeterText) || isEmpty(kmText) || isEmpty(date))
-        }
-
-        private fun isEmpty(editText: EditText): Boolean {
-            return TextUtils.isEmpty(editText.text.toString().trim { it <= ' ' })
-        }
-    }
     private lateinit var sportTypeSpinner: Spinner
     private var garminDataFromGarminConnect: GarminData? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        setRetainInstance(true)
+        resultReceiver = context as FragmentResultReceiver
         return inflater.inflate(R.layout.dialog_add_summit, container)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         currentContext = requireContext()
-        participantsAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestionParticipants)
-        equipmentsAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestionEquipments)
+        participantsAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, resultReceiver.getSortFilterHelper().entries.flatMap { it.participants }.distinct().filter { it != "" })
+        equipmentsAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, resultReceiver.getSortFilterHelper().entries.flatMap { it.equipments }.distinct().filter { it != "" })
         placesAdapter = getPlacesSuggestions()
         addPlaces(view)
         addCountries(view)
@@ -216,23 +216,34 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                 if (garminDataLocal != null && temporaryGpxFileLocal != null && temporaryGpxFileLocal.exists() && gpsTrackPath != null) {
                     temporaryGpxFileLocal.copyTo(gpsTrackPath, overwrite = true)
                 }
-                val latlngHighestPointLocal = latlngHightestPoint
+                val latlngHighestPointLocal = latlngHighestPoint
                 if (entry.latLng == null && latlngHighestPointLocal != null) {
                     entry.latLng = latlngHighestPointLocal
                 }
                 entry.setBoundingBoxFromTrack()
-                val adapter = SummitViewFragment.adapter
+                val adapter = resultReceiver.getSummitViewAdapter()
                 if (isUpdate) {
-                    sortFilterHelper.database.summitDao()?.updateSummit(entry)
+                    resultReceiver.getSortFilterHelper().database.summitDao()?.updateSummit(entry)
                 } else {
-                    entry.id = sortFilterHelper.database.summitDao()?.addSummit(entry) ?: 0L
-                    sortFilterHelper.entries.add(entry)
-                    sortFilterHelper.update(sortFilterHelper.entries)
+                    entry.id = resultReceiver.getSortFilterHelper().database.summitDao()?.addSummit(entry)
+                            ?: 0L
+                    resultReceiver.getSortFilterHelper().entries.add(entry)
+                    resultReceiver.getSortFilterHelper().update(resultReceiver.getSortFilterHelper().entries)
                 }
-                adapter.notifyDataSetChanged()
+                adapter?.notifyDataSetChanged()
                 dialog?.cancel()
             }
         }
+
+        addTrack = view.findViewById(R.id.add_gps_track)
+        addTrack.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+            }
+            resultLauncher.launch(intent)
+        }
+
         closeDialogButton.setOnClickListener { v: View ->
             dialog?.cancel()
             val text = if (currentSummit != null) getString(R.string.update_summit_cancel) else getString(R.string.add_new_summit_cancel)
@@ -244,8 +255,10 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
             val dateAsString = date.text.toString()
             val contextLocal = context
             if (dateAsString != "" && contextLocal != null) {
+                val pythonExecutor = resultReceiver.getPythonExecutor()
                 if (pythonExecutor != null) {
                     view.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
+                    @Suppress("DEPRECATION")
                     AsyncDownloadJsonViaPython(pythonExecutor, dateAsString, this).execute()
                 } else {
                     Toast.makeText(context,
@@ -296,7 +309,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                     if (entry != null) {
                         temporaryGpxFile = getTempGpsFilePath(entry.date).toFile()
                         downloader.composeFinalTrack(temporaryGpxFile)
-                        latlngHightestPoint = entry.latLng
+                        latlngHighestPoint = entry.latLng
                         updateDialogFields(entry, !isUpdate)
                         Toast.makeText(context, context?.getString(R.string.garmin_add_successful, entry.name), Toast.LENGTH_LONG).show()
                     }
@@ -344,6 +357,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
 
     private fun addEquipments(view: View) {
         val equipmentsView = view.findViewById<AutoCompleteTextView>(R.id.autoCompleteTextViewEquipments)
+        showDropDown(equipmentsView)
         equipmentsChips = view.findViewById(R.id.chipGroupEquipments)
         val chips = CustomAutoCompleteChips(view)
         chips.addChips(equipmentsAdapter, currentSummit?.equipments, equipmentsView, equipmentsChips)
@@ -361,16 +375,24 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         val placesView = view.findViewById<AutoCompleteTextView>(R.id.autoCompleteTextViewPlaces)
         placesChips = view.findViewById(R.id.chipGroupPlaces)
         val chips = CustomAutoCompleteChips(view)
-        chips.addChips(placesAdapter, currentSummit?.getPlacesWithConnectedEntryString(requireContext(), sortFilterHelper.database),
+        chips.addChips(placesAdapter, currentSummit?.getPlacesWithConnectedEntryString(requireContext(), resultReceiver.getSortFilterHelper().database),
                 placesView, placesChips)
     }
 
+    private fun showDropDown(autoCompleteTextView: AutoCompleteTextView) {
+        autoCompleteTextView.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                autoCompleteTextView.showDropDown()
+            }
+        }
+    }
+
     private fun getPlacesSuggestions(addConnectedEntryString: Boolean = true): ArrayAdapter<String> {
-        val suggestions: MutableList<String> = (sortFilterHelper.entries.flatMap { it.places } +
-                sortFilterHelper.entries.map { it.name }).filter { !it.startsWith(CONNECTED_ACTIVITY_PREFIX) } as MutableList<String>
+        val suggestions: MutableList<String> = (resultReceiver.getSortFilterHelper().entries.flatMap { it.places } +
+                resultReceiver.getSortFilterHelper().entries.map { it.name }).filter { !it.startsWith(CONNECTED_ACTIVITY_PREFIX) } as MutableList<String>
         val localSummit = currentSummit
         if (addConnectedEntryString && localSummit != null) {
-            for (entry in sortFilterHelper.entries.filter { it != currentSummit }) {
+            for (entry in resultReceiver.getSortFilterHelper().entries.filter { it != currentSummit }) {
                 val differenceInMilliSec: Long = localSummit.date.time - entry.date.time
                 val differenceInDays: Double = round(TimeUnit.MILLISECONDS.toDays(differenceInMilliSec).toDouble())
                 if (differenceInDays in 0.0..1.0) {
@@ -414,14 +436,14 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                         ElevationData.parse(getTextWithDefaultInt(topElevationText), heightMeterText.text.toString().toInt()),
                         getTextWithDefaultDouble(kmText),
                         VelocityData.parse(getTextWithDefaultDouble(paceText), getTextWithDefaultDouble(topSpeedText)),
-                        latlngHightestPoint?.lat, latlngHightestPoint?.lon,
+                        latlngHighestPoint?.lat, latlngHighestPoint?.lon,
                         participantsChips.children.toList().map { (it as Chip).text.toString() },
                         equipmentsChips.children.toList().map { (it as Chip).text.toString() },
-                        false,
-                        false,
-                        mutableListOf(),
-                        garminDataFromGarminConnect,
-                        null
+                        isFavorite = false,
+                        isPeak = false,
+                        imageIds = mutableListOf(),
+                        garminData = garminDataFromGarminConnect,
+                        trackBoundingBox = null
                 )
             }
         } catch (e: ParseException) {
@@ -459,7 +481,7 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         for ((i, place) in places.withIndex()) {
             for (connectedSummit in connectedSummits)
                 if (place == connectedSummit.getConnectedEntryString(requireContext())) {
-                    places[i] = "${Summit.CONNECTED_ACTIVITY_PREFIX}${connectedSummit.activityId}"
+                    places[i] = "$CONNECTED_ACTIVITY_PREFIX${connectedSummit.activityId}"
                 }
         }
         return places
@@ -504,6 +526,71 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         }
     }
 
+    private val watcher: TextWatcher = object : TextWatcher {
+        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+        override fun afterTextChanged(s: Editable) {
+            saveEntryButton.isEnabled = !(isEmpty(summitName) || isEmpty(heightMeterText) || isEmpty(kmText) || isEmpty(date))
+        }
+
+        private fun isEmpty(editText: EditText): Boolean {
+            return TextUtils.isEmpty(editText.text.toString().trim { it <= ' ' })
+        }
+    }
+
+    private var resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { resultData ->
+        if (resultData.resultCode == Activity.RESULT_OK) {
+            resultData?.data?.data.also { uri ->
+                addAndAnalyzeTrack(uri)
+            }
+        }
+    }
+
+    private fun addAndAnalyzeTrack(uri: Uri?) {
+        if (currentSummit == null) {
+            currentSummit = createNewSummit()
+        }
+        val summit = currentSummit
+        if (temporaryGpxFile == null) {
+            temporaryGpxFile = GarminTrackAndDataDownloader.getTempGpsFilePath(SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(Date())).toFile()
+        }
+        if (uri != null && summit != null) {
+            context?.contentResolver?.openInputStream(uri)?.use { inputStream ->
+                uploadGpxFile(inputStream, summit, view)
+                view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility = View.VISIBLE
+                view?.let { AddBookmarkDialog.Companion.AsyncAnalyzeGpsTracks(summit, MainActivity.pythonInstance ?: Python.getInstance(), resultReceiver.getSortFilterHelper().database, it, false).execute() }
+            }
+        }
+    }
+
+    private fun createNewSummit(): Summit {
+        return Summit(Date(),
+                if (summitName.text.toString() != "") summitName.text.toString() else "New Bookmark",
+                SportType.Bicycle,
+                emptyList(),
+                emptyList(),
+                commentText.text.toString(),
+                ElevationData.parse(0, getTextWithDefaultInt(heightMeterText)),
+                getTextWithDefaultDouble(kmText),
+                VelocityData.parse(0.0, 0.0),
+                0.0, 0.0, emptyList(), emptyList(), isFavorite = false, isPeak = false, imageIds = mutableListOf(), garminData = null, trackBoundingBox = null,
+                isBookmark = true
+        )
+    }
+
+    private fun uploadGpxFile(inputStream: InputStream, entry: Summit, v: View?) {
+        try {
+            Files.copy(inputStream, entry.getGpsTrackPath(), StandardCopyOption.REPLACE_EXISTING)
+        } catch (e: IOException) {
+            e.printStackTrace()
+            Toast.makeText(v?.context, v?.context?.getString(R.string.add_gpx_failed, entry.name), Toast.LENGTH_SHORT).show()
+        } catch (e: XmlPullParserException) {
+            e.printStackTrace()
+            Toast.makeText(v?.context, v?.context?.getString(R.string.add_gpx_failed, entry.name), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+
 
     private fun getTextWithDefaultDouble(editText: EditText): Double {
         return try {
@@ -522,10 +609,10 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     }
 
     private fun showDatePicker(eText: EditText, context: Context) {
-        val cldr = Calendar.getInstance()
-        var day = cldr[Calendar.DAY_OF_MONTH]
-        var month = cldr[Calendar.MONTH]
-        var year = cldr[Calendar.YEAR]
+        val calendar = Calendar.getInstance()
+        var day = calendar[Calendar.DAY_OF_MONTH]
+        var month = calendar[Calendar.MONTH]
+        var year = calendar[Calendar.YEAR]
         if (eText.text.toString().trim() != "") {
             val dateSplitted = eText.text.toString().trim().split("-".toRegex()).toTypedArray()
             if (dateSplitted.size == 3) {
@@ -548,7 +635,8 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
                 }
                 updateMultiSpotActivityIds(pythonExecutor, entry)
             }
-            GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(pythonExecutor, listOf(entry), sortFilterHelper, useTcx, this, index).execute()
+            @Suppress("DEPRECATION")
+            GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(listOf(entry), resultReceiver, useTcx, this, index).execute()
         } catch (e: java.lang.RuntimeException) {
             Log.e("AsyncDownloadActivities", e.message ?: "")
         }
@@ -557,9 +645,9 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     private fun updateMultiSpotActivityIds(pythonExecutor: GarminPythonExecutor, entry: Summit) {
         val activityId = entry.garminData?.activityId
         if (activityId != null) {
-            val activityJsonFile = File(SummitViewFragment.activitiesDir, "acivity_${activityId}.json")
+            val activityJsonFile = File(activitiesDir, "activity_${activityId}.json")
             if (activityJsonFile.exists()) {
-                val gson = JsonParser().parse(activityJsonFile.readText()) as JsonObject
+                val gson = JsonParser.parseString(activityJsonFile.readText()) as JsonObject
                 val parsedEntry = GarminPythonExecutor.parseJsonObject(gson)
                 val ids = parsedEntry.garminData?.activityIds
                 if (ids != null) {
@@ -595,8 +683,8 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
     companion object {
 
         @JvmStatic
-        fun updateInstance(entry: Summit?, sortFilterHelper: SortFilterHelper, pythonExecutor: GarminPythonExecutor?): AddSummitDialog {
-            val add = AddSummitDialog(sortFilterHelper, pythonExecutor)
+        fun updateInstance(entry: Summit?): AddSummitDialog {
+            val add = AddSummitDialog()
             add.isUpdate = true
             add.currentSummit = entry
             return add
@@ -617,18 +705,18 @@ class AddSummitDialog(private val sortFilterHelper: SortFilterHelper, private va
         class AsyncDownloadJsonViaPython(private val pythonExecutor: GarminPythonExecutor, private val dateAsString: String, private val dialog: AddSummitDialog) : AsyncTask<Void?, Void?, Void?>() {
 
             var entries: List<Summit>? = null
-            var powerData: JsonObject? = null
+            private var powerData: JsonObject? = null
 
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
-                    val allKnownEntries = getAllDownloadedSummitsFromGarmin(SummitViewFragment.activitiesDir)
+                    val allKnownEntries = getAllDownloadedSummitsFromGarmin(activitiesDir)
                     val firstDate = allKnownEntries.minByOrNull { it.getDateAsFloat() }?.getDateAsString()
                     val lastDate = allKnownEntries.maxByOrNull { it.getDateAsFloat() }?.getDateAsString()
                     val knownEntriesOnDate = allKnownEntries.filter { it.getDateAsString() == dateAsString }
-                    if (dateAsString != firstDate && dateAsString != lastDate && knownEntriesOnDate.isNotEmpty()) {
-                        entries = knownEntriesOnDate
+                    entries = if (dateAsString != firstDate && dateAsString != lastDate && knownEntriesOnDate.isNotEmpty()) {
+                        knownEntriesOnDate
                     } else {
-                        entries = pythonExecutor.getActivityJsonAtDate(dateAsString)
+                        pythonExecutor.getActivityJsonAtDate(dateAsString)
                     }
                     powerData = getPowerDataFromEntries(entries)
                 } catch (e: RuntimeException) {

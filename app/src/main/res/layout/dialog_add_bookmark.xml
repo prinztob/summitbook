@@ -22,7 +22,6 @@
                 android:indeterminate="true" />
         </RelativeLayout>
 
-
         <EditText
             android:id="@+id/bookmark_name"
             android:layout_width="match_parent"
@@ -33,29 +32,24 @@
             android:importantForAutofill="no"
             android:inputType="text" />
 
-
-
         <Spinner
             android:id="@+id/activities"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp" />
 
-
         <ImageButton
             android:id="@+id/add_gps_track"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="end"
             android:layout_margin="5dp"
             android:layout_marginBottom="5dp"
-            android:layout_gravity="end"
             android:background="@color/color_white"
             android:contentDescription="@string/addGpsTrack"
             android:paddingStart="5dp"
             android:paddingEnd="5dp"
             android:src="@drawable/ic_baseline_upload_file_24" />
-
-
 
         <RelativeLayout
             android:layout_width="fill_parent"
@@ -67,11 +61,13 @@
                 android:layout_height="wrap_content"
                 android:drawableStart="@drawable/ic_trending_up_black_24dp"
                 android:drawablePadding="10dp"
+                android:layout_toStartOf="@+id/height_meter_unit"
                 android:hint="@string/height_meter_hint"
                 android:importantForAutofill="no"
                 android:inputType="number" />
 
             <TextView
+                android:id="@+id/height_meter_unit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
@@ -88,11 +84,13 @@
                 android:layout_height="wrap_content"
                 android:drawableStart="@drawable/icons8_map_pinpoint_20"
                 android:drawablePadding="10dp"
+                android:layout_toStartOf="@+id/kilometers_unit"
                 android:hint="@string/kilometers_hint"
                 android:importantForAutofill="no"
                 android:inputType="numberDecimal" />
 
             <TextView
+                android:id="@+id/kilometers_unit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
@@ -110,7 +108,8 @@
             android:lines="3"
             android:maxLines="3"
             android:minLines="3"
-            android:scrollbars="vertical" />
+            android:scrollbars="vertical"
+            android:importantForAutofill="no" />
 
         <RelativeLayout
             android:layout_width="fill_parent"

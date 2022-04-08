@@ -9,19 +9,19 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.DialogFragment
-import androidx.preference.PreferenceManager
 import co.ceryle.segmentedbutton.SegmentedButtonGroup
 import com.google.android.material.slider.Slider
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.Forecast
 import de.drtobiasprinz.summitbook.models.Forecast.Companion.getSumForYear
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
 import java.util.*
 import kotlin.math.round
 
 
-class ForecastDialog(val indoorHeightMeterPercent: Int) : DialogFragment() {
+class ForecastDialog : DialogFragment() {
 
     private lateinit var currentContext: Context
     private lateinit var forecasts: ArrayList<Forecast>
@@ -32,26 +32,28 @@ class ForecastDialog(val indoorHeightMeterPercent: Int) : DialogFragment() {
     private var selectedSegmentedForecastProperty: Int = 0
     private var currentYear: Int = (Calendar.getInstance())[Calendar.YEAR]
     private var currentMonth: Int = (Calendar.getInstance())[Calendar.MONTH] + 1
-    private var yearsWithForcasts = listOf(currentYear, currentYear + 1)
+    private var yearsWithForecasts = listOf(currentYear, currentYear + 1)
     private var annualTargetActivity: String = ""
     private var annualTargetKm: String = ""
     private var annualTargetHm: String = ""
+    private lateinit var resultReceiver: FragmentResultReceiver
+    private var indoorHeightMeterPercent = 0
 
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?,
     ): View? {
+        resultReceiver = context as FragmentResultReceiver
         return inflater.inflate(R.layout.dialog_forecast, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         currentContext = requireContext()
-
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        annualTargetActivity = sharedPreferences.getString("annual_target_activities", "52") ?: "52"
-        annualTargetKm = sharedPreferences.getString("annual_target_km", "1200") ?: "1200"
-        annualTargetHm = sharedPreferences.getString("annual_target", "50000") ?: "50000"
+        indoorHeightMeterPercent = resultReceiver.getSharedPreference().getInt("indoor_height_meter_per_cent", 0)
+        annualTargetActivity = resultReceiver.getSharedPreference().getString("annual_target_activities", "52") ?: "52"
+        annualTargetKm = resultReceiver.getSharedPreference().getString("annual_target_km", "1200") ?: "1200"
+        annualTargetHm = resultReceiver.getSharedPreference().getString("annual_target", "50000") ?: "50000"
 
         segmentedYear = view.findViewById(R.id.group_year)
         segmentedForecastProperty = view.findViewById(R.id.group_forecast_property)
@@ -61,10 +63,10 @@ class ForecastDialog(val indoorHeightMeterPercent: Int) : DialogFragment() {
         val range: Date = Summit.parseDate("${currentYear}-01-01")
 
         summits = database.summitDao()?.getAllSummitForYear(range.time) as List<Summit>
-        setMissingForecasts(yearsWithForcasts, database)
+        setMissingForecasts(yearsWithForecasts, database)
         setAchievement()
-        setForecastsInDialog(yearsWithForcasts[selectedSegmentedYear], view)
-        setOverview(yearsWithForcasts[selectedSegmentedYear], view)
+        setForecastsInDialog(yearsWithForecasts[selectedSegmentedYear], view)
+        setOverview(yearsWithForecasts[selectedSegmentedYear], view)
 
         val backButton: Button = view.findViewById(R.id.back)
         backButton.setOnClickListener {
@@ -79,13 +81,13 @@ class ForecastDialog(val indoorHeightMeterPercent: Int) : DialogFragment() {
         }
         segmentedForecastProperty.setOnClickedButtonListener { position: Int ->
             selectedSegmentedForecastProperty = position
-            setOverview(yearsWithForcasts[selectedSegmentedYear], view)
-            setForecastsInDialog(yearsWithForcasts[selectedSegmentedYear], view)
+            setOverview(yearsWithForecasts[selectedSegmentedYear], view)
+            setForecastsInDialog(yearsWithForecasts[selectedSegmentedYear], view)
         }
         segmentedYear.setOnClickedButtonListener { position: Int ->
             selectedSegmentedYear = position
-            setOverview(yearsWithForcasts[selectedSegmentedYear], view)
-            setForecastsInDialog(yearsWithForcasts[selectedSegmentedYear], view)
+            setOverview(yearsWithForecasts[selectedSegmentedYear], view)
+            setForecastsInDialog(yearsWithForecasts[selectedSegmentedYear], view)
         }
     }
 
@@ -166,7 +168,7 @@ class ForecastDialog(val indoorHeightMeterPercent: Int) : DialogFragment() {
                         setForecastText(it, view, slider)
                     }
                     slider.addOnChangeListener { clickedSlider: Slider, value: Float, fromUser: Boolean ->
-                        if (fromUser && it.year == yearsWithForcasts[selectedSegmentedYear]) {
+                        if (fromUser && it.year == yearsWithForecasts[selectedSegmentedYear]) {
                             when (selectedSegmentedForecastProperty) {
                                 1 -> it.forecastDistance = value.toInt()
                                 2 -> it.forecastNumberActivities = value.toInt()
@@ -183,7 +185,7 @@ class ForecastDialog(val indoorHeightMeterPercent: Int) : DialogFragment() {
 
     private fun setForecastText(forecast: Forecast, view: View, slider: Slider) {
         val resourceIdText = resources.getIdentifier("fulfilled_forecast_month${forecast.month}", "id", requireContext().packageName)
-        val textView: TextView = view.findViewById<TextView>(resourceIdText)
+        val textView: TextView = view.findViewById(resourceIdText)
         textView.setTextColor(Color.BLACK)
         if (forecast.year == currentYear && forecast.month <= currentMonth) {
             textView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_baseline_edit_12, 0, 0, 0)
@@ -216,7 +218,7 @@ class ForecastDialog(val indoorHeightMeterPercent: Int) : DialogFragment() {
 
     private fun setTextAndColor(actual: Int, forecast: Int, unit: String, textView: TextView) {
         val percentAchievement = if (forecast > 0) round(actual.toDouble() / forecast.toDouble() * 100.0).toInt() else forecast
-        val text = if (forecast > 0) "${actual} ${unit} (${percentAchievement} %)" else "${actual} ${unit}"
+        val text = if (forecast > 0) "$actual $unit (${percentAchievement} %)" else "$actual $unit"
         textView.text = text
         if (percentAchievement > 0 && actual > 0) {
             textView.setTextColor(if (percentAchievement >= 100) Color.GREEN else Color.RED)

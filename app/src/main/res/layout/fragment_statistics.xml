@@ -935,7 +935,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:text="@string/heightest_hr"
+                    android:text="@string/highest_hr"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:textColor="#999" />
 
@@ -1578,7 +1578,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:text="@string/heighest_VO2MAX"
+                    android:text="@string/highest_VO2MAX"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:textColor="#999" />
 
@@ -1615,7 +1615,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:text="@string/heighest_FTP"
+                    android:text="@string/highest_FTP"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:textColor="#999" />
 
@@ -1652,7 +1652,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:text="@string/heightest_flow"
+                    android:text="@string/highest_flow"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:textColor="#999" />
 
@@ -1689,7 +1689,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:text="@string/heightest_grit"
+                    android:text="@string/highest_grit"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:textColor="#999" />
 
@@ -1726,7 +1726,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:text="@string/heightest_trainig_load"
+                    android:text="@string/highest_training_load"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:textColor="#999" />
 

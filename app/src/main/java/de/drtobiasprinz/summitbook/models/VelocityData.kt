@@ -66,14 +66,14 @@ class VelocityData constructor(
     companion object {
 
         fun parse(inputData: List<String>, topSpeed: Double): VelocityData {
-            if (inputData.size == 11) {
-                return VelocityData(inputData[0].toDouble(), topSpeed,
+            return if (inputData.size == 11) {
+                VelocityData(inputData[0].toDouble(), topSpeed,
                         inputData[1].toDouble(), inputData[2].toDouble(), inputData[3].toDouble(), inputData[4].toDouble(),
                         inputData[5].toDouble(), inputData[6].toDouble(), inputData[7].toDouble(), inputData[8].toDouble(),
                         inputData[9].toDouble(), inputData[10].toDouble())
             } else {
                 val avgVelocity = if (inputData.size == 1) inputData.first().toDouble() else 0.0
-                return VelocityData(avgVelocity,topSpeed,0.0, 0.0, 0.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0)
+                VelocityData(avgVelocity,topSpeed,0.0, 0.0, 0.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0)
             }
         }
 

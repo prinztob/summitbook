@@ -13,94 +13,97 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.models.Forecast
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
-import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.util.*
 import kotlin.math.roundToLong
 
-class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragment(), SummationFragment {
+class StatisticsFragment : Fragment(), SummationFragment {
     private var summitEntries: List<Summit>? = null
     private var filteredEntries: List<Summit>? = null
-    private lateinit var textTotalSummits: TextView
-    private lateinit var textTotalKm: TextView
-    private lateinit var textTotalHm: TextView
-    private lateinit var textTotalHmInfo: TextView
-    private lateinit var textTotalHmForecastInfo: TextView
-    private lateinit var textAchievement: TextView
+    private var textTotalSummits: TextView? = null
+    private var textTotalKm: TextView? = null
+    private var textTotalHm: TextView? = null
+    private var textTotalHmInfo: TextView? = null
+    private var textTotalHmForecastInfo: TextView? = null
+    private var textAchievement: TextView? = null
     private lateinit var statisticEntry: StatisticEntry
-    private lateinit var statisticFragmentView: View
+    private var statisticFragmentView: View? = null
     private var annualTargetActivity: String = ""
     private var annualTargetKm: String = ""
     private var annualTargetHm: String = ""
     private var indoorHeightMeterPercent: Int = 0
+    private lateinit var resultReceiver: FragmentResultReceiver
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        annualTargetActivity = sharedPreferences.getString("annual_target_activities", "52") ?: "52"
-        annualTargetKm = sharedPreferences.getString("annual_target_km", "1200") ?: "1200"
-        annualTargetHm = sharedPreferences.getString("annual_target", "50000") ?: "50000"
-        setRetainInstance(true)
+        resultReceiver = context as FragmentResultReceiver
+        annualTargetActivity = resultReceiver.getSharedPreference().getString("annual_target_activities", "52") ?: "52"
+        annualTargetKm = resultReceiver.getSharedPreference().getString("annual_target_km", "1200") ?: "1200"
+        annualTargetHm = resultReceiver.getSharedPreference().getString("annual_target", "50000") ?: "50000"
     }
 
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?,
     ): View {
-        sortFilterHelper.fragment = this
-        statisticFragmentView = inflater.inflate(R.layout.fragment_statistics, container, false)
+        resultReceiver.getSortFilterHelper().fragment = this
+        val view = inflater.inflate(R.layout.fragment_statistics, container, false)
+        this.statisticFragmentView = view
         setHasOptionsMenu(true)
-        textTotalSummits = statisticFragmentView.findViewById(R.id.textTotalSummits)
-        textTotalKm = statisticFragmentView.findViewById(R.id.textTotalKm)
-        textTotalHm = statisticFragmentView.findViewById(R.id.textTotalHm)
-        textTotalHmInfo = statisticFragmentView.findViewById(R.id.textTotalHmInfo)
-        textTotalHmForecastInfo = statisticFragmentView.findViewById(R.id.textTotalHmForecastInfo)
-        textAchievement = statisticFragmentView.findViewById(R.id.textAchievement)
-        summitEntries = sortFilterHelper.entries
-        filteredEntries = sortFilterHelper.filteredEntries
+        if (view != null) {
+            textTotalSummits = view.findViewById(R.id.textTotalSummits)
+            textTotalKm = view.findViewById(R.id.textTotalKm)
+            textTotalHm = view.findViewById(R.id.textTotalHm)
+            textTotalHmInfo = view.findViewById(R.id.textTotalHmInfo)
+            textTotalHmForecastInfo = view.findViewById(R.id.textTotalHmForecastInfo)
+            textAchievement = view.findViewById(R.id.textAchievement)
+        }
+        summitEntries = resultReceiver.getSortFilterHelper().entries
+        filteredEntries = resultReceiver.getSortFilterHelper().filteredEntries
         update(filteredEntries)
-        return statisticFragmentView
+        return view
     }
 
     private fun setTextViews(extremaValuesSummits: ExtremaValuesSummits?) {
         if (statisticEntry.getTotalSummits() > 0) {
-            textTotalSummits.text = String.format("%s", statisticEntry.getTotalSummits())
-            textTotalKm.text = String.format(requireContext().resources.configuration.locales[0], "%.1f km", statisticEntry.totalKm)
-            textTotalHm.text = String.format(requireContext().resources.configuration.locales[0], "%s hm", statisticEntry.totalHm)
+            textTotalSummits?.text = String.format("%s", statisticEntry.getTotalSummits())
+            textTotalKm?.text = String.format(requireContext().resources.configuration.locales[0], "%.1f km", statisticEntry.totalKm)
+            textTotalHm?.text = String.format(requireContext().resources.configuration.locales[0], "%s hm", statisticEntry.totalHm)
             val currentYear: Int = (Calendar.getInstance())[Calendar.YEAR]
             val currentMonth: Int = (Calendar.getInstance())[Calendar.MONTH] + 1
-            if (sortFilterHelper.selectedYear == currentYear.toString()) {
-                val forecasts = sortFilterHelper.database.forecastDao()?.allForecasts
+            if (resultReceiver.getSortFilterHelper().selectedYear == currentYear.toString()) {
+                val forecasts = resultReceiver.getSortFilterHelper().database.forecastDao()?.allForecasts
                 forecasts?.forEach { summitEntries?.let { it1 -> it.setActual(it1, indoorHeightMeterPercent) } }
                 val sumCurrentYear = forecasts?.let { Forecast.getSumForYear(currentYear, it, 0, currentYear, currentMonth) }
                 if ((sumCurrentYear ?: 0) > 0) {
-                    textTotalHmInfo.visibility = View.VISIBLE
-                    textTotalHmInfo.text = getString(R.string.forecast_info_hm, currentYear.toString(), sumCurrentYear.toString(), annualTargetHm)
-                    textTotalHmInfo.setTextColor(if (annualTargetHm.toInt() < (sumCurrentYear ?: 0)) Color.GREEN else Color.RED)
+                    textTotalHmInfo?.visibility = View.VISIBLE
+                    textTotalHmInfo?.text = getString(R.string.forecast_info_hm, currentYear.toString(), sumCurrentYear.toString(), annualTargetHm)
+                    textTotalHmInfo?.setTextColor(if (annualTargetHm.toInt() < (sumCurrentYear ?: 0)) Color.GREEN else Color.RED)
                 } else {
-                    textTotalHmInfo.visibility = View.VISIBLE
-                    textTotalHmInfo.text = getString(R.string.current_estimate, statisticEntry.expectedAchievementHmAbsolute.toInt().toString())
+                    textTotalHmInfo?.visibility = View.VISIBLE
+                    textTotalHmInfo?.text = getString(R.string.current_estimate, statisticEntry.expectedAchievementHmAbsolute.toInt().toString())
                 }
                 val sumNextYear = forecasts?.filter { it.year == currentYear + 1 }?.sumBy { it.forecastHeightMeter }
                 if (sumNextYear ?: 0 > 0) {
-                    textTotalHmForecastInfo.visibility = View.VISIBLE
-                    textTotalHmForecastInfo.text = getString(R.string.forecast_info_hm, (currentYear+1).toString(), sumNextYear.toString(), annualTargetHm)
-                    textTotalHmForecastInfo.setTextColor(if (annualTargetHm.toInt() < (sumNextYear ?: 0)) Color.GREEN else Color.RED)
+                    textTotalHmForecastInfo?.visibility = View.VISIBLE
+                    textTotalHmForecastInfo?.text = getString(R.string.forecast_info_hm, (currentYear+1).toString(), sumNextYear.toString(), annualTargetHm)
+                    textTotalHmForecastInfo?.setTextColor(if (annualTargetHm.toInt() < (sumNextYear ?: 0)) Color.GREEN else Color.RED)
                 }
             } else {
-                textTotalHmInfo.visibility = View.GONE
-                textTotalHmForecastInfo.visibility = View.GONE
+                textTotalHmInfo?.visibility = View.GONE
+                textTotalHmForecastInfo?.visibility = View.GONE
             }
-            if (sortFilterHelper.selectedYear != "") {
-                statisticFragmentView.findViewById<View?>(R.id.achievementInfo)?.visibility = View.VISIBLE
-                textAchievement.text = String.format(requireContext().resources.configuration.locales[0], "%.1f %%", statisticEntry.getAchievement())
+            if (resultReceiver.getSortFilterHelper().selectedYear != "") {
+                statisticFragmentView?.findViewById<View?>(R.id.achievementInfo)?.visibility = View.VISIBLE
+                textAchievement?.text = String.format(requireContext().resources.configuration.locales[0], "%.1f %%", statisticEntry.getAchievement())
             } else {
-                statisticFragmentView.findViewById<View?>(R.id.achievementInfo)?.visibility = View.GONE
+                statisticFragmentView?.findViewById<View?>(R.id.achievementInfo)?.visibility = View.GONE
             }
             setTextViewData(extremaValuesSummits?.kilometersMinMax?.second, R.id.layoutLongestDistance, R.id.textLongestDistance, R.id.textLongestDistanceInfo, getString(R.string.km),
                     getValueOrNull(extremaValuesSummits?.kilometersMinMax?.second) { e -> e.kilometers }, 1)
@@ -245,9 +248,9 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
             entry: Summit?, layoutId: Int, dataId: Int, infoId: Int,
             unit: String?, value: Double, digits: Int = 0, factor: Int = 1,
     ) {
-        val layout = statisticFragmentView.findViewById<LinearLayout?>(layoutId)
-        val data = statisticFragmentView.findViewById<TextView?>(dataId)
-        val info = statisticFragmentView.findViewById<TextView?>(infoId)
+        val layout = statisticFragmentView?.findViewById<LinearLayout?>(layoutId)
+        val data = statisticFragmentView?.findViewById<TextView?>(dataId)
+        val info = statisticFragmentView?.findViewById<TextView?>(infoId)
         if (entry != null) {
             layout?.setOnClickListener { v: View ->
                 val context = v.context
@@ -284,9 +287,9 @@ class StatisticsFragment(private val sortFilterHelper: SortFilterHelper) : Fragm
     }
 
     private fun setProgressBar() {
-        val simpleProgressBar = statisticFragmentView.findViewById<ProgressBar?>(R.id.vprogressbar)
-        if (sortFilterHelper.selectedYear != "") {
-            val expectedAchievement = if (sortFilterHelper.selectedYear == getCurrentYear()) statisticEntry.getExpectedAchievementHmPercent() else 100.0
+        val simpleProgressBar = statisticFragmentView?.findViewById<ProgressBar?>(R.id.vprogressbar)
+        if (resultReceiver.getSortFilterHelper().selectedYear != "") {
+            val expectedAchievement = if (resultReceiver.getSortFilterHelper().selectedYear == getCurrentYear()) statisticEntry.getExpectedAchievementHmPercent() else 100.0
             simpleProgressBar?.visibility = View.VISIBLE
             simpleProgressBar?.max = 100
             simpleProgressBar?.progress = statisticEntry.getAchievement().toInt()

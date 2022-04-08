@@ -21,19 +21,16 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
-import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.LineChartSpinnerEntry
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerLineChart
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerView
-import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.text.SimpleDateFormat
-import java.util.*
-import kotlin.collections.ArrayList
 
-class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragment(), SummationFragment {
+class LineChartFragment : Fragment(), SummationFragment {
     private var summitEntries: List<Summit>? = null
     private var filteredEntries: List<Summit>? = null
     private var dataSpinner: Spinner? = null
@@ -42,10 +39,12 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
     private var lineChartEntries: MutableList<Entry?> = ArrayList()
     private var lineChartColors: List<Int>? = mutableListOf()
     private var lineChart: CustomMarkerLineChart? = null
+    private lateinit var resultReceiver: FragmentResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setRetainInstance(true)
+        resultReceiver = context as FragmentResultReceiver
+
     }
 
     override fun onCreateView(
@@ -54,12 +53,12 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
     ): View? {
         lineChartView = inflater.inflate(R.layout.fragment_line_chart, container, false)
         setHasOptionsMenu(true)
-        sortFilterHelper.fragment = this
+        resultReceiver.getSortFilterHelper().fragment = this
         fillDateSpinner()
-        summitEntries = sortFilterHelper.entries
+        summitEntries = resultReceiver.getSortFilterHelper().entries
         lineChart = lineChartView?.findViewById(R.id.lineChart) // Fragment
         resizeChart()
-        filteredEntries = sortFilterHelper.filteredEntries
+        filteredEntries = resultReceiver.getSortFilterHelper().filteredEntries
         update(filteredEntries)
         listenOnDataSpinner()
         drawLineChart()
@@ -68,7 +67,15 @@ class LineChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragme
 
     private fun resizeChart() {
         val metrics = DisplayMetrics()
-        MainActivity.mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            val display = activity?.display
+            display?.getRealMetrics(metrics)
+        } else {
+            @Suppress("DEPRECATION")
+            val display = activity?.windowManager?.defaultDisplay
+            @Suppress("DEPRECATION")
+            display?.getMetrics(metrics)
+        }
         lineChart?.minimumHeight = (metrics.heightPixels * 0.7).toInt()
     }
 

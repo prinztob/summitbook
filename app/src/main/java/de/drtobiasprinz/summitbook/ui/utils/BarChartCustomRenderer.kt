@@ -7,7 +7,7 @@ import com.github.mikephil.charting.renderer.CombinedChartRenderer
 import com.github.mikephil.charting.utils.ViewPortHandler
 import java.util.*
 
-class BarChartCustomRenderer(val chart: CombinedChart?, animator: ChartAnimator?, viewPortHandler: ViewPortHandler?) : CombinedChartRenderer(chart, animator, viewPortHandler) {
+class BarChartCustomRenderer(private val chart: CombinedChart?, animator: ChartAnimator?, viewPortHandler: ViewPortHandler?) : CombinedChartRenderer(chart, animator, viewPortHandler) {
     override fun drawValue(c: Canvas, valueText: String, x: Float, y: Float, color: Int) {
         if (valueText != "0") {
             mValuePaint.color = color

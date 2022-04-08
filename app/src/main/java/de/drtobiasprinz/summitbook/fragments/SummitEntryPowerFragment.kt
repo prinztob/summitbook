@@ -1,3 +1,5 @@
+package de.drtobiasprinz.summitbook.fragments
+
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
@@ -9,8 +11,8 @@ import android.widget.*
 import androidx.annotation.Px
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
-import androidx.viewpager.widget.ViewPager
+import androidx.lifecycle.ViewModelProvider
+import androidx.viewpager2.widget.ViewPager2
 import com.chivorn.smartmaterialspinner.SmartMaterialSpinner
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.MarkerView
@@ -25,14 +27,15 @@ import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.MyResultReceiver
 import de.drtobiasprinz.summitbook.models.PowerData
 import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
 import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
 import java.util.*
+import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.round
 
@@ -47,12 +50,12 @@ class SummitEntryPowerFragment : Fragment() {
     private var selectedTimeRangeSpinner: Int = 0
     private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
-    private lateinit var resultreceiver: MyResultReceiver
+    private lateinit var resultReceiver: SummitEntryResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultreceiver = context as MyResultReceiver
-        pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
+        resultReceiver = context as SummitEntryResultReceiver
+        pageViewModel = ViewModelProvider(this).get(PageViewModel::class.java)
         pageViewModel?.setIndex(TAG)
     }
 
@@ -62,12 +65,19 @@ class SummitEntryPowerFragment : Fragment() {
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_power, container, false)
         database = context?.let { AppDatabase.getDatabase(it) }
-        summitEntry = resultreceiver.getSummit()
-        summitToCompare = resultreceiver.getSelectedSummitForComparison()
-        summitsToCompare = resultreceiver.getSummitsForComparison()
+        summitEntry = resultReceiver.getSummit()
+        summitToCompare = resultReceiver.getSelectedSummitForComparison()
+        summitsToCompare = resultReceiver.getSummitsForComparison()
         metrics = DisplayMetrics()
-        val mainActivity = MainActivity.mainActivity
-        mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            val display = activity?.display
+            display?.getRealMetrics(metrics)
+        } else {
+            @Suppress("DEPRECATION")
+            val display = activity?.windowManager?.defaultDisplay
+            @Suppress("DEPRECATION")
+            display?.getMetrics(metrics)
+        }
         timeRangeSpinner = root.findViewById(R.id.spinner_time_range)
         val timeRangeAdapter = ArrayAdapter(requireContext(),
                 android.R.layout.simple_spinner_item, listOf(getString(R.string.all), getString(R.string.current_year), getString(R.string.last_3_month), getString(R.string.last_12_month)))
@@ -101,11 +111,11 @@ class SummitEntryPowerFragment : Fragment() {
         val summitToCompareSpinner: SmartMaterialSpinner<String> = root.findViewById(R.id.summit_name_to_compare)
         val items = getSummitsSuggestions(summitEntry)
         summitToCompareSpinner.item = items
-        resultreceiver.getViewPager().addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+        resultReceiver.getViewPager().registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageScrolled(position: Int, positionOffset: Float, @Px positionOffsetPixels: Int) {}
 
             override fun onPageSelected(position: Int) {
-                val summitToCompareLocal = resultreceiver.getSelectedSummitForComparison()
+                val summitToCompareLocal = resultReceiver.getSelectedSummitForComparison()
                 if (summitToCompareLocal != null) {
                     val name = "${summitToCompareLocal.getDateAsString()} ${summitToCompareLocal.name}"
                     val index = items.indexOf(name)
@@ -123,7 +133,7 @@ class SummitEntryPowerFragment : Fragment() {
                     val text = items[position]
                     if (text != "") {
                         summitToCompare = summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
-                        resultreceiver.setSelectedSummitForComparison(summitToCompare)
+                        resultReceiver.setSelectedSummitForComparison(summitToCompare)
                     }
                     drawChart()
                 }
@@ -137,7 +147,7 @@ class SummitEntryPowerFragment : Fragment() {
 
     private fun getSummitsSuggestions(localSummit: Summit): ArrayList<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
-        val summitsToCompareFromActivity = resultreceiver.getSummitsForComparison()
+        val summitsToCompareFromActivity = resultReceiver.getSummitsForComparison()
         val summitsWithoutSimilarName = summitsToCompareFromActivity.filter { it.name != localSummit.name && it.garminData?.power?.hasPowerData() == true }.sortedByDescending { it.date }
         val summitsWithSimilarName = summitsToCompareFromActivity.filter { it.name == localSummit.name && it != localSummit }.sortedByDescending { it.date }
         summitsToCompare = summitsWithSimilarName + summitsWithoutSimilarName
@@ -295,11 +305,11 @@ class SummitEntryPowerFragment : Fragment() {
     }
 
     private fun scaleCbr(cbr: Double): Float {
-        return Math.log10(cbr).toFloat()
+        return log10(cbr).toFloat()
     }
 
     private fun unScaleCbr(cbr: Double): Float {
-        val calcVal = Math.pow(10.0, cbr)
+        val calcVal = 10.0.pow(cbr)
         return calcVal.toFloat()
     }
 
@@ -370,7 +380,7 @@ class SummitEntryPowerFragment : Fragment() {
 
 
     companion object {
-        private const val TAG = "SummitEntryPowerFragement"
+        private const val TAG = "SummitEntryPowerFragment"
 
         fun newInstance(summitEntry: Summit): SummitEntryPowerFragment {
             val fragment = SummitEntryPowerFragment()
@@ -384,8 +394,7 @@ class SummitEntryPowerFragment : Fragment() {
         private val tvContent: TextView? = findViewById(R.id.tvContent)
 
         override fun refreshContent(e: Entry, highlight: Highlight?) {
-            val value = 10f.pow(e.x)
-            val xText = when (value) {
+            val xText = when (val value = 10f.pow(e.x)) {
                 in 0f..59f -> "${round(value).toInt()} sec"
                 in 60f..3599f -> "${round(value / 60f).toInt()} min"
                 else -> "${round(value / 3660f).toInt()} h"

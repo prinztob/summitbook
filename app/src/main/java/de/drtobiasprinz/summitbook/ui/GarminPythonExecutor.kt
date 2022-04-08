@@ -5,18 +5,16 @@ import android.util.Log
 import android.view.View
 import com.chaquo.python.PyObject
 import com.chaquo.python.Python
-import com.chaquo.python.android.AndroidPlatform
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import de.drtobiasprinz.summitbook.MainActivity
+import de.drtobiasprinz.summitbook.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.dialog.BaseDialog
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader.Companion.getTempGpsFilePath
-import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.io.File
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -24,20 +22,19 @@ import java.util.*
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
-class GarminPythonExecutor(var pythonInstance: Python?, val username: String, val password: String) {
+class GarminPythonExecutor(private var pythonInstance: Python?, private val username: String, private val password: String) {
     private var pythonModule: PyObject? = null
-    var client: PyObject? = null
+    private var client: PyObject? = null
 
     private fun login() {
         if (client == null) {
-            if (!Python.isStarted()) {
-                MainActivity.mainActivity?.let { AndroidPlatform(it) }?.let { Python.start(it) }
+            if (Python.isStarted()) {
+                pythonModule = pythonInstance?.getModule("start")
+                Log.i("GarminPythonExecutor", "do login")
+                val result = pythonModule?.callAttr("get_authenticated_client", username, password)
+                checkOutput(result)
+                client = result
             }
-            pythonModule = pythonInstance?.getModule("start")
-            Log.i("GarminPythonExecutor", "do login")
-            val result = pythonModule?.callAttr("get_authenticated_client", username, password)
-            checkOutput(result)
-            client = result
         }
     }
 
@@ -47,7 +44,7 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
         }
         val result = pythonModule?.callAttr("get_activity_json_for_date", client, dateAsString)
         checkOutput(result)
-        val jsonResponse = JsonParser().parse(result.toString()) as JsonArray
+        val jsonResponse = JsonParser.parseString(result.toString()) as JsonArray
         return getSummitsAtDate(jsonResponse)
     }
 
@@ -78,13 +75,13 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
         checkOutput(result)
     }
 
-    fun downloadSpeedDataForActivity(activitiesDir: File, activityId: String): JsonObject {
+    fun downloadSpeedDataForActivity(activityId: String): JsonObject {
         if (client == null) {
             login()
         }
-        val result = pythonModule?.callAttr("get_split_data", client, activityId, activitiesDir.absolutePath)
+        val result = pythonModule?.callAttr("get_split_data", client, activityId, activitiesDir?.absolutePath)
         checkOutput(result)
-        return JsonParser().parse(result.toString()) as JsonObject
+        return JsonParser.parseString(result.toString()) as JsonObject
     }
 
     fun getMultiSportData(activityId: String): JsonObject {
@@ -93,7 +90,7 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
         }
         val result = pythonModule?.callAttr("get_multi_sport_data", client, activityId)
         checkOutput(result)
-        return JsonParser().parse(result.toString()) as JsonObject
+        return JsonParser.parseString(result.toString()) as JsonObject
     }
 
     fun getMultiSportPowerData(dateAsString: String): JsonObject {
@@ -102,7 +99,7 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
         }
         val result = pythonModule?.callAttr("get_power_data", client, dateAsString)
         checkOutput(result)
-        return JsonParser().parse(result.toString()) as JsonObject
+        return JsonParser.parseString(result.toString()) as JsonObject
     }
 
     private fun checkOutput(result: PyObject?) {
@@ -116,8 +113,10 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
 
     companion object {
 
-        class AsyncDownloadGpxViaPython(garminPythonExecutor: GarminPythonExecutor, entries: List<Summit>, private val sortFilterHelper: SortFilterHelper, useTcx: Boolean = false, private val dialog: BaseDialog, private val index: Int = -1) : AsyncTask<Void?, Void?, Void?>() {
-            private val downloader = GarminTrackAndDataDownloader(entries, garminPythonExecutor, useTcx)
+        @Suppress("DEPRECATION")
+        class AsyncDownloadGpxViaPython(summits: List<Summit>, private val resultReceiver: FragmentResultReceiver, useTcx: Boolean = false,
+                                        private val dialog: BaseDialog, private val index: Int = -1) : AsyncTask<Void?, Void?, Void?>() {
+            private val downloader = GarminTrackAndDataDownloader(summits, resultReceiver.getPythonExecutor(), useTcx)
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
                     downloader.downloadTracks()
@@ -137,7 +136,7 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
                         }
                     } else {
                         downloader.composeFinalTrack()
-                        downloader.updateFinalEntry(sortFilterHelper)
+                        downloader.updateFinalEntry(resultReceiver)
                     }
                     if (index != -1) {
                         dialog.doInPostExecute(index, downloader.downloadedTracks.none { !it.exists() })
@@ -145,7 +144,7 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
                 } catch (e: RuntimeException) {
                     Log.e("AsyncDownloadGpxViaPython", e.message ?: "")
                 } finally {
-                    SummitViewFragment.updateNewSummits(SummitViewFragment.activitiesDir, sortFilterHelper.entries, dialog.getDialogContext())
+                    SummitViewFragment.updateNewSummits(resultReceiver.getAllActivitiesFromThirdParty(), resultReceiver.getSortFilterHelper().entries, dialog.getDialogContext())
                     val progressBar = dialog.getProgressBarForAsyncTask()
                     if (progressBar != null) {
                         progressBar.visibility = View.GONE
@@ -168,15 +167,15 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
             return entries
         }
 
-        fun getAllDownloadedSummitsFromGarmin(directory: File): MutableList<Summit> {
+        fun getAllDownloadedSummitsFromGarmin(directory: File?): MutableList<Summit> {
             val entries = mutableListOf<Summit>()
-            if (directory.exists() && directory.isDirectory) {
+            if (directory != null && directory.exists() && directory.isDirectory) {
                 val files = directory.listFiles()
                 if (files?.isNotEmpty() == true) {
                     files.forEach {
                         if (it.name.startsWith("activity_") && !it.name.endsWith("_splits.json")) {
                             try {
-                                val gson = JsonParser().parse(it.readText()) as JsonObject
+                                val gson = JsonParser.parseString(it.readText()) as JsonObject
                                 entries.add(parseJsonObject(gson))
                             } catch (ex: IllegalArgumentException) {
                                 it.delete()
@@ -220,15 +219,15 @@ class GarminPythonExecutor(var pythonInstance: Python?, val username: String, va
                             getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt()),
                     round(convertMeterToKm(getJsonObjectEntryNotNull(jsonObject, "distance").toDouble()), 2),
                     VelocityData.parse(round(averageSpeed, 2),
-                        if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
+                            if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
                     null, null,
                     emptyList(),
                     emptyList(),
-                    false,
-                    false,
-                    mutableListOf(),
-                    garminData,
-                    null
+                    isFavorite = false,
+                    isPeak = false,
+                    imageIds = mutableListOf(),
+                    garminData = garminData,
+                    trackBoundingBox = null
             )
         }
 

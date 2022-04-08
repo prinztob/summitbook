@@ -4,14 +4,13 @@ import android.content.Context
 import android.content.Intent
 import android.widget.TextView
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.models.TrackColor
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.infowindow.InfoWindow
 
-class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Context, var alwaysShowTrack: Boolean) : InfoWindow(R.layout.bonuspack_bubble, mapView) {
+class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Context, private var alwaysShowTrack: Boolean) : InfoWindow(R.layout.bonuspack_bubble, mapView) {
     override fun onClose() {
         updateGpxTrack()
     }

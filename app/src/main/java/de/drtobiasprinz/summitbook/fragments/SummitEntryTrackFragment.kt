@@ -1,3 +1,5 @@
+package de.drtobiasprinz.summitbook.fragments
+
 import android.content.ActivityNotFoundException
 import android.content.DialogInterface
 import android.content.Intent
@@ -12,8 +14,8 @@ import androidx.annotation.Px
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
-import androidx.viewpager.widget.ViewPager
+import androidx.lifecycle.ViewModelProvider
+import androidx.viewpager2.widget.ViewPager2
 import com.chivorn.smartmaterialspinner.SmartMaterialSpinner
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.Legend
@@ -30,23 +32,20 @@ import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.utils.ColorTemplate
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.BuildConfig
-import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
-import de.drtobiasprinz.summitbook.models.MyResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
 import de.drtobiasprinz.summitbook.models.TrackColor
-import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowSrolling
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
 import java.io.IOException
-import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.math.roundToLong
 
 
@@ -56,7 +55,7 @@ class SummitEntryTrackFragment : Fragment() {
     private lateinit var root: View
     private lateinit var metrics: DisplayMetrics
     private var database: AppDatabase? = null
-    private lateinit var osMap: CustomMapViewToAllowSrolling
+    private lateinit var osMap: CustomMapViewToAllowScrolling
     private var marker: Marker? = null
     private var selectedCustomizeTrackItem = TrackColor.Elevation
     private var trackSlopeGraph: MutableList<Entry> = mutableListOf()
@@ -65,12 +64,12 @@ class SummitEntryTrackFragment : Fragment() {
     private var usedItemsForColorCode: List<TrackColor> = emptyList()
     private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
-    private lateinit var resultreceiver: MyResultReceiver
+    private lateinit var resultReceiver: SummitEntryResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultreceiver = context as MyResultReceiver
-        pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
+        resultReceiver = context as SummitEntryResultReceiver
+        pageViewModel = ViewModelProvider(this).get(PageViewModel::class.java)
         pageViewModel?.setIndex(TAG)
     }
 
@@ -79,12 +78,19 @@ class SummitEntryTrackFragment : Fragment() {
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_track, container, false)
         database = context?.let { AppDatabase.getDatabase(it) }
-        summitEntry = resultreceiver.getSummit()
-        summitToCompare = resultreceiver.getSelectedSummitForComparison()
-        summitsToCompare = resultreceiver.getSummitsForComparison()
+        summitEntry = resultReceiver.getSummit()
+        summitToCompare = resultReceiver.getSelectedSummitForComparison()
+        summitsToCompare = resultReceiver.getSummitsForComparison()
         metrics = DisplayMetrics()
-        val mainActivity = MainActivity.mainActivity
-        mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            val display = activity?.display
+            display?.getRealMetrics(metrics)
+        } else {
+            @Suppress("DEPRECATION")
+            val display = activity?.windowManager?.defaultDisplay
+            @Suppress("DEPRECATION")
+            display?.getMetrics(metrics)
+        }
         if (summitEntry.isBookmark) {
             root.findViewById<Spinner>(R.id.summit_name_to_compare).visibility = View.GONE
         } else {
@@ -131,10 +137,10 @@ class SummitEntryTrackFragment : Fragment() {
                     startActivity(intentShareFile)
                 } catch (e: IOException) {
                     Toast.makeText(requireContext(),
-                            getString(R.string.no_email_prgram_installed), Toast.LENGTH_LONG).show()
+                            getString(R.string.no_email_program_installed), Toast.LENGTH_LONG).show()
                 } catch (e: ActivityNotFoundException) {
                     Toast.makeText(requireContext(),
-                            getString(R.string.no_email_prgram_installed), Toast.LENGTH_LONG).show()
+                            getString(R.string.no_email_program_installed), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -146,11 +152,11 @@ class SummitEntryTrackFragment : Fragment() {
         val summitToCompareSpinner: SmartMaterialSpinner<String> = root.findViewById(R.id.summit_name_to_compare)
         val items = getSummitsSuggestions(summitEntry)
         summitToCompareSpinner.item = items
-        resultreceiver.getViewPager().addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+        resultReceiver.getViewPager().registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageScrolled(position: Int, positionOffset: Float, @Px positionOffsetPixels: Int) {}
 
             override fun onPageSelected(position: Int) {
-                val summitToCompareLocal = resultreceiver.getSelectedSummitForComparison()
+                val summitToCompareLocal = resultReceiver.getSelectedSummitForComparison()
                 if (summitToCompareLocal != null) {
                     val name = "${summitToCompareLocal.getDateAsString()} ${summitToCompareLocal.name}"
                     val index = items.indexOf(name)
@@ -168,7 +174,7 @@ class SummitEntryTrackFragment : Fragment() {
                     val text = items[position]
                     if (text != "") {
                         summitToCompare = summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
-                        resultreceiver.setSelectedSummitForComparison(summitToCompare)
+                        resultReceiver.setSelectedSummitForComparison(summitToCompare)
                     }
                     setOpenStreetMap()
                 }
@@ -182,7 +188,7 @@ class SummitEntryTrackFragment : Fragment() {
 
     private fun getSummitsSuggestions(localSummit: Summit): ArrayList<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
-        val summitsToCompareFromActivity = resultreceiver.getSummitsForComparison()
+        val summitsToCompareFromActivity = resultReceiver.getSummitsForComparison()
         val summitsWithoutSimilarName = summitsToCompareFromActivity.filter { it.name != localSummit.name && it.hasGpsTrack() }.sortedByDescending { it.date }
         val summitsWithSimilarName = summitsToCompareFromActivity.filter { it.name == localSummit.name && it != localSummit }.sortedByDescending { it.date }
         summitsToCompare = summitsWithSimilarName + summitsWithoutSimilarName
@@ -396,7 +402,7 @@ class SummitEntryTrackFragment : Fragment() {
 
 
     companion object {
-        private const val TAG = "SummitEntryTrackFragement"
+        private const val TAG = "SummitEntryTrackFragment"
 
         fun newInstance(summitEntry: Summit): SummitEntryTrackFragment {
             val fragment = SummitEntryTrackFragment()

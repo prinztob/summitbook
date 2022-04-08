@@ -12,14 +12,12 @@ import java.util.*
 class TCXToGPXParser {
     @Throws(XmlPullParserException::class, IOException::class)
     fun parse(tcsInputStream: InputStream): Gpx {
-        return try {
+        return tcsInputStream.use {
             val parser = Xml.newPullParser()
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
-            parser.setInput(tcsInputStream, null)
+            parser.setInput(it, null)
             parser.nextTag()
             readTcx(parser)
-        } finally {
-            tcsInputStream.close()
         }
     }
 
@@ -34,8 +32,7 @@ class TCXToGPXParser {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
                 TAG_ACTIVITIES -> tracks.addAll(readActivities(parser))
                 else -> skip(parser)
             }
@@ -57,8 +54,7 @@ class TCXToGPXParser {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
                 TAG_ACTIVITY -> tracks.addAll(readActivity(parser))
                 else -> skip(parser)
             }
@@ -115,8 +111,7 @@ class TCXToGPXParser {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
                 TAG_NAME -> trackBuilder.name = readName(parser)
                 TAG_TRACK_POINT -> trackPoints.add(readTrackPoint(parser))
                 TAG_DESC -> trackBuilder.desc = readDesc(parser)
@@ -151,8 +146,7 @@ class TCXToGPXParser {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
                 TAG_NAME -> builder.name = readName(parser)
                 TAG_ELEVATION -> builder.elevation = readElevation(parser)
                 TAG_TIME -> builder.time = readTime(parser)
@@ -182,13 +176,16 @@ class TCXToGPXParser {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            if (TAG_LAT == name) {
-                latitude = readString(parser, TAG_LAT)
-            } else if (TAG_LON == name) {
-                longitude = readString(parser, TAG_LON)
-            } else {
-                skip(parser)
+            when (parser.name) {
+                TAG_LAT -> {
+                    latitude = readString(parser, TAG_LAT)
+                }
+                TAG_LON -> {
+                    longitude = readString(parser, TAG_LON)
+                }
+                else -> {
+                    skip(parser)
+                }
             }
         }
         parser.require(XmlPullParser.END_TAG, namespace, TAG_POSITION)
@@ -228,8 +225,7 @@ class TCXToGPXParser {
                 if (parser.prefix != "ns3") {
                     continue
                 }
-                val name = parser.name
-                when (name) {
+                when (parser.name) {
                     TAG_POWER -> extensionBuilder.power = readString(parser, TAG_POWER).toInt()
                     TAG_SPEED -> extensionBuilder.speed = readString(parser, TAG_SPEED).toDouble()
                     else -> skip(parser)
@@ -343,7 +339,6 @@ class TCXToGPXParser {
         private const val TAG_TYPE = "type"
         private const val TAG_EXTENSIONS = "Extensions"
         private const val TAG_DISTANCE = "DistanceMeters"
-        const val TAG_TEMP = "atemp"
         const val TAG_CADENCE = "Cadence"
         const val TAG_HEART_RATE = "HeartRateBpm"
         const val TAG_SPEED = "Speed"

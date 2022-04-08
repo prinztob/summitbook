@@ -6,13 +6,15 @@ import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
-import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.models.Summit
@@ -60,7 +62,7 @@ class BookmarkViewAdapter(var bookmarks: MutableList<Summit>) : RecyclerView.Ada
             val editButton = cardView.findViewById<ImageButton?>(R.id.entry_edit)
             editButton?.setOnClickListener { _: View? ->
                 val updateDialog = updateInstance(entry)
-                MainActivity.mainActivity?.supportFragmentManager?.let { updateDialog.show(it, "Update Bookmark") }
+                (context as AppCompatActivity).supportFragmentManager.let { updateDialog.show(it, "Update Bookmark") }
             }
             cardView.setOnClickListener { v: View? ->
                 val context = v?.context
@@ -91,8 +93,7 @@ class BookmarkViewAdapter(var bookmarks: MutableList<Summit>) : RecyclerView.Ada
                 .show()
     }
 
-    class ViewHolder internal constructor(val cardView: CardView?) : RecyclerView.ViewHolder(cardView!!) {
-    }
+    class ViewHolder internal constructor(val cardView: CardView?) : RecyclerView.ViewHolder(cardView!!)
 
     companion object {
         var SUMMIT_IS_BOOKMARK_IDENTIFIERS = "SUMMIT_IS_BOOKMARK_IDENTIFIERS"

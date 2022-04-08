@@ -1,27 +1,34 @@
+package de.drtobiasprinz.summitbook.fragments
+
 import android.os.Bundle
 import android.text.Html
 import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ImageView
+import android.widget.Spinner
+import android.widget.TextView
 import androidx.annotation.Px
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
-import androidx.viewpager.widget.ViewPager
+import androidx.lifecycle.ViewModelProvider
+import androidx.viewpager2.widget.ViewPager2
 import com.chivorn.smartmaterialspinner.SmartMaterialSpinner
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.MyResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 
 class SummitEntryDataFragment : Fragment() {
@@ -31,12 +38,12 @@ class SummitEntryDataFragment : Fragment() {
     private var database: AppDatabase? = null
     private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
-    private lateinit var resultreceiver: MyResultReceiver
+    private lateinit var resultReceiver: SummitEntryResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultreceiver = context as MyResultReceiver
-        pageViewModel = ViewModelProviders.of(this).get(PageViewModel::class.java)
+        resultReceiver = context as SummitEntryResultReceiver
+        pageViewModel = ViewModelProvider(this).get(PageViewModel::class.java)
         pageViewModel?.setIndex(TAG)
     }
 
@@ -45,11 +52,12 @@ class SummitEntryDataFragment : Fragment() {
             savedInstanceState: Bundle?,
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_data, container, false)
+
         database = context?.let { AppDatabase.getDatabase(it) }
         val extrema = MainActivity.extremaValuesAllSummits
-        summitEntry = resultreceiver.getSummit()
-        summitToCompare = resultreceiver.getSelectedSummitForComparison()
-        summitsToCompare = resultreceiver.getSummitsForComparison()
+        summitEntry = resultReceiver.getSummit()
+        summitToCompare = resultReceiver.getSelectedSummitForComparison()
+        summitsToCompare = resultReceiver.getSummitsForComparison()
         if (summitEntry.isBookmark) {
             root.findViewById<Spinner>(R.id.summit_name_to_compare).visibility = View.GONE
         } else {
@@ -75,11 +83,11 @@ class SummitEntryDataFragment : Fragment() {
         setText(root.findViewById(R.id.top_elevationText), root.findViewById(R.id.top_elevation), getString(R.string.hm), summitEntry,
                 extrema?.topElevationMinMax?.first, extrema?.topElevationMinMax?.second, summitToCompare) { entry -> entry.elevationData.maxElevation }
         setText(root.findViewById(R.id.top_verticalVelocity1MinText), root.findViewById(R.id.top_verticalVelocity1Min), getString(R.string.m), summitEntry,
-                extrema?.topVerticalVelocity1MinMinMax?.first, extrema?.topVerticalVelocity1MinMinMax?.second, summitToCompare) { entry -> entry.elevationData.maxVerticalVelocity1Min }
+                extrema?.topVerticalVelocity1MinMinMax?.first, extrema?.topVerticalVelocity1MinMinMax?.second, summitToCompare, factor = 60, digits = 0) { entry -> entry.elevationData.maxVerticalVelocity1Min }
         setText(root.findViewById(R.id.top_verticalVelocity10MinText), root.findViewById(R.id.top_verticalVelocity10Min), getString(R.string.m), summitEntry,
-                extrema?.topVerticalVelocity10MinMinMax?.first, extrema?.topVerticalVelocity10MinMinMax?.second, summitToCompare) { entry -> entry.elevationData.maxVerticalVelocity10Min }
+                extrema?.topVerticalVelocity10MinMinMax?.first, extrema?.topVerticalVelocity10MinMinMax?.second, summitToCompare, factor = 600, digits = 0) { entry -> entry.elevationData.maxVerticalVelocity10Min }
         setText(root.findViewById(R.id.top_verticalVelocity1hText), root.findViewById(R.id.top_verticalVelocity1h), getString(R.string.m), summitEntry,
-                extrema?.topVerticalVelocity1hMinMax?.first, extrema?.topVerticalVelocity1hMinMax?.second, summitToCompare) { entry -> entry.elevationData.maxVerticalVelocity1h }
+                extrema?.topVerticalVelocity1hMinMax?.first, extrema?.topVerticalVelocity1hMinMax?.second, summitToCompare, factor = 3600, digits = 0) { entry -> entry.elevationData.maxVerticalVelocity1h }
         setText(root.findViewById(R.id.top_slopeText), root.findViewById(R.id.top_slope), "%", summitEntry,
                 extrema?.topSlopeMinMax?.first, extrema?.topSlopeMinMax?.second, summitToCompare) { entry -> entry.elevationData.maxSlope }
         setText(root.findViewById(R.id.paceText), root.findViewById(R.id.pace), getString(R.string.kmh), summitEntry,
@@ -182,13 +190,14 @@ class SummitEntryDataFragment : Fragment() {
 
     private fun prepareCompareAutoComplete(extrema: ExtremaValuesSummits?) {
         val summitToCompareSpinner: SmartMaterialSpinner<String> = root.findViewById(R.id.summit_name_to_compare)
+        summitToCompareSpinner.visibility = View.VISIBLE
         val items = getSummitsSuggestions(summitEntry)
         summitToCompareSpinner.item = items
-        resultreceiver.getViewPager().addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+        resultReceiver.getViewPager().registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageScrolled(position: Int, positionOffset: Float, @Px positionOffsetPixels: Int) {}
 
             override fun onPageSelected(position: Int) {
-                val summitToCompareLocal = resultreceiver.getSelectedSummitForComparison()
+                val summitToCompareLocal = resultReceiver.getSelectedSummitForComparison()
                 if (summitToCompareLocal != null) {
                     val name = "${summitToCompareLocal.getDateAsString()} ${summitToCompareLocal.name}"
                     val index = items.indexOf(name)
@@ -207,7 +216,7 @@ class SummitEntryDataFragment : Fragment() {
                     val text = items[position]
                     if (text != "") {
                         summitToCompare = summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
-                        resultreceiver.setSelectedSummitForComparison(summitToCompare)
+                        resultReceiver.setSelectedSummitForComparison(summitToCompare)
                     }
                     setBaseData(extrema)
                     setThirdPartyData(extrema)
@@ -223,7 +232,7 @@ class SummitEntryDataFragment : Fragment() {
 
     private fun getSummitsSuggestions(localSummit: Summit): ArrayList<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
-        val summitsToCompareFromActivity = resultreceiver.getSummitsForComparison()
+        val summitsToCompareFromActivity = resultReceiver.getSummitsForComparison()
         val summitsWithoutSimilarName = summitsToCompareFromActivity.filter { it.name != localSummit.name }.sortedByDescending { it.date }
         val summitsWithSimilarName = summitsToCompareFromActivity.filter { it.name == localSummit.name && it != localSummit }.sortedByDescending { it.date }
         summitsToCompare = summitsWithSimilarName + summitsWithoutSimilarName
@@ -302,18 +311,24 @@ class SummitEntryDataFragment : Fragment() {
         }
     }
 
-    private fun setText(descriptionTextView: TextView, valueTextView: TextView, unit: String, summit: Summit, minSummit: Summit? = null, maxSummit: Summit? = null,
-                        compareSummit: Summit? = null, reverse: Boolean = false, visibility: Int = View.VISIBLE, toHHms: Boolean = false, digits: Int = 1, f: (Summit) -> Number?) {
+    private fun setText(descriptionTextView: TextView, valueTextView: TextView, unit: String, summit: Summit,
+                        minSummit: Summit? = null, maxSummit: Summit? = null, compareSummit: Summit? = null,
+                        reverse: Boolean = false, visibility: Int = View.VISIBLE, toHHms: Boolean = false,
+                        digits: Int = 1, factor: Int = 1, f: (Summit) -> Number?) {
         val value = f(summit) ?: (if (f(summit) is Int) 0 else 0.0)
         val valueToCompare = if (compareSummit != null) f(compareSummit) else (if (f(summit) is Int) 0 else 0.0)
-        if (value.toInt() == 0) {
+        if (abs(value.toDouble()) < 0.01) {
             descriptionTextView.visibility = View.GONE
             valueTextView.visibility = View.GONE
         } else {
             descriptionTextView.visibility = visibility
             valueTextView.visibility = visibility
             if (value is Int || digits == 0) {
-                valueTextView.text = if (valueToCompare?.toInt() != 0) String.format("%s (%s) %s", value.toInt(), valueToCompare?.toInt(), unit) else String.format("%s %s", value.toInt(), unit)
+                valueTextView.text = if (valueToCompare != null && valueToCompare.toInt() != 0) {
+                    String.format("%s (%s) %s", (value.toDouble() * factor).roundToInt(), (valueToCompare.toDouble() * factor).roundToInt(), unit)
+                } else {
+                    String.format("%s %s", (value.toDouble() * factor).roundToInt(), unit)
+                }
             } else {
                 if (toHHms) {
                     val valueInMs = (value.toDouble() * 3600000.0).toLong()
@@ -329,7 +344,11 @@ class SummitEntryDataFragment : Fragment() {
                                 TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1))
                     }
                 } else {
-                    valueTextView.text = if (valueToCompare?.toInt() != 0) String.format(Locale.US, "%.${digits}f (%.${digits}f) %s", value, valueToCompare, unit) else String.format(Locale.US, "%.${digits}f %s", value, unit)
+                    valueTextView.text = if (valueToCompare != null && valueToCompare.toInt() != 0) {
+                        String.format(Locale.US,"%.${digits}f (%.${digits}f) %s", value.toDouble() * factor, valueToCompare.toDouble() * factor, unit)
+                    } else {
+                        String.format(Locale.US, "%.${digits}f %s", value.toDouble() * factor, unit)
+                    }
                 }
             }
             drawCircleWithIndication(valueTextView, minSummit?.let { f(it)?.toDouble() }

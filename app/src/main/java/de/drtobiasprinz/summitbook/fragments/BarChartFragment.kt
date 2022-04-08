@@ -1,7 +1,6 @@
 package de.drtobiasprinz.summitbook.fragments
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
@@ -16,7 +15,6 @@ import android.widget.Spinner
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.preference.PreferenceManager
 import com.github.mikephil.charting.charts.CombinedChart.DrawOrder
 import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.components.MarkerView
@@ -26,15 +24,14 @@ import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
-import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.models.Forecast
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.utils.BarChartCustomRenderer
 import de.drtobiasprinz.summitbook.ui.utils.CustomBarChart
 import de.drtobiasprinz.summitbook.ui.utils.IntervalHelper
-import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.text.DateFormatSymbols
 import java.text.ParseException
 import java.util.*
@@ -42,7 +39,7 @@ import java.util.function.Supplier
 import java.util.stream.Stream
 
 
-class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragment(), SummationFragment {
+class BarChartFragment : Fragment(), SummationFragment {
     private var summitEntries: ArrayList<Summit>? = null
     private var filteredEntries: ArrayList<Summit>? = null
     private var yAxisSpinner: Spinner? = null
@@ -56,33 +53,32 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
     private var unit: String? = "hm"
     private var label: String? = "Height meters"
     private var barChart: CustomBarChart? = null
-    private var intervalHelper: IntervalHelper = IntervalHelper(sortFilterHelper.filteredEntries)
-    private lateinit var forecasts: ArrayList<Forecast>
-    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var intervalHelper: IntervalHelper
+    private lateinit var resultReceiver: FragmentResultReceiver
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setRetainInstance(true)
+        resultReceiver = context as FragmentResultReceiver
     }
 
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?,
     ): View? {
+        intervalHelper = IntervalHelper(resultReceiver.getSortFilterHelper().filteredEntries)
         barChartView = inflater.inflate(R.layout.fragment_bar_chart, container, false)
         setHasOptionsMenu(true)
-        sortFilterHelper.fragment = this
-        forecasts = sortFilterHelper.database.forecastDao()?.allForecasts as ArrayList<Forecast>
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        indoorHeightMeterPercent = sharedPreferences.getInt("indoor_height_meter_per_cent", 0)
+        resultReceiver.getSortFilterHelper().fragment = this
+        indoorHeightMeterPercent = resultReceiver.getSharedPreference().getInt("indoor_height_meter_per_cent", 0)
         fillDateSpinner()
-        summitEntries = sortFilterHelper.entries
+        summitEntries = resultReceiver.getSortFilterHelper().entries
         barChart = barChartView?.findViewById(R.id.barChart)
         val barChartCustomRenderer = BarChartCustomRenderer(barChart, barChart?.animator, barChart?.viewPortHandler)
         barChart?.renderer = barChartCustomRenderer
         barChart?.setDrawValueAboveBar(false)
         resizeChart()
-        filteredEntries = sortFilterHelper.filteredEntries
+        filteredEntries = resultReceiver.getSortFilterHelper().filteredEntries
         listenOnDataSpinner()
         update(filteredEntries)
         return barChartView
@@ -90,7 +86,15 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     private fun resizeChart() {
         val metrics = DisplayMetrics()
-        MainActivity.mainActivity?.windowManager?.defaultDisplay?.getMetrics(metrics)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            val display = activity?.display
+            display?.getRealMetrics(metrics)
+        } else {
+            @Suppress("DEPRECATION")
+            val display = activity?.windowManager?.defaultDisplay
+            @Suppress("DEPRECATION")
+            display?.getMetrics(metrics)
+        }
         barChart?.minimumHeight = (metrics.heightPixels * 0.7).toInt()
     }
 
@@ -145,7 +149,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 return if (selectedXAxisSpinnerEntry == XAxisSelector.Date) {
-                    if (sortFilterHelper.selectedYear == "" || value > 12f || value == 0f) {
+                    if (resultReceiver.getSortFilterHelper().selectedYear == "" || value > 12f || value == 0f) {
                         String.format("%s", value.toInt())
                     } else {
                         val month = if (value < 1 || value > 12) 0 else value.toInt() - 1
@@ -204,9 +208,9 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         barChartEntries.clear()
         lineChartEntriesForecast.clear()
         try {
-            var annualTarget: Float = sharedPreferences.getString(selectedYAxisSpinnerEntry.sharedPreferenceKey, selectedYAxisSpinnerEntry.defaultAnnualTarget.toString())?.toFloat()
+            var annualTarget: Float = resultReceiver.getSharedPreference().getString(selectedYAxisSpinnerEntry.sharedPreferenceKey, selectedYAxisSpinnerEntry.defaultAnnualTarget.toString())?.toFloat()
                     ?: selectedYAxisSpinnerEntry.defaultAnnualTarget.toFloat()
-            if (sortFilterHelper.selectedYear != "") {
+            if (resultReceiver.getSortFilterHelper().selectedYear != "") {
                 annualTarget /= 12f
             }
             val line1 = LimitLine(annualTarget)
@@ -224,7 +228,8 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
         label = getString(selectedYAxisSpinnerEntry.nameId)
         unit = getString(selectedYAxisSpinnerEntry.unitId)
         barChartEntries.add(BarEntry(xValue, getValueForEntry(streamSupplier)))
-        if (sortFilterHelper.selectedYear == currentYear && selectedXAxisSpinnerEntry == XAxisSelector.Date) {
+        if (resultReceiver.getSortFilterHelper().selectedYear == currentYear && selectedXAxisSpinnerEntry == XAxisSelector.Date) {
+            val forecasts = resultReceiver.getSortFilterHelper().database.forecastDao()?.allForecasts as ArrayList<Forecast>
             val forecast = forecasts.firstOrNull { it.month == xValue.toInt() && it.year.toString() == currentYear }
             if (forecast != null) {
                 lineChartEntriesForecast.add(Entry(xValue - 0.5F, selectedYAxisSpinnerEntry.getForecastValue(forecast)))
@@ -235,8 +240,8 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
     @Throws(ParseException::class)
     private fun updateBarChart() {
-        intervalHelper = IntervalHelper(sortFilterHelper.filteredEntries)
-        intervalHelper.setSelectedYear(sortFilterHelper.selectedYear)
+        intervalHelper = IntervalHelper(resultReceiver.getSortFilterHelper().filteredEntries)
+        intervalHelper.setSelectedYear(resultReceiver.getSortFilterHelper().selectedYear)
         intervalHelper.calculate()
         val interval = selectedXAxisSpinnerEntry.getIntervals(intervalHelper)
         val annotation = selectedXAxisSpinnerEntry.getAnnotation(intervalHelper)
@@ -300,11 +305,11 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
                 val value: String
                 if (e != null && highlight != null) {
                     value = if (selectedXAxisSpinnerEntry == XAxisSelector.Date) {
-                        if (e.x > 12 || sortFilterHelper.selectedYear == "") {
+                        if (e.x > 12 || resultReceiver.getSortFilterHelper().selectedYear == "") {
                             String.format("%s", e.x.toInt())
                         } else {
                             val month = if (e.x < 1 || e.x > 12) 0 else e.x.toInt() - 1
-                            String.format("%s %s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month], sortFilterHelper.selectedYear)
+                            String.format("%s %s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month], resultReceiver.getSortFilterHelper().selectedYear)
                         }
                     } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants || selectedXAxisSpinnerEntry == XAxisSelector.Equipments) {
                         if (e.x.toInt() < selectedXAxisSpinnerEntry.getIntervals(intervalHelper).size) {
@@ -317,6 +322,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
 
                     }
                     val currentYear = Calendar.getInstance()[Calendar.YEAR].toString()
+                    val forecasts = resultReceiver.getSortFilterHelper().database.forecastDao()?.allForecasts as ArrayList<Forecast>
                     val forecast = forecasts.firstOrNull { it.month == e.x.toInt() && it.year.toString() == currentYear }
 
                     val selectedValue = (e as BarEntry).yVals[highlight.stackIndex].toInt()
@@ -363,7 +369,7 @@ class BarChartFragment(private val sortFilterHelper: SortFilterHelper) : Fragmen
             entries
                     ?.stream()
                     ?.filter { o: Summit? -> o?.date?.after(start as java.util.Date) ?: false && o?.date?.before(end as java.util.Date) ?: false }
-        }, { e -> e.dates}, { e -> e.dateAnnotation }),
+        }, { e -> e.dates }, { e -> e.dateAnnotation }),
         Kilometers(R.string.kilometers_hint, R.string.km, IntervalHelper.kilometersStep, { entries, start, end ->
             entries
                     ?.stream()

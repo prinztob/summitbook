@@ -7,13 +7,11 @@ import org.nield.kotlinstatistics.simpleRegression
 import kotlin.math.abs
 import kotlin.math.sign
 
-class SummitSlope(val trackPoints: MutableList<TrackPoint>) {
+class SummitSlope(private val trackPoints: MutableList<TrackPoint>) {
 
     var maxSlope: Double = 0.0
-    var maxVerticalVelocity: Double = 0.0
+    private var maxVerticalVelocity: Double = 0.0
     var slopeGraph: MutableList<Entry> = mutableListOf()
-    private val REQUIRED_R2 = 0.9
-    private val MAX_SLOPE = 0.45
 
     fun calculateMaxSlope(binSizeMeter: Double = 100.0, withRegression: Boolean = true, requiredR2: Double = REQUIRED_R2, factor: Int = 1): Double {
         if (trackPoints.size > 0 && trackPoints.first().extension?.distance == null) {
@@ -143,13 +141,16 @@ class SummitSlope(val trackPoints: MutableList<TrackPoint>) {
     }
 
     companion object {
+        private const val REQUIRED_R2 = 0.9
+        private const val MAX_SLOPE = 0.45
+
         fun keepOnlyMaximalValues(points: MutableList<TrackPoint>): MutableList<TrackPoint> {
             return points.filterIndexed { index, trackPoint ->
                 if (index == 0 || index == points.size - 1) {
                     true
-                } else if (trackPoint.ele != points.get(index - 1).ele && trackPoint.ele != points.get(index + 1).ele) {
-                    sign((trackPoint.ele ?: 0.0) - (points.get(index - 1).ele
-                            ?: 0.0)) != sign((points.get(index + 1).ele ?: 0.0) - (trackPoint.ele
+                } else if (trackPoint.ele != points[index - 1].ele && trackPoint.ele != points[index + 1].ele) {
+                    sign((trackPoint.ele ?: 0.0) - (points[index - 1].ele
+                            ?: 0.0)) != sign((points[index + 1].ele ?: 0.0) - (trackPoint.ele
                             ?: 0.0))
                 } else {
                     false

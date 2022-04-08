@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.*
 import android.widget.AdapterView.OnItemSelectedListener
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.children
 import co.ceryle.segmentedbutton.SegmentedButtonGroup
 import com.google.android.material.chip.Chip
@@ -41,7 +42,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     lateinit var fragment: SummationFragment
     lateinit var filteredEntries: ArrayList<Summit>
         private set
-    private lateinit var uniqueYearsOfSummit: ArrayList<String>
+    private lateinit var uniqueYearsOfSummit: List<String>
     private var startDate: Date? = null
     private var endDate: Date? = null
     var allEntriesRequested: Boolean = false
@@ -77,8 +78,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     var areSharedPrefInitialized: Boolean = false
 
     private fun setExtremeValues() {
-        extremaValuesAllSummits = entries.let { ExtremaValuesSummits(it) }
-        extremaValuesFilteredSummits = entries.let { ExtremaValuesSummits(it) }
+        extremaValuesAllSummits = ExtremaValuesSummits(entries)
+        extremaValuesFilteredSummits = ExtremaValuesSummits(entries)
     }
 
     private fun setMultiSliders() {
@@ -173,7 +174,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
                 { view: DatePicker, yearSelected: Int, monthSelected: Int, daySelected: Int ->
                     eText.setText(view.context.getString(R.string.date_format, String.format(context.resources.configuration.locales[0], "%02d", daySelected),
                             String.format(context.resources.configuration.locales[0], "%02d", monthSelected + 1),
-                            String.format(context.resources.configuration.locales[0], "%02d", yearSelected))) }, year, month, day)
+                            String.format(context.resources.configuration.locales[0], "%02d", yearSelected)))
+                }, year, month, day)
         picker.show()
     }
 
@@ -508,7 +510,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private fun filterByParticipants() {
         val selectedParticipants = participantsChips.children.toList().map { (it as Chip).text.toString() }
         val entries = ArrayList<Summit>()
-        if (selectedParticipants.size != 0) {
+        if (selectedParticipants.isNotEmpty()) {
             for (entry in filteredEntries) {
                 for (participant in selectedParticipants) {
                     if (participant in entry.participants) {
@@ -692,7 +694,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
             }
         }
         updateDateSpinner()
-        overview = MainActivity.mainActivity!!.findViewById(R.id.overview)
+        overview = (context as AppCompatActivity).findViewById(R.id.overview)
         setOverviewText()
     }
 
@@ -718,7 +720,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
 
 
     companion object {
-        fun getInstance(context: Context, entries: ArrayList<Summit>,
+        fun getInstance(
+                context: Context, entries: ArrayList<Summit>,
                 database: AppDatabase, savedInstanceState: Bundle?,
                 sharedPreferences: SharedPreferences?,
         ): SortFilterHelper {
@@ -732,11 +735,12 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
                 } else {
                     sortFilterHelper.setSelectedDateItemDefault(0)
                 }
-                sortFilterHelper.setIndoorHeightMeterPercent(sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0)
+                sortFilterHelper.setIndoorHeightMeterPercent(sharedPreferences?.getInt("indoor_height_meter_per_cent", 0)
+                        ?: 0)
             }
             if (savedInstanceState != null) {
-                val uniqueYears = savedInstanceState.getString(SORT_FILTER_HELPER_UNIQUE_YEARS)?.split(",")
-                sortFilterHelper.uniqueYearsOfSummit = uniqueYears as ArrayList<String>
+                val uniqueYears = savedInstanceState.getString(SORT_FILTER_HELPER_UNIQUE_YEARS)?.split(",") ?: emptyList()
+                sortFilterHelper.uniqueYearsOfSummit = uniqueYears
                 val selectedDateItem = savedInstanceState.getInt(SORT_FILTER_HELPER_SELECTED_YEAR)
                 sortFilterHelper.selectedDateItem = selectedDateItem
                 sortFilterHelper.dateSpinner.setSelection(selectedDateItem)

@@ -9,25 +9,29 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import de.drtobiasprinz.summitbook.*
+import de.drtobiasprinz.summitbook.AddImagesActivity
+import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
+import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
+import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
-import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog.Companion.updateInstance
-import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.util.*
 
 
-class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private val pythonExecutor: GarminPythonExecutor?) : RecyclerView.Adapter<SummitViewAdapter.ViewHolder?>(), Filterable {
-    var cardView: CardView? = null
-    val summitEntries = sortFilterHelper.entries
+class SummitViewAdapter(private val resultReceiver: FragmentResultReceiver) : RecyclerView.Adapter<SummitViewAdapter.ViewHolder?>(), Filterable {
+    private var cardView: CardView? = null
+    val summitEntries = resultReceiver.getSortFilterHelper().entries
     lateinit var context: Context
-    var summitEntriesFiltered: ArrayList<Summit>?
+    var summitEntriesFiltered: ArrayList<Summit>? = null
+
     override fun getItemCount(): Int {
         return summitEntriesFiltered?.size ?: 0
     }
@@ -84,7 +88,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
             val intent = Intent(context, AddImagesActivity::class.java)
             intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
             intent.putExtra(SelectOnOsMapActivity.SUMMIT_POSITION, position)
-            v?.context?.startActivity(intent)
+            resultReceiver.getResultLauncher().launch(intent)
         }
 
         val addVelocityData = cardView.findViewById<ImageButton?>(R.id.entry_add_velocity_data)
@@ -99,11 +103,8 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
             addVelocityData?.visibility = View.VISIBLE
         }
         addVelocityData?.setOnClickListener { _: View? ->
-            if (pythonExecutor != null) {
-                AddAdditionalDataFromExternalResourcesDialog(summit, pythonExecutor, sortFilterHelper, addVelocityData)
-                        .show((context as FragmentActivity).supportFragmentManager, "Show addition data")
-            }
-
+            AddAdditionalDataFromExternalResourcesDialog.getInstance(summit)
+                    .show((context as FragmentActivity).supportFragmentManager, "Show addition data")
         }
         val removeButton = cardView.findViewById<ImageButton?>(R.id.entry_delete)
         //delete a summit entry
@@ -114,8 +115,8 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         }
         val editButton = cardView.findViewById<ImageButton?>(R.id.entry_edit)
         editButton?.setOnClickListener { _: View? ->
-            val updateDialog = sortFilterHelper.let { updateInstance(summit, it, pythonExecutor) }
-            MainActivity.mainActivity?.supportFragmentManager?.let { updateDialog.show(it, "Summits") }
+            val updateDialog = updateInstance(summit)
+            (context as AppCompatActivity).supportFragmentManager.let { updateDialog.show(it, "Summits") }
         }
         val addPosition = cardView.findViewById<ImageButton?>(R.id.entry_add_coordinate)
         setIconForPositionButton(addPosition, summit)
@@ -124,7 +125,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
             val intent = Intent(context, SelectOnOsMapActivity::class.java)
             intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
             intent.putExtra(SelectOnOsMapActivity.SUMMIT_POSITION, position)
-            v?.context?.startActivity(intent)
+            resultReceiver.getResultLauncher().launch(intent)
         }
         cardView.setOnClickListener { v: View? ->
             val context = v?.context
@@ -147,7 +148,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
                 imageButton.setImageResource(R.drawable.ic_star_black_24dp)
             }
             summit.isFavorite = !summit.isFavorite
-            sortFilterHelper.database.summitDao()?.updateIsFavorite(summit.id, summit.isFavorite)
+            resultReceiver.getSortFilterHelper().database.summitDao()?.updateIsFavorite(summit.id, summit.isFavorite)
         }
     }
 
@@ -157,14 +158,14 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
         } else {
             mountainButton.setImageResource(R.drawable.icons8_valley_24)
         }
-        mountainButton.setOnClickListener { _: View? ->
+        mountainButton.setOnClickListener {
             if (summit.isPeak) {
                 mountainButton.setImageResource(R.drawable.icons8_valley_24)
             } else {
                 mountainButton.setImageResource(R.drawable.icons8_mountain_24)
             }
             summit.isPeak = !summit.isPeak
-            sortFilterHelper.database.summitDao()?.updateIsPeak(summit.id, summit.isPeak)
+            resultReceiver.getSortFilterHelper().database.summitDao()?.updateIsPeak(summit.id, summit.isPeak)
         }
     }
 
@@ -185,7 +186,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
     }
 
     private fun deleteEntry(entry: Summit, v: View) {
-        sortFilterHelper.database.summitDao()?.delete(entry)
+        resultReceiver.getSortFilterHelper().database.summitDao()?.delete(entry)
         if (entry.hasGpsTrack()) {
             entry.getGpsTrackPath().toFile()?.delete()
         }
@@ -194,7 +195,7 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
                 entry.getImagePath(it).toFile().delete()
             }
         }
-        sortFilterHelper.entries.remove(entry)
+        resultReceiver.getSortFilterHelper().entries.remove(entry)
         summitEntriesFiltered?.remove(entry)
         notifyDataSetChanged()
         Toast.makeText(v.context, v.context.getString(R.string.delete_entry, entry.name), Toast.LENGTH_SHORT).show()
@@ -202,13 +203,13 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
 
     fun updateIsPeak(entry: Summit, position: Int) {
         entry.isPeak = !entry.isPeak
-        sortFilterHelper.database.summitDao()?.updateIsPeak(entry.id, entry.isPeak)
+        resultReceiver.getSortFilterHelper().database.summitDao()?.updateIsPeak(entry.id, entry.isPeak)
         notifyItemChanged(position)
     }
 
     fun updateIsFavorite(entry: Summit, position: Int) {
         entry.isFavorite = !entry.isFavorite
-        sortFilterHelper.database.summitDao()?.updateIsFavorite(entry.id, entry.isFavorite)
+        resultReceiver.getSortFilterHelper().database.summitDao()?.updateIsFavorite(entry.id, entry.isFavorite)
         notifyItemChanged(position)
     }
 
@@ -237,10 +238,10 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
             override fun performFiltering(charSequence: CharSequence?): FilterResults {
                 val charString = charSequence.toString()
                 summitEntriesFiltered = if (charString.isEmpty()) {
-                    sortFilterHelper.entries
+                    resultReceiver.getSortFilterHelper().entries
                 } else {
                     val filteredList = ArrayList<Summit>()
-                    for (entry in sortFilterHelper.entries) {
+                    for (entry in resultReceiver.getSortFilterHelper().entries) {
                         if (entry.name.contains(charString, ignoreCase = true) || entry.comments.contains(charString, ignoreCase = true) || entry.places.joinToString(";").contains(charString, ignoreCase = true)) {
                             filteredList.add(entry)
                         }
@@ -277,6 +278,6 @@ class SummitViewAdapter(private val sortFilterHelper: SortFilterHelper, private 
     }
 
     init {
-        summitEntriesFiltered = sortFilterHelper.entries
+        summitEntriesFiltered = resultReceiver.getSortFilterHelper().entries
     }
 }

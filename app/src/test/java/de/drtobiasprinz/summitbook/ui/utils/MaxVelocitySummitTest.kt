@@ -15,7 +15,7 @@ class MaxVelocitySummitTest {
         val resource = this.javaClass.classLoader?.getResource("splits_1.json")
         if (resource != null) {
             val splits = File(resource.path)
-            val gson = JsonParser().parse(getJsonData(splits)) as JsonObject
+            val gson = JsonParser.parseString(getJsonData(splits)) as JsonObject
             val maxVelocitySummit = MaxVelocitySummit()
             val actualEntries = maxVelocitySummit.parseFomGarmin(gson)
             Assert.assertEquals(34, actualEntries.size)
@@ -25,11 +25,11 @@ class MaxVelocitySummitTest {
 
     @Test
     @Throws(ParseException::class)
-    fun getMaxVelocityInKilometerIntervall1() {
+    fun getMaxVelocityInKilometerInterval1() {
         val resource = this.javaClass.classLoader?.getResource("splits_1.json")
         if (resource != null) {
             val splits = File(resource.path)
-            val gson = JsonParser().parse(getJsonData(splits)) as JsonObject
+            val gson = JsonParser.parseString(getJsonData(splits)) as JsonObject
             val maxVelocitySummit = MaxVelocitySummit()
             val actualEntries = maxVelocitySummit.parseFomGarmin(gson)
             Assert.assertEquals(31.37, maxVelocitySummit.getAverageVelocityForKilometers(5.0, actualEntries), 0.01)
@@ -41,11 +41,11 @@ class MaxVelocitySummitTest {
 
     @Test
     @Throws(ParseException::class)
-    fun getMaxVelocityInKilometerIntervall2() {
+    fun getMaxVelocityInKilometerInterval2() {
         val resource = this.javaClass.classLoader?.getResource("splits_2.json")
         if (resource != null) {
             val splits = File(resource.path)
-            val gson = JsonParser().parse(getJsonData(splits)) as JsonObject
+            val gson = JsonParser.parseString(getJsonData(splits)) as JsonObject
             val maxVelocitySummit = MaxVelocitySummit()
             val actualEntries = maxVelocitySummit.parseFomGarmin(gson)
             Assert.assertEquals(29.66, maxVelocitySummit.getAverageVelocityForKilometers(5.0, actualEntries), 0.01)
@@ -58,11 +58,11 @@ class MaxVelocitySummitTest {
 
     @Test
     @Throws(ParseException::class)
-    fun getMaxVelocityInKilometerIntervall3() {
+    fun getMaxVelocityInKilometerInterval3() {
         val resource = this.javaClass.classLoader?.getResource("splits_3.json")
         if (resource != null) {
             val splits = File(resource.path)
-            val gson = JsonParser().parse(getJsonData(splits)) as JsonObject
+            val gson = JsonParser.parseString(getJsonData(splits)) as JsonObject
             val maxVelocitySummit = MaxVelocitySummit()
             val actualEntries = maxVelocitySummit.parseFomGarmin(gson)
             Assert.assertEquals(28.61, maxVelocitySummit.getAverageVelocityForKilometers(30.0, actualEntries), 0.01)
