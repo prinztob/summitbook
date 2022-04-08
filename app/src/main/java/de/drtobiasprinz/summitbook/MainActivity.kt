@@ -154,7 +154,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 it.hasGpsTrack() && !it.hasGpsTrack(simplified = true)
             }.take(100)
             @Suppress("DEPRECATION")
-            AsyncSimplifyGpaTracks(entriesWithoutSimplifiedGpxTrack, pythonInstance).execute()
+            AsyncSimplifyGpsTracks(entriesWithoutSimplifiedGpxTrack, pythonInstance).execute()
         } else {
             sortFilterHelper.entries.filter {
                 it.hasGpsTrack(simplified = true)
@@ -515,7 +515,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
 
         @Suppress("DEPRECATION")
-        class AsyncSimplifyGpaTracks(private val summitsWithoutSimplifiedTracks: List<Summit>, private val pythonInstance: Python) : AsyncTask<Uri, Int?, Void?>() {
+        class AsyncSimplifyGpsTracks(private val summitsWithoutSimplifiedTracks: List<Summit>, private val pythonInstance: Python) : AsyncTask<Uri, Int?, Void?>() {
 
             private var numberSimplifiedGpxTracks = 0
             override fun doInBackground(vararg uri: Uri): Void? {
@@ -524,19 +524,19 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         try {
                             GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(it.getGpsTrackPath(simplified = false))
                             numberSimplifiedGpxTracks += 1
-                            Log.i("AsyncSimplifyGpaTracks", "Simplify track for ${it.getDateAsString()}_${it.name}.")
+                            Log.i("AsyncSimplifyGpsTracks", "Simplify track for ${it.getDateAsString()}_${it.name}.")
                         } catch (ex: RuntimeException) {
-                            Log.e("AsyncSimplifyGpaTracks", "Error in simplify track for ${it.getDateAsString()}_${it.name}: ${ex.message}")
+                            Log.e("AsyncSimplifyGpsTracks", "Error in simplify track for ${it.getDateAsString()}_${it.name}: ${ex.message}")
                         }
                     }
                 } else {
-                    Log.i("AsyncSimplifyGpaTracks", "No more gpx tracks to simplified.")
+                    Log.i("AsyncSimplifyGpsTracks", "No more gpx tracks to simplified.")
                 }
                 return null
             }
 
             override fun onPostExecute(param: Void?) {
-                Log.i("AsyncSimplifyGpaTracks", "$numberSimplifiedGpxTracks gpx tracks simplified.")
+                Log.i("AsyncSimplifyGpsTracks", "$numberSimplifiedGpxTracks gpx tracks simplified.")
             }
         }
 

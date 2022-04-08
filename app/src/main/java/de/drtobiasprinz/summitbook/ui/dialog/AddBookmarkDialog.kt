@@ -45,7 +45,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
 
-class AddBookmarkDialog : DialogFragment() {
+@Suppress("DEPRECATION")
+class AddBookmarkDialog(val gpxTrackUrl: Uri? = null) : DialogFragment() {
     var isUpdate = false
     private var temporaryGpxFile: File? = null
     private var database: AppDatabase? = null
@@ -91,6 +92,9 @@ class AddBookmarkDialog : DialogFragment() {
         if (isUpdate) {
             saveEntryButton.setText(R.string.updateButtonText)
             updateDialogFields(currentBookmark, true)
+        }
+        if (gpxTrackUrl != null) {
+            addAndAnalyzeTrack(gpxTrackUrl)
         }
 
         saveEntryButton.setOnClickListener {
@@ -139,12 +143,7 @@ class AddBookmarkDialog : DialogFragment() {
 
     private fun uploadGpxFile(inputStream: InputStream, entry: Summit, v: View?) {
         try {
-            try {
-                Files.copy(inputStream, entry.getGpsTrackPath(), StandardCopyOption.REPLACE_EXISTING)
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-            Toast.makeText(v?.context, v?.context?.getString(R.string.add_gpx_successful, entry.name), Toast.LENGTH_SHORT).show()
+            Files.copy(inputStream, entry.getGpsTrackPath(), StandardCopyOption.REPLACE_EXISTING)
         } catch (e: IOException) {
             e.printStackTrace()
             Toast.makeText(v?.context, v?.context?.getString(R.string.add_gpx_failed, entry.name), Toast.LENGTH_SHORT).show()
@@ -223,17 +222,23 @@ class AddBookmarkDialog : DialogFragment() {
 
 
     private var resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { resultData ->
-        temporaryGpxFile = getTempGpsFilePath(SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(Date())).toFile()
         if (resultData.resultCode == Activity.RESULT_OK) {
             resultData?.data?.data.also { uri ->
-                val bookmark = currentBookmark
-                if (uri != null && bookmark != null) {
-                    context?.contentResolver?.openInputStream(uri)?.use { inputStream ->
-                        uploadGpxFile(inputStream, bookmark, view)
-                        usedView.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
-                        database?.let { AsyncAnalyzeGpaTracks(currentBookmark, MainActivity.pythonInstance, it, usedView).execute() }
-                    }
-                }
+                addAndAnalyzeTrack(uri)
+            }
+        }
+    }
+
+    private fun addAndAnalyzeTrack(uri: Uri?) {
+        val bookmark = currentBookmark
+        if (temporaryGpxFile == null) {
+            temporaryGpxFile = getTempGpsFilePath(SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(Date())).toFile()
+        }
+        if (uri != null && bookmark != null) {
+            context?.contentResolver?.openInputStream(uri)?.use { inputStream ->
+                uploadGpxFile(inputStream, bookmark, view)
+                usedView.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
+                database?.let { AsyncAnalyzeGpsTracks(currentBookmark, MainActivity.pythonInstance, it, usedView).execute() }
             }
         }
     }
@@ -261,7 +266,7 @@ class AddBookmarkDialog : DialogFragment() {
         }
 
         @SuppressLint("StaticFieldLeak")
-        class AsyncAnalyzeGpaTracks(private val entry: Summit?, private val pythonInstance: Python,
+        class AsyncAnalyzeGpsTracks(private val entry: Summit?, private val pythonInstance: Python,
                                     private val database: AppDatabase, private val view: View) : AsyncTask<Uri, Int?, Void?>() {
             private var highestElevation: TrackPoint? = null
             override fun doInBackground(vararg uri: Uri): Void? {
@@ -302,19 +307,30 @@ class AddBookmarkDialog : DialogFragment() {
                     if (gpxPyJsonFile.exists()) {
                         val gpxPyJson = JsonParser.parseString(JsonUtils.getJsonData(gpxPyJsonFile)) as JsonObject
 
-                        val elevationGain = gpxPyJson.getAsJsonPrimitive("elevation_gain").asDouble.roundToInt()
+                        val elevationGain = try {
+                            gpxPyJson.getAsJsonPrimitive("elevation_gain").asDouble.roundToInt()
+                        } catch (_: ClassCastException) {
+                            0
+                        }
                         entry.elevationData.elevationGain = elevationGain
                         val hmText = view.findViewById<EditText>(R.id.height_meter)
                         hmText.filters = arrayOf()
                         hmText.setText(elevationGain.toString())
                         hmText.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 9999))
 
-                        val maxElevation = gpxPyJson.getAsJsonPrimitive("max_elevation").asDouble.roundToInt()
+                        val maxElevation = try {
+                            gpxPyJson.getAsJsonPrimitive("max_elevation").asDouble.roundToInt()
+                        } catch (_: ClassCastException) {
+                            0
+                        }
                         if (maxElevation > 0) {
                             entry.elevationData.maxElevation = maxElevation
                         }
-
-                        var distance = gpxPyJson.getAsJsonPrimitive("moving_distance").asDouble / 1000
+                        var distance = try {
+                            gpxPyJson.getAsJsonPrimitive("moving_distance").asDouble / 1000
+                        } catch (_: ClassCastException) {
+                            0.0
+                        }
                         if (distance == 0.0 && gpsTrack != null) {
                             distance = (gpsTrack.trackPoints.last().extension?.distance
                                     ?: 0.0) / 1000
@@ -324,8 +340,11 @@ class AddBookmarkDialog : DialogFragment() {
                         kmText.filters = arrayOf()
                         kmText.setText(String.format(view.context.resources.configuration.locales[0], "%.1f", distance))
                         kmText.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
-
-                        val movingDuration = gpxPyJson.getAsJsonPrimitive("moving_time").asDouble
+                        val movingDuration = try {
+                            gpxPyJson.getAsJsonPrimitive("moving_time").asDouble
+                        }  catch (_: ClassCastException) {
+                            0.0
+                        }
                         if (movingDuration > 0) {
                             val pace = distance / movingDuration * 3600
                             entry.velocityData.avgVelocity = pace

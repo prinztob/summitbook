@@ -42,7 +42,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     lateinit var fragment: SummationFragment
     lateinit var filteredEntries: ArrayList<Summit>
         private set
-    private lateinit var uniqueYearsOfSummit: ArrayList<String>
+    private lateinit var uniqueYearsOfSummit: List<String>
     private var startDate: Date? = null
     private var endDate: Date? = null
     var allEntriesRequested: Boolean = false
@@ -739,8 +739,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
                         ?: 0)
             }
             if (savedInstanceState != null) {
-                val uniqueYears = savedInstanceState.getString(SORT_FILTER_HELPER_UNIQUE_YEARS)?.split(",")
-                sortFilterHelper.uniqueYearsOfSummit = uniqueYears as ArrayList<String>
+                val uniqueYears = savedInstanceState.getString(SORT_FILTER_HELPER_UNIQUE_YEARS)?.split(",") ?: emptyList()
+                sortFilterHelper.uniqueYearsOfSummit = uniqueYears
                 val selectedDateItem = savedInstanceState.getInt(SORT_FILTER_HELPER_SELECTED_YEAR)
                 sortFilterHelper.selectedDateItem = selectedDateItem
                 sortFilterHelper.dateSpinner.setSelection(selectedDateItem)

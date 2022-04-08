@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.fragments
 
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -21,6 +22,7 @@ import de.drtobiasprinz.summitbook.ui.dialog.AddBookmarkDialog
 
 class BookmarkViewFragment : Fragment() {
     private lateinit var bookmarks: MutableList<Summit>
+    private var gpxTrackUrl: Uri? = null
     private var addBookmarkFab: FloatingActionButton? = null
 
     override fun onCreateView(
@@ -45,7 +47,10 @@ class BookmarkViewFragment : Fragment() {
             val addSummit = AddBookmarkDialog()
             (context as AppCompatActivity).supportFragmentManager.let { addSummit.show(it, getString(R.string.add_new_bookmark)) }
         }
-
+        if (gpxTrackUrl != null) {
+            val addSummit = AddBookmarkDialog(gpxTrackUrl)
+            (context as AppCompatActivity).supportFragmentManager.let { addSummit.show(it, getString(R.string.add_new_bookmark)) }
+        }
         return summitRecycler
     }
 
@@ -69,6 +74,13 @@ class BookmarkViewFragment : Fragment() {
     }
 
     companion object {
+
+        fun getInstance(uri: Uri? = null): BookmarkViewFragment {
+            val fragment = BookmarkViewFragment()
+            fragment.gpxTrackUrl = uri
+            return fragment
+        }
+
         @SuppressLint("StaticFieldLeak")
         var summitRecycler: RecyclerView? = null
 

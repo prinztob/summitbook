@@ -41,7 +41,7 @@ class AddImagesActivity : AppCompatActivity() {
             val textViewName = findViewById<TextView>(R.id.summit_name)
             textViewName.text = localSummit.name
             val imageViewSportType = findViewById<ImageView>(R.id.sport_type_image)
-            findViewById<ImageButton>(R.id.back).setOnClickListener { v: View ->
+            findViewById<ImageButton>(R.id.back).setOnClickListener {
                 finish()
             }
             imageViewSportType.setImageResource(localSummit.sportType.imageIdBlack)
