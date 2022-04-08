@@ -69,6 +69,18 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp" />
 
+        <ImageButton
+            android:id="@+id/add_gps_track"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_margin="5dp"
+            android:layout_marginBottom="5dp"
+            android:background="@color/color_white"
+            android:contentDescription="@string/addGpsTrack"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:src="@drawable/ic_baseline_upload_file_24" />
 
         <RelativeLayout
             android:layout_width="match_parent"

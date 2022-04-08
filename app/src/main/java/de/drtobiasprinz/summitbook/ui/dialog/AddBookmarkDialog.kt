@@ -267,7 +267,7 @@ class AddBookmarkDialog(val gpxTrackUrl: Uri? = null) : DialogFragment() {
 
         @SuppressLint("StaticFieldLeak")
         class AsyncAnalyzeGpsTracks(private val entry: Summit?, private val pythonInstance: Python,
-                                    private val database: AppDatabase, private val view: View) : AsyncTask<Uri, Int?, Void?>() {
+                                    private val database: AppDatabase, private val view: View, private val isBookmark: Boolean = true) : AsyncTask<Uri, Int?, Void?>() {
             private var highestElevation: TrackPoint? = null
             override fun doInBackground(vararg uri: Uri): Void? {
                 try {
@@ -296,7 +296,11 @@ class AddBookmarkDialog(val gpxTrackUrl: Uri? = null) : DialogFragment() {
                     if (gpsTrack != null) {
                         val nameFromTrack = gpsTrack.gpxTrack?.metadata?.name
                                 ?: gpsTrack.gpxTrack?.tracks?.toList()?.blockingGet()?.first()?.name
-                        view.findViewById<EditText>(R.id.bookmark_name).setText(nameFromTrack)
+                        if (isBookmark) {
+                            view.findViewById<EditText>(R.id.bookmark_name).setText(nameFromTrack)
+                        } else {
+                            view.findViewById<EditText>(R.id.summit_name).setText(nameFromTrack)
+                        }
                         if (gpsTrack.hasNoTrackPoints()) {
                             gpsTrack.parseTrack(useSimplifiedIfExists = false)
                         }
@@ -325,6 +329,9 @@ class AddBookmarkDialog(val gpxTrackUrl: Uri? = null) : DialogFragment() {
                         }
                         if (maxElevation > 0) {
                             entry.elevationData.maxElevation = maxElevation
+                            if (!isBookmark) {
+                                view.findViewById<EditText>(R.id.top_elevation).setText(maxElevation.toString())
+                            }
                         }
                         var distance = try {
                             gpxPyJson.getAsJsonPrimitive("moving_distance").asDouble / 1000
@@ -342,12 +349,15 @@ class AddBookmarkDialog(val gpxTrackUrl: Uri? = null) : DialogFragment() {
                         kmText.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
                         val movingDuration = try {
                             gpxPyJson.getAsJsonPrimitive("moving_time").asDouble
-                        }  catch (_: ClassCastException) {
+                        } catch (_: ClassCastException) {
                             0.0
                         }
                         if (movingDuration > 0) {
                             val pace = distance / movingDuration * 3600
                             entry.velocityData.avgVelocity = pace
+                            if (!isBookmark) {
+                                view.findViewById<EditText>(R.id.pace).setText(pace.toString())
+                            }
                         }
                     }
                 }

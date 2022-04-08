@@ -1,8 +1,11 @@
 package de.drtobiasprinz.summitbook.ui.dialog
 
+import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
+import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
 import android.text.*
@@ -12,6 +15,7 @@ import android.view.View
 import android.view.View.OnFocusChangeListener
 import android.view.ViewGroup
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
@@ -32,9 +36,14 @@ import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
+import org.xmlpull.v1.XmlPullParserException
 import java.io.File
+import java.io.IOException
+import java.io.InputStream
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -84,6 +93,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     private lateinit var power2hText: EditText
     private lateinit var power5hText: EditText
     private lateinit var saveEntryButton: Button
+    private lateinit var addTrack: ImageButton
 
     private lateinit var participantsChips: ChipGroup
     private lateinit var equipmentsChips: ChipGroup
@@ -96,17 +106,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     private lateinit var participantsAdapter: ArrayAdapter<String>
     private lateinit var placesAdapter: ArrayAdapter<String>
 
-    private val watcher: TextWatcher = object : TextWatcher {
-        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-        override fun afterTextChanged(s: Editable) {
-            saveEntryButton.isEnabled = !(isEmpty(summitName) || isEmpty(heightMeterText) || isEmpty(kmText) || isEmpty(date))
-        }
-
-        private fun isEmpty(editText: EditText): Boolean {
-            return TextUtils.isEmpty(editText.text.toString().trim { it <= ' ' })
-        }
-    }
     private lateinit var sportTypeSpinner: Spinner
     private var garminDataFromGarminConnect: GarminData? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -235,6 +234,16 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 dialog?.cancel()
             }
         }
+
+        addTrack = view.findViewById(R.id.add_gps_track)
+        addTrack.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+            }
+            resultLauncher.launch(intent)
+        }
+
         closeDialogButton.setOnClickListener { v: View ->
             dialog?.cancel()
             val text = if (currentSummit != null) getString(R.string.update_summit_cancel) else getString(R.string.add_new_summit_cancel)
@@ -516,6 +525,71 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             garminDataFromGarminConnect = entry.garminData
         }
     }
+
+    private val watcher: TextWatcher = object : TextWatcher {
+        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+        override fun afterTextChanged(s: Editable) {
+            saveEntryButton.isEnabled = !(isEmpty(summitName) || isEmpty(heightMeterText) || isEmpty(kmText) || isEmpty(date))
+        }
+
+        private fun isEmpty(editText: EditText): Boolean {
+            return TextUtils.isEmpty(editText.text.toString().trim { it <= ' ' })
+        }
+    }
+
+    private var resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { resultData ->
+        if (resultData.resultCode == Activity.RESULT_OK) {
+            resultData?.data?.data.also { uri ->
+                addAndAnalyzeTrack(uri)
+            }
+        }
+    }
+
+    private fun addAndAnalyzeTrack(uri: Uri?) {
+        if (currentSummit == null) {
+            currentSummit = createNewSummit()
+        }
+        val summit = currentSummit
+        if (temporaryGpxFile == null) {
+            temporaryGpxFile = GarminTrackAndDataDownloader.getTempGpsFilePath(SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(Date())).toFile()
+        }
+        if (uri != null && summit != null) {
+            context?.contentResolver?.openInputStream(uri)?.use { inputStream ->
+                uploadGpxFile(inputStream, summit, view)
+                view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility = View.VISIBLE
+                view?.let { AddBookmarkDialog.Companion.AsyncAnalyzeGpsTracks(summit, MainActivity.pythonInstance, resultReceiver.getSortFilterHelper().database, it, false).execute() }
+            }
+        }
+    }
+
+    private fun createNewSummit(): Summit {
+        return Summit(Date(),
+                if (summitName.text.toString() != "") summitName.text.toString() else "New Bookmark",
+                SportType.Bicycle,
+                emptyList(),
+                emptyList(),
+                commentText.text.toString(),
+                ElevationData.parse(0, getTextWithDefaultInt(heightMeterText)),
+                getTextWithDefaultDouble(kmText),
+                VelocityData.parse(0.0, 0.0),
+                0.0, 0.0, emptyList(), emptyList(), isFavorite = false, isPeak = false, imageIds = mutableListOf(), garminData = null, trackBoundingBox = null,
+                isBookmark = true
+        )
+    }
+
+    private fun uploadGpxFile(inputStream: InputStream, entry: Summit, v: View?) {
+        try {
+            Files.copy(inputStream, entry.getGpsTrackPath(), StandardCopyOption.REPLACE_EXISTING)
+        } catch (e: IOException) {
+            e.printStackTrace()
+            Toast.makeText(v?.context, v?.context?.getString(R.string.add_gpx_failed, entry.name), Toast.LENGTH_SHORT).show()
+        } catch (e: XmlPullParserException) {
+            e.printStackTrace()
+            Toast.makeText(v?.context, v?.context?.getString(R.string.add_gpx_failed, entry.name), Toast.LENGTH_SHORT).show()
+        }
+    }
+
 
 
     private fun getTextWithDefaultDouble(editText: EditText): Double {
