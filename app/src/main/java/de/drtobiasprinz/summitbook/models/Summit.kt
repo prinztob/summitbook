@@ -84,11 +84,12 @@ class Summit(
     }
 
     fun getGpsTrackPath(simplified: Boolean = false): Path {
+        val folder = MainActivity.storage
         val fileName = if (simplified) "id_${activityId}_simplified.gpx" else "id_${activityId}.gpx"
         return if (isBookmark) {
-            Paths.get(MainActivity.storage.toString(), subDirForGpsTracksBookmark, fileName)
+            Paths.get(folder.toString(), subDirForGpsTracksBookmark, fileName)
         } else {
-            Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
+            Paths.get(folder.toString(), subDirForGpsTracks, fileName)
         }
     }
 

@@ -99,7 +99,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                         updateSavePositionButton(true)
                         latLngSelectedPosition = TrackPoint(p.latitude, p.longitude)
                         addMarker(localOsMap, applicationContext, p, entry)
-                        prepareGpxTrack()?.let { addSelectedPositionAndTrack(TrackPoint(p.latitude, p.longitude), it, localOsMap) }
+                        prepareGpxTrack(selectedGpsPath, summitEntry)?.let { addSelectedPositionAndTrack(TrackPoint(p.latitude, p.longitude), it, localOsMap) }
                     }
                     return false
                 }
@@ -225,54 +225,18 @@ class SelectOnOsMapActivity : FragmentActivity() {
         }
     }
 
-    private fun copyGpxFileToCache(inputStream: InputStream, file: File) {
-        var out: OutputStream? = null
-        try {
-            out = FileOutputStream(file)
-            val buf = ByteArray(1024)
-            var len: Int
-            while (inputStream.read(buf).also { len = it } > 0) {
-                out.write(buf, 0, len)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            try {
-                out?.close()
-                inputStream.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-    }
 
     private fun addGpxTrack(file: File, mParser: GPXParser, osMap: MapView) {
         val inputStream: InputStream = FileInputStream(file)
         mParser.parse(inputStream)
         selectedGpsPath = file.toPath()
-        val gpsTrack = prepareGpxTrack()
+        val gpsTrack = prepareGpxTrack(selectedGpsPath, summitEntry)
         val highestTrackPoint = gpsTrack?.getHighestElevation()
         if (highestTrackPoint != null) {
             latLngSelectedPosition = highestTrackPoint
             addSelectedPositionAndTrack(highestTrackPoint, gpsTrack, osMap)
             updateSavePositionButton(true)
         }
-    }
-
-    private fun prepareGpxTrack(): GpsTrack? {
-        val path = selectedGpsPath
-        val entry = summitEntry
-        val gpsTrack = if (path != null && path.toFile().exists()) {
-            GpsTrack(path)
-        } else if (entry != null && entry.hasGpsTrack()) {
-            entry.gpsTrack
-        } else {
-            null
-        }
-        if (gpsTrack != null && gpsTrack.hasNoTrackPoints()) {
-            gpsTrack.parseTrack()
-        }
-        return gpsTrack
     }
 
     private fun addSelectedPositionAndTrack(point: TrackPoint, gpsTrack: GpsTrack, osMap: MapView) {
@@ -327,6 +291,40 @@ class SelectOnOsMapActivity : FragmentActivity() {
 
     companion object {
         const val SUMMIT_POSITION = "SUMMIT_POSITION"
-        const val PICK_GPX_FILE = 103
+
+        fun prepareGpxTrack(path: Path?, entry: Summit?): GpsTrack? {
+            val gpsTrack = if (path != null && path.toFile().exists()) {
+                GpsTrack(path)
+            } else if (entry != null && entry.hasGpsTrack()) {
+                entry.gpsTrack
+            } else {
+                null
+            }
+            if (gpsTrack != null && gpsTrack.hasNoTrackPoints()) {
+                gpsTrack.parseTrack()
+            }
+            return gpsTrack
+        }
+
+        fun copyGpxFileToCache(inputStream: InputStream, file: File) {
+            var out: OutputStream? = null
+            try {
+                out = FileOutputStream(file)
+                val buf = ByteArray(1024)
+                var len: Int
+                while (inputStream.read(buf).also { len = it } > 0) {
+                    out.write(buf, 0, len)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                try {
+                    out?.close()
+                    inputStream.close()
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            }
+        }
     }
 }

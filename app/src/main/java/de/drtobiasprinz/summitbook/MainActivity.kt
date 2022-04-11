@@ -213,13 +213,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 // filter recycler view when query submitted
-                summitViewFragment.getAdapter()?.filter?.filter(query)
+                summitViewAdapterFromSummitViewFragment?.filter?.filter(query)
                 return false
             }
 
             override fun onQueryTextChange(query: String?): Boolean {
                 // filter recycler view when text is changed
-                summitViewFragment.getAdapter()?.filter?.filter(query)
+                summitViewAdapterFromSummitViewFragment?.filter?.filter(query)
                 return false
             }
         })
@@ -413,6 +413,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         selectedSummitInAdapter = database.summitDao()?.getSummit(summitEntryId)
         if (isDialogShown) {
             openViewer()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (database.summitDao()?.getCountSummits() != sortFilterHelper.entries.size) {
+            sortFilterHelper.update(database.summitDao()?.allSummit as ArrayList<Summit>)
         }
     }
 

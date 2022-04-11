@@ -343,6 +343,8 @@
     <string name="tool_tip_progress_new_garmin_activities">"Füge Gipfel %1$s hinzu und download seine Tracks. Das kann etwas dauern."</string>
     <string name="select_map_type">Wähle Kartentyp aus</string>
     <string name="count">Anzahl</string>
+    <string name="add_track_as_summit">neuer Gipfel</string>
+    <string name="add_track_as_bookmark">neues Lesezeichen</string>
 
 
 </resources>

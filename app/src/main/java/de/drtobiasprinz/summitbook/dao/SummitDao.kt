@@ -16,6 +16,12 @@ interface SummitDao {
     @get:Query("select * from summit where isBookmark = 1")
     val allBookmark: List<Summit>?
 
+    @Query("SELECT COUNT(id) FROM summit where isBookmark = 0")
+    fun getCountSummits(): Int
+
+    @Query("SELECT COUNT(id) FROM summit where isBookmark = 1")
+    fun getCountBookmarks(): Int
+
     @Query("select * from summit where sportType == :sportType and isBookmark = 0")
     fun getAllSummitWithSameSportType(sportType: SportType): List<Summit>?
 

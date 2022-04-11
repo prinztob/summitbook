@@ -47,7 +47,7 @@ import java.util.*
 import kotlin.math.roundToInt
 
 @Suppress("DEPRECATION")
-class AddBookmarkDialog(val gpxTrackUrl: Uri? = null) : DialogFragment() {
+class AddBookmarkDialog(private val gpxTrackUrl: Uri? = null) : DialogFragment() {
     var isUpdate = false
     private var temporaryGpxFile: File? = null
     private var database: AppDatabase? = null

@@ -92,7 +92,7 @@ object OpenStreetMapUtils {
         }
     }
 
-    private fun getTrackPointsFrom(gpsTrack: GpsTrack): List<GeoPoint> {
+    fun getTrackPointsFrom(gpsTrack: GpsTrack): List<GeoPoint> {
         val mGeoPoints: MutableList<GeoPoint> = mutableListOf()
         val positions = gpsTrack.getTrackPositions()
         for (entry in positions) {
@@ -144,9 +144,11 @@ object OpenStreetMapUtils {
     }
 
     @JvmStatic
-    fun calculateBoundingBox(mMapView: MapView, gpsTrack: GpsTrack, point: GeoPoint) {
+    fun calculateBoundingBox(mMapView: MapView, gpsTrack: GpsTrack, point: GeoPoint?) {
         val mGeoPoints = ArrayList<GeoPoint>()
-        mGeoPoints.add(point)
+        if (point != null) {
+            mGeoPoints.add(point)
+        }
         mGeoPoints.addAll(getTrackPointsFrom(gpsTrack))
         calculateBoundingBox(mMapView, mGeoPoints)
     }

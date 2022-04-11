@@ -21,6 +21,7 @@ import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
 import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.gson.JsonObject
@@ -53,7 +54,7 @@ import kotlin.math.round
 
 
 @Suppress("DEPRECATION")
-class AddSummitDialog : DialogFragment(), BaseDialog {
+class AddSummitDialog(private val gpxTrackUrl: Uri? = null) : DialogFragment(), BaseDialog {
     var isUpdate = false
     private var temporaryGpxFile: File? = null
     private var latlngHighestPoint: TrackPoint? = null
@@ -177,6 +178,10 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         if (isUpdate) {
             saveEntryButton.setText(R.string.updateButtonText)
             updateDialogFields(currentSummit, true)
+        }
+
+        if (gpxTrackUrl != null) {
+            addAndAnalyzeTrack(gpxTrackUrl)
         }
 
         val expandMore: TextView = view.findViewById(R.id.expand_more)
@@ -558,7 +563,14 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             context?.contentResolver?.openInputStream(uri)?.use { inputStream ->
                 uploadGpxFile(inputStream, summit, view)
                 view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility = View.VISIBLE
-                view?.let { AddBookmarkDialog.Companion.AsyncAnalyzeGpsTracks(summit, MainActivity.pythonInstance ?: Python.getInstance(), resultReceiver.getSortFilterHelper().database, it, false).execute() }
+                var python = MainActivity.pythonInstance
+                if (python == null) {
+                    if (!Python.isStarted()) {
+                        Python.start(AndroidPlatform(requireContext()))
+                    }
+                    python = Python.getInstance()
+                }
+                view?.let { AddBookmarkDialog.Companion.AsyncAnalyzeGpsTracks(summit, python, resultReceiver.getSortFilterHelper().database, it, false).execute() }
             }
         }
     }
@@ -574,7 +586,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 getTextWithDefaultDouble(kmText),
                 VelocityData.parse(0.0, 0.0),
                 0.0, 0.0, emptyList(), emptyList(), isFavorite = false, isPeak = false, imageIds = mutableListOf(), garminData = null, trackBoundingBox = null,
-                isBookmark = true
+                isBookmark = false
         )
     }
 

@@ -39,7 +39,7 @@ import kotlin.math.roundToLong
 class SortFilterHelper(private val filterAndSortView: View, private val context: Context, var entries: ArrayList<Summit>, val database: AppDatabase) {
     @JvmField
     var selectedYear = ""
-    lateinit var fragment: SummationFragment
+    var fragment: SummationFragment? = null
     lateinit var filteredEntries: ArrayList<Summit>
         private set
     private lateinit var uniqueYearsOfSummit: List<String>
@@ -381,7 +381,7 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
         filteredEntries = entries
         sort()
         filter()
-        fragment.update(filteredEntries)
+        fragment?.update(filteredEntries)
         setOverviewText()
     }
 
