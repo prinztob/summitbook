@@ -327,6 +327,7 @@
     <string name="last_12_month">Last 12 Month</string>
     <string name="last_3_month">Last 3 Month</string>
     <string name="min">min</string>
+    <string name="minutes">minutes</string>
     <string name="max">max</string>
     <string name="m">m</string>
     <string name="sec">sec</string>
@@ -344,5 +345,20 @@
     <string name="count">Count</string>
     <string name="add_track_as_summit">New summit</string>
     <string name="add_track_as_bookmark">New bookmark</string>
+
+    <string name="segments">Segments</string>
+    <string name="add_new_segment">Add new segment</string>
+    <string name="add_new_segment_details">Add new segment details</string>
+    <string name="segment_end_point">Segment end point</string>
+    <string name="segment_start_point">Segment start point</string>
+
+    <string name="update_segment_cancel">"Updating an existing segment was canceled."</string>
+    <string name="add_new_segment_cancel">"Adding a new segment was canceled."</string>
+    <string name="add_segment">Add segment</string>
+    <string name="extract_summit">Select summit for extracting segment</string>
+    <string name="start_after_stop">Selected start point is after end point</string>
+    <string name="stop_before_start">Selected end point is before start point</string>
+    <string name="chart">Chart</string>
+    <string name="map">Map </string>
 
 </resources>

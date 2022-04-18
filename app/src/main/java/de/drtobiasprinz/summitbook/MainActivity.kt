@@ -238,6 +238,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.nav_bookmarks -> {
                 commitFragment(BookmarkViewFragment())
             }
+            R.id.nav_routes -> {
+                commitFragment(SegmentsViewFragment())
+            }
             R.id.nav_statistics -> {
                 commitFragment(StatisticsFragment())
             }

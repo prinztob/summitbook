@@ -30,4 +30,18 @@
         <item name="android:maxLines">5</item>
         <item name="android:ellipsize">start</item>
     </style>
+    <style name="ThemeOverlay.App.Switch" parent="">
+        <item name="color">@color/colorPrimary</item>
+        <item name="colorSecondary">@color/colorPrimaryDark</item>
+    </style>
+    <style name="Widget.App.Switch" parent="Widget.MaterialComponents.CompoundButton.Switch">
+        <item name="materialThemeOverlay">@style/ThemeOverlay.App.Switch</item>
+    </style>
+
+    <style name="Theme.MyApp" parent="Theme.MaterialComponents.Light.Bridge">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
 </resources>

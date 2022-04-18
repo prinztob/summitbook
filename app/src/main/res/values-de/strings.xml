@@ -164,7 +164,7 @@
     <string name="garmin_add_successful">"Erfolgreich Gipfel %1$s von Garmin Connect abgefragt"</string>
     <string name="choose_item">"Wähle ein Item aus"</string>
     <string name="update_summit_cancel">"Aktualisierung des Gipfels wurde abgebrochen."</string>
-    <string name="add_new_summit_cancel">"Das Hinzufügen eines neuen Gipfels wure abgebrochen."</string>
+    <string name="add_new_summit_cancel">"Das Hinzufügen eines neuen Gipfels wurde abgebrochen."</string>
     <string name="heart_rate_profile_label">"Herzfrequenzprofil"</string>
     <string name="slope_profile_label">"Neigung"</string>
     <string name="cadence_profile_label">"Kadenceprofil"</string>
@@ -328,6 +328,7 @@
     <string name="last_12_month">Letzte 12 Monate</string>
     <string name="last_3_month">Letzte 3 Monate</string>
     <string name="min">min</string>
+    <string name="minutes">Minuten</string>
     <string name="max">max</string>
     <string name="m">m</string>
     <string name="sec">sec</string>
@@ -346,5 +347,18 @@
     <string name="add_track_as_summit">neuer Gipfel</string>
     <string name="add_track_as_bookmark">neues Lesezeichen</string>
 
+    <string name="segments">Abschnitte</string>
+    <string name="add_new_segment">Füge neuen Abschnitt hinzu</string>
+    <string name="add_new_segment_details">Füge neue Abschnitt Details hnzu</string>
+    <string name="segment_end_point">Abschnittendpunkt</string>
+    <string name="segment_start_point">Abschnittanfangpunkt</string>
 
+    <string name="update_segment_cancel">"Aktualisierung des Abschnitts wurde abgebrochen."</string>
+    <string name="add_new_segment_cancel">"Das Hinzufügen eines neuen Abschnitts wurde abgebrochen."</string>
+    <string name="add_segment">Add segment</string>
+    <string name="extract_summit">Wähle einen Gipfel aus</string>
+    <string name="start_after_stop">Ausgewälter Startpunkt ist nach Endpunkt</string>
+    <string name="stop_before_start">Ausgewälter Endpunkt ist vor Startpunkt</string>
+    <string name="chart">Chart </string>
+    <string name="map">Karte</string>
 </resources>

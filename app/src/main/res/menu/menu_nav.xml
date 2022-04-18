@@ -11,6 +11,11 @@
             android:icon="@drawable/ic_baseline_bookmarks_24"
             android:title="@string/bookmarks" />
         <item
+            android:id="@+id/nav_routes"
+            android:checked="true"
+            android:icon="@drawable/ic_baseline_route_24"
+            android:title="@string/segments" />
+        <item
             android:id="@+id/nav_statistics"
             android:icon="@drawable/ic_baseline_pie_chart_24"
             android:title="@string/nav_statistics" />

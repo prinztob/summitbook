@@ -88,15 +88,15 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                     tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_1Min),
                             if (localSummitEntry.elevationData.maxVerticalVelocity1Min > 0.0) localSummitEntry.elevationData.maxVerticalVelocity1Min else slopeCalculator.calculateMaxVerticalVelocity(60.0),
                             "m/s", localSummitEntry.elevationData.maxVerticalVelocity1Min > 0.0,
-                            { e -> localSummitEntry.elevationData.maxVerticalVelocity1Min = e }))
+                            { e -> localSummitEntry.elevationData.maxVerticalVelocity1Min = e }, scaleFactor = 60))
                     tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_10Min),
                             if (localSummitEntry.elevationData.maxVerticalVelocity10Min > 0.0) localSummitEntry.elevationData.maxVerticalVelocity10Min else slopeCalculator.calculateMaxVerticalVelocity(600.0),
                             "m/s", localSummitEntry.elevationData.maxVerticalVelocity10Min > 0.0,
-                            { e -> localSummitEntry.elevationData.maxVerticalVelocity10Min = e }))
+                            { e -> localSummitEntry.elevationData.maxVerticalVelocity10Min = e }, scaleFactor = 600))
                     tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_1h),
                             if (localSummitEntry.elevationData.maxVerticalVelocity1h > 0.0) localSummitEntry.elevationData.maxVerticalVelocity1h else slopeCalculator.calculateMaxVerticalVelocity(3600.0),
                             "m/s", localSummitEntry.elevationData.maxVerticalVelocity1h > 0.0,
-                            { e -> localSummitEntry.elevationData.maxVerticalVelocity1h = e }))
+                            { e -> localSummitEntry.elevationData.maxVerticalVelocity1h = e }, scaleFactor = 3600))
                 }
             }
             if (localSummitEntry.garminData != null && localSummitEntry.garminData?.activityId != null) {
@@ -237,8 +237,8 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         tr.layoutParams = TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT)
         addLabel(view, tr, 200 + i, name, padding = 2)
-        addLabel(view, tr, 201 + i, String.format(requireContext().resources.configuration.locales[0], "%.1f", entry.value), padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
-        val defaultValueAsString = if (abs(entry.defaultValue) < 0.05 || abs(entry.value - entry.defaultValue) < 0.05) "-" else String.format(requireContext().resources.configuration.locales[0], "%.1f", entry.defaultValue)
+        addLabel(view, tr, 201 + i, String.format(requireContext().resources.configuration.locales[0], "%.1f", entry.value * entry.scaleFactor), padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
+        val defaultValueAsString = if (abs(entry.defaultValue) < 0.05 || abs(entry.value - entry.defaultValue) < 0.05) "-" else String.format(requireContext().resources.configuration.locales[0], "%.1f", entry.defaultValue * entry.scaleFactor)
         addLabel(view, tr, 202 + i, defaultValueAsString, padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
         addLabel(view, tr, 203 + i, entry.unit, padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END)
         val box = CheckBox(view.context)
@@ -331,7 +331,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
 
     }
 
-    class TableEntry(var name: String, var value: Double, var unit: String, var isChecked: Boolean, var f: (Double) -> Unit, var defaultValue: Double = 0.0) {
+    class TableEntry(var name: String, var value: Double, var unit: String, var isChecked: Boolean, var f: (Double) -> Unit, var defaultValue: Double = 0.0, var scaleFactor: Int = 1) {
         var isSet: Boolean = true
         fun update() {
             if (isSet) {
