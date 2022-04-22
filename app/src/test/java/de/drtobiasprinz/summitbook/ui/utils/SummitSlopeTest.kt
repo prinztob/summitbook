@@ -80,6 +80,37 @@ class SummitSlopeTest {
 
     @Test
     @Throws(ParseException::class)
+    fun getVerticalVelocityFromRecordedGpx2() {
+        val resource = this.javaClass.classLoader?.getResource("track2.gpx")
+        if (resource != null) {
+            val gpxTrackFile = File(resource.path)
+            val summitSlope = SummitSlope(getTrackFromFile(gpxTrackFile))
+            summitSlope.calculateMaxVerticalVelocity(60.0)
+            Assert.assertEquals(17.5, summitSlope.maxVerticalVelocity*60, 0.1)
+
+            summitSlope.calculateMaxVerticalVelocity(600.0)
+            Assert.assertEquals(149.4, summitSlope.maxVerticalVelocity*600, 0.1)
+
+            summitSlope.calculateMaxVerticalVelocity(3600.0)
+            Assert.assertEquals(666.2, summitSlope.maxVerticalVelocity*3600, 0.1)
+
+        }
+    }
+
+    @Test
+    @Throws(ParseException::class)
+    fun testKeepOnlyMaximalValues() {
+        val resource = this.javaClass.classLoader?.getResource("track.gpx")
+        if (resource != null) {
+            val gpxTrackFile = File(resource.path)
+            val reducesPoints = keepOnlyMaximalValues(getTrackFromFile(gpxTrackFile))
+            Assert.assertEquals(48, reducesPoints.size)
+        }
+    }
+
+
+    @Test
+    @Throws(ParseException::class)
     fun testTrackWithOnlyMaximalValues() {
         val reducedTrackPoints = keepOnlyMaximalValues(getTrackPoints() as MutableList<TrackPoint>)
         Assert.assertEquals(6, reducedTrackPoints.size)

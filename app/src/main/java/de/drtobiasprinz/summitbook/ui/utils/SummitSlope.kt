@@ -5,12 +5,13 @@ import de.drtobiasprinz.gpx.Gpx
 import de.drtobiasprinz.gpx.TrackPoint
 import org.nield.kotlinstatistics.simpleRegression
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.math.sign
 
 class SummitSlope(private val trackPoints: MutableList<TrackPoint>) {
 
     var maxSlope: Double = 0.0
-    private var maxVerticalVelocity: Double = 0.0
+    var maxVerticalVelocity: Double = 0.0
     var slopeGraph: MutableList<Entry> = mutableListOf()
 
     fun calculateMaxSlope(binSizeMeter: Double = 100.0, withRegression: Boolean = true, requiredR2: Double = REQUIRED_R2, factor: Int = 1): Double {
@@ -145,13 +146,23 @@ class SummitSlope(private val trackPoints: MutableList<TrackPoint>) {
         private const val MAX_SLOPE = 0.45
 
         fun keepOnlyMaximalValues(points: MutableList<TrackPoint>): MutableList<TrackPoint> {
-            return points.filterIndexed { index, trackPoint ->
+            val reducedPoints = points.filterIndexed { index, trackPoint ->
+                val currentElevation = (trackPoint.ele?:0.0).roundToInt().toDouble()
                 if (index == 0 || index == points.size - 1) {
                     true
-                } else if (trackPoint.ele != points[index - 1].ele && trackPoint.ele != points[index + 1].ele) {
-                    sign((trackPoint.ele ?: 0.0) - (points[index - 1].ele
-                            ?: 0.0)) != sign((points[index + 1].ele ?: 0.0) - (trackPoint.ele
-                            ?: 0.0))
+                } else {
+                    val lastElevation = if (index != 0) (points[index - 1].ele?:0.0).roundToInt().toDouble() else currentElevation
+                    currentElevation != lastElevation
+                }
+            }
+            return reducedPoints.filterIndexed { index, trackPoint ->
+                val currentElevation = (trackPoint.ele?:0.0).roundToInt().toDouble()
+                val lastElevation = if (index != 0) (reducedPoints[index - 1].ele?:0.0).roundToInt().toDouble() else currentElevation
+                val nextElevation = if (index != reducedPoints.size - 1) (reducedPoints[index + 1].ele?:0.0).roundToInt().toDouble() else currentElevation
+                if (index == 0 || index == reducedPoints.size - 1) {
+                    true
+                } else if (currentElevation != lastElevation && currentElevation != nextElevation) {
+                    sign(currentElevation - lastElevation) != sign(nextElevation - currentElevation)
                 } else {
                     false
                 }
