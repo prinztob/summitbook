@@ -39,7 +39,6 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelect
 import de.drtobiasprinz.summitbook.ui.utils.SummitSlope
 import org.osmdroid.api.IGeoPoint
 import org.osmdroid.config.Configuration
-import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
@@ -157,7 +156,7 @@ class AddSegmentEntryFragment : Fragment() {
                 if (view != null) {
                     val text = items[position]
                     if (text != "" && text != "None") {
-                        val newlySelectedSummit = summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
+                        val newlySelectedSummit = summitsToCompare.find { text.startsWith("${it.getDateAsString()} ${it.name}") }
                         if (newlySelectedSummit != summitToCompare) {
                             summitToCompare = newlySelectedSummit
                             setGpsTrack(summitToCompare)
@@ -208,7 +207,8 @@ class AddSegmentEntryFragment : Fragment() {
             if (isUpdate) {
                 saveButton.text = getString(R.string.update)
             }
-            segmentEntry = SegmentEntry(segmentEntryId?:0, segmentId, summit.date, summit.activityId,
+            segmentEntry = SegmentEntry(segmentEntryId
+                    ?: 0, segmentId, summit.date, summit.activityId,
                     startPointId, startTrackPoint.lat, startTrackPoint.lon,
                     endPointId, endTrackPoint.lat, endTrackPoint.lon,
                     duration, distance, heightMeterResult.second.roundToInt(), heightMeterResult.third.roundToInt(), averageHeartRate, averagePower
@@ -222,20 +222,18 @@ class AddSegmentEntryFragment : Fragment() {
         val summitsWithTrack = summitsToCompareFromActivity.filter { it.hasGpsTrack() }.sortedByDescending { it.date }
         val entries = segment?.segmentEntries
         summitsToCompare = if (entries != null && entries.isNotEmpty()) {
-            val latNorth = if (entries.first().startPositionLatitude > entries.first().endPositionLatitude) entries.first().startPositionLatitude else entries.first().endPositionLatitude
-            val latSouth = if (entries.first().startPositionLatitude < entries.first().endPositionLatitude) entries.first().startPositionLatitude else entries.first().endPositionLatitude
-            val longEast = if (entries.first().startPositionLongitude > entries.first().endPositionLongitude) entries.first().startPositionLongitude else entries.first().endPositionLongitude
-            val longWest = if (entries.first().startPositionLongitude < entries.first().endPositionLongitude) entries.first().startPositionLongitude else entries.first().endPositionLongitude
+            val startPoint = GeoPoint(entries.first().startPositionLatitude, entries.first().startPositionLongitude)
+            val endPoint = GeoPoint(entries.first().endPositionLatitude, entries.first().endPositionLongitude)
             summitsWithTrack.filter {
-                it.trackBoundingBox?.intersects(
-                        BoundingBox(latNorth, longEast, latSouth, longWest)
-                ) == true
+                it.trackBoundingBox?.contains(startPoint) == true && it.trackBoundingBox?.contains(endPoint) == true
             }
         } else {
             summitsWithTrack
         }
-        summitsToCompare.forEach {
-            suggestions.add("${it.getDateAsString()} ${it.name}")
+        summitsToCompare.forEach { summit: Summit ->
+            val occurrence = segment?.segmentEntries?.filter { it.activityId == summit.activityId }?.size
+                    ?: 0
+            suggestions.add("${summit.getDateAsString()} ${summit.name} ${if (occurrence > 0) "($occurrence)" else ""}")
         }
         return suggestions as ArrayList
     }
@@ -367,10 +365,10 @@ class AddSegmentEntryFragment : Fragment() {
         }
         val entries = segment?.segmentEntries
         if (entries != null && entries.isNotEmpty()) {
-            val averageStartPoint = GeoPoint(entries.sumByDouble { it.startPositionLatitude }/entries.size, entries.sumByDouble { it.startPositionLongitude }/entries.size)
-            val averageEndPoint = GeoPoint(entries.sumByDouble { it.endPositionLatitude } / entries.size, entries.sumByDouble { it.endPositionLatitude } / entries.size)
-            addMarker(osMap, averageStartPoint, ResourcesCompat.getDrawable(requireContext().resources, R.drawable.ic_filled_location_lightbrown_48, null))
-            addMarker(osMap, averageEndPoint, ResourcesCompat.getDrawable(requireContext().resources, R.drawable.ic_filled_location_darkbrown_48, null))
+            val firstStartPoint = GeoPoint(entries.first().startPositionLatitude, entries.first().startPositionLongitude)
+            val firstEndPoint = GeoPoint(entries.first().endPositionLatitude, entries.first().endPositionLatitude)
+            addMarker(osMap, firstStartPoint, ResourcesCompat.getDrawable(requireContext().resources, R.drawable.ic_filled_location_lightbrown_48, null))
+            addMarker(osMap, firstEndPoint, ResourcesCompat.getDrawable(requireContext().resources, R.drawable.ic_filled_location_darkbrown_48, null))
         }
     }
 

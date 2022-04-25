@@ -53,7 +53,7 @@ class SegmentsViewAdapter(var segments: MutableList<Segment>) : RecyclerView.Ada
         if (viewType == CARD) {
             return ViewHolder(cardView)
         } else if (viewType == BUTTON) {
-            return ViewHolder(LayoutInflater.from(context).inflate(R.layout.card_add_segment_details, parent, false) as CardView);
+            return ViewHolder(LayoutInflater.from(context).inflate(R.layout.card_add_segment_details, parent, false) as CardView)
         }
         return ViewHolder(cardView)
     }
@@ -76,11 +76,11 @@ class SegmentsViewAdapter(var segments: MutableList<Segment>) : RecyclerView.Ada
             cardView.findViewById<TextView?>(R.id.route_name).text = segment.segmentDetails.getDisplayName()
             "# ${segment.segmentEntries.size}".also { cardView.findViewById<TextView?>(R.id.route_number).text = it }
 
-            val averageDistance = segment.segmentEntries.sumByDouble { it.kilometers } / segment.segmentEntries.size
-            val averageElevationGainUp = segment.segmentEntries.sumBy { it.heightMetersUp } / segment.segmentEntries.size
-            val averageElevationGainDown = segment.segmentEntries.sumBy { it.heightMetersDown } / segment.segmentEntries.size
-            cardView.findViewById<TextView?>(R.id.distance).text = String.format("%.1f %s", averageDistance, context.getString(R.string.km))
-            cardView.findViewById<TextView?>(R.id.elevationGain).text = String.format("%s/%s %s", averageElevationGainUp, averageElevationGainDown, context.getString(R.string.hm))
+            val averageDistance = if (segment.segmentEntries.isNotEmpty()) segment.segmentEntries.sumByDouble { it.kilometers } / segment.segmentEntries.size else 0.0
+            val averageElevationGainUp = if (segment.segmentEntries.isNotEmpty()) segment.segmentEntries.sumBy { it.heightMetersUp } / segment.segmentEntries.size else 0
+            val averageElevationGainDown = if (segment.segmentEntries.isNotEmpty()) segment.segmentEntries.sumBy { it.heightMetersDown } / segment.segmentEntries.size else 0
+            cardView.findViewById<TextView?>(R.id.distance).text = if (averageDistance > 0.0) String.format("%.1f %s", averageDistance, context.getString(R.string.km)) else ""
+            cardView.findViewById<TextView?>(R.id.elevationGain).text = if (averageElevationGainUp > 0 || averageElevationGainDown > 0) String.format("%s/%s %s", averageElevationGainUp, averageElevationGainDown, context.getString(R.string.hm)) else ""
 
             val removeButton = cardView.findViewById<ImageButton?>(R.id.entry_delete)
             removeButton?.setOnClickListener { v: View? ->
@@ -128,11 +128,11 @@ class SegmentsViewAdapter(var segments: MutableList<Segment>) : RecyclerView.Ada
         tableRowHead.setBackgroundColor(Color.WHITE)
         tableRowHead.layoutParams = TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT)
-        addLabel(view, tableRowHead, 20, context.getString(R.string.date), tableLayout, segment)
-        addLabel(view, tableRowHead, 21, context.getString(R.string.minutes), tableLayout, segment, sorter = { e -> e.sortedBy { it.duration } })
-        addLabel(view, tableRowHead, 22, context.getString(R.string.kmh), tableLayout, segment, sorter = { e -> e.sortedBy { it.kilometers * 60 / it.duration } })
-        addLabel(view, tableRowHead, 23, context.getString(R.string.bpm), tableLayout, segment, sorter = { e -> e.sortedBy { it.averageHeartRate } })
-        addLabel(view, tableRowHead, 24, context.getString(R.string.watt), tableLayout, segment, sorter = { e -> e.sortedBy { it.averagePower } })
+        addLabel(view, tableRowHead, 20, context.getString(R.string.date), tableLayout, segment, sorter = { e -> e.sortedBy { it.date } })
+        addLabel(view, tableRowHead, 21, context.getString(R.string.minutes), tableLayout, segment)
+        addLabel(view, tableRowHead, 22, context.getString(R.string.kmh), tableLayout, segment, sorter = { e -> e.sortedBy { it.kilometers * 60 / it.duration }.reversed() })
+        addLabel(view, tableRowHead, 23, context.getString(R.string.bpm), tableLayout, segment, sorter = { e -> e.sortedBy { it.averageHeartRate }.reversed() })
+        addLabel(view, tableRowHead, 24, context.getString(R.string.watt), tableLayout, segment, sorter = { e -> e.sortedBy { it.averagePower }.reversed() })
         addLabel(view, tableRowHead, 25, "", tableLayout, segment)
         addLabel(view, tableRowHead, 26, "", tableLayout, segment)
         tableLayout.addView(tableRowHead, TableLayout.LayoutParams(
