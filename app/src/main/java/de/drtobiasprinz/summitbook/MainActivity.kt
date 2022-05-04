@@ -51,6 +51,7 @@ import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
+import de.drtobiasprinz.summitbook.ui.utils.AsyncUpdateGarminData
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
 import java.io.*
 import java.time.LocalDate
@@ -125,6 +126,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawer.addDrawerListener(toggle)
         toggle.syncState()
         val navigationView = findViewById<NavigationView>(R.id.nav_view)
+        if (database.solarIntensityDao()?.getAll().isNullOrEmpty()) {
+            navigationView.menu.findItem(R.id.nav_solar).isVisible = false
+        }
         navigationView.setNavigationItemSelectedListener(this)
 
         val schedulerBoundingBox = Executors.newSingleThreadScheduledExecutor()
@@ -174,6 +178,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 Log.e("useSimplifiedTracks", "Deleted ${it.getDateAsString()}_${it.name} because useSimplifiedTracks was set to false.")
             }
         }
+
+        @Suppress("DEPRECATION")
+        AsyncUpdateGarminData(this).execute()
 
         if (viewedFragment == null) {
             extremaValuesAllSummits = ExtremaValuesSummits(sortFilterHelper.entries)
@@ -285,6 +292,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         }
                         .setIcon(android.R.drawable.ic_dialog_alert)
                         .show()
+            }
+            R.id.nav_solar -> {
+                commitFragment(BarChartSolarFragment())
             }
             R.id.action_settings -> {
                 val intent = Intent(this, SettingsActivity::class.java)

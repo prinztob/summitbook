@@ -47,6 +47,10 @@
             android:id="@+id/import_csv"
             android:icon="@drawable/ic_file_download_black_24dp"
             android:title="@string/nav_import" />
+        <item
+            android:id="@+id/nav_solar"
+            android:icon="@drawable/ic_baseline_solar_power_24"
+            android:title="@string/solar_power_fenix_6" />
     </group>
     <group  android:checkableBehavior="single">
         <item

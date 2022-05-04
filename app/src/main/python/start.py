@@ -267,3 +267,66 @@ def analyze_gpx_track(path):
         return "return code: 0"
     except Exception as err:  # pylint: disable=broad-except
         return "return code: 1Unknown error occurred %s" % err
+
+
+def get_device_id(api):
+    """
+    Get device id
+    """
+    try:
+        url = "proxy/device-service/deviceregistration/devices"
+        print(f"Fetching device id with {url}")
+        response_json = api.modern_rest_client.get(url).json()
+        if len(response_json) > 0:
+            for device in response_json:
+                if "deviceId" in device:
+                    return device["deviceId"]
+            return ""
+        else:
+            return ""
+    except (
+            GarminConnectConnectionError,
+            GarminConnectAuthenticationError,
+            GarminConnectTooManyRequestsError,
+    ) as err:
+        return "return code: 1Error occurred during Garmin Connect Client get activity power data: %s" % err
+    except Exception as err:  # pylint: disable=broad-except
+        return "return code: 1Unknown error occurred during Garmin Connect Client get power data %s" % err
+
+
+def get_solar_intensity_for_date(api, date, device_id):
+    """
+    Get solar intensity for date
+    """
+    try:
+        url = f"proxy/web-gateway/solar/{device_id}/{date}/{date}"
+        print(f"Fetching solar intensity with url {url}")
+        return api.modern_rest_client.get(url).json()
+    except (
+            GarminConnectConnectionError,
+            GarminConnectAuthenticationError,
+            GarminConnectTooManyRequestsError,
+    ) as err:
+        return "return code: 1Error occurred during Garmin Connect Client get activity power data: %s" % err
+    except Exception as err:  # pylint: disable=broad-except
+        return "return code: 1Unknown error occurred during Garmin Connect Client get power data %s" % err
+
+
+def get_battery_charged_in_percent(solar):
+    if "deviceSolarInput" in solar and "solarDailyDataDTOs" in solar["deviceSolarInput"]:
+        data_for_dates = solar["deviceSolarInput"]["solarDailyDataDTOs"]
+        for data in data_for_dates:
+            if "solarInputReadings" in data:
+                solar_reading_for_date = data["solarInputReadings"]
+                solar_utilization = [intensity["solarUtilization"] for intensity in solar_reading_for_date if
+                                     intensity["solarUtilization"] > 0]
+
+                solar_exposition = [intensity["solarUtilization"] for intensity in solar_reading_for_date if
+                                    intensity["solarUtilization"] > 5]
+                start_date = datetime.strptime(solar_reading_for_date[0]["readingTimestampLocal"], '%Y-%m-%dT%H:%M:%S.%f')
+                end_date = datetime.strptime(solar_reading_for_date[-1]["readingTimestampLocal"], '%Y-%m-%dT%H:%M:%S.%f')
+                seconds = (end_date - start_date).seconds
+                multiplicand = 0.2 /  (60 * 100)  # 0.2 % per 60 minutes 100% solar intensity (Fenix 6)
+                return sum(solar_utilization) * multiplicand, \
+                       len(solar_exposition) / 60, \
+                       86400 - seconds < 999

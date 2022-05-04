@@ -256,6 +256,8 @@
     <string name="power_1h">Leistung 1h</string>
     <string name="power_2h">Leistung 2h</string>
     <string name="power_5h">Leistung 5h</string>
+    <string name="battery_gain_by_solar">Batterieaufladung durch Sonne</string>
+    <string name="solar_exposure">Durchschn. Sonneaufenthalt</string>
     <string name="vo2Max">Vo2max</string>
     <string name="ftp">FTP</string>
     <string name="tab_text_4">Leistungsprofil</string>
@@ -361,4 +363,11 @@
     <string name="stop_before_start">Ausgewälter Endpunkt ist vor Startpunkt</string>
     <string name="chart">Chart </string>
     <string name="map">Karte</string>
+    <string name="percent">%</string>
+    <string name="h">h</string>
+
+    <string name="days_14">14 Tage</string>
+    <string name="weeks_12">12 Wochen</string>
+    <string name="month_12">12 Monaten</string>
+    <string name="solar_power_fenix_6">Solarleistung Fenix 6</string>
 </resources>

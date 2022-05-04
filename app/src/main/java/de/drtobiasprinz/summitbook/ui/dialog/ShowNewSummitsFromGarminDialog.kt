@@ -224,7 +224,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
     companion object {
 
         @Suppress("DEPRECATION")
-        class AsyncDownloadActivities(private val summits: List<Summit>, private val allActivitiesFromThirdParty: List<Summit>, private val pythonExecutor: GarminPythonExecutor?, private val startDate: String, private val endDate: String, val dialog: ShowNewSummitsFromGarminDialog) : AsyncTask<Void?, Void?, Void?>() {
+        class AsyncDownloadActivities(private val summits: List<Summit>, private val allActivitiesFromThirdParty: List<Summit>, private val pythonExecutor: GarminPythonExecutor?, private val startDate: String, private val endDate: String, val dialog: ShowNewSummitsFromGarminDialog?) : AsyncTask<Void?, Void?, Void?>() {
 
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
@@ -236,19 +236,21 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
             }
 
             override fun onPostExecute(param: Void?) {
-                updateNewSummits(allActivitiesFromThirdParty, summits, dialog.requireContext())
-                if (activitiesDir?.exists() == true && activitiesDir?.isDirectory == true) {
-                    val files = activitiesDir?.listFiles()
-                    if (files?.isNotEmpty() == true) {
-                        val edit = PreferenceManager.getDefaultSharedPreferences(dialog.requireContext()).edit()
-                        edit.putString("garmin_start_date", endDate)
-                        edit.apply()
+                if (dialog != null) {
+                    updateNewSummits(allActivitiesFromThirdParty, summits, dialog.requireContext())
+                    if (activitiesDir?.exists() == true && activitiesDir?.isDirectory == true) {
+                        val files = activitiesDir?.listFiles()
+                        if (files?.isNotEmpty() == true) {
+                            val edit = PreferenceManager.getDefaultSharedPreferences(dialog.requireContext()).edit()
+                            edit.putString("garmin_start_date", endDate)
+                            edit.apply()
+                        }
                     }
+                    dialog.updateEntriesWithoutIgnored()
+                    dialog.tableLayout.removeAllViews()
+                    dialog.view?.let { dialog.drawTable(it) }
+                    dialog.view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility = View.GONE
                 }
-                dialog.updateEntriesWithoutIgnored()
-                dialog.tableLayout.removeAllViews()
-                dialog.view?.let { dialog.drawTable(it) }
-                dialog.view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility = View.GONE
 
             }
         }

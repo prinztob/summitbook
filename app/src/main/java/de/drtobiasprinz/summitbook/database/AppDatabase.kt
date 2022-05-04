@@ -8,14 +8,15 @@ import de.drtobiasprinz.summitbook.models.*
 
 
 @Database(
-        entities = [Summit::class, Forecast::class, IgnoredActivity::class, SegmentDetails::class, SegmentEntry::class],
-        version = 6,
+        entities = [Summit::class, Forecast::class, IgnoredActivity::class, SegmentDetails::class, SegmentEntry::class, SolarIntensity::class],
+        version = 7,
         autoMigrations = [
             AutoMigration(from = 1, to = 2),
             AutoMigration(from = 2, to = 3),
             AutoMigration(from = 3, to = 4, spec = AppDatabase.MyAutoMigration::class),
             AutoMigration(from = 4, to = 5),
-            AutoMigration(from = 5, to = 6)
+            AutoMigration(from = 5, to = 6),
+            AutoMigration(from = 6, to = 7),
         ],
         exportSchema = true
 )
@@ -24,6 +25,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun forecastDao(): ForecastDao?
     abstract fun summitDao(): SummitDao?
     abstract fun segmentsDao(): SegmentsDao?
+    abstract fun solarIntensityDao(): SolarIntensityDao?
     abstract fun ignoredActivityDao(): IgnoredActivityDao?
 
     companion object {

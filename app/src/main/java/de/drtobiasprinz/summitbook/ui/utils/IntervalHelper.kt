@@ -5,6 +5,9 @@ import de.drtobiasprinz.summitbook.models.Summit
 import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneId
 import java.util.*
 import kotlin.math.ceil
 
@@ -16,6 +19,13 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
         private set
     var dateAnnotation: MutableList<Float> = mutableListOf()
         private set
+    var dates14Days: MutableList<Date> = getDatesBetween(14L)
+    var dates14DaysAnnotation: MutableList<Float> = dates14Days.mapIndexed { i, _ -> i.toFloat() } as MutableList<Float>
+    var dates12Weeks: MutableList<Date> = getDatesBetween(84L, stepSize = 7)
+    var dates12WeeksAnnotation: MutableList<Float> = dates12Weeks.mapIndexed { i, _ -> i.toFloat() } as MutableList<Float>
+    var dates12Month: MutableList<Date> = getLast12Month()
+    var dates12MonthAnnotation: MutableList<Float> = dates12Month.mapIndexed { i, _ -> i.toFloat() } as MutableList<Float>
+
     val topElevations: MutableList<Float> = mutableListOf()
     val topElevationAnnotation: MutableList<Float> = mutableListOf()
     val kilometers: MutableList<Float> = mutableListOf()
@@ -131,6 +141,7 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
             return dates
         }
 
+
     companion object {
         @JvmField
         var topElevationStep = 500.0
@@ -140,6 +151,29 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
 
         @JvmField
         var elevationGainStep = 250.0
+
+        fun getDatesBetween(days: Long, endDate: String? = null, stepSize: Int = 1): MutableList<Date> {
+            val end = if (endDate != null) LocalDate.parse(endDate) else LocalDate.now()
+            var start = end.minusDays(days)
+            val totalDates: MutableList<Date> = mutableListOf()
+            while (!start.isAfter(end)) {
+                totalDates.add(Date.from(start.atStartOfDay(ZoneId.systemDefault()).toInstant()))
+                start = start.plusDays(1)
+            }
+            if (stepSize == 1) {
+                return totalDates
+            } else {
+                return totalDates.slice(0 until totalDates.size step stepSize) as MutableList<Date>
+            }
+        }
+
+        fun getLast12Month(): MutableList<Date> {
+            val totalDates: MutableList<Date> = mutableListOf()
+            for (i in 0L until 11L) {
+                totalDates.add(Date.from(YearMonth.now().minusMonths( i ).atDay( 1 ).atStartOfDay(ZoneId.systemDefault()).toInstant()))
+            }
+            return totalDates
+        }
     }
 
 }

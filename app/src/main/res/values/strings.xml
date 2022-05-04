@@ -254,6 +254,8 @@
     <string name="power_1h">Power 1h</string>
     <string name="power_2h">Power 2h</string>
     <string name="power_5h">Power 5h</string>
+    <string name="battery_gain_by_solar">Battery gain by solar intensity</string>
+    <string name="solar_exposure">Average Solar Exposure</string>
     <string name="vo2Max">Vo2Max</string>
     <string name="ftp">FTP</string>
     <string name="tab_text_4">Power meter profile</string>
@@ -360,5 +362,11 @@
     <string name="stop_before_start">Selected end point is before start point</string>
     <string name="chart">Chart</string>
     <string name="map">Map </string>
+    <string name="percent">%</string>
+    <string name="h">h</string>
+    <string name="days_14">14 days</string>
+    <string name="weeks_12">12 weeks</string>
+    <string name="month_12">12 month</string>
+    <string name="solar_power_fenix_6">Solar power Fenix 6</string>
 
 </resources>
