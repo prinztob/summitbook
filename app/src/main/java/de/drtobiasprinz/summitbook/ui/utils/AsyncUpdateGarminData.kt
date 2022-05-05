@@ -3,6 +3,8 @@ package de.drtobiasprinz.summitbook.ui.utils
 import android.net.Uri
 import android.os.AsyncTask
 import android.util.Log
+import android.widget.Toast
+import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.SolarIntensity
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
@@ -42,30 +44,50 @@ class AsyncUpdateGarminData(val resultReceiver: FragmentResultReceiver) : AsyncT
         if (startDate != "") {
             var deviceId: String? = null
             val datesBetween = getDatesBetween(startDate)
-            for (dateToCheck in datesBetween) {
-                if (dateToCheck != null && (solarIntensities?.none { it.date == dateToCheck } == true || solarIntensities?.firstOrNull { it.date == dateToCheck }?.isForWholeDay == false)) {
-                    try {
-                        if (deviceId == null) {
-                            deviceId = resultReceiver.getPythonExecutor()?.getDeviceIdForSolarOutput()
-                        }
-                        if (deviceId != null) {
-                            Log.i("Scheduler", "Check solar intensity for date ${df.format(dateToCheck)}.")
-                            val solarIntensityJson = resultReceiver.getPythonExecutor()?.getSolarIntensityForDate(df.format(dateToCheck), deviceId)
-                            val solarIntensity = solarIntensityJson?.let { SolarIntensity.parseFromJson(it) }
-                            if (solarIntensity != null) {
-                                val entryToUpdate = solarIntensities.firstOrNull { it.date == dateToCheck }
-                                if (entryToUpdate != null) {
-                                    solarIntensity.entryId = entryToUpdate.entryId
-                                    resultReceiver.getSortFilterHelper().database.solarIntensityDao()?.update(solarIntensity)
-                                } else {
-                                    resultReceiver.getSortFilterHelper().database.solarIntensityDao()?.add(solarIntensity)
-                                }
-                                solarIntensities.add(solarIntensity)
-                            }
-                        }
-                    } catch (e: RuntimeException) {
-                        Log.e("AsyncUpdateGarminData", e.message ?: "")
+            solarIntensities?.filter { !it.isForWholeDay }?.forEach {
+                try {
+                    var deviceIdLocal = deviceId
+                    if (deviceIdLocal == null) {
+                        deviceIdLocal = resultReceiver.getPythonExecutor()?.getDeviceIdForSolarOutput()
+                        deviceId = deviceIdLocal
                     }
+                    if (deviceIdLocal != null) {
+                        val solarIntensityJson = resultReceiver.getPythonExecutor()?.getSolarIntensityForDate(df.format(it.date), deviceIdLocal)
+                        val solarIntensity = solarIntensityJson?.let { SolarIntensity.parseFromJson(it) }
+                        if (solarIntensity != null) {
+                            solarIntensity.entryId = it.entryId
+                            resultReceiver.getSortFilterHelper().database.solarIntensityDao()?.update(solarIntensity)
+                        }
+                    }
+                } catch (e: RuntimeException) {
+                    Log.e("AsyncUpdateGarminData", e.message ?: "")
+                }
+            }
+            for (dateToCheck in datesBetween) {
+                try {
+                    if (dateToCheck != null && solarIntensities?.none { it.date == dateToCheck } == true) {
+                        var deviceIdForLoop = deviceId
+                        if (deviceIdForLoop == null) {
+                            deviceIdForLoop = resultReceiver.getPythonExecutor()?.getDeviceIdForSolarOutput()
+                            deviceId = deviceIdForLoop
+                        }
+                        if (deviceIdForLoop != null) {
+                            Log.i("Scheduler", "Check solar intensity for date ${df.format(dateToCheck)}.")
+                            val solarIntensityJson = resultReceiver.getPythonExecutor()?.getSolarIntensityForDate(df.format(dateToCheck), deviceIdForLoop)
+                            val solarIntensity = solarIntensityJson?.let { SolarIntensity.parseFromJson(it) }
+                                    ?: SolarIntensity(0, dateToCheck, 0.0, 0.0, false)
+                            val entryToUpdate = solarIntensities.firstOrNull { it.date == dateToCheck }
+                            if (entryToUpdate != null) {
+                                solarIntensity.entryId = entryToUpdate.entryId
+                                resultReceiver.getSortFilterHelper().database.solarIntensityDao()?.update(solarIntensity)
+                            } else {
+                                resultReceiver.getSortFilterHelper().database.solarIntensityDao()?.add(solarIntensity)
+                            }
+                            solarIntensities.add(solarIntensity)
+                        }
+                    }
+                } catch (e: RuntimeException) {
+                    Log.e("AsyncUpdateGarminData", e.message ?: "")
                 }
             }
         }
@@ -76,6 +98,7 @@ class AsyncUpdateGarminData(val resultReceiver: FragmentResultReceiver) : AsyncT
         edit.putString("garmin_start_date", endDate)
         edit.apply()
         Log.i("AsyncUpdateGarminData", "Done.")
+        Toast.makeText(resultReceiver.getContext(), resultReceiver.getContext().getString(R.string.update_done), Toast.LENGTH_SHORT).show()
     }
 
     private fun getDatesBetween(startDate: String, endDate: String? = null): List<Date?> {

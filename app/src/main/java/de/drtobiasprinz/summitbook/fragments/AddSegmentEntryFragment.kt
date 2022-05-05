@@ -366,7 +366,7 @@ class AddSegmentEntryFragment : Fragment() {
         val entries = segment?.segmentEntries
         if (entries != null && entries.isNotEmpty()) {
             val firstStartPoint = GeoPoint(entries.first().startPositionLatitude, entries.first().startPositionLongitude)
-            val firstEndPoint = GeoPoint(entries.first().endPositionLatitude, entries.first().endPositionLatitude)
+            val firstEndPoint = GeoPoint(entries.first().endPositionLatitude, entries.first().endPositionLongitude)
             addMarker(osMap, firstStartPoint, ResourcesCompat.getDrawable(requireContext().resources, R.drawable.ic_filled_location_lightbrown_48, null))
             addMarker(osMap, firstEndPoint, ResourcesCompat.getDrawable(requireContext().resources, R.drawable.ic_filled_location_darkbrown_48, null))
         }

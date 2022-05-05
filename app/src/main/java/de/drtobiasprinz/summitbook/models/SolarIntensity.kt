@@ -21,6 +21,8 @@ data class SolarIntensity(
         var isForWholeDay: Boolean,
 ) {
     @Ignore
+    var activitiesOnDay = 0
+    @Ignore
     var markerText = getDateAsString()
     fun getDateAsFloat(): Float {
         return ((date.time - Summit.REFERENCE_VALUE_DATE) / 1e8).toFloat()

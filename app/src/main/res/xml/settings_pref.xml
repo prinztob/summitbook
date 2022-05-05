@@ -43,6 +43,11 @@
         android:title="@string/start_date_sync_garmin"
         android:key="garmin_start_date"
         android:defaultValue="2020-01-01"/>
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="startup_auto_update_switch"
+        android:summary="@string/startup_auto_update_summary"
+        android:title="@string/startup_auto_update_title" />
     <EditTextPreference
         android:title="@string/minimal_delta_for_elevation_gain_title"
         android:key="min_delta_height_meters"

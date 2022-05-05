@@ -15,9 +15,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.github.mikephil.charting.charts.CombinedChart.DrawOrder
-import com.github.mikephil.charting.components.MarkerView
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.components.YAxis
+import com.github.mikephil.charting.components.*
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
@@ -31,10 +29,10 @@ import de.drtobiasprinz.summitbook.ui.utils.CustomBarChart
 import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.*
+import kotlin.math.ceil
 
 
 class BarChartSolarFragment : Fragment() {
@@ -45,10 +43,12 @@ class BarChartSolarFragment : Fragment() {
     private var selectedXAxisSpinnerEntry: XAxisSelector = XAxisSelector.Days
     private var barChartView: View? = null
     private var barChartEntries: MutableList<BarEntry?> = mutableListOf()
+    private var lineChartEntries: MutableList<Entry?> = mutableListOf()
     private var unit: String? = "hm"
     private var label: String? = "Height meters"
     private var barChart: CustomBarChart? = null
     private var summits: ArrayList<Summit>? = null
+    private var max: Float = 1F
     private lateinit var resultReceiver: FragmentResultReceiver
 
 
@@ -66,10 +66,12 @@ class BarChartSolarFragment : Fragment() {
         fillDateSpinner()
         summits = resultReceiver.getSortFilterHelper().entries
         solarIntensities = resultReceiver.getSortFilterHelper().database.solarIntensityDao()?.getAll()
+        val numberActivitiesPerDay = summits?.groupingBy { it.getDateAsString() }?.eachCount()
+        solarIntensities?.forEach {
+            it.activitiesOnDay = if (numberActivitiesPerDay?.keys?.contains(it.getDateAsString()) == true) numberActivitiesPerDay[it.getDateAsString()]
+                    ?: 0 else 0
+        }
         barChart = barChartView?.findViewById(R.id.barChart)
-        val barChartCustomRenderer = BarChartCustomRenderer(barChart, barChart?.animator, barChart?.viewPortHandler)
-        barChart?.renderer = barChartCustomRenderer
-        barChart?.setDrawValueAboveBar(false)
         resizeChart()
         listenOnDataSpinner()
         return barChartView
@@ -90,22 +92,56 @@ class BarChartSolarFragment : Fragment() {
     }
 
     private fun drawChart() {
+        resetChart()
+        val barChartCustomRenderer = BarChartCustomRenderer(barChart, barChart?.animator, barChart?.viewPortHandler)
+        barChart?.renderer = barChartCustomRenderer
+        barChart?.setDrawValueAboveBar(false)
         barChart?.drawOrder = arrayOf(
                 DrawOrder.LINE, DrawOrder.BUBBLE, DrawOrder.CANDLE, DrawOrder.BAR, DrawOrder.SCATTER
         )
-        barChart?.legend?.isWordWrapEnabled = true
         val combinedData = CombinedData()
 
         setBarData(combinedData)
+        if (lineChartEntries.isNotEmpty()) {
+            val lastEntry = lineChartEntries.last()
+            if (lastEntry != null) {
+                lineChartEntries.add(Entry(lastEntry.x + 1f, lastEntry.y))
+            }
+            setLineData(combinedData)
+        }
         setXAxis()
-        val yAxisLeft = barChart?.axisLeft
-        setYAxis(yAxisLeft)
-        val yAxisRight = barChart?.axisRight
-        setYAxis(yAxisRight)
+        setYAxisBarData(barChart?.axisLeft)
+        setYAxisLineData(barChart?.axisRight)
         barChart?.data = combinedData
         barChart?.setTouchEnabled(true)
         barChart?.marker = CustomMarkerView(barChartView?.context, R.layout.marker_graph_bar_chart)
 
+        barChart?.setVisibleXRangeMaximum(12f) // allow 12 values to be displayed at once on the x-axis, not more
+        barChart?.moveViewToX(barChartEntries.size.toFloat() - 12f)
+    }
+
+    private fun setLineData(combinedData: CombinedData) {
+        val dataSet = LineDataSet(lineChartEntries, "Summits per Date")
+        setGraphViewLineChart(dataSet)
+        val data = LineData(dataSet)
+        combinedData.setData(data)
+    }
+
+    private fun setGraphViewLineChart(dataSet: LineDataSet) {
+        dataSet.setDrawValues(false)
+        dataSet.setDrawCircles(false)
+        dataSet.isHighlightEnabled = false
+        dataSet.color = Color.BLACK
+        dataSet.lineWidth = 2f
+        dataSet.mode = LineDataSet.Mode.STEPPED
+    }
+
+    private fun resetChart() {
+        barChart?.fitScreen()
+        barChart?.data?.clearValues()
+        barChart?.xAxis?.valueFormatter = null
+        barChart?.notifyDataSetChanged()
+        barChart?.clear()
         barChart?.invalidate()
     }
 
@@ -122,26 +158,57 @@ class BarChartSolarFragment : Fragment() {
         val min = barChartEntries.minByOrNull { it?.x ?: 0f }?.x ?: 0f
         xAxis?.axisMaximum = max + 0.5f
         xAxis?.axisMinimum = min - 0.5f
+
+        val startDate = (barChartEntries.first()?.data as SolarIntensity).date.time
+        val endDate = (barChartEntries.last()?.data as SolarIntensity).date.time
+        val divisor = (barChartEntries.last()?.x ?: 0f) - (barChartEntries.first()?.x ?: 0f)
+        val factor = (endDate - startDate) / (if (divisor == 0f) 1f else divisor)
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return ""
+                val time = factor * value + startDate
+                return SimpleDateFormat(Summit.DATE_FORMAT, requireContext().resources.configuration.locales[0])
+                        .format(Date(time.toLong()))
             }
         }
         return xAxis
     }
 
-    private fun setYAxis(yAxis: YAxis?) {
+    private fun setYAxisBarData(yAxis: YAxis?) {
         yAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return String.format(requireContext().resources.configuration.locales[0], "%.1f %s", value, unit)
+                return String.format(requireContext().resources.configuration.locales[0], "%.2f %s", value / max, unit)
+            }
+        }
+    }
+
+    private fun setYAxisLineData(yAxis: YAxis?) {
+        yAxis?.valueFormatter = object : ValueFormatter() {
+            override fun getFormattedValue(value: Float): String {
+                val decimalPlace = (value - ceil(value))
+                return if (decimalPlace == 0f) String.format(requireContext().resources.configuration.locales[0], "# %s", value.toInt()) else ""
             }
         }
     }
 
     private fun setGraphViewBarChart(dataSet: BarDataSet) {
         dataSet.setDrawValues(false)
-        dataSet.highLightColor = Color.RED
-        dataSet.color = Color.BLUE
+        dataSet.highLightColor = Color.GREEN
+        dataSet.colors = barChartEntries.map {
+            if ((it?.data as SolarIntensity).isForWholeDay) Color.BLUE else Color.RED
+        }
+        val legend = barChart?.legend
+        if (legend != null) {
+            legend.entries
+            legend.yEntrySpace = 10f
+            legend.isWordWrapEnabled = true
+            val legends = mutableListOf(
+                    LegendEntry(getString(R.string.part_day), Legend.LegendForm.CIRCLE, 9f, 5f, null, Color.YELLOW),
+                    LegendEntry(getString(R.string.whole_day), Legend.LegendForm.CIRCLE, 9f, 5f, null, Color.BLUE),
+                    LegendEntry(getString(R.string.activity_hint), Legend.LegendForm.CIRCLE, 9f, 5f, null, Color.BLACK),
+            )
+            legend.setCustom(legends)
+            legend.isEnabled = true
+        }
     }
 
     private fun selectedDataSpinner() {
@@ -161,12 +228,11 @@ class BarChartSolarFragment : Fragment() {
         val dateFormat: DateFormat = SimpleDateFormat(Summit.DATE_FORMAT, Locale.ENGLISH)
         val data = when (selectedXAxisSpinnerEntry) {
             XAxisSelector.Days -> {
-                val startDate = Date.from(LocalDate.now().minusDays(14).atStartOfDay(ZoneId.systemDefault()).toInstant())
-                solarIntensities?.filter { it.date.after(startDate) }
+                solarIntensities?.sortedBy { it.date }
             }
             XAxisSelector.Weeks -> {
                 solarIntensities
-                        ?.filter { it.date.after(Date.from(LocalDate.now().minusDays(84).atStartOfDay(ZoneId.systemDefault()).toInstant())) }
+                        ?.sortedBy { it.date }
                         ?.chunked(7)
                         ?.filter { it.isNotEmpty() }
                         ?.map { entries ->
@@ -177,12 +243,14 @@ class BarChartSolarFragment : Fragment() {
                                     sorted.sumByDouble { it.solarExposureInHours } / sorted.size,
                                     true)
                             newEntry.markerText = "${dateFormat.format(sorted.first().date)} - ${dateFormat.format(sorted.last().date)}"
+                            newEntry.activitiesOnDay = sorted.sumBy { it.activitiesOnDay }
                             newEntry
                         }
             }
             else -> {
                 val solarIntensitiesLocal: MutableList<SolarIntensity> = mutableListOf()
-                for (i in 0L until 11L) {
+                //TODO: until max date
+                for (i in 0L until 24L) {
                     val startDate = Date.from(YearMonth.now().minusMonths(i).atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant())
                     val endDate = Date.from(YearMonth.now().minusMonths(i).atEndOfMonth().atStartOfDay(ZoneId.systemDefault()).toInstant())
 
@@ -197,16 +265,22 @@ class BarChartSolarFragment : Fragment() {
                         SolarIntensity(0,
                                 startDate, 0.0, 0.0, true)
                     }
+                    newEntry.activitiesOnDay = entries?.sumBy { it.activitiesOnDay } ?: 0
                     newEntry.markerText = "${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}"
                     solarIntensitiesLocal.add(newEntry)
                 }
-                solarIntensitiesLocal.reversed()
+                solarIntensitiesLocal.sortedBy { it.date }
             }
         }
+        val maxBarChart = data?.map { selectedYAxisSpinnerEntry.getBinValue(it) }?.maxOrNull() ?: 1F
+        val maxLineChart = data?.map { it.activitiesOnDay.toFloat() }?.maxOrNull() ?: 1F
+        max = maxLineChart / (if (maxBarChart > 0f) maxBarChart else 1f)
         barChartEntries = data?.mapIndexed { index, entry ->
-            BarEntry(index.toFloat(), selectedYAxisSpinnerEntry.getBinValue(entry), entry)
+            BarEntry(index.toFloat(), selectedYAxisSpinnerEntry.getBinValue(entry) * max, entry)
         }?.toMutableList() ?: mutableListOf()
-
+        lineChartEntries = data?.mapIndexed { index, entry ->
+            Entry(index.toFloat() - 0.5F, entry.activitiesOnDay.toFloat(), entry)
+        }?.toMutableList() ?: mutableListOf()
         label = getString(selectedYAxisSpinnerEntry.nameId)
         unit = getString(selectedYAxisSpinnerEntry.unitId)
     }
@@ -254,7 +328,7 @@ class BarChartSolarFragment : Fragment() {
             try {
                 val entry = e?.data as SolarIntensity?
                 if (entry != null) {
-                    tvContent?.text = String.format("%s\n%.2f %s", entry.markerText, e?.y, unit)
+                    tvContent?.text = String.format("%s\n%.2f %s\n%.2f %s", entry.markerText, entry.solarIntensityInBatteryPerCent, getString(R.string.percent), entry.solarExposureInHours, getString(R.string.h))
                 } else {
                     tvContent?.text = ""
                 }
@@ -282,9 +356,9 @@ class BarChartSolarFragment : Fragment() {
     }
 
     enum class XAxisSelector(val nameId: Int) {
-        Days(R.string.days_14),
-        Weeks(R.string.weeks_12),
-        Months(R.string.month_12),
+        Days(R.string.days),
+        Weeks(R.string.weeks),
+        Months(R.string.months),
     }
 
     enum class YAxisSelector(val nameId: Int, val unitId: Int, val getBinValue: (SolarIntensity) -> Float) {

@@ -10,26 +10,20 @@ import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
-import de.drtobiasprinz.summitbook.models.SolarIntensity
 import de.drtobiasprinz.summitbook.models.Summit
 
 class CustomMarkerView(context: Context?, layoutResource: Int) : MarkerView(context, layoutResource) {
 
     private val tvContent: TextView? = findViewById(R.id.tvContent)
-    private var summit: Summit?  = null
+    private lateinit var summit: Summit
 
     var drawingPosX = 0f
     var drawingPosY = 0f
 
     override fun refreshContent(e: Entry?, highlight: Highlight?) {
         try {
-            if (e?.data is SolarIntensity) {
-                val intensity = e.data as SolarIntensity
-                tvContent?.text = String.format("%s\n%.1f h\n%.2f", intensity.getDateAsString(), intensity.solarExposureInHours, intensity.solarIntensityInBatteryPerCent)
-            } else {
-                summit = e?.data as Summit
-                tvContent?.text = String.format("%s\n%s\n%s hm", summit?.name, summit?.getDateAsString(), summit?.elevationData?.elevationGain)
-            }
+            summit = e?.data as Summit
+            tvContent?.text = String.format("%s\n%s\n%s hm", summit.name, summit.getDateAsString(), summit.elevationData.elevationGain)
         } catch (ex: Exception) {
             ex.printStackTrace()
         }
@@ -39,11 +33,9 @@ class CustomMarkerView(context: Context?, layoutResource: Int) : MarkerView(cont
 
     fun startIntent() {
         try {
-            if (summit != null) {
-                val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-                intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit?.id)
-                context.startActivity(intent)
-            }
+            val intent = Intent(context, SummitEntryDetailsActivity::class.java)
+            intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
+            context.startActivity(intent)
         } catch (e: NullPointerException) {
             // DO NOTHING
         }

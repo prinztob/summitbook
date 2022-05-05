@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook
 
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
@@ -106,6 +107,10 @@ class ReceiverActivity : AppCompatActivity(), FragmentResultReceiver {
             Log.i("ReceiverActivity", "intent was something else: ${intent.action}")
         }
 
+    }
+
+    override fun getContext(): Context {
+        return this
     }
 
     override fun getSortFilterHelper(): SortFilterHelper {

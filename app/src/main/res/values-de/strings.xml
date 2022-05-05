@@ -196,6 +196,8 @@
     <string name="tcx_switch_title">Lade tcx anstatt gpx herunter</string>
     <string name="current_year_summary">Aktiviere diese Option um das Standardverhalten nach dem Starten zu verändern</string>
     <string name="current_year_title">Zeige nur Gipfel des aktuellen Jahres</string>
+    <string name="startup_auto_update_summary">Aktiviere diese Option um Drittanbieter Daten beim Starten der App zu aktualisieren</string>
+    <string name="startup_auto_update_title">Aktualisiere Drittanbieter Daten beim Startup</string>
     <string name="annual_target_height_meter_summary">Bitte trege dein Jahresziel an zurückgelegten Höhenmeter ein</string>
     <string name="annual_target_height_meter_title">Jahresziel an zurückgelegten Höhenmeter</string>
     <string name="annual_target_kilometer_summary">Bitte trege dein Jahresziel an zurückgelegten Kilometern ein</string>
@@ -325,6 +327,7 @@
     <string name="color_code_selection">Wähle aus was für das Einfärben des Tracks verwendet werden soll</string>
     <string name="entry">Eintrag</string>
     <string name="update">Update</string>
+    <string name="update_3rd_part">Update Daten von Drittanbietern</string>
     <string name="unit">Einheit</string>
     <string name="current">Aktuell</string>
     <string name="last_12_month">Letzte 12 Monate</string>
@@ -366,8 +369,11 @@
     <string name="percent">%</string>
     <string name="h">h</string>
 
-    <string name="days_14">14 Tage</string>
-    <string name="weeks_12">12 Wochen</string>
-    <string name="month_12">12 Monaten</string>
+    <string name="days">Tage</string>
+    <string name="weeks">Wochen</string>
+    <string name="months">Monate</string>
     <string name="solar_power_fenix_6">Solarleistung Fenix 6</string>
+    <string name="part_day">Nicht vollständig</string>
+    <string name="whole_day">Ganzer Tag</string>
+    <string name="update_done">Update von Drittanbieterdaten durchgeführt</string>
 </resources>

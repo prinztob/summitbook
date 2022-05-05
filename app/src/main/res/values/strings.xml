@@ -191,6 +191,8 @@
     <string name="tcx_switch_title">Download tcx instead of gpx</string>
     <string name="current_year_summary">Turn this option to change the default behaviour at startup</string>
     <string name="current_year_title">Show entries of current year</string>
+    <string name="startup_auto_update_summary">Turn this option to update third party data at startup</string>
+    <string name="startup_auto_update_title">Update third party data at startup</string>
     <string name="annual_target_height_meter_summary">Please provide your annual target for elevation gain</string>
     <string name="annual_target_height_meter_title">Annual target for elevation gain</string>
     <string name="annual_target_kilometer_summary">Please provide your annual target for kilometers covered</string>
@@ -324,6 +326,7 @@
     <string name="color_code_selection">Select value used for color code</string>
     <string name="entry">Entry</string>
     <string name="update">Update</string>
+    <string name="update_3rd_part">Update third party data</string>
     <string name="unit">Unit</string>
     <string name="current">Current</string>
     <string name="last_12_month">Last 12 Month</string>
@@ -364,9 +367,12 @@
     <string name="map">Map </string>
     <string name="percent">%</string>
     <string name="h">h</string>
-    <string name="days_14">14 days</string>
-    <string name="weeks_12">12 weeks</string>
-    <string name="month_12">12 month</string>
+    <string name="days">days</string>
+    <string name="weeks">weeks</string>
+    <string name="months">months</string>
     <string name="solar_power_fenix_6">Solar power Fenix 6</string>
+    <string name="part_day">Part of day</string>
+    <string name="whole_day">Complete day</string>
+    <string name="update_done">Update of third party data done</string>
 
 </resources>

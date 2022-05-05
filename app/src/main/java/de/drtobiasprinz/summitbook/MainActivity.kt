@@ -179,8 +179,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
 
-        @Suppress("DEPRECATION")
-        AsyncUpdateGarminData(this).execute()
+        if (sharedPreferences.getBoolean("startup_auto_update_switch", false)) {
+            @Suppress("DEPRECATION")
+            AsyncUpdateGarminData(this).execute()
+        }
 
         if (viewedFragment == null) {
             extremaValuesAllSummits = ExtremaValuesSummits(sortFilterHelper.entries)
@@ -294,7 +296,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         .show()
             }
             R.id.nav_solar -> {
-                commitFragment(BarChartSolarFragment())
+                commitFragment(LineChartSolarFragment())
             }
             R.id.action_settings -> {
                 val intent = Intent(this, SettingsActivity::class.java)
@@ -403,6 +405,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             if (sortFilterHelper.entries.size > 0) {
                 sortFilterHelper.showDialog()
             }
+            return true
+        }
+
+        if (id == R.id.action_update) {
+            @Suppress("DEPRECATION")
+            AsyncUpdateGarminData(this).execute()
             return true
         }
         return super.onOptionsItemSelected(item)
@@ -678,6 +686,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         return sortFilterHelper
     }
 
+
+    override fun getContext(): Context {
+        return this
+    }
 
     override fun getSharedPreference(): SharedPreferences {
         return PreferenceManager.getDefaultSharedPreferences(this)

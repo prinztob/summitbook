@@ -20,4 +20,10 @@
         android:orderInCategory="1"
         android:title="@string/sort_entries"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/action_update"
+        android:icon="@drawable/ic_baseline_sync_24"
+        android:orderInCategory="1"
+        android:title="@string/update"
+        app:showAsAction="ifRoom" />
 </menu>
