@@ -13,4 +13,22 @@ data class SegmentDetails(
     fun getDisplayName(): String {
         return "$startPointName - $endPointName"
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as SegmentDetails
+
+        if (startPointName != other.startPointName) return false
+        if (endPointName != other.endPointName) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = startPointName.hashCode()
+        result = 31 * result + endPointName.hashCode()
+        return result
+    }
 }

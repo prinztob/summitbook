@@ -37,9 +37,10 @@ data class PointExtension(
         var cadence: Int? = null
         var temp: Double? = null
         var slope: Double? = null
+        var verticalVelocity: Double? = null
 
         fun build(): PointExtension {
-            return PointExtension(heartRate = heartRate, atemp = temp, cadence = cadence, power = power, speed = speed, distance = distanceMeters, slope = slope)
+            return PointExtension(heartRate = heartRate, atemp = temp, cadence = cadence, power = power, speed = speed, distance = distanceMeters, slope = slope, verticalVelocity = verticalVelocity)
         }
     }
 

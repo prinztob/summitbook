@@ -1,8 +1,10 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import android.util.Log
-import de.drtobiasprinz.summitbook.MainActivity.Companion.CSV_FILE_NAME
+import de.drtobiasprinz.summitbook.MainActivity.Companion.CSV_FILE_NAME_SEGMENTS
+import de.drtobiasprinz.summitbook.MainActivity.Companion.CSV_FILE_NAME_SUMMITS
 import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.models.Segment
 import de.drtobiasprinz.summitbook.models.Summit
 import java.io.*
 import java.nio.file.Files
@@ -15,6 +17,16 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
     var unsuccessful = 0
     var duplicate = 0
     val newSummits = arrayListOf<Summit>()
+
+    fun extractAndImport(inputStream: InputStream) {
+        extractZip(inputStream)
+        readFromCache()
+        newSummits.forEachIndexed { index, it ->
+            it.id = database.summitDao()?.addSummit(it) ?: 0L
+            readGpxFile(it)
+            readImageFile(it)
+        }
+    }
 
     fun extractZip(inputStream: InputStream) {
         ZipInputStream(BufferedInputStream(inputStream)).use { zipInputStream ->
@@ -38,33 +50,12 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
     }
 
     fun readFromCache() {
-        val inputCsvFile = File(baseDirectory, CSV_FILE_NAME)
+        val inputCsvFile = File(baseDirectory, CSV_FILE_NAME_SUMMITS)
+        val inputCsvFileSegments = File(baseDirectory, CSV_FILE_NAME_SEGMENTS)
         try {
-            val allSummits = database.summitDao()?.allSummit as MutableList<Summit>
-            val iStream: InputStream = FileInputStream(inputCsvFile)
-            BufferedReader(InputStreamReader(iStream)).use { br ->
-                var line: String?
-                while (br.readLine().also { line = it } != null) {
-                    var entry: Summit
-                    val lineLocal = line
-                    try {
-                        if (lineLocal != null && !lineLocal.startsWith("Date")) {
-                            entry = Summit.parseFromCsvFileLine(lineLocal)
-                            if (!entry.isDuplicate(allSummits)) {
-                                allSummits.add(entry)
-                                newSummits.add(entry)
-                                successful++
-                                Log.d("Line %s was added in db.", lineLocal)
-                            } else {
-                                duplicate++
-                                Log.d("Line %s is already db.", lineLocal)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        unsuccessful++
-                        e.printStackTrace()
-                    }
-                }
+            readSummits(inputCsvFile)
+            if (inputCsvFileSegments.exists()) {
+                readSegments(inputCsvFileSegments)
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -72,6 +63,60 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
             e.printStackTrace()
         }
     }
+
+    private fun readSummits(inputCsvFile: File) {
+        val allSummits = database.summitDao()?.allSummit as MutableList<Summit>
+        val iStream: InputStream = FileInputStream(inputCsvFile)
+        BufferedReader(InputStreamReader(iStream)).use { br ->
+            var line: String?
+            while (br.readLine().also { line = it } != null) {
+                var entry: Summit
+                val lineLocal = line
+                try {
+                    if (lineLocal != null && !lineLocal.startsWith("Activity") && !lineLocal.startsWith("required")) {
+                        entry = Summit.parseFromCsvFileLine(lineLocal)
+                        if (!entry.isDuplicate(allSummits)) {
+                            allSummits.add(entry)
+                            newSummits.add(entry)
+                            successful++
+                            Log.d("Line %s was added in db.", lineLocal)
+                        } else {
+                            duplicate++
+                            Log.d("Line %s is already db.", lineLocal)
+                        }
+                    }
+                } catch (e: Exception) {
+                    unsuccessful++
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+    private fun readSegments(inputCsvFile: File) {
+        val segments = database.segmentsDao()?.getAllSegments() as MutableList<Segment>
+        val iStream: InputStream = FileInputStream(inputCsvFile)
+        BufferedReader(InputStreamReader(iStream)).use { br ->
+            var line: String?
+            while (br.readLine().also { line = it } != null) {
+                val lineLocal = line
+                try {
+                    if (lineLocal != null && !lineLocal.startsWith("Start")) {
+                        val added = Segment.parseFromCsvFileLine(lineLocal, segments, database)
+                        if (added) {
+                            Log.d("Line %s was added in db.", lineLocal)
+                        } else {
+                            Log.d("Line %s is already db.", lineLocal)
+                        }
+                    }
+                } catch (e: Exception) {
+                    unsuccessful++
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
 
     @Throws(IOException::class)
     fun readGpxFile(entry: Summit) {

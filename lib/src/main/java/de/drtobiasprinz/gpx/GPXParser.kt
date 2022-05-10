@@ -15,8 +15,10 @@ import de.drtobiasprinz.gpx.PointExtension.Companion.TAG_DISTANCE
 import de.drtobiasprinz.gpx.PointExtension.Companion.TAG_EXTENSIONS
 import de.drtobiasprinz.gpx.PointExtension.Companion.TAG_HR
 import de.drtobiasprinz.gpx.PointExtension.Companion.TAG_POWER
+import de.drtobiasprinz.gpx.PointExtension.Companion.TAG_SLOPE
 import de.drtobiasprinz.gpx.PointExtension.Companion.TAG_SPEED
 import de.drtobiasprinz.gpx.PointExtension.Companion.TAG_TRACK_POINT_EXTENSIONS
+import de.drtobiasprinz.gpx.PointExtension.Companion.TAG_VERT_VELOCITY
 import de.drtobiasprinz.gpx.Route.Companion.TAG_ROUTE
 import de.drtobiasprinz.gpx.RoutePoint.Companion.TAG_ROUTE_POINT
 import de.drtobiasprinz.gpx.Time.Companion.TAG_TIME
@@ -264,6 +266,8 @@ class GPXParser {
                 TAG_POWER -> extensionBuilder.power = readString(parser, TAG_POWER).toInt()
                 TAG_SPEED -> extensionBuilder.speed = readString(parser, TAG_SPEED).toDouble()
                 TAG_ATEMP -> extensionBuilder.temp = readString(parser, TAG_ATEMP).toDouble()
+                TAG_SLOPE -> extensionBuilder.slope = readString(parser, TAG_SLOPE).toDouble()
+                TAG_VERT_VELOCITY -> extensionBuilder.verticalVelocity = readString(parser, TAG_VERT_VELOCITY).toDouble()
                 else -> skip(parser)
             }
         }

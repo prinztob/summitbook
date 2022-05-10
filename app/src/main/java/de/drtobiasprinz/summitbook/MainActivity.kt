@@ -9,7 +9,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.content.res.Resources
 import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
@@ -42,6 +41,7 @@ import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.*
 import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.Poster
+import de.drtobiasprinz.summitbook.models.Segment
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
@@ -49,17 +49,12 @@ import de.drtobiasprinz.summitbook.ui.PosterOverlayView
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
-import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
-import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
-import de.drtobiasprinz.summitbook.ui.utils.AsyncUpdateGarminData
-import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
-import java.io.*
+import de.drtobiasprinz.summitbook.ui.utils.*
+import java.io.File
 import java.time.LocalDate
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 import kotlin.math.round
 
 
@@ -463,7 +458,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var extremaValuesAllSummits: ExtremaValuesSummits? = null
 
         @kotlin.jvm.JvmField
-        var CSV_FILE_NAME: String = "de-prinz-summitbook-export.csv"
+        var CSV_FILE_NAME_SUMMITS: String = "de-prinz-summitbook-export.csv"
+
+        @kotlin.jvm.JvmField
+        var CSV_FILE_NAME_SEGMENTS: String = "de-prinz-summitbook-export-segments.csv"
 
         @kotlin.jvm.JvmField
         var storage: File? = null
@@ -577,23 +575,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         @SuppressLint("StaticFieldLeak")
         class AsyncExportZipFile(val context: Context, private val progressBar: ProgressBar,
                                  val entries: List<Summit>, private val resultData: Intent?,
+                                 val segments: List<Segment>?,
                                  private val exportThirdPartyData: Boolean = true,
                                  private val exportCalculatedData: Boolean = true) : AsyncTask<Uri, Int?, Void?>() {
-            private var entryNumber = 0
-            private var withImages = 0
-            private var withGpsFile = 0
+            private lateinit var writer: ZipFileWriter
 
             override fun doInBackground(vararg uri: Uri): Void? {
-                writeToZipFile(entries, resultData, context.resources, exportThirdPartyData, exportCalculatedData)
-                return null
-            }
-
-            override fun onProgressUpdate(vararg values: Int?) {
-                super.onProgressUpdate(*values)
-                val percent = values[0]
-                if (percent != null) {
-                    progressBar.progress = percent
+                resultData?.data?.also { resultDataUri ->
+                    writer = ZipFileWriter(entries, segments, context, exportThirdPartyData, exportCalculatedData)
+                    context.contentResolver.openOutputStream(resultDataUri)?.let { writer.writeToZipFile(it) }
                 }
+                return null
             }
 
             override fun onPostExecute(param: Void?) {
@@ -601,75 +593,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 AlertDialog.Builder(context)
                         .setTitle(context.getString(R.string.export_csv_summary_title))
                         .setMessage(context.getString(R.string.export_csv_summary_text,
-                                entries.size.toString(), withGpsFile.toString(), withImages.toString()))
+                                entries.size.toString(), writer.withGpsFile.toString(), writer.withImages.toString()))
                         .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
                         .setIcon(android.R.drawable.ic_dialog_info)
                         .show()
             }
-
-            private fun writeToZipFile(entries: List<Summit>, resultData: Intent?,
-                                       resources: Resources, exportThirdPartyData: Boolean,
-                                       exportCalculatedData: Boolean) {
-                val sb = StringBuilder()
-
-                sb.append(Summit.getCsvHeadline(resources, exportThirdPartyData))
-                sb.append(Summit.getCsvDescription(resources, exportThirdPartyData))
-                for (entry in entries) {
-                    sb.append(entry.getStringRepresentation(exportThirdPartyData, exportCalculatedData))
-                }
-                val dir = cache
-                if (dir != null) {
-                    val csvFile = writeToFile(dir, sb.toString())
-                    resultData?.data?.also { uri ->
-                        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                            ZipOutputStream(BufferedOutputStream(outputStream)).use { out ->
-                                addFileToZip(csvFile, csvFile.name, out)
-                                for (summit in entries) {
-                                    Log.i("MainActivity.writeToZipFile", "Write summit $summit to zipFile")
-                                    entryNumber += 1
-                                    if (summit.hasGpsTrack()) {
-                                        val file = summit.getGpsTrackPath().toFile()
-                                        addFileToZip(file, summit.getExportTrackPath(), out)
-                                        withGpsFile += 1
-                                    }
-                                    if (summit.hasImagePath()) {
-                                        for ((i, imageId) in summit.imageIds.withIndex()) {
-                                            val file = summit.getImagePath(imageId).toFile()
-                                            addFileToZip(file, summit.getExportImagePath(1001 + i), out)
-                                            withImages += 1
-                                        }
-                                    }
-                                    publishProgress(round(entryNumber.toDouble() / entries.size * 100.0).toInt())
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            private fun writeToFile(downloadDirectory: File, data: String): File {
-                val file = File(downloadDirectory, CSV_FILE_NAME)
-                try {
-                    FileOutputStream(file).use { stream -> stream.write(data.toByteArray()) }
-                } catch (e: IOException) {
-                    Log.e("Exception", "File write failed: $e")
-                }
-                return file
-            }
-
-            private fun addFileToZip(file: File?, fileName: String, out: ZipOutputStream) {
-                if (file != null) {
-                    FileInputStream(file).use { fi ->
-                        BufferedInputStream(fi).use { origin ->
-                            val entry = ZipEntry(fileName)
-                            out.putNextEntry(entry)
-                            origin.copyTo(out, 1024)
-                        }
-                    }
-                }
-            }
-
-
         }
 
     }
@@ -746,24 +674,25 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private val resultLauncherForExportZipAllSummits = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val progressBarZip = findViewById<ProgressBar>(R.id.progressBarZip)
+            val progressBarZip = findViewById<ProgressBar>(R.id.progressBarDownload)
             progressBarZip.visibility = View.VISIBLE
             val exportThirdPartyData = sharedPreferences.getBoolean("export_third_party_data", true)
             val exportCalculatedData = sharedPreferences.getBoolean("export_calculated_data", true)
+            val segments = database.segmentsDao()?.getAllSegments()
 
             @Suppress("DEPRECATION")
-            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.entries, result.data, exportThirdPartyData, exportCalculatedData).execute()
+            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.entries, result.data, segments, exportThirdPartyData, exportCalculatedData).execute()
         }
     }
     private val resultLauncherForExportZipFilteredSummits = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val progressBarZip = findViewById<ProgressBar>(R.id.progressBarZip)
+            val progressBarZip = findViewById<ProgressBar>(R.id.progressBarDownload)
             progressBarZip.visibility = View.VISIBLE
             val exportThirdPartyData = sharedPreferences.getBoolean("export_third_party_data", true)
             val exportCalculatedData = sharedPreferences.getBoolean("export_calculated_data", true)
-
+            val segments = database.segmentsDao()?.getAllSegments()
             @Suppress("DEPRECATION")
-            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.filteredEntries, result.data, exportThirdPartyData, exportCalculatedData).execute()
+            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.filteredEntries, result.data, segments, exportThirdPartyData, exportCalculatedData).execute()
         }
     }
 
