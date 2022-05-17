@@ -36,7 +36,7 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSetting
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
-import de.drtobiasprinz.summitbook.ui.utils.SummitSlope
+import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
 import org.osmdroid.api.IGeoPoint
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
@@ -89,7 +89,7 @@ class AddSegmentEntryFragment : Fragment() {
         osMap = root.findViewById(R.id.osmap)
         setTileSource(selectedItem, osMap)
         root.findViewById<com.google.android.material.button.MaterialButton>(R.id.cancel).setOnClickListener {
-            activity?.supportFragmentManager?.popBackStack();
+            activity?.supportFragmentManager?.popBackStack()
         }
         root.findViewById<com.google.android.material.button.MaterialButton>(R.id.save).setOnClickListener {
             val summit = summitToCompare
@@ -104,7 +104,7 @@ class AddSegmentEntryFragment : Fragment() {
                 segmentsViewAdapter?.segments?.first { it.segmentDetails.segmentDetailsId == segmentId }?.segmentEntries?.add(segmentEntryLocal)
                 segmentsViewAdapter?.notifyDataSetChanged()
             }
-            activity?.supportFragmentManager?.popBackStack();
+            activity?.supportFragmentManager?.popBackStack()
         }
 
         root.findViewById<SwitchCompat>(R.id.startOrStop).setOnCheckedChangeListener { _, isChecked ->
@@ -188,8 +188,8 @@ class AddSegmentEntryFragment : Fragment() {
             val averagePower = selectedTrackPoints.sumBy {
                 it.extension?.power ?: 0
             } / selectedTrackPoints.size
-            val pointsOnlyWithMaximalValues = SummitSlope.keepOnlyMaximalValues(selectedTrackPoints)
-            val heightMeterResult = SummitSlope.removeDeltasSmallerAs(10, pointsOnlyWithMaximalValues)
+            val pointsOnlyWithMaximalValues = TrackUtils.keepOnlyMaximalValues(selectedTrackPoints)
+            val heightMeterResult = TrackUtils.removeDeltasSmallerAs(10, pointsOnlyWithMaximalValues)
 
             val duration = ((endTrackPoint.time ?: 0L) - (startTrackPoint.time
                     ?: 0L)).toDouble() / 60000.0
@@ -376,15 +376,15 @@ class AddSegmentEntryFragment : Fragment() {
         val trackGeoPoints = gpsTrack?.trackGeoPoints
         if (trackGeoPoints != null && trackGeoPoints.isNotEmpty()) {
             osMap.overlays.remove(pointOverlay)
-            val filteredPoints = ArrayList<IGeoPoint>();
+            val filteredPoints = ArrayList<IGeoPoint>()
             for ((i, point) in trackGeoPoints.withIndex()) {
                 if (i > startPointId - 30 && i < endPointId + 30) {
-                    filteredPoints.add(LabelledGeoPoint(point.latitude, point.longitude, i.toString()));
+                    filteredPoints.add(LabelledGeoPoint(point.latitude, point.longitude, i.toString()))
                 }
             }
-            val pt = SimplePointTheme(filteredPoints, true);
+            val pt = SimplePointTheme(filteredPoints, true)
 
-            val textStyle = Paint();
+            val textStyle = Paint()
             textStyle.style = Paint.Style.FILL
             textStyle.color = Color.BLACK
             textStyle.textAlign = Paint.Align.CENTER
@@ -403,7 +403,7 @@ class AddSegmentEntryFragment : Fragment() {
                     .setCellSize(20)
                     .setMinZoomShowLabels(19)
                     .setTextStyle(textStyle)
-            pointOverlay = SimpleFastPointOverlay(pt, opt);
+            pointOverlay = SimpleFastPointOverlay(pt, opt)
             pointOverlay?.setOnClickListener { _: SimpleFastPointOverlay.PointAdapter, i: Int ->
                 val indexOfTrackPoint = (filteredPoints[i] as LabelledGeoPoint).label.toInt()
                 if (startSelected) {
@@ -412,7 +412,7 @@ class AddSegmentEntryFragment : Fragment() {
                     setEndMarker(indexOfTrackPoint)
                 }
             }
-            osMap.overlays?.add(pointOverlay);
+            osMap.overlays?.add(pointOverlay)
         }
     }
 

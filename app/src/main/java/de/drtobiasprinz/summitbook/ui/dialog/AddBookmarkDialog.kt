@@ -34,7 +34,7 @@ import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader.Companion.getTempGpsFilePath
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
 import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
-import de.drtobiasprinz.summitbook.ui.utils.SummitSlope
+import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
 import org.xmlpull.v1.XmlPullParserException
 import java.io.File
 import java.io.IOException
@@ -312,8 +312,6 @@ class AddBookmarkDialog(private val gpxTrackUrl: Uri? = null) : DialogFragment()
                         if (gpsTrack.hasNoTrackPoints()) {
                             gpsTrack.parseTrack(useSimplifiedIfExists = false)
                         }
-                        val slopeCalculator = SummitSlope(gpsTrack.trackPoints)
-                        entry.elevationData.maxSlope = slopeCalculator.calculateMaxSlope()
                     }
                     val gpxPyJsonFile = entry.getGpxPyPath().toFile()
                     if (gpxPyJsonFile.exists()) {

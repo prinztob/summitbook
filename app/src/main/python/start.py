@@ -1,14 +1,13 @@
-import gpxpy.gpx
 import json
 import os
 from datetime import date
-
 from garminconnect import (
     Garmin,
     GarminConnectConnectionError,
     GarminConnectTooManyRequestsError,
     GarminConnectAuthenticationError,
 )
+from track_analyzer import TrackAnalyzer
 
 BASE_URL = 'https://connect.garmin.com'
 
@@ -227,43 +226,14 @@ def update_power_data(activity, api, date):
         activity['maxAvgPower_18000'] = power_data['entries'][14]['power']
 
 
-suffix = "_simplified"
-
-
-def prefix_filename(fn: str, prefix: str) -> str:
-    return fn.replace(".gpx", prefix + ".gpx")
-
-
-def get_gpx_data(gpx):
-    extremes = gpx.get_elevation_extremes()
-    gpx.smooth()
-    moving_data = gpx.get_moving_data()
-    uphill_downhill = gpx.get_uphill_downhill()
-    return {
-        "duration": gpx.get_duration(),
-        "min_elevation": extremes.minimum,
-        "max_elevation": extremes.maximum,
-        "number_points": gpx.get_points_no(),
-        "elevation_gain": uphill_downhill.uphill,
-        "elevation_loss": uphill_downhill.downhill,
-        "moving_time": moving_data.moving_time,
-        "moving_distance": moving_data.moving_distance,
-        "max_speed": moving_data.max_speed,
-    }
 
 
 def analyze_gpx_track(path):
     try:
-        gpx_file = open(path, 'r')
-        gpx_file_simplified = prefix_filename(path, suffix)
-        gpx_file_gpxpy = path.replace(".gpx", "_gpxpy.json")
-        gpx = gpxpy.parse(gpx_file)
-        data = get_gpx_data(gpx)
-        with open(gpx_file_gpxpy, 'w') as fp:
-            json.dump(data, fp, indent=4)
-        gpx.simplify()
-        with open(gpx_file_simplified, 'w') as f:
-            f.write(gpx.to_xml())
+        analyzer = TrackAnalyzer(path)
+        analyzer.analyze()
+        analyzer.get_maximal_values()
+        analyzer.write_file()
         return "return code: 0"
     except Exception as err:  # pylint: disable=broad-except
         return "return code: 1Unknown error occurred %s" % err

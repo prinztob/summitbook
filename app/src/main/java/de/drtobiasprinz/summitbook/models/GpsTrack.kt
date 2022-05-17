@@ -15,7 +15,6 @@ import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.getDistance
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.setDistanceFromPoints
-import de.drtobiasprinz.summitbook.ui.utils.SummitSlope
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Polyline
@@ -27,7 +26,6 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
-import java.lang.NumberFormatException
 import java.nio.file.Path
 import java.util.*
 import kotlin.collections.ArrayList
@@ -73,7 +71,6 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             osMapRoute?.outlinePaint?.strokeCap = Paint.Cap.ROUND
             val paintBorder = Paint()
             paintBorder.strokeWidth = 20F
-            val summitSlope = SummitSlope(trackPoints)
             when (selectedCustomizeTrackItem) {
                 TrackColor.Mileage -> {
                     setUsedPoints()
@@ -83,24 +80,6 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                     managers.add(getHalfKilometerManager())
                     managers.add(getKilometerManager())
                     osMapRoute?.setMilestoneManagers(managers)
-                }
-                TrackColor.Elevation -> {
-                    setUsedPoints(selectedCustomizeTrackItem.f)
-                    addColorToTrack(paintBorder, selectedCustomizeTrackItem)
-                }
-                TrackColor.Slope -> {
-                    if (trackPoints.none { it.extension?.slope != null }) {
-                        summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0, factor = 100)
-                    }
-                    setUsedPoints(selectedCustomizeTrackItem.f)
-                    addColorToTrack(paintBorder, selectedCustomizeTrackItem)
-                }
-                TrackColor.VerticalSpeed -> {
-                    if (trackPoints.none { it.extension?.verticalVelocity != null }) {
-                        summitSlope.calculateMaxVerticalVelocity()
-                    }
-                    setUsedPoints(selectedCustomizeTrackItem.f)
-                    addColorToTrack(paintBorder, selectedCustomizeTrackItem)
                 }
                 TrackColor.None -> {
                     setUsedPoints()
@@ -121,7 +100,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
     private fun setUsedPoints(f: (TrackPoint) -> Double?) {
-        usedTrackPoints = trackPoints.filter { f(it) != 0.0 } as MutableList<TrackPoint>
+        usedTrackPoints = trackPoints.filter { f(it) != null } as MutableList<TrackPoint>
         usedTrackGeoPoints = usedTrackPoints.map { GeoPoint(it.lat, it.lon) } as MutableList<GeoPoint>
     }
 
@@ -289,13 +268,12 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         }
     }
 
-    fun getTrackSlopeGraph(binSizeMeter: Double = 100.0): MutableList<Entry> {
+    fun getTrackSlopeGraph(): MutableList<Entry> {
         if (trackPoints.first().extension?.distance == null) {
             setDistance()
         }
-        val summitSlope = SummitSlope(trackPoints)
-        summitSlope.calculateMaxSlope(binSizeMeter, requiredR2 = 0.0)
-        return summitSlope.slopeGraph
+        //TODO
+        return mutableListOf()
     }
 
     fun getHighestElevation(): TrackPoint? {
@@ -365,10 +343,6 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             override fun doInBackground(vararg uri: Uri): Void? {
                 track = getTrack(fileToUse)
                 trackPoints = getTrackPoints(track)
-//              TODO: fix stackOverflow Exception
-//                val summitSlope = SummitSlope(trackPoints)
-//                summitSlope.calculateMaxSlope(50.0, requiredR2 = 0.0, factor = 100)
-//                summitSlope.calculateMaxVerticalVelocity()
                 trackGeoPoints = getGeoPoints(trackPoints)
                 return null
             }

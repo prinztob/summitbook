@@ -13,8 +13,8 @@ import android.widget.*
 import androidx.fragment.app.DialogFragment
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.MainActivity.Companion.activitiesDir
+import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.models.ElevationData
 import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.Summit
@@ -23,7 +23,6 @@ import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
 import de.drtobiasprinz.summitbook.ui.utils.MaxVelocitySummit
 import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
-import de.drtobiasprinz.summitbook.ui.utils.SummitSlope
 import java.io.File
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -51,7 +50,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         updateDataButton = view.findViewById(R.id.update_data)
         deleteDataButton = view.findViewById(R.id.delete_data)
         backButton = view.findViewById(R.id.back)
-        if (savedInstanceState != null &&  summitEntry == null) {
+        if (savedInstanceState != null && summitEntry == null) {
             val summitEntryId = savedInstanceState.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
             summitEntry = resultReceiver.getSortFilterHelper().database.summitDao()?.getSummit(summitEntryId)
         }
@@ -72,32 +71,6 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             }
             backButton.setOnClickListener {
                 dialog?.cancel()
-            }
-            if (localSummitEntry.hasGpsTrack()) {
-                localSummitEntry.setGpsTrack(useSimplifiedTrack = false, updateTrack = true)
-                val gpsTrack = localSummitEntry.gpsTrack
-                if (gpsTrack != null) {
-                    if (gpsTrack.hasNoTrackPoints()) {
-                        gpsTrack.parseTrack(useSimplifiedIfExists = false)
-                    }
-                    val slopeCalculator = SummitSlope(gpsTrack.trackPoints)
-                    tableEntries.add(TableEntry(getString(R.string.max_slope),
-                            if (localSummitEntry.elevationData.maxSlope > 0.0) localSummitEntry.elevationData.maxSlope else slopeCalculator.calculateMaxSlope(),
-                            "%", localSummitEntry.elevationData.maxSlope > 0.0,
-                            { e -> localSummitEntry.elevationData.maxSlope = e }))
-                    tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_1Min),
-                            if (localSummitEntry.elevationData.maxVerticalVelocity1Min > 0.0) localSummitEntry.elevationData.maxVerticalVelocity1Min else slopeCalculator.calculateMaxVerticalVelocity(60.0),
-                            "m/s", localSummitEntry.elevationData.maxVerticalVelocity1Min > 0.0,
-                            { e -> localSummitEntry.elevationData.maxVerticalVelocity1Min = e }, scaleFactor = 60))
-                    tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_10Min),
-                            if (localSummitEntry.elevationData.maxVerticalVelocity10Min > 0.0) localSummitEntry.elevationData.maxVerticalVelocity10Min else slopeCalculator.calculateMaxVerticalVelocity(600.0),
-                            "m/s", localSummitEntry.elevationData.maxVerticalVelocity10Min > 0.0,
-                            { e -> localSummitEntry.elevationData.maxVerticalVelocity10Min = e }, scaleFactor = 600))
-                    tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_1h),
-                            if (localSummitEntry.elevationData.maxVerticalVelocity1h > 0.0) localSummitEntry.elevationData.maxVerticalVelocity1h else slopeCalculator.calculateMaxVerticalVelocity(3600.0),
-                            "m/s", localSummitEntry.elevationData.maxVerticalVelocity1h > 0.0,
-                            { e -> localSummitEntry.elevationData.maxVerticalVelocity1h = e }, scaleFactor = 3600))
-                }
             }
             if (localSummitEntry.garminData != null && localSummitEntry.garminData?.activityId != null) {
                 val splitsFile = File("${activitiesDir?.absolutePath}/activity_${localSummitEntry.garminData?.activityId}_splits.json")
@@ -205,11 +178,43 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                 val maxVelocity = gpxPyJson.getAsJsonPrimitive("max_speed").asDouble * 3.6
                 if (maxVelocity > 0) {
                     tableEntries.add(TableEntry(getString(R.string.top_speed),
-                            maxVelocity,
-                            "hm/h", abs(localSummitEntry.velocityData.maxVelocity - maxVelocity) < 0.05,
+                            maxVelocity, "hm/h",
+                            abs(localSummitEntry.velocityData.maxVelocity - maxVelocity) < 0.05,
                             { e -> localSummitEntry.velocityData.maxVelocity = e },
                             localSummitEntry.velocityData.maxVelocity)
                     )
+                }
+                if (gpxPyJson.has("slope_100")) {
+                    val value = gpxPyJson.getAsJsonPrimitive("slope_100").asDouble
+                    tableEntries.add(TableEntry(getString(R.string.max_slope),
+                            value, "%",
+                            abs(localSummitEntry.elevationData.maxSlope - value) < 0.05,
+                            { e -> localSummitEntry.elevationData.maxSlope = e },
+                            0.0))
+                }
+                if (gpxPyJson.has("vertical_velocities_60s")) {
+                    val value = gpxPyJson.getAsJsonPrimitive("vertical_velocities_60s").asDouble
+                    tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_1Min),
+                            value, "m",
+                            localSummitEntry.elevationData.maxVerticalVelocity1Min != 0.0 && abs(localSummitEntry.elevationData.maxVerticalVelocity1Min - value) * 60 < 0.05,
+                            { e -> localSummitEntry.elevationData.maxVerticalVelocity1Min = e },
+                            0.0, scaleFactor = 60))
+                }
+                if (gpxPyJson.has("vertical_velocities_600s")) {
+                    val value = gpxPyJson.getAsJsonPrimitive("vertical_velocities_600s").asDouble
+                    tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_10Min),
+                            value, "m",
+                            localSummitEntry.elevationData.maxVerticalVelocity10Min != 0.0 && abs(localSummitEntry.elevationData.maxVerticalVelocity10Min - value) * 600 < 0.05,
+                            { e -> localSummitEntry.elevationData.maxVerticalVelocity10Min = e },
+                            0.0, scaleFactor = 600))
+                }
+                if (gpxPyJson.has("vertical_velocities_3600s")) {
+                    val value = gpxPyJson.getAsJsonPrimitive("vertical_velocities_3600s").asDouble
+                    tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_1h),
+                            value, "m",
+                            localSummitEntry.elevationData.maxVerticalVelocity1h != 0.0 && abs(localSummitEntry.elevationData.maxVerticalVelocity1h - value) * 3600 < 0.05,
+                            { e -> localSummitEntry.elevationData.maxVerticalVelocity1h = e },
+                            0.0, scaleFactor = 3600))
                 }
             }
             tableLayout = view.findViewById(R.id.tableSummits) as TableLayout

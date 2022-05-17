@@ -151,7 +151,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (useSimplifiedTracks) {
             val entriesWithoutSimplifiedGpxTrack = sortFilterHelper.entries.filter {
                 it.hasGpsTrack() && !it.hasGpsTrack(simplified = true)
-            }.take(100)
+            }.take(50)
             pythonInstance.let {
                 if (it != null) {
                     @Suppress("DEPRECATION")

@@ -317,7 +317,7 @@ class SummitEntryDataFragment : Fragment() {
                         digits: Int = 1, factor: Int = 1, f: (Summit) -> Number?) {
         val value = f(summit) ?: (if (f(summit) is Int) 0 else 0.0)
         val valueToCompare = if (compareSummit != null) f(compareSummit) else (if (f(summit) is Int) 0 else 0.0)
-        if (abs(value.toDouble()) < 0.01) {
+        if (abs(value.toDouble() * factor) < 0.01) {
             descriptionTextView.visibility = View.GONE
             valueTextView.visibility = View.GONE
         } else {

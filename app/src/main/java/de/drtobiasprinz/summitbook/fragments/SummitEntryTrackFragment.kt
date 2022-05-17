@@ -207,7 +207,7 @@ class SummitEntryTrackFragment : Fragment() {
             }
             val localGpsTrack = gpsTrack
             if (localGpsTrack?.trackPoints?.isNotEmpty() == true && trackSlopeGraph.isNullOrEmpty()) {
-                trackSlopeGraph = localGpsTrack.getTrackSlopeGraph(binSizeMeter = trackSlopeGraphBinSize)
+                trackSlopeGraph = localGpsTrack.getTrackSlopeGraph()
             }
         }
     }
