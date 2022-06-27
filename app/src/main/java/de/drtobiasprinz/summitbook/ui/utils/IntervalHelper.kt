@@ -5,9 +5,6 @@ import de.drtobiasprinz.summitbook.models.Summit
 import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.ZoneId
 import java.util.*
 import kotlin.math.ceil
 
@@ -30,6 +27,8 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
     var participantsAnnotation: MutableList<Float> = mutableListOf()
     var equipments: MutableList<String> = mutableListOf()
     var equipmentsAnnotation: MutableList<Float> = mutableListOf()
+    var countries: MutableList<String> = mutableListOf()
+    var countriesAnnotation: MutableList<Float> = mutableListOf()
     fun setSelectedYear(selectedYear: String?) {
         this.selectedYear = selectedYear
     }
@@ -91,6 +90,15 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
             equipments = countsPerEquipments.toList().sortedByDescending { (_, value) -> value }.take(12).toMap().map { (key, _) -> key } as MutableList<String>
             equipments.add("")
             equipmentsAnnotation = (0 until equipments.size).map { it.toFloat() } as MutableList<Float>
+        }
+        if (countries.isEmpty()) {
+            val all = summitEntries.flatMap { it.countries }.filter { it != "" }
+            val countsPerCountry = all.toSet().map { name ->
+                name to all.filter { it == name }.count()
+            }
+            countries = countsPerCountry.toList().sortedByDescending { (_, value) -> value }.take(12).toMap().map { (key, _) -> key } as MutableList<String>
+            countries.add("")
+            countriesAnnotation = (0 until countries.size).map { it.toFloat() } as MutableList<Float>
         }
     }
 

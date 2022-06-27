@@ -16,7 +16,6 @@ import de.drtobiasprinz.summitbook.models.Summit
 class CustomMarkerViewSolarIntensity(context: Context?, layoutResource: Int) : MarkerView(context, layoutResource) {
 
     private val tvContent: TextView? = findViewById(R.id.tvContent)
-    private lateinit var summit: Summit
 
     var drawingPosX = 0f
     var drawingPosY = 0f
@@ -37,15 +36,6 @@ class CustomMarkerViewSolarIntensity(context: Context?, layoutResource: Int) : M
 
     private val uiScreenWidth = resources.displayMetrics.widthPixels
 
-    fun startIntent() {
-        try {
-            val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-            intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
-            context.startActivity(intent)
-        } catch (e: NullPointerException) {
-            // DO NOTHING
-        }
-    }
 
     override fun draw(canvas: Canvas?, posX: Float, posY: Float) {
         var newPosX = posX

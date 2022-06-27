@@ -40,7 +40,6 @@ class LineChartSolarFragment : Fragment() {
     private var lineChartEntriesSolarExposure: MutableList<Entry?> = mutableListOf()
     private var lineChartEntriesActivities: MutableList<Entry?> = mutableListOf()
     private var summits: java.util.ArrayList<Summit>? = null
-    private var maxBatteryExposure: Float = 1F
     private var dataSpinner: Spinner? = null
     private var lineChartSpinnerEntry: XAxisSelector = XAxisSelector.Days
     private var lineChartView: View? = null
@@ -173,18 +172,14 @@ class LineChartSolarFragment : Fragment() {
                 solarIntensitiesLocal.sortedBy { it.date }
             }
         }
-        val maxExposureInHours = data?.map { it.solarExposureInHours.toFloat() }?.maxOrNull() ?: 1F
-        val maxBatteryGain = data?.map { it.solarUtilizationInHours.toFloat() }?.maxOrNull()
-                ?: 1F
-        maxBatteryExposure = maxBatteryGain / (if (maxExposureInHours > 0f) maxExposureInHours else 1f)
         lineChartEntriesBatteryGain = data?.mapIndexed { index, entry ->
             Entry(index.toFloat(), (entry.solarUtilizationInHours).toFloat(), entry)
         }?.toMutableList() ?: mutableListOf()
         lineChartEntriesSolarExposure = data?.mapIndexed { index, entry ->
-            Entry(index.toFloat(), (entry.solarExposureInHours * maxBatteryExposure).toFloat(), entry)
+            Entry(index.toFloat(), (entry.solarExposureInHours).toFloat(), entry)
         }?.toMutableList() ?: mutableListOf()
         lineChartEntriesActivities = data?.mapIndexed { index, entry ->
-            Entry(index.toFloat() - 0.5F, entry.activitiesOnDay.toFloat() * maxBatteryExposure, entry)
+            Entry(index.toFloat() - 0.5F, entry.activitiesOnDay.toFloat(), entry)
         }?.toMutableList() ?: mutableListOf()
         val lastEntry = lineChartEntriesActivities.last()
         if (lastEntry != null) {
@@ -209,7 +204,7 @@ class LineChartSolarFragment : Fragment() {
         yAxis?.textSize = 12f
         yAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return String.format(requireContext().resources.configuration.locales[0], "%.1f h", value / maxBatteryExposure)
+                return String.format(requireContext().resources.configuration.locales[0], "%.1f h", value)
             }
         }
     }
@@ -274,23 +269,6 @@ class LineChartSolarFragment : Fragment() {
         dataSpinner?.adapter = dateAdapter
     }
 
-    inner class CustomMarkerView(context: Context?, layoutResource: Int) : MarkerView(context, layoutResource) {
-        private val tvContent: TextView? = findViewById(R.id.tvContent)
-
-        override fun refreshContent(e: Entry?, highlight: Highlight?) {
-            try {
-                val entry = e?.data as SolarIntensity?
-                if (entry != null) {
-                    tvContent?.text = String.format("%s\n%.2f %s\n%.2f %s", entry.markerText, entry.solarUtilizationInHours, getString(R.string.percent), entry.solarExposureInHours, getString(R.string.h))
-                } else {
-                    tvContent?.text = ""
-                }
-            } catch (ex: Exception) {
-                tvContent?.text = ""
-                ex.printStackTrace()
-            }
-        }
-    }
 }
 
 

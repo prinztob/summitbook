@@ -82,6 +82,7 @@
     <string name="top_speed">Top Speed</string>
     <string name="highest_average_speed">Highest average speed</string>
     <string name="longest_distance">Longest Distance</string>
+    <string name="visited_countries">Number of visited Countries</string>
     <string name="height_meter_done">Most height meter done</string>
     <string name="height_meter">Height meter</string>
     <string name="height_meter_accumulated">Height meter accumulated</string>

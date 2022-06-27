@@ -155,7 +155,9 @@ class BarChartFragment : Fragment(), SummationFragment {
                         val month = if (value < 1 || value > 12) 0 else value.toInt() - 1
                         String.format("%s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month])
                     }
-                } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants || selectedXAxisSpinnerEntry == XAxisSelector.Equipments) {
+                } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants ||
+                        selectedXAxisSpinnerEntry == XAxisSelector.Equipments ||
+                        selectedXAxisSpinnerEntry == XAxisSelector.Countries) {
                     if (value.toInt() < selectedXAxisSpinnerEntry.getIntervals(intervalHelper).size) {
                         selectedXAxisSpinnerEntry.getIntervals(intervalHelper)[value.toInt()].toString()
                     } else {
@@ -311,7 +313,9 @@ class BarChartFragment : Fragment(), SummationFragment {
                             val month = if (e.x < 1 || e.x > 12) 0 else e.x.toInt() - 1
                             String.format("%s %s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month], resultReceiver.getSortFilterHelper().selectedYear)
                         }
-                    } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants || selectedXAxisSpinnerEntry == XAxisSelector.Equipments) {
+                    } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants
+                            || selectedXAxisSpinnerEntry == XAxisSelector.Equipments
+                            || selectedXAxisSpinnerEntry == XAxisSelector.Countries) {
                         if (e.x.toInt() < selectedXAxisSpinnerEntry.getIntervals(intervalHelper).size) {
                             selectedXAxisSpinnerEntry.getIntervals(intervalHelper)[e.x.toInt()].toString()
                         } else {
@@ -394,7 +398,13 @@ class BarChartFragment : Fragment(), SummationFragment {
             entries
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.equipments.contains(start) }
-        }, { e -> e.equipments }, { e -> e.equipmentsAnnotation })
+        }, { e -> e.equipments }, { e -> e.equipmentsAnnotation }),
+
+        Countries(R.string.country_hint, R.string.empty, 1.0, { entries, start, _ ->
+            entries
+                    ?.stream()
+                    ?.filter { o: Summit? -> o != null && o.countries.contains(start) }
+        }, { e -> e.countries }, { e -> e.countriesAnnotation })
     }
 
     enum class YAxisSelector(val nameId: Int, val unitId: Int, val sharedPreferenceKey: String, val defaultAnnualTarget: Int,

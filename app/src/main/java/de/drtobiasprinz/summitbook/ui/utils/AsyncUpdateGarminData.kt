@@ -96,7 +96,7 @@ class AsyncUpdateGarminData(val resultReceiver: FragmentResultReceiver) : AsyncT
     }
 
     override fun onPostExecute(param: Void?) {
-        resultReceiver.getProgressBar()?.visibility = View.VISIBLE
+        resultReceiver.getProgressBar()?.visibility = View.GONE
         val edit = resultReceiver.getSharedPreference().edit()
         edit.putString("garmin_start_date", endDate)
         edit.apply()

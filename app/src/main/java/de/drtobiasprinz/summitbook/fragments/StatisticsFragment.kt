@@ -107,6 +107,12 @@ class StatisticsFragment : Fragment(), SummationFragment {
             }
             setTextViewData(extremaValuesSummits?.kilometersMinMax?.second, R.id.layoutLongestDistance, R.id.textLongestDistance, R.id.textLongestDistanceInfo, getString(R.string.km),
                     getValueOrNull(extremaValuesSummits?.kilometersMinMax?.second) { e -> e.kilometers }, 1)
+
+            val layoutVisitedCountries = statisticFragmentView?.findViewById<LinearLayout?>(R.id.layoutVisitedCountries)
+            val dataVisitedCountries = statisticFragmentView?.findViewById<TextView?>(R.id.textVisitedCountries)
+            layoutVisitedCountries?.visibility = View.VISIBLE
+            dataVisitedCountries?.text = String.format(requireContext().resources.configuration.locales[0], "%s", statisticEntry.getVisitedCountries())
+
             setTextViewData(extremaValuesSummits?.averageSpeedMinMax?.second, R.id.layoutHighestAverageSpeed, R.id.textHeighestAverageSpeed, R.id.textHeighestAverageSpeedInfo, getString(R.string.kmh),
                     getValueOrNull(extremaValuesSummits?.averageSpeedMinMax?.second) { e -> e.velocityData.avgVelocity }, 1)
             setTextViewData(extremaValuesSummits?.durationMinMax?.second, R.id.layoutLongestDuration, R.id.textLongestDuration, R.id.textLongestDurationInfo, "h",

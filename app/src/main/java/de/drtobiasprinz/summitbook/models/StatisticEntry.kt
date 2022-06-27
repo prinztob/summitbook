@@ -10,6 +10,7 @@ import kotlin.math.roundToInt
 
 class StatisticEntry {
     private var totalSummits = 0
+    private var visitedCountries = 0
     var totalHm = 0
     var totalKm = 0.0
     private var achievementHm = 0.0
@@ -40,6 +41,7 @@ class StatisticEntry {
 
     fun calculate() {
         totalSummits = filteredSummitEntries?.size ?: 0
+        visitedCountries = filteredSummitEntries?.flatMap { it.countries }?.toSet()?.filter { it != "" }?.size ?: 0
         totalHm = filteredSummitEntries?.map {
             if (it.sportType == SportType.IndoorTrainer) {
                 it.elevationData.elevationGain * indoorHeightMeterPercent / 100
@@ -73,6 +75,10 @@ class StatisticEntry {
 
     fun getTotalSummits(): Int {
         return totalSummits
+    }
+
+    fun getVisitedCountries(): Int {
+        return visitedCountries
     }
 
     fun getAchievement(): Double {
