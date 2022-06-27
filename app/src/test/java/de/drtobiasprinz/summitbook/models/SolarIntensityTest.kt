@@ -17,7 +17,7 @@ class SolarIntensityTest {
             val actual = SolarIntensity.parseFromJson(gson)
             assert(actual != null)
             if (actual != null) {
-                assertEquals(actual.solarIntensityInBatteryPerCent, 0.55, 0.01)
+                assertEquals(actual.solarUtilizationInHours, 2.76, 0.01)
                 assertEquals(actual.solarExposureInHours, 4.82, 0.01)
                 assertFalse(actual.isForWholeDay)
             }
@@ -32,7 +32,7 @@ class SolarIntensityTest {
             val actual = SolarIntensity.parseFromJson(gson)
             assert(actual != null)
             if (actual != null) {
-                assertEquals(actual.solarIntensityInBatteryPerCent, 0.09, 0.01)
+                assertEquals(actual.solarUtilizationInHours, 0.45, 0.01)
                 assertEquals(actual.solarExposureInHours, 1.93, 0.01)
                 assertTrue(actual.isForWholeDay)
             }

@@ -3,6 +3,8 @@ package de.drtobiasprinz.summitbook.ui.utils
 import android.net.Uri
 import android.os.AsyncTask
 import android.util.Log
+import android.view.View
+import android.widget.ProgressBar
 import android.widget.Toast
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
@@ -94,6 +96,7 @@ class AsyncUpdateGarminData(val resultReceiver: FragmentResultReceiver) : AsyncT
     }
 
     override fun onPostExecute(param: Void?) {
+        resultReceiver.getProgressBar()?.visibility = View.VISIBLE
         val edit = resultReceiver.getSharedPreference().edit()
         edit.putString("garmin_start_date", endDate)
         edit.apply()

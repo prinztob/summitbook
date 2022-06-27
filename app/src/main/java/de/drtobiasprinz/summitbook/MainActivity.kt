@@ -175,6 +175,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
 
         if (sharedPreferences.getBoolean("startup_auto_update_switch", false)) {
+            val progressBar = findViewById<ProgressBar>(R.id.progressBarDownload)
+            progressBar.visibility = View.VISIBLE
+
             @Suppress("DEPRECATION")
             AsyncUpdateGarminData(this).execute()
         }
@@ -404,6 +407,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
 
         if (id == R.id.action_update) {
+            val progressBar = findViewById<ProgressBar>(R.id.progressBarDownload)
+            progressBar.visibility = View.VISIBLE
             @Suppress("DEPRECATION")
             AsyncUpdateGarminData(this).execute()
             return true

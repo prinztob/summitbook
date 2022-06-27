@@ -256,7 +256,7 @@
     <string name="power_1h">Power 1h</string>
     <string name="power_2h">Power 2h</string>
     <string name="power_5h">Power 5h</string>
-    <string name="battery_gain_by_solar">Battery gain by solar intensity</string>
+    <string name="solar_50000_lux_condition">50000 Lux condition</string>
     <string name="solar_exposure">Average Solar Exposure</string>
     <string name="vo2Max">Vo2Max</string>
     <string name="ftp">FTP</string>

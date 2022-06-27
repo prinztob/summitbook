@@ -25,6 +25,7 @@ import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.SolarIntensity
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerLineChart
+import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerViewSolarIntensity
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.time.YearMonth
@@ -108,10 +109,10 @@ class LineChartSolarFragment : Fragment() {
         lineChart?.setVisibleXRangeMaximum(12f) // allow 12 values to be displayed at once on the x-axis, not more
         lineChart?.moveViewToX(lineChartEntriesBatteryGain.size.toFloat() - 12f)
         setXAxis()
-        setYAxisLeft(lineChart?.axisLeft)
-        setYAxisRight(lineChart?.axisRight)
+        setYAxis(lineChart?.axisLeft)
+        setYAxis(lineChart?.axisRight)
         lineChart?.setTouchEnabled(true)
-        lineChart?.marker = CustomMarkerView(lineChartView?.context, R.layout.marker_graph)
+        lineChart?.marker = CustomMarkerViewSolarIntensity(lineChartView?.context, R.layout.marker_graph)
         lineChart?.invalidate()
     }
 
@@ -139,7 +140,7 @@ class LineChartSolarFragment : Fragment() {
                             val sorted = entries.sortedBy { it.getDateAsFloat() }
                             val newEntry = SolarIntensity(0,
                                     sorted.first().date,
-                                    sorted.sumByDouble { it.solarIntensityInBatteryPerCent },
+                                    sorted.sumByDouble { it.solarUtilizationInHours },
                                     sorted.sumByDouble { it.solarExposureInHours } / sorted.size,
                                     true)
                             newEntry.markerText = "${dateFormat.format(sorted.first().date)} - ${dateFormat.format(sorted.last().date)}"
@@ -158,7 +159,7 @@ class LineChartSolarFragment : Fragment() {
                     val newEntry = if (entries != null && entries.isNotEmpty()) {
                         SolarIntensity(0,
                                 entries.first().date,
-                                entries.sumByDouble { it.solarIntensityInBatteryPerCent },
+                                entries.sumByDouble { it.solarUtilizationInHours },
                                 entries.sumByDouble { it.solarExposureInHours } / entries.size,
                                 true)
                     } else {
@@ -173,11 +174,11 @@ class LineChartSolarFragment : Fragment() {
             }
         }
         val maxExposureInHours = data?.map { it.solarExposureInHours.toFloat() }?.maxOrNull() ?: 1F
-        val maxBatteryGain = data?.map { it.solarIntensityInBatteryPerCent.toFloat() }?.maxOrNull()
+        val maxBatteryGain = data?.map { it.solarUtilizationInHours.toFloat() }?.maxOrNull()
                 ?: 1F
         maxBatteryExposure = maxBatteryGain / (if (maxExposureInHours > 0f) maxExposureInHours else 1f)
         lineChartEntriesBatteryGain = data?.mapIndexed { index, entry ->
-            Entry(index.toFloat(), (entry.solarIntensityInBatteryPerCent).toFloat(), entry)
+            Entry(index.toFloat(), (entry.solarUtilizationInHours).toFloat(), entry)
         }?.toMutableList() ?: mutableListOf()
         lineChartEntriesSolarExposure = data?.mapIndexed { index, entry ->
             Entry(index.toFloat(), (entry.solarExposureInHours * maxBatteryExposure).toFloat(), entry)
@@ -204,20 +205,11 @@ class LineChartSolarFragment : Fragment() {
         }
     }
 
-    private fun setYAxisLeft(yAxis: YAxis?) {
+    private fun setYAxis(yAxis: YAxis?) {
         yAxis?.textSize = 12f
         yAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return String.format(requireContext().resources.configuration.locales[0], "%.1f h/#", value / maxBatteryExposure)
-            }
-        }
-    }
-
-    private fun setYAxisRight(yAxis: YAxis?) {
-        yAxis?.textSize = 12f
-        yAxis?.valueFormatter = object : ValueFormatter() {
-            override fun getFormattedValue(value: Float): String {
-                return String.format(requireContext().resources.configuration.locales[0], "%.2f %s", value, getString(R.string.percent))
+                return String.format(requireContext().resources.configuration.locales[0], "%.1f h", value / maxBatteryExposure)
             }
         }
     }
@@ -254,7 +246,7 @@ class LineChartSolarFragment : Fragment() {
                 LegendEntry(getString(R.string.part_day), Legend.LegendForm.CIRCLE, 9f, 5f, null, Color.RED),
                 LegendEntry(getString(R.string.whole_day), Legend.LegendForm.CIRCLE, 9f, 5f, null, Color.BLUE),
                 LegendEntry(getString(R.string.activity_hint), Legend.LegendForm.CIRCLE, 9f, 5f, null, Color.DKGRAY),
-                LegendEntry(getString(R.string.battery_gain_by_solar), Legend.LegendForm.LINE, 9f, 5f, null, Color.GREEN),
+                LegendEntry(getString(R.string.solar_50000_lux_condition), Legend.LegendForm.LINE, 9f, 5f, null, Color.GREEN),
                 LegendEntry(getString(R.string.solar_exposure), Legend.LegendForm.LINE, 9f, 5f, null, Color.RED),
         )
         legend.setCustom(legends)
@@ -289,7 +281,7 @@ class LineChartSolarFragment : Fragment() {
             try {
                 val entry = e?.data as SolarIntensity?
                 if (entry != null) {
-                    tvContent?.text = String.format("%s\n%.2f %s\n%.2f %s", entry.markerText, entry.solarIntensityInBatteryPerCent, getString(R.string.percent), entry.solarExposureInHours, getString(R.string.h))
+                    tvContent?.text = String.format("%s\n%.2f %s\n%.2f %s", entry.markerText, entry.solarUtilizationInHours, getString(R.string.percent), entry.solarExposureInHours, getString(R.string.h))
                 } else {
                     tvContent?.text = ""
                 }

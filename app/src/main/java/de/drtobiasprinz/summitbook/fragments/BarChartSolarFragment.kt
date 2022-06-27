@@ -239,7 +239,7 @@ class BarChartSolarFragment : Fragment() {
                             val sorted = entries.sortedBy { it.getDateAsFloat() }
                             val newEntry = SolarIntensity(0,
                                     sorted.first().date,
-                                    sorted.sumByDouble { it.solarIntensityInBatteryPerCent },
+                                    sorted.sumByDouble { it.solarUtilizationInHours },
                                     sorted.sumByDouble { it.solarExposureInHours } / sorted.size,
                                     true)
                             newEntry.markerText = "${dateFormat.format(sorted.first().date)} - ${dateFormat.format(sorted.last().date)}"
@@ -258,7 +258,7 @@ class BarChartSolarFragment : Fragment() {
                     val newEntry = if (entries != null && entries.isNotEmpty()) {
                         SolarIntensity(0,
                                 entries.first().date,
-                                entries.sumByDouble { it.solarIntensityInBatteryPerCent },
+                                entries.sumByDouble { it.solarUtilizationInHours },
                                 entries.sumByDouble { it.solarExposureInHours } / entries.size,
                                 true)
                     } else {
@@ -328,7 +328,7 @@ class BarChartSolarFragment : Fragment() {
             try {
                 val entry = e?.data as SolarIntensity?
                 if (entry != null) {
-                    tvContent?.text = String.format("%s\n%.2f %s\n%.2f %s", entry.markerText, entry.solarIntensityInBatteryPerCent, getString(R.string.percent), entry.solarExposureInHours, getString(R.string.h))
+                    tvContent?.text = String.format("%s\n%.2f %s\n%.2f %s", entry.markerText, entry.solarUtilizationInHours, getString(R.string.percent), entry.solarExposureInHours, getString(R.string.h))
                 } else {
                     tvContent?.text = ""
                 }
@@ -362,7 +362,7 @@ class BarChartSolarFragment : Fragment() {
     }
 
     enum class YAxisSelector(val nameId: Int, val unitId: Int, val getBinValue: (SolarIntensity) -> Float) {
-        BatteryGainBySolar(R.string.battery_gain_by_solar, R.string.percent, { it.solarIntensityInBatteryPerCent.toFloat() }),
+        BatteryGainBySolar(R.string.solar_50000_lux_condition, R.string.percent, { it.solarUtilizationInHours.toFloat() }),
         SolarExposure(R.string.solar_exposure, R.string.h, { it.solarExposureInHours.toFloat() }),
     }
 

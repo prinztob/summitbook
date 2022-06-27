@@ -24,6 +24,16 @@ class CustomMarkerLineChart : LineChart {
             } else {
                 handled = super.onTouchEvent(event)
             }
+        } else if (isShowingMarker() && this.marker is CustomMarkerViewSolarIntensity) {
+            val markerView: CustomMarkerViewSolarIntensity = this.marker as CustomMarkerViewSolarIntensity
+            val rect = Rect(markerView.drawingPosX.toInt(), markerView.drawingPosY.toInt(),
+                    markerView.drawingPosX.toInt() + markerView.width, markerView.drawingPosY.toInt() + markerView.height)
+            if (event.action == MotionEvent.ACTION_DOWN && rect.contains(event.x.toInt(), event.y.toInt())) {
+                markerView.startIntent()
+                markerView.dispatchTouchEvent(event)
+            } else {
+                handled = super.onTouchEvent(event)
+            }
         } else {
             handled = super.onTouchEvent(event)
         }

@@ -258,7 +258,7 @@
     <string name="power_1h">Leistung 1h</string>
     <string name="power_2h">Leistung 2h</string>
     <string name="power_5h">Leistung 5h</string>
-    <string name="battery_gain_by_solar">Batterieaufladung durch Sonne</string>
+    <string name="solar_50000_lux_condition">50000 Lux Konditionen</string>
     <string name="solar_exposure">Durchschn. Sonneaufenthalt</string>
     <string name="vo2Max">Vo2max</string>
     <string name="ftp">FTP</string>

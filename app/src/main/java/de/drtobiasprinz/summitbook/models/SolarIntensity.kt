@@ -16,7 +16,7 @@ import java.util.*
 data class SolarIntensity(
         @PrimaryKey(autoGenerate = true) var entryId: Long = 0,
         var date: Date,
-        var solarIntensityInBatteryPerCent: Double,
+        var solarUtilizationInHours: Double,
         var solarExposureInHours: Double,
         var isForWholeDay: Boolean,
 ) {
@@ -48,12 +48,12 @@ data class SolarIntensity(
                         val endDate = LocalDateTime.parse(array.last().asJsonObject.get("readingTimestampLocal").asString, formatter)
                         val duration = Duration.between(startDate, endDate)
                         val solarExposureInHours = solarUtilization.filter { it > 5 }.size / 60.0
-                        val multiplicand = 0.2 / (60 * 100) // 0.2 % per 60 minutes 100% solar intensity (Fenix 6)
-                        val solarIntensityInBatteryPerCent = solarUtilization.sum() * multiplicand
+                        val multiplicand = 1.0 / (60 * 100)
+                        val solarUtilizationInHours = solarUtilization.sum() * multiplicand
                         return SolarIntensity(
                                 0,
                                 Date.from(startDate.toLocalDate().atStartOfDay(ZoneId.systemDefault()).toInstant()),
-                                solarIntensityInBatteryPerCent,
+                                solarUtilizationInHours,
                                 solarExposureInHours,
                                 duration.seconds > 85400
                         )
