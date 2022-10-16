@@ -10,7 +10,8 @@ import de.drtobiasprinz.summitbook.models.TrackColor
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.infowindow.InfoWindow
 
-class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Context, private var alwaysShowTrack: Boolean) : InfoWindow(R.layout.bonuspack_bubble, mapView) {
+class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Context,
+                          private var alwaysShowTrack: Boolean) : InfoWindow(R.layout.bonuspack_bubble, mapView) {
     override fun onClose() {
         updateGpxTrack()
     }
@@ -46,7 +47,8 @@ class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Con
                     if (gpsTrack.hasNoTrackPoints()) {
                         gpsTrack.parseTrack()
                     }
-                    gpsTrack.addGpsTrack(mMapView, TrackColor.None)
+                    gpsTrack.addGpsTrack(mMapView, TrackColor.None, summit = entry)
+                    gpsTrack.isShownOnMap = true
                 }
             }
         }

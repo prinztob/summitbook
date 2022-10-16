@@ -86,7 +86,7 @@ import java.util.*
             markersInBoundingBox.forEach {
                 if (it != null) {
                     val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
-                    if (it !in mMarkersShown) {
+                    if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
                         if (pointsShown < maxPointsToShow) {
                             infoWindow.updateGpxTrack(forceShow = true)
                             pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size?: 0

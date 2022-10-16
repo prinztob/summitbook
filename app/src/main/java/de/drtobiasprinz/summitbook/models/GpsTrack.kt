@@ -8,6 +8,7 @@ import android.os.AsyncTask
 import android.util.Log
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
 import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.gpx.GPXParser
 import de.drtobiasprinz.gpx.Gpx
@@ -43,7 +44,8 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     private var minForColorCoding = 0f
     private var maxForColorCoding = 0f
 
-    fun addGpsTrack(mMapView: MapView?, selectedCustomizeTrackItem: TrackColor = TrackColor.None, color: Int = COLOR_POLYLINE_STATIC, rootView: View? = null) {
+    fun addGpsTrack(mMapView: MapView?, selectedCustomizeTrackItem: TrackColor = TrackColor.None,
+                    color: Int = COLOR_POLYLINE_STATIC, rootView: View? = null, summit: Summit? = null) {
         try {
             osMapRoute = Polyline(mMapView)
             val textView: TextView? = rootView?.findViewById(R.id.track_value)
@@ -63,6 +65,9 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                     } else {
                         textView.visibility = View.GONE
                     }
+                } else if (mMapView != null && summit != null) {
+                    Toast.makeText(mMapView.context, "${summit.getDateAsString()} ${summit.name}",
+                            Toast.LENGTH_LONG).show()
                 }
                 return@setOnClickListener true
             }
