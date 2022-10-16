@@ -123,7 +123,9 @@ class BarChartFragment : Fragment(), SummationFragment {
         barChart?.data = combinedData
         barChart?.setTouchEnabled(true)
         barChart?.marker = CustomMarkerView(barChartView?.context, R.layout.marker_graph_bar_chart)
-
+        if (selectedXAxisSpinnerEntry.isAQuality) {
+            barChart?.setVisibleXRangeMaximum(12f)
+        }
         barChart?.invalidate()
     }
 
@@ -144,7 +146,7 @@ class BarChartFragment : Fragment(), SummationFragment {
         val xAxis = barChart?.xAxis
         val max = barChartEntries.maxByOrNull { it?.x ?: 0f }?.x ?: 0f
         val min = barChartEntries.minByOrNull { it?.x ?: 0f }?.x ?: 0f
-        xAxis?.axisMaximum = if ((selectedXAxisSpinnerEntry == XAxisSelector.Participants || selectedXAxisSpinnerEntry == XAxisSelector.Equipments) && max < 10) 10.5f else max + 0.5f
+        xAxis?.axisMaximum = if ((selectedXAxisSpinnerEntry.isAQuality) && max < 10) 10.5f else max + 0.5f
         xAxis?.axisMinimum = min - 0.5f
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
@@ -155,9 +157,7 @@ class BarChartFragment : Fragment(), SummationFragment {
                         val month = if (value < 1 || value > 12) 0 else value.toInt() - 1
                         String.format("%s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month])
                     }
-                } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants ||
-                        selectedXAxisSpinnerEntry == XAxisSelector.Equipments ||
-                        selectedXAxisSpinnerEntry == XAxisSelector.Countries) {
+                } else if (selectedXAxisSpinnerEntry.isAQuality) {
                     if (value.toInt() < selectedXAxisSpinnerEntry.getIntervals(intervalHelper).size) {
                         selectedXAxisSpinnerEntry.getIntervals(intervalHelper)[value.toInt()].toString()
                     } else {
@@ -313,9 +313,7 @@ class BarChartFragment : Fragment(), SummationFragment {
                             val month = if (e.x < 1 || e.x > 12) 0 else e.x.toInt() - 1
                             String.format("%s %s", DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month], resultReceiver.getSortFilterHelper().selectedYear)
                         }
-                    } else if (selectedXAxisSpinnerEntry == XAxisSelector.Participants
-                            || selectedXAxisSpinnerEntry == XAxisSelector.Equipments
-                            || selectedXAxisSpinnerEntry == XAxisSelector.Countries) {
+                    } else if (selectedXAxisSpinnerEntry.isAQuality) {
                         if (e.x.toInt() < selectedXAxisSpinnerEntry.getIntervals(intervalHelper).size) {
                             selectedXAxisSpinnerEntry.getIntervals(intervalHelper)[e.x.toInt()].toString()
                         } else {
@@ -367,40 +365,40 @@ class BarChartFragment : Fragment(), SummationFragment {
 
     }
 
-    enum class XAxisSelector(val nameId: Int, val unitId: Int, val stepsSize: Double, val getStream: (entries: List<Summit>?, start: Any, end: Any) -> Stream<Summit?>?,
+    enum class XAxisSelector(val nameId: Int, val unitId: Int, val stepsSize: Double, val isAQuality: Boolean, val getStream: (entries: List<Summit>?, start: Any, end: Any) -> Stream<Summit?>?,
                              val getIntervals: (IntervalHelper) -> List<Any>, val getAnnotation: (IntervalHelper) -> List<Float>) {
-        Date(R.string.date, R.string.empty, 0.0, { entries, start, end ->
+        Date(R.string.date, R.string.empty, 0.0, false, { entries, start, end ->
             entries
                     ?.stream()
                     ?.filter { o: Summit? -> o?.date?.after(start as java.util.Date) ?: false && o?.date?.before(end as java.util.Date) ?: false }
         }, { e -> e.dates }, { e -> e.dateAnnotation }),
-        Kilometers(R.string.kilometers_hint, R.string.km, IntervalHelper.kilometersStep, { entries, start, end ->
+        Kilometers(R.string.kilometers_hint, R.string.km, IntervalHelper.kilometersStep,false,  { entries, start, end ->
             entries
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.kilometers >= start as Float && o.kilometers < end as Float }
         }, { e -> e.kilometers }, { e -> e.kilometerAnnotation }),
-        ElevationGain(R.string.height_meter_hint, R.string.hm, IntervalHelper.elevationGainStep, { entries, start, end ->
+        ElevationGain(R.string.height_meter_hint, R.string.hm, IntervalHelper.elevationGainStep,false,  { entries, start, end ->
             entries
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.elevationData.elevationGain >= start as Float && o.elevationData.elevationGain < end as Float }
         }, { e -> e.elevationGains }, { e -> e.elevationGainAnnotation }),
-        TopElevation(R.string.top_elevation_hint, R.string.masl, IntervalHelper.topElevationStep, { entries, start, end ->
+        TopElevation(R.string.top_elevation_hint, R.string.masl, IntervalHelper.topElevationStep,false,  { entries, start, end ->
             entries
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.elevationData.maxElevation >= start as Float && o.elevationData.maxElevation < end as Float }
         }, { e -> e.topElevations }, { e -> e.topElevationAnnotation }),
-        Participants(R.string.participants, R.string.empty, 1.0, { entries, start, _ ->
+        Participants(R.string.participants, R.string.empty, 1.0, true, { entries, start, _ ->
             entries
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.participants.contains(start) }
         }, { e -> e.participants }, { e -> e.participantsAnnotation }),
-        Equipments(R.string.equipments, R.string.empty, 1.0, { entries, start, _ ->
+        Equipments(R.string.equipments, R.string.empty, 1.0, true, { entries, start, _ ->
             entries
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.equipments.contains(start) }
         }, { e -> e.equipments }, { e -> e.equipmentsAnnotation }),
 
-        Countries(R.string.country_hint, R.string.empty, 1.0, { entries, start, _ ->
+        Countries(R.string.country_hint, R.string.empty, 1.0, true, { entries, start, _ ->
             entries
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.countries.contains(start) }

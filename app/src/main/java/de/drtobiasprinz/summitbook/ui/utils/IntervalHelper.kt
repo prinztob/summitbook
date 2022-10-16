@@ -78,7 +78,7 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
             val countsPerParticipants = allParticipants.toSet().map { name ->
                 name to allParticipants.filter { it == name }.count()
             }
-            participants = countsPerParticipants.toList().sortedByDescending { (_, value) -> value }.take(12).toMap().map { (key, _) -> key } as MutableList<String>
+            participants = countsPerParticipants.toList().sortedByDescending { (_, value) -> value }.toMap().map { (key, _) -> key } as MutableList<String>
             participants.add("")
             participantsAnnotation = (0 until participants.size).map { it.toFloat() } as MutableList<Float>
         }
@@ -87,7 +87,7 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
             val countsPerEquipments = allEquipments.toSet().map { name ->
                 name to allEquipments.filter { it == name }.count()
             }
-            equipments = countsPerEquipments.toList().sortedByDescending { (_, value) -> value }.take(12).toMap().map { (key, _) -> key } as MutableList<String>
+            equipments = countsPerEquipments.toList().sortedByDescending { (_, value) -> value }.toMap().map { (key, _) -> key } as MutableList<String>
             equipments.add("")
             equipmentsAnnotation = (0 until equipments.size).map { it.toFloat() } as MutableList<Float>
         }
@@ -96,7 +96,7 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
             val countsPerCountry = all.toSet().map { name ->
                 name to all.filter { it == name }.count()
             }
-            countries = countsPerCountry.toList().sortedByDescending { (_, value) -> value }.take(12).toMap().map { (key, _) -> key } as MutableList<String>
+            countries = countsPerCountry.toList().sortedByDescending { (_, value) -> value }.toMap().map { (key, _) -> key } as MutableList<String>
             countries.add("")
             countriesAnnotation = (0 until countries.size).map { it.toFloat() } as MutableList<Float>
         }
