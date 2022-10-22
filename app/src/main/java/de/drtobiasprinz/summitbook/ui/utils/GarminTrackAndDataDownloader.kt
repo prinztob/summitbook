@@ -1,7 +1,6 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import de.drtobiasprinz.summitbook.MainActivity
-import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import java.io.File

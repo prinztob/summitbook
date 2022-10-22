@@ -54,6 +54,7 @@
     <string name="hm">hm</string>
     <string name="total_height_meters">Total height meters</string>
     <string name="total_kilometers">Total kilometers</string>
+    <string name="total_activities">Total activities</string>
     <string name="total_summits">Total summits</string>
     <string name="achievement">Achievement in selected year</string>
     <string name="sport_type">sport type</string>
@@ -142,7 +143,8 @@
 
     <string name="shared_gpx_subject">"Shared gpx file"</string>
     <string name="shared_summit_gpx_text">"Sharing gpx file for %1$s.\nDate: %2$s\nElevation gain: %3$s hm\nDistance: %4$s km"</string>
-    <string name="base_info">"%1$s summits with %2$s km and an elevation gain of %3$s m."</string>
+    <string name="base_info_activities">"%1$s activities (%2$s km; %3$s hm)"</string>
+    <string name="base_info_summits">"%1$s summits (%2$s km; %3$s hm)"</string>
     <string name="forecast_info_hm">"%1$s: Estimated elevation gain: %2$s m (Goal: %3$s m)."</string>
     <string name="forecast_info_km">"%1$s: Estimated distance: %2$s km (Goal: %3$s km)."</string>
     <string name="forecast_info_activities">"%1$s: Estimated activities: %2$s m (Goal: %3$s)."</string>

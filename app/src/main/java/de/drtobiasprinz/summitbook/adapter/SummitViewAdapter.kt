@@ -166,6 +166,7 @@ class SummitViewAdapter(private val resultReceiver: FragmentResultReceiver) : Re
             }
             summit.isPeak = !summit.isPeak
             resultReceiver.getSortFilterHelper().database.summitDao()?.updateIsPeak(summit.id, summit.isPeak)
+            resultReceiver.getSortFilterHelper().apply()
         }
     }
 

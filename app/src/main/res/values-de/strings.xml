@@ -55,6 +55,7 @@
     <string name="hm">hm</string>
     <string name="total_height_meters">Gesammte Höhenmeter</string>
     <string name="total_kilometers">Gesammte Kilometer</string>
+    <string name="total_activities">Anzahl Aktivitäten</string>
     <string name="total_summits">Anzahl Gipfel</string>
     <string name="achievement">Zielerreichung im gewählten Jahr</string>
     <string name="sport_type_image">Sportart Bild</string>
@@ -145,7 +146,8 @@
 
     <string name="shared_gpx_subject">"Teile GPX Track"</string>
     <string name="shared_summit_gpx_text">"Teile GPX Track for %1$s.\nDatum: %2$s\nHöhenmeter: %3$s hm\nEntfernung: %4$s km",</string>
-    <string name="base_info">"%1$s Gipfel mit %2$s km und %3$s m Höhenmeter."</string>
+    <string name="base_info_activities">"%1$s Aktivitäten (%2$s km; %3$s hm)"</string>
+    <string name="base_info_summits">"%1$s Gipfel (%2$s km; %3$s hm)"</string>
     <string name="forecast_info_hm">"%1$s: Schätzung Höhenmeter: %2$s hm (Ziel: %3$s hm)."</string>
     <string name="forecast_info_km">"%1$s: Schätzung Entfernung: %2$s km (Ziel: %3$s km)."</string>
     <string name="forecast_info_activities">"%1$s: Schätzung Gipfel: %2$s m (Ziel: %3$s)."</string>

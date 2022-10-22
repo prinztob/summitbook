@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
 class StatisticEntry {
+    private var totalActivities = 0
     private var totalSummits = 0
     private var visitedCountries = 0
     var totalHm = 0
@@ -40,7 +41,8 @@ class StatisticEntry {
     }
 
     fun calculate() {
-        totalSummits = filteredSummitEntries?.size ?: 0
+        totalActivities = filteredSummitEntries?.size ?: 0
+        totalSummits = filteredSummitEntries?.filter { it.isPeak }?.size ?: 0
         visitedCountries = filteredSummitEntries?.flatMap { it.countries }?.toSet()?.filter { it != "" }?.size ?: 0
         totalHm = filteredSummitEntries?.map {
             if (it.sportType == SportType.IndoorTrainer) {
@@ -71,6 +73,10 @@ class StatisticEntry {
         } catch (e: ParseException) {
             e.printStackTrace()
         }
+    }
+
+    fun getTotalActivities(): Int {
+        return totalActivities
     }
 
     fun getTotalSummits(): Int {

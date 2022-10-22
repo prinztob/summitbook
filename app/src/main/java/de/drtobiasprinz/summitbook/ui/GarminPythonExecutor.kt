@@ -191,6 +191,7 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
             val entries = mutableListOf<Summit>()
             if (directory != null && directory.exists() && directory.isDirectory) {
                 val files = directory.listFiles()
+                files.sortByDescending { it.absolutePath }
                 if (files?.isNotEmpty() == true) {
                     files.forEach {
                         if (it.name.startsWith("activity_") && !it.name.endsWith("_splits.json")) {
@@ -198,6 +199,7 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
                                 val gson = JsonParser.parseString(it.readText()) as JsonObject
                                 entries.add(parseJsonObject(gson))
                             } catch (ex: IllegalArgumentException) {
+                                Log.i("GarminPythonExecutor","Could not parse file ${it.absolutePath}")
                                 it.delete()
                             }
                         }

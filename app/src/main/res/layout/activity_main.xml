@@ -29,7 +29,22 @@
                 android:layout_marginStart="15dp"
                 android:layout_marginEnd="15dp"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="#999"/>
+                android:textColor="#999"
+                android:drawablePadding="15dp"
+                app:drawableStartCompat="@drawable/ic_baseline_directions_run_24" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:id="@+id/overview_summits"
+                android:text="@string/overview"
+                android:gravity="center"
+                android:layout_marginTop="5dp"
+                android:layout_marginStart="15dp"
+                android:layout_marginEnd="15dp"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="#999"
+                android:drawablePadding="15dp"
+                app:drawableStartCompat="@drawable/icons8_mountain_24" />
 
             <ProgressBar
                 android:id="@+id/progressBarZip"

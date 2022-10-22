@@ -55,7 +55,7 @@ def get_activities_by_date(api, startdate, enddate, activitytype):
 
 def get_excercise_sets(api, activity_id):
     activity_id = str(activity_id)
-    url = f"{api.garmin_connect_activities}/{activity_id}"
+    url = f"proxy/activity-service/activity/{activity_id}"
     return api.modern_rest_client.get(url).json()
 
 
@@ -68,9 +68,9 @@ def get_activity_json_for_date(client, date):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client get activities: %s" % err
+        return f"return code: 1Error occurred during Garmin Connect Client get activity json for date {date}: {err}"
     except Exception as err:
-        return "return code: 1Unknown error occurred during Garmin Connect Client get activities %s" % err
+        return f"return code: 1Unknown error occurred during Garmin Connect Client get activity json for date {date}: {err}"
 
 
 def download_tcx(api, activity_id, output_file):
@@ -84,9 +84,9 @@ def download_tcx(api, activity_id, output_file):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client get activities: %s" % err
+        return f"return code: 1Error occurred during Garmin Connect Client download tcx for id {activity_id}: {err}"
     except Exception as err:
-        return "return code: 1Unknown error occurred during Garmin Connect Client get activities %s" % err
+        return f"return code: 1Unknown error occurred during Garmin Connect Client download tcx for id {activity_id}: {err}"
 
 
 def download_gpx(api, activity_id, output_file):
@@ -100,9 +100,9 @@ def download_gpx(api, activity_id, output_file):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client get activities: %s" % err
+        return f"return code: 1Error occurred during Garmin Connect Client download gpx for id {activity_id}: {err}"
     except Exception as err:
-        return "return code: 1Unknown error occurred during Garmin Connect Client get activities %s" % err
+        return f"return code: 1Unknown error occurred during Garmin Connect Client download gpx for id {activity_id}: {err}"
 
 
 def get_multi_sport_data(api, activity_id):
@@ -113,9 +113,9 @@ def get_multi_sport_data(api, activity_id):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client get activities: %s" % err
+        return "return code: 1Error occurred during Garmin Connect Client get multi sport data: %s" % err
     except Exception as err:
-        return "return code: 1Unknown error occurred during Garmin Connect Client get activities %s" % err
+        return "return code: 1Unknown error occurred during Garmin Connect Client get multi sport data %s" % err
 
 
 def get_split_data(api, activity_id, folder):
@@ -126,34 +126,25 @@ def get_split_data(api, activity_id, folder):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client get activities: %s" % err
+        return "return code: 1Error occurred during Garmin Connect Client get split data: %s" % err
     except Exception as err:
-        return "return code: 1Unknown error occurred during Garmin Connect Client get activities %s" % err
+        return "return code: 1Unknown error occurred during Garmin Connect Client get split data %s" % err
 
 
 def get_power_data(api, date):
     """
-    Get activity splits
+    Get power data
     """
     try:
-        start = 0
-        limit = 20
-        url = '/modern/proxy/fitnessstats-service/powerCurve/'
-        params = {
-            "startDate": str(date),
-            "endDate": str(date),
-            "start": str(start),
-            "limit": str(limit)
-        }
-        print("Fetching power data with url %s", url)
-        api.headers["nk"] = "NT"
+        url = f"proxy/fitnessstats-service/powerCurve/?startDate={date}&endDate={date}"
+        print(f"Fetching power data with url {url}")
         return api.modern_rest_client.get(url).json()
     except (
             GarminConnectConnectionError,
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client get activity power data: %s" % err
+        return "return code: 1Error occurred during Garmin Connect Client get power data: %s" % err
     except Exception as err:  # pylint: disable=broad-except
         return "return code: 1Unknown error occurred during Garmin Connect Client get power data %s" % err
 
@@ -192,9 +183,9 @@ def download_activities_by_date(api, folder, start_date, end_date=date.today()):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client get activities by date: %s" % err
+        return "return code: 1Error occurred during Garmin Connect Client download activities by date: %s" % err
     except Exception as err:  # pylint: disable=broad-except
-        return "return code: 1Unknown error occurred during Garmin Connect Client get activities by date %s" % err
+        return "return code: 1Unknown error occurred during Garmin Connect Client download activities by date %s" % err
 
 
 def download_splits(api, activity_id, folder):
@@ -259,9 +250,9 @@ def get_device_id(api):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client get activity power data: %s" % err
+        return "return code: 1Error occurred during Garmin Connect Client get power data: %s" % err
     except Exception as err:  # pylint: disable=broad-except
-        return "return code: 1Unknown error occurred during Garmin Connect Client get power data %s" % err
+        return "return code: 1Unknown error occurred during Garmin Connect Client get device id %s" % err
 
 
 def get_solar_intensity_for_date(api, date, device_id):
@@ -277,9 +268,9 @@ def get_solar_intensity_for_date(api, date, device_id):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client get activity power data: %s" % err
+        return f"return code: 1Error occurred during Garmin Connect Client get solar intensity for date {date}: {err}"
     except Exception as err:  # pylint: disable=broad-except
-        return "return code: 1Unknown error occurred during Garmin Connect Client get power data %s" % err
+        return f"return code: 1Unknown error occurred during Garmin Connect Client get solar intensity for date {date}: {err}"
 
 
 def get_battery_charged_in_percent(solar):

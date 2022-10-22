@@ -13,7 +13,7 @@ class PowerData constructor(
     }
 
     fun hasPowerData(): Boolean {
-        return avgPower > 0f
+        return avgPower > 0f || oneSec > 0
     }
 
     companion object {

@@ -46,7 +46,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private var startDate: Date? = null
     private var endDate: Date? = null
     var allEntriesRequested: Boolean = false
-    private lateinit var overview: TextView
+    private lateinit var overviewActivities: TextView
+    private lateinit var overviewSummits: TextView
     private lateinit var startDateText: EditText
     private lateinit var endDateText: EditText
     private var selectedDateItemDefault = 0
@@ -388,7 +389,9 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
     private fun setOverviewText() {
         val statisticEntry = StatisticEntry(filteredEntries, indoorHeightMeterPercent)
         statisticEntry.calculate()
-        overview.text = context.getString(R.string.base_info, filteredEntries.size.toString(), statisticEntry.totalKm.roundToLong().toInt().toString(), statisticEntry.totalHm.toFloat().roundToLong().toString())
+        val peaks = filteredEntries.filter { it.isPeak }
+        overviewActivities.text = context.getString(R.string.base_info_activities, filteredEntries.size.toString(), statisticEntry.totalKm.roundToLong().toInt().toString(), statisticEntry.totalHm.toFloat().roundToLong().toString())
+        overviewSummits.text = context.getString(R.string.base_info_summits, peaks.size.toString(), peaks.sumByDouble { it.kilometers }.toInt().toString(), peaks.sumBy { it.elevationData.elevationGain }.toString())
     }
 
     private fun sort() {
@@ -694,7 +697,8 @@ class SortFilterHelper(private val filterAndSortView: View, private val context:
             }
         }
         updateDateSpinner()
-        overview = (context as AppCompatActivity).findViewById(R.id.overview)
+        overviewActivities = (context as AppCompatActivity).findViewById(R.id.overview)
+        overviewSummits = (context as AppCompatActivity).findViewById(R.id.overview_summits)
         setOverviewText()
     }
 

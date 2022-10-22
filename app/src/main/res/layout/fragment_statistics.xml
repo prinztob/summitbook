@@ -40,6 +40,22 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
+                    android:text="@string/total_activities"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:textColor="#999" />
+
+                <TextView
+                    android:id="@+id/textTotalActivities"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="#333"
+                    android:textSize="35sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
                     android:text="@string/total_summits"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:textColor="#999" />

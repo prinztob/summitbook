@@ -25,6 +25,7 @@ import kotlin.math.roundToLong
 class StatisticsFragment : Fragment(), SummationFragment {
     private var summitEntries: List<Summit>? = null
     private var filteredEntries: List<Summit>? = null
+    private var textTotalActivities: TextView? = null
     private var textTotalSummits: TextView? = null
     private var textTotalKm: TextView? = null
     private var textTotalHm: TextView? = null
@@ -57,6 +58,7 @@ class StatisticsFragment : Fragment(), SummationFragment {
         this.statisticFragmentView = view
         setHasOptionsMenu(true)
         if (view != null) {
+            textTotalActivities = view.findViewById(R.id.textTotalActivities)
             textTotalSummits = view.findViewById(R.id.textTotalSummits)
             textTotalKm = view.findViewById(R.id.textTotalKm)
             textTotalHm = view.findViewById(R.id.textTotalHm)
@@ -73,6 +75,7 @@ class StatisticsFragment : Fragment(), SummationFragment {
     private fun setTextViews(extremaValuesSummits: ExtremaValuesSummits?) {
         if (statisticEntry.getTotalSummits() > 0) {
             textTotalSummits?.text = String.format("%s", statisticEntry.getTotalSummits())
+            textTotalActivities?.text = String.format("%s", statisticEntry.getTotalActivities())
             textTotalKm?.text = String.format(requireContext().resources.configuration.locales[0], "%.1f km", statisticEntry.totalKm)
             textTotalHm?.text = String.format(requireContext().resources.configuration.locales[0], "%s hm", statisticEntry.totalHm)
             val currentYear: Int = (Calendar.getInstance())[Calendar.YEAR]
