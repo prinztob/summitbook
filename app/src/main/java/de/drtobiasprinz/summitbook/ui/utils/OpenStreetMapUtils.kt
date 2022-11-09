@@ -26,7 +26,7 @@ import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 
 object OpenStreetMapUtils {
 
-    private val MAP_TYPE_ITEMS = arrayOf<CharSequence>("OpenTopo", "MAPNIK", "USGS_TOPO", "HIKEBIKEMAP")
+    private val MAP_TYPE_ITEMS = arrayOf<CharSequence>("OpenTopo", "MAPNIK")
 
     @JvmStatic
     var selectedItem = 0

@@ -2,12 +2,10 @@ package de.drtobiasprinz.summitbook.models
 
 import android.graphics.Rect
 import androidx.room.Ignore
-import de.drtobiasprinz.gpx.TrackPoint
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import kotlin.math.ceil
 import kotlin.math.floor
-import kotlin.math.roundToInt
 
 class TrackBoundingBox(
         var latNorth: Double, var latSouth: Double, var lonWest: Double, var lonEast: Double
@@ -16,12 +14,14 @@ class TrackBoundingBox(
     private var factor = 1000
 
     @Ignore
-    var trackBoundingRect = Rect(floor(lonWest * factor).toInt(), ceil( latNorth * factor).toInt(), ceil(lonEast * factor).toInt(), floor(latSouth * factor).toInt())
+    var trackBoundingRect = Rectangle(lonWest, latNorth, lonEast, latSouth)
 
     fun intersects(boundingBox: BoundingBox): Boolean {
-        val boundingRect = Rect(floor(boundingBox.lonWest * factor).toInt(), ceil(boundingBox.latNorth * factor).toInt(), ceil(boundingBox.lonEast * factor).toInt(), floor(boundingBox.latSouth * factor).toInt())
+        val boundingRect = Rectangle(boundingBox.lonWest , boundingBox.latNorth , boundingBox.lonEast , boundingBox.latSouth )
         return boundingRect.intersect(trackBoundingRect)
     }
+
+
 
     fun contains(geoPoint: GeoPoint): Boolean {
         return trackBoundingRect.left <= (geoPoint.longitude * factor).toInt() && trackBoundingRect.right >= (geoPoint.longitude * factor).toInt() && trackBoundingRect.bottom <= (geoPoint.latitude * factor).toInt() && trackBoundingRect.top >= (geoPoint.latitude * factor).toInt()
@@ -35,6 +35,17 @@ class TrackBoundingBox(
                 GeoPoint(latSouth, lonWest),
                 GeoPoint(latNorth, lonWest)
         )
+    }
+
+    class Rectangle(var left: Double, var top: Double, var right: Double, var bottom: Double) {
+        fun intersect(rec1: Rectangle): Boolean {
+            return if (left == right || top == bottom || rec1.left == rec1.right || rec1.top == rec1.bottom) {
+                false
+            } else !(right <= rec1.left ||
+                    top <= rec1.bottom ||
+                    left >= rec1.right ||
+                    bottom >= rec1.top)
+        }
     }
 
 }
