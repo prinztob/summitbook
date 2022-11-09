@@ -56,7 +56,7 @@ class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Con
 
     override fun onOpen(item: Any) {
         val description = mView.findViewById<TextView>(R.id.bubble_description)
-        description.text = entry.sportType.toString()
+        description.text = context.getString(entry.sportType.sportNameStringId)
         description.setOnClickListener { startIntent() }
         val moreInfo = mView.findViewById<TextView>(R.id.bubble_title)
         moreInfo.text = entry.name
