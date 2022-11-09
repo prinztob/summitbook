@@ -73,7 +73,7 @@ class StatisticsFragment : Fragment(), SummationFragment {
     }
 
     private fun setTextViews(extremaValuesSummits: ExtremaValuesSummits?) {
-        if (statisticEntry.getTotalSummits() > 0) {
+        if (statisticEntry.getTotalActivities() > 0) {
             textTotalSummits?.text = String.format("%s", statisticEntry.getTotalSummits())
             textTotalActivities?.text = String.format("%s", statisticEntry.getTotalActivities())
             textTotalKm?.text = String.format(requireContext().resources.configuration.locales[0], "%.1f km", statisticEntry.totalKm)

@@ -24,7 +24,10 @@ class TrackBoundingBox(
 
 
     fun contains(geoPoint: GeoPoint): Boolean {
-        return trackBoundingRect.left <= (geoPoint.longitude * factor).toInt() && trackBoundingRect.right >= (geoPoint.longitude * factor).toInt() && trackBoundingRect.bottom <= (geoPoint.latitude * factor).toInt() && trackBoundingRect.top >= (geoPoint.latitude * factor).toInt()
+        return trackBoundingRect.left <= geoPoint.longitude
+                && trackBoundingRect.right >= geoPoint.longitude
+                && trackBoundingRect.bottom <= geoPoint.latitude
+                && trackBoundingRect.top >= geoPoint.latitude
     }
 
     fun getGeoPoints(): List<GeoPoint> {

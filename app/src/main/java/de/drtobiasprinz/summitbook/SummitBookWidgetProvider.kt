@@ -36,11 +36,11 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
             val allWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
             for (widgetId in allWidgetIds) {
                 val remoteViews = RemoteViews(context.packageName, R.layout.widget_layout)
-                remoteViews.setTextViewText(R.id.activity, "${statisticEntry.getTotalSummits()} ${context.getString(R.string.of)} ${statisticEntry.expectedAchievementActivityAbsolute.roundToInt()}")
+                remoteViews.setTextViewText(R.id.activity, "${statisticEntry.getTotalActivities()} ${context.getString(R.string.of)} ${statisticEntry.expectedAchievementActivityAbsolute.roundToInt()}")
                 remoteViews.setTextViewText(R.id.height_meter, "${statisticEntry.totalHm} ${context.getString(R.string.of)} ${statisticEntry.expectedAchievementHmAbsolute.roundToInt()} hm")
                 remoteViews.setTextViewText(R.id.kilometers, "${statisticEntry.totalKm.roundToInt()} ${context.getString(R.string.of)} ${statisticEntry.expectedAchievementKmAbsolute.roundToInt()} km")
 
-                remoteViews.setImageViewResource(R.id.activity_image, if (statisticEntry.getTotalSummits() >= statisticEntry.expectedAchievementActivityAbsolute) R.drawable.ic_baseline_directions_run_24_green else R.drawable.ic_baseline_directions_run_24_red)
+                remoteViews.setImageViewResource(R.id.activity_image, if (statisticEntry.getTotalActivities() >= statisticEntry.expectedAchievementActivityAbsolute) R.drawable.ic_baseline_directions_run_24_green else R.drawable.ic_baseline_directions_run_24_red)
                 remoteViews.setImageViewResource(R.id.height_meter_image, if (statisticEntry.totalHm >= statisticEntry.expectedAchievementHmAbsolute) R.drawable.ic_baseline_trending_up_24_green else R.drawable.ic_baseline_trending_up_24_red)
                 remoteViews.setImageViewResource(R.id.kilometers_image, if (statisticEntry.totalKm >= statisticEntry.expectedAchievementKmAbsolute) R.drawable.ic_baseline_compare_arrows_24_green else R.drawable.ic_baseline_compare_arrows_24_red)
                 val configIntent = Intent(context, MainActivity::class.java)
