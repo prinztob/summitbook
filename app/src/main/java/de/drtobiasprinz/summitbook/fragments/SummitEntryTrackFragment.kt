@@ -104,6 +104,8 @@ class SummitEntryTrackFragment : Fragment() {
         imageViewSportType.setImageResource(summitEntry.sportType.imageIdBlack)
         setOpenStreetMap()
         drawChart()
+        OpenStreetMapUtils.setOsmConfForTiles()
+
         val openWithButton = root.findViewById<ImageButton>(R.id.gps_open_with)
         openWithButton.setOnClickListener { _: View? ->
             if (summitEntry.hasGpsTrack()) {

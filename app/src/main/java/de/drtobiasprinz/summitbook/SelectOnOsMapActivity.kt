@@ -22,6 +22,7 @@ import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.summit
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.models.TrackColor
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addTrackAndMarker
@@ -70,6 +71,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
             }
         }
 
+        OpenStreetMapUtils.setOsmConfForTiles()
         val policy: StrictMode.ThreadPolicy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
         val bundle = intent.extras

@@ -86,6 +86,7 @@ class AddSegmentEntryFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         root = inflater.inflate(R.layout.fragment_add_segment_entry, container, false)
         lineChart = root.findViewById(R.id.lineChart)
+        OpenStreetMapUtils.setOsmConfForTiles()
         osMap = root.findViewById(R.id.osmap)
         setTileSource(selectedItem, osMap)
         root.findViewById<com.google.android.material.button.MaterialButton>(R.id.cancel).setOnClickListener {

@@ -1,4 +1,4 @@
- package de.drtobiasprinz.summitbook.fragments
+package de.drtobiasprinz.summitbook.fragments
 
 import android.app.AlertDialog
 import android.content.Context
@@ -14,6 +14,7 @@ import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.models.SportType
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
@@ -30,7 +31,7 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.util.*
 
- class OpenStreetMapFragment : Fragment(), SummationFragment {
+class OpenStreetMapFragment : Fragment(), SummationFragment {
     private var mGeoPoints: MutableList<GeoPoint?> = ArrayList()
     private var mMarkers: MutableList<Marker?> = ArrayList()
     private var mMarkersShown: MutableList<Marker?> = ArrayList()
@@ -48,8 +49,10 @@ import java.util.*
         resultReceiver = context as FragmentResultReceiver
         setHasOptionsMenu(true)
         val context = requireContext()
-        maxPointsToShow = (resultReceiver.getSharedPreference().getString("max_number_points", maxPointsToShow.toString())?: maxPointsToShow.toString()).toInt()
+        maxPointsToShow = (resultReceiver.getSharedPreference().getString("max_number_points", maxPointsToShow.toString())
+                ?: maxPointsToShow.toString()).toInt()
         Configuration.getInstance().load(context, PreferenceManager.getDefaultSharedPreferences(context))
+        OpenStreetMapUtils.setOsmConfForTiles()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -71,12 +74,14 @@ import java.util.*
 
         val showAllTracksButton: ImageButton = root.findViewById(R.id.show_all_tracks)
         showAllTracksButton.setOnClickListener { _: View? ->
-            var pointsShown = mMarkersShown.sumBy { (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size?:0 }
+            var pointsShown = mMarkersShown.sumBy {
+                (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size ?: 0
+            }
             val markersInBoundingBox = mMarkers.filter {
                 val mapCustomInfoBubble: MapCustomInfoBubble = it?.infoWindow as MapCustomInfoBubble
                 val shouldBeShown = mMapView?.boundingBox?.let { it1 -> mapCustomInfoBubble.entry.isInBoundingBox(it1) }
                 if (shouldBeShown == false && it in mMarkersShown) {
-                    pointsShown -= mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size?: 0
+                    pointsShown -= mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0
                     mapCustomInfoBubble.updateGpxTrack(forceRemove = true)
                     mMarkersShown.remove(it)
 
@@ -89,7 +94,7 @@ import java.util.*
                     if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
                         if (pointsShown < maxPointsToShow) {
                             infoWindow.updateGpxTrack(forceShow = true)
-                            pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size?: 0
+                            pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0
                             mMarkersShown.add(it)
                         }
                     }
