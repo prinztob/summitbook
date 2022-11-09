@@ -8,12 +8,15 @@ import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.models.TrackColor
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.infowindow.InfoWindow
 
 class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Context,
-                          private var alwaysShowTrack: Boolean) : InfoWindow(R.layout.bonuspack_bubble, mapView) {
+                          private var alwaysShowTrack: Boolean) :
+        InfoWindow(R.layout.bonuspack_bubble, mapView) {
+
     override fun onClose() {
-        updateGpxTrack()
+        updateGpxTrack(forceRemove = !alwaysShowTrack)
     }
 
     fun updateGpxTrack(forceShow: Boolean = false, forceRemove: Boolean = false) {
@@ -61,7 +64,7 @@ class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Con
         val moreInfo = mView.findViewById<TextView>(R.id.bubble_title)
         moreInfo.text = entry.name
         moreInfo.setOnClickListener { startIntent() }
-        updateGpxTrack()
+        updateGpxTrack(forceShow = true)
     }
 
     private fun startIntent() {
