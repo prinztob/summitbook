@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.*
 import android.widget.ImageButton
 import android.widget.Toast
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import de.drtobiasprinz.summitbook.R
@@ -16,11 +17,12 @@ import de.drtobiasprinz.summitbook.models.Summit
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
+import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
+import org.osmdroid.bonuspack.utils.BonusPackHelper
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.util.GeoPoint
@@ -30,6 +32,7 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.util.*
+
 
 class OpenStreetMapFragment : Fragment(), SummationFragment {
     private var mGeoPoints: MutableList<GeoPoint?> = ArrayList()
@@ -134,8 +137,8 @@ class OpenStreetMapFragment : Fragment(), SummationFragment {
         mMapView?.onResume()
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         val localMapView = mMapView
         if (localMapView != null) {
             setTileSource(selectedItem, localMapView)
@@ -168,7 +171,13 @@ class OpenStreetMapFragment : Fragment(), SummationFragment {
     private fun addAllMarkers() {
         val localMapView = mMapView
         if (localMapView != null) {
+            val context = requireContext()
             localMapView.overlays?.clear()
+            val markers = RadiusMarkerClusterer(context)
+            val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(context, R.drawable.marker_cluster)
+            markers.setIcon(clusterIcon)
+            markers.setMaxClusteringZoomLevel(10)
+            localMapView.overlays.add(markers)
             mGeoPoints = ArrayList()
             mMarkers = ArrayList()
             val filteredEntriesLocal = filteredEntries
@@ -178,7 +187,9 @@ class OpenStreetMapFragment : Fragment(), SummationFragment {
                     if (latLng != null && mMapView != null) {
                         val point = GeoPoint(latLng.lat, latLng.lon)
                         mGeoPoints.add(point)
-                        mMarkers.add(addMarker(localMapView, requireContext(), point, entry))
+                        val marker = getMarker(localMapView, entry, point, context)
+                        markers.add(marker)
+                        mMarkers.add(marker)
                     }
                 }
             }
@@ -203,6 +214,27 @@ class OpenStreetMapFragment : Fragment(), SummationFragment {
             mMapView?.overlays?.add(eventsOverlay)
             mMapView?.post { calculateBoundingBox(localMapView, mGeoPoints) }
         }
+    }
+
+    private fun getMarker(localMapView: MapView?, entry: Summit, point: GeoPoint, context: Context): Marker {
+        val marker = Marker(localMapView)
+        marker.title = entry.id.toString()
+        marker.position = point
+        if (entry.hasGpsTrack()) {
+            marker.icon = ResourcesCompat.getDrawable(context.resources, entry.sportType.markerIdWithGpx, null)
+        } else {
+            marker.icon = ResourcesCompat.getDrawable(context.resources, entry.sportType.markerIdWithoutGpx, null)
+        }
+        marker.infoWindow = MapCustomInfoBubble(mMapView, entry, context, false)
+        marker.setOnMarkerClickListener { marker1, _ ->
+            if (!marker1.isInfoWindowShown) {
+                marker1.showInfoWindow()
+            } else {
+                marker1.closeInfoWindow()
+            }
+            false
+        }
+        return marker
     }
 
     override fun update(filteredSummitEntries: List<Summit>?) {

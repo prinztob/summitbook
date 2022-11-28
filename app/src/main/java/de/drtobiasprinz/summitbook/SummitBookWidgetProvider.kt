@@ -61,7 +61,6 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
         for (entry in allEntries) {
             if (entry.date.after(startDate) && entry.date.before(endDate)) {
                 entries.add(entry)
-                Log.i("tag", entry.toString())
             }
         }
         return entries
