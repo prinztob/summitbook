@@ -35,9 +35,7 @@ import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
 import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
 import java.util.*
-import kotlin.math.log10
-import kotlin.math.pow
-import kotlin.math.round
+import kotlin.math.*
 
 
 class SummitEntryPowerFragment : Fragment() {
@@ -50,6 +48,7 @@ class SummitEntryPowerFragment : Fragment() {
     private var selectedTimeRangeSpinner: Int = 0
     private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
+    private var extremaValuesAllSummits: ExtremaValuesSummits? = null
     private lateinit var resultReceiver: SummitEntryResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -186,7 +185,7 @@ class SummitEntryPowerFragment : Fragment() {
             val summits = MainActivity.extremaValuesAllSummits?.entries
             if (summits != null) {
                 val filteredSummits = getFilteredSummits(summits)
-                val extremaValuesAllSummits = ExtremaValuesSummits(filteredSummits, excludeZeroValueFromMin = true)
+                extremaValuesAllSummits = ExtremaValuesSummits(filteredSummits, excludeZeroValueFromMin = true)
                 val extremalChartEntries = getLineChartEntriesMax(extremaValuesAllSummits)
                 val minimalChartEntries = getLineChartEntriesMin(extremaValuesAllSummits)
                 val dataSetMaximalValues = LineDataSet(extremalChartEntries, getString(R.string.power_profile_max_label))
@@ -200,7 +199,11 @@ class SummitEntryPowerFragment : Fragment() {
                     val maxEntry = extremalChartEntries[index]
                     val minEntry = minimalChartEntries[index]
                     if (chartEntry != null && maxEntry != null && minEntry != null) {
-                        ColorUtils.blendARGB(Color.GREEN, Color.RED, 1f - ((chartEntry.y - minEntry.y) / (maxEntry.y - minEntry.y)))
+                        if (chartEntry.y >= maxEntry.y) {
+                            Color.rgb(255, 215, 0)
+                        } else {
+                            ColorUtils.blendARGB(Color.GREEN, Color.RED, 1f - ((chartEntry.y - minEntry.y) / (maxEntry.y - minEntry.y)))
+                        }
                     } else {
                         Color.BLUE
                     }
@@ -230,78 +233,16 @@ class SummitEntryPowerFragment : Fragment() {
         return if (filtered.isNotEmpty()) filtered else summits
     }
 
-    private fun getLineChartEntriesMax(extremaValuesSummits: ExtremaValuesSummits): MutableList<Entry?> {
-        val lineChartEntries: MutableList<Entry?> = ArrayList()
-        lineChartEntries.add(Entry(scaleCbr(1.0), extremaValuesSummits.power1sMinMax?.second?.garminData?.power?.oneSec?.toFloat()
-                ?: 0f, extremaValuesSummits.power1sMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(2.0), extremaValuesSummits.power2sMinMax?.second?.garminData?.power?.twoSec?.toFloat()
-                ?: 0f, extremaValuesSummits.power2sMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(5.0), extremaValuesSummits.power5sMinMax?.second?.garminData?.power?.fiveSec?.toFloat()
-                ?: 0f, extremaValuesSummits.power5sMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(10.0), extremaValuesSummits.power10sMinMax?.second?.garminData?.power?.tenSec?.toFloat()
-                ?: 0f, extremaValuesSummits.power10sMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(20.0), extremaValuesSummits.power20sMinMax?.second?.garminData?.power?.twentySec?.toFloat()
-                ?: 0f, extremaValuesSummits.power20sMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(30.0), extremaValuesSummits.power30sMinMax?.second?.garminData?.power?.thirtySec?.toFloat()
-                ?: 0f, extremaValuesSummits.power30sMinMax?.second))
-
-        lineChartEntries.add(Entry(scaleCbr(60.0), extremaValuesSummits.power1minMinMax?.second?.garminData?.power?.oneMin?.toFloat()
-                ?: 0f, extremaValuesSummits.power1minMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(120.0), extremaValuesSummits.power2minMinMax?.second?.garminData?.power?.twoMin?.toFloat()
-                ?: 0f, extremaValuesSummits.power2minMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(300.0), extremaValuesSummits.power5minMinMax?.second?.garminData?.power?.fiveMin?.toFloat()
-                ?: 0f, extremaValuesSummits.power5minMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(600.0), extremaValuesSummits.power10minMinMax?.second?.garminData?.power?.tenMin?.toFloat()
-                ?: 0f, extremaValuesSummits.power10minMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(1200.0), extremaValuesSummits.power20minMinMax?.second?.garminData?.power?.twentyMin?.toFloat()
-                ?: 0f, extremaValuesSummits.power20minMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(1800.0), extremaValuesSummits.power30minMinMax?.second?.garminData?.power?.thirtyMin?.toFloat()
-                ?: 0f, extremaValuesSummits.power30minMinMax?.second))
-
-        lineChartEntries.add(Entry(scaleCbr(3600.0), extremaValuesSummits.power1hMinMax?.second?.garminData?.power?.oneHour?.toFloat()
-                ?: 0f, extremaValuesSummits.power1hMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(7200.0), extremaValuesSummits.power2hMinMax?.second?.garminData?.power?.twoHours?.toFloat()
-                ?: 0f, extremaValuesSummits.power2hMinMax?.second))
-        lineChartEntries.add(Entry(scaleCbr(18000.0), extremaValuesSummits.power5hMinMax?.second?.garminData?.power?.fiveHours?.toFloat()
-                ?: 0f, extremaValuesSummits.power5hMinMax?.second))
-        return lineChartEntries
+    private fun getLineChartEntriesMin(extremaValuesSummits: ExtremaValuesSummits?): MutableList<Entry?> {
+        return TimeIntervalPower.values().map {
+            Entry(scaleCbr(it.seconds.toDouble()), it.minPower(extremaValuesSummits), it.getMinSummit(extremaValuesSummits))
+        }.toMutableList()
     }
 
-    private fun getLineChartEntriesMin(extremaValuesSummits: ExtremaValuesSummits): MutableList<Entry?> {
-        val lineChartEntries: MutableList<Entry?> = ArrayList()
-        lineChartEntries.add(Entry(scaleCbr(1.0), extremaValuesSummits.power1sMinMax?.first?.garminData?.power?.oneSec?.toFloat()
-                ?: 0f, extremaValuesSummits.power1sMinMax?.first))
-        lineChartEntries.add(Entry(scaleCbr(2.0), extremaValuesSummits.power2sMinMax?.first?.garminData?.power?.twoSec?.toFloat()
-                ?: 0f, extremaValuesSummits.power2sMinMax?.first))
-        lineChartEntries.add(Entry(scaleCbr(5.0), extremaValuesSummits.power5sMinMax?.first?.garminData?.power?.fiveSec?.toFloat()
-                ?: 0f, extremaValuesSummits.power5sMinMax?.first))
-        lineChartEntries.add(Entry(scaleCbr(10.0), extremaValuesSummits.power10sMinMax?.first?.garminData?.power?.tenSec?.toFloat()
-                ?: 0f, extremaValuesSummits.power10sMinMax?.first))
-        lineChartEntries.add(Entry(scaleCbr(20.0), extremaValuesSummits.power20sMinMax?.first?.garminData?.power?.twentySec?.toFloat()
-                ?: 0f, extremaValuesSummits.power20sMinMax?.first))
-        lineChartEntries.add(Entry(scaleCbr(30.0), extremaValuesSummits.power30sMinMax?.first?.garminData?.power?.thirtySec?.toFloat()
-                ?: 0f, extremaValuesSummits.power30sMinMax?.first))
-
-        lineChartEntries.add(Entry(scaleCbr(60.0), extremaValuesSummits.power1minMinMax?.first?.garminData?.power?.oneMin?.toFloat()
-                ?: 0f, extremaValuesSummits.power1minMinMax?.first))
-        lineChartEntries.add(Entry(scaleCbr(120.0), extremaValuesSummits.power2minMinMax?.first?.garminData?.power?.twoMin?.toFloat()
-                ?: 0f, extremaValuesSummits.power2minMinMax?.first))
-        lineChartEntries.add(Entry(scaleCbr(300.0), extremaValuesSummits.power5minMinMax?.first?.garminData?.power?.fiveMin?.toFloat()
-                ?: 0f, extremaValuesSummits.power5minMinMax?.first))
-        lineChartEntries.add(Entry(scaleCbr(600.0), extremaValuesSummits.power10minMinMax?.first?.garminData?.power?.tenMin?.toFloat()
-                ?: 0f, extremaValuesSummits.power10minMinMax?.first))
-        lineChartEntries.add(Entry(scaleCbr(1200.0), extremaValuesSummits.power20minMinMax?.first?.garminData?.power?.twentyMin?.toFloat()
-                ?: 0f, extremaValuesSummits.power20minMinMax?.first))
-        lineChartEntries.add(Entry(scaleCbr(1800.0), extremaValuesSummits.power30minMinMax?.first?.garminData?.power?.thirtyMin?.toFloat()
-                ?: 0f, extremaValuesSummits.power30minMinMax?.first))
-
-        lineChartEntries.add(Entry(scaleCbr(3600.0), extremaValuesSummits.power1hMinMax?.first?.garminData?.power?.oneHour?.toFloat()
-                ?: 0f, extremaValuesSummits.power1hMinMax?.first))
-        lineChartEntries.add(Entry(scaleCbr(7200.0), extremaValuesSummits.power2hMinMax?.first?.garminData?.power?.twoHours?.toFloat()
-                ?: 0f, extremaValuesSummits.power2hMinMax?.first))
-        lineChartEntries.add(Entry(scaleCbr(18000.0), extremaValuesSummits.power5hMinMax?.first?.garminData?.power?.fiveHours?.toFloat()
-                ?: 0f, extremaValuesSummits.power5hMinMax?.first))
-        return lineChartEntries
+    private fun getLineChartEntriesMax(extremaValuesSummits: ExtremaValuesSummits?): MutableList<Entry?> {
+        return TimeIntervalPower.values().map {
+            Entry(scaleCbr(it.seconds.toDouble()), it.maxPower(extremaValuesSummits), it.getMaxSummit(extremaValuesSummits))
+        }.toMutableList()
     }
 
     private fun scaleCbr(cbr: Double): Float {
@@ -394,12 +335,13 @@ class SummitEntryPowerFragment : Fragment() {
         private val tvContent: TextView? = findViewById(R.id.tvContent)
 
         override fun refreshContent(e: Entry, highlight: Highlight?) {
-            val xText = when (val value = 10f.pow(e.x)) {
-                in 0f..59f -> "${round(value).toInt()} sec"
-                in 60f..3599f -> "${round(value / 60f).toInt()} min"
-                else -> "${round(value / 3660f).toInt()} h"
+            val timeIntervalPower = TimeIntervalPower.values().minByOrNull { abs(10f.pow(e.x) - it.seconds) }
+            var text = "${e.y.roundToInt()} W "
+            if (extremaValuesAllSummits != null && timeIntervalPower != null && (timeIntervalPower.maxPower(extremaValuesAllSummits) - e.y) > 1) {
+                text += "(${timeIntervalPower.minPower(extremaValuesAllSummits).roundToInt()} - ${timeIntervalPower.maxPower(extremaValuesAllSummits).roundToInt()})"
             }
-            tvContent?.text = "${e.y.toInt()} W\n($xText)"
+            text += "\n${timeIntervalPower?.asString}"
+            tvContent?.text = text
             super.refreshContent(e, highlight)
         }
 
@@ -411,4 +353,67 @@ class SummitEntryPowerFragment : Fragment() {
             return mOffset!!
         }
     }
+}
+
+enum class TimeIntervalPower(val seconds: Int, val asString: String, val minPower: (ExtremaValuesSummits?) -> Float, val maxPower: (ExtremaValuesSummits?) -> Float, val getMinSummit: (ExtremaValuesSummits?) -> Summit?, val getMaxSummit: (ExtremaValuesSummits?) -> Summit?) {
+    OneSec(1, "1 sec",
+            { e -> e?.power1sMinMax?.first?.garminData?.power?.oneSec?.toFloat() ?: 0f },
+            { e -> e?.power1sMinMax?.second?.garminData?.power?.oneSec?.toFloat() ?: 0f },
+            { e -> e?.power1sMinMax?.first }, { e -> e?.power1sMinMax?.second }),
+    TwoSec(2, "2 sec",
+            { e -> e?.power2sMinMax?.first?.garminData?.power?.twoSec?.toFloat() ?: 0f },
+            { e -> e?.power2sMinMax?.second?.garminData?.power?.twoSec?.toFloat() ?: 0f },
+            { e -> e?.power2sMinMax?.first }, { e -> e?.power2sMinMax?.second }),
+    FiveSec(5, "5 sec",
+            { e -> e?.power5sMinMax?.first?.garminData?.power?.fiveSec?.toFloat() ?: 0f },
+            { e -> e?.power5sMinMax?.second?.garminData?.power?.fiveSec?.toFloat() ?: 0f },
+            { e -> e?.power5sMinMax?.first }, { e -> e?.power5sMinMax?.second }),
+    TenSec(10, "10 sec",
+            { e -> e?.power10sMinMax?.first?.garminData?.power?.tenSec?.toFloat() ?: 0f },
+            { e -> e?.power10sMinMax?.second?.garminData?.power?.tenSec?.toFloat() ?: 0f },
+            { e -> e?.power10sMinMax?.first }, { e -> e?.power10sMinMax?.second }),
+    TwentySec(20, "20 sec",
+            { e -> e?.power20sMinMax?.first?.garminData?.power?.twentySec?.toFloat() ?: 0f },
+            { e -> e?.power20sMinMax?.second?.garminData?.power?.twentySec?.toFloat() ?: 0f },
+            { e -> e?.power20sMinMax?.first }, { e -> e?.power20sMinMax?.second }),
+    ThirtySec(30, "30 sec",
+            { e -> e?.power30sMinMax?.first?.garminData?.power?.thirtySec?.toFloat() ?: 0f },
+            { e -> e?.power30sMinMax?.second?.garminData?.power?.thirtySec?.toFloat() ?: 0f },
+            { e -> e?.power30sMinMax?.first }, { e -> e?.power30sMinMax?.second }),
+    OneMin(60, "1 min",
+            { e -> e?.power1minMinMax?.first?.garminData?.power?.oneMin?.toFloat() ?: 0f },
+            { e -> e?.power1minMinMax?.second?.garminData?.power?.oneMin?.toFloat() ?: 0f },
+            { e -> e?.power1minMinMax?.first }, { e -> e?.power1minMinMax?.second }),
+    TwoMin(120, "2 min",
+            { e -> e?.power2minMinMax?.first?.garminData?.power?.twoMin?.toFloat() ?: 0f },
+            { e -> e?.power2minMinMax?.second?.garminData?.power?.twoMin?.toFloat() ?: 0f },
+            { e -> e?.power2minMinMax?.first }, { e -> e?.power2minMinMax?.second }),
+    FiveMin(300, "5 min",
+            { e -> e?.power5minMinMax?.first?.garminData?.power?.fiveMin?.toFloat() ?: 0f },
+            { e -> e?.power5minMinMax?.second?.garminData?.power?.fiveMin?.toFloat() ?: 0f },
+            { e -> e?.power5minMinMax?.first }, { e -> e?.power5minMinMax?.second }),
+    TenMin(600, "10 min",
+            { e -> e?.power10minMinMax?.first?.garminData?.power?.tenMin?.toFloat() ?: 0f },
+            { e -> e?.power10minMinMax?.second?.garminData?.power?.tenMin?.toFloat() ?: 0f },
+            { e -> e?.power10minMinMax?.first }, { e -> e?.power10minMinMax?.second }),
+    TwentyMin(1200, "20 min",
+            { e -> e?.power20minMinMax?.first?.garminData?.power?.twentyMin?.toFloat() ?: 0f },
+            { e -> e?.power20minMinMax?.second?.garminData?.power?.twentyMin?.toFloat() ?: 0f },
+            { e -> e?.power20minMinMax?.first }, { e -> e?.power20minMinMax?.second }),
+    ThirtyMin(1800, "30 min",
+            { e -> e?.power30minMinMax?.first?.garminData?.power?.thirtyMin?.toFloat() ?: 0f },
+            { e -> e?.power30minMinMax?.second?.garminData?.power?.thirtyMin?.toFloat() ?: 0f },
+            { e -> e?.power30minMinMax?.first }, { e -> e?.power30minMinMax?.second }),
+    OneHour(3600, "1 h",
+            { e -> e?.power1hMinMax?.first?.garminData?.power?.oneHour?.toFloat() ?: 0f },
+            { e -> e?.power1hMinMax?.second?.garminData?.power?.oneHour?.toFloat() ?: 0f },
+            { e -> e?.power1hMinMax?.first }, { e -> e?.power1hMinMax?.second }),
+    TwoHours(7200, "2 h",
+            { e -> e?.power2hMinMax?.first?.garminData?.power?.twoHours?.toFloat() ?: 0f },
+            { e -> e?.power2hMinMax?.second?.garminData?.power?.twoHours?.toFloat() ?: 0f },
+            { e -> e?.power2hMinMax?.first }, { e -> e?.power2hMinMax?.second }),
+    FiveHours(18000, "5 h",
+            { e -> e?.power5hMinMax?.first?.garminData?.power?.fiveHours?.toFloat() ?: 0f },
+            { e -> e?.power5hMinMax?.second?.garminData?.power?.fiveHours?.toFloat() ?: 0f },
+            { e -> e?.power5hMinMax?.first }, { e -> e?.power5hMinMax?.second })
 }

@@ -15,7 +15,7 @@
         android:lines="2"
         android:maxLines="2"
         android:minLines="1"
-        android:ems="4"
+        android:ems="8"
         android:textAlignment="center"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:textColor="@android:color/white" />

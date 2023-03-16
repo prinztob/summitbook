@@ -50,8 +50,8 @@ class BarChartFragment : Fragment(), SummationFragment {
     private var barChartView: View? = null
     private var barChartEntries: MutableList<BarEntry?> = mutableListOf()
     private var lineChartEntriesForecast: MutableList<Entry?> = mutableListOf()
-    private var unit: String? = "hm"
-    private var label: String? = "Height meters"
+    private var unit: String = "hm"
+    private var label: String = "Height meters"
     private var barChart: CustomBarChart? = null
     private lateinit var intervalHelper: IntervalHelper
     private lateinit var resultReceiver: FragmentResultReceiver
