@@ -1,7 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
-import de.drtobiasprinz.summitbook.MainActivity
-import de.drtobiasprinz.summitbook.models.*
+import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import java.io.File
 import java.nio.file.Path
@@ -45,12 +45,12 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
 
     fun updateFinalEntry(resultReceiver: FragmentResultReceiver) {
         val finalEntryLocal = finalEntry
-        if (finalEntryLocal != null) {
-            finalEntryLocal.id = resultReceiver.getSortFilterHelper().database.summitDao()?.addSummit(finalEntryLocal) ?: 0L
-            resultReceiver.getSortFilterHelper().entries.add(finalEntryLocal)
-            resultReceiver.getSortFilterHelper().update(resultReceiver.getSortFilterHelper().entries)
-            resultReceiver.getSummitViewAdapter()?.notifyDataSetChanged()
-        }
+//        if (finalEntryLocal != null) {
+//            finalEntryLocal.id = resultReceiver.getSortFilterHelper().database.summitsDao().addSummit(finalEntryLocal)
+//            resultReceiver.getSortFilterHelper().entries.add(finalEntryLocal)
+//            resultReceiver.getSortFilterHelper().update(resultReceiver.getSortFilterHelper().entries)
+//            resultReceiver.getSummitViewAdapter()?.notifyDataSetChanged()
+//        }
     }
 
     fun composeFinalTrack(fileDestination: File? = null) {
@@ -65,7 +65,7 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
                 if (points.isNotEmpty()) {
                     var highestTrackPoint = points.first()
                     for (point in points) {
-                        if (point.ele ?: 0.0 > highestTrackPoint.ele ?: 0.0) {
+                        if ((point.ele ?: 0.0) > (highestTrackPoint.ele ?: 0.0)) {
                             highestTrackPoint = point
                         }
                     }
@@ -86,9 +86,10 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
                 entries.map { it.places }.flatten(),
                 entries.map { it.countries }.flatten(),
                 if (entries.size > 1) "merge of " + entries.joinToString(", ") { it.name } else "",
-                ElevationData.parse(entries.maxByOrNull { it.elevationData.maxElevation }?.elevationData?.maxElevation ?: 0, entries.sumBy { it.elevationData.elevationGain }),
-                entries.sumByDouble { it.kilometers },
-                VelocityData.parse( entries.sumByDouble { it.kilometers } / activityDuration.sum(),
+                ElevationData.parse(entries.maxByOrNull { it.elevationData.maxElevation }?.elevationData?.maxElevation ?: 0,
+                    entries.sumOf { it.elevationData.elevationGain }),
+                entries.sumOf { it.kilometers },
+                VelocityData.parse( entries.sumOf { it.kilometers } / activityDuration.sum(),
                         entries.maxByOrNull { it.velocityData.maxVelocity }?.velocityData?.maxVelocity ?: 0.0),
                 null, null,
                 entries.map { it.participants }.flatten(),
@@ -113,8 +114,8 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
             garminDataSets.forEach { it?.activityIds?.let { it1 -> activityIds.addAll(it1) } }
             return GarminData(
                     activityIds,
-                    garminDataSets.sumByDouble { it?.calories?.toDouble() ?: 0.0 }.toFloat(),
-                    (garminDataSets.sumByDouble {
+                    garminDataSets.sumOf { it?.calories?.toDouble() ?: 0.0 }.toFloat(),
+                    (garminDataSets.sumOf {
                         (it?.averageHR?.toDouble() ?: 0.0) * (it?.duration ?: 0.0)
                     } / entries.filter { it.garminData?.averageHR != null && (it.garminData?.averageHR ?: 0f) > 0 }.map { it.kilometers / it.velocityData.avgVelocity }.sum()).toFloat(),
                     garminDataSets.maxByOrNull { it?.maxHR?.toDouble() ?: 0.0 }?.maxHR ?: 0f,
@@ -129,7 +130,7 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
                     }?.anaerobicTrainingEffect ?: 0f,
                     garminDataSets.maxByOrNull { it?.grit?.toDouble() ?: 0.0 }?.grit ?: 0f,
                     garminDataSets.maxByOrNull { it?.flow?.toDouble() ?: 0.0 }?.flow ?: 0f,
-                    garminDataSets.sumByDouble { it?.trainingLoad?.toDouble() ?: 0.0 }.toFloat()
+                    garminDataSets.sumOf { it?.trainingLoad?.toDouble() ?: 0.0 }.toFloat()
             )
         }
         return null

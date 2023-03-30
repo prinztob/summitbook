@@ -4,11 +4,10 @@ import android.net.Uri
 import android.os.AsyncTask
 import android.util.Log
 import android.view.View
-import android.widget.ProgressBar
 import android.widget.Toast
+import de.drtobiasprinz.summitbook.db.entities.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
-import de.drtobiasprinz.summitbook.models.SolarIntensity
+import de.drtobiasprinz.summitbook.db.entities.SolarIntensity
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
 import java.text.SimpleDateFormat
 import java.time.LocalDate

@@ -7,104 +7,37 @@
     <color name="colorDarkGreen">#298C2D</color>
     <color name="color_white">#00FDFCFC</color>
 
-    <!-- Material Design - Color Palette -->
-    <!-- Date: 1/15/2015 -->
-    <!-- http://www.google.com/design/spec/style/color.html#color-color-palette -->
-
-    <!-- Red -->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
     <color name="red_50">#FFEBEE</color>
     <color name="red_400">#EF5350</color>
     <color name="red_500">#F44336</color>
-
-    <!-- Red -->
-
-    <!-- Pink -->
-    <!-- Pink -->
-
-    <!-- Purple -->
-    <!-- Purple -->
-
-    <!-- Deep Purple -->
-    <!-- Deep Purple -->
-
-    <!-- Indigo -->
-    <!-- Indigo -->
-
-    <!-- Blue -->
     <color name="blue_300">#64B5F6</color>
     <color name="blue_400">#42A5F5</color>
     <color name="blue_500">#2196F3</color>
-    <!-- Blue -->
-
-    <!-- Light Blue -->
-    <!-- Light Blue -->
-
-    <!-- Cyan -->
-    <!-- Cyan -->
-
-
-    <!-- Teal -->
     <color name="teal_100">#B2DFDB</color>
     <color name="teal_900">#004D40</color>
-    <!-- Teal -->
-
-    <!-- Green -->
     <color name="green_50">#E8F5E9</color>
     <color name="green_200">#A5D6A7</color>
     <color name="green_500">#4CAF50</color>
     <color name="green_600">#43A047</color>
     <color name="green_800">#2E7D32</color>
-    <!-- Green -->
-
-    <!-- Light Green -->
-    <!-- Light Green -->
-
-    <!-- Lime -->
-    <!-- Lime -->
-
-    <!-- Yellow -->
-    <!-- Yellow -->
-
-    <!-- Amber -->
-    <!-- Amber -->
-
-    <!-- Orange -->
     <color name="orange_100">#FFE0B2</color>
     <color name="orange_600">#FB8C00</color>
-    <!-- Orange -->
-
-    <!-- Deep Orange -->
-    <!-- Deep Orange -->
-
-    <!-- Brown -->
     <color name="brown_400">#8D6E63</color>
-    <!-- Brown -->
-
-    <!-- Grey -->
     <color name="grey_400">#BDBDBD</color>
     <color name="grey_500">#9E9E9E</color>
-
-    <!-- Grey -->
-
-    <!-- Blue Grey -->
-    <!-- Blue Grey -->
-
-    <!-- Black -->
-    <color name="black">#000000</color>
-    <!-- Black -->
-
-    <!-- White -->
-    <!-- White -->
-
-    <!-- Mixed Colors -->
     <color name="red">#FF0000</color>
     <color name="White">#FFFFFF</color>
     <color name="Yellow">#FFFF00</color>
     <color name="Orange">#FFA500</color>
     <color name="ForestGreen">#228B22</color>
     <color name="Blue">#0000FF</color>
-    <!-- Mixed Colors -->
-
     <color name="translucent">#80000000</color>
     <color name="translucent70">#70000000</color>
 </resources>

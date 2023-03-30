@@ -1,111 +1,156 @@
 package de.drtobiasprinz.summitbook.fragments
 
-import android.content.Context
-import android.content.SharedPreferences
-import android.content.SharedPreferences.OnSharedPreferenceChangeListener
+import android.graphics.Canvas
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.res.ResourcesCompat
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter
-import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
-import de.drtobiasprinz.summitbook.models.Summit
-import de.drtobiasprinz.summitbook.ui.SwipeToMarkCallback
+import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.databinding.FragmentSummitViewBinding
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.utils.Constants
+import de.drtobiasprinz.summitbook.utils.DataStatus
+import de.drtobiasprinz.summitbook.utils.isVisible
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
+import javax.inject.Inject
 
+@AndroidEntryPoint
+class SummitViewFragment : Fragment() {
+    @Inject
+    lateinit var contactsAdapter: ContactsAdapter
+    private lateinit var binding: FragmentSummitViewBinding
 
-class SummitViewFragment : Fragment(), SummationFragment, OnSharedPreferenceChangeListener {
-    private lateinit var summitEntries: List<Summit>
-    private var filteredEntries: List<Summit>? = null
-    private lateinit var resultReceiver: FragmentResultReceiver
-    private var adapter: SummitViewAdapter? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        resultReceiver = context as FragmentResultReceiver
-    }
+    private lateinit var database: AppDatabase
+    val viewModel: DatabaseViewModel by viewModels()
 
     override fun onCreateView(
-            inflater: LayoutInflater, container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        summitRecycler = inflater.inflate(
-                R.layout.fragment_summit_view, container, false) as RecyclerView
-        setHasOptionsMenu(true)
-        resultReceiver.getSortFilterHelper().fragment = this
-        summitEntries = resultReceiver.getSortFilterHelper().entries
-        adapter = SummitViewAdapter(resultReceiver)
-        resultReceiver.setSummitViewAdapter(adapter)
-        filteredEntries = resultReceiver.getSortFilterHelper().filteredEntries
-        update(filteredEntries)
-        summitRecycler.adapter = adapter
-        val layoutManager = LinearLayoutManager(activity)
-        summitRecycler.layoutManager = layoutManager
-        val itemTouchHelper = ItemTouchHelper(SwipeToMarkCallback(adapter, requireContext()))
-        itemTouchHelper.attachToRecyclerView(summitRecycler)
-        resultReceiver.getSharedPreference().registerOnSharedPreferenceChangeListener(this)
-        resultReceiver.getSortFilterHelper().apply()
-        return summitRecycler
+        binding = FragmentSummitViewBinding.inflate(layoutInflater, container, false)
+        database = DatabaseModule.provideDatabase(requireContext())
+        return binding.root
     }
 
-    fun getAdapter(): SummitViewAdapter? {
-        return adapter
-    }
-
-    override fun update(filteredSummitEntries: List<Summit>?) {
-        adapter?.setFilteredSummitEntries(filteredSummitEntries)
-    }
-
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        resultReceiver.getSortFilterHelper().areSharedPrefInitialized = false
-        if (key == "current_year_switch" || key == "indoor_height_meter_per_cent") {
-            readSharedPreference(sharedPreferences)
-        }
-    }
-
-    private fun readSharedPreference(sharedPreferences: SharedPreferences?) {
-        if (!resultReceiver.getSortFilterHelper().areSharedPrefInitialized) {
-            resultReceiver.getSortFilterHelper().areSharedPrefInitialized = true
-            if (sharedPreferences?.getBoolean("current_year_switch", false) == true) {
-                resultReceiver.getSortFilterHelper().setSelectedDateItemDefault(2)
-            } else {
-                resultReceiver.getSortFilterHelper().setSelectedDateItemDefault(0)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        binding.apply {
+            btnShowDialog.setOnClickListener {
+                AddContactFragment().show(
+                    requireActivity().supportFragmentManager,
+                    AddContactFragment().tag
+                )
             }
-            resultReceiver.getSortFilterHelper().setIndoorHeightMeterPercent(sharedPreferences?.getInt("indoor_height_meter_per_cent", 0)
-                    ?: 0)
-            resultReceiver.getSortFilterHelper().setDataSpinnerToDefault()
-            resultReceiver.getSortFilterHelper().apply()
+
+            viewModel.getAllContacts()
+            viewModel.contactsList.observe(requireActivity()) {
+                when (it.status) {
+                    DataStatus.Status.LOADING -> {
+                        loading.isVisible(true, rvContacts)
+                        emptyBody.isVisible(false, rvContacts)
+                    }
+                    DataStatus.Status.SUCCESS -> {
+                        it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
+                        loading.isVisible(false, rvContacts)
+                        contactsAdapter.differ.submitList(it.data)
+                        rvContacts.apply {
+                            layoutManager = LinearLayoutManager(view.context)
+                            adapter = contactsAdapter
+                        }
+                    }
+                    DataStatus.Status.ERROR -> {
+                        loading.isVisible(false, rvContacts)
+                        Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+
+            val swipeCallback = object :
+                ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+                override fun onMove(
+                    recyclerView: RecyclerView,
+                    viewHolder: RecyclerView.ViewHolder,
+                    target: RecyclerView.ViewHolder
+                ): Boolean {
+                    return false
+                }
+
+                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                    val position = viewHolder.absoluteAdapterPosition
+                    val contact = contactsAdapter.differ.currentList[position]
+                    when (direction) {
+                        ItemTouchHelper.LEFT -> {
+                            viewModel.deleteContact(contact)
+                            Snackbar.make(binding.root, "Item Deleted!", Snackbar.LENGTH_LONG)
+                                .apply {
+                                    setAction("UNDO") {
+                                        viewModel.saveContact(false, contact)
+                                    }
+                                }.show()
+                        }
+                        ItemTouchHelper.RIGHT -> {
+                            val addContactFragment = AddContactFragment()
+                            val bundle = Bundle()
+                            bundle.putLong(Constants.BUNDLE_ID, contact.id)
+                            addContactFragment.arguments = bundle
+                            addContactFragment.show(
+                                requireActivity().supportFragmentManager, AddContactFragment().tag
+                            )
+                        }
+                    }
+                }
+
+                override fun onChildDraw(
+                    c: Canvas,
+                    recyclerView: RecyclerView,
+                    viewHolder: RecyclerView.ViewHolder,
+                    dX: Float,
+                    dY: Float,
+                    actionState: Int,
+                    isCurrentlyActive: Boolean
+                ) {
+                    RecyclerViewSwipeDecorator.Builder(
+                        c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive
+                    ).addSwipeLeftLabel("Delete").addSwipeLeftBackgroundColor(Color.RED)
+                        .addSwipeLeftActionIcon(R.drawable.ic_baseline_delete_24)
+                        .setSwipeLeftLabelColor(Color.WHITE).setSwipeLeftActionIconTint(Color.WHITE)
+                        .addSwipeRightLabel("Edit").addSwipeRightBackgroundColor(Color.GREEN)
+                        .setSwipeRightLabelColor(Color.WHITE)
+                        .setSwipeRightActionIconTint(Color.WHITE)
+                        .addSwipeRightActionIcon(R.drawable.ic_baseline_edit_24).create().decorate()
+                    super.onChildDraw(
+                        c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive
+                    )
+                }
+
+            }
+
+            val itemTouchHelper = ItemTouchHelper(swipeCallback)
+            itemTouchHelper.attachToRecyclerView(rvContacts)
+
         }
     }
 
 
-    companion object {
-        lateinit var summitRecycler: RecyclerView
-        private var optionMenu: Menu? = null
-
-        fun updateNewSummits(allEntriesFromGarmin: List<Summit>, summits: List<Summit>, context: Context?) {
-            if (allEntriesFromGarmin.isNotEmpty()) {
-                val activitiesIdOfAllSummits = summits.filter { it.garminData != null && it.garminData?.activityIds?.isNotEmpty() == true }.map { it.garminData?.activityIds as List<String> }.flatten().toMutableList()
-                val newEntriesFromGarmin = allEntriesFromGarmin.filter { it.garminData?.activityId !in activitiesIdOfAllSummits }
-                when (newEntriesFromGarmin.size) {
-                    0 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_none_24, null) }
-                    1 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_1_24, null) }
-                    2 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_2_24, null) }
-                    3 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_3_24, null) }
-                    4 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_4_24, null) }
-                    5 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_5_24, null) }
-                    6 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_6_24, null) }
-                    7 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_7_24, null) }
-                    8 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_8_24, null) }
-                    9 -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_9_24, null) }
-                    else -> optionMenu?.getItem(1)?.icon = context?.let { ResourcesCompat.getDrawable(it.resources, R.drawable.ic_baseline_filter_9_plus_24, null) }
-                }
+    private fun showEmpty(isShown: Boolean) {
+        binding.apply {
+            if (isShown) {
+                emptyBody.visibility = View.VISIBLE
+                listBody.visibility = View.GONE
+            } else {
+                emptyBody.visibility = View.GONE
+                listBody.visibility = View.VISIBLE
             }
         }
     }

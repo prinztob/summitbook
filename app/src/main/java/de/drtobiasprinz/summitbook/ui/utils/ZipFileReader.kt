@@ -1,13 +1,13 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import android.util.Log
-import de.drtobiasprinz.summitbook.MainActivity.Companion.CSV_FILE_NAME_FORECASTS
-import de.drtobiasprinz.summitbook.MainActivity.Companion.CSV_FILE_NAME_SEGMENTS
-import de.drtobiasprinz.summitbook.MainActivity.Companion.CSV_FILE_NAME_SUMMITS
-import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.Forecast
-import de.drtobiasprinz.summitbook.models.Segment
-import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SEGMENTS
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SUMMITS
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.Forecast
+import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_FORECASTS
 import java.io.*
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -24,7 +24,7 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
         extractZip(inputStream)
         readFromCache()
         newSummits.forEachIndexed { index, it ->
-            it.id = database.summitDao()?.addSummit(it) ?: 0L
+            it.id = database.summitsDao()?.addSummit(it) ?: 0L
             readGpxFile(it)
             readImageFile(it)
         }
@@ -71,7 +71,7 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
     }
 
     private fun readSummits(inputCsvFile: File) {
-        val allSummits = database.summitDao()?.allSummit as MutableList<Summit>
+        val allSummits = database.summitsDao()?.allSummit as MutableList<Summit>
         val iStream: InputStream = FileInputStream(inputCsvFile)
         BufferedReader(InputStreamReader(iStream)).use { br ->
             var line: String?

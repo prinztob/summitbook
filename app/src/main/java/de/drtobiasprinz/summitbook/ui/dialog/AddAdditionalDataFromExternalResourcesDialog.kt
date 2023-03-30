@@ -13,12 +13,12 @@ import android.widget.*
 import androidx.fragment.app.DialogFragment
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import de.drtobiasprinz.summitbook.MainActivity.Companion.activitiesDir
+import de.drtobiasprinz.summitbook.db.entities.ElevationData
+import de.drtobiasprinz.summitbook.db.entities.FragmentResultReceiver
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.VelocityData
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.models.ElevationData
-import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
-import de.drtobiasprinz.summitbook.models.Summit
-import de.drtobiasprinz.summitbook.models.VelocityData
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
 import de.drtobiasprinz.summitbook.ui.utils.MaxVelocitySummit
@@ -52,7 +52,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         backButton = view.findViewById(R.id.back)
         if (savedInstanceState != null && summitEntry == null) {
             val summitEntryId = savedInstanceState.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
-            summitEntry = resultReceiver.getSortFilterHelper().database.summitDao()?.getSummit(summitEntryId)
+            summitEntry = resultReceiver.getSortFilterHelper().database.summitsDao().getSummit(summitEntryId)
         }
         val localSummitEntry = summitEntry
         if (localSummitEntry != null) {
@@ -60,13 +60,13 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                 val copyElevationData = localSummitEntry.elevationData.clone()
                 val copyVelocityData = localSummitEntry.velocityData.clone()
                 tableEntries.forEach { it.update() }
-                if (copyElevationData != localSummitEntry.elevationData || copyVelocityData != localSummitEntry.velocityData) resultReceiver.getSortFilterHelper().database.summitDao()?.updateSummit(localSummitEntry)
+                if (copyElevationData != localSummitEntry.elevationData || copyVelocityData != localSummitEntry.velocityData) resultReceiver.getSortFilterHelper().database.summitsDao()?.updateSummit(localSummitEntry)
                 dialog?.cancel()
             }
             deleteDataButton.setOnClickListener {
                 localSummitEntry.velocityData = VelocityData(localSummitEntry.velocityData.avgVelocity, localSummitEntry.velocityData.maxVelocity, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 localSummitEntry.elevationData = ElevationData(localSummitEntry.elevationData.maxElevation, localSummitEntry.elevationData.elevationGain)
-                resultReceiver.getSortFilterHelper().database.summitDao()?.updateSummit(localSummitEntry)
+                resultReceiver.getSortFilterHelper().database.summitsDao()?.updateSummit(localSummitEntry)
                 dialog?.cancel()
             }
             backButton.setOnClickListener {
@@ -78,53 +78,73 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                     val json = JsonParser.parseString(JsonUtils.getJsonData(splitsFile)) as JsonObject
                     val maxVelocitySummit = MaxVelocitySummit()
                     val velocityEntries = maxVelocitySummit.parseFomGarmin(json)
-                    tableEntries.add(TableEntry(getString(R.string.top_speed_1km_hint),
+                    tableEntries.add(
+                        TableEntry(getString(R.string.top_speed_1km_hint),
                             if (localSummitEntry.velocityData.oneKilometer > 0.0) localSummitEntry.velocityData.oneKilometer else maxVelocitySummit.getAverageVelocityForKilometers(1.0, velocityEntries),
-                            "km/h", localSummitEntry.velocityData.oneKilometer > 0.0, { e -> localSummitEntry.velocityData.oneKilometer = e }))
+                            "km/h", localSummitEntry.velocityData.oneKilometer > 0.0, { e -> localSummitEntry.velocityData.oneKilometer = e })
+                    )
                     if (tableEntries.last().value > 0) {
-                        tableEntries.add(TableEntry(getString(R.string.top_speed_5km_hint),
+                        tableEntries.add(
+                            TableEntry(getString(R.string.top_speed_5km_hint),
                                 if (localSummitEntry.velocityData.fiveKilometer > 0.0) localSummitEntry.velocityData.fiveKilometer else maxVelocitySummit.getAverageVelocityForKilometers(5.0, velocityEntries),
-                                "km/h", localSummitEntry.velocityData.fiveKilometer > 0.0, { e -> localSummitEntry.velocityData.fiveKilometer = e }))
+                                "km/h", localSummitEntry.velocityData.fiveKilometer > 0.0, { e -> localSummitEntry.velocityData.fiveKilometer = e })
+                        )
                     }
                     if (tableEntries.last().value > 0) {
-                        tableEntries.add(TableEntry(getString(R.string.top_speed_10km_hint),
+                        tableEntries.add(
+                            TableEntry(getString(R.string.top_speed_10km_hint),
                                 if (localSummitEntry.velocityData.tenKilometers > 0.0) localSummitEntry.velocityData.tenKilometers else maxVelocitySummit.getAverageVelocityForKilometers(10.0, velocityEntries),
-                                "km/h", localSummitEntry.velocityData.tenKilometers > 0.0, { e -> localSummitEntry.velocityData.tenKilometers = e }))
+                                "km/h", localSummitEntry.velocityData.tenKilometers > 0.0, { e -> localSummitEntry.velocityData.tenKilometers = e })
+                        )
                     }
                     if (tableEntries.last().value > 0) {
-                        tableEntries.add(TableEntry(getString(R.string.top_speed_15km_hint),
+                        tableEntries.add(
+                            TableEntry(getString(R.string.top_speed_15km_hint),
                                 if (localSummitEntry.velocityData.fifteenKilometers > 0.0) localSummitEntry.velocityData.fifteenKilometers else maxVelocitySummit.getAverageVelocityForKilometers(15.0, velocityEntries),
-                                "km/h", localSummitEntry.velocityData.fifteenKilometers > 0.0, { e -> localSummitEntry.velocityData.fifteenKilometers = e }))
+                                "km/h", localSummitEntry.velocityData.fifteenKilometers > 0.0, { e -> localSummitEntry.velocityData.fifteenKilometers = e })
+                        )
                     }
                     if (tableEntries.last().value > 0) {
-                        tableEntries.add(TableEntry(getString(R.string.top_speed_20km_hint),
+                        tableEntries.add(
+                            TableEntry(getString(R.string.top_speed_20km_hint),
                                 if (localSummitEntry.velocityData.twentyKilometers > 0.0) localSummitEntry.velocityData.twentyKilometers else maxVelocitySummit.getAverageVelocityForKilometers(20.0, velocityEntries),
-                                "km/h", localSummitEntry.velocityData.twentyKilometers > 0.0, { e -> localSummitEntry.velocityData.twentyKilometers = e }))
+                                "km/h", localSummitEntry.velocityData.twentyKilometers > 0.0, { e -> localSummitEntry.velocityData.twentyKilometers = e })
+                        )
                     }
                     if (tableEntries.last().value > 0) {
-                        tableEntries.add(TableEntry(getString(R.string.top_speed_30km_hint),
+                        tableEntries.add(
+                            TableEntry(getString(R.string.top_speed_30km_hint),
                                 if (localSummitEntry.velocityData.thirtyKilometers > 0.0) localSummitEntry.velocityData.thirtyKilometers else maxVelocitySummit.getAverageVelocityForKilometers(30.0, velocityEntries),
-                                "km/h", localSummitEntry.velocityData.thirtyKilometers > 0.0, { e -> localSummitEntry.velocityData.thirtyKilometers = e }))
+                                "km/h", localSummitEntry.velocityData.thirtyKilometers > 0.0, { e -> localSummitEntry.velocityData.thirtyKilometers = e })
+                        )
                     }
                     if (tableEntries.last().value > 0) {
-                        tableEntries.add(TableEntry(getString(R.string.top_speed_40km_hint),
+                        tableEntries.add(
+                            TableEntry(getString(R.string.top_speed_40km_hint),
                                 if (localSummitEntry.velocityData.fortyKilometers > 0.0) localSummitEntry.velocityData.fortyKilometers else maxVelocitySummit.getAverageVelocityForKilometers(40.0, velocityEntries),
-                                "km/h", localSummitEntry.velocityData.fortyKilometers > 0.0, { e -> localSummitEntry.velocityData.fortyKilometers = e }))
+                                "km/h", localSummitEntry.velocityData.fortyKilometers > 0.0, { e -> localSummitEntry.velocityData.fortyKilometers = e })
+                        )
                     }
                     if (tableEntries.last().value > 0) {
-                        tableEntries.add(TableEntry(getString(R.string.top_speed_50km_hint),
+                        tableEntries.add(
+                            TableEntry(getString(R.string.top_speed_50km_hint),
                                 if (localSummitEntry.velocityData.fiftyKilometers > 0.0) localSummitEntry.velocityData.fiftyKilometers else maxVelocitySummit.getAverageVelocityForKilometers(50.0, velocityEntries),
-                                "km/h", localSummitEntry.velocityData.fiftyKilometers > 0.0, { e -> localSummitEntry.velocityData.fiftyKilometers = e }))
+                                "km/h", localSummitEntry.velocityData.fiftyKilometers > 0.0, { e -> localSummitEntry.velocityData.fiftyKilometers = e })
+                        )
                     }
                     if (tableEntries.last().value > 0) {
-                        tableEntries.add(TableEntry(getString(R.string.top_speed_75km_hint),
+                        tableEntries.add(
+                            TableEntry(getString(R.string.top_speed_75km_hint),
                                 if (localSummitEntry.velocityData.seventyFiveKilometers > 0.0) localSummitEntry.velocityData.seventyFiveKilometers else maxVelocitySummit.getAverageVelocityForKilometers(75.0, velocityEntries),
-                                "km/h", localSummitEntry.velocityData.seventyFiveKilometers > 0.0, { e -> localSummitEntry.velocityData.seventyFiveKilometers = e }))
+                                "km/h", localSummitEntry.velocityData.seventyFiveKilometers > 0.0, { e -> localSummitEntry.velocityData.seventyFiveKilometers = e })
+                        )
                     }
                     if (tableEntries.last().value > 0) {
-                        tableEntries.add(TableEntry(getString(R.string.top_speed_100km_hint),
+                        tableEntries.add(
+                            TableEntry(getString(R.string.top_speed_100km_hint),
                                 if (localSummitEntry.velocityData.hundredKilometers > 0.0) localSummitEntry.velocityData.hundredKilometers else maxVelocitySummit.getAverageVelocityForKilometers(100.0, velocityEntries),
-                                "km/h", localSummitEntry.velocityData.hundredKilometers > 0.0, { e -> localSummitEntry.velocityData.hundredKilometers = e }))
+                                "km/h", localSummitEntry.velocityData.hundredKilometers > 0.0, { e -> localSummitEntry.velocityData.hundredKilometers = e })
+                        )
                     }
                 } else {
                     AsyncDownloadSpeedDataForActivity(localSummitEntry, resultReceiver.getPythonExecutor(), resultReceiver.getSortFilterHelper()).execute()
@@ -136,7 +156,8 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
 
                 val elevationGain = gpxPyJson.getAsJsonPrimitive("elevation_gain").asDouble.roundToInt()
                 if (elevationGain > 0) {
-                    tableEntries.add(TableEntry(getString(R.string.height_meter_hint),
+                    tableEntries.add(
+                        TableEntry(getString(R.string.height_meter_hint),
                             elevationGain.toDouble(),
                             "hm", localSummitEntry.elevationData.elevationGain == elevationGain,
                             { e -> localSummitEntry.elevationData.elevationGain = e.toInt() },
@@ -146,7 +167,8 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
 
                 val maxElevation = gpxPyJson.getAsJsonPrimitive("max_elevation").asDouble.roundToInt()
                 if (maxElevation > 0) {
-                    tableEntries.add(TableEntry(getString(R.string.top_elevation_hint),
+                    tableEntries.add(
+                        TableEntry(getString(R.string.top_elevation_hint),
                             maxElevation.toDouble(),
                             "hm", localSummitEntry.elevationData.maxElevation == maxElevation,
                             { e -> localSummitEntry.elevationData.maxElevation = e.toInt() },
@@ -156,7 +178,8 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
 
                 val distance = gpxPyJson.getAsJsonPrimitive("moving_distance").asDouble / 1000
                 if (distance > 0) {
-                    tableEntries.add(TableEntry(getString(R.string.kilometers_hint),
+                    tableEntries.add(
+                        TableEntry(getString(R.string.kilometers_hint),
                             distance,
                             "km", abs(localSummitEntry.kilometers - distance) < 0.05,
                             { e -> localSummitEntry.kilometers = e },
@@ -167,7 +190,8 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                 val movingDuration = gpxPyJson.getAsJsonPrimitive("moving_time").asDouble
                 if (movingDuration > 0) {
                     val pace = distance / movingDuration * 3600
-                    tableEntries.add(TableEntry(getString(R.string.pace_hint),
+                    tableEntries.add(
+                        TableEntry(getString(R.string.pace_hint),
                             pace,
                             "km/h", abs(localSummitEntry.velocityData.avgVelocity - pace) < 0.05,
                             { e -> localSummitEntry.velocityData.avgVelocity = e },
@@ -177,7 +201,8 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
 
                 val maxVelocity = gpxPyJson.getAsJsonPrimitive("max_speed").asDouble * 3.6
                 if (maxVelocity > 0) {
-                    tableEntries.add(TableEntry(getString(R.string.top_speed),
+                    tableEntries.add(
+                        TableEntry(getString(R.string.top_speed),
                             maxVelocity, "hm/h",
                             abs(localSummitEntry.velocityData.maxVelocity - maxVelocity) < 0.05,
                             { e -> localSummitEntry.velocityData.maxVelocity = e },
@@ -186,35 +211,43 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                 }
                 if (gpxPyJson.has("slope_100")) {
                     val value = gpxPyJson.getAsJsonPrimitive("slope_100").asDouble
-                    tableEntries.add(TableEntry(getString(R.string.max_slope),
+                    tableEntries.add(
+                        TableEntry(getString(R.string.max_slope),
                             value, "%",
                             abs(localSummitEntry.elevationData.maxSlope - value) < 0.05,
                             { e -> localSummitEntry.elevationData.maxSlope = e },
-                            0.0))
+                            0.0)
+                    )
                 }
                 if (gpxPyJson.has("vertical_velocities_60s")) {
                     val value = gpxPyJson.getAsJsonPrimitive("vertical_velocities_60s").asDouble
-                    tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_1Min),
+                    tableEntries.add(
+                        TableEntry(getString(R.string.max_verticalVelocity_1Min),
                             value, "m",
                             localSummitEntry.elevationData.maxVerticalVelocity1Min != 0.0 && abs(localSummitEntry.elevationData.maxVerticalVelocity1Min - value) * 60 < 0.05,
                             { e -> localSummitEntry.elevationData.maxVerticalVelocity1Min = e },
-                            0.0, scaleFactor = 60))
+                            0.0, scaleFactor = 60)
+                    )
                 }
                 if (gpxPyJson.has("vertical_velocities_600s")) {
                     val value = gpxPyJson.getAsJsonPrimitive("vertical_velocities_600s").asDouble
-                    tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_10Min),
+                    tableEntries.add(
+                        TableEntry(getString(R.string.max_verticalVelocity_10Min),
                             value, "m",
                             localSummitEntry.elevationData.maxVerticalVelocity10Min != 0.0 && abs(localSummitEntry.elevationData.maxVerticalVelocity10Min - value) * 600 < 0.05,
                             { e -> localSummitEntry.elevationData.maxVerticalVelocity10Min = e },
-                            0.0, scaleFactor = 600))
+                            0.0, scaleFactor = 600)
+                    )
                 }
                 if (gpxPyJson.has("vertical_velocities_3600s")) {
                     val value = gpxPyJson.getAsJsonPrimitive("vertical_velocities_3600s").asDouble
-                    tableEntries.add(TableEntry(getString(R.string.max_verticalVelocity_1h),
+                    tableEntries.add(
+                        TableEntry(getString(R.string.max_verticalVelocity_1h),
                             value, "m",
                             localSummitEntry.elevationData.maxVerticalVelocity1h != 0.0 && abs(localSummitEntry.elevationData.maxVerticalVelocity1h - value) * 3600 < 0.05,
                             { e -> localSummitEntry.elevationData.maxVerticalVelocity1h = e },
-                            0.0, scaleFactor = 3600))
+                            0.0, scaleFactor = 3600)
+                    )
                 }
             }
             tableLayout = view.findViewById(R.id.tableSummits) as TableLayout
@@ -330,7 +363,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             if (summit.velocityData.fortyKilometers > 0) summit.velocityData.fiftyKilometers = maxVelocitySummit.getAverageVelocityForKilometers(50.0, velocityEntries)
             if (summit.velocityData.fiftyKilometers > 0) summit.velocityData.seventyFiveKilometers = maxVelocitySummit.getAverageVelocityForKilometers(75.0, velocityEntries)
             if (summit.velocityData.seventyFiveKilometers > 0) summit.velocityData.hundredKilometers = maxVelocitySummit.getAverageVelocityForKilometers(100.0, velocityEntries)
-            sortFilterHelper.database.summitDao()?.updateSummit(summit)
+            sortFilterHelper.database.summitsDao()?.updateSummit(summit)
             addVelocityData?.setImageResource(R.drawable.ic_baseline_speed_24)
         }
 

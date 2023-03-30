@@ -13,9 +13,10 @@ import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SegmentsViewAdapter
-import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.Segment
-import de.drtobiasprinz.summitbook.models.SegmentDetails
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
+import de.drtobiasprinz.summitbook.di.DatabaseModule
 import java.text.ParseException
 
 class AddSegmentDetailsDialog : DialogFragment() {
@@ -35,7 +36,7 @@ class AddSegmentDetailsDialog : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        database = context?.let { AppDatabase.getDatabase(it) }
+        database = context?.let { DatabaseModule.provideDatabase(it) }
         usedView = view
         saveEntryButton = view.findViewById(R.id.add_segment_save)
         saveEntryButton.isEnabled = false

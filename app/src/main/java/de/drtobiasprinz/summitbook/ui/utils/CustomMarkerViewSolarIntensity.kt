@@ -1,7 +1,6 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Canvas
 import android.widget.TextView
 import com.github.mikephil.charting.components.MarkerView
@@ -9,9 +8,7 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
-import de.drtobiasprinz.summitbook.models.SolarIntensity
-import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.db.entities.SolarIntensity
 
 class CustomMarkerViewSolarIntensity(context: Context?, layoutResource: Int) : MarkerView(context, layoutResource) {
 

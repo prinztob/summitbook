@@ -10,7 +10,7 @@ import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
-import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.db.entities.Summit
 
 class CustomMarkerView(context: Context?, layoutResource: Int) : MarkerView(context, layoutResource) {
 

@@ -1,7 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
-import de.drtobiasprinz.summitbook.models.SportType
-import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.db.entities.SportType
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import kotlin.math.ceil
 
 class ExtremaValuesSummits(val entries: List<Summit>, val shouldIndoorActivityBeExcluded: Boolean = false, private val excludeZeroValueFromMin: Boolean = false) {

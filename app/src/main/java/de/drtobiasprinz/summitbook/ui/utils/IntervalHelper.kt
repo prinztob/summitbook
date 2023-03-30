@@ -1,7 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import de.drtobiasprinz.summitbook.fragments.StatisticsFragment
-import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat

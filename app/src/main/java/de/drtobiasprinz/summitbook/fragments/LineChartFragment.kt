@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.ArrayAdapter
-import android.widget.Spinner
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.github.mikephil.charting.components.Legend
@@ -21,48 +20,45 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
+import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
-import de.drtobiasprinz.summitbook.models.LineChartSpinnerEntry
-import de.drtobiasprinz.summitbook.models.SportType
-import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.databinding.FragmentLineChartBinding
+import de.drtobiasprinz.summitbook.db.entities.LineChartSpinnerEntry
+import de.drtobiasprinz.summitbook.db.entities.SportType
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerLineChart
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerView
 import java.text.SimpleDateFormat
+import javax.inject.Inject
 
-class LineChartFragment : Fragment(), SummationFragment {
+@AndroidEntryPoint
+class LineChartFragment : Fragment() {
+
+    @Inject
+    lateinit var contactsAdapter: ContactsAdapter
+
     private var summitEntries: List<Summit>? = null
     private var filteredEntries: List<Summit>? = null
-    private var dataSpinner: Spinner? = null
     private var lineChartSpinnerEntry: LineChartSpinnerEntry = LineChartSpinnerEntry.HeightMeter
-    private var lineChartView: View? = null
     private var lineChartEntries: MutableList<Entry?> = ArrayList()
     private var lineChartColors: List<Int>? = mutableListOf()
-    private var lineChart: CustomMarkerLineChart? = null
-    private lateinit var resultReceiver: FragmentResultReceiver
+    private lateinit var binding: FragmentLineChartBinding
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        resultReceiver = context as FragmentResultReceiver
-
-    }
 
     override fun onCreateView(
-            inflater: LayoutInflater, container: ViewGroup?,
-            savedInstanceState: Bundle?
-    ): View? {
-        lineChartView = inflater.inflate(R.layout.fragment_line_chart, container, false)
-        setHasOptionsMenu(true)
-        resultReceiver.getSortFilterHelper().fragment = this
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        binding = FragmentLineChartBinding.inflate(layoutInflater, container, false)
+//        setHasOptionsMenu(true)
         fillDateSpinner()
-        summitEntries = resultReceiver.getSortFilterHelper().entries
-        lineChart = lineChartView?.findViewById(R.id.lineChart) // Fragment
+        summitEntries = contactsAdapter.differ.currentList
         resizeChart()
-        filteredEntries = resultReceiver.getSortFilterHelper().filteredEntries
-        update(filteredEntries)
+        filteredEntries = contactsAdapter.differ.currentList
         listenOnDataSpinner()
         drawLineChart()
-        return lineChartView
+        return binding.root
     }
 
     private fun resizeChart() {
@@ -76,25 +72,26 @@ class LineChartFragment : Fragment(), SummationFragment {
             @Suppress("DEPRECATION")
             display?.getMetrics(metrics)
         }
-        lineChart?.minimumHeight = (metrics.heightPixels * 0.7).toInt()
+        binding.lineChart.minimumHeight = (metrics.heightPixels * 0.7).toInt()
     }
 
     private fun drawLineChart() {
         setLineChartEntries()
         val dataSets: MutableList<ILineDataSet?> = ArrayList()
-        val dataSet = LineDataSet(lineChartEntries, resources.getString(lineChartSpinnerEntry.nameId))
+        val dataSet =
+            LineDataSet(lineChartEntries, resources.getString(lineChartSpinnerEntry.nameId))
         setGraphView(dataSet)
-        lineChart?.let { setLegend(it, resources.getString(lineChartSpinnerEntry.nameId)) }
+        setLegend(binding.lineChart, resources.getString(lineChartSpinnerEntry.nameId))
         dataSets.add(dataSet)
-        lineChart?.data = LineData(dataSets)
+        binding.lineChart.data = LineData(dataSets)
         setXAxis()
-        val yAxisLeft = lineChart?.axisLeft
+        val yAxisLeft = binding.lineChart.axisLeft
         setYAxis(yAxisLeft)
-        val yAxisRight = lineChart?.axisRight
+        val yAxisRight = binding.lineChart.axisRight
         setYAxis(yAxisRight)
-        lineChart?.setTouchEnabled(true)
-        lineChart?.marker = CustomMarkerView(lineChartView?.context, R.layout.marker_graph)
-        lineChart?.invalidate()
+        binding.lineChart.setTouchEnabled(true)
+        binding.lineChart.marker = CustomMarkerView(requireContext(), R.layout.marker_graph)
+        binding.lineChart.invalidate()
     }
 
     private fun setLineChartEntries() {
@@ -111,7 +108,8 @@ class LineChartFragment : Fragment(), SummationFragment {
             }
         }?.sortedBy { it.date }
         var accumulator = 0f
-        lineChartColors = useEntries?.map { ContextCompat.getColor(requireContext(), it.sportType.color) }
+        lineChartColors =
+            useEntries?.map { ContextCompat.getColor(requireContext(), it.sportType.color) }
         lineChartEntries = useEntries?.map {
             val value = if (!lineChartSpinnerEntry.accumulate) {
                 lineChartSpinnerEntry.f(it)
@@ -124,12 +122,15 @@ class LineChartFragment : Fragment(), SummationFragment {
     }
 
     private fun setXAxis() {
-        val xAxis = lineChart?.xAxis
+        val xAxis = binding.lineChart.xAxis
         xAxis?.position = XAxis.XAxisPosition.BOTTOM
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String? {
-                return SimpleDateFormat(Summit.DATE_FORMAT, requireContext().resources.configuration.locales[0])
-                        .format(Summit.getDateFromFloat(value))
+                return SimpleDateFormat(
+                    Summit.DATE_FORMAT,
+                    requireContext().resources.configuration.locales[0]
+                )
+                    .format(Summit.getDateFromFloat(value))
             }
         }
     }
@@ -137,18 +138,14 @@ class LineChartFragment : Fragment(), SummationFragment {
     private fun setYAxis(yAxis: YAxis?) {
         yAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return String.format(requireContext().resources.configuration.locales[0], "%.0f %s", value, lineChartSpinnerEntry.unit)
+                return String.format(
+                    requireContext().resources.configuration.locales[0],
+                    "%.0f %s",
+                    value,
+                    lineChartSpinnerEntry.unit
+                )
             }
         }
-    }
-
-    override fun update(filteredSummitEntries: List<Summit>?) {
-        filteredEntries = filteredSummitEntries
-        val selected = dataSpinner?.selectedItemId?.toInt()
-        if (selected != null) {
-            lineChartSpinnerEntry = LineChartSpinnerEntry.values()[selected]
-        }
-        drawLineChart()
     }
 
     private fun setGraphView(dataSet: LineDataSet) {
@@ -171,15 +168,39 @@ class LineChartFragment : Fragment(), SummationFragment {
         l.entries
         l.yEntrySpace = 10f
         l.isWordWrapEnabled = true
-        val legends = mutableListOf(LegendEntry(label, Legend.LegendForm.CIRCLE, 9f, 5f, null, R.color.colorPrimaryDark))
-        legends.addAll(SportType.values().map { LegendEntry(resources.getString(it.sportNameStringId), Legend.LegendForm.CIRCLE, 9f, 5f, null, ContextCompat.getColor(requireContext(), it.color)) })
+        val legends = mutableListOf(
+            LegendEntry(
+                label,
+                Legend.LegendForm.CIRCLE,
+                9f,
+                5f,
+                null,
+                R.color.colorPrimaryDark
+            )
+        )
+        legends.addAll(
+            SportType.values().map {
+                LegendEntry(
+                    resources.getString(it.sportNameStringId),
+                    Legend.LegendForm.CIRCLE,
+                    9f,
+                    5f,
+                    null,
+                    ContextCompat.getColor(requireContext(), it.color)
+                )
+            })
         l.setCustom(legends)
         l.isEnabled = true
     }
 
     private fun listenOnDataSpinner() {
-        dataSpinner?.onItemSelectedListener = object : OnItemSelectedListener {
-            override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
+        binding.spinnerData.onItemSelectedListener = object : OnItemSelectedListener {
+            override fun onItemSelected(
+                adapterView: AdapterView<*>?,
+                view: View?,
+                i: Int,
+                l: Long
+            ) {
                 lineChartSpinnerEntry = LineChartSpinnerEntry.values()[i]
                 drawLineChart()
             }
@@ -189,12 +210,13 @@ class LineChartFragment : Fragment(), SummationFragment {
     }
 
     private fun fillDateSpinner() {
-        val dateAdapter = ArrayAdapter(requireContext(),
-                android.R.layout.simple_spinner_item,
-                LineChartSpinnerEntry.values().map { resources.getString(it.nameId) }.toTypedArray())
+        val dateAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            LineChartSpinnerEntry.values().map { resources.getString(it.nameId) }.toTypedArray()
+        )
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        dataSpinner = lineChartView?.findViewById(R.id.spinner_data)
-        dataSpinner?.adapter = dateAdapter
+        binding.spinnerData.adapter = dateAdapter
     }
 
 

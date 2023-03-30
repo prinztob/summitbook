@@ -12,13 +12,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
-import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.fragments.AddSegmentEntryFragment
-import de.drtobiasprinz.summitbook.models.Segment
-import de.drtobiasprinz.summitbook.models.SegmentEntry
-import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.dialog.AddSegmentDetailsDialog
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -60,7 +61,7 @@ class SegmentsViewAdapter(var segments: MutableList<Segment>) : RecyclerView.Ada
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val cardView = holder.cardView
-        database = context.let { AppDatabase.getDatabase(it) }
+        database = context.let { DatabaseModule.provideDatabase(it) }
         if (position >= segments.size) {
             cardView?.findViewById<Button?>(R.id.add_segment_detail)?.setOnClickListener {
                 (context as AppCompatActivity).supportFragmentManager.let { AddSegmentDetailsDialog.getInstance(null, this).show(it, "Add Segment Details") }
@@ -115,7 +116,7 @@ class SegmentsViewAdapter(var segments: MutableList<Segment>) : RecyclerView.Ada
         tableLayout.removeAllViews()
         addHeader(cardView, tableLayout, segment)
         sorter(segment.segmentEntries).forEachIndexed { index, entry ->
-            val summit = database?.summitDao()?.getSummitFromActivityId(entry.activityId)
+            val summit = database?.summitsDao()?.getSummitFromActivityId(entry.activityId)
             if (summit != null) {
                 addSegmentToTable(summit, entry, cardView, index, tableLayout, segment)
             }

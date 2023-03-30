@@ -15,13 +15,12 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
 import de.drtobiasprinz.gpx.GPXParser
 import de.drtobiasprinz.gpx.TrackPoint
-import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter
-import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter.Companion.setIconForPositionButton
-import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.summitRecycler
-import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.models.Summit
-import de.drtobiasprinz.summitbook.models.TrackColor
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.GpsTrack
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.TrackColor
+import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
@@ -60,7 +59,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_select_on_osmap)
-        database = AppDatabase.getDatabase(applicationContext)
+        database = DatabaseModule.provideDatabase(applicationContext)
         val searchPanel = findViewById<View>(R.id.search_panel)
         val expander = findViewById<View>(R.id.expander)
         expander.setOnClickListener {
@@ -78,7 +77,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
         if (bundle != null) {
             summitEntryId = bundle.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
             summitEntryPosition = bundle.getInt(SUMMIT_POSITION)
-            summitEntry = database?.summitDao()?.getSummit(summitEntryId)
+            summitEntry = database?.summitsDao()?.getSummit(summitEntryId)
 
             searchForLocation = findViewById(R.id.editLocation)
             searchForLocation.setText(summitEntry?.name)
@@ -130,8 +129,8 @@ class SelectOnOsMapActivity : FragmentActivity() {
                 if (position != null) {
                     entry.lat = position.lat
                     entry.lng = position.lon
-                    database?.summitDao()?.updateLat(entry.id, position.lat)
-                    database?.summitDao()?.updateLng(entry.id, position.lon)
+                    database?.summitsDao()?.updateLat(entry.id, position.lat)
+                    database?.summitsDao()?.updateLng(entry.id, position.lon)
                     entry.latLng = latLngSelectedPosition
                     finish()
                     Toast.makeText(v.context, String.format(getString(R.string.no_email_program_installed), entry.name), Toast.LENGTH_SHORT).show()
@@ -147,11 +146,11 @@ class SelectOnOsMapActivity : FragmentActivity() {
                 }
                 entry.setBoundingBoxFromTrack()
                 if (entry.trackBoundingBox != null) {
-                    database?.summitDao()?.updateSummit(entry)
+                    database?.summitsDao()?.updateSummit(entry)
                 }
-                val holder = summitRecycler.findViewHolderForAdapterPosition(summitEntryPosition) as SummitViewAdapter.ViewHolder
-                val addButton = holder.cardView?.findViewById<ImageButton>(R.id.entry_add_coordinate)
-                setIconForPositionButton(addButton, entry)
+//                val holder = summitRecycler.findViewHolderForAdapterPosition(summitEntryPosition) as SummitViewAdapter.ViewHolder
+//                val addButton = holder.cardView?.findViewById<ImageButton>(R.id.entry_add_coordinate)
+//                setIconForPositionButton(addButton, entry)
             }
         }
         closeDialogButton = findViewById(R.id.add_position_cancel)
@@ -174,8 +173,8 @@ class SelectOnOsMapActivity : FragmentActivity() {
                             }
                             entry.latLng = TrackPoint(0.0, 0.0)
 
-                            database?.summitDao()?.updateLat(entry.id, 0.0)
-                            database?.summitDao()?.updateLng(entry.id, 0.0)
+                            database?.summitsDao()?.updateLat(entry.id, 0.0)
+                            database?.summitsDao()?.updateLng(entry.id, 0.0)
                             finish()
                             Toast.makeText(v.context, v.context.getString(R.string.delete_gps, entry.name), Toast.LENGTH_SHORT).show()
                         }

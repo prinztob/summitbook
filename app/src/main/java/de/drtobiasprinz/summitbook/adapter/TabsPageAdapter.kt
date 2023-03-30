@@ -3,11 +3,11 @@ package de.drtobiasprinz.summitbook.adapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.fragments.SummitEntryDataFragment
 import de.drtobiasprinz.summitbook.fragments.SummitEntryImagesFragment
 import de.drtobiasprinz.summitbook.fragments.SummitEntryPowerFragment
 import de.drtobiasprinz.summitbook.fragments.SummitEntryTrackFragment
-import de.drtobiasprinz.summitbook.models.Summit
 
 
 class TabsPagerAdapter(fa: FragmentActivity?, private val summitEntry: Summit) : FragmentStateAdapter(fa!!) {

@@ -33,12 +33,13 @@ import com.github.mikephil.charting.utils.ColorTemplate
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
-import de.drtobiasprinz.summitbook.models.Summit
-import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
-import de.drtobiasprinz.summitbook.models.TrackColor
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.GpsTrack
+import de.drtobiasprinz.summitbook.db.entities.GpsTrack.Companion.interpolateColor
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.SummitEntryResultReceiver
+import de.drtobiasprinz.summitbook.db.entities.TrackColor
+import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
@@ -77,7 +78,7 @@ class SummitEntryTrackFragment : Fragment() {
             inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?,
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_track, container, false)
-        database = context?.let { AppDatabase.getDatabase(it) }
+        database = context?.let { DatabaseModule.provideDatabase(it) }
         summitEntry = resultReceiver.getSummit()
         summitToCompare = resultReceiver.getSelectedSummitForComparison()
         summitsToCompare = resultReceiver.getSummitsForComparison()

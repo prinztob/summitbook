@@ -13,10 +13,10 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.stfalcon.imageviewer.StfalconImageViewer
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.PageViewModel
-import kotlinx.android.synthetic.*
 import org.imaginativeworld.whynotimagecarousel.ImageCarousel
 import org.imaginativeworld.whynotimagecarousel.listener.CarouselListener
 import org.imaginativeworld.whynotimagecarousel.model.CarouselItem
@@ -36,11 +36,11 @@ class SummitEntryImagesFragment : Fragment() {
             savedInstanceState: Bundle?,
     ): View {
         val root: View = inflater.inflate(R.layout.fragment_summit_entry_images, container, false)
-        database = context?.let { AppDatabase.getDatabase(it) }
+        database = context?.let { DatabaseModule.provideDatabase(it) }
         if (summitEntry == null && savedInstanceState != null) {
             val summitEntryId = savedInstanceState.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
             if (summitEntryId != 0L) {
-                summitEntry = database?.summitDao()?.getSummit(summitEntryId)
+                summitEntry = database?.summitsDao()?.getSummit(summitEntryId)
             }
         }
         val localSummit = summitEntry
@@ -72,7 +72,7 @@ class SummitEntryImagesFragment : Fragment() {
         params.height = (metrics.heightPixels * 0.7).toInt()
         carousel.layoutParams = params
         carousel.invalidate()
-        carousel.clearFindViewByIdCache()
+//        carousel.clearFindViewByIdCache()
         val list = mutableListOf<CarouselItem>()
         for (imageId in localSummit.imageIds) {
             val item = CarouselItem(imageUrl = "file://" + localSummit.getImagePath(imageId))

@@ -285,6 +285,7 @@
 
             <HorizontalScrollView
                 android:layout_width="match_parent"
+                android:id="@+id/horizontal_velocity"
                 android:layout_height="0dp"
                 android:layout_weight="2">
 
@@ -407,6 +408,7 @@
             </HorizontalScrollView>
 
             <HorizontalScrollView
+                android:id="@+id/horizontal_speed"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="2">
@@ -1041,6 +1043,7 @@
 
             <HorizontalScrollView
                 android:layout_width="match_parent"
+                android:id="@+id/horizontal_power"
                 android:layout_height="0dp"
                 android:layout_weight="2">
 

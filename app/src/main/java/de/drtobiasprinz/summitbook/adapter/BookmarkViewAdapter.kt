@@ -16,8 +16,9 @@ import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
-import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.dialog.AddBookmarkDialog.Companion.updateInstance
 
 
@@ -40,7 +41,7 @@ class BookmarkViewAdapter(var bookmarks: MutableList<Summit>) : RecyclerView.Ada
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val cardView = holder.cardView
-        database = context?.let { AppDatabase.getDatabase(it) }
+        database = context?.let { DatabaseModule.provideDatabase(it) }
         val entry = bookmarks[position]
         if (cardView != null) {
             val textViewName = cardView.findViewById<TextView?>(R.id.bookmark_name)
@@ -79,7 +80,7 @@ class BookmarkViewAdapter(var bookmarks: MutableList<Summit>) : RecyclerView.Ada
                 .setTitle(v.context.getString(R.string.delete_entry, entry.name))
                 .setMessage(v.context.getString(R.string.delete_entry_text))
                 .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                    database?.let { database.summitDao()?.delete(entry) }
+                    database?.let { database.summitsDao().delete(entry) }
                     bookmarks.remove(entry)
                     notifyDataSetChanged()
                     Toast.makeText(v.context, v.context.getString(R.string.delete_entry, entry.name), Toast.LENGTH_SHORT).show()

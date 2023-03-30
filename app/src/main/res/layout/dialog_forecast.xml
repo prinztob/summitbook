@@ -6,63 +6,54 @@
     android:orientation="vertical">
 
     <TextView
-        android:layout_height="wrap_content"
-        android:layout_width="match_parent"
         android:id="@+id/overview"
-        android:text="@string/overview"
-        android:gravity="center"
-        android:layout_marginTop="5dp"
-        android:layout_marginStart="15dp"
-        android:layout_marginEnd="15dp"
-        android:textAppearance="?android:attr/textAppearanceSmall"
-        android:textColor="#999"/>
-
-    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginStart="15dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="15dp"
+        android:gravity="center"
+        android:text="@string/overview"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="#999" />
 
-        <co.ceryle.segmentedbutton.SegmentedButtonGroup
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="10dp">
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/group_year"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_margin="10dp"
             android:elevation="2dp"
-            app:sbg_animateSelector="fastOutSlowIn"
-            app:sbg_animateSelectorDuration="1000"
-            app:sbg_backgroundColor="@android:color/transparent"
-            app:sbg_backgroundDrawable="@drawable/gradient_drawable"
-            app:sbg_dividerBackgroundDrawable="@drawable/gradient_drawable_divider"
-            app:sbg_dividerColor="@color/grey_500"
-            app:sbg_dividerPadding="50dp"
-            app:sbg_dividerRadius="50dp"
-            app:sbg_dividerSize="4dp"
-            app:sbg_position="0"
-            app:sbg_radius="20dp"
-            app:sbg_ripple="true"
-            app:sbg_rippleColor="@color/blue_300"
-            app:sbg_selectorColor="@color/colorPrimary">
+            app:checkedButton="@id/button_current_year"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:selectionRequired="true"
+            app:singleSelection="true">
 
-            <co.ceryle.segmentedbutton.SegmentedButton
+            <Button
+                android:id="@+id/button_current_year"
+                style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="15sp"
-                app:sb_text="@string/current_year"
-                app:sb_textColor="@color/colorAccent"
-                app:sb_textColor_onSelection="@android:color/white" />
+                android:text="@string/current_year"
+                android:textSize="11sp" />
 
-            <co.ceryle.segmentedbutton.SegmentedButton
+            <Button
+                android:id="@+id/button_next_year"
+                style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="15sp"
-                app:sb_text="@string/next_year"
-                app:sb_textColor="@color/colorAccent"
-                app:sb_textColor_onSelection="@android:color/white" />
-        </co.ceryle.segmentedbutton.SegmentedButtonGroup>
+                android:text="@string/next_year"
+                android:textSize="11sp" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
 
-        <co.ceryle.segmentedbutton.SegmentedButtonGroup
+        <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/group_forecast_property"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -70,50 +61,39 @@
             android:layout_gravity="center_vertical"
             android:layout_margin="10dp"
             android:elevation="2dp"
-            app:sbg_animateSelector="fastOutSlowIn"
-            app:sbg_animateSelectorDuration="1000"
-            app:sbg_backgroundColor="@android:color/transparent"
-            app:sbg_backgroundDrawable="@drawable/gradient_drawable"
-            app:sbg_dividerBackgroundDrawable="@drawable/gradient_drawable_divider"
-            app:sbg_dividerColor="@color/grey_500"
-            app:sbg_dividerPadding="50dp"
-            app:sbg_dividerRadius="50dp"
-            app:sbg_dividerSize="4dp"
-            app:sbg_position="0"
-            app:sbg_radius="20dp"
-            app:sbg_ripple="true"
-            app:sbg_rippleColor="@color/blue_300"
-            app:sbg_selectorColor="@color/colorPrimary">
+            app:checkedButton="@id/button_height_meter"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/group_year"
+            app:selectionRequired="true"
+            app:singleSelection="true">
 
-            <co.ceryle.segmentedbutton.SegmentedButton
+            <Button
+                android:id="@+id/button_height_meter"
+                style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="15sp"
-                app:sb_text="@string/height_meter"
-                app:sb_textColor="@color/colorAccent"
-                app:sb_textColor_onSelection="@android:color/white" />
+                android:breakStrategy="balanced"
+                android:text="@string/hm"
+                android:textSize="11sp" />
 
-            <co.ceryle.segmentedbutton.SegmentedButton
+            <Button
+                android:id="@+id/button_kilometers"
+                style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="15sp"
-                app:sb_text="@string/kilometers_hint"
-                app:sb_textColor="@color/colorAccent"
-                app:sb_textColor_onSelection="@android:color/white" />
+                android:text="@string/km"
+                android:textSize="11sp" />
 
-            <co.ceryle.segmentedbutton.SegmentedButton
+            <Button
+                android:id="@+id/button_activity"
+                style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="15sp"
-                app:sb_text="@string/activity_hint"
-                app:sb_textColor="@color/colorAccent"
-                app:sb_textColor_onSelection="@android:color/white" />
-
-        </co.ceryle.segmentedbutton.SegmentedButtonGroup>
-    </RelativeLayout>
+                android:text="@string/activity_hint"
+                android:textSize="11sp" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <ScrollView
         android:layout_width="wrap_content"
@@ -137,12 +117,12 @@
                 android:id="@+id/fulfilled_forecast_month1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_toEndOf="@+id/text_month1"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginTop="-5dp"
-                android:text=""
+                android:layout_toEndOf="@+id/text_month1"
                 android:drawablePadding="5dp"
+                android:text=""
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
 
@@ -171,13 +151,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month1"
-                android:layout_toEndOf="@+id/text_month2"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginTop="-5dp"
-                android:text=""
+                android:layout_toEndOf="@+id/text_month2"
                 android:drawablePadding="5dp"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12"  />
+                android:text=""
+                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
                 android:id="@+id/range_slider_forecast_month2"
@@ -204,13 +184,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month2"
-                android:layout_toEndOf="@+id/text_month3"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginTop="-5dp"
-                android:text=""
+                android:layout_toEndOf="@+id/text_month3"
                 android:drawablePadding="5dp"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12"  />
+                android:text=""
+                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
                 android:id="@+id/range_slider_forecast_month3"
@@ -237,12 +217,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month3"
-                android:layout_toEndOf="@+id/text_month4"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginTop="-5dp"
-                android:text=""
+                android:layout_toEndOf="@+id/text_month4"
                 android:drawablePadding="5dp"
+                android:text=""
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -270,12 +250,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month4"
-                android:layout_toEndOf="@+id/text_month5"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginTop="-5dp"
-                android:text=""
+                android:layout_toEndOf="@+id/text_month5"
                 android:drawablePadding="5dp"
+                android:text=""
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -303,13 +283,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month5"
-                android:layout_toEndOf="@+id/text_month6"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginTop="-5dp"
-                android:text=""
+                android:layout_toEndOf="@+id/text_month6"
                 android:drawablePadding="5dp"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12"  />
+                android:text=""
+                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
                 android:id="@+id/range_slider_forecast_month6"
@@ -336,12 +316,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month6"
-                android:layout_toEndOf="@+id/text_month7"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginTop="-5dp"
-                android:text=""
+                android:layout_toEndOf="@+id/text_month7"
                 android:drawablePadding="5dp"
+                android:text=""
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -369,12 +349,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month7"
-                android:layout_toEndOf="@+id/text_month8"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginTop="-5dp"
-                android:text=""
+                android:layout_toEndOf="@+id/text_month8"
                 android:drawablePadding="5dp"
+                android:text=""
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -402,12 +382,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month8"
-                android:layout_toEndOf="@+id/text_month9"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginTop="-5dp"
-                android:text=""
+                android:layout_toEndOf="@+id/text_month9"
                 android:drawablePadding="5dp"
+                android:text=""
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -435,12 +415,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month9"
-                android:layout_toEndOf="@+id/text_month10"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginTop="-5dp"
-                android:text=""
+                android:layout_toEndOf="@+id/text_month10"
                 android:drawablePadding="5dp"
+                android:text=""
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -468,12 +448,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month10"
-                android:layout_toEndOf="@+id/text_month11"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginTop="-5dp"
-                android:text=""
+                android:layout_toEndOf="@+id/text_month11"
                 android:drawablePadding="5dp"
+                android:text=""
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -501,12 +481,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/range_slider_forecast_month11"
-                android:layout_toEndOf="@+id/text_month12"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginTop="-5dp"
-                android:text=""
+                android:layout_toEndOf="@+id/text_month12"
                 android:drawablePadding="5dp"
+                android:text=""
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider

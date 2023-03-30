@@ -24,12 +24,13 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.utils.MPPointF
-import de.drtobiasprinz.summitbook.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.PowerData
-import de.drtobiasprinz.summitbook.models.Summit
-import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.PowerData
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.SummitEntryResultReceiver
+import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
@@ -63,7 +64,7 @@ class SummitEntryPowerFragment : Fragment() {
             savedInstanceState: Bundle?,
     ): View {
         root = inflater.inflate(R.layout.fragment_summit_entry_power, container, false)
-        database = context?.let { AppDatabase.getDatabase(it) }
+        database = context?.let { DatabaseModule.provideDatabase(it) }
         summitEntry = resultReceiver.getSummit()
         summitToCompare = resultReceiver.getSelectedSummitForComparison()
         summitsToCompare = resultReceiver.getSummitsForComparison()

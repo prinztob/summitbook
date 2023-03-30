@@ -7,12 +7,12 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
-import de.drtobiasprinz.summitbook.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.models.Summit
-import de.drtobiasprinz.summitbook.models.TrackBoundingBox
-import de.drtobiasprinz.summitbook.models.TrackColor
+import de.drtobiasprinz.summitbook.db.entities.GpsTrack
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
+import de.drtobiasprinz.summitbook.db.entities.TrackColor
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.ITileSource

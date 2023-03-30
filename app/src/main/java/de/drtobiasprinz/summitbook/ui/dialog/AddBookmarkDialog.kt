@@ -22,19 +22,19 @@ import com.chaquo.python.android.AndroidPlatform
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.gpx.TrackPoint
-import de.drtobiasprinz.summitbook.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.ElevationData
+import de.drtobiasprinz.summitbook.db.entities.SportType
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.VelocityData
+import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.fragments.BookmarkViewFragment
-import de.drtobiasprinz.summitbook.models.ElevationData
-import de.drtobiasprinz.summitbook.models.SportType
-import de.drtobiasprinz.summitbook.models.Summit
-import de.drtobiasprinz.summitbook.models.VelocityData
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader.Companion.getTempGpsFilePath
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
 import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
-import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
 import org.xmlpull.v1.XmlPullParserException
 import java.io.File
 import java.io.IOException
@@ -69,7 +69,7 @@ class AddBookmarkDialog(private val gpxTrackUrl: Uri? = null) : DialogFragment()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        database = context?.let { AppDatabase.getDatabase(it) }
+        database = context?.let { DatabaseModule.provideDatabase(it) }
         usedView = view
         saveEntryButton = view.findViewById(R.id.add_bookmark_save)
         saveEntryButton.isEnabled = false
@@ -105,16 +105,16 @@ class AddBookmarkDialog(private val gpxTrackUrl: Uri? = null) : DialogFragment()
             val bookmark = currentBookmark
             if (bookmark != null) {
                 if (isUpdate) {
-                    database?.summitDao()?.updateSummit(bookmark)
+                    database?.summitsDao()?.updateSummit(bookmark)
                 } else {
-                    bookmark.id = database?.summitDao()?.addSummit(bookmark) ?: 0L
+                    bookmark.id = database?.summitsDao()?.addSummit(bookmark) ?: 0L
                     adapter?.bookmarks?.add(bookmark)
                 }
                 if (temporaryGpxFile?.exists() == true) {
                     temporaryGpxFile?.copyTo(bookmark.getGpsTrackPath().toFile())
                 }
-                adapter?.notifyDataSetChanged()
                 dialog?.cancel()
+                adapter?.notifyDataSetChanged()
             }
         }
 
@@ -298,8 +298,8 @@ class AddBookmarkDialog(private val gpxTrackUrl: Uri? = null) : DialogFragment()
                     entry.lat = highestElevation?.lat
                     entry.lng = highestElevation?.lon
                     entry.latLng = highestElevation
-                    highestElevation?.lat?.let { database.summitDao()?.updateLat(entry.id, it) }
-                    highestElevation?.lon?.let { database.summitDao()?.updateLng(entry.id, it) }
+                    highestElevation?.lat?.let { database.summitsDao().updateLat(entry.id, it) }
+                    highestElevation?.lon?.let { database.summitsDao().updateLng(entry.id, it) }
                     val gpsTrack = entry.gpsTrack
                     if (gpsTrack != null) {
                         val nameFromTrack = gpsTrack.gpxTrack?.metadata?.name

@@ -17,8 +17,10 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import com.github.dhaval2404.imagepicker.ImagePicker
-import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import java.io.File
 
 @Suppress("DEPRECATION")
@@ -30,11 +32,11 @@ class AddImagesActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_images)
-        database = AppDatabase.getDatabase(applicationContext)
+        database = DatabaseModule.provideDatabase(applicationContext)
         val bundle = intent.extras
         if (bundle != null) {
             val summitEntryId = bundle.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
-            summitEntry = database?.summitDao()?.getSummit(summitEntryId)
+            summitEntry = database?.summitsDao()?.getSummit(summitEntryId)
         }
         val localSummit = summitEntry
         if (localSummit != null) {
@@ -210,7 +212,7 @@ class AddImagesActivity : AppCompatActivity() {
     }
 
     private fun updateAdapterAndDatabase(localSummit: Summit) {
-        database?.summitDao()?.updateImageIds(localSummit.id, localSummit.imageIds)
+        database?.summitsDao()?.updateImageIds(localSummit.id, localSummit.imageIds)
     }
 
     private fun getLayoutParams(id: Int, alignment: Int, alignParentEnd: Boolean = true, idOtherButton: Int = 0): RelativeLayout.LayoutParams {

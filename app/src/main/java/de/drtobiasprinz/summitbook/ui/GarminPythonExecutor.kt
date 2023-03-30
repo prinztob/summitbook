@@ -2,16 +2,14 @@ package de.drtobiasprinz.summitbook.ui
 
 import android.os.AsyncTask
 import android.util.Log
-import android.view.View
 import com.chaquo.python.PyObject
 import com.chaquo.python.Python
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import de.drtobiasprinz.summitbook.MainActivity.Companion.activitiesDir
-import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
-import de.drtobiasprinz.summitbook.models.*
+import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.dialog.BaseDialog
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader.Companion.getTempGpsFilePath
@@ -22,7 +20,9 @@ import java.util.*
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
-class GarminPythonExecutor(private var pythonInstance: Python?, private val username: String, private val password: String) {
+class GarminPythonExecutor(
+    private var pythonInstance: Python?, val username: String, val password: String
+) {
     private var pythonModule: PyObject? = null
     private var client: PyObject? = null
 
@@ -71,7 +71,9 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
         if (!activitiesDir.exists()) {
             activitiesDir.mkdirs()
         }
-        val result = pythonModule?.callAttr("download_activities_by_date", client, activitiesDir.absolutePath, startDate, endDate)
+        val result = pythonModule?.callAttr(
+            "download_activities_by_date", client, activitiesDir.absolutePath, startDate, endDate
+        )
         checkOutput(result)
     }
 
@@ -99,7 +101,9 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
         if (client == null) {
             login()
         }
-        val result = pythonModule?.callAttr("get_split_data", client, activityId, activitiesDir?.absolutePath)
+        val result = pythonModule?.callAttr(
+            "get_split_data", client, activityId, activitiesDir?.absolutePath
+        )
         checkOutput(result)
         return JsonParser.parseString(result.toString()) as JsonObject
     }
@@ -134,9 +138,14 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
     companion object {
 
         @Suppress("DEPRECATION")
-        class AsyncDownloadGpxViaPython(summits: List<Summit>, private val resultReceiver: FragmentResultReceiver, useTcx: Boolean = false,
-                                        private val dialog: BaseDialog, private val index: Int = -1) : AsyncTask<Void?, Void?, Void?>() {
-            private val downloader = GarminTrackAndDataDownloader(summits, resultReceiver.getPythonExecutor(), useTcx)
+        class AsyncDownloadGpxViaPython(
+            summits: List<Summit>,
+            private val pythonExecutor: GarminPythonExecutor,
+            useTcx: Boolean = false,
+            private val dialog: BaseDialog,
+            private val index: Int = -1
+        ) : AsyncTask<Void?, Void?, Void?>() {
+            private val downloader = GarminTrackAndDataDownloader(summits, pythonExecutor, useTcx)
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
                     downloader.downloadTracks()
@@ -156,20 +165,21 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
                         }
                     } else {
                         downloader.composeFinalTrack()
-                        downloader.updateFinalEntry(resultReceiver)
+//                        downloader.updateFinalEntry(resultReceiver)
                     }
                     if (index != -1) {
-                        dialog.doInPostExecute(index, downloader.downloadedTracks.none { !it.exists() })
+                        dialog.doInPostExecute(index,
+                            downloader.downloadedTracks.none { !it.exists() })
                     }
                 } catch (e: RuntimeException) {
                     Log.e("AsyncDownloadGpxViaPython", e.message ?: "")
                 } finally {
-                    SummitViewFragment.updateNewSummits(resultReceiver.getAllActivitiesFromThirdParty(), resultReceiver.getSortFilterHelper().entries, dialog.getDialogContext())
-                    val progressBar = dialog.getProgressBarForAsyncTask()
-                    if (progressBar != null) {
-                        progressBar.visibility = View.GONE
-                        progressBar.tooltipText = ""
-                    }
+//                    SummitViewFragment.updateNewSummits(resultReceiver.getAllActivitiesFromThirdParty(), resultReceiver.getSortFilterHelper().entries, dialog.getDialogContext())
+//                    val progressBar = dialog.getProgressBarForAsyncTask()
+//                    if (progressBar != null) {
+//                        progressBar.visibility = View.GONE
+//                        progressBar.tooltipText = ""
+//                    }
                 }
             }
         }
@@ -199,7 +209,10 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
                                 val gson = JsonParser.parseString(it.readText()) as JsonObject
                                 entries.add(parseJsonObject(gson))
                             } catch (ex: IllegalArgumentException) {
-                                Log.i("GarminPythonExecutor","Could not parse file ${it.absolutePath}")
+                                Log.i(
+                                    "GarminPythonExecutor",
+                                    "Could not parse file ${it.absolutePath}"
+                                )
                                 it.delete()
                             }
                         }
@@ -211,70 +224,90 @@ class GarminPythonExecutor(private var pythonInstance: Python?, private val user
 
         @Throws(ParseException::class)
         fun parseJsonObject(jsonObject: JsonObject): Summit {
-            val date = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
-                    .parse(jsonObject.getAsJsonPrimitive("startTimeLocal").asString) ?: Date()
-            val duration: Double = if (jsonObject["movingDuration"] != JsonNull.INSTANCE) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
+            val date = SimpleDateFormat(
+                Summit.DATETIME_FORMAT,
+                Locale.ENGLISH
+            ).parse(jsonObject.getAsJsonPrimitive("startTimeLocal").asString) ?: Date()
+            val duration: Double =
+                if (jsonObject["movingDuration"] != JsonNull.INSTANCE) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
             val averageSpeed = convertMphToKmh(jsonObject["distance"].asDouble / duration)
             val activityIds: MutableList<String> = mutableListOf(jsonObject["activityId"].asString)
             if (jsonObject.has("childIds")) {
                 activityIds.addAll(jsonObject["childIds"].asJsonArray.map { it.asString })
             }
             val garminData = GarminData(
-                    activityIds,
-                    getJsonObjectEntryNotNull(jsonObject, "calories"),
-                    getJsonObjectEntryNotNull(jsonObject, "averageHR"),
-                    getJsonObjectEntryNotNull(jsonObject, "maxHR"),
-                    getPower(jsonObject),
-                    getJsonObjectEntryNotNull(jsonObject, "maxFtp").toInt(),
-                    getJsonObjectEntryNotNull(jsonObject, "vO2MaxValue").toInt(),
-                    getJsonObjectEntryNotNull(jsonObject, "aerobicTrainingEffect"),
-                    getJsonObjectEntryNotNull(jsonObject, "anaerobicTrainingEffect"),
-                    getJsonObjectEntryNotNull(jsonObject, "grit"),
-                    getJsonObjectEntryNotNull(jsonObject, "avgFlow"),
-                    getJsonObjectEntryNotNull(jsonObject, "activityTrainingLoad")
+                activityIds,
+                getJsonObjectEntryNotNull(jsonObject, "calories"),
+                getJsonObjectEntryNotNull(jsonObject, "averageHR"),
+                getJsonObjectEntryNotNull(jsonObject, "maxHR"),
+                getPower(jsonObject),
+                getJsonObjectEntryNotNull(jsonObject, "maxFtp").toInt(),
+                getJsonObjectEntryNotNull(jsonObject, "vO2MaxValue").toInt(),
+                getJsonObjectEntryNotNull(jsonObject, "aerobicTrainingEffect"),
+                getJsonObjectEntryNotNull(jsonObject, "anaerobicTrainingEffect"),
+                getJsonObjectEntryNotNull(jsonObject, "grit"),
+                getJsonObjectEntryNotNull(jsonObject, "avgFlow"),
+                getJsonObjectEntryNotNull(jsonObject, "activityTrainingLoad")
             )
-            return Summit(date,
-                    jsonObject["activityName"].asString,
-                    parseSportType(jsonObject["activityType"].asJsonObject),
-                    emptyList(), emptyList(), "",
-                    ElevationData.parse(if (jsonObject["maxElevation"] != JsonNull.INSTANCE) round(jsonObject["maxElevation"].asDouble, 2).toInt() else 0,
-                            getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt()),
-                    round(convertMeterToKm(getJsonObjectEntryNotNull(jsonObject, "distance").toDouble()), 2),
-                    VelocityData.parse(round(averageSpeed, 2),
-                            if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(convertMphToKmh(jsonObject["maxSpeed"].asDouble), 2) else 0.0),
-                    null, null,
-                    emptyList(),
-                    emptyList(),
-                    isFavorite = false,
-                    isPeak = false,
-                    imageIds = mutableListOf(),
-                    garminData = garminData,
-                    trackBoundingBox = null
+            return Summit(
+                date,
+                jsonObject["activityName"].asString,
+                parseSportType(jsonObject["activityType"].asJsonObject),
+                emptyList(),
+                emptyList(),
+                "",
+                ElevationData.parse(
+                    if (jsonObject["maxElevation"] != JsonNull.INSTANCE) round(
+                        jsonObject["maxElevation"].asDouble, 2
+                    ).toInt() else 0, getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt()
+                ),
+                round(
+                    convertMeterToKm(
+                        getJsonObjectEntryNotNull(
+                            jsonObject, "distance"
+                        ).toDouble()
+                    ), 2
+                ),
+                VelocityData.parse(
+                    round(averageSpeed, 2), if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(
+                        convertMphToKmh(
+                            jsonObject["maxSpeed"].asDouble
+                        ), 2
+                    ) else 0.0
+                ),
+                null,
+                null,
+                emptyList(),
+                emptyList(),
+                isFavorite = false,
+                isPeak = false,
+                imageIds = mutableListOf(),
+                garminData = garminData,
+                trackBoundingBox = null
             )
         }
 
 
-        private fun getPower(jsonObject: JsonObject) =
-                PowerData(
-                        getJsonObjectEntryNotNull(jsonObject, "avgPower"),
-                        getJsonObjectEntryNotNull(jsonObject, "maxPower"),
-                        getJsonObjectEntryNotNull(jsonObject, "normPower"),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_1").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_2").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_5").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_10").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_20").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_30").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_60").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_120").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_300").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_600").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_1200").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_1800").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_3600").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_7200").toInt(),
-                        getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_18000").toInt()
-                )
+        private fun getPower(jsonObject: JsonObject) = PowerData(
+            getJsonObjectEntryNotNull(jsonObject, "avgPower"),
+            getJsonObjectEntryNotNull(jsonObject, "maxPower"),
+            getJsonObjectEntryNotNull(jsonObject, "normPower"),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_1").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_2").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_5").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_10").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_20").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_30").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_60").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_120").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_300").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_600").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_1200").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_1800").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_3600").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_7200").toInt(),
+            getJsonObjectEntryNotNull(jsonObject, "maxAvgPower_18000").toInt()
+        )
 
         private fun getJsonObjectEntryNotNull(jsonObject: JsonObject, key: String): Float {
             return if (jsonObject[key].isJsonNull) 0.0f else jsonObject[key].asFloat

@@ -14,19 +14,24 @@ import android.widget.*
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
 import com.google.android.material.button.MaterialButton
-import de.drtobiasprinz.summitbook.MainActivity.Companion.activitiesDir
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.database.AppDatabase
-import de.drtobiasprinz.summitbook.fragments.SummitViewFragment.Companion.updateNewSummits
-import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
-import de.drtobiasprinz.summitbook.models.IgnoredActivity
-import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.FragmentResultReceiver
+import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 
 
 class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
+
+
+    @Inject
+    lateinit var pythonExecutor: GarminPythonExecutor
 
     private lateinit var addSummitsButton: Button
     private lateinit var currentContext: Context
@@ -50,14 +55,14 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         currentContext = requireContext()
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val useTcx = sharedPreferences.getBoolean("download_tcx", false)
-        database = AppDatabase.getDatabase(currentContext)
+        val sharedPreferences = context?.let { PreferenceManager.getDefaultSharedPreferences(it) }
+        val useTcx = sharedPreferences?.getBoolean("download_tcx", false) ?: false
+        database = DatabaseModule.provideDatabase(currentContext)
         updateEntriesWithoutIgnored()
 
         updateSummitsButton = view.findViewById(R.id.update_new_summits)
         updateSummitsButton.setOnClickListener {
-            val startDate = sharedPreferences.getString("garmin_start_date", null) ?: ""
+            val startDate = sharedPreferences?.getString("garmin_start_date", null) ?: ""
             if (resultReceiver.getPythonExecutor() != null) {
                 val current = LocalDateTime.now()
                 val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -88,7 +93,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                 entriesWithoutIgnored.filter { summit -> summit.isSelected }.forEach { entry ->
                     @Suppress("DEPRECATION")
                     GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(
-                            listOf(entry), resultReceiver, useTcx, this).execute()
+                            listOf(entry), pythonExecutor, useTcx, this).execute()
                 }
             }
             dialog?.cancel()
@@ -100,7 +105,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                 resultReceiver.getProgressBar()?.visibility = View.VISIBLE
                 resultReceiver.getProgressBar()?.tooltipText = getString(R.string.tool_tip_progress_new_garmin_activities, entriesWithoutIgnored.filter { summit -> summit.isSelected }.joinToString(", ") { it.name })
                 @Suppress("DEPRECATION")
-                GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(entriesWithoutIgnored.filter { summit -> summit.isSelected }, resultReceiver, useTcx, this).execute()
+                GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(entriesWithoutIgnored.filter { summit -> summit.isSelected }, pythonExecutor, useTcx, this).execute()
             }
             dialog?.cancel()
         }
@@ -237,7 +242,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
 
             override fun onPostExecute(param: Void?) {
                 if (dialog != null) {
-                    updateNewSummits(allActivitiesFromThirdParty, summits, dialog.requireContext())
+//                    updateNewSummits(allActivitiesFromThirdParty, summits, dialog.requireContext())
                     if (activitiesDir?.exists() == true && activitiesDir?.isDirectory == true) {
                         val files = activitiesDir?.listFiles()
                         if (files?.isNotEmpty() == true) {

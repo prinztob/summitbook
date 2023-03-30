@@ -10,27 +10,27 @@ import androidx.preference.EditTextPreference.OnBindEditTextListener
 
 internal class PasswordPreference : EditTextPreference, OnBindEditTextListener {
 
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(context, attrs, defStyleAttr, defStyleRes) {
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(context, attrs, defStyleAttr, defStyleRes) {
         setOnBindEditTextListener(this)
     }
 
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
         setOnBindEditTextListener(this)
     }
 
-    constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs) {
+    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         setOnBindEditTextListener(this)
     }
 
-    constructor(context: Context?) : super(context) {
+    constructor(context: Context) : super(context) {
         setOnBindEditTextListener(this)
     }
 
-    override fun getSummary(): CharSequence {
+    override fun getSummary(): CharSequence? {
         if (summaryProvider != null) {
             val text = super.getText()
             if (!TextUtils.isEmpty(text)) {
-                return getMaskedText(text)
+                return text?.let { getMaskedText(it) }
             }
         }
         return super.getSummary()
