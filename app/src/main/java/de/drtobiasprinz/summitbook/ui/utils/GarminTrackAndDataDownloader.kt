@@ -1,8 +1,11 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
+import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
+import de.drtobiasprinz.summitbook.ui.PageViewModel
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -43,14 +46,11 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
     }
 
 
-    fun updateFinalEntry(resultReceiver: FragmentResultReceiver) {
+    fun updateFinalEntry(viewModel: DatabaseViewModel) {
         val finalEntryLocal = finalEntry
-//        if (finalEntryLocal != null) {
-//            finalEntryLocal.id = resultReceiver.getSortFilterHelper().database.summitsDao().addSummit(finalEntryLocal)
-//            resultReceiver.getSortFilterHelper().entries.add(finalEntryLocal)
-//            resultReceiver.getSortFilterHelper().update(resultReceiver.getSortFilterHelper().entries)
-//            resultReceiver.getSummitViewAdapter()?.notifyDataSetChanged()
-//        }
+        if (finalEntryLocal != null) {
+            viewModel.saveContact(false, finalEntryLocal)
+        }
     }
 
     fun composeFinalTrack(fileDestination: File? = null) {

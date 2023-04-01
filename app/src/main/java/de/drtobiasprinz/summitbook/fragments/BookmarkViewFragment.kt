@@ -28,8 +28,7 @@ class BookmarkViewFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        summitRecycler = inflater.inflate(
+    ): View? {summitRecycler = inflater.inflate(
             R.layout.fragment_summit_view, container, false
         ) as RecyclerView
         setHasOptionsMenu(true)

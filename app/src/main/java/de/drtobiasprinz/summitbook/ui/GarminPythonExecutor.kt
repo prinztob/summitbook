@@ -8,11 +8,15 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.dialog.BaseDialog
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader.Companion.getTempGpsFilePath
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.io.File
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -21,12 +25,15 @@ import kotlin.math.pow
 import kotlin.math.roundToLong
 
 class GarminPythonExecutor(
-    private var pythonInstance: Python?, val username: String, val password: String
+    val username: String, val password: String
 ) {
     private var pythonModule: PyObject? = null
     private var client: PyObject? = null
 
     private fun login() {
+        if (pythonInstance == null) {
+            pythonInstance = pythonInstance
+        }
         if (client == null) {
             if (Python.isStarted()) {
                 pythonModule = pythonInstance?.getModule("start")
@@ -140,7 +147,7 @@ class GarminPythonExecutor(
         @Suppress("DEPRECATION")
         class AsyncDownloadGpxViaPython(
             summits: List<Summit>,
-            private val pythonExecutor: GarminPythonExecutor,
+            private val viewModel: DatabaseViewModel,
             useTcx: Boolean = false,
             private val dialog: BaseDialog,
             private val index: Int = -1
@@ -165,7 +172,7 @@ class GarminPythonExecutor(
                         }
                     } else {
                         downloader.composeFinalTrack()
-//                        downloader.updateFinalEntry(resultReceiver)
+                        downloader.updateFinalEntry(viewModel)
                     }
                     if (index != -1) {
                         dialog.doInPostExecute(index,

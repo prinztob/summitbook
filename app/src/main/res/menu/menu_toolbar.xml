@@ -4,21 +4,26 @@
     <item
         android:id="@+id/actionSearch"
         android:icon="@drawable/ic_baseline_search_24"
-        android:title="Search"
-        app:actionViewClass="androidx.appcompat.widget.SearchView"
+        android:title="@string/action_search"
         app:iconTint="@color/white"
-        app:showAsAction="ifRoom|collapseActionView" />
+        app:actionViewClass="androidx.appcompat.widget.SearchView"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_show_new_summits"
+        android:icon="@drawable/ic_baseline_filter_none_grey_24"
+        android:orderInCategory="50"
+        android:title="@string/show_new_summits"
+        app:showAsAction="ifRoom" />
     <item
         android:id="@+id/actionSort"
         android:icon="@drawable/ic_baseline_sort_24"
-        android:title="Sort"
-        app:iconTint="@color/white"
+        android:orderInCategory="1"
+        android:title="@string/sort_entries"
         app:showAsAction="always" />
-
     <item
-        android:id="@+id/actionDeleteAll"
-        android:icon="@drawable/ic_baseline_delete_forever_24"
-        android:title="Delete All"
-        app:iconTint="@color/white"
-        app:showAsAction="always" />
+        android:id="@+id/action_update"
+        android:icon="@drawable/ic_baseline_sync_24"
+        android:orderInCategory="1"
+        android:title="@string/update_3rd_part"
+        app:showAsAction="ifRoom" />
 </menu>

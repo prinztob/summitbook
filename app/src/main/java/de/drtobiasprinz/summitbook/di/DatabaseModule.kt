@@ -41,10 +41,6 @@ object DatabaseModule {
     fun provideContactsAdapter() = ContactsAdapter()
 
     @Provides
-    @Singleton
-    fun providePythonExecutor() = GarminPythonExecutor(MainActivity.pythonInstance, "", "")
-
-    @Provides
     fun provideEntity()= Summit()
 
 }

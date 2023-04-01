@@ -39,12 +39,9 @@ import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.fragments.*
-import de.drtobiasprinz.summitbook.ui.deleteall.DeleteAllFragment
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
-import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
-import de.drtobiasprinz.summitbook.ui.utils.PosterOverlayView
-import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
-import de.drtobiasprinz.summitbook.ui.utils.ZipFileWriter
+import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
+import de.drtobiasprinz.summitbook.ui.utils.*
 import java.io.File
 import java.time.LocalDate
 import javax.inject.Inject
@@ -62,10 +59,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var overlayView: PosterOverlayView? = null
     private var viewer: StfalconImageViewer<Poster>? = null
     private var isDialogShown = false
-
-    @Inject
-    lateinit var pythonExecutor: GarminPythonExecutor
-
     private lateinit var sharedPreferences: SharedPreferences
 
     private var selectedItem = 0
@@ -79,7 +72,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             Python.start(AndroidPlatform(this))
         }
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-        setPythonExecutor()
+        updatePythonExecutor()
         pythonInstance = Python.getInstance()
         cache = applicationContext.cacheDir
         storage = applicationContext.filesDir
@@ -110,14 +103,33 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         binding.apply {
 
 
-            toolbar.setOnMenuItemClickListener {
-                when (it.itemId) {
-                    R.id.actionDeleteAll -> {
-                        DeleteAllFragment().show(supportFragmentManager, DeleteAllFragment.TAG)
-                        return@setOnMenuItemClickListener true
-                    }
+            toolbar.setOnMenuItemClickListener { menuItem ->
+                when (menuItem.itemId) {
                     R.id.actionSort -> {
                         filter()
+                        return@setOnMenuItemClickListener true
+                    }
+                    R.id.action_update -> {
+                        binding.loading.visibility = View.VISIBLE
+                        @Suppress("DEPRECATION")
+                        ((pythonExecutor)?.let {
+                            AsyncUpdateGarminData(
+                                sharedPreferences,
+                                it,
+                                database,
+                                summitViewFragment.contactsAdapter.differ.currentList,
+                                getAllActivitiesFromThirdParty(),
+                                this@MainActivity,
+                                binding.loading
+                            ).execute()
+                        })
+                        return@setOnMenuItemClickListener true
+                    }
+                    (R.id.action_show_new_summits) -> {
+                        ShowNewSummitsFromGarminDialog().show(
+                            supportFragmentManager,
+                            "Show new summits from Garmin"
+                        )
                         return@setOnMenuItemClickListener true
                     }
                     else -> {
@@ -127,7 +139,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
     }
-
+    private fun getAllActivitiesFromThirdParty(): MutableList<Summit> {
+        return GarminPythonExecutor.getAllDownloadedSummitsFromGarmin(activitiesDir)
+    }
     private fun filter() {
         SortAndFilterFragment().show(
             supportFragmentManager, SortAndFilterFragment().tag
@@ -153,12 +167,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         return super.onCreateOptionsMenu(menu)
     }
 
-    private fun setPythonExecutor() {
-        if (pythonExecutor.username == "" || pythonExecutor.password == "") {
+    private fun updatePythonExecutor() {
+        if (pythonExecutor == null || pythonExecutor?.username == "" || pythonExecutor?.password == "") {
             val username = sharedPreferences.getString("garmin_username", null) ?: ""
             val password = sharedPreferences.getString("garmin_password", null) ?: ""
             if (username != "" && password != "") {
-                pythonExecutor = GarminPythonExecutor(pythonInstance, username, password)
+                pythonExecutor = GarminPythonExecutor(username, password)
             }
         }
     }
@@ -186,6 +200,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var cache: File? = null
         var activitiesDir: File? = null
         var pythonInstance: Python? = null
+        var pythonExecutor: GarminPythonExecutor? = null
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {

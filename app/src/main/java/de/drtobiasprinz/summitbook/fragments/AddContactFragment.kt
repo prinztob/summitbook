@@ -73,8 +73,6 @@ class AddContactFragment : DialogFragment(), BaseDialog {
     @Inject
     lateinit var contactsAdapter: ContactsAdapter
 
-    @Inject
-    lateinit var pythonExecutor: GarminPythonExecutor
 
     lateinit var database: AppDatabase
     private val viewModel: DatabaseViewModel by viewModels()
@@ -680,7 +678,7 @@ class AddContactFragment : DialogFragment(), BaseDialog {
                 updateMultiSpotActivityIds(pythonExecutor, entry)
             }
             @Suppress("DEPRECATION") GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(
-                listOf(entry), pythonExecutor, useTcx, this, index
+                listOf(entry), viewModel, useTcx, this, index
             ).execute()
         } catch (e: java.lang.RuntimeException) {
             Log.e("AsyncDownloadActivities", e.message ?: "")

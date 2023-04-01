@@ -3,7 +3,7 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id 'dagger.hilt.android.plugin'
     id 'kotlin-kapt'
-    id  'com.chaquo.python'
+    id 'com.chaquo.python'
 }
 
 android {
@@ -27,6 +27,11 @@ android {
                 install "gpxpy==1.4.2"
                 install "geopy==2.2.0"
                 install "lxml==4.6.3"
+//                install "requests==2.28.2"
+//                install "cloudscraper==1.2.68"
+//                install "garminconnect==0.1.55"
+//                install "gpxpy==1.5.0"
+//                install "geopy==2.3.0"
             }
         }
         ndk {

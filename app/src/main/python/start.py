@@ -14,6 +14,7 @@ BASE_URL = 'https://connect.garmin.com'
 
 def get_authenticated_client(user_name, password):
     try:
+        print(f"Garmin login with {user_name}")
         api = Garmin(user_name, password)
         api.login()
         return api
