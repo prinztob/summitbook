@@ -11,6 +11,7 @@ import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.ArrayAdapter
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.LegendEntry
 import com.github.mikephil.charting.components.XAxis
@@ -29,6 +30,7 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerLineChart
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerView
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.SimpleDateFormat
 import javax.inject.Inject
 
@@ -38,12 +40,12 @@ class LineChartFragment : Fragment() {
     @Inject
     lateinit var contactsAdapter: ContactsAdapter
 
-    private var summitEntries: List<Summit>? = null
-    private var filteredEntries: List<Summit>? = null
+    private lateinit var binding: FragmentLineChartBinding
+    private val viewModel: DatabaseViewModel by activityViewModels()
+
     private var lineChartSpinnerEntry: LineChartSpinnerEntry = LineChartSpinnerEntry.HeightMeter
     private var lineChartEntries: MutableList<Entry?> = ArrayList()
     private var lineChartColors: List<Int>? = mutableListOf()
-    private lateinit var binding: FragmentLineChartBinding
 
 
     override fun onCreateView(
@@ -51,13 +53,16 @@ class LineChartFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         binding = FragmentLineChartBinding.inflate(layoutInflater, container, false)
-//        setHasOptionsMenu(true)
         fillDateSpinner()
-        summitEntries = contactsAdapter.differ.currentList
-        resizeChart()
-        filteredEntries = contactsAdapter.differ.currentList
-        listenOnDataSpinner()
-        drawLineChart()
+        binding.apply {
+            viewModel.contactsList.observe(requireActivity()) { itData ->
+                itData.data?.let { summits ->
+                    resizeChart()
+                    listenOnDataSpinner(summits)
+                    drawLineChart(summits)
+                }
+            }
+        }
         return binding.root
     }
 
@@ -75,8 +80,8 @@ class LineChartFragment : Fragment() {
         binding.lineChart.minimumHeight = (metrics.heightPixels * 0.7).toInt()
     }
 
-    private fun drawLineChart() {
-        setLineChartEntries()
+    private fun drawLineChart(summits: List<Summit>) {
+        setLineChartEntries(summits)
         val dataSets: MutableList<ILineDataSet?> = ArrayList()
         val dataSet =
             LineDataSet(lineChartEntries, resources.getString(lineChartSpinnerEntry.nameId))
@@ -94,8 +99,8 @@ class LineChartFragment : Fragment() {
         binding.lineChart.invalidate()
     }
 
-    private fun setLineChartEntries() {
-        val useEntries = filteredEntries?.filter {
+    private fun setLineChartEntries(summits: List<Summit>) {
+        val useEntries = summits.filter {
             val value = lineChartSpinnerEntry.f(it)
             if (value != null) {
                 if (!lineChartSpinnerEntry.includeIndoorActivities) {
@@ -106,11 +111,11 @@ class LineChartFragment : Fragment() {
             } else {
                 false
             }
-        }?.sortedBy { it.date }
+        }.sortedBy { it.date }
         var accumulator = 0f
         lineChartColors =
-            useEntries?.map { ContextCompat.getColor(requireContext(), it.sportType.color) }
-        lineChartEntries = useEntries?.map {
+            useEntries.map { ContextCompat.getColor(requireContext(), it.sportType.color) }
+        lineChartEntries = useEntries.map {
             val value = if (!lineChartSpinnerEntry.accumulate) {
                 lineChartSpinnerEntry.f(it)
             } else {
@@ -118,7 +123,7 @@ class LineChartFragment : Fragment() {
                 accumulator
             }
             Entry(it.getDateAsFloat(), value ?: 0f, it)
-        }?.toMutableList() ?: mutableListOf()
+        }.toMutableList()
     }
 
     private fun setXAxis() {
@@ -193,7 +198,7 @@ class LineChartFragment : Fragment() {
         l.isEnabled = true
     }
 
-    private fun listenOnDataSpinner() {
+    private fun listenOnDataSpinner(summits: List<Summit>) {
         binding.spinnerData.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onItemSelected(
                 adapterView: AdapterView<*>?,
@@ -202,7 +207,7 @@ class LineChartFragment : Fragment() {
                 l: Long
             ) {
                 lineChartSpinnerEntry = LineChartSpinnerEntry.values()[i]
-                drawLineChart()
+                drawLineChart(summits)
             }
 
             override fun onNothingSelected(adapterView: AdapterView<*>?) {}

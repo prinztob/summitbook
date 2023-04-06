@@ -25,17 +25,28 @@ import java.util.*
 
 @Entity(tableName = Constants.SUMMITS_TABLE)
 class Summit(
-    var date: Date = Date(), var name: String = "", var sportType: SportType = SportType.Other,
-    var places: List<String> = mutableListOf(), var countries: List<String> = mutableListOf(),
-    var comments: String = "", @Embedded var elevationData: ElevationData = ElevationData(0, 0),
-    var kilometers: Double = 0.0, @Embedded var velocityData: VelocityData = VelocityData(0.0, 0.0),
-    var lat: Double? = null, var lng: Double? = null, var participants: List<String> = mutableListOf(),
+    var date: Date = Date(),
+    var name: String = "",
+    var sportType: SportType = SportType.Other,
+    var places: List<String> = mutableListOf(),
+    var countries: List<String> = mutableListOf(),
+    var comments: String = "",
+    @Embedded var elevationData: ElevationData = ElevationData(0, 0),
+    var kilometers: Double = 0.0,
+    @Embedded var velocityData: VelocityData = VelocityData(0.0, 0.0),
+    var lat: Double? = null,
+    var lng: Double? = null,
+    var participants: List<String> = mutableListOf(),
     @ColumnInfo(defaultValue = "") var equipments: List<String> = mutableListOf(),
-    var isFavorite: Boolean = false, @ColumnInfo(defaultValue = "false") var isPeak: Boolean = false,
-    var imageIds: MutableList<Int> = mutableListOf(), @Embedded var garminData: GarminData? = null,
+    var isFavorite: Boolean = false,
+    @ColumnInfo(defaultValue = "false") var isPeak: Boolean = false,
+    var imageIds: MutableList<Int> = mutableListOf(),
+    @Embedded var garminData: GarminData? = null,
     @Embedded var trackBoundingBox: TrackBoundingBox? = null,
     var activityId: Long = System.currentTimeMillis(),
-    @ColumnInfo(defaultValue = "false") var isBookmark: Boolean = false
+    @ColumnInfo(defaultValue = "false") var isBookmark: Boolean = false,
+    @ColumnInfo(defaultValue = "false") var hasImage: Boolean = false,
+    @ColumnInfo(defaultValue = "false") var hasTrack: Boolean = false,
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0

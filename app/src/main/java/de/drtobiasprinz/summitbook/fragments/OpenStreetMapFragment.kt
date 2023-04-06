@@ -9,6 +9,7 @@ import android.view.*
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
@@ -22,7 +23,9 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBounding
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
+import org.osmdroid.bonuspack.utils.BonusPackHelper
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.util.GeoPoint
@@ -41,23 +44,22 @@ class OpenStreetMapFragment : Fragment() {
     lateinit var contactsAdapter: ContactsAdapter
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var binding: FragmentOpenStreetMapBinding
+    private val viewModel: DatabaseViewModel by activityViewModels()
 
     private var mGeoPoints: MutableList<GeoPoint?> = ArrayList()
     private var mMarkers: MutableList<Marker?> = ArrayList()
     private var mMarkersShown: MutableList<Marker?> = ArrayList()
     private var gotoLocationDialog: AlertDialog? = null
-    private var summitEntries: List<Summit>? = null
-    private var filteredEntries: List<Summit>? = null
     private var maxPointsToShow: Int = 10000
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
-//        setHasOptionsMenu(true)
         val context = requireContext()
-        maxPointsToShow = (sharedPreferences.getString("max_number_points", maxPointsToShow.toString())
-            ?: maxPointsToShow.toString()).toInt()
+        maxPointsToShow =
+            (sharedPreferences.getString("max_number_points", maxPointsToShow.toString())
+                ?: maxPointsToShow.toString()).toInt()
         Configuration.getInstance()
             .load(context, PreferenceManager.getDefaultSharedPreferences(context))
         OpenStreetMapUtils.setOsmConfForTiles()
@@ -69,12 +71,51 @@ class OpenStreetMapFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         binding = FragmentOpenStreetMapBinding.inflate(layoutInflater, container, false)
-        summitEntries = contactsAdapter.differ.currentList
-        filteredEntries = contactsAdapter.differ.currentList
         setMap()
-        Log.d(TAG, "onCreateView")
         return binding.root
     }
+
+
+    override fun onPause() {
+        super.onPause()
+        binding.osmap.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.osmap.onResume()
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        binding.apply {
+            viewModel.contactsList.observe(requireActivity()) { itData ->
+                itData.data?.let { summits ->
+                    setTileSource(selectedItem, binding.osmap)
+                    addOverlays(summits)
+                    val context: Context? = this@OpenStreetMapFragment.activity
+                    val mLocationOverlay =
+                        MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
+                    mLocationOverlay.enableMyLocation()
+                    binding.osmap.overlays.add(mLocationOverlay)
+                    addDefaultSettings(requireContext(), binding.osmap, requireActivity())
+                }
+            }
+        }
+    }
+
+    override fun onDestroyView() {
+        Log.d(TAG, "onDetach")
+        binding.osmap.onDetach()
+        super.onDestroyView()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "onDestroy")
+        gotoLocationDialog?.dismiss()
+    }
+
 
     private fun setMap() {
         binding.changeMap.setOnClickListener {
@@ -85,7 +126,7 @@ class OpenStreetMapFragment : Fragment() {
         }
 
         binding.showAllTracks.setOnClickListener { _: View? ->
-            var pointsShown = mMarkersShown.sumBy {
+            var pointsShown = mMarkersShown.sumOf {
                 (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size ?: 0
             }
             val markersInBoundingBox = mMarkers.filter {
@@ -132,7 +173,7 @@ class OpenStreetMapFragment : Fragment() {
 
 //        requireActivity().findViewById<View>(R.id.add_new_summit).visibility = View.INVISIBLE
 
-        binding.osmap?.setOnGenericMotionListener { _: View?, event: MotionEvent ->
+        binding.osmap.setOnGenericMotionListener { _: View?, event: MotionEvent ->
             if (0 != event.source and InputDevice.SOURCE_CLASS_POINTER) {
                 if (event.action == MotionEvent.ACTION_SCROLL) {
                     if (event.getAxisValue(MotionEvent.AXIS_VSCROLL) < 0.0f) {
@@ -147,94 +188,49 @@ class OpenStreetMapFragment : Fragment() {
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        binding.osmap?.onPause()
+    private fun addOverlays(summits: List<Summit>) {
+        addAllMarkers(summits)
     }
 
-    override fun onResume() {
-        super.onResume()
-        binding.osmap?.onResume()
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        val localMapView = binding.osmap
-        if (localMapView != null) {
-            setTileSource(selectedItem, localMapView)
-            addOverlays()
-            val context: Context? = this.activity
-            val mLocationOverlay =
-                MyLocationNewOverlay(GpsMyLocationProvider(context), localMapView)
-            mLocationOverlay.enableMyLocation()
-            localMapView.overlays.add(mLocationOverlay)
-            addDefaultSettings(requireContext(), localMapView, requireActivity())
-        }
-    }
-
-    override fun onDestroyView() {
-        Log.d(TAG, "onDetach")
-        binding.osmap?.onDetach()
-        super.onDestroyView()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.d(TAG, "onDestroy")
-        gotoLocationDialog?.dismiss()
-//        requireActivity().findViewById<View>(R.id.add_new_summit).visibility = View.VISIBLE
-    }
-
-    private fun addOverlays() {
-        addAllMarkers()
-    }
-
-    private fun addAllMarkers() {
-        val localMapView = binding.osmap
-        if (localMapView != null) {
-            val context = requireContext()
-            localMapView.overlays?.clear()
-            val markers = RadiusMarkerClusterer(context)
-//            val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(context, R.drawable.marker_cluster)
-//            markers.setIcon(clusterIcon)
-            markers.setMaxClusteringZoomLevel(10)
-            localMapView.overlays.add(markers)
-            mGeoPoints = ArrayList()
-            mMarkers = ArrayList()
-            val filteredEntriesLocal = filteredEntries
-            if (filteredEntriesLocal != null) {
-                for (entry in filteredEntriesLocal) {
-                    val latLng = entry.latLng
-                    if (latLng != null && binding.osmap != null) {
-                        val point = GeoPoint(latLng.lat, latLng.lon)
-                        mGeoPoints.add(point)
-                        val marker = getMarker(localMapView, entry, point, context)
-                        markers.add(marker)
-                        mMarkers.add(marker)
-                    }
-                }
+    private fun addAllMarkers(summits: List<Summit>) {
+        val context = requireContext()
+        binding.osmap.overlays?.clear()
+        val markers = RadiusMarkerClusterer(context)
+        val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(context, org.osmdroid.bonuspack.R.drawable.marker_cluster)
+        markers.setIcon(clusterIcon)
+        markers.setMaxClusteringZoomLevel(10)
+        binding.osmap.overlays.add(markers)
+        mGeoPoints = ArrayList()
+        mMarkers = ArrayList()
+        for (entry in summits) {
+            val latLng = entry.latLng
+            if (latLng != null) {
+                val point = GeoPoint(latLng.lat, latLng.lon)
+                mGeoPoints.add(point)
+                val marker = getMarker(binding.osmap, entry, point, context)
+                markers.add(marker)
+                mMarkers.add(marker)
             }
-            val mReceive: MapEventsReceiver = object : MapEventsReceiver {
-                override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
-                    return false
-                }
-
-                override fun longPressHelper(arg0: GeoPoint): Boolean {
-                    Log.d("debug", "LongPressHelper")
-                    mMarkers.forEach {
-                        if (it?.isInfoWindowShown == true) {
-                            it.infoWindow.close()
-                        }
-                    }
-                    //your onLongPress logic here
-                    return false
-                }
+        }
+        val mReceive: MapEventsReceiver = object : MapEventsReceiver {
+            override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+                return false
             }
 
-            val eventsOverlay = MapEventsOverlay(mReceive)
-            binding.osmap?.overlays?.add(eventsOverlay)
-            binding.osmap?.post { calculateBoundingBox(localMapView, mGeoPoints) }
+            override fun longPressHelper(arg0: GeoPoint): Boolean {
+                Log.d("debug", "LongPressHelper")
+                mMarkers.forEach {
+                    if (it?.isInfoWindowShown == true) {
+                        it.infoWindow.close()
+                    }
+                }
+                return false
+            }
         }
+
+        val eventsOverlay = MapEventsOverlay(mReceive)
+        binding.osmap.overlays?.add(eventsOverlay)
+        binding.osmap.post { calculateBoundingBox(binding.osmap, mGeoPoints) }
     }
 
     private fun getMarker(

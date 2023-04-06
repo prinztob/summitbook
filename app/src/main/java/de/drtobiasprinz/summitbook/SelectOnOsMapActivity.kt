@@ -8,13 +8,18 @@ import android.location.Address
 import android.os.Bundle
 import android.os.StrictMode
 import android.view.View
-import android.widget.*
+import android.widget.Button
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
+import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.GPXParser
 import de.drtobiasprinz.gpx.TrackPoint
+import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.databinding.ActivitySelectOnOsmapBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.GpsTrack
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -27,6 +32,7 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addTrackAndMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.drawBoundingBox
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import org.osmdroid.bonuspack.location.GeocoderNominatim
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
@@ -41,32 +47,33 @@ import java.io.*
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class SelectOnOsMapActivity : FragmentActivity() {
+
+    private lateinit var binding: ActivitySelectOnOsmapBinding
+
+    @Inject
+    lateinit var contactsAdapter: ContactsAdapter
+    private val viewModel: DatabaseViewModel by viewModels()
     private var latLngSelectedPosition: TrackPoint? = null
     private var summitEntry: Summit? = null
     private var database: AppDatabase? = null
     private var selectedGpsPath: Path? = null
-    private var osMap: MapView? = null
-    private lateinit var savePositionButton: ImageButton
-    private lateinit var closeDialogButton: ImageButton
-    private lateinit var addGpsTrackButton: ImageButton
-    private lateinit var deletButton: ImageButton
-    private lateinit var searchForLocation: EditText
     private var summitEntryId = 0L
-    private var summitEntryPosition = 0
     private var wasBoundingBoxCalculated: Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_select_on_osmap)
+        binding = ActivitySelectOnOsmapBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         database = DatabaseModule.provideDatabase(applicationContext)
-        val searchPanel = findViewById<View>(R.id.search_panel)
-        val expander = findViewById<View>(R.id.expander)
-        expander.setOnClickListener {
-            if (searchPanel.visibility == View.VISIBLE) {
-                searchPanel.visibility = View.GONE
+        binding.expander.setOnClickListener {
+            if (binding.searchPanel.visibility == View.VISIBLE) {
+                binding.searchPanel.visibility = View.GONE
             } else {
-                searchPanel.visibility = View.VISIBLE
+                binding.searchPanel.visibility = View.VISIBLE
             }
         }
 
@@ -76,118 +83,135 @@ class SelectOnOsMapActivity : FragmentActivity() {
         val bundle = intent.extras
         if (bundle != null) {
             summitEntryId = bundle.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
-            summitEntryPosition = bundle.getInt(SUMMIT_POSITION)
             summitEntry = database?.summitsDao()?.getSummit(summitEntryId)
-
-            searchForLocation = findViewById(R.id.editLocation)
-            searchForLocation.setText(summitEntry?.name)
+            binding.editLocation.setText(summitEntry?.name)
 
         }
-        osMap = findViewById(R.id.osmap)
-        val localOsMap = osMap
-        if (localOsMap != null) {
-            localOsMap.setTileSource(TileSourceFactory.MAPNIK)
-            Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-            val entry = summitEntry
-            if (entry != null) {
-                addTrackAndMarker(entry, localOsMap, this, false, TrackColor.None, alwaysShowTrackOnMap = false)
-                entry.trackBoundingBox?.let { drawBoundingBox(osMap, it) }
-            }
-            addDefaultSettings(this, localOsMap, this)
-            val mReceive: MapEventsReceiver = object : MapEventsReceiver {
-                override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
-                    if (entry != null) {
-                        updateSavePositionButton(true)
-                        latLngSelectedPosition = TrackPoint(p.latitude, p.longitude)
-                        addMarker(localOsMap, applicationContext, p, entry)
-                        prepareGpxTrack(selectedGpsPath, summitEntry)?.let { addSelectedPositionAndTrack(TrackPoint(p.latitude, p.longitude), it, localOsMap) }
+        binding.osmap.setTileSource(TileSourceFactory.MAPNIK)
+        Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
+        val entry = summitEntry
+        if (entry != null) {
+            addTrackAndMarker(
+                entry,
+                binding.osmap,
+                this,
+                false,
+                TrackColor.None,
+                alwaysShowTrackOnMap = false
+            )
+            entry.trackBoundingBox?.let { drawBoundingBox(binding.osmap, it) }
+        }
+        addDefaultSettings(this, binding.osmap, this)
+        val mReceive: MapEventsReceiver = object : MapEventsReceiver {
+            override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
+                if (entry != null) {
+                    updateSavePositionButton(true)
+                    latLngSelectedPosition = TrackPoint(p.latitude, p.longitude)
+                    addMarker(binding.osmap, applicationContext, p, entry)
+                    prepareGpxTrack(
+                        selectedGpsPath,
+                        summitEntry
+                    )?.let {
+                        addSelectedPositionAndTrack(
+                            TrackPoint(p.latitude, p.longitude),
+                            it,
+                            binding.osmap
+                        )
                     }
-                    return false
                 }
-
-                override fun longPressHelper(p: GeoPoint): Boolean {
-                    return false
-                }
+                return false
             }
-            localOsMap.overlays.add(MapEventsOverlay(mReceive))
 
-        }
-
-        val searchButton: Button = findViewById(R.id.buttonSearchLocation)
-        searchButton.setOnClickListener {
-            if (localOsMap != null) {
-                searchForAddress(localOsMap, searchForLocation.text.toString())
+            override fun longPressHelper(p: GeoPoint): Boolean {
+                return false
             }
         }
+        binding.osmap.overlays.add(MapEventsOverlay(mReceive))
 
-        savePositionButton = findViewById(R.id.add_position_save)
+        binding.buttonSearchLocation.setOnClickListener {
+            searchForAddress(binding.editLocation.text.toString())
+        }
+
         updateSavePositionButton(false)
-        savePositionButton.setOnClickListener { v: View ->
-            val entry = summitEntry
+        binding.addPositionSave.setOnClickListener { v: View ->
+            val summit = summitEntry
             val position = latLngSelectedPosition
-            if (entry != null) {
+            if (summit != null) {
                 if (position != null) {
-                    entry.lat = position.lat
-                    entry.lng = position.lon
-                    database?.summitsDao()?.updateLat(entry.id, position.lat)
-                    database?.summitsDao()?.updateLng(entry.id, position.lon)
-                    entry.latLng = latLngSelectedPosition
+                    summit.lat = position.lat
+                    summit.lng = position.lon
+                    summit.latLng = latLngSelectedPosition
+                    viewModel.saveContact(true, summit)
                     finish()
-                    Toast.makeText(v.context, String.format(getString(R.string.no_email_program_installed), entry.name), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        v.context,
+                        String.format(
+                            getString(R.string.add_position_to_summit_successful),
+                            summit.name
+                        ),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
                 val localSelectedPath = selectedGpsPath
                 if (localSelectedPath != null) {
-                    val fileDest = entry.getGpsTrackPath()
+                    val fileDest = summit.getGpsTrackPath()
                     try {
                         Files.copy(localSelectedPath, fileDest, StandardCopyOption.REPLACE_EXISTING)
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
                 }
-                entry.setBoundingBoxFromTrack()
-                if (entry.trackBoundingBox != null) {
-                    database?.summitsDao()?.updateSummit(entry)
+                summit.setBoundingBoxFromTrack()
+                if (summit.trackBoundingBox != null) {
+                    database?.summitsDao()?.updateSummit(summit)
                 }
-//                val holder = summitRecycler.findViewHolderForAdapterPosition(summitEntryPosition) as SummitViewAdapter.ViewHolder
-//                val addButton = holder.cardView?.findViewById<ImageButton>(R.id.entry_add_coordinate)
-//                setIconForPositionButton(addButton, entry)
             }
         }
-        closeDialogButton = findViewById(R.id.add_position_cancel)
-        closeDialogButton.setOnClickListener { v: View ->
+        binding.addPositionCancel.setOnClickListener { v: View ->
             finish()
-            Toast.makeText(v.context, getString(R.string.add_position_to_summit_cancel, summitEntry?.name), Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                v.context,
+                getString(R.string.add_position_to_summit_cancel, summitEntry?.name),
+                Toast.LENGTH_SHORT
+            ).show()
         }
-        deletButton = findViewById(R.id.add_position_delete)
-        deletButton.setOnClickListener { v: View ->
+        binding.addPositionDelete.setOnClickListener { v: View ->
             val entry = summitEntry
             if (entry != null) {
                 AlertDialog.Builder(v.context)
-                        .setTitle(getString(R.string.delete_coordinates))
-                        .setMessage(getString(R.string.delete_coordinates_message))
-                        .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                            selectedGpsPath = null
-                            if (entry.hasGpsTrack()) {
-                                val gpsTrackPath = entry.getGpsTrackPath()
-                                gpsTrackPath.toFile()?.delete()
-                            }
-                            entry.latLng = TrackPoint(0.0, 0.0)
+                    .setTitle(getString(R.string.delete_coordinates))
+                    .setMessage(getString(R.string.delete_coordinates_message))
+                    .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
+                        selectedGpsPath = null
+                        if (entry.hasGpsTrack()) {
+                            val gpsTrackPath = entry.getGpsTrackPath()
+                            gpsTrackPath.toFile()?.delete()
+                        }
+                        entry.latLng = TrackPoint(0.0, 0.0)
 
-                            database?.summitsDao()?.updateLat(entry.id, 0.0)
-                            database?.summitsDao()?.updateLng(entry.id, 0.0)
-                            finish()
-                            Toast.makeText(v.context, v.context.getString(R.string.delete_gps, entry.name), Toast.LENGTH_SHORT).show()
-                        }
-                        .setNegativeButton(android.R.string.cancel
-                        ) { _: DialogInterface?, _: Int ->
-                            Toast.makeText(v.context, getString(R.string.delete_cancel), Toast.LENGTH_SHORT).show()
-                        }
-                        .setIcon(android.R.drawable.ic_dialog_alert)
-                        .show()
+                        database?.summitsDao()?.updateLat(entry.id, 0.0)
+                        database?.summitsDao()?.updateLng(entry.id, 0.0)
+                        finish()
+                        Toast.makeText(
+                            v.context,
+                            v.context.getString(R.string.delete_gps, entry.name),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    .setNegativeButton(
+                        android.R.string.cancel
+                    ) { _: DialogInterface?, _: Int ->
+                        Toast.makeText(
+                            v.context,
+                            getString(R.string.delete_cancel),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show()
             }
         }
-        addGpsTrackButton = findViewById(R.id.add_gps_track)
-        addGpsTrackButton.setOnClickListener {
+        binding.addGpsTrack.setOnClickListener {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
                 type = "*/*"
@@ -200,29 +224,40 @@ class SelectOnOsMapActivity : FragmentActivity() {
         setResult(Activity.RESULT_OK, data)
     }
 
-    private fun searchForAddress(localOsMap: MapView, locationAddress: String) {
+    private fun searchForAddress(locationAddress: String) {
         val geoCoder = GeocoderNominatim(BuildConfig.APPLICATION_ID)
-        val viewBox: BoundingBox = localOsMap.boundingBox
-        val foundAddresses: List<Address> = geoCoder.getFromLocationName(locationAddress, 1,
-                viewBox.latSouth, viewBox.lonEast, viewBox.latNorth, viewBox.lonWest, false)
+        val viewBox: BoundingBox = binding.osmap.boundingBox
+        val foundAddresses: List<Address> = geoCoder.getFromLocationName(
+            locationAddress, 1,
+            viewBox.latSouth, viewBox.lonEast, viewBox.latNorth, viewBox.lonWest, false
+        )
         if (foundAddresses.isNotEmpty()) {
-            Toast.makeText(applicationContext, getString(R.string.found_address, locationAddress), Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                applicationContext,
+                getString(R.string.found_address, locationAddress),
+                Toast.LENGTH_SHORT
+            ).show()
             val address = foundAddresses[0]
             val geoPoint = GeoPoint(address.latitude, address.longitude)
-            val poiIcon: Drawable? = ResourcesCompat.getDrawable(resources, R.drawable.ic_filled_location_black_48, null)
-            localOsMap.setExpectedCenter(geoPoint)
-            val poiMarker = Marker(osMap)
+            val poiIcon: Drawable? =
+                ResourcesCompat.getDrawable(resources, R.drawable.ic_filled_location_black_48, null)
+            binding.osmap.setExpectedCenter(geoPoint)
+            val poiMarker = Marker(binding.osmap)
             poiMarker.title = address.getAddressLine(0)
             poiMarker.snippet = address.getAddressLine(1)
             poiMarker.position = geoPoint
             poiMarker.relatedObject = address
             poiMarker.icon = poiIcon
             poiMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            poiMarker.setInfoWindow(CustomInfoWindow(localOsMap))
-            localOsMap.overlays.add(poiMarker)
-            localOsMap.setExpectedCenter(geoPoint)
+            poiMarker.setInfoWindow(CustomInfoWindow(binding.osmap))
+            binding.osmap.overlays.add(poiMarker)
+            binding.osmap.setExpectedCenter(geoPoint)
         } else {
-            Toast.makeText(applicationContext, getString(R.string.not_found, locationAddress), Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                applicationContext,
+                getString(R.string.not_found, locationAddress),
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
@@ -254,11 +289,11 @@ class SelectOnOsMapActivity : FragmentActivity() {
     }
 
     private fun updateSavePositionButton(enable: Boolean) {
-        savePositionButton.isEnabled = enable
+        binding.addPositionSave.isEnabled = enable
         if (enable) {
-            savePositionButton.setImageResource(R.drawable.ic_save_black_24dp)
+            binding.addPositionSave.setImageResource(R.drawable.ic_save_black_24dp)
         } else {
-            savePositionButton.setImageResource(R.drawable.ic_save_grey_400_24dp)
+            binding.addPositionSave.setImageResource(R.drawable.ic_save_grey_400_24dp)
         }
     }
 
@@ -267,19 +302,21 @@ class SelectOnOsMapActivity : FragmentActivity() {
         database?.close()
     }
 
-    private val resultLauncherForAddingGpxTrack = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val file = File(MainActivity.cache, "new_gpx_track.gpx")
-            result?.data?.data?.also { uri ->
-                contentResolver.openInputStream(uri)?.use { inputStream ->
-                    copyGpxFileToCache(inputStream, file)
+    private val resultLauncherForAddingGpxTrack =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val file = File(MainActivity.cache, "new_gpx_track.gpx")
+                result?.data?.data?.also { uri ->
+                    contentResolver.openInputStream(uri)?.use { inputStream ->
+                        copyGpxFileToCache(inputStream, file)
+                    }
                 }
+                addGpxTrack(file, GPXParser(), binding.osmap)
             }
-            osMap?.let { addGpxTrack(file, GPXParser(), it) }
         }
-    }
 
-    internal class CustomInfoWindow(mapView: MapView?) : MarkerInfoWindow(org.osmdroid.bonuspack.R.layout.bonuspack_bubble, mapView) {
+    internal class CustomInfoWindow(mapView: MapView?) :
+        MarkerInfoWindow(org.osmdroid.bonuspack.R.layout.bonuspack_bubble, mapView) {
         private var mSelectedPoi: Address? = null
         override fun onOpen(item: Any) {
             super.onOpen(item)
@@ -291,8 +328,6 @@ class SelectOnOsMapActivity : FragmentActivity() {
     }
 
     companion object {
-        const val SUMMIT_POSITION = "SUMMIT_POSITION"
-
         fun prepareGpxTrack(path: Path?, entry: Summit?): GpsTrack? {
             val gpsTrack = if (path != null && path.toFile().exists()) {
                 GpsTrack(path)

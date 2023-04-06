@@ -11,11 +11,11 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentStatisticsBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Forecast
@@ -23,6 +23,7 @@ import de.drtobiasprinz.summitbook.db.entities.StatisticEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.util.*
 import javax.inject.Inject
 import kotlin.math.roundToLong
@@ -30,12 +31,9 @@ import kotlin.math.roundToLong
 @AndroidEntryPoint
 class StatisticsFragment : Fragment() {
 
-    @Inject
-    lateinit var contactsAdapter: ContactsAdapter
     private lateinit var binding: FragmentStatisticsBinding
+    private val viewModel: DatabaseViewModel by activityViewModels()
 
-    private var summitEntries: List<Summit>? = null
-    private var filteredEntries: List<Summit>? = null
     private lateinit var statisticEntry: StatisticEntry
     private var annualTargetActivity: String = ""
     private var annualTargetKm: String = ""
@@ -61,14 +59,43 @@ class StatisticsFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentStatisticsBinding.inflate(layoutInflater, container, false)
-        //setHasOptionsMenu(true)
-        summitEntries = contactsAdapter.differ.currentList
-        filteredEntries = contactsAdapter.differ.currentList
-        update(filteredEntries)
+        update()
         return binding.root
     }
 
-    private fun setTextViews(extremaValuesSummits: ExtremaValuesSummits?) {
+    fun update() {
+        binding.apply {
+            viewModel.contactsList.observe(requireActivity()) { itData ->
+                itData.data?.let { summits ->
+                    val sharedPreferences =
+                        PreferenceManager.getDefaultSharedPreferences(requireContext())
+                    val annualTargetActivity =
+                        sharedPreferences.getString("annual_target_activities", "52")?.toInt() ?: 52
+                    val annualTargetKm =
+                        sharedPreferences.getString("annual_target_km", "1200")?.toInt() ?: 1200
+                    val annualTargetHm =
+                        sharedPreferences.getString("annual_target", "50000")?.toInt() ?: 50000
+                    indoorHeightMeterPercent =
+                        sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0
+                    statisticEntry = StatisticEntry(
+                        summits,
+                        annualTargetActivity,
+                        annualTargetKm,
+                        annualTargetHm,
+                        indoorHeightMeterPercent
+                    )
+                    statisticEntry.calculate()
+                    setProgressBar()
+                    val extremaValuesSummits = ExtremaValuesSummits(
+                        summits, shouldIndoorActivityBeExcluded = true
+                    )
+                    setTextViews(summits, extremaValuesSummits)
+                }
+            }
+        }
+    }
+
+    private fun setTextViews(summits: List<Summit>, extremaValuesSummits: ExtremaValuesSummits?) {
         if (statisticEntry.getTotalActivities() > 0) {
             binding.textTotalSummits.text = String.format("%s", statisticEntry.getTotalSummits())
             binding.textTotalActivities.text =
@@ -86,11 +113,9 @@ class StatisticsFragment : Fragment() {
             if (selectedYear == currentYear.toString()) {
                 val forecasts = database.forecastDao()?.allForecasts
                 forecasts?.forEach {
-                    summitEntries?.let { it1 ->
-                        it.setActual(
-                            it1, indoorHeightMeterPercent
-                        )
-                    }
+                    it.setActual(
+                        summits, indoorHeightMeterPercent
+                    )
                 }
                 val sumCurrentYear = forecasts?.let {
                     Forecast.getSumForYear(
@@ -137,7 +162,7 @@ class StatisticsFragment : Fragment() {
             }
             if (selectedYear != "") {
                 binding.achievementInfo.visibility = View.VISIBLE
-                binding.textAchievement?.text = String.format(
+                binding.textAchievement.text = String.format(
                     requireContext().resources.configuration.locales[0],
                     "%.1f %%",
                     statisticEntry.getAchievement()
@@ -573,30 +598,6 @@ class StatisticsFragment : Fragment() {
         }
     }
 
-    fun update(filteredSummitEntries: List<Summit>?) {
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        val annualTargetActivity =
-            sharedPreferences.getString("annual_target_activities", "52")?.toInt() ?: 52
-        val annualTargetKm =
-            sharedPreferences.getString("annual_target_km", "1200")?.toInt() ?: 1200
-        val annualTargetHm = sharedPreferences.getString("annual_target", "50000")?.toInt() ?: 50000
-        indoorHeightMeterPercent = sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0
-        statisticEntry = StatisticEntry(
-            filteredSummitEntries,
-            annualTargetActivity,
-            annualTargetKm,
-            annualTargetHm,
-            indoorHeightMeterPercent
-        )
-        statisticEntry.calculate()
-        setProgressBar()
-        val extremaValuesSummits = filteredSummitEntries?.let {
-            ExtremaValuesSummits(
-                it, shouldIndoorActivityBeExcluded = true
-            )
-        }
-        setTextViews(extremaValuesSummits)
-    }
 
     private fun setProgressBar() {
         val simpleProgressBar = binding.vprogressbar

@@ -1,13 +1,14 @@
 package de.drtobiasprinz.summitbook.db.dao
 
 import androidx.room.*
+import androidx.sqlite.db.SupportSQLiteQuery
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMITS_TABLE
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface  SummitsDao {
+interface SummitsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveContact(contactsEntity: Summit)
 
@@ -35,6 +36,9 @@ interface  SummitsDao {
     @Query("SELECT * FROM $SUMMITS_TABLE ORDER BY name DESC")
     fun sortedDESC(): Flow<MutableList<Summit>>
 
+    @RawQuery(observedEntities = [Summit::class])
+    fun getSortedAndFilteredSummits(query: SupportSQLiteQuery): Flow<MutableList<Summit>>
+
     @Query("SELECT * FROM $SUMMITS_TABLE WHERE name LIKE '%' || :name || '%' ")
     fun searchContact(name: String): Flow<MutableList<Summit>>
 
@@ -52,6 +56,9 @@ interface  SummitsDao {
 
     @Query("SELECT COUNT(id) FROM $SUMMITS_TABLE where isBookmark = 1")
     fun getCountBookmarks(): Int
+
+    @RawQuery
+    fun get(query: SupportSQLiteQuery): Double
 
     @Query("select * from $SUMMITS_TABLE where sportType == :sportType and isBookmark = 0")
     fun getAllSummitWithSameSportType(sportType: SportType): List<Summit>?

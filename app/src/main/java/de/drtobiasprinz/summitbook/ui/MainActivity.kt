@@ -9,6 +9,7 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -44,7 +45,6 @@ import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
 import de.drtobiasprinz.summitbook.ui.utils.*
 import java.io.File
 import java.time.LocalDate
-import javax.inject.Inject
 import kotlin.math.round
 
 
@@ -92,8 +92,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             binding.navView.menu.findItem(R.id.nav_solar).isVisible = false
         }
         binding.navView.setNavigationItemSelectedListener(this)
-        //supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
         summitViewFragment = SummitViewFragment()
         if (viewedFragment == null) {
             val ft = supportFragmentManager.beginTransaction()
@@ -101,8 +99,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             ft.commit()
         }
         binding.apply {
-
-
             toolbar.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
                     R.id.actionSort -> {
@@ -118,7 +114,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                 it,
                                 database,
                                 summitViewFragment.contactsAdapter.differ.currentList,
-                                getAllActivitiesFromThirdParty(),
                                 this@MainActivity,
                                 binding.loading
                             ).execute()
@@ -139,11 +134,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
     }
-    private fun getAllActivitiesFromThirdParty(): MutableList<Summit> {
-        return GarminPythonExecutor.getAllDownloadedSummitsFromGarmin(activitiesDir)
-    }
+
+
     private fun filter() {
-        SortAndFilterFragment().show(
+        val sortAndFilterFragment = SortAndFilterFragment()
+        sortAndFilterFragment.setViewModel(summitViewFragment.viewModel)
+        sortAndFilterFragment.show(
             supportFragmentManager, SortAndFilterFragment().tag
         )
     }
@@ -178,15 +174,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
 
-    private fun updateImageIds(localSummit: Summit, summitEntries: List<Summit>?) {
-        summitEntries?.forEach {
-            if (it.id == localSummit.id) {
-                it.imageIds = localSummit.imageIds
-            }
-        }
-    }
-
-
     companion object {
         private const val REQUEST_EXTERNAL_STORAGE = 1
         private const val KEY_IS_DIALOG_SHOWN = "IS_DIALOG_SHOWN"
@@ -195,6 +182,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var CSV_FILE_NAME_SEGMENTS: String = "de-prinz-summitbook-export-segments.csv"
         var CSV_FILE_NAME_FORECASTS: String = "de-prinz-summitbook-export-forecasts.csv"
 
+        var entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
         var extremaValuesAllSummits: ExtremaValuesSummits? = null
         var storage: File? = null
         var cache: File? = null
@@ -244,38 +232,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 resultLauncherForImportZip.launch(intent)
             }
             R.id.export_csv -> {
-
-                AlertDialog.Builder(this)
-                    .setTitle(getString(R.string.export_csv_dialog))
-                    .setMessage(getString(R.string.export_csv_dialog_text))
-                    .setPositiveButton(R.string.export_csv_dialog_positive) { _: DialogInterface?, _: Int ->
-                        startFileSelectorAndExportSummits(
-                            String.format(
-                                "%s_summitbook_backup_ALL.zip",
-                                LocalDate.now()
-                            ), false
-                        )
-                    }
-                    .setNeutralButton(
-                        R.string.export_csv_dialog_neutral
-                    ) { _: DialogInterface?, _: Int ->
-                        startFileSelectorAndExportSummits(
-                            String.format(
-                                "%s_summitbook_backup_FILTERED.zip",
-                                LocalDate.now()
-                            ), true
-                        )
-                    }
-                    .setNegativeButton(
-                        android.R.string.cancel
-                    ) { _: DialogInterface?, _: Int ->
-                        Toast.makeText(
-                            this, getString(R.string.export_csv_dialog_negative_text),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    .setIcon(android.R.drawable.ic_dialog_alert)
-                    .show()
+                showExportCsvDialog()
             }
             R.id.nav_solar -> {
                 commitFragment(LineChartSolarFragment())
@@ -285,10 +242,44 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 startActivity(intent)
             }
             else -> {
-
+                commitFragment(SummitViewFragment())
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)
+    }
+
+    private fun showExportCsvDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.export_csv_dialog))
+            .setMessage(getString(R.string.export_csv_dialog_text))
+            .setPositiveButton(R.string.export_csv_dialog_positive) { _: DialogInterface?, _: Int ->
+                startFileSelectorAndExportSummits(
+                    String.format(
+                        "%s_summitbook_backup_ALL.zip",
+                        LocalDate.now()
+                    ), false
+                )
+            }
+            .setNeutralButton(
+                R.string.export_csv_dialog_neutral
+            ) { _: DialogInterface?, _: Int ->
+                startFileSelectorAndExportSummits(
+                    String.format(
+                        "%s_summitbook_backup_FILTERED.zip",
+                        LocalDate.now()
+                    ), true
+                )
+            }
+            .setNegativeButton(
+                android.R.string.cancel
+            ) { _: DialogInterface?, _: Int ->
+                Toast.makeText(
+                    this, getString(R.string.export_csv_dialog_negative_text),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .show()
     }
 
     private fun commitFragment(fragment: Fragment) {
@@ -419,6 +410,33 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
                 .setIcon(android.R.drawable.ic_dialog_info)
                 .show()
+        }
+    }
+
+
+    @Suppress("DEPRECATION")
+    class AsyncSimplifyGpsTracks(private val summitsWithoutSimplifiedTracks: List<Summit>, private val pythonInstance: Python) : AsyncTask<Uri, Int?, Void?>() {
+
+        private var numberSimplifiedGpxTracks = 0
+        override fun doInBackground(vararg uri: Uri): Void? {
+            if (summitsWithoutSimplifiedTracks.isNotEmpty()) {
+                summitsWithoutSimplifiedTracks.forEach {
+                    try {
+                        GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(it.getGpsTrackPath(simplified = false))
+                        numberSimplifiedGpxTracks += 1
+                        Log.i("AsyncSimplifyGpsTracks", "Simplify track for ${it.getDateAsString()}_${it.name}.")
+                    } catch (ex: RuntimeException) {
+                        Log.e("AsyncSimplifyGpsTracks", "Error in simplify track for ${it.getDateAsString()}_${it.name}: ${ex.message}")
+                    }
+                }
+            } else {
+                Log.i("AsyncSimplifyGpsTracks", "No more gpx tracks to simplify.")
+            }
+            return null
+        }
+
+        override fun onPostExecute(param: Void?) {
+            Log.i("AsyncSimplifyGpsTracks", "$numberSimplifiedGpxTracks gpx tracks simplified.")
         }
     }
 

@@ -1,14 +1,17 @@
 package de.drtobiasprinz.summitbook.fragments
 
+import android.content.SharedPreferences
 import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -18,12 +21,18 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitViewBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
 import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.entriesToExcludeForBoundingBoxCalculation
+import de.drtobiasprinz.summitbook.ui.utils.AsyncUpdateGarminData
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.isVisible
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -32,14 +41,19 @@ class SummitViewFragment : Fragment() {
     lateinit var contactsAdapter: ContactsAdapter
     private lateinit var binding: FragmentSummitViewBinding
 
+    @Inject
+    lateinit var sortFilterValues: SortFilterValues
+    private var startedScheduler: Boolean = false
     private lateinit var database: AppDatabase
-    val viewModel: DatabaseViewModel by viewModels()
+    val viewModel: DatabaseViewModel by activityViewModels()
+    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentSummitViewBinding.inflate(layoutInflater, container, false)
         database = DatabaseModule.provideDatabase(requireContext())
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         return binding.root
     }
 
@@ -52,8 +66,12 @@ class SummitViewFragment : Fragment() {
                     AddContactFragment().tag
                 )
             }
-
-            viewModel.getAllContacts()
+            rvContacts.apply {
+                layoutManager = LinearLayoutManager(view.context)
+                adapter = contactsAdapter
+                contactsAdapter.viewModel = viewModel
+            }
+            viewModel.getSortedAndFilteredSummits(sortFilterValues)
             viewModel.contactsList.observe(requireActivity()) {
                 when (it.status) {
                     DataStatus.Status.LOADING -> {
@@ -64,9 +82,9 @@ class SummitViewFragment : Fragment() {
                         it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
                         loading.isVisible(false, rvContacts)
                         contactsAdapter.differ.submitList(it.data)
-                        rvContacts.apply {
-                            layoutManager = LinearLayoutManager(view.context)
-                            adapter = contactsAdapter
+                        if (!startedScheduler) {
+                            addScheduler()
+                            startedScheduler = true
                         }
                     }
                     DataStatus.Status.ERROR -> {
@@ -152,6 +170,82 @@ class SummitViewFragment : Fragment() {
                 emptyBody.visibility = View.GONE
                 listBody.visibility = View.VISIBLE
             }
+        }
+    }
+
+
+    private fun addScheduler() {
+        val schedulerBoundingBox = Executors.newSingleThreadScheduledExecutor()
+        schedulerBoundingBox.schedule({
+            val entriesWithoutBoundingBox = contactsAdapter.differ.currentList.filter {
+                it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingBoxCalculation
+            }
+            if (entriesWithoutBoundingBox.isNotEmpty()) {
+                val entryToCheck = entriesWithoutBoundingBox.first()
+                entryToCheck.setBoundingBoxFromTrack()
+                if (entryToCheck.trackBoundingBox != null) {
+                    database.summitsDao().updateSummit(entryToCheck)
+                    Log.i(
+                        "Scheduler",
+                        "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining."
+                    )
+                } else {
+                    Log.i(
+                        "Scheduler",
+                        "Updated bounding box for ${entryToCheck.name} failed, remove it from update list."
+                    )
+                    entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
+                }
+            } else {
+                Log.i("Scheduler", "No more bounding boxes to calculate.")
+            }
+
+        }, 10, TimeUnit.MINUTES)
+
+        val useSimplifiedTracks = sharedPreferences.getBoolean("use_simplified_tracks", true)
+        if (useSimplifiedTracks) {
+            val entriesWithoutSimplifiedGpxTrack = contactsAdapter.differ.currentList.filter {
+                it.hasGpsTrack() && !it.hasGpsTrack(simplified = true)
+            }.take(50)
+            MainActivity.pythonInstance.let {
+                if (it != null) {
+                    @Suppress("DEPRECATION")
+                    MainActivity.AsyncSimplifyGpsTracks(entriesWithoutSimplifiedGpxTrack, it)
+                        .execute()
+                }
+            }
+        } else {
+            contactsAdapter.differ.currentList.filter {
+                it.hasGpsTrack(simplified = true)
+            }.forEach {
+                val trackFile = it.getGpsTrackPath(simplified = true).toFile()
+                if (trackFile.exists()) {
+                    trackFile.delete()
+                }
+                val gpxPyFile = it.getGpxPyPath().toFile()
+                if (gpxPyFile.exists()) {
+                    gpxPyFile.delete()
+                }
+                Log.e(
+                    "useSimplifiedTracks",
+                    "Deleted ${it.getDateAsString()}_${it.name} because useSimplifiedTracks was set to false."
+                )
+            }
+        }
+
+        if (sharedPreferences.getBoolean("startup_auto_update_switch", false)) {
+            binding.loading.visibility = View.VISIBLE
+            @Suppress("DEPRECATION")
+            ((MainActivity.pythonExecutor)?.let {
+                AsyncUpdateGarminData(
+                    sharedPreferences,
+                    it,
+                    database,
+                    contactsAdapter.differ.currentList,
+                    requireContext(),
+                    binding.loading
+                ).execute()
+            })
         }
     }
 

@@ -11,17 +11,24 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.DialogFragment
+import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.android.material.slider.RangeSlider
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSortAndFilterBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.RangeSliderValues
 import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
+import de.drtobiasprinz.summitbook.utils.Constants
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import java.text.SimpleDateFormat
+import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 
@@ -34,7 +41,7 @@ class SortAndFilterFragment : DialogFragment() {
 
     @Inject
     lateinit var sortFilterValues: SortFilterValues
-
+    private var summitViewFragmentViewModel: DatabaseViewModel? = null
     lateinit var database: AppDatabase
     lateinit var entries: List<Summit>
 
@@ -43,11 +50,14 @@ class SortAndFilterFragment : DialogFragment() {
     var fragment: SummationFragment? = null
     private var extremaValuesAllSummits: ExtremaValuesSummits? = null
     private var extremaValuesFilteredSummits: ExtremaValuesSummits? = null
+    private val dateFormat: SimpleDateFormat =
+        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH)
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentSortAndFilterBinding.inflate(layoutInflater, container, false)
+        database = DatabaseModule.provideDatabase(requireContext())
         dialog!!.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         return binding.root
     }
@@ -55,11 +65,11 @@ class SortAndFilterFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         entries = contactsAdapter.differ.currentList
-        val uniqueYearsOfSummit = StatisticsFragment.getAllYears(entries)
         binding.imgClose.setOnClickListener {
             dismiss()
         }
         binding.apply.setOnClickListener {
+            summitViewFragmentViewModel?.getSortedAndFilteredSummits(sortFilterValues)
             dismiss()
         }
         binding.setToDefault.setOnClickListener {
@@ -71,16 +81,16 @@ class SortAndFilterFragment : DialogFragment() {
         updateSportTypeSpinner()
         addParticipantsFilter()
         updateButtonGroups()
-        setMultiSliders()
+        setRangeSliders()
     }
 
     private fun updateButtonGroups() {
         binding.groupSortAscDesc.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 if (checkedId == binding.buttonDescending.id) {
-                    sortFilterValues.sortDescending = true
+                    sortFilterValues.orderByDescAsc = "DESC"
                 } else {
-                    sortFilterValues.sortDescending = true
+                    sortFilterValues.orderByDescAsc = "ASC"
                 }
             }
         }
@@ -88,19 +98,19 @@ class SortAndFilterFragment : DialogFragment() {
             if (isChecked) {
                 when (checkedId) {
                     binding.buttonByName.id -> {
-                        sortFilterValues.sortBy = { e -> e.name }
+                        sortFilterValues.orderBy = "name"
                     }
                     binding.buttonByElevation.id -> {
-                        sortFilterValues.sortBy = { e -> e.elevationData.maxElevation }
+                        sortFilterValues.orderBy = "maxElevation"
                     }
                     binding.buttonByHeightMeter.id -> {
-                        sortFilterValues.sortBy = { e -> e.elevationData.elevationGain }
+                        sortFilterValues.orderBy = "elevationGain"
                     }
                     binding.buttonByKilometers.id -> {
-                        sortFilterValues.sortBy = { e -> e.kilometers }
+                        sortFilterValues.orderBy = "kilometers"
                     }
                     else -> {
-                        sortFilterValues.sortBy = { e -> e.date }
+                        sortFilterValues.orderBy = "date"
                     }
                 }
             }
@@ -109,13 +119,13 @@ class SortAndFilterFragment : DialogFragment() {
             if (isChecked) {
                 when (checkedId) {
                     binding.buttonGpxYes.id -> {
-                        sortFilterValues.filterByHasGpxTrack = { e -> e.hasGpsTrack() }
+                        sortFilterValues.filterByHasGpxTrack = 1
                     }
                     binding.buttonGpxNo.id -> {
-                        sortFilterValues.filterByHasGpxTrack = { e -> !e.hasGpsTrack() }
+                        sortFilterValues.filterByHasGpxTrack = 0
                     }
                     else -> {
-                        sortFilterValues.filterByHasGpxTrack = { e -> true }
+                        sortFilterValues.filterByHasGpxTrack = -1
                     }
                 }
             }
@@ -124,13 +134,13 @@ class SortAndFilterFragment : DialogFragment() {
             if (isChecked) {
                 when (checkedId) {
                     binding.buttonImageYes.id -> {
-                        sortFilterValues.filterByHasImage = { e -> e.hasImagePath() }
+                        sortFilterValues.filterByHasImage = 1
                     }
                     binding.buttonImageNo.id -> {
-                        sortFilterValues.filterByHasImage = { e -> !e.hasImagePath() }
+                        sortFilterValues.filterByHasImage = 0
                     }
                     else -> {
-                        sortFilterValues.filterByHasImage = { e -> true }
+                        sortFilterValues.filterByHasImage = -1
                     }
                 }
             }
@@ -139,13 +149,13 @@ class SortAndFilterFragment : DialogFragment() {
             if (isChecked) {
                 when (checkedId) {
                     binding.buttonPositionYes.id -> {
-                        sortFilterValues.filterByHasPosition = { e -> e.latLng != null }
+                        sortFilterValues.filterByHasPosition = 1
                     }
                     binding.buttonPositionNo.id -> {
-                        sortFilterValues.filterByHasPosition = { e -> e.latLng == null }
+                        sortFilterValues.filterByHasPosition = 0
                     }
                     else -> {
-                        sortFilterValues.filterByHasPosition = { e -> true }
+                        sortFilterValues.filterByHasPosition = -1
                     }
                 }
             }
@@ -154,55 +164,75 @@ class SortAndFilterFragment : DialogFragment() {
             if (isChecked) {
                 when (checkedId) {
                     binding.buttonMarkedSummit.id -> {
-                        sortFilterValues.filterByIsSummit = true
-                        sortFilterValues.filterByIsFavorite = false
+                        sortFilterValues.filterByIsSummit = 1
+                        sortFilterValues.filterByIsFavorite = 0
                     }
                     binding.buttonPositionNo.id -> {
-                        sortFilterValues.filterByIsSummit = false
-                        sortFilterValues.filterByIsFavorite = true
+                        sortFilterValues.filterByIsSummit = 0
+                        sortFilterValues.filterByIsFavorite = 1
                     }
                     else -> {
-                        sortFilterValues.filterByIsSummit = false
-                        sortFilterValues.filterByIsFavorite = false
+                        sortFilterValues.filterByIsSummit = 0
+                        sortFilterValues.filterByIsFavorite = 0
                     }
                 }
             }
         }
     }
 
-    private fun setMultiSliders() {
+    private fun setRangeSliders() {
         setRangeSlider(
             5f,
             binding.rangeSliderKilometers,
-            sortFilterValues.valuesRangeSliderKilometers
+            binding.layoutKilometers,
+            sortFilterValues.kilometersSlider
         )
         setRangeSlider(
             250f,
             binding.rangeSliderHeightMeter,
-            sortFilterValues.valuesRangeSliderHeightMeters
+            binding.layoutHeightMeter,
+            sortFilterValues.elevationGainSlider
         )
         setRangeSlider(
             250f,
             binding.rangeSliderTopElevation,
-            sortFilterValues.valuesRangeSliderTopElevation
+            binding.layoutTopElevation,
+            sortFilterValues.topElevationSlider
         )
     }
 
-    private fun setRangeSlider(separation: Float, slider: RangeSlider, values: MutableList<Float>) {
-        if (values[3] > 0) {
+    private fun setRangeSlider(
+        stepSize: Float,
+        slider: RangeSlider,
+        layout: LinearLayout,
+        values: RangeSliderValues
+    ) {
+        values.totalMin = database.summitsDao()
+            .get(SimpleSQLiteQuery("SELECT MIN(${values.dbColumnName}) FROM ${Constants.SUMMITS_TABLE} where isBookmark = 0"))
+            .toFloat()
+        values.totalMax = database.summitsDao()
+            .get(SimpleSQLiteQuery("SELECT MAX(${values.dbColumnName}) FROM ${Constants.SUMMITS_TABLE} where isBookmark = 0"))
+            .toFloat()
+
+        if (values.totalMax > 0) {
             slider.visibility = View.VISIBLE
-            slider.minSeparation = separation
-            slider.valueFrom = values[0]
-            slider.valueTo = values[3]
-            if (values[1] >= values[0] && values[3] <= values[2]) {
-                slider.values = listOf(values[1], values[2])
+            layout.visibility = View.VISIBLE
+            slider.valueFrom = values.totalMin
+            slider.valueTo = values.totalMax
+            if (!(values.selectedMin in values.totalMin..values.totalMax)) {
+                values.selectedMin = values.totalMin
             }
-            slider.addOnChangeListener { slider, value, fromUser ->
-                values[1] = slider.values[0]
-                values[2] = slider.values[1]
+            if (!(values.selectedMax in values.totalMin..values.totalMax) || values.selectedMax == 0f) {
+                values.selectedMax = values.totalMax
+            }
+            slider.values = listOf(values.selectedMin, values.selectedMax)
+            slider.addOnChangeListener { slider1, _, _ ->
+                values.selectedMin = slider1.values[0]
+                values.selectedMax = slider1.values[1]
             }
         } else {
             slider.visibility = View.GONE
+            layout.visibility = View.GONE
         }
     }
 
@@ -250,29 +280,6 @@ class SortAndFilterFragment : DialogFragment() {
     private fun setExtremeValues() {
         extremaValuesAllSummits = ExtremaValuesSummits(entries)
         extremaValuesFilteredSummits = ExtremaValuesSummits(entries)
-        setInitialValues(
-            sortFilterValues.valuesRangeSliderKilometers,
-            extremaValuesAllSummits?.minKilometers?.toFloat(),
-            extremaValuesAllSummits?.maxKilometersCeil?.toFloat()
-        )
-        setInitialValues(
-            sortFilterValues.valuesRangeSliderHeightMeters,
-            extremaValuesAllSummits?.minHeightMeters?.toFloat(),
-            extremaValuesAllSummits?.maxHeightMeters?.toFloat()
-        )
-        setInitialValues(
-            sortFilterValues.valuesRangeSliderTopElevation,
-            extremaValuesAllSummits?.minTopElevation?.toFloat(),
-            extremaValuesAllSummits?.maxTopElevation?.toFloat()
-        )
-
-    }
-
-    private fun setInitialValues(values: MutableList<Float>, min: Float?, max: Float?) {
-        values[0] = min ?: 0f
-        values[1] = min ?: 0f
-        values[2] = max ?: 0f
-        values[3] = max ?: 0f
     }
 
     private fun updateDateSpinner() {
@@ -315,15 +322,26 @@ class SortAndFilterFragment : DialogFragment() {
                 when (position) {
                     1 -> {
                         binding.dateStartEndSelector.visibility = View.VISIBLE
-                        sortFilterValues.selectedYear = ""
                     }
                     0 -> {
                         binding.dateStartEndSelector.visibility = View.GONE
-                        sortFilterValues.selectedYear = ""
+                        sortFilterValues.startDate = null
+                        sortFilterValues.endDate = null
                     }
                     else -> {
                         binding.dateStartEndSelector.visibility = View.GONE
-                        sortFilterValues.selectedYear =uniqueYearsOfSummit[position-2]
+                        sortFilterValues.startDate = dateFormat.parse(
+                            String.format(
+                                "%s-01-01 00:00:00",
+                                uniqueYearsOfSummit[position - 2]
+                            )
+                        )
+                        sortFilterValues.endDate = dateFormat.parse(
+                            String.format(
+                                "%s-31-12 23:59:59",
+                                uniqueYearsOfSummit[position - 2]
+                            )
+                        )
                     }
                 }
             }
@@ -373,6 +391,10 @@ class SortAndFilterFragment : DialogFragment() {
             }, year, month, day
         )
         picker.show()
+    }
+
+    fun setViewModel(viewModel: DatabaseViewModel) {
+        summitViewFragmentViewModel = viewModel
     }
 
 

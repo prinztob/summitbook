@@ -15,6 +15,7 @@ import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import com.github.mikephil.charting.charts.CombinedChart.DrawOrder
 import com.github.mikephil.charting.components.LimitLine
@@ -29,6 +30,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentBarChartBinding
+import de.drtobiasprinz.summitbook.databinding.FragmentStatisticsBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.SportType
@@ -36,6 +38,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.utils.BarChartCustomRenderer
 import de.drtobiasprinz.summitbook.ui.utils.IntervalHelper
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.DateFormatSymbols
 import java.text.ParseException
 import java.util.*
@@ -46,11 +49,11 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class BarChartFragment : Fragment() {
 
+    private lateinit var binding: FragmentBarChartBinding
+    private val viewModel: DatabaseViewModel by activityViewModels()
     @Inject
     lateinit var contactsAdapter: ContactsAdapter
 
-    private lateinit var summitEntries: List<Summit>
-    private lateinit var filteredEntries: List<Summit>
     private var selectedYAxisSpinnerEntry: YAxisSelector = YAxisSelector.Count
     private var indoorHeightMeterPercent = 0
     private var selectedXAxisSpinnerEntry: XAxisSelector = XAxisSelector.Date
@@ -61,7 +64,6 @@ class BarChartFragment : Fragment() {
     private var unit: String = "hm"
     private var label: String = "Height meters"
     private lateinit var intervalHelper: IntervalHelper
-    private lateinit var binding: FragmentBarChartBinding
     lateinit var database: AppDatabase
 
     private lateinit var sharedPreferences: SharedPreferences
@@ -72,23 +74,10 @@ class BarChartFragment : Fragment() {
     ): View {
         binding = FragmentBarChartBinding.inflate(layoutInflater, container, false)
         database = DatabaseModule.provideDatabase(requireContext())
-        summitEntries = contactsAdapter.differ.currentList
-        filteredEntries = contactsAdapter.differ.currentList
-        intervalHelper = IntervalHelper(filteredEntries)
-//        setHasOptionsMenu(true)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         indoorHeightMeterPercent = sharedPreferences.getInt("indoor_height_meter_per_cent", 0)
         fillDateSpinner()
-        val barChartCustomRenderer = BarChartCustomRenderer(
-            binding.barChart,
-            binding.barChart.animator,
-            binding.barChart.viewPortHandler
-        )
-        binding.barChart.renderer = barChartCustomRenderer
-        binding.barChart.setDrawValueAboveBar(false)
-        resizeChart()
-        listenOnDataSpinner()
-        update(filteredEntries)
+        update()
         return binding.root
     }
 
@@ -200,10 +189,25 @@ class BarChartFragment : Fragment() {
         }
     }
 
-    fun update(filteredSummitEntries: List<Summit>) {
-        filteredEntries = filteredSummitEntries
-        selectedDataSpinner()
-        drawChart()
+    fun update() {
+        binding.apply {
+            viewModel.contactsList.observe(requireActivity()) { itData ->
+                itData.data?.let { summits ->
+                    intervalHelper = IntervalHelper(summits)
+                    val barChartCustomRenderer = BarChartCustomRenderer(
+                        binding.barChart,
+                        binding.barChart.animator,
+                        binding.barChart.viewPortHandler
+                    )
+                    binding.barChart.renderer = barChartCustomRenderer
+                    binding.barChart.setDrawValueAboveBar(false)
+                    resizeChart()
+                    listenOnDataSpinner(summits)
+                    selectedDataSpinner(summits)
+                    drawChart()
+                }
+            }
+        }
     }
 
     private fun setGraphViewBarChart(dataSet: BarDataSet) {
@@ -226,10 +230,9 @@ class BarChartFragment : Fragment() {
         dataSet.mode = LineDataSet.Mode.STEPPED
     }
 
-    private fun selectedDataSpinner() {
+    private fun selectedDataSpinner(summits: List<Summit>) {
         binding.barChart.axisLeft?.removeAllLimitLines()
-        val sortedEntries = filteredEntries
-        sortedEntries.sortedBy { it.date }
+        summits.sortedBy { it.date }
         barChartEntries.clear()
         lineChartEntriesForecast.clear()
         try {
@@ -249,7 +252,7 @@ class BarChartFragment : Fragment() {
                     R.color.red_50
                 ), ContextCompat.getColor(requireContext(), R.color.green_50)
             )
-            updateBarChart()
+            updateBarChart(summits)
         } catch (e: ParseException) {
             e.printStackTrace()
         }
@@ -278,15 +281,15 @@ class BarChartFragment : Fragment() {
 
 
     @Throws(ParseException::class)
-    private fun updateBarChart() {
-        intervalHelper = IntervalHelper(filteredEntries)
+    private fun updateBarChart(summits: List<Summit>) {
+        intervalHelper = IntervalHelper(summits)
         intervalHelper.setSelectedYear(selectedYear)
         intervalHelper.calculate()
         val interval = selectedXAxisSpinnerEntry.getIntervals(intervalHelper)
         val annotation = selectedXAxisSpinnerEntry.getAnnotation(intervalHelper)
         for (i in 0 until interval.size - 1) {
             val streamSupplier: Supplier<Stream<Summit?>?> = Supplier {
-                selectedXAxisSpinnerEntry.getStream(filteredEntries, interval[i], interval[i + 1])
+                selectedXAxisSpinnerEntry.getStream(summits, interval[i], interval[i + 1])
             }
             val xValue = annotation[i]
             updateDataForChart(xValue, streamSupplier)
@@ -307,7 +310,7 @@ class BarChartFragment : Fragment() {
     }
 
 
-    private fun listenOnDataSpinner() {
+    private fun listenOnDataSpinner(summits: List<Summit>) {
         binding.barChartSpinnerData.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onItemSelected(
                 adapterView: AdapterView<*>?,
@@ -316,7 +319,7 @@ class BarChartFragment : Fragment() {
                 l: Long
             ) {
                 selectedYAxisSpinnerEntry = YAxisSelector.values()[i]
-                selectedDataSpinner()
+                selectedDataSpinner(summits)
                 drawChart()
             }
 
@@ -330,7 +333,7 @@ class BarChartFragment : Fragment() {
                 l: Long
             ) {
                 selectedXAxisSpinnerEntry = XAxisSelector.values()[i]
-                selectedDataSpinner()
+                selectedDataSpinner(summits)
                 drawChart()
             }
 

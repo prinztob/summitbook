@@ -323,6 +323,7 @@
     <string name="gpx_viewer_not_installed">GPX viewer nicht installiert</string>
     <string name="gpx_file_not_copied">GPX Datei konnte nicht kopiert werden</string>
     <string name="add_position_to_summit_cancel">Hinzufügen einer neuen position zu Gipfel %1$s wurde abgebrochen.</string>
+    <string name="add_position_to_summit_successful">Hinzufügen einer neuen position zu Gipfel %1$s war erfolgreich.</string>
     <string name="no_email_program_installed">E-Mail program not installed</string>
     <string name="add_new_summit">Füge neuen Gipfel hinzu</string>
     <string name="change_map_type">Ändere Kartentyp</string>

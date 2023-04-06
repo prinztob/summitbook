@@ -12,7 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
@@ -35,7 +35,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
 
     @Inject
     lateinit var contactsAdapter: ContactsAdapter
-    private val viewModel: DatabaseViewModel by viewModels()
+    private val viewModel: DatabaseViewModel by activityViewModels()
 
     private lateinit var binding: DialogShowNewSummitFromGarminBinding
 
@@ -70,8 +70,6 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
             val endDate = current.format(formatter)
             view.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
             @Suppress("DEPRECATION") AsyncDownloadActivities(
-                contactsAdapter.differ.currentList,
-                getAllActivitiesFromThirdParty(),
                 pythonExecutor,
                 startDate,
                 endDate,
@@ -283,8 +281,6 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
 
         @Suppress("DEPRECATION")
         class AsyncDownloadActivities(
-            private val summits: List<Summit>,
-            private val allActivitiesFromThirdParty: List<Summit>,
             private val pythonExecutor: GarminPythonExecutor?,
             private val startDate: String,
             private val endDate: String,
@@ -306,7 +302,6 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
 
             override fun onPostExecute(param: Void?) {
                 if (dialog != null) {
-//                    updateNewSummits(allActivitiesFromThirdParty, summits, dialog.requireContext())
                     if (activitiesDir?.exists() == true && activitiesDir?.isDirectory == true) {
                         val files = activitiesDir?.listFiles()
                         if (files?.isNotEmpty() == true) {

@@ -24,18 +24,20 @@ import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.ItemContactsBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.fragments.AddContactFragment
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.utils.Constants
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import javax.inject.Singleton
 
 
 @Singleton
-class ContactsAdapter : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
+class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
 
     private lateinit var binding: ItemContactsBinding
     private lateinit var context: Context
+
+    var viewModel: DatabaseViewModel? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         binding = ItemContactsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -67,15 +69,14 @@ class ContactsAdapter : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
                     sportTypeImage.setImageResource(entity.sportType.imageIdBlack)
                 }
                 addImage(entity)
-                setFavoriteImage(entity)
-                setMountainImage(entity)
+                setFavoriteImage(entity, entryFavorite)
+                setMountainImage(entity, entrySummit)
 
                 entryAddImage.setOnClickListener { v: View? ->
                     val context = v?.context
                     val intent = Intent(context, AddImagesActivity::class.java)
                     intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
-                    intent.putExtra(SelectOnOsMapActivity.SUMMIT_POSITION, absoluteAdapterPosition)
-//                    resultReceiver.getResultLauncher().launch(intent)
+                    v?.context?.startActivity(intent)
                 }
 
                 if (entity.velocityData.hasAdditionalData() || entity.elevationData.hasAdditionalData()) {
@@ -90,9 +91,9 @@ class ContactsAdapter : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
                 }
                 entryAddVelocityData.setOnClickListener { v: View? ->
                     AddAdditionalDataFromExternalResourcesDialog.getInstance(entity).show(
-                            (FragmentComponentManager.findActivity(v?.context) as FragmentActivity).supportFragmentManager,
-                            "Show addition data"
-                        )
+                        (FragmentComponentManager.findActivity(v?.context) as FragmentActivity).supportFragmentManager,
+                        "Show addition data"
+                    )
                 }
                 entryDelete.setOnClickListener { v: View? ->
                     v?.context?.let {
@@ -114,16 +115,16 @@ class ContactsAdapter : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
                     val context = v?.context
                     val intent = Intent(context, SelectOnOsMapActivity::class.java)
                     intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
-                    intent.putExtra(SelectOnOsMapActivity.SUMMIT_POSITION, absoluteAdapterPosition)
-//                    resultReceiver.getResultLauncher().launch(intent)
+                    v?.context?.startActivity(intent)
                 }
-                entryAddCoordinate.setOnClickListener { v: View? ->
+                root.setOnClickListener { v: View? ->
                     val context = v?.context
                     val intent = Intent(context, SummitEntryDetailsActivity::class.java)
                     intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
                     v?.context?.startActivity(intent)
                 }
             }
+
         }
 
         private fun ItemContactsBinding.addImage(item: Summit) {
@@ -144,39 +145,38 @@ class ContactsAdapter : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
             }
         }
 
-        private fun setFavoriteImage(summit: Summit) {
+        private fun setFavoriteImage(summit: Summit, button: ImageButton) {
             if (summit.isFavorite) {
-                binding.entryFavorite.setImageResource(R.drawable.ic_star_black_24dp)
+                button.setImageResource(R.drawable.ic_star_black_24dp)
             } else {
-                binding.entryFavorite.setImageResource(R.drawable.ic_star_border_black_24dp)
+                button.setImageResource(R.drawable.ic_star_border_black_24dp)
             }
-            binding.entryFavorite.setOnClickListener {
+            button.setOnClickListener {
                 if (summit.isFavorite) {
-                    binding.entryFavorite.setImageResource(R.drawable.ic_star_border_black_24dp)
+                    button.setImageResource(R.drawable.ic_star_border_black_24dp)
                 } else {
-                    binding.entryFavorite.setImageResource(R.drawable.ic_star_black_24dp)
+                    button.setImageResource(R.drawable.ic_star_black_24dp)
                 }
                 summit.isFavorite = !summit.isFavorite
-                DatabaseModule.provideDatabase(context).summitsDao()
-                    .updateIsFavorite(summit.id, summit.isFavorite)
+                viewModel?.saveContact(true, summit)
             }
         }
 
-        private fun setMountainImage(summit: Summit) {
+        private fun setMountainImage(summit: Summit, button: ImageButton) {
             if (summit.isPeak) {
-                binding.entrySummit.setImageResource(R.drawable.icons8_mountain_24)
+                button.setImageResource(R.drawable.icons8_mountain_24)
             } else {
-                binding.entrySummit.setImageResource(R.drawable.icons8_valley_24)
+                button.setImageResource(R.drawable.icons8_valley_24)
             }
-            binding.entrySummit.setOnClickListener {
+            button.setOnClickListener {
                 if (summit.isPeak) {
-                    binding.entrySummit.setImageResource(R.drawable.icons8_valley_24)
+                    button.setImageResource(R.drawable.icons8_valley_24)
                 } else {
-                    binding.entrySummit.setImageResource(R.drawable.icons8_mountain_24)
+                    button.setImageResource(R.drawable.icons8_mountain_24)
                 }
                 summit.isPeak = !summit.isPeak
-                DatabaseModule.provideDatabase(context).summitsDao()
-                    .updateIsPeak(summit.id, summit.isPeak)
+
+                viewModel?.saveContact(true, summit)
             }
         }
 
@@ -205,7 +205,7 @@ class ContactsAdapter : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
         }
 
         private fun deleteEntry(entry: Summit, v: View) {
-            DatabaseModule.provideDatabase(context).summitsDao().delete(entry)
+            viewModel?.deleteContact(entry)
             if (entry.hasGpsTrack()) {
                 entry.getGpsTrackPath().toFile()?.delete()
             }
@@ -214,7 +214,6 @@ class ContactsAdapter : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
                     entry.getImagePath(it).toFile().delete()
                 }
             }
-            notifyDataSetChanged()
             Toast.makeText(
                 v.context,
                 v.context.getString(R.string.delete_entry, entry.name),

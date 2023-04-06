@@ -19,7 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
@@ -28,6 +28,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentAddContactBinding
@@ -48,7 +49,6 @@ import de.drtobiasprinz.summitbook.utils.Constants.BUNDLE_ID
 import de.drtobiasprinz.summitbook.utils.Constants.EDIT
 import de.drtobiasprinz.summitbook.utils.Constants.NEW
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
-import de.drtobiasprinz.gpx.TrackPoint
 import org.xmlpull.v1.XmlPullParserException
 import java.io.File
 import java.io.IOException
@@ -75,7 +75,7 @@ class AddContactFragment : DialogFragment(), BaseDialog {
 
 
     lateinit var database: AppDatabase
-    private val viewModel: DatabaseViewModel by viewModels()
+    private val viewModel: DatabaseViewModel by activityViewModels()
 
     private lateinit var binding: FragmentAddContactBinding
 
@@ -121,7 +121,6 @@ class AddContactFragment : DialogFragment(), BaseDialog {
         binding.apply {
             btnCancel.setOnClickListener {
                 dismiss()
-                contactsAdapter.notifyDataSetChanged()
                 val text =
                     if (isEdit) getString(R.string.update_summit_cancel) else getString(R.string.add_new_summit_cancel)
                 Snackbar.make(it, text, Snackbar.LENGTH_SHORT).show()
@@ -138,21 +137,22 @@ class AddContactFragment : DialogFragment(), BaseDialog {
                 viewModel.contactDetails.observe(viewLifecycleOwner) { itData ->
                     itData.data?.let {
                         entity = it
-                        binding.heightMeter.addTextChangedListener(watcher)
-                        binding.kilometers.addTextChangedListener(watcher)
-                        binding.kilometers.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
-                        binding.tourDate.addTextChangedListener(watcher)
-                        binding.tourDate.inputType = InputType.TYPE_NULL
-                        binding.tourDate.onFocusChangeListener =
+                        heightMeter.addTextChangedListener(watcher)
+                        kilometers.addTextChangedListener(watcher)
+                        kilometers.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
+                        tourDate.addTextChangedListener(watcher)
+                        tourDate.inputType = InputType.TYPE_NULL
+                        tourDate.onFocusChangeListener =
                             View.OnFocusChangeListener { _: View?, hasFocus: Boolean ->
                                 if (hasFocus) {
-                                    showDatePicker(binding.tourDate, view.context)
+                                    showDatePicker(tourDate, view.context)
                                 }
                             }
-                        binding.activities.adapter = ArrayAdapter(
+                        activities.adapter = ArrayAdapter(
                             requireContext(),
                             android.R.layout.simple_spinner_item,
-                            SportType.values().map { resources.getString(it.sportNameStringId) }.toTypedArray()
+                            SportType.values().map { resources.getString(it.sportNameStringId) }
+                                .toTypedArray()
                         )
 
                         addPlaces(view)
@@ -171,7 +171,7 @@ class AddContactFragment : DialogFragment(), BaseDialog {
             }
 
             btnSave.setOnClickListener {
-                val sportType = SportType.values()[binding.activities.selectedItemPosition]
+                val sportType = SportType.values()[activities.selectedItemPosition]
                 parseSummit(sportType)
                 val garminDataLocal = entity.garminData
                 val gpsTrackPath = entity.getGpsTrackPath().toFile()

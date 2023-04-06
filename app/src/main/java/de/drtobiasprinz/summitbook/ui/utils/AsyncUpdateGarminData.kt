@@ -27,7 +27,6 @@ class AsyncUpdateGarminData(
     private val pythonExecutor: GarminPythonExecutor,
     val database: AppDatabase,
     val entries: List<Summit>,
-    val activitiesFromThirdParty: List<Summit>,
     val context: Context,
     val progressBar: ProgressBar
 ) : AsyncTask<Uri, Int?, Void?>() {
@@ -49,8 +48,6 @@ class AsyncUpdateGarminData(
             endDate = current.format(formatter)
             @Suppress("DEPRECATION")
             ShowNewSummitsFromGarminDialog.Companion.AsyncDownloadActivities(
-                entries,
-                activitiesFromThirdParty,
                 pythonExecutor,
                 startDate,
                 endDate,

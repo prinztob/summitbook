@@ -9,7 +9,7 @@ import de.drtobiasprinz.summitbook.db.entities.*
 
 @Database(entities = [Summit::class, Forecast::class, IgnoredActivity::class,
     SegmentDetails::class, SegmentEntry::class, SolarIntensity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 
