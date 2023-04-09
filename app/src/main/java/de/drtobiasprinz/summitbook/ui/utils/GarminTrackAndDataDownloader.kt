@@ -74,6 +74,7 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
                     finalEntryLocal.lng = highestTrackPoint.lon
                 }
             }
+            finalEntryLocal.hasGpsTrack()
             finalEntryLocal.setBoundingBoxFromTrack()
         }
     }

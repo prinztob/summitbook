@@ -5,29 +5,26 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.sqlite.db.SimpleSQLiteQuery
+import dagger.hilt.android.lifecycle.HiltViewModel
+import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.utils.DataStatus
-import dagger.hilt.android.lifecycle.HiltViewModel
-import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepository) : ViewModel() {
+class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepository) :
+    ViewModel() {
 
     private val _contactsList = MutableLiveData<DataStatus<List<Summit>>>()
-    val contactsList : LiveData<DataStatus<List<Summit>>>
+    val contactsList: LiveData<DataStatus<List<Summit>>>
         get() = _contactsList
 
     private val _contactDetails = MutableLiveData<DataStatus<Summit>>()
-    val contactDetails :LiveData<DataStatus<Summit>>
+    val contactDetails: LiveData<DataStatus<Summit>>
         get() = _contactDetails
-
-    init {
-        getAllContacts()
-    }
 
     fun saveContact(isEdite: Boolean, entity: Summit) = viewModelScope.launch {
         if (isEdite) {
@@ -39,13 +36,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
 
     fun deleteContact(entity: Summit) = viewModelScope.launch {
         repository.deleteContact(entity)
-    }
-
-    fun getAllContacts() = viewModelScope.launch {
-        _contactsList.postValue(DataStatus.loading())
-        repository.getAllContacts()
-            .catch { _contactsList.postValue(DataStatus.error(it.message.toString())) }
-            .collect { _contactsList.postValue(DataStatus.success(it, it.isEmpty())) }
     }
 
     fun getSortedAndFilteredSummits(sortFilterValues: SortFilterValues) = viewModelScope.launch {

@@ -16,6 +16,7 @@ import android.view.View
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -34,18 +35,17 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SettingsActivity
 import de.drtobiasprinz.summitbook.databinding.ActivityMainBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.db.entities.Forecast
-import de.drtobiasprinz.summitbook.db.entities.Poster
-import de.drtobiasprinz.summitbook.db.entities.Segment
-import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.fragments.*
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
 import de.drtobiasprinz.summitbook.ui.utils.*
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.io.File
 import java.time.LocalDate
 import kotlin.math.round
+import kotlin.math.roundToLong
 
 
 @AndroidEntryPoint
@@ -54,6 +54,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var database: AppDatabase
     private lateinit var binding: ActivityMainBinding
     private lateinit var summitViewFragment: SummitViewFragment
+
+    private val viewModel: DatabaseViewModel by viewModels()
 
     private var currentPosition: Int = 0
     private var overlayView: PosterOverlayView? = null
@@ -78,11 +80,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         storage = applicationContext.filesDir
         activitiesDir = File(storage, "activities")
         val viewedFragment: Fragment? = supportFragmentManager.findFragmentById(R.id.content_frame)
-        setSupportActionBar(binding.toolbar)
+        setSupportActionBar(binding.toolbarInclude.toolbar)
         val actionBarDrawerToggle = ActionBarDrawerToggle(
             this,
             binding.drawerLayout,
-            binding.toolbar,
+            binding.toolbarInclude.toolbar,
             R.string.nav_open_drawer,
             R.string.nav_close_drawer
         )
@@ -99,7 +101,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             ft.commit()
         }
         binding.apply {
-            toolbar.setOnMenuItemClickListener { menuItem ->
+            toolbarInclude.toolbar.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
                     R.id.actionSort -> {
                         filter()
@@ -132,9 +134,32 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     }
                 }
             }
+            viewModel.contactsList.observe(this@MainActivity) { itData ->
+                itData.data?.let { summits ->
+                    setOverviewText(summits)
+                }
+            }
         }
     }
 
+    private fun setOverviewText(summits: List<Summit>) {
+        val indoorHeightMeterPercent = sharedPreferences.getInt("indoor_height_meter_per_cent", 0)
+        val statisticEntry = StatisticEntry(summits, indoorHeightMeterPercent)
+        statisticEntry.calculate()
+        val peaks = summits.filter { it.isPeak }
+        binding.overview.text = getString(
+            R.string.base_info_activities,
+            summits.size.toString(),
+            statisticEntry.totalKm.roundToLong().toInt().toString(),
+            statisticEntry.totalHm.toFloat().roundToLong().toString()
+        )
+        binding.overviewSummits.text = getString(
+            R.string.base_info_summits,
+            peaks.size.toString(),
+            peaks.sumOf { it.kilometers }.toInt().toString(),
+            peaks.sumOf { it.elevationData.elevationGain }.toString()
+        )
+    }
 
     private fun filter() {
         val sortAndFilterFragment = SortAndFilterFragment()
@@ -415,18 +440,31 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
     @Suppress("DEPRECATION")
-    class AsyncSimplifyGpsTracks(private val summitsWithoutSimplifiedTracks: List<Summit>, private val pythonInstance: Python) : AsyncTask<Uri, Int?, Void?>() {
+    class AsyncSimplifyGpsTracks(
+        private val summitsWithoutSimplifiedTracks: List<Summit>,
+        private val pythonInstance: Python
+    ) : AsyncTask<Uri, Int?, Void?>() {
 
         private var numberSimplifiedGpxTracks = 0
         override fun doInBackground(vararg uri: Uri): Void? {
             if (summitsWithoutSimplifiedTracks.isNotEmpty()) {
                 summitsWithoutSimplifiedTracks.forEach {
                     try {
-                        GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(it.getGpsTrackPath(simplified = false))
+                        GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
+                            it.getGpsTrackPath(
+                                simplified = false
+                            )
+                        )
                         numberSimplifiedGpxTracks += 1
-                        Log.i("AsyncSimplifyGpsTracks", "Simplify track for ${it.getDateAsString()}_${it.name}.")
+                        Log.i(
+                            "AsyncSimplifyGpsTracks",
+                            "Simplify track for ${it.getDateAsString()}_${it.name}."
+                        )
                     } catch (ex: RuntimeException) {
-                        Log.e("AsyncSimplifyGpsTracks", "Error in simplify track for ${it.getDateAsString()}_${it.name}: ${ex.message}")
+                        Log.e(
+                            "AsyncSimplifyGpsTracks",
+                            "Error in simplify track for ${it.getDateAsString()}_${it.name}: ${ex.message}"
+                        )
                     }
                 }
             } else {

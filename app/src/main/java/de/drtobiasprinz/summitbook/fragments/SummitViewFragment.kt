@@ -43,6 +43,7 @@ class SummitViewFragment : Fragment() {
 
     @Inject
     lateinit var sortFilterValues: SortFilterValues
+
     private var startedScheduler: Boolean = false
     private lateinit var database: AppDatabase
     val viewModel: DatabaseViewModel by activityViewModels()
@@ -72,7 +73,7 @@ class SummitViewFragment : Fragment() {
                 contactsAdapter.viewModel = viewModel
             }
             viewModel.getSortedAndFilteredSummits(sortFilterValues)
-            viewModel.contactsList.observe(requireActivity()) {
+            viewModel.contactsList.observe(viewLifecycleOwner) {
                 when (it.status) {
                     DataStatus.Status.LOADING -> {
                         loading.isVisible(true, rvContacts)
@@ -81,6 +82,10 @@ class SummitViewFragment : Fragment() {
                     DataStatus.Status.SUCCESS -> {
                         it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
                         loading.isVisible(false, rvContacts)
+                        rvContacts.apply {
+                            layoutManager = LinearLayoutManager(view.context)
+                            adapter = contactsAdapter
+                        }
                         contactsAdapter.differ.submitList(it.data)
                         if (!startedScheduler) {
                             addScheduler()

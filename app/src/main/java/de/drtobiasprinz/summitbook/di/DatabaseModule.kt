@@ -2,18 +2,16 @@ package de.drtobiasprinz.summitbook.di
 
 import android.content.Context
 import androidx.room.Room
-import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.utils.Constants.DATABASE
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.utils.Constants.DATABASE
 import javax.inject.Singleton
 
 @Module
@@ -41,6 +39,6 @@ object DatabaseModule {
     fun provideContactsAdapter() = ContactsAdapter()
 
     @Provides
-    fun provideEntity()= Summit()
+    fun provideEntity() = Summit()
 
 }

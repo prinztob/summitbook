@@ -11,20 +11,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/teal_700"
+        <include
+            android:id="@+id/toolbar_include"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:menu="@menu/menu_toolbar"
-            app:subtitle="All your contacts"
-            app:subtitleTextColor="#C6FFFFFF"
-            app:title="Contacts List"
-            app:titleTextColor="@color/white" />
-
+            layout="@layout/toolbar_main" />
 
         <TextView
             android:id="@+id/overview"
@@ -41,7 +33,7 @@
             app:drawableStartCompat="@drawable/ic_baseline_directions_run_24"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/toolbar" />
+            app:layout_constraintTop_toBottomOf="@id/toolbar_include" />
 
         <TextView
             android:id="@+id/overview_summits"

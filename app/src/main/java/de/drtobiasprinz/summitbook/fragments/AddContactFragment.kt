@@ -164,6 +164,23 @@ class AddContactFragment : DialogFragment(), BaseDialog {
                     }
                 }
             } else {
+                heightMeter.addTextChangedListener(watcher)
+                kilometers.addTextChangedListener(watcher)
+                kilometers.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
+                tourDate.addTextChangedListener(watcher)
+                tourDate.inputType = InputType.TYPE_NULL
+                tourDate.onFocusChangeListener =
+                    View.OnFocusChangeListener { _: View?, hasFocus: Boolean ->
+                        if (hasFocus) {
+                            showDatePicker(tourDate, view.context)
+                        }
+                    }
+                activities.adapter = ArrayAdapter(
+                    requireContext(),
+                    android.R.layout.simple_spinner_item,
+                    SportType.values().map { resources.getString(it.sportNameStringId) }
+                        .toTypedArray()
+                )
                 addPlaces(view)
                 addCountries(view)
                 addParticipants(view)
@@ -183,6 +200,7 @@ class AddContactFragment : DialogFragment(), BaseDialog {
                 if (entity.latLng == null && latlngHighestPointLocal != null) {
                     entity.latLng = latlngHighestPointLocal
                 }
+                entity.hasGpsTrack()
                 entity.setBoundingBoxFromTrack()
                 viewModel.saveContact(isEdit, entity)
                 dismiss()

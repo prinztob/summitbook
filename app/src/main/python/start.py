@@ -152,8 +152,10 @@ def get_power_data(api, date):
 
 def download_activities_by_date(api, folder, start_date, end_date=date.today()):
     try:
+        print(f"Download activities between {start_date} and {end_date}.")
         activities = get_activities_by_date(api, start_date, end_date, None)
         write_index = 0
+        print(f"Downloading {len(activities)} activities.")
         for activity in activities:
             activity_id = activity["activityId"]
             if activity["activityType"]["typeId"] == 89:

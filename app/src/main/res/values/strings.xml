@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Summit Book</string>
+    <string name="toolbar_subtitle">Manage your summits</string>
     <string name="required">required</string>
     <string name="optional">optional</string>
     <string name="user_name">spot@prinz.de</string>
@@ -378,5 +379,6 @@
     <string name="part_day">Part of day</string>
     <string name="whole_day">Complete day</string>
     <string name="update_done">Update of third party data done</string>
+    <string name="no_summit">There is no summit for this criteria</string>
 
 </resources>

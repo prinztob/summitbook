@@ -3,7 +3,7 @@ package de.drtobiasprinz.summitbook.db.entities
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
-import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.db.AppDatabase
 import java.util.*
 import kotlin.math.roundToInt
 

@@ -8,10 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
-import android.widget.ImageButton
-import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import com.chivorn.smartmaterialspinner.SmartMaterialSpinner
@@ -24,21 +21,28 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
+import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.adapter.SegmentsViewAdapter
-import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.databinding.FragmentAddSegmentEntryBinding
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.GpsTrack
 import de.drtobiasprinz.summitbook.db.entities.GpsTrack.Companion.interpolateColor
+import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.TrackColor.Elevation
 import de.drtobiasprinz.summitbook.db.entities.TrackColor.None
-import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
+import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
-import de.drtobiasprinz.gpx.TrackPoint
 import org.osmdroid.api.IGeoPoint
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
@@ -48,22 +52,24 @@ import org.osmdroid.views.overlay.simplefastpoint.LabelledGeoPoint
 import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlay
 import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlayOptions
 import org.osmdroid.views.overlay.simplefastpoint.SimplePointTheme
+import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
-
+@AndroidEntryPoint
 class AddSegmentEntryFragment : Fragment() {
 
-    private lateinit var root: View
-    private lateinit var osMap: CustomMapViewToAllowScrolling
-    private lateinit var lineChart: LineChart
+    @Inject
+    lateinit var contactsAdapter: ContactsAdapter
+    lateinit var database: AppDatabase
+    private lateinit var binding: FragmentAddSegmentEntryBinding
+
     private var gpsTrack: GpsTrack? = null
     private var startMarker: Marker? = null
     private var stopMarker: Marker? = null
     private var pointOverlay: SimpleFastPointOverlay? = null
     private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
-    private lateinit var resultReceiver: FragmentResultReceiver
     private var selectedCustomizeTrackItem = None
     private var startSelected = true
     private var startPointId: Int = 0
@@ -77,15 +83,14 @@ class AddSegmentEntryFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultReceiver = context as FragmentResultReceiver
-        setHasOptionsMenu(true)
+        database = DatabaseModule.provideDatabase(requireContext())
         segmentEntry = segmentEntryId?.let {
-            resultReceiver.getSortFilterHelper().database.segmentsDao()?.getSegmentEntry(it)
+            database.segmentsDao()?.getSegmentEntry(it)
         }
         segment =
             segmentsViewAdapter?.segments?.first { it.segmentDetails.segmentDetailsId == segmentId }
         summitToCompare = segmentEntry?.activityId?.let {
-            resultReceiver.getSortFilterHelper().database.summitsDao().getSummitFromActivityId(it)
+            database.summitsDao().getSummitFromActivityId(it)
         }
     }
 
@@ -94,28 +99,25 @@ class AddSegmentEntryFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        root = inflater.inflate(R.layout.fragment_add_segment_entry, container, false)
-        lineChart = root.findViewById(R.id.lineChart)
+        binding = FragmentAddSegmentEntryBinding.inflate(layoutInflater, container, false)
         OpenStreetMapUtils.setOsmConfForTiles()
-        osMap = root.findViewById(R.id.osmap)
-        setTileSource(selectedItem, osMap)
-        root.findViewById<com.google.android.material.button.MaterialButton>(R.id.cancel)
-            .setOnClickListener {
-                activity?.supportFragmentManager?.popBackStack()
-            }
-        root.findViewById<com.google.android.material.button.MaterialButton>(R.id.save)
+        setTileSource(selectedItem, binding.osmap)
+        binding.cancel.setOnClickListener {
+            activity?.supportFragmentManager?.popBackStack()
+        }
+        binding.save.findViewById<com.google.android.material.button.MaterialButton>(R.id.save)
             .setOnClickListener {
                 val summit = summitToCompare
                 val segmentEntryLocal = segmentEntry
                 if (summit != null && segmentEntryLocal != null) {
                     if (isUpdate) {
-                        resultReceiver.getSortFilterHelper().database.segmentsDao()
+                        database.segmentsDao()
                             ?.updateSegmentEntry(segmentEntryLocal)
                         segmentsViewAdapter?.segments?.first { it.segmentDetails.segmentDetailsId == segmentId }?.segmentEntries?.remove(
                             segmentEntryLocal
                         )
                     } else {
-                        resultReceiver.getSortFilterHelper().database.segmentsDao()
+                        database.segmentsDao()
                             ?.addSegmentEntry(segmentEntryLocal)
                     }
                     segmentsViewAdapter?.segments?.first { it.segmentDetails.segmentDetailsId == segmentId }?.segmentEntries?.add(
@@ -126,27 +128,25 @@ class AddSegmentEntryFragment : Fragment() {
                 activity?.supportFragmentManager?.popBackStack()
             }
 
-        root.findViewById<SwitchCompat>(R.id.startOrStop)
+        binding.startOrStop
             .setOnCheckedChangeListener { _, isChecked ->
                 startSelected = !isChecked
             }
-        root.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.mapOnOff)
+        binding.mapOnOff
             .setOnCheckedChangeListener { _, isChecked ->
                 if (isChecked) {
-                    osMap.visibility = View.VISIBLE
-                    val scale = root.resources.displayMetrics.density
+                    binding.osmap.visibility = View.VISIBLE
+                    val scale = binding.root.resources.displayMetrics.density
                     val pixels = (150 * scale + 0.5f).toInt()
-                    lineChart.layoutParams.height = pixels
+                    binding.lineChart.layoutParams.height = pixels
                 } else {
-                    osMap.visibility = View.GONE
-                    lineChart.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+                    binding.osmap.visibility = View.GONE
+                    binding.lineChart.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
                 }
             }
-        root.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.chartOnOff)
-            .setOnCheckedChangeListener { _, isChecked ->
-                lineChart.visibility = if (isChecked) View.VISIBLE else View.GONE
-            }
-        setHasOptionsMenu(true)
+        binding.chartOnOff.setOnCheckedChangeListener { _, isChecked ->
+            binding.lineChart.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
         if (summitToCompare != null) {
             setGpsTrack(summitToCompare)
             val segmentEntryLocal = segmentEntry
@@ -159,22 +159,20 @@ class AddSegmentEntryFragment : Fragment() {
             setEndMarker(endPointId)
         }
         prepareCompareAutoComplete()
-        return root
+        return binding.root
     }
 
     private fun prepareCompareAutoComplete() {
-        val summitToCompareSpinner: SmartMaterialSpinner<String> =
-            root.findViewById(R.id.summit_name_to_use)
         val items = getSummitsSuggestions()
-        summitToCompareSpinner.item = items
+        binding.summitNameToUse.item = items
         val summit = summitToCompare
         if (summit != null) {
             val position = items.indexOf("${summit.getDateAsString()} ${summit.name}")
             if (position >= 0) {
-                summitToCompareSpinner.setSelection(position)
+                binding.summitNameToUse.setSelection(position)
             }
         }
-        summitToCompareSpinner.onItemSelectedListener =
+        binding.summitNameToUse.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
                     adapterView: AdapterView<*>?,
@@ -203,7 +201,7 @@ class AddSegmentEntryFragment : Fragment() {
     }
 
     private fun setTextView() {
-        root.findViewById<TextView>(R.id.tour_date).text = summitToCompare?.getDateAsString()
+        binding.tourDate.text = summitToCompare?.getDateAsString()
         val allTrackPoints = gpsTrack?.trackPoints
         val summit = summitToCompare
         if (summit != null && allTrackPoints != null && allTrackPoints.isNotEmpty()) {
@@ -227,42 +225,40 @@ class AddSegmentEntryFragment : Fragment() {
             val distance = ((endTrackPoint.extension?.distance
                 ?: 0.0) - (startTrackPoint.extension?.distance ?: 0.0)) / 1000.0
 
-            root.findViewById<TextView>(R.id.duration).text = String.format(
+            binding.duration.text = String.format(
                 requireContext().resources.configuration.locales[0],
                 "%.1f %s",
                 duration,
                 getString(R.string.min)
             )
-            root.findViewById<TextView>(R.id.kilometers).text = String.format(
+            binding.kilometers.text = String.format(
                 requireContext().resources.configuration.locales[0],
                 "%.1f %s",
                 distance,
                 getString(R.string.km)
             )
-            root.findViewById<TextView>(R.id.averageHr).text = String.format(
+            binding.averageHr.text = String.format(
                 requireContext().resources.configuration.locales[0],
                 "%s %s",
                 averageHeartRate,
                 getString(R.string.bpm)
             )
-            root.findViewById<TextView>(R.id.averagePower).text = String.format(
+            binding.averagePower.text = String.format(
                 requireContext().resources.configuration.locales[0],
                 "%s %s",
                 averagePower,
                 getString(R.string.watt)
             )
-            root.findViewById<TextView>(R.id.height_meter).text = String.format(
+            binding.heightMeter.text = String.format(
                 requireContext().resources.configuration.locales[0],
                 "%s/%s %s",
                 heightMeterResult.second.roundToInt(),
                 heightMeterResult.third.roundToInt(),
                 getString(R.string.hm)
             )
-            val saveButton =
-                root.findViewById<com.google.android.material.button.MaterialButton>(R.id.save)
-            saveButton.isEnabled = true
+            binding.save.isEnabled = true
             if (isUpdate) {
-                saveButton.text = getString(R.string.update)
+                binding.save.text = getString(R.string.update)
             }
             segmentEntry = SegmentEntry(
                 segmentEntryId
@@ -286,9 +282,9 @@ class AddSegmentEntryFragment : Fragment() {
         }
     }
 
-    private fun getSummitsSuggestions(): ArrayList<String> {
+    private fun getSummitsSuggestions(): List<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
-        val summitsToCompareFromActivity = resultReceiver.getSortFilterHelper().entries
+        val summitsToCompareFromActivity = contactsAdapter.differ.currentList
         val summitsWithTrack =
             summitsToCompareFromActivity.filter { it.hasGpsTrack() }.sortedByDescending { it.date }
         val entries = segment?.segmentEntries
@@ -334,15 +330,15 @@ class AddSegmentEntryFragment : Fragment() {
     private fun drawChart() {
         val localGpsTrack = gpsTrack
         if (localGpsTrack != null) {
-            lineChart.clear()
-            lineChart.xAxis.removeAllLimitLines()
-            setXAxis(lineChart)
+            binding.lineChart.clear()
+            binding.lineChart.xAxis.removeAllLimitLines()
+            setXAxis(binding.lineChart)
             val dataSets: MutableList<ILineDataSet> = ArrayList()
             val trackColor = selectedCustomizeTrackItem
             val lineChartEntries = localGpsTrack.getTrackGraph(trackColor.f)
             val label = getString(trackColor.labelId)
 
-            val leftAxis: YAxis = lineChart.axisLeft
+            val leftAxis: YAxis = binding.lineChart.axisLeft
             leftAxis.textColor = Color.BLACK
             leftAxis.setDrawGridLines(true)
             leftAxis.isGranularityEnabled = true
@@ -351,8 +347,9 @@ class AddSegmentEntryFragment : Fragment() {
             setGraphView(dataSet)
             setColors(lineChartEntries, dataSet)
             dataSets.add(dataSet)
-            lineChart.data = LineData(dataSets)
-            lineChart.setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
+            binding.lineChart.data = LineData(dataSets)
+            binding.lineChart.setOnChartValueSelectedListener(object :
+                OnChartValueSelectedListener {
                 override fun onValueSelected(e: Entry, h: Highlight?) {
                     if (e.data is TrackPoint) {
                         val trackPoint = e.data as TrackPoint
@@ -363,18 +360,18 @@ class AddSegmentEntryFragment : Fragment() {
                             } else {
                                 setEndMarker(index)
                             }
-                            osMap.controller.setCenter(gpsTrack?.trackGeoPoints?.get(index))
+                            binding.osmap.controller.setCenter(gpsTrack?.trackGeoPoints?.get(index))
                         }
                     }
                 }
 
                 override fun onNothingSelected() {}
             })
-            setLegend(lineChart, label)
+            setLegend(binding.lineChart, label)
             drawVerticalLine(startPointId, Color.GREEN)
             drawVerticalLine(endPointId, Color.RED)
         } else {
-            lineChart.visibility = View.GONE
+            binding.lineChart.visibility = View.GONE
         }
     }
 
@@ -384,7 +381,7 @@ class AddSegmentEntryFragment : Fragment() {
             val ll = LimitLine(distance)
             ll.lineColor = color
             ll.lineWidth = 2f
-            lineChart.xAxis.addLimitLine(ll)
+            binding.lineChart.xAxis.addLimitLine(ll)
         }
     }
 
@@ -444,12 +441,16 @@ class AddSegmentEntryFragment : Fragment() {
     }
 
     private fun setOpenStreetMap() {
-        osMap.overlays?.clear()
-        osMap.overlayManager?.clear()
-        val changeMapTypeFab: ImageButton = root.findViewById(R.id.change_map_type)
-        changeMapTypeFab.setImageResource(R.drawable.ic_more_vert_black_24dp)
-        changeMapTypeFab.setOnClickListener { showMapTypeSelectorDialog(requireContext(), osMap) }
-        addDefaultSettings(requireContext(), osMap, requireActivity())
+        binding.osmap.overlays?.clear()
+        binding.osmap.overlayManager?.clear()
+        binding.changeMapType.setImageResource(R.drawable.ic_more_vert_black_24dp)
+        binding.changeMapType.setOnClickListener {
+            showMapTypeSelectorDialog(
+                requireContext(),
+                binding.osmap
+            )
+        }
+        addDefaultSettings(requireContext(), binding.osmap, requireActivity())
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
 
         val summit = summitToCompare
@@ -457,13 +458,17 @@ class AddSegmentEntryFragment : Fragment() {
             val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || summit.latLng != null
             if (summitToCompare != null && hasPoints) {
                 if (gpsTrack?.osMapRoute == null) {
-                    gpsTrack?.addGpsTrack(osMap, selectedCustomizeTrackItem, rootView = root)
+                    gpsTrack?.addGpsTrack(
+                        binding.osmap,
+                        selectedCustomizeTrackItem,
+                        rootView = binding.root
+                    )
                 }
                 showSinglePoints()
-                osMap.post {
+                binding.osmap.post {
                     gpsTrack?.let {
                         OpenStreetMapUtils.calculateBoundingBox(
-                            osMap,
+                            binding.osmap,
                             it.trackGeoPoints
                         )
                     }
@@ -479,7 +484,7 @@ class AddSegmentEntryFragment : Fragment() {
             val firstEndPoint =
                 GeoPoint(entries.first().endPositionLatitude, entries.first().endPositionLongitude)
             addMarker(
-                osMap,
+                binding.osmap,
                 firstStartPoint,
                 ResourcesCompat.getDrawable(
                     requireContext().resources,
@@ -488,7 +493,7 @@ class AddSegmentEntryFragment : Fragment() {
                 )
             )
             addMarker(
-                osMap,
+                binding.osmap,
                 firstEndPoint,
                 ResourcesCompat.getDrawable(
                     requireContext().resources,
@@ -502,7 +507,7 @@ class AddSegmentEntryFragment : Fragment() {
     private fun showSinglePoints() {
         val trackGeoPoints = gpsTrack?.trackGeoPoints
         if (trackGeoPoints != null && trackGeoPoints.isNotEmpty()) {
-            osMap.overlays.remove(pointOverlay)
+            binding.osmap.overlays.remove(pointOverlay)
             val filteredPoints = ArrayList<IGeoPoint>()
             for ((i, point) in trackGeoPoints.withIndex()) {
                 if (i > startPointId - 30 && i < endPointId + 30) {
@@ -545,7 +550,7 @@ class AddSegmentEntryFragment : Fragment() {
                     setEndMarker(indexOfTrackPoint)
                 }
             }
-            osMap.overlays?.add(pointOverlay)
+            binding.osmap.overlays?.add(pointOverlay)
         }
     }
 
@@ -554,7 +559,11 @@ class AddSegmentEntryFragment : Fragment() {
             endPointId = i
             updateMapAndChart()
         } else {
-            Toast.makeText(root.context, getString(R.string.stop_before_start), Toast.LENGTH_SHORT)
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.stop_before_start),
+                Toast.LENGTH_SHORT
+            )
                 .show()
         }
     }
@@ -564,7 +573,11 @@ class AddSegmentEntryFragment : Fragment() {
             startPointId = i
             updateMapAndChart(updateView)
         } else {
-            Toast.makeText(root.context, getString(R.string.start_after_stop), Toast.LENGTH_SHORT)
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.start_after_stop),
+                Toast.LENGTH_SHORT
+            )
                 .show()
         }
     }
@@ -575,10 +588,10 @@ class AddSegmentEntryFragment : Fragment() {
             showSinglePoints()
             setTextView()
         }
-        osMap.overlays.remove(startMarker)
-        osMap.overlays.remove(stopMarker)
+        binding.osmap.overlays.remove(startMarker)
+        binding.osmap.overlays.remove(stopMarker)
         startMarker = addMarker(
-            osMap,
+            binding.osmap,
             gpsTrack?.trackGeoPoints?.get(startPointId),
             ResourcesCompat.getDrawable(
                 requireContext().resources,
@@ -587,7 +600,7 @@ class AddSegmentEntryFragment : Fragment() {
             )
         )
         stopMarker = addMarker(
-            osMap,
+            binding.osmap,
             gpsTrack?.trackGeoPoints?.get(endPointId),
             ResourcesCompat.getDrawable(
                 requireContext().resources,

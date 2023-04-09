@@ -33,6 +33,7 @@ import de.drtobiasprinz.summitbook.databinding.FragmentBarChartBinding
 import de.drtobiasprinz.summitbook.databinding.FragmentStatisticsBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Forecast
+import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.di.DatabaseModule
@@ -53,14 +54,14 @@ class BarChartFragment : Fragment() {
     private val viewModel: DatabaseViewModel by activityViewModels()
     @Inject
     lateinit var contactsAdapter: ContactsAdapter
+    @Inject
+    lateinit var sortFilterValues: SortFilterValues
 
     private var selectedYAxisSpinnerEntry: YAxisSelector = YAxisSelector.Count
     private var indoorHeightMeterPercent = 0
     private var selectedXAxisSpinnerEntry: XAxisSelector = XAxisSelector.Date
     private var barChartEntries: MutableList<BarEntry?> = mutableListOf()
     private var lineChartEntriesForecast: MutableList<Entry?> = mutableListOf()
-    //TODO: fix
-    private var selectedYear: String = ""
     private var unit: String = "hm"
     private var label: String = "Height meters"
     private lateinit var intervalHelper: IntervalHelper
@@ -150,7 +151,7 @@ class BarChartFragment : Fragment() {
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 return if (selectedXAxisSpinnerEntry == XAxisSelector.Date) {
-                    if (selectedYear == "" || value > 12f || value == 0f) {
+                    if (!sortFilterValues.wasFullYearSelected() || value > 12f || value == 0f) {
                         String.format("%s", value.toInt())
                     } else {
                         val month = if (value < 1 || value > 12) 0 else value.toInt() - 1
@@ -241,7 +242,7 @@ class BarChartFragment : Fragment() {
                 selectedYAxisSpinnerEntry.defaultAnnualTarget.toString()
             )?.toFloat()
                 ?: selectedYAxisSpinnerEntry.defaultAnnualTarget.toFloat()
-            if (selectedYear != "") {
+            if (sortFilterValues.wasFullYearSelected()) {
                 annualTarget /= 12f
             }
             val line1 = LimitLine(annualTarget)
@@ -264,7 +265,7 @@ class BarChartFragment : Fragment() {
         label = getString(selectedYAxisSpinnerEntry.nameId)
         unit = getString(selectedYAxisSpinnerEntry.unitId)
         barChartEntries.add(BarEntry(xValue, getValueForEntry(streamSupplier)))
-        if (selectedYear == currentYear && selectedXAxisSpinnerEntry == XAxisSelector.Date) {
+        if (sortFilterValues.wasCurrentYearSelected() && selectedXAxisSpinnerEntry == XAxisSelector.Date) {
             val forecasts = database.forecastDao()?.allForecasts as ArrayList<Forecast>
             val forecast =
                 forecasts.firstOrNull { it.month == xValue.toInt() && it.year.toString() == currentYear }
@@ -283,7 +284,7 @@ class BarChartFragment : Fragment() {
     @Throws(ParseException::class)
     private fun updateBarChart(summits: List<Summit>) {
         intervalHelper = IntervalHelper(summits)
-        intervalHelper.setSelectedYear(selectedYear)
+        intervalHelper.setSelectedYear(sortFilterValues.getSelectedYear())
         intervalHelper.calculate()
         val interval = selectedXAxisSpinnerEntry.getIntervals(intervalHelper)
         val annotation = selectedXAxisSpinnerEntry.getAnnotation(intervalHelper)
@@ -367,14 +368,14 @@ class BarChartFragment : Fragment() {
                 val value: String
                 if (e != null && highlight != null) {
                     value = if (selectedXAxisSpinnerEntry == XAxisSelector.Date) {
-                        if (e.x > 12 || selectedYear == "") {
+                        if (e.x > 12 || !sortFilterValues.wasFullYearSelected()) {
                             String.format("%s", e.x.toInt())
                         } else {
                             val month = if (e.x < 1 || e.x > 12) 0 else e.x.toInt() - 1
                             String.format(
                                 "%s %s",
                                 DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month],
-                                selectedYear
+                                sortFilterValues.getSelectedYear()
                             )
                         }
                     } else if (selectedXAxisSpinnerEntry.isAQuality) {

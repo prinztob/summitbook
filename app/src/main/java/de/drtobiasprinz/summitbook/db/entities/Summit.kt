@@ -45,7 +45,6 @@ class Summit(
     @Embedded var trackBoundingBox: TrackBoundingBox? = null,
     var activityId: Long = System.currentTimeMillis(),
     @ColumnInfo(defaultValue = "false") var isBookmark: Boolean = false,
-    @ColumnInfo(defaultValue = "false") var hasImage: Boolean = false,
     @ColumnInfo(defaultValue = "false") var hasTrack: Boolean = false,
 ) {
     @PrimaryKey(autoGenerate = true)
@@ -181,7 +180,8 @@ class Summit(
     }
 
     fun hasGpsTrack(simplified: Boolean = false): Boolean {
-        return getGpsTrackPath(simplified).toFile()?.exists() ?: false
+        hasTrack = getGpsTrackPath(simplified).toFile()?.exists() ?: false
+        return hasTrack
     }
 
     fun isDuplicate(allExistingEntries: List<Summit>?): Boolean {
@@ -281,11 +281,10 @@ class Summit(
     }
 
     fun toReadableString(context: Context): String {
-        return "${context.getString(R.string.tour_date)}: ${getDateAsString()}, ${
-            context.getString(
+        return "${context.getString(R.string.tour_date)}: ${getDateAsString()}, ${context.getString(
                 R.string.name
-            )
-        }: ${name}, ${context.getString(R.string.type)}: $sportType, ${elevationData.elevationGain} hm, $kilometers km"
+            )}: ${name}, " +
+                "${context.getString(R.string.type)}: $sportType, ${elevationData.elevationGain} hm, $kilometers km"
     }
 
     fun getConnectedEntryString(context: Context): String {
@@ -375,24 +374,44 @@ class Summit(
         }
     }
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || javaClass != other.javaClass) return false
-        val that = other as Summit
-        return that.kilometers == kilometers && that.getDateAsString() == getDateAsString() && name == that.name && sportType == that.sportType && elevationData == that.elevationData
-    }
 
-    fun equalsInAllProperties(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || javaClass != other.javaClass) return false
-        val that = other as Summit
-        return that.kilometers == kilometers && that.getDateAsString() == getDateAsString()
-                && name == that.name && sportType == that.sportType
-                && elevationData == that.elevationData && velocityData == that.velocityData && comments == that.comments
-    }
 
     override fun hashCode(): Int {
         return Objects.hash(date, name, sportType, elevationData, kilometers)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Summit
+
+        if (date != other.date) return false
+        if (name != other.name) return false
+        if (sportType != other.sportType) return false
+        if (places != other.places) return false
+        if (countries != other.countries) return false
+        if (comments != other.comments) return false
+        if (elevationData != other.elevationData) return false
+        if (kilometers != other.kilometers) return false
+        if (velocityData != other.velocityData) return false
+        if (lat != other.lat) return false
+        if (lng != other.lng) return false
+        if (participants != other.participants) return false
+        if (equipments != other.equipments) return false
+        if (imageIds != other.imageIds) return false
+        if (garminData != other.garminData) return false
+        if (trackBoundingBox != other.trackBoundingBox) return false
+        if (activityId != other.activityId) return false
+        if (isBookmark != other.isBookmark) return false
+        if (hasTrack != other.hasTrack) return false
+        if (id != other.id) return false
+        if (latLng != other.latLng) return false
+        if (duration != other.duration) return false
+        if (gpsTrack != other.gpsTrack) return false
+        if (isSelected != other.isSelected) return false
+
+        return true
     }
 
     companion object {

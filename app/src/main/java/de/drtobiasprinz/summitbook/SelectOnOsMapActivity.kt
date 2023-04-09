@@ -154,17 +154,19 @@ class SelectOnOsMapActivity : FragmentActivity() {
                 }
                 val localSelectedPath = selectedGpsPath
                 if (localSelectedPath != null) {
-                    val fileDest = summit.getGpsTrackPath()
                     try {
-                        Files.copy(localSelectedPath, fileDest, StandardCopyOption.REPLACE_EXISTING)
+                        Files.copy(
+                            localSelectedPath,
+                            summit.getGpsTrackPath(),
+                            StandardCopyOption.REPLACE_EXISTING
+                        )
+                        summit.hasTrack = true
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
                 }
                 summit.setBoundingBoxFromTrack()
-                if (summit.trackBoundingBox != null) {
-                    database?.summitsDao()?.updateSummit(summit)
-                }
+                viewModel.saveContact(true, summit)
             }
         }
         binding.addPositionCancel.setOnClickListener { v: View ->
@@ -176,25 +178,25 @@ class SelectOnOsMapActivity : FragmentActivity() {
             ).show()
         }
         binding.addPositionDelete.setOnClickListener { v: View ->
-            val entry = summitEntry
-            if (entry != null) {
+            val summitEntryLocal = summitEntry
+            if (summitEntryLocal != null) {
                 AlertDialog.Builder(v.context)
                     .setTitle(getString(R.string.delete_coordinates))
                     .setMessage(getString(R.string.delete_coordinates_message))
                     .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
                         selectedGpsPath = null
-                        if (entry.hasGpsTrack()) {
-                            val gpsTrackPath = entry.getGpsTrackPath()
+                        if (summitEntryLocal.hasGpsTrack()) {
+                            val gpsTrackPath = summitEntryLocal.getGpsTrackPath()
                             gpsTrackPath.toFile()?.delete()
+                            summitEntryLocal.hasTrack = false
                         }
-                        entry.latLng = TrackPoint(0.0, 0.0)
+                        summitEntryLocal.latLng = TrackPoint(0.0, 0.0)
 
-                        database?.summitsDao()?.updateLat(entry.id, 0.0)
-                        database?.summitsDao()?.updateLng(entry.id, 0.0)
+                        viewModel.saveContact(true, summitEntryLocal)
                         finish()
                         Toast.makeText(
                             v.context,
-                            v.context.getString(R.string.delete_gps, entry.name),
+                            v.context.getString(R.string.delete_gps, summitEntryLocal.name),
                             Toast.LENGTH_SHORT
                         ).show()
                     }

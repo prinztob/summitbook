@@ -19,6 +19,7 @@ import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentStatisticsBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Forecast
+import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.StatisticEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.di.DatabaseModule
@@ -30,6 +31,8 @@ import kotlin.math.roundToLong
 
 @AndroidEntryPoint
 class StatisticsFragment : Fragment() {
+    @Inject
+    lateinit var sortFilterValues: SortFilterValues
 
     private lateinit var binding: FragmentStatisticsBinding
     private val viewModel: DatabaseViewModel by activityViewModels()
@@ -41,9 +44,6 @@ class StatisticsFragment : Fragment() {
     private var indoorHeightMeterPercent: Int = 0
     private lateinit var sharedPreferences: SharedPreferences
     lateinit var database: AppDatabase
-
-    //TODO: fix
-    private var selectedYear: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -110,7 +110,7 @@ class StatisticsFragment : Fragment() {
             )
             val currentYear: Int = (Calendar.getInstance())[Calendar.YEAR]
             val currentMonth: Int = (Calendar.getInstance())[Calendar.MONTH] + 1
-            if (selectedYear == currentYear.toString()) {
+            if (sortFilterValues.wasCurrentYearSelected()) {
                 val forecasts = database.forecastDao()?.allForecasts
                 forecasts?.forEach {
                     it.setActual(
@@ -160,7 +160,7 @@ class StatisticsFragment : Fragment() {
                 binding.textTotalHmInfo.visibility = View.GONE
                 binding.textTotalHmForecastInfo.visibility = View.GONE
             }
-            if (selectedYear != "") {
+            if (sortFilterValues.wasFullYearSelected()) {
                 binding.achievementInfo.visibility = View.VISIBLE
                 binding.textAchievement.text = String.format(
                     requireContext().resources.configuration.locales[0],
@@ -601,9 +601,9 @@ class StatisticsFragment : Fragment() {
 
     private fun setProgressBar() {
         val simpleProgressBar = binding.vprogressbar
-        if (selectedYear != "") {
+        if (sortFilterValues.wasFullYearSelected()) {
             val expectedAchievement =
-                if (selectedYear == getCurrentYear()) statisticEntry.getExpectedAchievementHmPercent() else 100.0
+                if (sortFilterValues.wasCurrentYearSelected()) statisticEntry.getExpectedAchievementHmPercent() else 100.0
             simpleProgressBar.visibility = View.VISIBLE
             simpleProgressBar.max = 100
             simpleProgressBar.progress = statisticEntry.getAchievement().toInt()

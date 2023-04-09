@@ -31,20 +31,12 @@ class SegmentsViewFragment : Fragment() {
         setHasOptionsMenu(true)
         val database = context?.let { DatabaseModule.provideDatabase(it) }
 
-//        val routeDefinition = RouteDefinition(0, "name", "startPoint", "endPoint")
-//        routeDefinition.routeDefinitionId = database?.routesDao()?.addRouteDefinition(routeDefinition)
-//                ?: 0
-//        database?.routesDao()?.addRouteEntry(RouteEntry(0, routeDefinition.routeDefinitionId, Calendar.getInstance().time, 1, 2.0, 2.0, 1, 1, 1))
-
-
         segments = (database?.segmentsDao()?.getAllSegments() ?: listOf()) as MutableList
         adapter = SegmentsViewAdapter(segments)
         recycler.adapter = adapter
         val layoutManager = LinearLayoutManager(activity)
         recycler.layoutManager = layoutManager
 
-//        requireActivity().findViewById<View>(R.id.add_new_summit).visibility = View.INVISIBLE
-//        addRoutesFab = requireActivity().findViewById(R.id.add_new_bookmark)
         addRoutesFab?.visibility = View.VISIBLE
         addRoutesFab?.setOnClickListener { _: View? ->
             val addSummit = AddBookmarkDialog()

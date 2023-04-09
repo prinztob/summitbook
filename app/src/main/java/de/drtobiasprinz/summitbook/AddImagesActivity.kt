@@ -280,7 +280,6 @@ class AddImagesActivity : AppCompatActivity() {
         }
 
     private fun updateAdapterAndDatabase(localSummit: Summit) {
-        localSummit.hasImage = localSummit.imageIds.size > 0
         contactsAdapter.viewModel?.saveContact(true, localSummit)
     }
 
