@@ -1,9 +1,11 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import android.util.Log
+import de.drtobiasprinz.summitbook.MainActivity.Companion.CSV_FILE_NAME_FORECASTS
 import de.drtobiasprinz.summitbook.MainActivity.Companion.CSV_FILE_NAME_SEGMENTS
 import de.drtobiasprinz.summitbook.MainActivity.Companion.CSV_FILE_NAME_SUMMITS
 import de.drtobiasprinz.summitbook.database.AppDatabase
+import de.drtobiasprinz.summitbook.models.Forecast
 import de.drtobiasprinz.summitbook.models.Segment
 import de.drtobiasprinz.summitbook.models.Summit
 import java.io.*
@@ -52,10 +54,14 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
     fun readFromCache() {
         val inputCsvFile = File(baseDirectory, CSV_FILE_NAME_SUMMITS)
         val inputCsvFileSegments = File(baseDirectory, CSV_FILE_NAME_SEGMENTS)
+        val inputCsvFileForecasts = File(baseDirectory, CSV_FILE_NAME_FORECASTS)
         try {
             readSummits(inputCsvFile)
             if (inputCsvFileSegments.exists()) {
                 readSegments(inputCsvFileSegments)
+            }
+            if (inputCsvFileForecasts.exists()) {
+                readForecasts(inputCsvFileForecasts)
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -103,6 +109,30 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
                 try {
                     if (lineLocal != null && !lineLocal.startsWith("Start")) {
                         val added = Segment.parseFromCsvFileLine(lineLocal, segments, database)
+                        if (added) {
+                            Log.d("Line %s was added in db.", lineLocal)
+                        } else {
+                            Log.d("Line %s is already db.", lineLocal)
+                        }
+                    }
+                } catch (e: Exception) {
+                    unsuccessful++
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+    private fun readForecasts(inputCsvFile: File) {
+        val forecasts = database.forecastDao()?.allForecasts as MutableList<Forecast>
+        val iStream: InputStream = FileInputStream(inputCsvFile)
+        BufferedReader(InputStreamReader(iStream)).use { br ->
+            var line: String?
+            while (br.readLine().also { line = it } != null) {
+                val lineLocal = line
+                try {
+                    if (lineLocal != null && !lineLocal.startsWith("Start")) {
+                        val added = Forecast.parseFromCsvFileLine(lineLocal, forecasts, database)
                         if (added) {
                             Log.d("Line %s was added in db.", lineLocal)
                         } else {

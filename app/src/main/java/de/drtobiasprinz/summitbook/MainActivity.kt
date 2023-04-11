@@ -39,10 +39,7 @@ import com.stfalcon.imageviewer.StfalconImageViewer
 import de.drtobiasprinz.summitbook.adapter.SummitViewAdapter
 import de.drtobiasprinz.summitbook.database.AppDatabase
 import de.drtobiasprinz.summitbook.fragments.*
-import de.drtobiasprinz.summitbook.models.FragmentResultReceiver
-import de.drtobiasprinz.summitbook.models.Poster
-import de.drtobiasprinz.summitbook.models.Segment
-import de.drtobiasprinz.summitbook.models.Summit
+import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.PosterOverlayView
@@ -274,7 +271,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 resultLauncherForImportZip.launch(intent)
             }
             R.id.export_csv -> {
-
                 AlertDialog.Builder(this)
                         .setTitle(getString(R.string.export_csv_dialog))
                         .setMessage(getString(R.string.export_csv_dialog_text))
@@ -469,6 +465,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var CSV_FILE_NAME_SEGMENTS: String = "de-prinz-summitbook-export-segments.csv"
 
         @kotlin.jvm.JvmField
+        var CSV_FILE_NAME_FORECASTS: String = "de-prinz-summitbook-export-forecasts.csv"
+
+        @kotlin.jvm.JvmField
         var storage: File? = null
 
         @kotlin.jvm.JvmField
@@ -580,14 +579,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         @SuppressLint("StaticFieldLeak")
         class AsyncExportZipFile(val context: Context, private val progressBar: ProgressBar,
                                  val entries: List<Summit>, private val resultData: Intent?,
-                                 val segments: List<Segment>?,
+                                 val segments: List<Segment>?, val forecasts: List<Forecast>?,
                                  private val exportThirdPartyData: Boolean = true,
                                  private val exportCalculatedData: Boolean = true) : AsyncTask<Uri, Int?, Void?>() {
             private lateinit var writer: ZipFileWriter
 
             override fun doInBackground(vararg uri: Uri): Void? {
                 resultData?.data?.also { resultDataUri ->
-                    writer = ZipFileWriter(entries, segments, context, exportThirdPartyData, exportCalculatedData)
+                    writer = ZipFileWriter(entries, segments, forecasts, context, exportThirdPartyData, exportCalculatedData)
                     context.contentResolver.openOutputStream(resultDataUri)?.let { writer.writeToZipFile(it) }
                 }
                 return null
@@ -684,9 +683,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             val exportThirdPartyData = sharedPreferences.getBoolean("export_third_party_data", true)
             val exportCalculatedData = sharedPreferences.getBoolean("export_calculated_data", true)
             val segments = database.segmentsDao()?.getAllSegments()
+            val forecasts = database.forecastDao()?.allForecasts
 
             @Suppress("DEPRECATION")
-            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.entries, result.data, segments, exportThirdPartyData, exportCalculatedData).execute()
+            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.entries, result.data,
+                    segments, forecasts, exportThirdPartyData, exportCalculatedData).execute()
         }
     }
     private val resultLauncherForExportZipFilteredSummits = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -696,8 +697,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             val exportThirdPartyData = sharedPreferences.getBoolean("export_third_party_data", true)
             val exportCalculatedData = sharedPreferences.getBoolean("export_calculated_data", true)
             val segments = database.segmentsDao()?.getAllSegments()
+            val forecasts = database.forecastDao()?.allForecasts
+
             @Suppress("DEPRECATION")
-            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.filteredEntries, result.data, segments, exportThirdPartyData, exportCalculatedData).execute()
+            AsyncExportZipFile(this, progressBarZip, sortFilterHelper.filteredEntries,
+                    result.data, segments, forecasts, exportThirdPartyData, exportCalculatedData
+            ).execute()
         }
     }
 
