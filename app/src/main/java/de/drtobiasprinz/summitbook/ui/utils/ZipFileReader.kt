@@ -20,17 +20,14 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
     var duplicate = 0
     val newSummits = arrayListOf<Summit>()
 
-    fun extractAndImport(inputStream: InputStream) {
-        extractZip(inputStream)
-        readFromCache()
-        newSummits.forEachIndexed { index, it ->
-            it.id = database.summitsDao()?.addSummit(it) ?: 0L
-            readGpxFile(it)
-            readImageFile(it)
-        }
+    fun cleanUp() {
+        baseDirectory.deleteRecursively()
     }
 
     fun extractZip(inputStream: InputStream) {
+        if (!baseDirectory.exists()) {
+            baseDirectory.mkdirs()
+        }
         ZipInputStream(BufferedInputStream(inputStream)).use { zipInputStream ->
             zipInputStream.use { zis ->
                 var ze: ZipEntry?
@@ -68,10 +65,11 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
         } catch (e: FileNotFoundException) {
             e.printStackTrace()
         }
+
     }
 
     private fun readSummits(inputCsvFile: File) {
-        val allSummits = database.summitsDao()?.allSummit as MutableList<Summit>
+        val allSummits = database.summitsDao().allSummit as MutableList<Summit>
         val iStream: InputStream = FileInputStream(inputCsvFile)
         BufferedReader(InputStreamReader(iStream)).use { br ->
             var line: String?

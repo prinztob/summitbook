@@ -30,7 +30,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentBarChartBinding
-import de.drtobiasprinz.summitbook.databinding.FragmentStatisticsBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
@@ -192,7 +191,7 @@ class BarChartFragment : Fragment() {
 
     fun update() {
         binding.apply {
-            viewModel.contactsList.observe(requireActivity()) { itData ->
+            viewModel.summitsList.observe(requireActivity()) { itData ->
                 itData.data?.let { summits ->
                     intervalHelper = IntervalHelper(summits)
                     val barChartCustomRenderer = BarChartCustomRenderer(

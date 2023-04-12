@@ -11,7 +11,8 @@ class DatabaseRepository @Inject constructor(private val dao: SummitsDao) {
     suspend fun updateTask(entity: Summit) = dao.updateContact(entity)
     suspend fun deleteContact(entity: Summit) = dao.deleteContact(entity)
     fun getDetailsContact(id: Long) = dao.getContact(id)
-    fun getAllContacts() = dao.getAllContacts()
+    fun getAllSummits() = dao.getAllSummits()
+    fun getAllBookmarks() = dao.getAllBookmarks()
     fun getSortedAndFilteredSummits(query: SupportSQLiteQuery) =
         dao.getSortedAndFilteredSummits(query)
 

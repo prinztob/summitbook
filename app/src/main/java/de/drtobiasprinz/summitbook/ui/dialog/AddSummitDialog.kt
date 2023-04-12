@@ -1,9 +1,11 @@
-package de.drtobiasprinz.summitbook.fragments
+package de.drtobiasprinz.summitbook.ui.dialog
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
@@ -31,7 +33,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
-import de.drtobiasprinz.summitbook.databinding.FragmentAddContactBinding
+import de.drtobiasprinz.summitbook.databinding.DialogAddSummitBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.CONNECTED_ACTIVITY_PREFIX
@@ -39,12 +41,13 @@ import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
+import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
-import de.drtobiasprinz.summitbook.ui.dialog.AddBookmarkDialog
-import de.drtobiasprinz.summitbook.ui.dialog.BaseDialog
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
+import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
 import de.drtobiasprinz.summitbook.utils.Constants.BUNDLE_ID
 import de.drtobiasprinz.summitbook.utils.Constants.EDIT
 import de.drtobiasprinz.summitbook.utils.Constants.NEW
@@ -63,9 +66,10 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.round
+import kotlin.math.roundToInt
 
 @AndroidEntryPoint
-class AddContactFragment : DialogFragment(), BaseDialog {
+class AddSummitDialog : DialogFragment(), BaseDialog {
 
     @Inject
     lateinit var entity: Summit
@@ -77,11 +81,12 @@ class AddContactFragment : DialogFragment(), BaseDialog {
     lateinit var database: AppDatabase
     private val viewModel: DatabaseViewModel by activityViewModels()
 
-    private lateinit var binding: FragmentAddContactBinding
+    private lateinit var binding: DialogAddSummitBinding
 
     private var listItemsGpsDownloadSuccessful: BooleanArray? = null
     private var mDialog: AlertDialog? = null
     private var temporaryGpxFile: File? = null
+    var gpxTrackUri: Uri? = null
     private var latlngHighestPoint: TrackPoint? = null
     private lateinit var currentContext: Context
     private var connectedSummits: MutableList<Summit> = mutableListOf()
@@ -95,11 +100,12 @@ class AddContactFragment : DialogFragment(), BaseDialog {
 
     private var type = ""
     private var isEdit = false
+    var isBookmark = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        binding = FragmentAddContactBinding.inflate(layoutInflater, container, false)
+        binding = DialogAddSummitBinding.inflate(layoutInflater, container, false)
         dialog!!.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         database = DatabaseModule.provideDatabase(requireContext())
         return binding.root
@@ -119,6 +125,9 @@ class AddContactFragment : DialogFragment(), BaseDialog {
         }
 
         binding.apply {
+            if (gpxTrackUri != null) {
+                addAndAnalyzeTrack(gpxTrackUri)
+            }
             btnCancel.setOnClickListener {
                 dismiss()
                 val text =
@@ -137,54 +146,13 @@ class AddContactFragment : DialogFragment(), BaseDialog {
                 viewModel.contactDetails.observe(viewLifecycleOwner) { itData ->
                     itData.data?.let {
                         entity = it
-                        heightMeter.addTextChangedListener(watcher)
-                        kilometers.addTextChangedListener(watcher)
-                        kilometers.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
-                        tourDate.addTextChangedListener(watcher)
-                        tourDate.inputType = InputType.TYPE_NULL
-                        tourDate.onFocusChangeListener =
-                            View.OnFocusChangeListener { _: View?, hasFocus: Boolean ->
-                                if (hasFocus) {
-                                    showDatePicker(tourDate, view.context)
-                                }
-                            }
-                        activities.adapter = ArrayAdapter(
-                            requireContext(),
-                            android.R.layout.simple_spinner_item,
-                            SportType.values().map { resources.getString(it.sportNameStringId) }
-                                .toTypedArray()
-                        )
-
-                        addPlaces(view)
-                        addCountries(view)
-                        addParticipants(view)
-                        addEquipments(view)
+                        updateBaseBindings(view)
                         updateDialogFields(true)
                         btnSave.text = getString(R.string.update)
                     }
                 }
             } else {
-                heightMeter.addTextChangedListener(watcher)
-                kilometers.addTextChangedListener(watcher)
-                kilometers.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
-                tourDate.addTextChangedListener(watcher)
-                tourDate.inputType = InputType.TYPE_NULL
-                tourDate.onFocusChangeListener =
-                    View.OnFocusChangeListener { _: View?, hasFocus: Boolean ->
-                        if (hasFocus) {
-                            showDatePicker(tourDate, view.context)
-                        }
-                    }
-                activities.adapter = ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_spinner_item,
-                    SportType.values().map { resources.getString(it.sportNameStringId) }
-                        .toTypedArray()
-                )
-                addPlaces(view)
-                addCountries(view)
-                addParticipants(view)
-                addEquipments(view)
+                updateBaseBindings(view)
             }
 
             btnSave.setOnClickListener {
@@ -202,42 +170,116 @@ class AddContactFragment : DialogFragment(), BaseDialog {
                 }
                 entity.hasGpsTrack()
                 entity.setBoundingBoxFromTrack()
+                if (isBookmark) {
+                    entity.isBookmark = true
+                }
                 viewModel.saveContact(isEdit, entity)
                 dismiss()
             }
-
-            expandMore.setOnClickListener {
-                if (expandMore.text == getString(R.string.more)) {
-                    expandMore.text = getString(R.string.less)
-                    expandMore.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.ic_baseline_expand_less_24, 0, 0, 0
-                    )
-                    additionalDataFieldsView.visibility = View.VISIBLE
-                } else {
-                    expandMore.text = getString(R.string.more)
-                    expandMore.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.ic_baseline_expand_more_24, 0, 0, 0
-                    )
-                    additionalDataFieldsView.visibility = View.GONE
+            addGpsTrack.setOnClickListener {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
                 }
+                resultLauncher.launch(intent)
             }
-
-            expandMorePerformance.setOnClickListener {
-                if (expandMorePerformance.text == getString(R.string.more_performance)) {
-                    expandMorePerformance.text = getString(R.string.less_performance)
-                    expandMorePerformance.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.ic_baseline_expand_less_24, 0, 0, 0
-                    )
-                    performanceDataFieldsView.visibility = View.VISIBLE
-                } else {
-                    expandMorePerformance.text = getString(R.string.more_performance)
-                    expandMorePerformance.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.ic_baseline_expand_more_24, 0, 0, 0
-                    )
-                    performanceDataFieldsView.visibility = View.GONE
+            if (isBookmark) {
+                tourDate.visibility = View.GONE
+                addTrackFromGarmin.visibility = View.GONE
+                summitName.hint = getString(R.string.add_new_bookmark)
+                expandMore.visibility = View.GONE
+                expandMorePerformance.visibility = View.GONE
+            } else {
+                addTrackFromGarmin.setOnClickListener {
+                    val dateAsString = binding.tourDate.text.toString()
+                    val contextLocal = context
+                    if (dateAsString != "" && contextLocal != null) {
+                        val pythonExecutor = pythonExecutor
+                        if (pythonExecutor != null) {
+                            binding.loadingPanel.visibility = View.VISIBLE
+                            @Suppress("DEPRECATION")
+                            AsyncDownloadJsonViaPython(
+                                pythonExecutor,
+                                dateAsString,
+                                this@AddSummitDialog
+                            ).execute()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                getString(R.string.set_user_pwd), Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    } else {
+                        Toast.makeText(
+                            context,
+                            getString(R.string.date_garmin_connect), Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
+                setExpandMoreButtons()
             }
         }
+    }
+
+    private fun DialogAddSummitBinding.setExpandMoreButtons() {
+        expandMore.setOnClickListener {
+            if (expandMore.text == getString(R.string.more)) {
+                expandMore.text = getString(R.string.less)
+                expandMore.setCompoundDrawablesWithIntrinsicBounds(
+                    R.drawable.ic_baseline_expand_less_24, 0, 0, 0
+                )
+                additionalDataFieldsView.visibility = View.VISIBLE
+            } else {
+                expandMore.text = getString(R.string.more)
+                expandMore.setCompoundDrawablesWithIntrinsicBounds(
+                    R.drawable.ic_baseline_expand_more_24, 0, 0, 0
+                )
+                additionalDataFieldsView.visibility = View.GONE
+            }
+        }
+
+        expandMorePerformance.setOnClickListener {
+            if (expandMorePerformance.text == getString(R.string.more_performance)) {
+                expandMorePerformance.text = getString(R.string.less_performance)
+                expandMorePerformance.setCompoundDrawablesWithIntrinsicBounds(
+                    R.drawable.ic_baseline_expand_less_24, 0, 0, 0
+                )
+                performanceDataFieldsView.visibility = View.VISIBLE
+            } else {
+                expandMorePerformance.text = getString(R.string.more_performance)
+                expandMorePerformance.setCompoundDrawablesWithIntrinsicBounds(
+                    R.drawable.ic_baseline_expand_more_24, 0, 0, 0
+                )
+                performanceDataFieldsView.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun DialogAddSummitBinding.updateBaseBindings(
+        view: View
+    ) {
+        heightMeter.addTextChangedListener(watcher)
+        kilometers.addTextChangedListener(watcher)
+        kilometers.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
+        tourDate.addTextChangedListener(watcher)
+        tourDate.inputType = InputType.TYPE_NULL
+        tourDate.onFocusChangeListener =
+            View.OnFocusChangeListener { _: View?, hasFocus: Boolean ->
+                if (hasFocus) {
+                    showDatePicker(tourDate, view.context)
+                }
+            }
+        activities.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            SportType.values().map { resources.getString(it.sportNameStringId) }
+                .toTypedArray()
+        )
+
+        addPlaces(view)
+        addCountries(view)
+        addParticipants(view)
+        addEquipments(view)
     }
 
 
@@ -283,6 +325,7 @@ class AddContactFragment : DialogFragment(), BaseDialog {
             downloader.extractFinalSummit()
             val entry = downloader.finalEntry
             if (entry != null) {
+                entity = entry
                 temporaryGpxFile = getTempGpsFilePath(entry.date).toFile()
                 downloader.composeFinalTrack(temporaryGpxFile)
                 latlngHighestPoint = entry.latLng
@@ -408,7 +451,8 @@ class AddContactFragment : DialogFragment(), BaseDialog {
         val places = updatePlacesChipValuesWithId()
         parseGarminData()
         try {
-            entity.date = Summit.parseDate(binding.tourDate.text.toString())
+            entity.date =
+                if (isBookmark) Date() else Summit.parseDate(binding.tourDate.text.toString())
             entity.name = binding.summitName.text.toString()
             entity.sportType = sportType
             entity.places = places
@@ -528,9 +572,8 @@ class AddContactFragment : DialogFragment(), BaseDialog {
         override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
         override fun afterTextChanged(s: Editable) {
             binding.btnSave.isEnabled =
-                !(isEmpty(binding.summitName) || isEmpty(binding.heightMeter) || isEmpty(binding.kilometers) || isEmpty(
-                    binding.tourDate
-                ))
+                !(isEmpty(binding.summitName) || isEmpty(binding.heightMeter) ||
+                        isEmpty(binding.kilometers) || (if (isBookmark) false else isEmpty(binding.tourDate)))
         }
 
         private fun isEmpty(editText: EditText): Boolean {
@@ -551,7 +594,6 @@ class AddContactFragment : DialogFragment(), BaseDialog {
         if (entity.name == "") {
             entity = createNewSummit()
         }
-        val summit = entity
         if (temporaryGpxFile == null) {
             temporaryGpxFile = GarminTrackAndDataDownloader.getTempGpsFilePath(
                 SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(
@@ -561,7 +603,7 @@ class AddContactFragment : DialogFragment(), BaseDialog {
         }
         if (uri != null) {
             context?.contentResolver?.openInputStream(uri)?.use { inputStream ->
-                uploadGpxFile(inputStream, summit, view)
+                uploadGpxFile(inputStream, entity, view)
                 view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility = View.VISIBLE
                 var python = MainActivity.pythonInstance
                 if (python == null) {
@@ -570,11 +612,14 @@ class AddContactFragment : DialogFragment(), BaseDialog {
                     }
                     python = Python.getInstance()
                 }
-                view?.let {
-                    AddBookmarkDialog.Companion.AsyncAnalyzeGpsTracks(
-                        summit, python, database, it, false
-                    ).execute()
-                }
+                AsyncAnalyzeGpsTracks(
+                    entity,
+                    python,
+                    database,
+                    binding,
+                    view?.resources?.configuration?.locales?.get(0) ?: Locale.ENGLISH,
+                    false
+                ).execute()
             }
         }
     }
@@ -745,16 +790,6 @@ class AddContactFragment : DialogFragment(), BaseDialog {
 
     companion object {
 
-        @JvmStatic
-        fun updateInstance(entry: Summit?): AddContactFragment {
-            val add = AddContactFragment()
-            add.isEdit = true
-            if (entry != null) {
-                add.entity = entry
-            }
-            return add
-        }
-
         private fun setTextIfNotAlreadySet(editText: EditText, setValue: String) {
             val textValue = editText.text.toString()
             if ((textValue == "" || textValue == "0" || textValue == "0.0" || textValue == "null") && !(setValue == "" || setValue == "0" || setValue == "0.0" || setValue == "null")) {
@@ -771,7 +806,7 @@ class AddContactFragment : DialogFragment(), BaseDialog {
         class AsyncDownloadJsonViaPython(
             private val pythonExecutor: GarminPythonExecutor,
             private val dateAsString: String,
-            private val contactFragment: AddContactFragment
+            private val contactFragment: AddSummitDialog? = null
         ) : AsyncTask<Void?, Void?, Void?>() {
 
             var entries: List<Summit>? = null
@@ -813,15 +848,118 @@ class AddContactFragment : DialogFragment(), BaseDialog {
             override fun onPostExecute(param: Void?) {
                 val entriesLocal = entries
                 val progressBar =
-                    contactFragment.view?.findViewById<RelativeLayout>(R.id.loadingPanel)
+                    contactFragment?.view?.findViewById<RelativeLayout>(R.id.loadingPanel)
                 if (entriesLocal != null) {
                     if (progressBar != null) {
-                        contactFragment.showSummitsDialog(
+                        contactFragment?.showSummitsDialog(
                             pythonExecutor, entriesLocal, progressBar, powerData
                         )
                     }
                 } else {
                     progressBar?.visibility = View.GONE
+                }
+            }
+        }
+
+        @SuppressLint("StaticFieldLeak")
+        class AsyncAnalyzeGpsTracks(
+            private val entry: Summit?,
+            private val pythonInstance: Python,
+            private val database: AppDatabase,
+            private val binding: DialogAddSummitBinding,
+            private val locale: Locale,
+            private val isBookmark: Boolean = true
+        ) : AsyncTask<Uri, Int?, Void?>() {
+            private var highestElevation: TrackPoint? = null
+            override fun doInBackground(vararg uri: Uri): Void? {
+                try {
+                    if (entry?.hasGpsTrack() == true) {
+                        GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(entry.getGpsTrackPath())
+                        entry.setGpsTrack()
+                        highestElevation = entry.gpsTrack?.getHighestElevation()
+                        entry.gpsTrack?.setDistance()
+                    }
+                } catch (ex: RuntimeException) {
+                    Log.e("AsyncAnalyzeGpaTracks", "Error in simplify track: ${ex.message}")
+                }
+                return null
+            }
+
+            override fun onPostExecute(param: Void?) {
+                Log.i("AsyncAnalyzeGpaTracks", "Gpx tracks simplified.")
+                binding.loadingPanel.visibility = View.GONE
+                if (entry != null) {
+                    entry.lat = highestElevation?.lat
+                    entry.lng = highestElevation?.lon
+                    entry.latLng = highestElevation
+                    highestElevation?.lat?.let { database.summitsDao().updateLat(entry.id, it) }
+                    highestElevation?.lon?.let { database.summitsDao().updateLng(entry.id, it) }
+                    val gpsTrack = entry.gpsTrack
+                    if (gpsTrack != null) {
+                        val nameFromTrack = gpsTrack.gpxTrack?.metadata?.name
+                            ?: gpsTrack.gpxTrack?.tracks?.toList()?.blockingGet()?.first()?.name
+                        binding.summitName.setText(nameFromTrack)
+                        if (gpsTrack.hasNoTrackPoints()) {
+                            gpsTrack.parseTrack(useSimplifiedIfExists = false)
+                        }
+                    }
+                    val gpxPyJsonFile = entry.getGpxPyPath().toFile()
+                    if (gpxPyJsonFile.exists()) {
+                        val gpxPyJson =
+                            JsonParser.parseString(JsonUtils.getJsonData(gpxPyJsonFile)) as JsonObject
+
+                        val elevationGain = try {
+                            gpxPyJson.getAsJsonPrimitive("elevation_gain").asDouble.roundToInt()
+                        } catch (_: ClassCastException) {
+                            0
+                        }
+                        entry.elevationData.elevationGain = elevationGain
+                        binding.heightMeter.filters = arrayOf()
+                        binding.heightMeter.setText(elevationGain.toString())
+                        binding.heightMeter.filters =
+                            arrayOf<InputFilter>(InputFilterMinMax(0, 9999))
+
+                        val maxElevation = try {
+                            gpxPyJson.getAsJsonPrimitive("max_elevation").asDouble.roundToInt()
+                        } catch (_: ClassCastException) {
+                            0
+                        }
+                        if (maxElevation > 0) {
+                            entry.elevationData.maxElevation = maxElevation
+                            binding.topElevation.setText(maxElevation.toString())
+                        }
+                        var distance = try {
+                            gpxPyJson.getAsJsonPrimitive("moving_distance").asDouble / 1000
+                        } catch (_: ClassCastException) {
+                            0.0
+                        }
+                        if (distance == 0.0 && gpsTrack != null) {
+                            distance = (gpsTrack.trackPoints.last().extension?.distance
+                                ?: 0.0) / 1000
+                        }
+                        entry.kilometers = distance
+                        binding.kilometers.filters = arrayOf()
+                        binding.kilometers.setText(
+                            String.format(
+                                locale,
+                                "%.1f",
+                                distance
+                            )
+                        )
+                        binding.kilometers.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
+                        val movingDuration = try {
+                            gpxPyJson.getAsJsonPrimitive("moving_time").asDouble
+                        } catch (_: ClassCastException) {
+                            0.0
+                        }
+                        if (movingDuration > 0) {
+                            val pace = distance / movingDuration * 3600
+                            entry.velocityData.avgVelocity = pace
+                            if (!isBookmark) {
+                                binding.pace.setText(pace.toString())
+                            }
+                        }
+                    }
                 }
             }
         }

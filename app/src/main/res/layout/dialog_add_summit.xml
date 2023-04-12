@@ -6,7 +6,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:background="@drawable/rounded_win"
     android:padding="15dp"
-    tools:context="de.drtobiasprinz.summitbook.fragments.AddContactFragment">
+    tools:context="de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -30,7 +30,7 @@
                 android:inputType="date" />
 
             <ImageButton
-                android:id="@+id/add_track"
+                android:id="@+id/add_track_from_garmin"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"

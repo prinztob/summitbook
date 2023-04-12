@@ -55,7 +55,7 @@ class LineChartFragment : Fragment() {
         binding = FragmentLineChartBinding.inflate(layoutInflater, container, false)
         fillDateSpinner()
         binding.apply {
-            viewModel.contactsList.observe(requireActivity()) { itData ->
+            viewModel.summitsList.observe(requireActivity()) { itData ->
                 itData.data?.let { summits ->
                     resizeChart()
                     listenOnDataSpinner(summits)

@@ -89,7 +89,7 @@ class OpenStreetMapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.apply {
-            viewModel.contactsList.observe(requireActivity()) { itData ->
+            viewModel.summitsList.observe(requireActivity()) { itData ->
                 itData.data?.let { summits ->
                     setTileSource(selectedItem, binding.osmap)
                     addOverlays(summits)

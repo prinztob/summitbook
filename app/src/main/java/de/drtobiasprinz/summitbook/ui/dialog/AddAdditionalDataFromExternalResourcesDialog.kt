@@ -13,63 +13,61 @@ import android.widget.*
 import androidx.fragment.app.DialogFragment
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
-import de.drtobiasprinz.summitbook.db.entities.FragmentResultReceiver
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
+import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.databinding.DialogAddAdditionalDataFromExternalResourcesBinding
+import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
 import de.drtobiasprinz.summitbook.ui.utils.MaxVelocitySummit
-import de.drtobiasprinz.summitbook.ui.utils.SortFilterHelper
 import java.io.File
+import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-
+@AndroidEntryPoint
 class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
 
+    @Inject
+    lateinit var contactsAdapter: ContactsAdapter
+    lateinit var database: AppDatabase
+    private lateinit var binding: DialogAddAdditionalDataFromExternalResourcesBinding
+
     private lateinit var currentContext: Context
-    private lateinit var updateDataButton: Button
-    private lateinit var deleteDataButton: Button
-    private lateinit var backButton: Button
-    private lateinit var tableLayout: TableLayout
     private var tableEntries: MutableList<TableEntry> = mutableListOf()
-    private lateinit var resultReceiver: FragmentResultReceiver
     private var summitEntry: Summit? = null
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        resultReceiver = context as FragmentResultReceiver
-        return inflater.inflate(R.layout.dialog_add_additional_data_from_external_resources, container)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
+        binding = DialogAddAdditionalDataFromExternalResourcesBinding.inflate(layoutInflater, container, false)
+        database = DatabaseModule.provideDatabase(requireContext())
         currentContext = requireContext()
-        updateDataButton = view.findViewById(R.id.update_data)
-        deleteDataButton = view.findViewById(R.id.delete_data)
-        backButton = view.findViewById(R.id.back)
         if (savedInstanceState != null && summitEntry == null) {
             val summitEntryId = savedInstanceState.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
-            summitEntry = resultReceiver.getSortFilterHelper().database.summitsDao().getSummit(summitEntryId)
+            summitEntry = database.summitsDao().getSummit(summitEntryId)
         }
         val localSummitEntry = summitEntry
         if (localSummitEntry != null) {
-            updateDataButton.setOnClickListener {
+            binding.updateData.setOnClickListener {
                 val copyElevationData = localSummitEntry.elevationData.clone()
                 val copyVelocityData = localSummitEntry.velocityData.clone()
                 tableEntries.forEach { it.update() }
-                if (copyElevationData != localSummitEntry.elevationData || copyVelocityData != localSummitEntry.velocityData) resultReceiver.getSortFilterHelper().database.summitsDao()?.updateSummit(localSummitEntry)
+                if (copyElevationData != localSummitEntry.elevationData || copyVelocityData != localSummitEntry.velocityData) database.summitsDao()?.updateSummit(localSummitEntry)
                 dialog?.cancel()
             }
-            deleteDataButton.setOnClickListener {
+            binding.deleteData.setOnClickListener {
                 localSummitEntry.velocityData = VelocityData(localSummitEntry.velocityData.avgVelocity, localSummitEntry.velocityData.maxVelocity, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
                 localSummitEntry.elevationData = ElevationData(localSummitEntry.elevationData.maxElevation, localSummitEntry.elevationData.elevationGain)
-                resultReceiver.getSortFilterHelper().database.summitsDao()?.updateSummit(localSummitEntry)
+                database.summitsDao().updateSummit(localSummitEntry)
                 dialog?.cancel()
             }
-            backButton.setOnClickListener {
+            binding.back.setOnClickListener {
                 dialog?.cancel()
             }
             if (localSummitEntry.garminData != null && localSummitEntry.garminData?.activityId != null) {
@@ -147,7 +145,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                         )
                     }
                 } else {
-                    AsyncDownloadSpeedDataForActivity(localSummitEntry, resultReceiver.getPythonExecutor(), resultReceiver.getSortFilterHelper()).execute()
+                    AsyncDownloadSpeedDataForActivity(localSummitEntry, database).execute()
                 }
             }
             val gpxPyJsonFile = localSummitEntry.getGpxPyPath().toFile()
@@ -250,17 +248,16 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                     )
                 }
             }
-            tableLayout = view.findViewById(R.id.tableSummits) as TableLayout
-            drawTable(view)
+            drawTable(binding.root)
         }
-
+        return binding.root
     }
 
     private fun drawTable(view: View) {
-        addHeader(view, tableLayout)
+        addHeader(view, binding.tableSummits)
         tableEntries.forEachIndexed { index, entry ->
             if (entry.value > 0.0) {
-                addSummitToTable(entry, view, index, tableLayout)
+                addSummitToTable(entry, view, index, binding.tableSummits)
             } else {
                 entry.isSet = false
             }
@@ -331,7 +328,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         }
 
         @SuppressLint("StaticFieldLeak")
-        class AsyncDownloadSpeedDataForActivity(private val summit: Summit, private val pythonExecutor: GarminPythonExecutor?, private var sortFilterHelper: SortFilterHelper) : AsyncTask<Void?, Void?, Void?>() {
+        class AsyncDownloadSpeedDataForActivity(private val summit: Summit, var database: AppDatabase) : AsyncTask<Void?, Void?, Void?>() {
             private var json: JsonObject? = null
             override fun doInBackground(vararg params: Void?): Void? {
                 try {
@@ -345,12 +342,12 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             override fun onPostExecute(param: Void?) {
                 val jsonLocal = json
                 if (jsonLocal != null) {
-                    setVelocityData(jsonLocal, summit, sortFilterHelper)
+                    setVelocityData(jsonLocal, summit, database)
                 }
             }
         }
 
-        fun setVelocityData(jsonLocal: JsonObject, summit: Summit, sortFilterHelper: SortFilterHelper, addVelocityData: ImageButton? = null) {
+        fun setVelocityData(jsonLocal: JsonObject, summit: Summit, database: AppDatabase, addVelocityData: ImageButton? = null) {
             val maxVelocitySummit = MaxVelocitySummit()
             val velocityEntries = maxVelocitySummit.parseFomGarmin(jsonLocal)
             summit.velocityData.oneKilometer = maxVelocitySummit.getAverageVelocityForKilometers(1.0, velocityEntries)
@@ -363,7 +360,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             if (summit.velocityData.fortyKilometers > 0) summit.velocityData.fiftyKilometers = maxVelocitySummit.getAverageVelocityForKilometers(50.0, velocityEntries)
             if (summit.velocityData.fiftyKilometers > 0) summit.velocityData.seventyFiveKilometers = maxVelocitySummit.getAverageVelocityForKilometers(75.0, velocityEntries)
             if (summit.velocityData.seventyFiveKilometers > 0) summit.velocityData.hundredKilometers = maxVelocitySummit.getAverageVelocityForKilometers(100.0, velocityEntries)
-            sortFilterHelper.database.summitsDao()?.updateSummit(summit)
+            database.summitsDao().updateSummit(summit)
             addVelocityData?.setImageResource(R.drawable.ic_baseline_speed_24)
         }
 

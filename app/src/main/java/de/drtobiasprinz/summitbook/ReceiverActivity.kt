@@ -10,9 +10,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity.Companion.copyGpxFileToCache
 import de.drtobiasprinz.summitbook.db.entities.TrackColor
-import de.drtobiasprinz.summitbook.fragments.AddContactFragment
+import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.MainActivity
-import de.drtobiasprinz.summitbook.ui.dialog.AddBookmarkDialog
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -41,7 +40,7 @@ class ReceiverActivity : AppCompatActivity() {
         val addSummitButton = findViewById<Button>(R.id.add_to_summits)
         addSummitButton.setOnClickListener {
             if (gpxTrackUri != null) {
-                val addSummit = AddContactFragment()
+                val addSummit = AddSummitDialog()
                 supportFragmentManager.let {
                     addSummit.show(
                         it,
@@ -53,7 +52,9 @@ class ReceiverActivity : AppCompatActivity() {
         val addBookmarkButton = findViewById<Button>(R.id.add_to_bookmarks)
         addBookmarkButton.setOnClickListener {
             if (gpxTrackUri != null) {
-                val addSummit = AddBookmarkDialog(gpxTrackUri)
+                val addSummit = AddSummitDialog()
+                addSummit.gpxTrackUri = gpxTrackUri
+                addSummit.isBookmark = true
                 supportFragmentManager.let {
                     addSummit.show(
                         it,

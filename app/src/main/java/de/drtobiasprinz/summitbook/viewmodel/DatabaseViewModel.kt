@@ -18,9 +18,13 @@ import javax.inject.Inject
 class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepository) :
     ViewModel() {
 
-    private val _contactsList = MutableLiveData<DataStatus<List<Summit>>>()
-    val contactsList: LiveData<DataStatus<List<Summit>>>
-        get() = _contactsList
+    private val _summitsList = MutableLiveData<DataStatus<List<Summit>>>()
+    val summitsList: LiveData<DataStatus<List<Summit>>>
+        get() = _summitsList
+
+    private val _bookmarksList = MutableLiveData<DataStatus<List<Summit>>>()
+    val bookmarksList: LiveData<DataStatus<List<Summit>>>
+        get() = _bookmarksList
 
     private val _contactDetails = MutableLiveData<DataStatus<Summit>>()
     val contactDetails: LiveData<DataStatus<Summit>>
@@ -38,16 +42,30 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         repository.deleteContact(entity)
     }
 
+    fun getAllSummits() = viewModelScope.launch {
+        _summitsList.postValue(DataStatus.loading())
+        repository.getAllSummits()
+            .catch { _summitsList.postValue(DataStatus.error(it.message.toString())) }
+            .collect { _summitsList.postValue(DataStatus.success(it, it.isEmpty())) }
+    }
+
+    fun getAllBookmarks() = viewModelScope.launch {
+        _bookmarksList.postValue(DataStatus.loading())
+        repository.getAllBookmarks()
+            .catch { _bookmarksList.postValue(DataStatus.error(it.message.toString())) }
+            .collect { _bookmarksList.postValue(DataStatus.success(it, it.isEmpty())) }
+    }
+
     fun getSortedAndFilteredSummits(sortFilterValues: SortFilterValues) = viewModelScope.launch {
-        _contactsList.postValue(DataStatus.loading())
+        _summitsList.postValue(DataStatus.loading())
         repository.getSortedAndFilteredSummits(SimpleSQLiteQuery(sortFilterValues.getSqlQuery()))
-            .catch { _contactsList.postValue(DataStatus.error(it.message.toString())) }
-            .collect { _contactsList.postValue(DataStatus.success(it, it.isEmpty())) }
+            .catch { _summitsList.postValue(DataStatus.error(it.message.toString())) }
+            .collect { _summitsList.postValue(DataStatus.success(it, it.isEmpty())) }
     }
 
     fun getSearchContacts(name: String) = viewModelScope.launch {
         repository.searchContact(name).collect() {
-            _contactsList.postValue(DataStatus.success(it, it.isEmpty()))
+            _summitsList.postValue(DataStatus.success(it, it.isEmpty()))
         }
     }
 

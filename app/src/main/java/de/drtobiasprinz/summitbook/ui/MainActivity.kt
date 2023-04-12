@@ -44,6 +44,7 @@ import de.drtobiasprinz.summitbook.ui.utils.*
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.io.File
 import java.time.LocalDate
+import java.util.*
 import kotlin.math.round
 import kotlin.math.roundToLong
 
@@ -134,7 +135,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     }
                 }
             }
-            viewModel.contactsList.observe(this@MainActivity) { itData ->
+            viewModel.summitsList.observe(this@MainActivity) { itData ->
                 itData.data?.let { summits ->
                     setOverviewText(summits)
                 }
@@ -226,7 +227,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun startSelectedNavigationMenuItem(selectedNavigationMenuItemId: Int) {
         when (selectedNavigationMenuItemId) {
             R.id.nav_bookmarks -> {
-                commitFragment(BookmarkViewFragment())
+                val fragment = SummitViewFragment()
+                fragment.showBookmarksOnly = true
+                commitFragment(fragment)
             }
             R.id.nav_routes -> {
                 commitFragment(SegmentsViewFragment())
@@ -390,9 +393,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     class AsyncImportZipFile(private val mainActivity: MainActivity) :
         AsyncTask<Uri, Int?, Void?>() {
 
-        private val reader = ZipFileReader(mainActivity.cacheDir, mainActivity.database)
+        private val reader = ZipFileReader(File(mainActivity.cacheDir, "ZipFileReader_${Date().time}"), mainActivity.database)
         private val database = mainActivity.database
         override fun doInBackground(vararg uri: Uri): Void? {
+
             mainActivity.contentResolver.openInputStream(uri[0])?.use { inputStream ->
                 reader.extractZip(inputStream)
             }
@@ -421,6 +425,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             reader.newSummits.forEach {
                 database.summitsDao().updateSummit(it)
             }
+            reader.cleanUp()
             AlertDialog.Builder(mainActivity)
                 .setTitle(mainActivity.getString(R.string.import_string_title))
                 .setMessage(

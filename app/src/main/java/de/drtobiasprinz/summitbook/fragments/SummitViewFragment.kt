@@ -25,6 +25,7 @@ import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
 import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.entriesToExcludeForBoundingBoxCalculation
+import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.utils.AsyncUpdateGarminData
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.utils.DataStatus
@@ -49,6 +50,8 @@ class SummitViewFragment : Fragment() {
     val viewModel: DatabaseViewModel by activityViewModels()
     private lateinit var sharedPreferences: SharedPreferences
 
+    var showBookmarksOnly = false
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
@@ -62,9 +65,11 @@ class SummitViewFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         binding.apply {
             btnShowDialog.setOnClickListener {
-                AddContactFragment().show(
+                val addFragment = AddSummitDialog()
+                addFragment.isBookmark = showBookmarksOnly
+                addFragment.show(
                     requireActivity().supportFragmentManager,
-                    AddContactFragment().tag
+                    AddSummitDialog().tag
                 )
             }
             rvContacts.apply {
@@ -72,29 +77,45 @@ class SummitViewFragment : Fragment() {
                 adapter = contactsAdapter
                 contactsAdapter.viewModel = viewModel
             }
-            viewModel.getSortedAndFilteredSummits(sortFilterValues)
-            viewModel.contactsList.observe(viewLifecycleOwner) {
-                when (it.status) {
-                    DataStatus.Status.LOADING -> {
-                        loading.isVisible(true, rvContacts)
-                        emptyBody.isVisible(false, rvContacts)
-                    }
-                    DataStatus.Status.SUCCESS -> {
-                        it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
-                        loading.isVisible(false, rvContacts)
-                        rvContacts.apply {
-                            layoutManager = LinearLayoutManager(view.context)
-                            adapter = contactsAdapter
+            if (showBookmarksOnly) {
+                viewModel.getAllBookmarks()
+                viewModel.bookmarksList.observe(viewLifecycleOwner) {
+                    when (it.status) {
+                        DataStatus.Status.LOADING -> {
+                            loading.isVisible(true, rvContacts)
+                            emptyBody.isVisible(false, rvContacts)
                         }
-                        contactsAdapter.differ.submitList(it.data)
-                        if (!startedScheduler) {
-                            addScheduler()
-                            startedScheduler = true
+                        DataStatus.Status.SUCCESS -> {
+                            it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
+                            loading.isVisible(false, rvContacts)
+                            contactsAdapter.differ.submitList(it.data)
+                        }
+                        DataStatus.Status.ERROR -> {
+                            loading.isVisible(false, rvContacts)
+                            Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
                         }
                     }
-                    DataStatus.Status.ERROR -> {
-                        loading.isVisible(false, rvContacts)
-                        Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+                }            } else {
+                viewModel.getSortedAndFilteredSummits(sortFilterValues)
+                viewModel.summitsList.observe(viewLifecycleOwner) {
+                    when (it.status) {
+                        DataStatus.Status.LOADING -> {
+                            loading.isVisible(true, rvContacts)
+                            emptyBody.isVisible(false, rvContacts)
+                        }
+                        DataStatus.Status.SUCCESS -> {
+                            it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
+                            loading.isVisible(false, rvContacts)
+                            contactsAdapter.differ.submitList(it.data)
+                            if (!startedScheduler) {
+                                addScheduler()
+                                startedScheduler = true
+                            }
+                        }
+                        DataStatus.Status.ERROR -> {
+                            loading.isVisible(false, rvContacts)
+                            Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
@@ -123,12 +144,12 @@ class SummitViewFragment : Fragment() {
                                 }.show()
                         }
                         ItemTouchHelper.RIGHT -> {
-                            val addContactFragment = AddContactFragment()
+                            val addSummitDialog = AddSummitDialog()
                             val bundle = Bundle()
                             bundle.putLong(Constants.BUNDLE_ID, contact.id)
-                            addContactFragment.arguments = bundle
-                            addContactFragment.show(
-                                requireActivity().supportFragmentManager, AddContactFragment().tag
+                            addSummitDialog.arguments = bundle
+                            addSummitDialog.show(
+                                requireActivity().supportFragmentManager, AddSummitDialog().tag
                             )
                         }
                     }

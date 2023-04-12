@@ -188,7 +188,7 @@ class Summit(
         var isInList = false
         if (allExistingEntries != null) {
             for (entry in allExistingEntries) {
-                if (entry == this) {
+                if (entry.equalsInBaseProperties(this)) {
                     isInList = true
                 }
             }
@@ -260,7 +260,7 @@ class Summit(
                 sportType + ';' +
                 places.joinToString(",") + ';' +
                 countries.joinToString(",") + ';' +
-                comments + ';' +
+                comments.replace(";", ",").replace("\n", ",") + ';' +
                 (if (exportCalculatedData) elevationData.toString() else elevationData.elevationGain) + ';' +
                 kilometers + ';' +
                 (if (exportCalculatedData) velocityData.toString() else velocityData.avgVelocity) + ';' +
@@ -378,6 +378,13 @@ class Summit(
 
     override fun hashCode(): Int {
         return Objects.hash(date, name, sportType, elevationData, kilometers)
+    }
+
+    fun equalsInBaseProperties(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || javaClass != other.javaClass) return false
+        val that = other as Summit
+        return that.kilometers == kilometers && that.getDateAsString() == getDateAsString() && name == that.name && sportType == that.sportType && elevationData == that.elevationData
     }
 
     override fun equals(other: Any?): Boolean {

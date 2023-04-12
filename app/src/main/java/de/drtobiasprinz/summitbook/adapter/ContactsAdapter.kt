@@ -24,7 +24,7 @@ import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.ItemContactsBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.fragments.AddContactFragment
+import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
@@ -34,15 +34,11 @@ import javax.inject.Singleton
 @Singleton
 class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
 
-    private lateinit var binding: ItemContactsBinding
-    private lateinit var context: Context
-
     var viewModel: DatabaseViewModel? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        binding = ItemContactsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        context = parent.context
-        return ViewHolder()
+        val binding = ItemContactsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -53,15 +49,12 @@ class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
         return differ.currentList.size
     }
 
-    inner class ViewHolder : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(var binding: ItemContactsBinding) : RecyclerView.ViewHolder(binding.root) {
         fun setData(entity: Summit) {
             binding.apply {
                 summitName.text = entity.name
-                tourDate.text = entity.getDateAsString()
                 heightMeter.text = String.format(
-                    "%s %s",
-                    entity.elevationData.elevationGain,
-                    context.getString(R.string.hm)
+                    "%s %s", entity.elevationData.elevationGain, "hm"
                 )
                 if (entity.hasImagePath()) {
                     sportTypeImage.setImageResource(entity.sportType.imageIdWhite)
@@ -69,31 +62,16 @@ class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
                     sportTypeImage.setImageResource(entity.sportType.imageIdBlack)
                 }
                 addImage(entity)
-                setFavoriteImage(entity, entryFavorite)
-                setMountainImage(entity, entrySummit)
-
-                entryAddImage.setOnClickListener { v: View? ->
-                    val context = v?.context
-                    val intent = Intent(context, AddImagesActivity::class.java)
-                    intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
-                    v?.context?.startActivity(intent)
-                }
-
-                if (entity.velocityData.hasAdditionalData() || entity.elevationData.hasAdditionalData()) {
-                    entryAddVelocityData.setImageResource(R.drawable.ic_baseline_speed_24)
-                } else {
-                    entryAddVelocityData.setImageResource(R.drawable.ic_baseline_more_time_24)
-                }
-                if ((entity.garminData == null || entity.garminData?.activityId == null) && !entity.hasGpsTrack()) {
-                    entryAddVelocityData.visibility = View.GONE
-                } else {
-                    entryAddVelocityData.visibility = View.VISIBLE
-                }
-                entryAddVelocityData.setOnClickListener { v: View? ->
-                    AddAdditionalDataFromExternalResourcesDialog.getInstance(entity).show(
-                        (FragmentComponentManager.findActivity(v?.context) as FragmentActivity).supportFragmentManager,
-                        "Show addition data"
+                if (entity.isBookmark) {
+                    entryAddImage.setImageResource(R.drawable.ic_baseline_bookmarks_24)
+                    tourDate.text = String.format(
+                        "%s %s", entity.kilometers, "km"
                     )
+                    entryFavorite.visibility = View.INVISIBLE
+                    entrySummit.visibility = View.INVISIBLE
+                    entryAddVelocityData.visibility = View.INVISIBLE
+                } else {
+                    setViewForSummitsOnly(entity)
                 }
                 entryDelete.setOnClickListener { v: View? ->
                     v?.context?.let {
@@ -101,13 +79,13 @@ class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
                     }
                 }
                 entryEdit.setOnClickListener { v: View? ->
-                    val addContactFragment = AddContactFragment()
+                    val addSummitDialog = AddSummitDialog()
                     val bundle = Bundle()
                     bundle.putLong(Constants.BUNDLE_ID, entity.id)
-                    addContactFragment.arguments = bundle
-                    addContactFragment.show(
+                    addSummitDialog.arguments = bundle
+                    addSummitDialog.show(
                         (FragmentComponentManager.findActivity(v?.context) as FragmentActivity).supportFragmentManager,
-                        AddContactFragment().tag
+                        AddSummitDialog().tag
                     )
                 }
                 setIconForPositionButton(entryAddCoordinate, entity)
@@ -127,12 +105,42 @@ class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
 
         }
 
+        private fun ItemContactsBinding.setViewForSummitsOnly(entity: Summit) {
+            tourDate.text = entity.getDateAsString()
+            setFavoriteImage(entity, entryFavorite)
+            setMountainImage(entity, entrySummit)
+
+            entryAddImage.setOnClickListener { v: View? ->
+                val context = v?.context
+                val intent = Intent(context, AddImagesActivity::class.java)
+                intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
+                v?.context?.startActivity(intent)
+            }
+
+            if (entity.velocityData.hasAdditionalData() || entity.elevationData.hasAdditionalData()) {
+                entryAddVelocityData.setImageResource(R.drawable.ic_baseline_speed_24)
+            } else {
+                entryAddVelocityData.setImageResource(R.drawable.ic_baseline_more_time_24)
+            }
+            if ((entity.garminData == null || entity.garminData?.activityId == null) && !entity.hasGpsTrack()) {
+                entryAddVelocityData.visibility = View.GONE
+            } else {
+                entryAddVelocityData.visibility = View.VISIBLE
+            }
+            entryAddVelocityData.setOnClickListener { v: View? ->
+                AddAdditionalDataFromExternalResourcesDialog.getInstance(entity).show(
+                    (FragmentComponentManager.findActivity(v?.context) as FragmentActivity).supportFragmentManager,
+                    "Show addition data"
+                )
+            }
+        }
+
         private fun ItemContactsBinding.addImage(item: Summit) {
             if (item.hasImagePath()) {
                 cardViewText.setBackgroundResource(R.color.translucent)
                 summitName.setTextColor(Color.WHITE)
                 cardViewImage.visibility = View.VISIBLE
-                Glide.with(context)
+                Glide.with(root)
                     .load("file://" + item.getImagePath(item.imageIds.first()))
                     .centerInside()
                     .diskCacheStrategy(DiskCacheStrategy.NONE)

@@ -24,8 +24,11 @@ interface SummitsDao {
     @Query("SELECT * FROM $SUMMITS_TABLE WHERE id ==:id")
     fun getSummit(id: Long): Summit
 
-    @Query("SELECT * FROM $SUMMITS_TABLE")
-    fun getAllContacts(): Flow<MutableList<Summit>>
+    @Query("SELECT * FROM $SUMMITS_TABLE where isBookmark = 0")
+    fun getAllSummits(): Flow<MutableList<Summit>>
+
+    @Query("SELECT * FROM $SUMMITS_TABLE where isBookmark = 1")
+    fun getAllBookmarks(): Flow<MutableList<Summit>>
 
     @Query("DELETE FROM $SUMMITS_TABLE")
     fun deleteAllContacts()

@@ -65,7 +65,7 @@ class StatisticsFragment : Fragment() {
 
     fun update() {
         binding.apply {
-            viewModel.contactsList.observe(requireActivity()) { itData ->
+            viewModel.summitsList.observe(requireActivity()) { itData ->
                 itData.data?.let { summits ->
                     val sharedPreferences =
                         PreferenceManager.getDefaultSharedPreferences(requireContext())
@@ -628,11 +628,6 @@ class StatisticsFragment : Fragment() {
             val uniqueYears = ArrayList(HashSet(years))
             Collections.sort(uniqueYears, Collections.reverseOrder())
             return uniqueYears
-        }
-
-        private fun getCurrentYear(): String {
-            val now = Calendar.getInstance()
-            return now[Calendar.YEAR].toString()
         }
     }
 
