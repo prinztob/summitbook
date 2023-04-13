@@ -72,7 +72,8 @@
                 android:drawablePadding="5dp"
                 android:padding="1dp"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                app:drawableStartCompat="@drawable/ic_today_black_24dp" />
+                app:drawableTint="?android:attr/colorControlNormal"
+                app:drawableStartCompat="@drawable/baseline_today_black_24dp" />
 
             <TextView
                 android:id="@+id/height_meter"
@@ -83,7 +84,8 @@
                 android:drawablePadding="5dp"
                 android:padding="1dp"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                app:drawableStartCompat="@drawable/ic_trending_up_black_24dp" />
+                app:drawableTint="?android:attr/colorControlNormal"
+                app:drawableStartCompat="@drawable/baseline_trending_up_black_24dp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -98,6 +100,7 @@
                 android:drawablePadding="5dp"
                 android:padding="1dp"
                 android:textAppearance="?android:attr/textAppearanceSmall"
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/icons8_map_pinpoint_20" />
 
 
@@ -110,6 +113,7 @@
                 android:drawablePadding="5dp"
                 android:padding="1dp"
                 android:textAppearance="?android:attr/textAppearanceSmall"
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_monitor_heart_24" />
 
             <com.google.android.material.switchmaterial.SwitchMaterial
@@ -135,6 +139,7 @@
                 android:drawablePadding="5dp"
                 android:padding="1dp"
                 android:textAppearance="?android:attr/textAppearanceSmall"
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_timer_24" />
 
             <TextView
@@ -146,6 +151,7 @@
                 android:drawablePadding="5dp"
                 android:padding="1dp"
                 android:textAppearance="?android:attr/textAppearanceSmall"
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_power_24" />
 
 
@@ -187,7 +193,7 @@
             android:layout_alignTop="@id/osmap"
             android:layout_alignParentEnd="true"
             android:contentDescription="@string/map_type"
-            android:src="@drawable/ic_more_vert_black_24dp" />
+            android:src="@drawable/baseline_more_vert_black_24dp" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/startOrStop"

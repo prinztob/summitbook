@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.fragments
 
+import android.content.res.Configuration
 import android.os.Bundle
 import android.text.Html
 import android.text.method.LinkMovementMethod
@@ -11,6 +12,7 @@ import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.annotation.Px
+import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -119,7 +121,7 @@ class SummitEntryDataFragment : Fragment() {
         setText(root.findViewById(R.id.durationText), root.findViewById(R.id.duration), "h", summitEntry,
                 extrema?.durationMinMax?.first, extrema?.durationMinMax?.second, summitToCompare, toHHms = true) { entry -> entry.duration }
         setText(summitEntry.comments, root.findViewById(R.id.comments), root.findViewById(R.id.comments))
-        database?.let { setChipsText(R.id.places, summitEntry.getPlacesWithConnectedEntryString(requireContext(), it), R.drawable.ic_place_black_24dp) }
+        database?.let { setChipsText(R.id.places, summitEntry.getPlacesWithConnectedEntryString(requireContext(), it), R.drawable.baseline_place_black_24dp) }
         setChipsText(R.id.countries, summitEntry.countries, R.drawable.ic_baseline_flag_24)
         setChipsText(R.id.participants, summitEntry.participants, R.drawable.ic_baseline_people_24)
         setChipsText(R.id.equipments, summitEntry.equipments, R.drawable.ic_baseline_handyman_24)
@@ -386,6 +388,18 @@ class SummitEntryDataFragment : Fragment() {
                 chip.text = entry
                 chip.isClickable = false
                 chip.chipIcon = ResourcesCompat.getDrawable(resources, imageId, null)
+                when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+                    Configuration.UI_MODE_NIGHT_YES -> {
+                        chip.chipIconTint = ContextCompat.getColorStateList(requireContext(), R.color.white)
+                    }
+                    Configuration.UI_MODE_NIGHT_NO -> {
+                        chip.chipIconTint = ContextCompat.getColorStateList(requireContext(), R.color.black)
+                    }
+                    Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                        chip.chipIconTint = ContextCompat.getColorStateList(requireContext(), R.color.black)
+                    }
+                }
+
                 chipGroup.addView(chip)
             }
         }

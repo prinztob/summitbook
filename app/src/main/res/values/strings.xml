@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">Summit Book</string>
-    <string name="toolbar_subtitle">Manage your summits</string>
     <string name="required">required</string>
     <string name="optional">optional</string>
     <string name="user_name">spot@prinz.de</string>
@@ -204,9 +203,9 @@
     <string name="annual_target_activities_summary">Please provide your annual target for activities</string>
     <string name="annual_target_activities_title">Annual target for activities</string>
     <string name="export_csv_dialog">Export summits</string>
-    <string name="export_csv_dialog_text">Export all or currently filtered summits?</string>
+    <string name="export_csv_dialog_text">Export currently filtered summits?</string>
     <string name="export_csv_dialog_positive">All summits</string>
-    <string name="export_csv_dialog_neutral">Filtered summits</string>
+    <string name="export_csv_dialog_neutral">Export filtered summits!</string>
     <string name="export_csv_dialog_negative_text">Export was aborted</string>
     <string name="export_csv_summary_title">"Export successful"</string>
     <string name="export_csv_summary_text">"Total summits exported to file: %1$s\nSummits with gps file: %2$s\nSummits wth images: %3$s"</string>

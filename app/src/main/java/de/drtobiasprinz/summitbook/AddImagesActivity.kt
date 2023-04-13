@@ -118,7 +118,7 @@ class AddImagesActivity : AppCompatActivity() {
 
         val removeButton = ImageButton(this)
         removeButton.id = View.generateViewId()
-        removeButton.setImageResource(R.drawable.ic_delete_black_24dp)
+        removeButton.setImageResource(R.drawable.baseline_delete_black_24dp)
         removeButton.setOnClickListener { v: View ->
             @Suppress("DEPRECATION")
             AsyncClearCache(Glide.get(applicationContext)).execute()

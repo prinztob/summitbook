@@ -34,7 +34,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         if (isEdite) {
             repository.updateTask(entity)
         } else {
-            repository.saveContact(entity)
+            entity.id = repository.saveContact(entity)
         }
     }
 

@@ -22,6 +22,7 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
     private lateinit var viewPager: ViewPager2
     private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
+    private var allSummits: List<Summit> = emptyList()
     private var database: AppDatabase? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,6 +48,7 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
                         database?.summitsDao()?.getAllSummitWithSameSportType(summitEntry.sportType)
                                 ?: emptyList()
                     }
+                    allSummits = database?.summitsDao()?.allSummit ?: emptyList()
                 }
             }
             val tabsPagerAdapter = TabsPagerAdapter(this, summitEntry)
@@ -119,6 +121,10 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
 
     override fun getSummitsForComparison(): List<Summit> {
         return summitsToCompare
+    }
+
+    override fun getAllSummits(): List<Summit> {
+        return allSummits
     }
 
     override fun getViewPager(): ViewPager2 {

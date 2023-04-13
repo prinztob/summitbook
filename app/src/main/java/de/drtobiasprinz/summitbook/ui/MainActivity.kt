@@ -23,6 +23,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LiveData
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -41,16 +43,19 @@ import de.drtobiasprinz.summitbook.fragments.*
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
 import de.drtobiasprinz.summitbook.ui.utils.*
+import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.io.File
 import java.time.LocalDate
 import java.util.*
+import javax.inject.Inject
 import kotlin.math.round
 import kotlin.math.roundToLong
 
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener,
+    SharedPreferences.OnSharedPreferenceChangeListener {
 
     private lateinit var database: AppDatabase
     private lateinit var binding: ActivityMainBinding
@@ -58,13 +63,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private val viewModel: DatabaseViewModel by viewModels()
 
+    @Inject
+    lateinit var sortFilterValues: SortFilterValues
     private var currentPosition: Int = 0
     private var overlayView: PosterOverlayView? = null
     private var viewer: StfalconImageViewer<Poster>? = null
     private var isDialogShown = false
     private lateinit var sharedPreferences: SharedPreferences
 
-    private var selectedItem = 0
+    private var useFilteredSummits: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,6 +82,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             Python.start(AndroidPlatform(this))
         }
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this)
+        sortFilterValues.setInitialValues(database, sharedPreferences)
         updatePythonExecutor()
         pythonInstance = Python.getInstance()
         cache = applicationContext.cacheDir
@@ -164,7 +173,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun filter() {
         val sortAndFilterFragment = SortAndFilterFragment()
-        sortAndFilterFragment.setViewModel(summitViewFragment.viewModel)
         sortAndFilterFragment.show(
             supportFragmentManager, SortAndFilterFragment().tag
         )
@@ -181,7 +189,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                summitViewFragment.viewModel.getSearchContacts(newText!!)
+                summitViewFragment.viewModel?.getSearchContacts(newText!!)
                 return true
             }
 
@@ -280,23 +288,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.export_csv_dialog))
             .setMessage(getString(R.string.export_csv_dialog_text))
-            .setPositiveButton(R.string.export_csv_dialog_positive) { _: DialogInterface?, _: Int ->
+            .setPositiveButton(R.string.export_csv_dialog_neutral) { _: DialogInterface?, _: Int ->
+                useFilteredSummits = false
                 startFileSelectorAndExportSummits(
                     String.format(
                         "%s_summitbook_backup_ALL.zip",
                         LocalDate.now()
-                    ), false
-                )
-            }
-            .setNeutralButton(
-                R.string.export_csv_dialog_neutral
-            ) { _: DialogInterface?, _: Int ->
-                startFileSelectorAndExportSummits(
-                    String.format(
-                        "%s_summitbook_backup_FILTERED.zip",
-                        LocalDate.now()
-                    ), true
-                )
+                    ))
             }
             .setNegativeButton(
                 android.R.string.cancel
@@ -316,20 +314,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         ft.commit()
     }
 
-    private fun startFileSelectorAndExportSummits(filename: String, useFilteredSummits: Boolean) {
+    private fun startFileSelectorAndExportSummits(filename: String) {
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "application/zip"
             putExtra(Intent.EXTRA_TITLE, filename)
         }
-        if (useFilteredSummits) {
-            resultLauncherForExportZipFilteredSummits.launch(intent)
-        } else {
-            resultLauncherForExportZipAllSummits.launch(intent)
-        }
+        resultLauncherForExportZipSummits.launch(intent)
     }
 
-    private val resultLauncherForExportZipAllSummits =
+    private val resultLauncherForExportZipSummits =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 binding.loading.visibility = View.VISIBLE
@@ -339,42 +333,24 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     sharedPreferences.getBoolean("export_calculated_data", true)
                 val segments = DatabaseModule.provideDatabase(this).segmentsDao()?.getAllSegments()
                 val forecasts = DatabaseModule.provideDatabase(this).forecastDao()?.allForecasts
-
-                @Suppress("DEPRECATION")
-                AsyncExportZipFile(
-                    this,
-                    binding.loading,
-                    summitViewFragment.contactsAdapter.differ.currentList,
-                    result.data,
-                    segments,
-                    forecasts,
-                    exportThirdPartyData,
-                    exportCalculatedData
-                ).execute()
-            }
-        }
-    private val resultLauncherForExportZipFilteredSummits =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                binding.loading.visibility = View.VISIBLE
-                val exportThirdPartyData =
-                    sharedPreferences.getBoolean("export_third_party_data", true)
-                val exportCalculatedData =
-                    sharedPreferences.getBoolean("export_calculated_data", true)
-                val segments = DatabaseModule.provideDatabase(this).segmentsDao()?.getAllSegments()
-                val forecasts = DatabaseModule.provideDatabase(this).forecastDao()?.allForecasts
-
-                @Suppress("DEPRECATION")
-                AsyncExportZipFile(
-                    this,
-                    binding.loading,
-                    summitViewFragment.contactsAdapter.differ.currentList,
-                    result.data,
-                    segments,
-                    forecasts,
-                    exportThirdPartyData,
-                    exportCalculatedData
-                ).execute()
+                viewModel.summitsList.observe(this, object: androidx.lifecycle.Observer<DataStatus<List<Summit>>> {
+                    override fun onChanged(t: DataStatus<List<Summit>>?) {
+                        viewModel.summitsList.removeObserver(this)
+                        if (t?.data != null) {
+                            @Suppress("DEPRECATION")
+                            AsyncExportZipFile(
+                                this@MainActivity,
+                                binding.loading,
+                                t.data,
+                                result.data,
+                                segments,
+                                forecasts,
+                                exportThirdPartyData,
+                                exportCalculatedData
+                            ).execute()
+                        }
+                    }
+                })
             }
         }
     private val resultLauncherForImportZip =
@@ -423,7 +399,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         override fun onPostExecute(param: Void?) {
             mainActivity.binding.loading.visibility = View.GONE
             reader.newSummits.forEach {
-                database.summitsDao().updateSummit(it)
+                mainActivity.viewModel.saveContact(true, it)
             }
             reader.cleanUp()
             AlertDialog.Builder(mainActivity)
@@ -595,6 +571,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         currentPosition = savedInstanceState.getInt(KEY_CURRENT_POSITION)
         if (isDialogShown) {
             openViewer()
+        }
+    }
+
+    override fun onSharedPreferenceChanged(preferences: SharedPreferences?, key: String?) {
+        if (key == "current_year_switch") {
+            sortFilterValues.setInitialValues(database, sharedPreferences)
+            summitViewFragment.contactsAdapter.viewModel?.getSortedAndFilteredSummits(sortFilterValues)
         }
     }
 }

@@ -361,7 +361,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             if (summit.velocityData.fiftyKilometers > 0) summit.velocityData.seventyFiveKilometers = maxVelocitySummit.getAverageVelocityForKilometers(75.0, velocityEntries)
             if (summit.velocityData.seventyFiveKilometers > 0) summit.velocityData.hundredKilometers = maxVelocitySummit.getAverageVelocityForKilometers(100.0, velocityEntries)
             database.summitsDao().updateSummit(summit)
-            addVelocityData?.setImageResource(R.drawable.ic_baseline_speed_24)
+            addVelocityData?.setImageResource(R.drawable.baseline_speed_black_24dp)
         }
 
     }

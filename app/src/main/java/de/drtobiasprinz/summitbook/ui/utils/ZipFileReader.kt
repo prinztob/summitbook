@@ -23,7 +23,15 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
     fun cleanUp() {
         baseDirectory.deleteRecursively()
     }
-
+    fun extractAndImport(inputStream: InputStream) {
+        extractZip(inputStream)
+        readFromCache()
+        newSummits.forEachIndexed { _, it ->
+            it.id = database.summitsDao().addSummit(it)
+            readGpxFile(it)
+            readImageFile(it)
+        }
+    }
     fun extractZip(inputStream: InputStream) {
         if (!baseDirectory.exists()) {
             baseDirectory.mkdirs()
@@ -151,6 +159,7 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
         val gpxFile = File(baseDirectory, entry.getExportTrackPath())
         if (gpxFile.exists()) {
             Files.copy(gpxFile.toPath(), entry.getGpsTrackPath(), StandardCopyOption.REPLACE_EXISTING)
+            entry.hasTrack = true
         }
     }
 

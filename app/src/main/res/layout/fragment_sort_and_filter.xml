@@ -26,7 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0"
-            android:background="#fff"
+            android:background="?android:colorBackground"
             android:orientation="horizontal"
             android:padding="3dp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -39,9 +39,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/set_date"
-                android:src="@drawable/ic_today_black_24dp" />
+                android:src="@drawable/baseline_today_black_24dp" />
 
-            <Spinner
+            <androidx.appcompat.widget.AppCompatSpinner
                 android:id="@+id/spinner_date"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -66,7 +66,7 @@
                 android:id="@+id/date_start"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_today_black_24dp"
+                android:drawableStart="@drawable/baseline_today_black_24dp"
                 android:drawablePadding="10dp"
                 android:ems="6"
                 android:hint="@string/from"
@@ -78,7 +78,7 @@
                 android:id="@+id/date_end"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_today_black_24dp"
+                android:drawableStart="@drawable/baseline_today_black_24dp"
                 android:drawablePadding="10dp"
                 android:ems="6"
                 android:hint="@string/until"
@@ -92,7 +92,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0"
-            android:background="#fff"
+            android:background="?android:colorBackground"
             android:orientation="horizontal"
             android:padding="3dp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -103,7 +103,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/set_activity"
-                android:src="@drawable/ic_directions_walk_black_24dp" />
+                android:src="@drawable/baseline_directions_walk_black_24dp" />
 
             <Spinner
                 android:id="@+id/spinner_sports_type"
@@ -459,7 +459,7 @@
                 android:layout_height="wrap_content"
                 android:breakStrategy="balanced"
                 android:textSize="11sp"
-                app:icon="@drawable/ic_star_black_24dp"
+                app:icon="@drawable/baseline_star_black_24dp"
                 app:iconGravity="textStart" />
 
             <Button

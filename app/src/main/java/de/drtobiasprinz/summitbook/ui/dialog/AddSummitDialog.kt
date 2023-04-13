@@ -6,6 +6,7 @@ import android.app.DatePickerDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
@@ -19,6 +20,7 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
@@ -275,11 +277,23 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             SportType.values().map { resources.getString(it.sportNameStringId) }
                 .toTypedArray()
         )
-
+        setImageColor()
         addPlaces(view)
         addCountries(view)
         addParticipants(view)
         addEquipments(view)
+    }
+
+    private fun setImageColor() {
+            binding.imageParticipants.imageTintList =
+                ContextCompat.getColorStateList(requireContext(), R.color.black)
+            binding.imageCountries.imageTintList =
+                ContextCompat.getColorStateList(requireContext(), R.color.black)
+            binding.imageEquipments.imageTintList =
+                ContextCompat.getColorStateList(requireContext(), R.color.black)
+            binding.imagePlaces.imageTintList =
+                ContextCompat.getColorStateList(requireContext(), R.color.black)
+
     }
 
 

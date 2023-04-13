@@ -298,7 +298,7 @@ class SummitEntryTrackFragment : Fragment() {
         osMap.overlayManager?.clear()
         OpenStreetMapUtils.setTileSource(OpenStreetMapUtils.selectedItem, osMap)
         val changeMapTypeFab: ImageButton = root.findViewById(R.id.change_map_type)
-        changeMapTypeFab.setImageResource(R.drawable.ic_more_vert_black_24dp)
+        changeMapTypeFab.setImageResource(R.drawable.baseline_more_vert_black_24dp)
         changeMapTypeFab.setOnClickListener { OpenStreetMapUtils.showMapTypeSelectorDialog(requireContext(), osMap) }
         OpenStreetMapUtils.addDefaultSettings(requireContext(), osMap, requireActivity())
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID

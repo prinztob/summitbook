@@ -42,14 +42,14 @@
                     android:gravity="center"
                     android:text="@string/total_activities"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
 
                 <TextView
                     android:id="@+id/textTotalActivities"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -58,14 +58,14 @@
                     android:gravity="center"
                     android:text="@string/total_summits"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
 
                 <TextView
                     android:id="@+id/textTotalSummits"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
             </LinearLayout>
@@ -86,14 +86,15 @@
                     android:gravity="center"
                     android:text="@string/total_kilometers"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textTotalKm"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
             </LinearLayout>
@@ -114,14 +115,15 @@
                     android:gravity="center"
                     android:text="@string/total_height_meters"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textTotalHm"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -129,7 +131,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
                 <TextView
@@ -137,7 +139,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -159,14 +161,15 @@
                     android:gravity="center"
                     android:text="@string/achievement"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textAchievement"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
             </LinearLayout>
@@ -188,14 +191,15 @@
                     android:gravity="center"
                     android:text="@string/highest_peak"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textHighestPeak"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -203,7 +207,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -225,14 +229,15 @@
                     android:gravity="center"
                     android:text="@string/height_meter_done"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textMostHeightMeter"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -240,7 +245,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -263,14 +268,15 @@
                     android:gravity="center"
                     android:text="@string/max_slope"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textMaxSlope"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -278,7 +284,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -311,14 +317,15 @@
                             android:gravity="center"
                             android:text="@string/max_verticalVelocity_1Min"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textMaxVerticalVelocity1Min"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -326,7 +333,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -348,14 +355,15 @@
                             android:gravity="center"
                             android:text="@string/max_verticalVelocity_10Min"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textMaxVerticalVelocity10Min"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -363,7 +371,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -385,14 +393,15 @@
                             android:gravity="center"
                             android:text="@string/max_verticalVelocity_1h"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textMaxVerticalVelocity1h"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -400,7 +409,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -435,14 +444,15 @@
                             android:gravity="center"
                             android:text="@string/top_speed"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textTopSpeed"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -450,7 +460,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -472,14 +482,15 @@
                             android:gravity="center"
                             android:text="@string/top_speed_1km_hint"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textTopSpeed1Km"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -487,7 +498,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -509,14 +520,15 @@
                             android:gravity="center"
                             android:text="@string/top_speed_5km_hint"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textTopSpeed5Km"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -524,7 +536,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -546,14 +558,15 @@
                             android:gravity="center"
                             android:text="@string/top_speed_10km_hint"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textTopSpeed10Km"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -561,7 +574,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -583,14 +596,15 @@
                             android:gravity="center"
                             android:text="@string/top_speed_15km_hint"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textTopSpeed15Km"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -598,7 +612,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -620,14 +634,15 @@
                             android:gravity="center"
                             android:text="@string/top_speed_20km_hint"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textTopSpeed20Km"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -635,7 +650,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -657,14 +672,15 @@
                             android:gravity="center"
                             android:text="@string/top_speed_30km_hint"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textTopSpeed30Km"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -672,7 +688,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -694,14 +710,15 @@
                             android:gravity="center"
                             android:text="@string/top_speed_40km_hint"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textTopSpeed40Km"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -709,7 +726,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -731,14 +748,15 @@
                             android:gravity="center"
                             android:text="@string/top_speed_50km_hint"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textTopSpeed50Km"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -746,7 +764,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -768,14 +786,15 @@
                             android:gravity="center"
                             android:text="@string/top_speed_75km_hint"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textTopSpeed75Km"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -783,7 +802,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -805,14 +824,15 @@
                             android:gravity="center"
                             android:text="@string/top_speed_100km_hint"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textTopSpeed100Km"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -820,7 +840,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -844,14 +864,15 @@
                     android:gravity="center"
                     android:text="@string/highest_average_speed"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textHeighestAverageSpeed"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -859,7 +880,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -881,14 +902,15 @@
                     android:gravity="center"
                     android:text="@string/longest_duration"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textLongestDuration"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -896,7 +918,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -918,14 +940,15 @@
                     android:gravity="center"
                     android:text="@string/longest_distance"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textLongestDistance"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -933,7 +956,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -954,14 +977,15 @@
                     android:gravity="center"
                     android:text="@string/visited_countries"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textVisitedCountries"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
             </LinearLayout>
@@ -983,14 +1007,15 @@
                     android:gravity="center"
                     android:text="@string/highest_hr"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textHeighestAverageHR"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -998,7 +1023,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -1021,14 +1046,15 @@
                     android:gravity="center"
                     android:text="@string/highest_power"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textHeighestPower"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -1036,7 +1062,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -1069,14 +1095,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_1sec"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower1sec"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1084,7 +1111,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1106,14 +1133,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_2sec"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower2sec"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1121,7 +1149,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1143,14 +1171,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_5sec"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower5sec"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1158,7 +1187,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1180,14 +1209,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_10sec"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower10sec"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1195,7 +1225,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1217,14 +1247,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_20sec"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower20sec"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1232,7 +1263,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1254,14 +1285,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_30sec"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower30sec"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1269,7 +1301,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1291,14 +1323,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_1min"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower1min"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1306,7 +1339,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1328,14 +1361,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_2min"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower2min"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1343,7 +1377,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1365,14 +1399,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_5min"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower5min"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1380,7 +1415,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1402,14 +1437,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_10min"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower10min"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1417,7 +1453,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1439,14 +1475,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_20min"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower20min"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1454,7 +1491,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1476,14 +1513,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_30min"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower30min"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1491,7 +1529,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1513,14 +1551,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_1h"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower1h"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1528,7 +1567,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1550,14 +1589,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_2h"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower2h"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1565,7 +1605,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1587,14 +1627,15 @@
                             android:gravity="center"
                             android:text="@string/highest_power_5h"
                             android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="#999" />
+                            android:textColor="?android:attr/textColorSecondary" />
+
 
                         <TextView
                             android:id="@+id/textHeighestPower5h"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="35sp" />
 
                         <TextView
@@ -1602,7 +1643,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:textColor="#333"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="20sp" />
 
                     </LinearLayout>
@@ -1627,14 +1668,15 @@
                     android:gravity="center"
                     android:text="@string/highest_VO2MAX"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textHeighestVO2MAX"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -1642,7 +1684,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -1664,14 +1706,15 @@
                     android:gravity="center"
                     android:text="@string/highest_FTP"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textHeighestFTP"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -1679,7 +1722,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -1701,14 +1744,15 @@
                     android:gravity="center"
                     android:text="@string/highest_flow"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textHeighestFlow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -1716,7 +1760,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -1738,14 +1782,15 @@
                     android:gravity="center"
                     android:text="@string/highest_grit"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textHeighestGrit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -1753,7 +1798,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>
@@ -1775,14 +1820,15 @@
                     android:gravity="center"
                     android:text="@string/highest_training_load"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textColor="#999" />
+                    android:textColor="?android:attr/textColorSecondary" />
+
 
                 <TextView
                     android:id="@+id/textHeighestTrainingLoad"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="35sp" />
 
                 <TextView
@@ -1790,7 +1836,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#333"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="20sp" />
 
             </LinearLayout>

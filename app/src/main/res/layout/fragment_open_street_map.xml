@@ -15,7 +15,7 @@
         android:layout_alignTop="@id/osmap"
         android:layout_toStartOf="@id/show_all_tracks"
         android:contentDescription="@string/map_type"
-        android:src="@drawable/ic_more_vert_black_24dp" />
+        android:src="@drawable/baseline_more_vert_black_24dp" />
 
     <ImageButton
         android:id="@+id/show_all_tracks"

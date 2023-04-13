@@ -88,7 +88,7 @@
                         android:layout_alignTop="@id/osmap"
                         android:layout_toStartOf="@id/gps_share"
                         android:contentDescription="@string/map_type"
-                        android:src="@drawable/ic_more_vert_black_24dp" />
+                        android:src="@drawable/baseline_more_vert_black_24dp" />
 
                     <ImageButton
                         android:id="@+id/gps_share"
@@ -97,7 +97,7 @@
                         android:layout_alignTop="@id/osmap"
                         android:layout_toStartOf="@id/gps_open_with"
                         android:contentDescription="@string/action_share"
-                        android:src="@drawable/ic_share_black_24dp" />
+                        android:src="@drawable/baseline_share_black_24dp" />
 
                     <ImageButton
                         android:id="@+id/gps_open_with"
@@ -106,7 +106,7 @@
                         android:layout_alignTop="@id/osmap"
                         android:layout_toStartOf="@id/customize_track"
                         android:contentDescription="@string/open_with"
-                        android:src="@drawable/ic_open_in_new_black_24dp" />
+                        android:src="@drawable/baseline_open_in_new_black_24dp" />
 
                     <ImageButton
                         android:id="@+id/customize_track"

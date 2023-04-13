@@ -293,9 +293,9 @@ class SelectOnOsMapActivity : FragmentActivity() {
     private fun updateSavePositionButton(enable: Boolean) {
         binding.addPositionSave.isEnabled = enable
         if (enable) {
-            binding.addPositionSave.setImageResource(R.drawable.ic_save_black_24dp)
+            binding.addPositionSave.setImageResource(R.drawable.baseline_save_black_24dp)
         } else {
-            binding.addPositionSave.setImageResource(R.drawable.ic_save_grey_400_24dp)
+            binding.addPositionSave.setImageResource(R.drawable.baseline_save_grey_500_24dp)
         }
     }
 

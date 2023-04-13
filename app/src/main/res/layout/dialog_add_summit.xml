@@ -22,7 +22,7 @@
                 android:id="@+id/tour_date"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_today_black_24dp"
+                android:drawableStart="@drawable/baseline_today_black_24dp"
                 android:drawablePadding="10dp"
                 android:ems="6"
                 android:hint="@string/tour_date"
@@ -40,7 +40,7 @@
                 android:contentDescription="@string/add_activity"
                 android:paddingStart="5dp"
                 android:paddingEnd="5dp"
-                android:src="@drawable/ic_note_add_black_24dp" />
+                android:src="@drawable/baseline_add_location_alt_black_24dp" />
 
         </RelativeLayout>
 
@@ -61,7 +61,7 @@
             android:id="@+id/summit_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:drawableStart="@drawable/ic_landscape_black_24dp"
+            android:drawableStart="@drawable/baseline_landscape_black_24dp"
             android:drawablePadding="10dp"
             android:hint="@string/summit_name_hint"
             android:importantForAutofill="no"
@@ -118,7 +118,7 @@
                 android:id="@+id/height_meter"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_trending_up_black_24dp"
+                android:drawableStart="@drawable/baseline_trending_up_black_24dp"
                 android:drawablePadding="10dp"
                 android:hint="@string/height_meter_hint"
                 android:layout_toStartOf="@id/height_meter_text"
@@ -140,6 +140,7 @@
             android:layout_height="wrap_content"
             android:drawablePadding="10dp"
             android:text="@string/more"
+            app:drawableTint="?android:attr/colorControlNormal"
             app:drawableStartCompat="@drawable/ic_baseline_expand_more_24" />
 
         <LinearLayout
@@ -182,7 +183,7 @@
                     android:id="@+id/pace"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/icons8_speed_20"
+                    android:drawableStart="@drawable/baseline_speed_black_24dp"
                     android:drawablePadding="10dp"
                     android:hint="@string/pace_hint"
                     android:layout_toStartOf="@id/pace_text"
@@ -206,7 +207,7 @@
                     android:id="@+id/top_speed"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/icons8_speed_20"
+                    android:drawableStart="@drawable/baseline_speed_black_24dp"
                     android:drawablePadding="10dp"
                     android:hint="@string/top_speed_hint"
                     android:layout_toStartOf="@id/top_speed_text"
@@ -264,7 +265,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:contentDescription="@string/place_hint"
-                    android:src="@drawable/ic_place_black_24dp" />
+                    android:src="@drawable/baseline_place_black_24dp" />
 
                 <AutoCompleteTextView
                     android:id="@+id/autoCompleteTextViewPlaces"
@@ -364,6 +365,7 @@
             android:layout_height="wrap_content"
             android:drawablePadding="10dp"
             android:text="@string/more_performance"
+            app:drawableTint="?android:attr/colorControlNormal"
             app:drawableStartCompat="@drawable/ic_baseline_expand_more_24" />
 
         <LinearLayout

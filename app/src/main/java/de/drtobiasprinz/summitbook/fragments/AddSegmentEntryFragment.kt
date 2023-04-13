@@ -11,7 +11,6 @@ import android.widget.AdapterView
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
-import com.chivorn.smartmaterialspinner.SmartMaterialSpinner
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.*
 import com.github.mikephil.charting.data.Entry
@@ -443,7 +442,7 @@ class AddSegmentEntryFragment : Fragment() {
     private fun setOpenStreetMap() {
         binding.osmap.overlays?.clear()
         binding.osmap.overlayManager?.clear()
-        binding.changeMapType.setImageResource(R.drawable.ic_more_vert_black_24dp)
+        binding.changeMapType.setImageResource(R.drawable.baseline_more_vert_black_24dp)
         binding.changeMapType.setOnClickListener {
             showMapTypeSelectorDialog(
                 requireContext(),

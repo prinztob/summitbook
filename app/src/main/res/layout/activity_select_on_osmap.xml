@@ -51,7 +51,7 @@
         android:layout_alignTop="@id/osmap"
         android:layout_toStartOf="@id/add_position_cancel"
         android:contentDescription="@string/addGpsTrack"
-        android:src="@drawable/ic_add_black_24dp" />
+        android:src="@drawable/baseline_add_black_24dp" />
 
     <ImageButton
         android:id="@+id/add_position_cancel"
@@ -60,7 +60,7 @@
         android:layout_alignTop="@id/osmap"
         android:layout_toStartOf="@id/add_position_save"
         android:contentDescription="@string/cancelButtonText"
-        android:src="@drawable/ic_cancel_black_24dp" />
+        android:src="@drawable/baseline_cancel_black_24dp" />
 
     <ImageButton
         android:id="@+id/add_position_save"
@@ -69,7 +69,7 @@
         android:layout_alignTop="@id/osmap"
         android:layout_toStartOf="@id/add_position_delete"
         android:contentDescription="@string/saveButtonText"
-        android:src="@drawable/ic_save_grey_400_24dp" />
+        android:src="@drawable/baseline_save_grey_500_24dp" />
 
     <ImageButton
         android:id="@+id/add_position_delete"
@@ -78,7 +78,7 @@
         android:layout_alignTop="@id/osmap"
         android:layout_alignParentEnd="true"
         android:contentDescription="@string/cancelButtonText"
-        android:src="@drawable/ic_delete_black_24dp" />
+        android:src="@drawable/baseline_delete_black_24dp" />
 
 
 </RelativeLayout>

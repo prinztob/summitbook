@@ -12,6 +12,8 @@ interface SummitEntryResultReceiver {
 
     fun getSummitsForComparison(): List<Summit>
 
+    fun getAllSummits(): List<Summit>
+
     fun getViewPager(): ViewPager2
 
 }

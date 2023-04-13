@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.ui
 
+import android.content.res.Configuration
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
@@ -15,7 +16,12 @@ import de.drtobiasprinz.summitbook.R
 class CustomAutoCompleteChips(private val mView: View, private val chipIconId: Int? = null) {
     private val newline = "\n"
 
-    fun addChips(suggestionsAdapter: ArrayAdapter<String>, entries: List<String>?, autoCompleteTextView: AutoCompleteTextView, chipGroup: ChipGroup) {
+    fun addChips(
+        suggestionsAdapter: ArrayAdapter<String>,
+        entries: List<String>?,
+        autoCompleteTextView: AutoCompleteTextView,
+        chipGroup: ChipGroup
+    ) {
         autoCompleteTextView.setAdapter(suggestionsAdapter)
         autoCompleteTextView.setOnItemClickListener { parent, _, position, _ ->
             autoCompleteTextView.text = null
@@ -59,7 +65,10 @@ class CustomAutoCompleteChips(private val mView: View, private val chipIconId: I
         if (chipIconId != null) {
             chip.chipIcon = ContextCompat.getDrawable(mView.context, chipIconId)
         }
-        chip.setChipIconTintResource(R.color.ForestGreen)
+        chip.chipIconTint = ContextCompat.getColorStateList(mView.context, R.color.black)
+        if (mView.context.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
+            chip.chipIconTint = ContextCompat.getColorStateList(mView.context, R.color.white)
+        }
         chip.isClickable = true
         chip.isCheckable = false
         chip.isCloseIconVisible = true

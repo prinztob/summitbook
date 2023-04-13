@@ -34,6 +34,7 @@
 
             <Spinner
                 android:id="@+id/spinner_time_range"
+                android:background="?android:colorBackground"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/sport_type_image"
@@ -45,6 +46,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/summit_name_compare_hint"
+                android:background="?android:colorBackground"
                 app:smsp_searchHeaderText="@string/select_item"
                 app:smsp_searchHint="@string/summit_name_compare_hint"
                 app:smsp_hint="@string/summit_name_compare_hint"

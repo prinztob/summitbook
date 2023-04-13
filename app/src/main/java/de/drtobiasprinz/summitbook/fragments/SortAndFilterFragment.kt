@@ -10,7 +10,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.android.material.slider.RangeSlider
@@ -28,6 +30,7 @@ import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
+import kotlin.math.roundToInt
 
 
 @AndroidEntryPoint
@@ -38,9 +41,10 @@ class SortAndFilterFragment : DialogFragment() {
 
     @Inject
     lateinit var sortFilterValues: SortFilterValues
-    private var summitViewFragmentViewModel: DatabaseViewModel? = null
     lateinit var database: AppDatabase
     lateinit var entries: List<Summit>
+
+    val viewModel: DatabaseViewModel by activityViewModels()
 
     private lateinit var binding: FragmentSortAndFilterBinding
 
@@ -54,26 +58,7 @@ class SortAndFilterFragment : DialogFragment() {
         binding = FragmentSortAndFilterBinding.inflate(layoutInflater, container, false)
         database = DatabaseModule.provideDatabase(requireContext())
         dialog!!.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        if (PreferenceManager.getDefaultSharedPreferences(requireContext())
-                .getBoolean("current_year_switch", false)
-        ) {
-            sortFilterValues.selectedDateSpinner = 2
-            sortFilterValues.selectedDateSpinnerDefault = 2
-        }
-        val minDate = Date(
-            database.summitsDao()
-                .get(SimpleSQLiteQuery("SELECT MIN(date) FROM ${Constants.SUMMITS_TABLE} where isBookmark = 0"))
-                .toLong()
-        ).year + 1900
-
-        val maxDate = Date(
-            database.summitsDao()
-                .get(SimpleSQLiteQuery("SELECT MAX(date) FROM ${Constants.SUMMITS_TABLE} where isBookmark = 0"))
-                .toLong()
-        ).year + 1900
-        if (minDate != 1970 && maxDate != 1970) {
-            sortFilterValues.years = (minDate..maxDate).map { it.toString() }.sortedDescending()
-        }
+        sortFilterValues.setInitialValues(database, PreferenceManager.getDefaultSharedPreferences(requireContext()))
         return binding.root
     }
 
@@ -84,12 +69,12 @@ class SortAndFilterFragment : DialogFragment() {
             dismiss()
         }
         binding.apply.setOnClickListener {
-            summitViewFragmentViewModel?.getSortedAndFilteredSummits(sortFilterValues)
+            viewModel.getSortedAndFilteredSummits(sortFilterValues)
             dismiss()
         }
         binding.setToDefault.setOnClickListener {
             sortFilterValues.setToDefault()
-            summitViewFragmentViewModel?.getSortedAndFilteredSummits(sortFilterValues)
+            viewModel.getSortedAndFilteredSummits(sortFilterValues)
             dismiss()
         }
         setExtremeValues()
@@ -176,16 +161,25 @@ class SortAndFilterFragment : DialogFragment() {
     private fun setRangeSliders() {
         val sortFilterValues = sortFilterValues
         setRangeSlider(
+            binding.minValueKm,
+            binding.maxValueKm,
+            getString(R.string.km),
             binding.rangeSliderKilometers,
             binding.layoutKilometers,
             sortFilterValues.kilometersSlider
         )
         setRangeSlider(
+            binding.minValueHm,
+            binding.maxValueHm,
+            getString(R.string.hm),
             binding.rangeSliderHeightMeter,
             binding.layoutHeightMeter,
             sortFilterValues.elevationGainSlider
         )
         setRangeSlider(
+            binding.minValueTopElevation,
+            binding.maxValueTopElevation,
+            getString(R.string.masl),
             binding.rangeSliderTopElevation,
             binding.layoutTopElevation,
             sortFilterValues.topElevationSlider
@@ -193,6 +187,9 @@ class SortAndFilterFragment : DialogFragment() {
     }
 
     private fun setRangeSlider(
+        textMin: TextView,
+        textMax: TextView,
+        unit: String,
         slider: RangeSlider,
         layout: LinearLayout,
         values: RangeSliderValues
@@ -203,27 +200,30 @@ class SortAndFilterFragment : DialogFragment() {
         values.totalMax = database.summitsDao()
             .get(SimpleSQLiteQuery("SELECT MAX(${values.dbColumnName}) FROM ${Constants.SUMMITS_TABLE} where isBookmark = 0"))
             .toFloat()
-
         if (values.totalMax > 0) {
             slider.visibility = View.VISIBLE
             layout.visibility = View.VISIBLE
             slider.valueFrom = values.totalMin
             slider.valueTo = values.totalMax
-            if (!(values.selectedMin in values.totalMin..values.totalMax)) {
+            if (values.selectedMin !in values.totalMin..values.totalMax) {
                 values.selectedMin = values.totalMin
             }
-            if (!(values.selectedMax in values.totalMin..values.totalMax) || values.selectedMax == 0f) {
+            if (values.selectedMax !in values.totalMin..values.totalMax || values.selectedMax == 0f) {
                 values.selectedMax = values.totalMax
             }
             slider.values = listOf(values.selectedMin, values.selectedMax)
             slider.addOnChangeListener { slider1, _, _ ->
                 values.selectedMin = slider1.values[0]
                 values.selectedMax = slider1.values[1]
+                textMin.text = "${values.selectedMin.roundToInt()}"
+                textMax.text = " ${values.selectedMax.roundToInt()} $unit"
             }
         } else {
             slider.visibility = View.GONE
             layout.visibility = View.GONE
         }
+        textMin.text = "${values.selectedMin.roundToInt()}"
+        textMax.text = " ${values.selectedMax.roundToInt()} $unit"
     }
 
     private fun updateSportTypeSpinner() {
@@ -236,10 +236,10 @@ class SortAndFilterFragment : DialogFragment() {
             android.R.layout.simple_spinner_item, sportTypes
         )
         binding.spinnerSportsType.adapter = sportTypeAdapter
-        val position = if (sortFilterValues?.sportType == null) {
+        val position = if (sortFilterValues.sportType == null) {
             0
         } else {
-            SportType.values().indexOfFirst { it == sortFilterValues?.sportType }
+            SportType.values().indexOfFirst { it == sortFilterValues.sportType }
         }
         binding.spinnerSportsType.setSelection(position)
         binding.spinnerSportsType.onItemSelectedListener =
@@ -250,7 +250,7 @@ class SortAndFilterFragment : DialogFragment() {
                     position: Int,
                     id: Long
                 ) {
-                    sortFilterValues?.sportType = if (position == 0) {
+                    sortFilterValues.sportType = if (position == 0) {
                         null
                     } else {
                         SportType.values()[position - 1]
@@ -271,6 +271,7 @@ class SortAndFilterFragment : DialogFragment() {
             binding.autoCompleteTextViewParticipants,
             binding.chipGroupParticipants
         )
+        binding.imageParticipants.imageTintList = ContextCompat.getColorStateList(requireContext(), R.color.black)
     }
 
     private fun setExtremeValues() {
@@ -383,10 +384,5 @@ class SortAndFilterFragment : DialogFragment() {
         )
         picker.show()
     }
-
-    fun setViewModel(viewModel: DatabaseViewModel) {
-        summitViewFragmentViewModel = viewModel
-    }
-
 
 }

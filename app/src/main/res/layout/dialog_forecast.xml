@@ -123,6 +123,7 @@
                 android:layout_toEndOf="@+id/text_month1"
                 android:drawablePadding="5dp"
                 android:text=""
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
 
@@ -157,6 +158,7 @@
                 android:layout_toEndOf="@+id/text_month2"
                 android:drawablePadding="5dp"
                 android:text=""
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -190,6 +192,7 @@
                 android:layout_toEndOf="@+id/text_month3"
                 android:drawablePadding="5dp"
                 android:text=""
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -223,6 +226,7 @@
                 android:layout_toEndOf="@+id/text_month4"
                 android:drawablePadding="5dp"
                 android:text=""
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -256,6 +260,7 @@
                 android:layout_toEndOf="@+id/text_month5"
                 android:drawablePadding="5dp"
                 android:text=""
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -289,6 +294,7 @@
                 android:layout_toEndOf="@+id/text_month6"
                 android:drawablePadding="5dp"
                 android:text=""
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -322,6 +328,7 @@
                 android:layout_toEndOf="@+id/text_month7"
                 android:drawablePadding="5dp"
                 android:text=""
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -355,6 +362,7 @@
                 android:layout_toEndOf="@+id/text_month8"
                 android:drawablePadding="5dp"
                 android:text=""
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -388,6 +396,7 @@
                 android:layout_toEndOf="@+id/text_month9"
                 android:drawablePadding="5dp"
                 android:text=""
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -421,6 +430,7 @@
                 android:layout_toEndOf="@+id/text_month10"
                 android:drawablePadding="5dp"
                 android:text=""
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -454,6 +464,7 @@
                 android:layout_toEndOf="@+id/text_month11"
                 android:drawablePadding="5dp"
                 android:text=""
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider
@@ -487,6 +498,7 @@
                 android:layout_toEndOf="@+id/text_month12"
                 android:drawablePadding="5dp"
                 android:text=""
+                app:drawableTint="?android:attr/colorControlNormal"
                 app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
 
             <com.google.android.material.slider.Slider

@@ -276,7 +276,7 @@ class Summit(
             GarminData.emptyLine(exportThirdPartyData)
         }
         entryToString += if (exportThirdPartyData) ";" else ""
-        entryToString += if (isFavorite) "1\n" else "0\n"
+        entryToString += "${if (isFavorite) "1" else "0"},${if (isPeak) "1" else "0"}\n"
         return entryToString
     }
 
@@ -465,9 +465,13 @@ class Summit(
                     splitLine[12].toDouble()
                 ) else null
             val isFavoriteAndOrPeak =
-                (if (splitLine.size == NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY) splitLine[27] else (if (splitLine.size == NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY) splitLine[15] else splitLine[29])).split(
-                    ","
-                )
+                (if (splitLine.size == NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY) {
+                    splitLine[27]
+                } else (if (splitLine.size == NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY) {
+                    splitLine[15]
+                } else {
+                    splitLine[29]
+                })).split(",")
             val isFavorite =
                 if (isFavoriteAndOrPeak.isEmpty()) false else isFavoriteAndOrPeak[0] == "1"
             val isPeak = if (isFavoriteAndOrPeak.size < 2) false else isFavoriteAndOrPeak[1] == "1"

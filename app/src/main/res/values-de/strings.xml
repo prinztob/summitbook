@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">Gipfelbuch</string>
-    <string name="toolbar_subtitle">Verwalte deine Gipfel</string>
     <string name="required">Erforderlich</string>
     <string name="optional">Optional</string>
     <string name="user_name">spot@prinz.de</string>
@@ -208,9 +207,9 @@
     <string name="annual_target_activities_summary">Bitte trege dein Jahresziel an absolvierten Aktivitäten ein</string>
     <string name="annual_target_activities_title">Jahresziel an Aktivitäten</string>
     <string name="export_csv_dialog">Export von Gipfel?</string>
-    <string name="export_csv_dialog_text">Export alle oder gerade gefilterte summits?</string>
+    <string name="export_csv_dialog_text">Exportiere gerade gefilterte Gipfel?</string>
     <string name="export_csv_dialog_positive">Alle Gipfel</string>
-    <string name="export_csv_dialog_neutral">Gefilterte Gipfel</string>
+    <string name="export_csv_dialog_neutral">Exportiere Gipfel</string>
     <string name="export_csv_dialog_negative_text">Export ist agebrochen worden</string>
     <string name="export_csv_summary_title">"Export war erfolgreich"</string>
     <string name="export_csv_summary_text">"Anzahl an Gipfel exportiert in Datei: %1$s\nGipfel mit gps Datei: %2$s\nGipfel mit Bildern: %3$s"</string>

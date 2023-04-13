@@ -8,7 +8,5 @@
     android:background="?attr/colorPrimaryDark"
     android:theme="@style/App.ToolbarStyle"
     app:menu="@menu/menu_toolbar"
-    app:subtitle="@string/toolbar_subtitle"
-    app:subtitleTextColor="#C6FFFFFF"
     app:title="@string/app_name"
     app:titleTextColor="@color/white" />

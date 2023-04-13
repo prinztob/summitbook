@@ -47,7 +47,7 @@ class SummitViewFragment : Fragment() {
 
     private var startedScheduler: Boolean = false
     private lateinit var database: AppDatabase
-    val viewModel: DatabaseViewModel by activityViewModels()
+    val viewModel: DatabaseViewModel? by activityViewModels()
     private lateinit var sharedPreferences: SharedPreferences
 
     var showBookmarksOnly = false
@@ -75,11 +75,11 @@ class SummitViewFragment : Fragment() {
             rvContacts.apply {
                 layoutManager = LinearLayoutManager(view.context)
                 adapter = contactsAdapter
-                contactsAdapter.viewModel = viewModel
             }
+            contactsAdapter.viewModel = viewModel
             if (showBookmarksOnly) {
-                viewModel.getAllBookmarks()
-                viewModel.bookmarksList.observe(viewLifecycleOwner) {
+                viewModel?.getAllBookmarks()
+                viewModel?.bookmarksList?.observe(viewLifecycleOwner) {
                     when (it.status) {
                         DataStatus.Status.LOADING -> {
                             loading.isVisible(true, rvContacts)
@@ -96,8 +96,8 @@ class SummitViewFragment : Fragment() {
                         }
                     }
                 }            } else {
-                viewModel.getSortedAndFilteredSummits(sortFilterValues)
-                viewModel.summitsList.observe(viewLifecycleOwner) {
+                viewModel?.getSortedAndFilteredSummits(sortFilterValues)
+                viewModel?.summitsList?.observe(viewLifecycleOwner) {
                     when (it.status) {
                         DataStatus.Status.LOADING -> {
                             loading.isVisible(true, rvContacts)
@@ -135,11 +135,11 @@ class SummitViewFragment : Fragment() {
                     val contact = contactsAdapter.differ.currentList[position]
                     when (direction) {
                         ItemTouchHelper.LEFT -> {
-                            viewModel.deleteContact(contact)
+                            viewModel?.deleteContact(contact)
                             Snackbar.make(binding.root, "Item Deleted!", Snackbar.LENGTH_LONG)
                                 .apply {
                                     setAction("UNDO") {
-                                        viewModel.saveContact(false, contact)
+                                        viewModel?.saveContact(false, contact)
                                     }
                                 }.show()
                         }

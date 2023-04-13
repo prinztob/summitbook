@@ -71,7 +71,7 @@
                 android:drawablePadding="5dp"
                 android:padding="1dp"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                card_view:drawableStartCompat="@drawable/ic_trending_up_black_24dp" />
+                card_view:drawableStartCompat="@drawable/baseline_trending_up_black_24dp" />
 
         </GridLayout>
 
@@ -101,7 +101,7 @@
                 android:contentDescription="@string/add_segment"
                 android:paddingStart="5dp"
                 android:paddingEnd="5dp"
-                android:src="@drawable/ic_add_black_24dp" />
+                android:src="@drawable/baseline_add_black_24dp" />
 
             <ImageButton
                 android:id="@+id/entry_edit"
@@ -114,7 +114,7 @@
                 android:contentDescription="@string/edit_icon"
                 android:paddingStart="5dp"
                 android:paddingEnd="5dp"
-                android:src="@drawable/ic_edit_black_24dp" />
+                android:src="@drawable/baseline_mode_edit_black_24dp" />
 
             <ImageButton
                 android:id="@+id/entry_delete"
@@ -127,7 +127,7 @@
                 android:contentDescription="@string/delete_icon"
                 android:paddingStart="5dp"
                 android:paddingEnd="5dp"
-                android:src="@drawable/ic_delete_black_24dp" />
+                android:src="@drawable/baseline_delete_black_24dp" />
 
         </RelativeLayout>
 

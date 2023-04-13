@@ -37,7 +37,7 @@
         android:layout_alignTop="@id/osmap"
         android:layout_alignEnd="@id/add_to_bookmarks"
         android:text="@string/add_track_as_summit"
-        android:src="@drawable/ic_add_black_24dp" />
+        android:src="@drawable/baseline_add_black_24dp" />
 
     <Button
         android:id="@+id/add_to_bookmarks"
@@ -45,6 +45,6 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/add_to_summits"
         android:text="@string/add_track_as_bookmark"
-        android:src="@drawable/ic_add_black_24dp" />
+        android:src="@drawable/baseline_add_black_24dp" />
 
 </RelativeLayout>

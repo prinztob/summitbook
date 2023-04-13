@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.adapter
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -24,8 +25,8 @@ import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.ItemContactsBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
+import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import javax.inject.Singleton
@@ -35,9 +36,12 @@ import javax.inject.Singleton
 class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
 
     var viewModel: DatabaseViewModel? = null
+    lateinit var context: Context
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val binding = ItemContactsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        context = parent.context
+        val binding =
+            ItemContactsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)
     }
 
@@ -49,18 +53,14 @@ class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
         return differ.currentList.size
     }
 
-    inner class ViewHolder(var binding: ItemContactsBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(var binding: ItemContactsBinding) :
+        RecyclerView.ViewHolder(binding.root) {
         fun setData(entity: Summit) {
             binding.apply {
                 summitName.text = entity.name
                 heightMeter.text = String.format(
                     "%s %s", entity.elevationData.elevationGain, "hm"
                 )
-                if (entity.hasImagePath()) {
-                    sportTypeImage.setImageResource(entity.sportType.imageIdWhite)
-                } else {
-                    sportTypeImage.setImageResource(entity.sportType.imageIdBlack)
-                }
                 addImage(entity)
                 if (entity.isBookmark) {
                     entryAddImage.setImageResource(R.drawable.ic_baseline_bookmarks_24)
@@ -118,9 +118,9 @@ class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
             }
 
             if (entity.velocityData.hasAdditionalData() || entity.elevationData.hasAdditionalData()) {
-                entryAddVelocityData.setImageResource(R.drawable.ic_baseline_speed_24)
+                entryAddVelocityData.setImageResource(R.drawable.baseline_speed_black_24dp)
             } else {
-                entryAddVelocityData.setImageResource(R.drawable.ic_baseline_more_time_24)
+                entryAddVelocityData.setImageResource(R.drawable.baseline_more_time_black_24dp)
             }
             if ((entity.garminData == null || entity.garminData?.activityId == null) && !entity.hasGpsTrack()) {
                 entryAddVelocityData.visibility = View.GONE
@@ -137,6 +137,7 @@ class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
 
         private fun ItemContactsBinding.addImage(item: Summit) {
             if (item.hasImagePath()) {
+                sportTypeImage.setImageResource(item.sportType.imageIdWhite)
                 cardViewText.setBackgroundResource(R.color.translucent)
                 summitName.setTextColor(Color.WHITE)
                 cardViewImage.visibility = View.VISIBLE
@@ -148,22 +149,35 @@ class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
                     .into(cardViewImage)
             } else {
                 cardViewText.setBackgroundColor(Color.TRANSPARENT)
-                summitName.setTextColor(Color.BLACK)
+                when (context.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+                    Configuration.UI_MODE_NIGHT_YES -> {
+                        sportTypeImage.setImageResource(item.sportType.imageIdWhite)
+                        summitName.setTextColor(Color.WHITE)
+                    }
+                    Configuration.UI_MODE_NIGHT_NO -> {
+                        sportTypeImage.setImageResource(item.sportType.imageIdBlack)
+                        summitName.setTextColor(Color.BLACK)
+                    }
+                    Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                        sportTypeImage.setImageResource(item.sportType.imageIdWhite)
+                        summitName.setTextColor(Color.GRAY)
+                    }
+                }
                 cardViewImage.visibility = View.GONE
             }
         }
 
         private fun setFavoriteImage(summit: Summit, button: ImageButton) {
             if (summit.isFavorite) {
-                button.setImageResource(R.drawable.ic_star_black_24dp)
+                button.setImageResource(R.drawable.baseline_star_black_24dp)
             } else {
-                button.setImageResource(R.drawable.ic_star_border_black_24dp)
+                button.setImageResource(R.drawable.baseline_star_border_black_24dp)
             }
             button.setOnClickListener {
                 if (summit.isFavorite) {
-                    button.setImageResource(R.drawable.ic_star_border_black_24dp)
+                    button.setImageResource(R.drawable.baseline_star_border_black_24dp)
                 } else {
-                    button.setImageResource(R.drawable.ic_star_black_24dp)
+                    button.setImageResource(R.drawable.baseline_star_black_24dp)
                 }
                 summit.isFavorite = !summit.isFavorite
                 viewModel?.saveContact(true, summit)
@@ -246,9 +260,9 @@ class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
     companion object {
         fun setIconForPositionButton(addPosition: ImageButton?, entry: Summit?) {
             if (entry?.latLng == null) {
-                addPosition?.setImageResource(R.drawable.ic_add_location_black_24dp)
+                addPosition?.setImageResource(R.drawable.baseline_add_location_black_24dp)
             } else {
-                addPosition?.setImageResource(R.drawable.ic_edit_location_black_24dp)
+                addPosition?.setImageResource(R.drawable.baseline_edit_location_black_24dp)
             }
         }
     }
