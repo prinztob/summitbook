@@ -65,8 +65,9 @@ class StatisticsFragment : Fragment() {
 
     fun update() {
         binding.apply {
-            viewModel.summitsList.observe(requireActivity()) { itData ->
+            viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
                 itData.data?.let { summits ->
+                    val filteredSummits = sortFilterValues.apply(summits)
                     val sharedPreferences =
                         PreferenceManager.getDefaultSharedPreferences(requireContext())
                     val annualTargetActivity =
@@ -78,7 +79,7 @@ class StatisticsFragment : Fragment() {
                     indoorHeightMeterPercent =
                         sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0
                     statisticEntry = StatisticEntry(
-                        summits,
+                        filteredSummits,
                         annualTargetActivity,
                         annualTargetKm,
                         annualTargetHm,

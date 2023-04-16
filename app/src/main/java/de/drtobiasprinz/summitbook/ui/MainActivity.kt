@@ -23,8 +23,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -146,7 +145,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             viewModel.summitsList.observe(this@MainActivity) { itData ->
                 itData.data?.let { summits ->
-                    setOverviewText(summits)
+                    setOverviewText(sortFilterValues.apply(summits))
                 }
             }
         }
@@ -170,9 +169,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             peaks.sumOf { it.elevationData.elevationGain }.toString()
         )
     }
-
+    fun <T> MutableLiveData<T>.forceRefresh() {
+        this.value = this.value
+    }
     private fun filter() {
         val sortAndFilterFragment = SortAndFilterFragment()
+        sortAndFilterFragment.apply = {
+            viewModel.refresh()
+        }
         sortAndFilterFragment.show(
             supportFragmentManager, SortAndFilterFragment().tag
         )
@@ -209,7 +213,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
     companion object {
-        private const val REQUEST_EXTERNAL_STORAGE = 1
         private const val KEY_IS_DIALOG_SHOWN = "IS_DIALOG_SHOWN"
         private const val KEY_CURRENT_POSITION = "CURRENT_POSITION"
         var CSV_FILE_NAME_SUMMITS: String = "de-prinz-summitbook-export.csv"
@@ -577,7 +580,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onSharedPreferenceChanged(preferences: SharedPreferences?, key: String?) {
         if (key == "current_year_switch") {
             sortFilterValues.setInitialValues(database, sharedPreferences)
-            summitViewFragment.contactsAdapter.viewModel?.getSortedAndFilteredSummits(sortFilterValues)
+            viewModel.refresh()
         }
     }
 }

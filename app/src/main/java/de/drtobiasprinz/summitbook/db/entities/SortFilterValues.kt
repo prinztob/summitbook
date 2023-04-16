@@ -18,10 +18,14 @@ class SortFilterValues(
     var selectedDateSpinnerDefault: Int = 0,
 
     var sportType: SportType? = null,
+    var participants: List<String> = emptyList(),
 
-    var kilometersSlider: RangeSliderValues = RangeSliderValues("kilometers"),
-    var topElevationSlider: RangeSliderValues = RangeSliderValues("maxElevation"),
-    var elevationGainSlider: RangeSliderValues = RangeSliderValues("elevationGain"),
+    var kilometersSlider: RangeSliderValues = RangeSliderValues("kilometers",
+        { e -> e.kilometers.toFloat() }),
+    var topElevationSlider: RangeSliderValues = RangeSliderValues("maxElevation",
+        { e -> e.elevationData.maxElevation.toFloat() }),
+    var elevationGainSlider: RangeSliderValues = RangeSliderValues("elevationGain",
+        { e -> e.elevationData.maxElevation.toFloat() }),
 
     var peakFavoriteButtonGroup: PeakFavoriteButtonGroup = PeakFavoriteButtonGroup.Indifferent,
     var hasPositionButtonGroup: HasPositionButtonGroup = HasPositionButtonGroup.Indifferent,
@@ -89,6 +93,37 @@ class SortFilterValues(
         return selectedDateSpinner >= 2
     }
 
+    fun apply(summits: List<Summit>): List<Summit> {
+        val filteredSummits = summits.filter {
+            filterDate(it) &&
+                    filterParticipants(it) &&
+                    (sportType == null || sportType == it.sportType) &&
+                    kilometersSlider.filter(it) &&
+                    elevationGainSlider.filter(it) &&
+                    topElevationSlider.filter(it) &&
+                    peakFavoriteButtonGroup.filter(it) &&
+                    hasImageButtonGroup.filter(it) &&
+                    hasGpxTrackButtonGroup.filter(it) &&
+                    hasPositionButtonGroup.filter(it)
+        }
+        orderByValueButtonGroup.sort(filteredSummits, orderByAscDescButtonGroup)
+        return filteredSummits
+    }
+
+    private fun filterDate(summit: Summit): Boolean {
+        val date1 = startDate
+        val date2 = endDate
+        return if (date1 != null && date2 != null) {
+            summit.date.time in date1.time..date2.time
+        } else {
+            true
+        }
+    }
+
+    private fun filterParticipants(summit: Summit): Boolean {
+        return summit.participants.containsAll(participants)
+    }
+
     fun getSqlQuery(): String {
         var query = "SELECT *  FROM ${Constants.SUMMITS_TABLE} WHERE isBookmark = 0"
         query += addSportTypeFilter(sportType)
@@ -133,9 +168,12 @@ class SortFilterValues(
         setDates()
         selectedDateSpinner = selectedDateSpinnerDefault
         sportType = null
-        kilometersSlider = RangeSliderValues("kilometers")
-        topElevationSlider = RangeSliderValues("maxElevation")
-        elevationGainSlider = RangeSliderValues("elevationGain")
+        kilometersSlider = RangeSliderValues("kilometers",
+            { e -> e.kilometers.toFloat() })
+        topElevationSlider = RangeSliderValues("maxElevation",
+            { e -> e.elevationData.elevationGain.toFloat() })
+        elevationGainSlider = RangeSliderValues("elevationGain",
+            { e -> e.elevationData.maxElevation.toFloat() })
 
         peakFavoriteButtonGroup = PeakFavoriteButtonGroup.Indifferent
         hasPositionButtonGroup = HasPositionButtonGroup.Indifferent
@@ -149,67 +187,112 @@ class SortFilterValues(
 
 class RangeSliderValues(
     var dbColumnName: String,
+    var getValue: (Summit) -> Float,
     var totalMin: Float = 0f,
     var selectedMin: Float = 0f,
     var selectedMax: Float = 0f,
     var totalMax: Float = 0f
-)
+) {
+    fun filter(summit: Summit): Boolean {
+        return if (selectedMin in (totalMin + 0.001f)..(totalMax - 0.001f) || selectedMax in (totalMin + 0.001f)..(totalMax - 0.001f)) {
+            getValue(summit) in selectedMin..selectedMax
+        } else {
+            true
+        }
+    }
+}
 
 enum class OrderByAscDescButtonGroup(
     val query: String, val bindingId: (FragmentSortAndFilterBinding) -> Int
 ) {
-    Ascending("ASC", { e -> e.buttonAscending.id }), Descending(
-        "DESC",
-        { e -> e.buttonDescending.id }),
+    Ascending("ASC", { e -> e.buttonAscending.id }),
+    Descending("DESC", { e -> e.buttonDescending.id }),
 }
 
 enum class OrderByValueButtonGroup(
-    val query: String, val bindingId: (FragmentSortAndFilterBinding) -> Int
+    val query: String,
+    val bindingId: (FragmentSortAndFilterBinding) -> Int,
+    val sort: (List<Summit>, OrderByAscDescButtonGroup) -> Unit
 ) {
-    Date("date", { e -> e.buttonByDate.id }), Name("name", { e -> e.buttonByName.id }), HeightMeter(
-        "elevationGain",
-        { e -> e.buttonByHeightMeter.id }),
-    Kilometer("kilometer", { e -> e.buttonByKilometers.id }), TopElevation(
-        "maxElevation",
-        { e -> e.buttonByElevation.id })
+    Date("date", { e -> e.buttonByDate.id }, { e, order ->
+        if (order == OrderByAscDescButtonGroup.Descending) {
+            e.sortedByDescending { it.date.time }
+        } else {
+            e.sortedBy { it.date.time }
+        }
+    }),
+    Name("name", { e -> e.buttonByName.id }, { e, order ->
+        if (order == OrderByAscDescButtonGroup.Descending) {
+            e.sortedByDescending { it.name }
+        } else {
+            e.sortedBy { it.name }
+        }
+    }),
+    HeightMeter("elevationGain", { e -> e.buttonByHeightMeter.id }, { e, order ->
+        if (order == OrderByAscDescButtonGroup.Descending) {
+            e.sortedByDescending { it.elevationData.elevationGain }
+        } else {
+            e.sortedBy { it.elevationData.elevationGain }
+        }
+    }),
+    Kilometer("kilometer", { e -> e.buttonByKilometers.id }, { e, order ->
+        if (order == OrderByAscDescButtonGroup.Descending) {
+            e.sortedByDescending { it.kilometers }
+        } else {
+            e.sortedBy { it.kilometers }
+        }
+    }),
+    TopElevation("maxElevation", { e -> e.buttonByElevation.id }, { e, order ->
+        if (order == OrderByAscDescButtonGroup.Descending) {
+            e.sortedByDescending { it.elevationData.maxElevation }
+        } else {
+            e.sortedBy { it.elevationData.maxElevation }
+        }
+    })
 }
 
 enum class HasGpxTrackButtonGroup(
-    val query: String, val bindingId: (FragmentSortAndFilterBinding) -> Int
+    val query: String,
+    val bindingId: (FragmentSortAndFilterBinding) -> Int,
+    val filter: (Summit) -> Boolean
 ) {
-    Yes(" AND (hasTrack = 1)", { e -> e.buttonGpxYes.id }), No(
-        " AND (hasTrack = 0)",
-        { e -> e.buttonGpxNo.id }),
-    Indifferent("", { e -> e.buttonGpxAll.id })
+    Yes(" AND (hasTrack = 1)", { e -> e.buttonGpxYes.id }, { e -> e.hasTrack }),
+    No(" AND (hasTrack = 0)", { e -> e.buttonGpxNo.id }, { e -> !e.hasTrack }),
+    Indifferent("", { e -> e.buttonGpxAll.id }, { e -> true })
 }
 
 enum class HasPositionButtonGroup(
-    val query: String, val bindingId: (FragmentSortAndFilterBinding) -> Int
+    val query: String,
+    val bindingId: (FragmentSortAndFilterBinding) -> Int,
+    val filter: (Summit) -> Boolean
 ) {
     Yes(
         " AND (lat IS NOT NULL) AND (lng IS NOT NULL)",
-        { e -> e.buttonPositionYes.id }),
-    No(" AND (lat IS NULL) AND (lng IS NULL)", { e -> e.buttonPositionNo.id }), Indifferent(
-        "",
-        { e -> e.buttonPositionAll.id })
+        { e -> e.buttonPositionYes.id },
+        { e -> e.lat != null && e.lng != null }),
+    No(
+        " AND (lat IS NULL) AND (lng IS NULL)",
+        { e -> e.buttonPositionNo.id },
+        { e -> e.lat == null && e.lng == null }),
+    Indifferent("", { e -> e.buttonPositionAll.id }, { e -> true })
 }
 
 enum class HasImageButtonGroup(
-    val query: String, val bindingId: (FragmentSortAndFilterBinding) -> Int
+    val query: String,
+    val bindingId: (FragmentSortAndFilterBinding) -> Int,
+    val filter: (Summit) -> Boolean
 ) {
-    Yes(" AND (imageIds != '')", { e -> e.buttonImageYes.id }), No(
-        " AND (imageIds = '')",
-        { e -> e.buttonImageNo.id }),
-    Indifferent("", { e -> e.buttonImageAll.id })
+    Yes(" AND (imageIds != '')", { e -> e.buttonImageYes.id }, { e -> e.imageIds.isNotEmpty() }),
+    No(" AND (imageIds = '')", { e -> e.buttonImageNo.id }, { e -> e.imageIds.isEmpty() }),
+    Indifferent("", { e -> e.buttonImageAll.id }, { e -> true })
 }
 
 enum class PeakFavoriteButtonGroup(
-    val query: String, val bindingId: (FragmentSortAndFilterBinding) -> Int
+    val query: String,
+    val bindingId: (FragmentSortAndFilterBinding) -> Int,
+    val filter: (Summit) -> Boolean
 ) {
-    IsFavorite(
-        " AND (isFavorite = 1)",
-        { e -> e.buttonMarkedFavorite.id }),
-    IsPeak(" AND (isPeak = 1)", { e -> e.buttonMarkedSummit.id }), Indifferent(
-        "",
-        { e -> e.buttonMarkedAll.id })
+    IsFavorite(" AND (isFavorite = 1)", { e -> e.buttonMarkedFavorite.id }, { e -> e.isFavorite }),
+    IsPeak(" AND (isPeak = 1)", { e -> e.buttonMarkedSummit.id }, { e -> e.isPeak }),
+    Indifferent("", { e -> e.buttonMarkedAll.id }, { e -> true })
 }

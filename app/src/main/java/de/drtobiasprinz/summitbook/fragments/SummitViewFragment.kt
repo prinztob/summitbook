@@ -22,6 +22,7 @@ import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitViewBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.entriesToExcludeForBoundingBoxCalculation
@@ -61,6 +62,20 @@ class SummitViewFragment : Fragment() {
         return binding.root
     }
 
+    private fun adapterOnClickUpdateIsFavorite(summit: Summit) {
+        summit.isFavorite = !summit.isFavorite
+        viewModel?.saveContact(true, summit)
+    }
+
+    private fun adapterOnClickUpdateIsPeak(summit: Summit) {
+        summit.isPeak = !summit.isPeak
+        viewModel?.saveContact(true, summit)
+    }
+
+    private fun adapterOnClickDelete(summit: Summit) {
+        viewModel?.deleteContact(summit)
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.apply {
@@ -73,10 +88,12 @@ class SummitViewFragment : Fragment() {
                 )
             }
             rvContacts.apply {
-                layoutManager = LinearLayoutManager(view.context)
+                layoutManager = LinearLayoutManager(requireContext())
                 adapter = contactsAdapter
+                contactsAdapter.onClickDelete = { e -> adapterOnClickDelete(e) }
+                contactsAdapter.onClickUpdateIsFavorite = { e -> adapterOnClickUpdateIsFavorite(e) }
+                contactsAdapter.onClickUpdateIsPeak = { e -> adapterOnClickUpdateIsPeak(e) }
             }
-            contactsAdapter.viewModel = viewModel
             if (showBookmarksOnly) {
                 viewModel?.getAllBookmarks()
                 viewModel?.bookmarksList?.observe(viewLifecycleOwner) {
@@ -95,8 +112,8 @@ class SummitViewFragment : Fragment() {
                             Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
                         }
                     }
-                }            } else {
-                viewModel?.getSortedAndFilteredSummits(sortFilterValues)
+                }
+            } else {
                 viewModel?.summitsList?.observe(viewLifecycleOwner) {
                     when (it.status) {
                         DataStatus.Status.LOADING -> {
@@ -106,7 +123,8 @@ class SummitViewFragment : Fragment() {
                         DataStatus.Status.SUCCESS -> {
                             it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
                             loading.isVisible(false, rvContacts)
-                            contactsAdapter.differ.submitList(it.data)
+                            val data = sortFilterValues.apply(it.data ?: emptyList())
+                            contactsAdapter.differ.submitList(data)
                             if (!startedScheduler) {
                                 addScheduler()
                                 startedScheduler = true

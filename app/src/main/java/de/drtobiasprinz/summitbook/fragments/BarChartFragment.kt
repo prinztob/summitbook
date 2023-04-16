@@ -28,7 +28,6 @@ import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentBarChartBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Forecast
@@ -51,8 +50,7 @@ class BarChartFragment : Fragment() {
 
     private lateinit var binding: FragmentBarChartBinding
     private val viewModel: DatabaseViewModel by activityViewModels()
-    @Inject
-    lateinit var contactsAdapter: ContactsAdapter
+
     @Inject
     lateinit var sortFilterValues: SortFilterValues
 
@@ -191,9 +189,10 @@ class BarChartFragment : Fragment() {
 
     fun update() {
         binding.apply {
-            viewModel.summitsList.observe(requireActivity()) { itData ->
+            viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
                 itData.data?.let { summits ->
-                    intervalHelper = IntervalHelper(summits)
+                    val filteredSummits = sortFilterValues.apply(summits)
+                    intervalHelper = IntervalHelper(filteredSummits)
                     val barChartCustomRenderer = BarChartCustomRenderer(
                         binding.barChart,
                         binding.barChart.animator,
@@ -202,8 +201,8 @@ class BarChartFragment : Fragment() {
                     binding.barChart.renderer = barChartCustomRenderer
                     binding.barChart.setDrawValueAboveBar(false)
                     resizeChart()
-                    listenOnDataSpinner(summits)
-                    selectedDataSpinner(summits)
+                    listenOnDataSpinner(filteredSummits)
+                    selectedDataSpinner(filteredSummits)
                     drawChart()
                 }
             }

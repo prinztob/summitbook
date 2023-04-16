@@ -39,6 +39,7 @@ class AddImagesActivity : AppCompatActivity() {
 
     @Inject
     lateinit var contactsAdapter: ContactsAdapter
+    private val viewModel: DatabaseViewModel by viewModels()
 
     private var database: AppDatabase? = null
     private var summitEntry: Summit? = null
@@ -81,7 +82,7 @@ class AddImagesActivity : AppCompatActivity() {
                 id = addImage(localSummit, imageId, layout, id, position)
             }
         }
-        addAdditionalImage(id, layout, localSummit)
+        addAdditionalImage(id, layout)
     }
 
     private fun addImage(
@@ -193,7 +194,7 @@ class AddImagesActivity : AppCompatActivity() {
         return localSummitImage.id
     }
 
-    private fun addAdditionalImage(id: Int, layout: RelativeLayout, localSummit: Summit) {
+    private fun addAdditionalImage(id: Int, layout: RelativeLayout) {
         val localSummitImage = PhotoView(this)
         localSummitImage.visibility = View.VISIBLE
         val lp = RelativeLayout.LayoutParams(
@@ -280,7 +281,7 @@ class AddImagesActivity : AppCompatActivity() {
         }
 
     private fun updateAdapterAndDatabase(localSummit: Summit) {
-        contactsAdapter.viewModel?.saveContact(true, localSummit)
+        viewModel.saveContact(true, localSummit)
     }
 
     private fun getLayoutParams(

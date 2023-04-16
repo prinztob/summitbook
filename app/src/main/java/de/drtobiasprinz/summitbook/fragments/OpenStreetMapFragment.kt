@@ -13,8 +13,8 @@ import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentOpenStreetMapBinding
+import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
@@ -41,7 +41,8 @@ import javax.inject.Inject
 class OpenStreetMapFragment : Fragment() {
 
     @Inject
-    lateinit var contactsAdapter: ContactsAdapter
+    lateinit var sortFilterValues: SortFilterValues
+
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var binding: FragmentOpenStreetMapBinding
     private val viewModel: DatabaseViewModel by activityViewModels()
@@ -89,10 +90,11 @@ class OpenStreetMapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.apply {
-            viewModel.summitsList.observe(requireActivity()) { itData ->
+            viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
                 itData.data?.let { summits ->
+                    val filteredSummits = sortFilterValues.apply(summits)
                     setTileSource(selectedItem, binding.osmap)
-                    addOverlays(summits)
+                    addOverlays(filteredSummits)
                     val context: Context? = this@OpenStreetMapFragment.activity
                     val mLocationOverlay =
                         MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)

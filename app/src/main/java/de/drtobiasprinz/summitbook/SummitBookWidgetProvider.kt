@@ -73,7 +73,7 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
                 )
                 val configIntent = Intent(context, MainActivity::class.java)
                 val pIntent = PendingIntent.getActivity(
-                    context, 0, configIntent, FLAG_UPDATE_CURRENT
+                    context, 0, configIntent, FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 remoteViews.setOnClickPendingIntent(R.id.widget, pIntent)
 

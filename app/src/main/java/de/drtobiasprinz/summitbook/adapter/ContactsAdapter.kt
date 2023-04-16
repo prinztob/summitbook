@@ -28,15 +28,17 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.utils.Constants
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import javax.inject.Singleton
 
 
 @Singleton
-class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
+class ContactsAdapter() :
+    RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
 
-    var viewModel: DatabaseViewModel? = null
     lateinit var context: Context
+    var onClickUpdateIsFavorite: (Summit) -> Unit = { e -> }
+    var onClickUpdateIsPeak: (Summit) -> Unit = { e -> }
+    var onClickDelete: (Summit) -> Unit = { e -> }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         context = parent.context
@@ -179,8 +181,7 @@ class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
                 } else {
                     button.setImageResource(R.drawable.baseline_star_black_24dp)
                 }
-                summit.isFavorite = !summit.isFavorite
-                viewModel?.saveContact(true, summit)
+                onClickUpdateIsFavorite(summit)
             }
         }
 
@@ -196,9 +197,7 @@ class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
                 } else {
                     button.setImageResource(R.drawable.icons8_mountain_24)
                 }
-                summit.isPeak = !summit.isPeak
-
-                viewModel?.saveContact(true, summit)
+                onClickUpdateIsPeak(summit)
             }
         }
 
@@ -227,7 +226,7 @@ class ContactsAdapter() : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
         }
 
         private fun deleteEntry(entry: Summit, v: View) {
-            viewModel?.deleteContact(entry)
+            onClickDelete(entry)
             if (entry.hasGpsTrack()) {
                 entry.getGpsTrackPath().toFile()?.delete()
             }

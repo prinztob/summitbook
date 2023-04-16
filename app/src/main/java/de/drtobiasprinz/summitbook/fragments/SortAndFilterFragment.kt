@@ -11,10 +11,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.core.content.ContextCompat
+import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import androidx.sqlite.db.SimpleSQLiteQuery
+import com.google.android.material.chip.Chip
 import com.google.android.material.slider.RangeSlider
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
@@ -26,7 +27,6 @@ import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.utils.Constants
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -44,7 +44,7 @@ class SortAndFilterFragment : DialogFragment() {
     lateinit var database: AppDatabase
     lateinit var entries: List<Summit>
 
-    val viewModel: DatabaseViewModel by activityViewModels()
+    var apply: () -> Unit = { }
 
     private lateinit var binding: FragmentSortAndFilterBinding
 
@@ -58,7 +58,6 @@ class SortAndFilterFragment : DialogFragment() {
         binding = FragmentSortAndFilterBinding.inflate(layoutInflater, container, false)
         database = DatabaseModule.provideDatabase(requireContext())
         dialog!!.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        sortFilterValues.setInitialValues(database, PreferenceManager.getDefaultSharedPreferences(requireContext()))
         return binding.root
     }
 
@@ -69,12 +68,13 @@ class SortAndFilterFragment : DialogFragment() {
             dismiss()
         }
         binding.apply.setOnClickListener {
-            viewModel.getSortedAndFilteredSummits(sortFilterValues)
+            sortFilterValues.participants = binding.chipGroupParticipants.children.toList().map { (it as Chip).text.toString() }
+            apply()
             dismiss()
         }
         binding.setToDefault.setOnClickListener {
             sortFilterValues.setToDefault()
-            viewModel.getSortedAndFilteredSummits(sortFilterValues)
+            apply()
             dismiss()
         }
         setExtremeValues()
@@ -239,7 +239,7 @@ class SortAndFilterFragment : DialogFragment() {
         val position = if (sortFilterValues.sportType == null) {
             0
         } else {
-            SportType.values().indexOfFirst { it == sortFilterValues.sportType }
+            SportType.values().indexOfFirst { it == sortFilterValues.sportType } + 1
         }
         binding.spinnerSportsType.setSelection(position)
         binding.spinnerSportsType.onItemSelectedListener =
@@ -267,7 +267,7 @@ class SortAndFilterFragment : DialogFragment() {
             ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions)
         CustomAutoCompleteChips(requireView()).addChips(
             adapter,
-            emptyList(),
+            sortFilterValues.participants,
             binding.autoCompleteTextViewParticipants,
             binding.chipGroupParticipants
         )

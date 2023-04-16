@@ -18,7 +18,7 @@ import javax.inject.Inject
 class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepository) :
     ViewModel() {
 
-    private val _summitsList = MutableLiveData<DataStatus<List<Summit>>>()
+    private var _summitsList = MutableLiveData<DataStatus<List<Summit>>>()
     val summitsList: LiveData<DataStatus<List<Summit>>>
         get() = _summitsList
 
@@ -30,11 +30,19 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val contactDetails: LiveData<DataStatus<Summit>>
         get() = _contactDetails
 
+    init {
+        getAllSummits()
+    }
+
+    fun refresh() {
+        _summitsList.value = _summitsList.value
+    }
+
     fun saveContact(isEdite: Boolean, entity: Summit) = viewModelScope.launch {
         if (isEdite) {
             repository.updateTask(entity)
         } else {
-            entity.id = repository.saveContact(entity)
+            repository.saveContact(entity)
         }
     }
 
@@ -42,7 +50,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         repository.deleteContact(entity)
     }
 
-    fun getAllSummits() = viewModelScope.launch {
+    private fun getAllSummits() = viewModelScope.launch {
         _summitsList.postValue(DataStatus.loading())
         repository.getAllSummits()
             .catch { _summitsList.postValue(DataStatus.error(it.message.toString())) }
@@ -54,13 +62,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         repository.getAllBookmarks()
             .catch { _bookmarksList.postValue(DataStatus.error(it.message.toString())) }
             .collect { _bookmarksList.postValue(DataStatus.success(it, it.isEmpty())) }
-    }
-
-    fun getSortedAndFilteredSummits(sortFilterValues: SortFilterValues) = viewModelScope.launch {
-        _summitsList.postValue(DataStatus.loading())
-        repository.getSortedAndFilteredSummits(SimpleSQLiteQuery(sortFilterValues.getSqlQuery()))
-            .catch { _summitsList.postValue(DataStatus.error(it.message.toString())) }
-            .collect { _summitsList.postValue(DataStatus.success(it, it.isEmpty())) }
     }
 
     fun getSearchContacts(name: String) = viewModelScope.launch {

@@ -23,9 +23,9 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentLineChartBinding
 import de.drtobiasprinz.summitbook.db.entities.LineChartSpinnerEntry
+import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerLineChart
@@ -38,7 +38,7 @@ import javax.inject.Inject
 class LineChartFragment : Fragment() {
 
     @Inject
-    lateinit var contactsAdapter: ContactsAdapter
+    lateinit var sortFilterValues: SortFilterValues
 
     private lateinit var binding: FragmentLineChartBinding
     private val viewModel: DatabaseViewModel by activityViewModels()
@@ -55,11 +55,12 @@ class LineChartFragment : Fragment() {
         binding = FragmentLineChartBinding.inflate(layoutInflater, container, false)
         fillDateSpinner()
         binding.apply {
-            viewModel.summitsList.observe(requireActivity()) { itData ->
+            viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
                 itData.data?.let { summits ->
+                    val filteredSummits = sortFilterValues.apply(summits)
                     resizeChart()
-                    listenOnDataSpinner(summits)
-                    drawLineChart(summits)
+                    listenOnDataSpinner(filteredSummits)
+                    drawLineChart(filteredSummits)
                 }
             }
         }
