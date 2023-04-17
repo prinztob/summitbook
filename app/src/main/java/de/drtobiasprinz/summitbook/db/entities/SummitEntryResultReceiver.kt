@@ -1,6 +1,8 @@
 package de.drtobiasprinz.summitbook.db.entities
 
+import androidx.lifecycle.LiveData
 import androidx.viewpager2.widget.ViewPager2
+import de.drtobiasprinz.summitbook.utils.DataStatus
 
 interface SummitEntryResultReceiver {
 
@@ -10,9 +12,7 @@ interface SummitEntryResultReceiver {
 
     fun setSelectedSummitForComparison(summit: Summit?)
 
-    fun getSummitsForComparison(): List<Summit>
-
-    fun getAllSummits(): List<Summit>
+    fun getAllSummits(): LiveData<DataStatus<List<Summit>>>
 
     fun getViewPager(): ViewPager2
 

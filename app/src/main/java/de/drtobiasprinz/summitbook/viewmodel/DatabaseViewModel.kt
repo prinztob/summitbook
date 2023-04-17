@@ -4,9 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.sqlite.db.SimpleSQLiteQuery
 import dagger.hilt.android.lifecycle.HiltViewModel
-import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.utils.DataStatus

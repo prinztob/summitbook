@@ -214,7 +214,9 @@
             <Button
                 android:id="@+id/button_by_date"
                 style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="wrap_content"
+                android:layout_width="60dp"
+                android:insetRight="-15dp"
+                android:insetLeft="-15dp"
                 android:layout_height="wrap_content"
                 android:breakStrategy="balanced"
                 android:text="@string/by_date"
@@ -223,7 +225,9 @@
             <Button
                 android:id="@+id/button_by_name"
                 style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="wrap_content"
+                android:layout_width="60dp"
+                android:insetRight="-15dp"
+                android:insetLeft="-15dp"
                 android:layout_height="wrap_content"
                 android:text="@string/by_name"
                 android:textSize="11sp" />
@@ -231,7 +235,9 @@
             <Button
                 android:id="@+id/button_by_elevation"
                 style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="wrap_content"
+                android:layout_width="60dp"
+                android:insetRight="-15dp"
+                android:insetLeft="-15dp"
                 android:layout_height="wrap_content"
                 android:text="@string/by_elevation"
                 android:textSize="11sp" />
@@ -239,7 +245,9 @@
             <Button
                 android:id="@+id/button_by_height_meter"
                 style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="wrap_content"
+                android:layout_width="60dp"
+                android:insetRight="-15dp"
+                android:insetLeft="-15dp"
                 android:layout_height="wrap_content"
                 android:text="@string/by_height_meter"
                 android:textSize="11sp" />
@@ -247,7 +255,9 @@
             <Button
                 android:id="@+id/button_by_kilometers"
                 style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="wrap_content"
+                android:layout_width="60dp"
+                android:insetRight="-15dp"
+                android:insetLeft="-15dp"
                 android:layout_height="wrap_content"
                 android:text="@string/by_km"
                 android:textSize="11sp" />

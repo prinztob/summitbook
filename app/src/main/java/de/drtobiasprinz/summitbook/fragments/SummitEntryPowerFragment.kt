@@ -23,15 +23,12 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.utils.MPPointF
-import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryPowerBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.PowerData
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.SummitEntryResultReceiver
-import de.drtobiasprinz.summitbook.di.DatabaseModule
-import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
@@ -66,7 +63,14 @@ class SummitEntryPowerFragment : Fragment() {
 
         summitEntry = resultReceiver.getSummit()
         summitToCompare = resultReceiver.getSelectedSummitForComparison()
-        summitsToCompare = resultReceiver.getSummitsForComparison()
+        resultReceiver.getAllSummits().observe(viewLifecycleOwner) {
+            summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(it, summitEntry, onlyWithPowerData = true)
+            if (summitEntry.isBookmark) {
+                binding.summitNameToCompare.visibility = View.GONE
+            } else {
+                prepareCompareAutoComplete()
+            }
+        }
         metrics = DisplayMetrics()
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             val display = activity?.display
@@ -90,29 +94,26 @@ class SummitEntryPowerFragment : Fragment() {
         timeRangeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerTimeRange.adapter = timeRangeAdapter
 
-        if (summitEntry.isBookmark) {
-            binding.summitNameToCompare.visibility = View.GONE
-        } else {
-            prepareCompareAutoComplete()
-        }
+
 
         binding.summitName.text = summitEntry.name
         binding.sportTypeImage.setImageResource(summitEntry.sportType.imageIdBlack)
         drawChart()
 
-        binding.spinnerTimeRange.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                adapterView: AdapterView<*>?,
-                view: View?,
-                i: Int,
-                l: Long
-            ) {
-                selectedTimeRangeSpinner = i
-                drawChart()
-            }
+        binding.spinnerTimeRange.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    adapterView: AdapterView<*>?,
+                    view: View?,
+                    i: Int,
+                    l: Long
+                ) {
+                    selectedTimeRangeSpinner = i
+                    drawChart()
+                }
 
-            override fun onNothingSelected(adapterView: AdapterView<*>?) {}
-        }
+                override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+            }
         return binding.root
     }
 
@@ -169,12 +170,11 @@ class SummitEntryPowerFragment : Fragment() {
 
     private fun getSummitsSuggestions(localSummit: Summit): List<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
-        val summitsToCompareFromActivity = resultReceiver.getSummitsForComparison()
         val summitsWithoutSimilarName =
-            summitsToCompareFromActivity.filter { it.name != localSummit.name && it.garminData?.power?.hasPowerData() == true }
+            summitsToCompare.filter { it.name != localSummit.name && it.garminData?.power?.hasPowerData() == true }
                 .sortedByDescending { it.date }
         val summitsWithSimilarName =
-            summitsToCompareFromActivity.filter { it.name == localSummit.name && it != localSummit }
+            summitsToCompare.filter { it.name == localSummit.name && it != localSummit }
                 .sortedByDescending { it.date }
         summitsToCompare = summitsWithSimilarName + summitsWithoutSimilarName
         summitsToCompare.forEach {
@@ -212,8 +212,8 @@ class SummitEntryPowerFragment : Fragment() {
                 dataSets.add(dataSetComparator)
             }
             val summits = resultReceiver.getAllSummits()
-            if (summits.isNotEmpty()) {
-                val filteredSummits = getFilteredSummits(summits)
+            summits.observe(viewLifecycleOwner) {
+                val filteredSummits = it.data?.let { it1 -> getFilteredSummits(it1) } ?: emptyList()
                 extremaValuesAllSummits =
                     ExtremaValuesSummits(filteredSummits, excludeZeroValueFromMin = true)
                 val extremalChartEntries = getLineChartEntriesMax(extremaValuesAllSummits)
@@ -226,7 +226,6 @@ class SummitEntryPowerFragment : Fragment() {
                         getString(R.string.power_profile_min_label)
                     )
                 )
-
                 binding.lineChart.renderer = MyLineLegendRenderer(
                     binding.lineChart,
                     binding.lineChart.animator,
@@ -256,7 +255,8 @@ class SummitEntryPowerFragment : Fragment() {
             dataSets.add(dataSet)
 
             binding.lineChart.setTouchEnabled(true)
-            binding.lineChart.marker = PowerMarkerView(requireContext(), R.layout.marker_power_graph)
+            binding.lineChart.marker =
+                PowerMarkerView(requireContext(), R.layout.marker_power_graph)
             binding.lineChart.data = LineData(dataSets)
         }
     }
@@ -266,11 +266,15 @@ class SummitEntryPowerFragment : Fragment() {
         if (selectedTimeRangeSpinner != 0) {
             filtered = summits.filter { summit ->
                 val diff = Date().time - summit.date.time
-                when (selectedTimeRangeSpinner) {
-                    1 -> summit.date.year == Date().year
-                    2 -> diff < 3 * 30 * 24 * 3600000L
-                    3 -> diff < 12 * 30 * 24 * 3600000L
-                    else -> true
+                if (summit == summitEntry) {
+                    false
+                } else {
+                    when (selectedTimeRangeSpinner) {
+                        1 -> summit.date.year == Date().year
+                        2 -> diff < 3 * 30 * 24 * 3600000L
+                        3 -> diff < 12 * 30 * 24 * 3600000L
+                        else -> true
+                    }
                 }
             }
         }

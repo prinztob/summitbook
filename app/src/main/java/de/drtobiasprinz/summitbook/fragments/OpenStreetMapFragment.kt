@@ -15,6 +15,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentOpenStreetMapBinding
 import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
@@ -93,6 +94,7 @@ class OpenStreetMapFragment : Fragment() {
             viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
                 itData.data?.let { summits ->
                     val filteredSummits = sortFilterValues.apply(summits)
+                        .filter { it.sportType != SportType.IndoorTrainer && it.lat != null && it.lat != 0.0 && it.lng != null && it.lng != 0.0 }
                     setTileSource(selectedItem, binding.osmap)
                     addOverlays(filteredSummits)
                     val context: Context? = this@OpenStreetMapFragment.activity
@@ -198,7 +200,10 @@ class OpenStreetMapFragment : Fragment() {
         val context = requireContext()
         binding.osmap.overlays?.clear()
         val markers = RadiusMarkerClusterer(context)
-        val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(context, org.osmdroid.bonuspack.R.drawable.marker_cluster)
+        val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(
+            context,
+            org.osmdroid.bonuspack.R.drawable.marker_cluster
+        )
         markers.setIcon(clusterIcon)
         markers.setMaxClusteringZoomLevel(10)
         binding.osmap.overlays.add(markers)

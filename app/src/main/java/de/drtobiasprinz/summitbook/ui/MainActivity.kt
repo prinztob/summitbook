@@ -169,9 +169,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             peaks.sumOf { it.elevationData.elevationGain }.toString()
         )
     }
+
     fun <T> MutableLiveData<T>.forceRefresh() {
         this.value = this.value
     }
+
     private fun filter() {
         val sortAndFilterFragment = SortAndFilterFragment()
         sortAndFilterFragment.apply = {
@@ -297,7 +299,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     String.format(
                         "%s_summitbook_backup_ALL.zip",
                         LocalDate.now()
-                    ))
+                    )
+                )
             }
             .setNegativeButton(
                 android.R.string.cancel
@@ -336,24 +339,26 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     sharedPreferences.getBoolean("export_calculated_data", true)
                 val segments = DatabaseModule.provideDatabase(this).segmentsDao()?.getAllSegments()
                 val forecasts = DatabaseModule.provideDatabase(this).forecastDao()?.allForecasts
-                viewModel.summitsList.observe(this, object: androidx.lifecycle.Observer<DataStatus<List<Summit>>> {
-                    override fun onChanged(t: DataStatus<List<Summit>>?) {
-                        viewModel.summitsList.removeObserver(this)
-                        if (t?.data != null) {
-                            @Suppress("DEPRECATION")
-                            AsyncExportZipFile(
-                                this@MainActivity,
-                                binding.loading,
-                                t.data,
-                                result.data,
-                                segments,
-                                forecasts,
-                                exportThirdPartyData,
-                                exportCalculatedData
-                            ).execute()
+                viewModel.summitsList.observe(
+                    this,
+                    object : androidx.lifecycle.Observer<DataStatus<List<Summit>>> {
+                        override fun onChanged(t: DataStatus<List<Summit>>?) {
+                            viewModel.summitsList.removeObserver(this)
+                            if (t?.data != null) {
+                                @Suppress("DEPRECATION")
+                                AsyncExportZipFile(
+                                    this@MainActivity,
+                                    binding.loading,
+                                    t.data,
+                                    result.data,
+                                    segments,
+                                    forecasts,
+                                    exportThirdPartyData,
+                                    exportCalculatedData
+                                ).execute()
+                            }
                         }
-                    }
-                })
+                    })
             }
         }
     private val resultLauncherForImportZip =
@@ -372,7 +377,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     class AsyncImportZipFile(private val mainActivity: MainActivity) :
         AsyncTask<Uri, Int?, Void?>() {
 
-        private val reader = ZipFileReader(File(mainActivity.cacheDir, "ZipFileReader_${Date().time}"), mainActivity.database)
+        private val reader = ZipFileReader(
+            File(mainActivity.cacheDir, "ZipFileReader_${Date().time}"),
+            mainActivity.database
+        )
         private val database = mainActivity.database
         override fun doInBackground(vararg uri: Uri): Void? {
 
@@ -507,56 +515,61 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
-    private fun getAllImages(): MutableList<Poster> {
-        return summitViewFragment.contactsAdapter.differ.currentList.map { entry ->
+    private fun getAllImages(summits: List<Summit>?): MutableList<Poster> {
+        return summits?.map { entry ->
             entry.imageIds.mapIndexed { i, imageId ->
                 Poster(
                     entry.getImageUrl(imageId),
                     entry.getImageDescription(resources, i)
                 )
             }
-        }.flatten() as MutableList<Poster>
+        }?.flatten() as MutableList<Poster>
     }
 
     private fun openViewer() {
-        var allImages = getAllImages()
-        var usePositionAfterTransition = -1
-        if (allImages.size < currentPosition) {
-            usePositionAfterTransition = currentPosition
-            currentPosition = 0
-        }
-        if (allImages.size > 0) {
-            overlayView = PosterOverlayView(this).apply {
-                update(allImages[currentPosition])
-            }
-            viewer = StfalconImageViewer.Builder(this, allImages) { view, poster ->
-                Glide.with(this)
-                    .load(poster.url)
-                    .fitCenter()
-                    .diskCacheStrategy(DiskCacheStrategy.NONE)
-                    .skipMemoryCache(true)
-                    .into(view)
-            }
-                .withStartPosition(currentPosition)
-                .withImageChangeListener {
-                    currentPosition = it
-                    val sizeBefore = allImages.size
-                    allImages = getAllImages()
-                    val sizeAfter = allImages.size
-                    if (sizeAfter != sizeBefore) {
-                        viewer?.updateImages(allImages)
-                        if (usePositionAfterTransition >= 0) {
-                            viewer?.setCurrentPosition(usePositionAfterTransition)
-                        }
-                    }
-                    overlayView?.update(allImages[it])
+        viewModel.summitsList.observe(this) {
+            it.data.let {summits ->
+                var allImages = getAllImages(summits)
+                var usePositionAfterTransition = -1
+                if (allImages.size < currentPosition) {
+                    usePositionAfterTransition = currentPosition
+                    currentPosition = 0
                 }
-                .withOverlayView(overlayView)
-                .withDismissListener { isDialogShown = false }
-                .show(!isDialogShown)
-            isDialogShown = true
-        } else {
-            Toast.makeText(this, getString(R.string.no_image_selected), Toast.LENGTH_SHORT).show()
+                if (allImages.size > 0) {
+                    overlayView = PosterOverlayView(this).apply {
+                        update(allImages[currentPosition])
+                    }
+                    viewer = StfalconImageViewer.Builder(this, allImages) { view, poster ->
+                        Glide.with(this)
+                            .load(poster.url)
+                            .fitCenter()
+                            .diskCacheStrategy(DiskCacheStrategy.NONE)
+                            .skipMemoryCache(true)
+                            .into(view)
+                    }
+                        .withStartPosition(currentPosition)
+                        .withImageChangeListener {
+                            currentPosition = it
+                            val sizeBefore = allImages.size
+                            allImages = getAllImages(summits)
+                            val sizeAfter = allImages.size
+                            if (sizeAfter != sizeBefore) {
+                                viewer?.updateImages(allImages)
+                                if (usePositionAfterTransition >= 0) {
+                                    viewer?.setCurrentPosition(usePositionAfterTransition)
+                                }
+                            }
+                            overlayView?.update(allImages[it])
+                        }
+                        .withOverlayView(overlayView)
+                        .withDismissListener { isDialogShown = false }
+                        .show(!isDialogShown)
+                    isDialogShown = true
+                } else {
+                    Toast.makeText(this, getString(R.string.no_image_selected), Toast.LENGTH_SHORT)
+                        .show()
+                }
+            }
         }
     }
 

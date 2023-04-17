@@ -120,7 +120,6 @@ object OpenStreetMapUtils {
     @JvmStatic
     fun addMarker(mMapView: MapView, context: Context, startPoint: GeoPoint?, entry: Summit, addToOverlay: Boolean = true, alwaysShowTrackOnMap: Boolean = false): Marker? {
         try {
-
             val marker = Marker(mMapView)
             marker.position = startPoint
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)

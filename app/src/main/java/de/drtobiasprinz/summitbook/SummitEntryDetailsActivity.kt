@@ -4,62 +4,59 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.lifecycle.LiveData
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.TabsPagerAdapter
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.SportGroup
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.SummitEntryResultReceiver
-import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.utils.DataStatus
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 
-
+@AndroidEntryPoint
 class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceiver {
-    lateinit var summitEntry: Summit
+    private val viewModel: DatabaseViewModel by viewModels()
+
+    private lateinit var summitEntry: Summit
     private lateinit var viewPager: ViewPager2
     private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
-    private var allSummits: List<Summit> = emptyList()
-    private var database: AppDatabase? = null
+    private lateinit var allSummits: LiveData<DataStatus<List<Summit>>>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_summit_entry_details)
-        database = DatabaseModule.provideDatabase(applicationContext)
-
+        allSummits = viewModel.summitsList
         setActionBar()
         val bundle = intent.extras
         if (bundle != null) {
             val summitEntryId = intent.extras?.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
             if (summitEntryId != null) {
-                val entry = database?.summitsDao()?.getSummit(summitEntryId)
-                if (entry != null) {
-                    summitEntry = entry
-                    val sportGroup = SportGroup.values().filter { summitEntry.sportType in it.sportTypes }
-                    summitsToCompare = if (sportGroup.size == 1) {
-                        sportGroup.first().sportTypes.flatMap {
-                            database?.summitsDao()?.getAllSummitWithSameSportType(it)
-                                ?: emptyList()
+                viewModel.getDetailsContact(summitEntryId)
+                viewModel.contactDetails.observe(this) { itData ->
+                    itData.data?.let {
+                        summitEntry = it
+                        val tabsPagerAdapter = TabsPagerAdapter(this, summitEntry)
+                        viewPager = findViewById(R.id.pager)
+                        viewPager.adapter = tabsPagerAdapter
+                        viewPager.offscreenPageLimit = 4
+                        val tabs = findViewById<TabLayout>(R.id.tabs)
+                        TabLayoutMediator(tabs, viewPager) { tab, position ->
+                            tab.text = getPageTitle(position)
+                        }.attach()
+
+                        viewModel.summitsList.observe(this) { itData ->
+                            summitsToCompare = getSummitsToCompare(itData, summitEntry)
                         }
-                    } else {
-                        database?.summitsDao()?.getAllSummitWithSameSportType(summitEntry.sportType)
-                                ?: emptyList()
                     }
-                    allSummits = database?.summitsDao()?.allSummit ?: emptyList()
                 }
             }
-            val tabsPagerAdapter = TabsPagerAdapter(this, summitEntry)
-            viewPager = findViewById(R.id.pager)
-            viewPager.adapter = tabsPagerAdapter
-            viewPager.offscreenPageLimit = 4
-            val tabs = findViewById<TabLayout>(R.id.tabs)
-            TabLayoutMediator(tabs, viewPager) { tab, position ->
-                tab.text = getPageTitle(position)
-            }.attach()
-
         }
     }
 
@@ -90,6 +87,36 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
         }
     }
 
+    companion object {
+
+        fun getSummitsToCompare(
+            itData: DataStatus<List<Summit>>,
+            summitEntry: Summit,
+            onlyWithGpxTrack: Boolean = false,
+            onlyWithPowerData: Boolean = false,
+        ): List<Summit> {
+            itData.data.let { summits ->
+                val sportGroup =
+                    SportGroup.values()
+                        .filter { summitEntry.sportType in it.sportTypes }
+                return if (sportGroup.size == 1) {
+                    summits?.filter {
+                        it.id != summitEntry.id && it.hasGpsTrack() &&
+                                it.sportType in sportGroup.first().sportTypes
+                    } ?: emptyList()
+                } else {
+                    summits?.filter {
+                        it.id != summitEntry.id &&
+                                (if (onlyWithGpxTrack) it.hasGpsTrack() else true) &&
+                                (if (onlyWithPowerData) it.garminData?.power != null else true) &&
+                                it.sportType == summitEntry.sportType
+                    } ?: emptyList()
+                }
+            }
+        }
+
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
             finish()
@@ -100,11 +127,6 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         return true
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        database?.close()
     }
 
     override fun getSummit(): Summit {
@@ -119,11 +141,7 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
         summitToCompare = summit
     }
 
-    override fun getSummitsForComparison(): List<Summit> {
-        return summitsToCompare
-    }
-
-    override fun getAllSummits(): List<Summit> {
+    override fun getAllSummits(): LiveData<DataStatus<List<Summit>>> {
         return allSummits
     }
 

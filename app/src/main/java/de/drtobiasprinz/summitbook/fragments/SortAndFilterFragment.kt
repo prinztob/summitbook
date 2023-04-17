@@ -13,13 +13,12 @@ import android.widget.*
 import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
-import androidx.preference.PreferenceManager
+import androidx.fragment.app.activityViewModels
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.android.material.chip.Chip
 import com.google.android.material.slider.RangeSlider
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSortAndFilterBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.*
@@ -27,6 +26,7 @@ import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.utils.Constants
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -37,12 +37,9 @@ import kotlin.math.roundToInt
 class SortAndFilterFragment : DialogFragment() {
 
     @Inject
-    lateinit var contactsAdapter: ContactsAdapter
-
-    @Inject
     lateinit var sortFilterValues: SortFilterValues
     lateinit var database: AppDatabase
-    lateinit var entries: List<Summit>
+    private val viewModel: DatabaseViewModel by activityViewModels()
 
     var apply: () -> Unit = { }
 
@@ -63,12 +60,12 @@ class SortAndFilterFragment : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        entries = contactsAdapter.differ.currentList
         binding.imgClose.setOnClickListener {
             dismiss()
         }
         binding.apply.setOnClickListener {
-            sortFilterValues.participants = binding.chipGroupParticipants.children.toList().map { (it as Chip).text.toString() }
+            sortFilterValues.participants =
+                binding.chipGroupParticipants.children.toList().map { (it as Chip).text.toString() }
             apply()
             dismiss()
         }
@@ -77,12 +74,18 @@ class SortAndFilterFragment : DialogFragment() {
             apply()
             dismiss()
         }
-        setExtremeValues()
-        updateDateSpinner()
-        updateSportTypeSpinner()
-        addParticipantsFilter()
-        updateButtonGroups()
-        setRangeSliders()
+        viewModel.summitsList.observe(viewLifecycleOwner) {
+            it.data.let { summits ->
+                if (summits != null) {
+                    setExtremeValues(summits)
+                    updateDateSpinner()
+                    updateSportTypeSpinner()
+                    addParticipantsFilter(summits)
+                    updateButtonGroups()
+                    setRangeSliders()
+                }
+            }
+        }
     }
 
     private fun updateButtonGroups() {
@@ -261,8 +264,8 @@ class SortAndFilterFragment : DialogFragment() {
             }
     }
 
-    private fun addParticipantsFilter() {
-        val suggestions = entries.flatMap { it.participants }.distinct()
+    private fun addParticipantsFilter(summits: List<Summit>) {
+        val suggestions = summits.flatMap { it.participants }.distinct()
         val adapter =
             ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions)
         CustomAutoCompleteChips(requireView()).addChips(
@@ -271,12 +274,13 @@ class SortAndFilterFragment : DialogFragment() {
             binding.autoCompleteTextViewParticipants,
             binding.chipGroupParticipants
         )
-        binding.imageParticipants.imageTintList = ContextCompat.getColorStateList(requireContext(), R.color.black)
+        binding.imageParticipants.imageTintList =
+            ContextCompat.getColorStateList(requireContext(), R.color.black)
     }
 
-    private fun setExtremeValues() {
-        extremaValuesAllSummits = ExtremaValuesSummits(entries)
-        extremaValuesFilteredSummits = ExtremaValuesSummits(entries)
+    private fun setExtremeValues(summits: List<Summit>) {
+        extremaValuesAllSummits = ExtremaValuesSummits(summits)
+        extremaValuesFilteredSummits = ExtremaValuesSummits(summits)
     }
 
     private fun updateDateSpinner() {
