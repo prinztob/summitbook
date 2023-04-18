@@ -22,6 +22,10 @@
     <string name="action_share">Teilen</string>
     <string name="capricorn_caption">Steinbock in den Alpen</string>
     <string name="date">Datum</string>
+    <string name="yearly">Jährlich</string>
+    <string name="monthly">Monatlich</string>
+    <string name="wekly">Wöchenlich</string>
+    <string name="calender_wek_abrv">KW</string>
     <string name="tour_date">Gipfel Datum</string>
     <string name="date_format">%3$s-%2$s-%1$s</string>
     <string name="saveButtonText">Speichern</string>

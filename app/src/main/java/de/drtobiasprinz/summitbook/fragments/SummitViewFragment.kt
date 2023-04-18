@@ -80,12 +80,7 @@ class SummitViewFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         binding.apply {
             btnShowDialog.setOnClickListener {
-                val addFragment = AddSummitDialog()
-                addFragment.isBookmark = showBookmarksOnly
-                addFragment.show(
-                    requireActivity().supportFragmentManager,
-                    AddSummitDialog().tag
-                )
+                startAddSummitDialog(null)
             }
             rvContacts.apply {
                 layoutManager = LinearLayoutManager(requireContext())
@@ -162,13 +157,7 @@ class SummitViewFragment : Fragment() {
                                 }.show()
                         }
                         ItemTouchHelper.RIGHT -> {
-                            val addSummitDialog = AddSummitDialog()
-                            val bundle = Bundle()
-                            bundle.putLong(Constants.BUNDLE_ID, contact.id)
-                            addSummitDialog.arguments = bundle
-                            addSummitDialog.show(
-                                requireActivity().supportFragmentManager, AddSummitDialog().tag
-                            )
+                            startAddSummitDialog(contact)
                         }
                     }
                 }
@@ -202,6 +191,19 @@ class SummitViewFragment : Fragment() {
             itemTouchHelper.attachToRecyclerView(rvContacts)
 
         }
+    }
+
+    private fun startAddSummitDialog(summit: Summit?) {
+        val addSummitDialog = AddSummitDialog()
+        if (summit != null) {
+            val bundle = Bundle()
+            bundle.putLong(Constants.BUNDLE_ID, summit.id)
+            addSummitDialog.arguments = bundle
+        }
+        addSummitDialog.isBookmark = showBookmarksOnly
+        addSummitDialog.show(
+            requireActivity().supportFragmentManager, AddSummitDialog().tag
+        )
     }
 
 

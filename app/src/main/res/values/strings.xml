@@ -21,6 +21,10 @@
     <string name="action_share">share</string>
     <string name="capricorn_caption">Capricorn in the alps</string>
     <string name="date">Date</string>
+    <string name="yearly">Yearly</string>
+    <string name="monthly">Monthly</string>
+    <string name="calender_wek_abrv">cw</string>
+    <string name="wekly">Weekly</string>
     <string name="tour_date">Activity date</string>
     <string name="date_format">%3$s-%2$s-%1$s</string>
     <string name="saveButtonText">Save</string>

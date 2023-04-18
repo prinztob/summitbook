@@ -106,8 +106,7 @@ class SortFilterValues(
                     hasGpxTrackButtonGroup.filter(it) &&
                     hasPositionButtonGroup.filter(it)
         }
-        orderByValueButtonGroup.sort(filteredSummits, orderByAscDescButtonGroup)
-        return filteredSummits
+        return orderByValueButtonGroup.sort(filteredSummits, orderByAscDescButtonGroup)
     }
 
     private fun filterDate(summit: Summit): Boolean {
@@ -212,7 +211,7 @@ enum class OrderByAscDescButtonGroup(
 enum class OrderByValueButtonGroup(
     val query: String,
     val bindingId: (FragmentSortAndFilterBinding) -> Int,
-    val sort: (List<Summit>, OrderByAscDescButtonGroup) -> Unit
+    val sort: (List<Summit>, OrderByAscDescButtonGroup) -> List<Summit>
 ) {
     Date("date", { e -> e.buttonByDate.id }, { e, order ->
         if (order == OrderByAscDescButtonGroup.Descending) {

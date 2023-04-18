@@ -1,148 +1,142 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
-import de.drtobiasprinz.summitbook.fragments.StatisticsFragment
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import java.text.DateFormat
-import java.text.ParseException
-import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.ceil
 
 class IntervalHelper(private val summitEntries: List<Summit>) {
-    private var selectedYear: String? = null
-    private val allYears: List<String> = StatisticsFragment.getAllYears(summitEntries).sorted()
-    private val extremaValuesSummits: ExtremaValuesSummits = ExtremaValuesSummits(summitEntries)
-    var dates: MutableList<Date> = mutableListOf()
-        private set
-    var dateAnnotation: MutableList<Float> = mutableListOf()
-        private set
 
-    val topElevations: MutableList<Float> = mutableListOf()
-    val topElevationAnnotation: MutableList<Float> = mutableListOf()
-    val kilometers: MutableList<Float> = mutableListOf()
-    val kilometerAnnotation: MutableList<Float> = mutableListOf()
-    val elevationGains: MutableList<Float> = mutableListOf()
-    val elevationGainAnnotation: MutableList<Float> = mutableListOf()
-    var participants: MutableList<String> = mutableListOf()
-    var participantsAnnotation: MutableList<Float> = mutableListOf()
-    var equipments: MutableList<String> = mutableListOf()
-    var equipmentsAnnotation: MutableList<Float> = mutableListOf()
-    var countries: MutableList<String> = mutableListOf()
-    var countriesAnnotation: MutableList<Float> = mutableListOf()
-    fun setSelectedYear(selectedYear: String?) {
-        this.selectedYear = selectedYear
+    fun getRangeAndAnnotationForSummitChipValues(getValue: (Summit) -> List<String>): Pair<MutableList<Float>, MutableList<String>> {
+        val values = summitEntries.flatMap { getValue(it) }.filter { it != "" }
+        val countPerValue = values.toSet().map { name ->
+            name to values.count { it == name }
+        }
+        val comparable =
+            countPerValue.toList().sortedByDescending { (_, value) -> value }.toMap()
+                .map { (key, _) -> key } as MutableList<String>
+        comparable.add("")
+        val annotation =
+            (0 until comparable.size).map { it.toFloat() } as MutableList<Float>
+        return Pair(annotation, comparable)
     }
 
-    @Throws(ParseException::class)
-    fun calculate() {
-        dates = if (selectedYear == "") datesPerAllYear else monthPerYear
-        calculateTopElevation()
-        calculateElevationGain()
-        calculateKilometers()
-        calculateKParticipantsAndEquipments()
+    fun getRangeAndAnnotationsForSummitValue(
+        step: Float,
+        getValue: (Summit) -> Float
+    ): Pair<MutableList<Float>, MutableList<ClosedRange<Float>>> {
+        val ranges: Pair<MutableList<Float>, MutableList<ClosedRange<Float>>> =
+            Pair(mutableListOf(), mutableListOf())
+        val max = getValue(summitEntries.maxBy { getValue(it) })
+        val intervals = ceil(max / step).toInt()
+        for (i in 0..intervals) {
+            ranges.first.add(i.toFloat())
+            ranges.second.add((i * step)..((i + 1) * step - 0.01f))
+        }
+        return ranges
     }
 
-    private fun calculateTopElevation() {
-        if (topElevationAnnotation.isEmpty()) {
-            val intervals = ceil(extremaValuesSummits.maxTopElevation / topElevationStep).toInt()
-            for (i in 0..intervals) {
-                topElevations.add((i * topElevationStep).toFloat())
-                topElevationAnnotation.add(i.toFloat())
-            }
-        }
+    private fun calendarStartOrEndOfDate(date: Date): Calendar {
+        val cal: Calendar = Calendar.getInstance(TimeZone.getDefault())
+        cal.time = date
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        return cal
     }
 
-    private fun calculateElevationGain() {
-        if (elevationGains.isEmpty()) {
-            val intervals = ceil(extremaValuesSummits.maxHeightMeters / elevationGainStep).toInt()
-            for (i in 0..intervals) {
-                elevationGains.add((i * elevationGainStep).toFloat())
-                elevationGainAnnotation.add(i.toFloat())
-            }
+    fun getRangeAndAnnotationsForDate(
+        rangeTypeForDelta: Int,
+        rangeTypeForRange: Int,
+        untilEndOfYear: Boolean = false
+    ): Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> {
+        val minDate = summitEntries.minBy { it.date }.date
+        var maxDate = summitEntries.maxBy { it.date }.date
+        if (untilEndOfYear) {
+            val cal: Calendar = Calendar.getInstance(TimeZone.getDefault())
+            cal.time = maxDate
+            val day = cal.getActualMaximum(Calendar.DAY_OF_YEAR)
+            cal.set(Calendar.DAY_OF_YEAR, day)
+            maxDate = cal.time
         }
-    }
 
-    private fun calculateKilometers() {
-        if (kilometers.isEmpty()) {
-            val intervals = ceil(extremaValuesSummits.maxKilometers / kilometersStep).toInt()
-            for (i in 0..intervals) {
-                kilometers.add((i * kilometersStep).toFloat())
-                kilometerAnnotation.add(i.toFloat())
-            }
-        }
-    }
-
-    private fun calculateKParticipantsAndEquipments() {
-        if (participants.isEmpty()) {
-            val allParticipants = summitEntries.flatMap { it.participants }.filter { it != "" }
-            val countsPerParticipants = allParticipants.toSet().map { name ->
-                name to allParticipants.filter { it == name }.count()
-            }
-            participants = countsPerParticipants.toList().sortedByDescending { (_, value) -> value }.toMap().map { (key, _) -> key } as MutableList<String>
-            participants.add("")
-            participantsAnnotation = (0 until participants.size).map { it.toFloat() } as MutableList<Float>
-        }
-        if (equipments.isEmpty()) {
-            val allEquipments = summitEntries.flatMap { it.equipments }.filter { it != "" }
-            val countsPerEquipments = allEquipments.toSet().map { name ->
-                name to allEquipments.filter { it == name }.count()
-            }
-            equipments = countsPerEquipments.toList().sortedByDescending { (_, value) -> value }.toMap().map { (key, _) -> key } as MutableList<String>
-            equipments.add("")
-            equipmentsAnnotation = (0 until equipments.size).map { it.toFloat() } as MutableList<Float>
-        }
-        if (countries.isEmpty()) {
-            val all = summitEntries.flatMap { it.countries }.filter { it != "" }
-            val countsPerCountry = all.toSet().map { name ->
-                name to all.filter { it == name }.count()
-            }
-            countries = countsPerCountry.toList().sortedByDescending { (_, value) -> value }.toMap().map { (key, _) -> key } as MutableList<String>
-            countries.add("")
-            countriesAnnotation = (0 until countries.size).map { it.toFloat() } as MutableList<Float>
+        return if (rangeTypeForRange == Calendar.DAY_OF_WEEK) {
+            getRangeForWeek(minDate, maxDate, rangeTypeForRange, rangeTypeForDelta)
+        } else {
+            getRangeForMonthAndYear(minDate, maxDate, rangeTypeForRange, rangeTypeForDelta)
         }
     }
 
-    @get:Throws(ParseException::class)
-    private val datesPerAllYear: MutableList<Date>
-        get() {
-            dateAnnotation = mutableListOf()
-            val size = allYears.size
-            val dates = mutableListOf<Date>()
-            val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
-            for (i in 0 until size) {
-                allYears[i].toFloat().let { dateAnnotation.add(it) }
+    private fun getRangeForWeek(
+        minDate: Date,
+        maxDate: Date,
+        rangeTypeForRange: Int,
+        rangeTypeForDelta: Int
+    ): Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> {
+        val ranges: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> =
+            Pair(mutableListOf(), mutableListOf())
+        val cal: Calendar = calendarStartOrEndOfDate(minDate)
+        val startDay = cal.getActualMinimum(rangeTypeForRange)
+        cal.set(rangeTypeForRange, startDay)
+        var to = minDate
+        var from = cal.time
+        while (to < maxDate) {
+            cal.add(Calendar.DAY_OF_YEAR, 6)
+            cal.set(Calendar.HOUR_OF_DAY, 23)
+            cal.set(Calendar.MINUTE, 59)
+            cal.set(Calendar.SECOND, 59)
+            to = cal.time
+            val annotation = cal.get(rangeTypeForDelta).toFloat()
+            val last = ranges.first.lastOrNull() ?: -1f
+            if (annotation > last) {
+                ranges.first.add(annotation)
+            } else {
+                ranges.first.add(last + 1f)
             }
-            for (i in allYears.indices) {
-                addDate(df, String.format("%s-01-01 00:00:00", allYears[i]), dates)
-            }
-            addDate(df, String.format("%s-01-01 00:00:00", (allYears[size - 1].toInt()) + 1), dates)
-            return dates
+            ranges.second.add(from..to)
+            cal.add(Calendar.DAY_OF_YEAR, 1)
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            from = cal.time
         }
-
-    private fun addDate(df: DateFormat, year: String, dates: MutableList<Date>) {
-        val addDate = df.parse(year)
-        if (addDate != null) {
-            dates.add(addDate)
-        }
+        return ranges
     }
+    private fun getRangeForMonthAndYear(
+        minDate: Date,
+        maxDate: Date,
+        rangeTypeForRange: Int,
+        rangeTypeForDelta: Int
+    ): Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> {
+        val ranges: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> =
+            Pair(mutableListOf(), mutableListOf())
+        var date = minDate
+        var to = minDate
+        while (to < maxDate) {
+            val cal: Calendar = calendarStartOrEndOfDate(date)
+            val startDay = cal.getActualMinimum(rangeTypeForRange)
+            cal.set(rangeTypeForRange, startDay)
+            val from = cal.time
 
-    @get:Throws(ParseException::class)
-    private val monthPerYear: MutableList<Date>
-        get() {
-            dateAnnotation = mutableListOf()
-            val size = 12
-            val dates = mutableListOf<Date>()
-            val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
-            for (i in 0 until size) {
-                dateAnnotation.add((i + 1).toFloat())
+            val endDay = cal.getActualMaximum(rangeTypeForRange)
+            cal.set(rangeTypeForRange, endDay)
+            cal.set(Calendar.HOUR_OF_DAY, 23)
+            cal.set(Calendar.MINUTE, 59)
+            cal.set(Calendar.SECOND, 59)
+            to = cal.time
+            val annotation = cal.get(rangeTypeForDelta).toFloat()
+            val last = ranges.first.lastOrNull() ?: -1f
+            if (annotation > last) {
+                ranges.first.add(annotation)
+            } else {
+                ranges.first.add(last + 1f)
             }
-            for (i in 1..size) {
-                addDate(df, String.format("%s-%s-01 00:00:00", selectedYear, i), dates)
-            }
-            addDate(df, String.format("%s-01-01 00:00:00", (selectedYear?.toInt() ?: 0) + 1), dates)
-            return dates
+            ranges.second.add(from..to)
+            cal.add(rangeTypeForDelta, 1)
+            date = cal.time
         }
-
+        return ranges
+    }
 
     companion object {
         @JvmField

@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import de.drtobiasprinz.summitbook.db.AppDatabase
+import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
 
@@ -38,6 +39,11 @@ class Forecast(
         }
         actualDistance = summitsInMonth.sumBy { it.kilometers.roundToInt() }
         actualNumberActivities = summitsInMonth.size
+    }
+
+    fun getDate(): Date? {
+        val df = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+        return df.parse("$year-${String.format("%02d", month)}-15")
     }
 
     fun getStringRepresentation(): String {

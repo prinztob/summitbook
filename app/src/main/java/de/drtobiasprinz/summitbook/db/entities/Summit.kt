@@ -569,9 +569,9 @@ class Summit(
 
         @Throws(ParseException::class)
         fun parseDate(date: String): Date {
-            val df: DateFormat = SimpleDateFormat(DATETIME_FORMAT, Locale.ENGLISH)
+            val df: DateFormat = SimpleDateFormat(DATETIME_FORMAT, Locale.getDefault())
             df.isLenient = false
-            return df.parse(String.format("%s 12:00:00", date)) ?: Date()
+            return df.parse(String.format("%s 07:00:00", date)) ?: Date()
         }
 
         @Throws(Exception::class)

@@ -6,7 +6,6 @@ import android.app.DatePickerDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
@@ -116,7 +115,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val summits = contactsAdapter.differ.currentList
-        currentContext = requireContext()
         contactId = arguments?.getLong(BUNDLE_ID) ?: 0
         if (contactId > 0) {
             type = EDIT
@@ -143,15 +141,14 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 android.R.layout.simple_dropdown_item_1line,
                 summits.flatMap { it.equipments }.distinct().filter { it != "" })
             placesAdapter = getPlacesSuggestions()
+            summitName.setAdapter(getPlacesSuggestions(false))
             if (type == EDIT) {
-                viewModel.getDetailsContact(contactId)
-                viewModel.contactDetails.observe(viewLifecycleOwner) { itData ->
-                    itData.data?.let {
-                        entity = it
-                        updateBaseBindings(view)
-                        updateDialogFields(true)
-                        btnSave.text = getString(R.string.update)
-                    }
+                val summitToEdit = summits.firstOrNull { it.id == contactId }
+                if (summitToEdit != null) {
+                    entity = summitToEdit
+                    updateBaseBindings(view)
+                    updateDialogFields(true)
+                    btnSave.text = getString(R.string.update)
                 }
             } else {
                 updateBaseBindings(view)
@@ -285,14 +282,14 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
     private fun setImageColor() {
-            binding.imageParticipants.imageTintList =
-                ContextCompat.getColorStateList(requireContext(), R.color.black)
-            binding.imageCountries.imageTintList =
-                ContextCompat.getColorStateList(requireContext(), R.color.black)
-            binding.imageEquipments.imageTintList =
-                ContextCompat.getColorStateList(requireContext(), R.color.black)
-            binding.imagePlaces.imageTintList =
-                ContextCompat.getColorStateList(requireContext(), R.color.black)
+        binding.imageParticipants.imageTintList =
+            ContextCompat.getColorStateList(requireContext(), R.color.black)
+        binding.imageCountries.imageTintList =
+            ContextCompat.getColorStateList(requireContext(), R.color.black)
+        binding.imageEquipments.imageTintList =
+            ContextCompat.getColorStateList(requireContext(), R.color.black)
+        binding.imagePlaces.imageTintList =
+            ContextCompat.getColorStateList(requireContext(), R.color.black)
 
     }
 
