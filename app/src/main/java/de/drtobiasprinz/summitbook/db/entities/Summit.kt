@@ -7,6 +7,8 @@ import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.models.GpsTrack
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.utils.Constants
 import org.osmdroid.util.BoundingBox
@@ -208,7 +210,8 @@ class Summit(
     fun setGpsTrack(
         useSimplifiedTrack: Boolean = true,
         updateTrack: Boolean = false,
-        loadFullTrackAsynchronous: Boolean = false
+        loadFullTrackAsynchronous: Boolean = false,
+        deleteEmptyTrack: Boolean = false
     ) {
         if (hasGpsTrack()) {
             if (gpsTrack == null || updateTrack) {
@@ -218,7 +221,7 @@ class Summit(
             if (gpsTrack?.hasNoTrackPoints() == true) {
                 gpsTrack?.parseTrack(loadFullTrackAsynchronous = loadFullTrackAsynchronous)
             }
-            if (gpsTrack?.trackPoints?.isEmpty() == true) {
+            if (gpsTrack?.trackPoints?.isEmpty() == true && deleteEmptyTrack) {
                 if (getGpsTrackPath().toFile().exists()) {
                     getGpsTrackPath().toFile().delete()
                 }
@@ -408,7 +411,6 @@ class Summit(
         if (equipments != other.equipments) return false
         if (imageIds != other.imageIds) return false
         if (garminData != other.garminData) return false
-        if (trackBoundingBox != other.trackBoundingBox) return false
         if (activityId != other.activityId) return false
         if (isBookmark != other.isBookmark) return false
         if (hasTrack != other.hasTrack) return false

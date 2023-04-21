@@ -1,5 +1,7 @@
-package de.drtobiasprinz.summitbook.db.entities
+package de.drtobiasprinz.summitbook.models
 
+import de.drtobiasprinz.summitbook.db.entities.SportType
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat

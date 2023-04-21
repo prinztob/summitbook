@@ -17,7 +17,7 @@ import de.drtobiasprinz.summitbook.db.entities.*
 abstract class AppDatabase : RoomDatabase() {
     abstract fun summitsDao(): SummitsDao
     abstract fun forecastDao(): ForecastDao?
-    abstract fun segmentsDao(): SegmentsDao?
+    abstract fun segmentsDao(): SegmentsDao
     abstract fun solarIntensityDao(): SolarIntensityDao?
     abstract fun ignoredActivityDao(): IgnoredActivityDao?
 }

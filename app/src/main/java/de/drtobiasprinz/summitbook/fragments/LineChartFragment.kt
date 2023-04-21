@@ -24,8 +24,8 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentLineChartBinding
-import de.drtobiasprinz.summitbook.db.entities.LineChartSpinnerEntry
-import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
+import de.drtobiasprinz.summitbook.models.LineChartSpinnerEntry
+import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerLineChart

@@ -282,6 +282,7 @@
     <string name="show_new_summits">Zeige neue Gipfel von Garmin</string>
     <string name="update_new_summits">Aktualisiere Gipfel von Garmin</string>
     <string name="merge">Merge</string>
+    <string name="rank_in_activity">"Plazierung %1$s in Aktivität '%2$s'"</string>
     <string name="ignore">Ignorieren</string>
     <string name="back">Zurück</string>
     <string name="revert_ignored_summits">Lösche ignorierte Gipfel</string>

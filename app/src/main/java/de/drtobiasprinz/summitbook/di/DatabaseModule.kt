@@ -9,7 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
+import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.utils.Constants.DATABASE
 import javax.inject.Singleton
@@ -28,7 +28,11 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDao(db: AppDatabase) = db.summitsDao()
+    fun provideSummitsDao(db: AppDatabase) = db.summitsDao()
+
+    @Provides
+    @Singleton
+    fun provideSegmentsDao(db: AppDatabase) = db.segmentsDao()
 
     @Provides
     @Singleton

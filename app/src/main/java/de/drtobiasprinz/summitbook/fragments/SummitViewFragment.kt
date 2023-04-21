@@ -21,11 +21,10 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitViewBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.db.entities.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.MainActivity
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.entriesToExcludeForBoundingBoxCalculation
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.utils.AsyncUpdateGarminData
 import de.drtobiasprinz.summitbook.utils.Constants
@@ -33,8 +32,6 @@ import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.isVisible
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -121,7 +118,7 @@ class SummitViewFragment : Fragment() {
                             val data = sortFilterValues.apply(it.data ?: emptyList())
                             contactsAdapter.differ.submitList(data)
                             if (!startedScheduler) {
-                                addScheduler()
+                                addBackgroundTasks()
                                 startedScheduler = true
                             }
                         }
@@ -219,35 +216,7 @@ class SummitViewFragment : Fragment() {
         }
     }
 
-
-    private fun addScheduler() {
-        val schedulerBoundingBox = Executors.newSingleThreadScheduledExecutor()
-        schedulerBoundingBox.schedule({
-            val entriesWithoutBoundingBox = contactsAdapter.differ.currentList.filter {
-                it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingBoxCalculation
-            }
-            if (entriesWithoutBoundingBox.isNotEmpty()) {
-                val entryToCheck = entriesWithoutBoundingBox.first()
-                entryToCheck.setBoundingBoxFromTrack()
-                if (entryToCheck.trackBoundingBox != null) {
-                    database.summitsDao().updateSummit(entryToCheck)
-                    Log.i(
-                        "Scheduler",
-                        "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining."
-                    )
-                } else {
-                    Log.i(
-                        "Scheduler",
-                        "Updated bounding box for ${entryToCheck.name} failed, remove it from update list."
-                    )
-                    entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
-                }
-            } else {
-                Log.i("Scheduler", "No more bounding boxes to calculate.")
-            }
-
-        }, 10, TimeUnit.MINUTES)
-
+    private fun addBackgroundTasks() {
         val useSimplifiedTracks = sharedPreferences.getBoolean("use_simplified_tracks", true)
         if (useSimplifiedTracks) {
             val entriesWithoutSimplifiedGpxTrack = contactsAdapter.differ.currentList.filter {

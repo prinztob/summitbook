@@ -1,4 +1,4 @@
-package de.drtobiasprinz.summitbook.db.entities
+package de.drtobiasprinz.summitbook.models
 
 import android.graphics.Color
 import de.drtobiasprinz.gpx.TrackPoint

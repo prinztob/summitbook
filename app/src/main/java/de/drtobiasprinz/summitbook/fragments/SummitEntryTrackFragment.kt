@@ -35,11 +35,11 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryTrackBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.db.entities.GpsTrack
-import de.drtobiasprinz.summitbook.db.entities.GpsTrack.Companion.interpolateColor
+import de.drtobiasprinz.summitbook.models.GpsTrack
+import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.db.entities.SummitEntryResultReceiver
-import de.drtobiasprinz.summitbook.db.entities.TrackColor
+import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
+import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils

@@ -1,7 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import de.drtobiasprinz.gpx.*
-import de.drtobiasprinz.summitbook.db.entities.GpsTrack
+import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils.Companion.keepOnlyMaximalValues
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils.Companion.removeDeltasSmallerAs
 import io.reactivex.Observable

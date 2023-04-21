@@ -8,7 +8,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
@@ -31,9 +30,6 @@ class GarminPythonExecutor(
     private var client: PyObject? = null
 
     private fun login() {
-        if (pythonInstance == null) {
-            pythonInstance = pythonInstance
-        }
         if (client == null) {
             if (Python.isStarted()) {
                 pythonModule = pythonInstance?.getModule("start")
@@ -235,8 +231,9 @@ class GarminPythonExecutor(
                 Summit.DATETIME_FORMAT,
                 Locale.ENGLISH
             ).parse(jsonObject.getAsJsonPrimitive("startTimeLocal").asString) ?: Date()
+            val sportType = parseSportType(jsonObject["activityType"].asJsonObject)
             val duration: Double =
-                if (jsonObject["movingDuration"] != JsonNull.INSTANCE) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
+                if (jsonObject["movingDuration"] != JsonNull.INSTANCE && sportType in SportGroup.Bike.sportTypes) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
             val averageSpeed = convertMphToKmh(jsonObject["distance"].asDouble / duration)
             val activityIds: MutableList<String> = mutableListOf(jsonObject["activityId"].asString)
             if (jsonObject.has("childIds")) {
@@ -259,13 +256,13 @@ class GarminPythonExecutor(
             return Summit(
                 date,
                 jsonObject["activityName"].asString,
-                parseSportType(jsonObject["activityType"].asJsonObject),
+                sportType,
                 emptyList(),
                 emptyList(),
                 "",
                 ElevationData.parse(
                     if (jsonObject["maxElevation"] != JsonNull.INSTANCE) round(
-                        jsonObject["maxElevation"].asDouble, 2
+                        jsonObject["maxElevation"].asDouble
                     ).toInt() else 0, getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt()
                 ),
                 round(
@@ -273,13 +270,13 @@ class GarminPythonExecutor(
                         getJsonObjectEntryNotNull(
                             jsonObject, "distance"
                         ).toDouble()
-                    ), 2
+                    )
                 ),
                 VelocityData.parse(
-                    round(averageSpeed, 2), if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(
+                    round(averageSpeed), if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(
                         convertMphToKmh(
                             jsonObject["maxSpeed"].asDouble
-                        ), 2
+                        )
                     ) else 0.0
                 ),
                 null,
@@ -340,7 +337,8 @@ class GarminPythonExecutor(
             }
         }
 
-        private fun round(value: Double, precision: Int): Double {
+        private fun round(value: Double): Double {
+            val precision = 2
             val scale = 10.0.pow(precision.toDouble()).toInt()
             return (value * scale).roundToLong().toDouble() / scale
         }

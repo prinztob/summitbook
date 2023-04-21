@@ -7,7 +7,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.Poster
+import de.drtobiasprinz.summitbook.models.Poster
 
 class PosterOverlayView @JvmOverloads constructor(
         context: Context,

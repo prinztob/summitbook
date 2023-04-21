@@ -1,10 +1,12 @@
-package de.drtobiasprinz.summitbook.db.entities
+package de.drtobiasprinz.summitbook.models
 
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.sqlite.db.SimpleSQLiteQuery
 import de.drtobiasprinz.summitbook.databinding.FragmentSortAndFilterBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.SportType
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.utils.Constants
 import java.text.SimpleDateFormat
 import java.util.*
@@ -15,7 +17,7 @@ class SortFilterValues(
     var startDate: Date? = null,
     var endDate: Date? = null,
     var selectedDateSpinner: Int = 0,
-    var selectedDateSpinnerDefault: Int = 0,
+    private var selectedDateSpinnerDefault: Int = 0,
 
     var sportType: SportType? = null,
     var participants: List<String> = emptyList(),
@@ -257,7 +259,7 @@ enum class HasGpxTrackButtonGroup(
 ) {
     Yes(" AND (hasTrack = 1)", { e -> e.buttonGpxYes.id }, { e -> e.hasTrack }),
     No(" AND (hasTrack = 0)", { e -> e.buttonGpxNo.id }, { e -> !e.hasTrack }),
-    Indifferent("", { e -> e.buttonGpxAll.id }, { e -> true })
+    Indifferent("", { e -> e.buttonGpxAll.id }, { true })
 }
 
 enum class HasPositionButtonGroup(
@@ -273,7 +275,7 @@ enum class HasPositionButtonGroup(
         " AND (lat IS NULL) AND (lng IS NULL)",
         { e -> e.buttonPositionNo.id },
         { e -> e.lat == null && e.lng == null }),
-    Indifferent("", { e -> e.buttonPositionAll.id }, { e -> true })
+    Indifferent("", { e -> e.buttonPositionAll.id }, { true })
 }
 
 enum class HasImageButtonGroup(
@@ -283,7 +285,7 @@ enum class HasImageButtonGroup(
 ) {
     Yes(" AND (imageIds != '')", { e -> e.buttonImageYes.id }, { e -> e.imageIds.isNotEmpty() }),
     No(" AND (imageIds = '')", { e -> e.buttonImageNo.id }, { e -> e.imageIds.isEmpty() }),
-    Indifferent("", { e -> e.buttonImageAll.id }, { e -> true })
+    Indifferent("", { e -> e.buttonImageAll.id }, { true })
 }
 
 enum class PeakFavoriteButtonGroup(
@@ -293,5 +295,5 @@ enum class PeakFavoriteButtonGroup(
 ) {
     IsFavorite(" AND (isFavorite = 1)", { e -> e.buttonMarkedFavorite.id }, { e -> e.isFavorite }),
     IsPeak(" AND (isPeak = 1)", { e -> e.buttonMarkedSummit.id }, { e -> e.isPeak }),
-    Indifferent("", { e -> e.buttonMarkedAll.id }, { e -> true })
+    Indifferent("", { e -> e.buttonMarkedAll.id }, { true })
 }

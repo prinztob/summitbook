@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.utils.DataStatus
@@ -24,12 +25,17 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val bookmarksList: LiveData<DataStatus<List<Summit>>>
         get() = _bookmarksList
 
+    private val _segmentsList = MutableLiveData<DataStatus<List<Segment>>>()
+    val segmentsList: LiveData<DataStatus<List<Segment>>>
+        get() = _segmentsList
+
     private val _contactDetails = MutableLiveData<DataStatus<Summit>>()
     val contactDetails: LiveData<DataStatus<Summit>>
         get() = _contactDetails
 
     init {
         getAllSummits()
+        getAllSegments()
     }
 
     fun refresh() {
@@ -71,6 +77,12 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     fun getDetailsContact(id: Long) = viewModelScope.launch {
         repository.getDetailsContact(id).collect {
             _contactDetails.postValue(DataStatus.success(it, false))
+        }
+    }
+
+    fun getAllSegments() = viewModelScope.launch {
+        repository.getAllSegments().collect {
+            _segmentsList.postValue(DataStatus.success(it, false))
         }
     }
 

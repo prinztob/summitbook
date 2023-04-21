@@ -21,9 +21,11 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryDataBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
+import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.db.entities.SummitEntryResultReceiver
 import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
 import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import java.util.*
@@ -186,6 +188,7 @@ class SummitEntryDataFragment : Fragment() {
         setChipsText(R.id.countries, summitEntry.countries, R.drawable.ic_baseline_flag_24)
         setChipsText(R.id.participants, summitEntry.participants, R.drawable.ic_baseline_people_24)
         setChipsText(R.id.equipments, summitEntry.equipments, R.drawable.ic_baseline_handyman_24)
+        setChipsTextForSegments(R.id.segments, R.drawable.ic_baseline_route_24)
     }
 
     private fun setThirdPartyData(extrema: ExtremaValuesSummits?) {
@@ -795,6 +798,74 @@ class SummitEntryDataFragment : Fragment() {
             }
         }
         textView.setCompoundDrawablesWithIntrinsicBounds(drawable, 0, 0, 0)
+    }
+
+    private fun setChipsTextForSegments(id: Int, imageId: Int) {
+        resultReceiver.getAllSegments().observe(viewLifecycleOwner) {
+            it.data.let { segments ->
+                val segmentsForSummit =
+                    segments?.filter { it.segmentEntries.any { it.activityId == summitEntry.activityId } }
+                if (segmentsForSummit != null && segmentsForSummit.isNotEmpty()) {
+                    val list = mutableListOf<Triple<SegmentEntry, SegmentDetails, String>>()
+                    segmentsForSummit.forEach { segment ->
+                        segment.segmentEntries.sortBy { it.duration }
+                        val relevantEntries =
+                            segment.segmentEntries.filter { it.activityId == summitEntry.activityId }
+                        relevantEntries.forEach { segmentEntry ->
+                            list.add(
+                                Triple(
+                                    segmentEntry, segment.segmentDetails,
+                                    String.format(
+                                        getString(R.string.rank_in_activity),
+                                        segment.segmentEntries.indexOf(segmentEntry),
+                                        segment.segmentDetails.getDisplayName()
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    val chipGroup: ChipGroup = binding.root.findViewById(id)
+                    chipGroup.removeAllViews()
+                    if (list.isEmpty() || list.first().third == "") {
+                        chipGroup.visibility = View.GONE
+                    } else {
+                        for (entry in list) {
+                            val chip = Chip(requireContext())
+                            chip.text = entry.third
+                            chip.isClickable = false
+                            chip.chipIcon = ResourcesCompat.getDrawable(resources, imageId, null)
+                            when (requireContext().resources?.configuration?.uiMode?.and(
+                                Configuration.UI_MODE_NIGHT_MASK
+                            )) {
+                                Configuration.UI_MODE_NIGHT_YES -> {
+                                    chip.chipIconTint =
+                                        ContextCompat.getColorStateList(
+                                            requireContext(),
+                                            R.color.white
+                                        )
+                                }
+                                Configuration.UI_MODE_NIGHT_NO -> {
+                                    chip.chipIconTint =
+                                        ContextCompat.getColorStateList(
+                                            requireContext(),
+                                            R.color.black
+                                        )
+                                }
+                                Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                                    chip.chipIconTint =
+                                        ContextCompat.getColorStateList(
+                                            requireContext(),
+                                            R.color.black
+                                        )
+                                }
+                            }
+
+                            chipGroup.addView(chip)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun setChipsText(id: Int, list: List<String>, imageId: Int) {

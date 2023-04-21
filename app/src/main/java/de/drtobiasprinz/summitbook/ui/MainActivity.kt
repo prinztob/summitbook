@@ -24,6 +24,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -39,11 +40,17 @@ import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.fragments.*
+import de.drtobiasprinz.summitbook.models.Poster
+import de.drtobiasprinz.summitbook.models.SortFilterValues
+import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
 import de.drtobiasprinz.summitbook.ui.utils.*
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.LocalDate
 import java.util.*
@@ -149,6 +156,37 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
             }
         }
+        addMissingBoundingBox()
+    }
+
+    private fun addMissingBoundingBox() {
+        viewModel.summitsList.observe(this@MainActivity) {
+            lifecycleScope.launch {
+                withContext(Dispatchers.Default) {
+                    val entriesWithoutBoundingBox = it.data?.filter { summit ->
+                        summit.hasGpsTrack() && summit.trackBoundingBox == null && summit !in entriesToExcludeForBoundingBoxCalculation
+                    } as MutableList<Summit>?
+                    if (entriesWithoutBoundingBox != null && entriesWithoutBoundingBox.isNotEmpty()) {
+                        val entryToCheck = entriesWithoutBoundingBox.first()
+                        entriesWithoutBoundingBox.remove(entryToCheck)
+                        entryToCheck.setBoundingBoxFromTrack()
+                        if (entryToCheck.trackBoundingBox != null) {
+                            viewModel.saveContact(true, entryToCheck)
+                            Log.i(
+                                "MainActivity Background",
+                                "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining."
+                            )
+                        } else {
+                            Log.i(
+                                "Scheduler",
+                                "Updated bounding box for ${entryToCheck.name} failed, remove it from update list."
+                            )
+                            entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun setOverviewText(summits: List<Summit>) {
@@ -222,7 +260,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var CSV_FILE_NAME_FORECASTS: String = "de-prinz-summitbook-export-forecasts.csv"
 
         var entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
-        var extremaValuesAllSummits: ExtremaValuesSummits? = null
         var storage: File? = null
         var cache: File? = null
         var activitiesDir: File? = null
@@ -528,7 +565,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun openViewer() {
         viewModel.summitsList.observe(this) {
-            it.data.let {summits ->
+            it.data.let { summits ->
                 var allImages = getAllImages(summits)
                 var usePositionAfterTransition = -1
                 if (allImages.size < currentPosition) {

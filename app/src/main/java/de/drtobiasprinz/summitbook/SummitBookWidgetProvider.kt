@@ -9,7 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
 import androidx.preference.PreferenceManager
-import de.drtobiasprinz.summitbook.db.entities.StatisticEntry
+import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.MainActivity

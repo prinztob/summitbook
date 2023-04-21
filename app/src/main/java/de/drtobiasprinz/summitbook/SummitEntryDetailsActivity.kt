@@ -13,11 +13,14 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.TabsPagerAdapter
+import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportGroup
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.db.entities.SummitEntryResultReceiver
+import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import org.osmdroid.views.overlay.Marker
 
 @AndroidEntryPoint
 class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceiver {
@@ -29,11 +32,15 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
     private var summitsToCompare: List<Summit> = emptyList()
     private lateinit var allSummits: LiveData<DataStatus<List<Summit>>>
 
+    private var startMarker: Marker? = null
+    private var stopMarker: Marker? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_summit_entry_details)
         allSummits = viewModel.summitsList
         setActionBar()
+        OpenStreetMapUtils.setOsmConfForTiles()
         val bundle = intent.extras
         if (bundle != null) {
             val summitEntryId = intent.extras?.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
@@ -77,13 +84,10 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
     private fun setActionBar() {
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
-        val supportActionBarLocal = supportActionBar
-        if (supportActionBarLocal != null) {
-            supportActionBarLocal.setDisplayHomeAsUpEnabled(true)
-            supportActionBarLocal.setDisplayShowHomeEnabled(true)
-            if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                supportActionBarLocal.hide()
-            }
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
+        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            supportActionBar?.hide()
         }
     }
 
@@ -143,6 +147,10 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
 
     override fun getAllSummits(): LiveData<DataStatus<List<Summit>>> {
         return allSummits
+    }
+
+    override fun getAllSegments(): LiveData<DataStatus<List<Segment>>> {
+        return viewModel.segmentsList
     }
 
     override fun getViewPager(): ViewPager2 {

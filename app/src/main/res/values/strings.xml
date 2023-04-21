@@ -281,6 +281,7 @@
     <string name="show_new_summits">Show new summits from Garmin</string>
     <string name="update_new_summits">Update summits from Garmin</string>
     <string name="merge">Merge</string>
+    <string name="rank_in_activity">"Ranked %1$s in activity '%2$s'"</string>
     <string name="ignore">Ignore</string>
     <string name="back">Back</string>
     <string name="revert_ignored_summits">Clean ignored summits</string>

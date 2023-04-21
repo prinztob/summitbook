@@ -1,6 +1,7 @@
-package de.drtobiasprinz.summitbook.db.entities
+package de.drtobiasprinz.summitbook.models
 
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.db.entities.Summit
 
 enum class LineChartSpinnerEntry(val nameId: Int, val unit: String, val accumulate: Boolean = false,
                                  var includeIndoorActivities: Boolean = false,

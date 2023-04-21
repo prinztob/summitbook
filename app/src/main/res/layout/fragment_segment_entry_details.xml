@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <androidx.constraintlayout.widget.ConstraintLayout xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/constraintLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <GridLayout
+            android:id="@+id/gridLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="5dp"
+            android:columnCount="2"
+            android:rowCount="3"
+
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/segmentName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="20dp"
+                android:drawablePadding="5dp"
+                android:padding="1dp"
+                app:drawableStartCompat="@drawable/baseline_today_black_24dp"
+                app:drawableTint="?android:attr/colorControlNormal" />
+
+            <TextView
+                android:id="@+id/height_meter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="20dp"
+                android:drawablePadding="5dp"
+                android:padding="1dp"
+                app:drawableStartCompat="@drawable/baseline_trending_up_black_24dp"
+                app:drawableTint="?android:attr/colorControlNormal" />
+
+            <TextView
+                android:id="@+id/kilometers"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="20dp"
+                android:drawablePadding="5dp"
+                android:padding="1dp"
+                app:drawableStartCompat="@drawable/icons8_map_pinpoint_20"
+                app:drawableTint="?android:attr/colorControlNormal" />
+
+
+            <TextView
+                android:id="@+id/averageHr"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="20dp"
+                android:drawablePadding="5dp"
+                android:padding="1dp"
+                app:drawableStartCompat="@drawable/ic_baseline_monitor_heart_24"
+                app:drawableTint="?android:attr/colorControlNormal" />
+
+            <TextView
+                android:id="@+id/duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="20dp"
+                android:drawablePadding="5dp"
+                android:padding="1dp"
+                app:drawableStartCompat="@drawable/ic_baseline_timer_24"
+                app:drawableTint="?android:attr/colorControlNormal" />
+
+            <TextView
+                android:id="@+id/averagePower"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="20dp"
+                android:drawablePadding="5dp"
+                android:padding="1dp"
+                app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                app:drawableTint="?android:attr/colorControlNormal" />
+
+        </GridLayout>
+
+
+        <de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
+            android:id="@+id/osMap"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/gridLayout" />
+
+        <ImageButton
+            android:id="@+id/change_map_type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/map_type"
+            android:minHeight="48dp"
+            android:src="@drawable/baseline_more_vert_black_24dp"
+            app:layout_constraintEnd_toEndOf="@id/osMap"
+            app:layout_constraintTop_toTopOf="@+id/osMap" />
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/lineChart"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/osMap" />
+
+
+        <TableLayout
+            android:id="@+id/tableSegments"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:stretchColumns="*"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/lineChart" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

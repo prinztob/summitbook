@@ -4,6 +4,7 @@ import androidx.room.*
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
+import kotlinx.coroutines.flow.Flow
 
 
 @Dao
@@ -11,6 +12,10 @@ interface SegmentsDao {
     @Transaction
     @Query("select * from segmentdetails")
     fun getAllSegments(): MutableList<Segment>?
+
+    @Transaction
+    @Query("select * from segmentdetails")
+    fun getAllSegmentsFlow(): Flow<MutableList<Segment>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addSegmentDetails(segmentDetails: SegmentDetails?): Long

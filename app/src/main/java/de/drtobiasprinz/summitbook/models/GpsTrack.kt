@@ -1,4 +1,4 @@
-package de.drtobiasprinz.summitbook.db.entities
+package de.drtobiasprinz.summitbook.models
 
 import android.content.Context
 import android.graphics.*
@@ -14,6 +14,7 @@ import de.drtobiasprinz.gpx.GPXParser
 import de.drtobiasprinz.gpx.Gpx
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.getDistance
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.setDistanceFromPoints
 import org.osmdroid.util.GeoPoint
@@ -255,21 +256,22 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
 
 
     fun getTrackGraph(f: (TrackPoint) -> Double?): MutableList<Entry> {
-        if (trackPoints.isNotEmpty()) {
-            if (trackPoints.first().extension?.distance == null) {
-                setDistance()
-            }
+        if (trackPoints.firstOrNull()?.extension?.distance == null) {
+            setDistance()
+        }
+        val filterTrackPoints = trackPoints
+        return if (filterTrackPoints.isNotEmpty()) {
             val graph = mutableListOf<Entry>()
-            for (trackPoint in trackPoints) {
+            for (trackPoint in filterTrackPoints) {
                 val value = f(trackPoint)?.toFloat()
                 val distance = trackPoint.extension?.distance?.toFloat()
                 if (value != null && distance != null) {
                     graph.add(Entry(distance, value, trackPoint))
                 }
             }
-            return graph
+            graph
         } else {
-            return mutableListOf()
+            mutableListOf()
         }
     }
 
@@ -299,7 +301,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         private const val COLOR_POLYLINE_STATIC = Color.BLUE
         private const val COLOR_POLYLINE_ANIMATED = Color.GREEN
         private const val COLOR_BACKGROUND = Color.WHITE
-        private const val LINE_WIDTH_BIG = 12f
+        const val LINE_WIDTH_BIG = 12f
         private const val TEXT_SIZE = 20f
         private const val TAG = "GpsTrack"
 
@@ -319,7 +321,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         }
 
         private fun getGeoPoints(trackPoints: List<TrackPoint>): MutableList<GeoPoint> {
-            return trackPoints.map { GeoPoint(it.lat, it.lon) } as MutableList<GeoPoint>
+            return trackPoints.map { GeoPoint(it.lat, it.lon, it.ele ?: 0.0) } as MutableList<GeoPoint>
         }
 
         private fun getTrack(fileToUse: File): Gpx? {

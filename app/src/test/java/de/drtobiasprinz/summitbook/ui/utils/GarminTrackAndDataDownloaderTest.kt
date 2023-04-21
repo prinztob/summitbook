@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import org.junit.Test
 

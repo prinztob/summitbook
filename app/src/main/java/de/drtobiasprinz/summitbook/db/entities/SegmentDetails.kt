@@ -31,4 +31,8 @@ data class SegmentDetails(
         result = 31 * result + endPointName.hashCode()
         return result
     }
+
+    companion object {
+        const val SEGMENT_DETAILS_ID_EXTRA_IDENTIFIER = "SEGMENT_DETAILS_ID"
+    }
 }

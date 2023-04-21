@@ -11,6 +11,7 @@ import android.widget.AdapterView
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.*
 import com.github.mikephil.charting.data.Entry
@@ -28,20 +29,21 @@ import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
 import de.drtobiasprinz.summitbook.adapter.SegmentsViewAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentAddSegmentEntryBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.db.entities.GpsTrack
-import de.drtobiasprinz.summitbook.db.entities.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.db.entities.TrackColor.Elevation
-import de.drtobiasprinz.summitbook.db.entities.TrackColor.None
 import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.models.GpsTrack
+import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
+import de.drtobiasprinz.summitbook.models.TrackColor.Elevation
+import de.drtobiasprinz.summitbook.models.TrackColor.None
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import org.osmdroid.api.IGeoPoint
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
@@ -62,6 +64,8 @@ class AddSegmentEntryFragment : Fragment() {
     lateinit var contactsAdapter: ContactsAdapter
     lateinit var database: AppDatabase
     private lateinit var binding: FragmentAddSegmentEntryBinding
+    private val viewModel: DatabaseViewModel by activityViewModels()
+
 
     private var gpsTrack: GpsTrack? = null
     private var startMarker: Marker? = null
@@ -84,7 +88,7 @@ class AddSegmentEntryFragment : Fragment() {
         super.onCreate(savedInstanceState)
         database = DatabaseModule.provideDatabase(requireContext())
         segmentEntry = segmentEntryId?.let {
-            database.segmentsDao()?.getSegmentEntry(it)
+            database.segmentsDao().getSegmentEntry(it)
         }
         segment =
             segmentsViewAdapter?.segments?.first { it.segmentDetails.segmentDetailsId == segmentId }
@@ -110,14 +114,12 @@ class AddSegmentEntryFragment : Fragment() {
                 val segmentEntryLocal = segmentEntry
                 if (summit != null && segmentEntryLocal != null) {
                     if (isUpdate) {
-                        database.segmentsDao()
-                            ?.updateSegmentEntry(segmentEntryLocal)
+                        database.segmentsDao().updateSegmentEntry(segmentEntryLocal)
                         segmentsViewAdapter?.segments?.first { it.segmentDetails.segmentDetailsId == segmentId }?.segmentEntries?.remove(
                             segmentEntryLocal
                         )
                     } else {
-                        database.segmentsDao()
-                            ?.addSegmentEntry(segmentEntryLocal)
+                        database.segmentsDao().addSegmentEntry(segmentEntryLocal)
                     }
                     segmentsViewAdapter?.segments?.first { it.segmentDetails.segmentDetailsId == segmentId }?.segmentEntries?.add(
                         segmentEntryLocal
@@ -162,41 +164,48 @@ class AddSegmentEntryFragment : Fragment() {
     }
 
     private fun prepareCompareAutoComplete() {
-        val items = getSummitsSuggestions()
-        binding.summitNameToUse.item = items
-        val summit = summitToCompare
-        if (summit != null) {
-            val position = items.indexOf("${summit.getDateAsString()} ${summit.name}")
-            if (position >= 0) {
-                binding.summitNameToUse.setSelection(position)
-            }
-        }
-        binding.summitNameToUse.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    adapterView: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long
-                ) {
-                    if (view != null) {
-                        val text = items[position]
-                        if (text != "" && text != "None") {
-                            val newlySelectedSummit =
-                                summitsToCompare.find { text.startsWith("${it.getDateAsString()} ${it.name}") }
-                            if (newlySelectedSummit != summitToCompare) {
-                                summitToCompare = newlySelectedSummit
-                                setGpsTrack(summitToCompare)
-                                setOpenStreetMap()
-                                drawChart()
-                                setTextView()
-                            }
+        val summitsToCompareFromActivity = viewModel.summitsList
+        summitsToCompareFromActivity.observe(viewLifecycleOwner) {
+            it.data.let { summits ->
+                if (summits != null) {
+                    val items = getSummitsSuggestions(summits)
+                    binding.summitNameToUse.item = items
+                    val summit = summitToCompare
+                    if (summit != null) {
+                        val position = items.indexOf("${summit.getDateAsString()} ${summit.name}")
+                        if (position >= 0) {
+                            binding.summitNameToUse.setSelection(position)
                         }
                     }
-                }
+                    binding.summitNameToUse.onItemSelectedListener =
+                        object : AdapterView.OnItemSelectedListener {
+                            override fun onItemSelected(
+                                adapterView: AdapterView<*>?,
+                                view: View?,
+                                position: Int,
+                                id: Long
+                            ) {
+                                if (view != null) {
+                                    val text = items[position]
+                                    if (text != "" && text != "None") {
+                                        val newlySelectedSummit =
+                                            summitsToCompare.find { text.startsWith("${it.getDateAsString()} ${it.name}") }
+                                        if (newlySelectedSummit != summitToCompare) {
+                                            summitToCompare = newlySelectedSummit
+                                            setGpsTrack(summitToCompare)
+                                            setOpenStreetMap()
+                                            drawChart()
+                                            setTextView()
+                                        }
+                                    }
+                                }
+                            }
 
-                override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+                            override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+                        }
+                }
             }
+        }
     }
 
     private fun setTextView() {
@@ -281,11 +290,9 @@ class AddSegmentEntryFragment : Fragment() {
         }
     }
 
-    private fun getSummitsSuggestions(): List<String> {
+    private fun getSummitsSuggestions(summits: List<Summit>): List<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
-        val summitsToCompareFromActivity = contactsAdapter.differ.currentList
-        val summitsWithTrack =
-            summitsToCompareFromActivity.filter { it.hasGpsTrack() }.sortedByDescending { it.date }
+        val summitsWithTrack = summits.filter { it.hasGpsTrack() }.sortedByDescending { it.date }
         val entries = segment?.segmentEntries
         summitsToCompare = if (entries != null && entries.isNotEmpty()) {
             val startPoint = GeoPoint(
@@ -308,7 +315,7 @@ class AddSegmentEntryFragment : Fragment() {
                     ?: 0
             suggestions.add("${summit.getDateAsString()} ${summit.name} ${if (occurrence > 0) "($occurrence)" else ""}")
         }
-        return suggestions as ArrayList
+        return suggestions
     }
 
     private fun setGpsTrack(localSummit: Summit?) {
@@ -626,7 +633,7 @@ class AddSegmentEntryFragment : Fragment() {
     }
 
     private fun addMarker(mMapView: MapView, startPoint: GeoPoint?, drawable: Drawable?): Marker? {
-        try {
+        return try {
             val marker = Marker(mMapView)
             marker.position = startPoint
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
@@ -636,17 +643,17 @@ class AddSegmentEntryFragment : Fragment() {
                 false
             }
             mMapView.invalidate()
-            return marker
+            marker
         } catch (e: NullPointerException) {
             e.printStackTrace()
-            return null
+            null
         }
     }
 
     companion object {
         fun getInstance(
             segmentId: Long,
-            segmentsViewAdapter: SegmentsViewAdapter,
+            segmentsViewAdapter: SegmentsViewAdapter?,
             segmentEntryId: Long?
         ): AddSegmentEntryFragment {
             val fragment = AddSegmentEntryFragment()
@@ -659,7 +666,6 @@ class AddSegmentEntryFragment : Fragment() {
             return fragment
         }
 
-        const val TAG = "osmBaseFrag"
     }
 
 }

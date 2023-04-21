@@ -9,10 +9,10 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.GpsTrack
+import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
-import de.drtobiasprinz.summitbook.db.entities.TrackColor
+import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.ITileSource
@@ -70,9 +70,9 @@ object OpenStreetMapUtils {
 
     @JvmStatic
     fun drawTrack(
-            summitEntry: Summit, forceAddTrack: Boolean, osMap: MapView, selectedCustomizeTrackItem: TrackColor,
-            calculateBondingBox: Boolean = false, mGeoPoints: ArrayList<GeoPoint> = arrayListOf(),
-            color: Int = Color.BLUE, rootView: View? = null
+        summitEntry: Summit, forceAddTrack: Boolean, osMap: MapView, selectedCustomizeTrackItem: TrackColor,
+        calculateBondingBox: Boolean = false, mGeoPoints: ArrayList<GeoPoint> = arrayListOf(),
+        color: Int = Color.BLUE, rootView: View? = null
     ) {
         if (summitEntry.hasGpsTrack()) {
             if (summitEntry.gpsTrack == null) {
