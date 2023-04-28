@@ -8,7 +8,7 @@ class GpxPyExecutor(private var pythonInstance: Python) {
     private lateinit var pythonModule: PyObject
 
     fun createSimplifiedGpxTrack(originalGpxTrackPath: Path) {
-        pythonModule = pythonInstance.getModule("start")
+        pythonModule = pythonInstance.getModule("entry_point")
         val result = pythonModule.callAttr("analyze_gpx_track", originalGpxTrackPath.toFile().absolutePath)
         checkOutput(result)
     }

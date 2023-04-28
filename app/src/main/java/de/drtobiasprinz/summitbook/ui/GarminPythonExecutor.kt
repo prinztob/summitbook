@@ -32,7 +32,7 @@ class GarminPythonExecutor(
     private fun login() {
         if (client == null) {
             if (Python.isStarted()) {
-                pythonModule = pythonInstance?.getModule("start")
+                pythonModule = pythonInstance?.getModule("entry_point")
                 Log.i("GarminPythonExecutor", "do login")
                 val result = pythonModule?.callAttr("get_authenticated_client", username, password)
                 checkOutput(result)

@@ -7,7 +7,7 @@ from garminconnect import (
     GarminConnectTooManyRequestsError,
     GarminConnectAuthenticationError,
 )
-from track_analyzer import TrackAnalyzer
+from gpx_track_analyzer import TrackAnalyzer
 
 BASE_URL = 'https://connect.garmin.com'
 
@@ -218,8 +218,6 @@ def update_power_data(activity, api, date):
         activity['maxAvgPower_3600'] = power_data['entries'][12]['power']
         activity['maxAvgPower_7200'] = power_data['entries'][13]['power']
         activity['maxAvgPower_18000'] = power_data['entries'][14]['power']
-
-
 
 
 def analyze_gpx_track(path):
