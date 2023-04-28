@@ -10,28 +10,25 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface SummitsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun saveContact(contactsEntity: Summit): Long
+    suspend fun saveSummit(entity: Summit): Long
 
     @Update
-    suspend fun updateContact(contactsEntity: Summit)
+    suspend fun updateSummit(entity: Summit)
 
     @Delete
-    suspend fun deleteContact(contactsEntity: Summit)
+    suspend fun deleteSummit(entity: Summit)
 
     @Query("SELECT * FROM $SUMMITS_TABLE WHERE id ==:id")
-    fun getContact(id: Long): Flow<Summit>
+    fun getSummit(id: Long): Flow<Summit>
 
     @Query("SELECT * FROM $SUMMITS_TABLE WHERE id ==:id")
-    fun getSummit(id: Long): Summit
+    fun getSummitDeprecated(id: Long): Summit
 
     @Query("SELECT * FROM $SUMMITS_TABLE where isBookmark = 0")
     fun getAllSummits(): Flow<MutableList<Summit>>
 
     @Query("SELECT * FROM $SUMMITS_TABLE where isBookmark = 1")
     fun getAllBookmarks(): Flow<MutableList<Summit>>
-
-    @Query("DELETE FROM $SUMMITS_TABLE")
-    fun deleteAllContacts()
 
     @Query("SELECT * FROM $SUMMITS_TABLE ORDER BY name ASC")
     fun sortedASC(): Flow<MutableList<Summit>>
@@ -42,8 +39,8 @@ interface SummitsDao {
     @RawQuery(observedEntities = [Summit::class])
     fun getSortedAndFilteredSummits(query: SupportSQLiteQuery): Flow<MutableList<Summit>>
 
-    @Query("SELECT * FROM $SUMMITS_TABLE WHERE name LIKE '%' || :name || '%' ")
-    fun searchContact(name: String): Flow<MutableList<Summit>>
+    @Query("SELECT * FROM $SUMMITS_TABLE WHERE name LIKE '%' || :name || '%' OR comments LIKE '%' || :name || '%'")
+    fun searchSummit(name: String): Flow<MutableList<Summit>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addSummit(summit: Summit?): Long

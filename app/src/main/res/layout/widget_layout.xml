@@ -1,67 +1,189 @@
 <?xml version="1.0" encoding="utf-8"?>
-<GridLayout android:background="@color/translucent70"
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget"
-    android:columnCount="2"
-    android:layout_height="wrap_content"
-    android:padding="5dp"
     android:layout_width="wrap_content"
-    android:rowCount="3"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+    android:layout_height="wrap_content"
+    android:background="@color/translucent70"
+    android:columnCount="2"
+    android:padding="5dp"
+    android:rowCount="8">
+
+
+    <TextView
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginStart="10dp"
+        android:padding="2dp"
+        android:text=""
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/white" />
+
+    <TextView
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginStart="10dp"
+        android:padding="2dp"
+        android:text="@string/current_year"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/white" />
 
     <ImageView
         android:id="@+id/activity_image"
-        android:paddingStart="2dp"
-        android:paddingEnd="2dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_baseline_directions_run_24_green"
-        android:contentDescription="@string/set_activity"  />
+        android:contentDescription="@string/set_activity"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp"
+        android:src="@drawable/ic_baseline_directions_run_24_green" />
+
     <TextView
-        android:id="@+id/activity"
+        android:id="@+id/activityYearly"
         android:layout_height="wrap_content"
         android:layout_gravity="start"
         android:layout_marginStart="10dp"
         android:padding="2dp"
-        android:textColor="@color/white"
         android:text="@string/will_be_updated_soon"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/white" />
 
     <ImageView
         android:id="@+id/height_meter_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/height_meter_hint"
         android:paddingStart="2dp"
         android:paddingEnd="2dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_baseline_trending_up_24_green"
-        android:contentDescription="@string/height_meter_hint" />
+        android:src="@drawable/ic_baseline_trending_up_24_green" />
+
     <TextView
-        android:id="@+id/height_meter"
-        android:layout_gravity="start"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
+        android:id="@+id/heightMeterYealy"
         android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginStart="10dp"
         android:padding="2dp"
-        android:textColor="@color/white"
         android:text="@string/will_be_updated_soon"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/white" />
 
 
     <ImageView
         android:id="@+id/kilometers_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/kilometers_hint"
         android:paddingStart="2dp"
         android:paddingEnd="2dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_baseline_compare_arrows_24_green"
-        android:contentDescription="@string/kilometers_hint" />
+        android:src="@drawable/ic_baseline_compare_arrows_24_green" />
+
     <TextView
-        android:id="@+id/kilometers"
-        android:layout_gravity="start"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
+        android:id="@+id/kilometersYearly"
         android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginStart="10dp"
         android:padding="2dp"
-        android:textColor="@color/white"
         android:text="@string/will_be_updated_soon"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/white" />
+
+    <TextView
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/white" />
+
+    <TextView
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/white" />
+
+    <TextView
+        android:id="@+id/header_image_monthly"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginStart="10dp"
+        android:padding="2dp"
+        android:text=""
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/white"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/header_monthly"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginStart="10dp"
+        android:padding="2dp"
+        android:text="@string/current_month"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/white"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/activity_image_monthly"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/set_activity"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp"
+        android:src="@drawable/ic_baseline_directions_run_24_green"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/activityMonthly"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginStart="10dp"
+        android:padding="2dp"
+        android:text=""
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/white"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/height_meter_image_monthly"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/height_meter_hint"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp"
+        android:src="@drawable/ic_baseline_trending_up_24_green"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/heightMeterMonthly"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginStart="10dp"
+        android:padding="2dp"
+        android:text=""
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/white"
+        android:visibility="gone" />
+
+
+    <ImageView
+        android:id="@+id/kilometers_image_monthly"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/kilometers_hint"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp"
+        android:src="@drawable/ic_baseline_compare_arrows_24_green"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/kilometersMonthly"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginStart="10dp"
+        android:padding="2dp"
+        android:text=""
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/white"
+        android:visibility="gone" />
 </GridLayout>

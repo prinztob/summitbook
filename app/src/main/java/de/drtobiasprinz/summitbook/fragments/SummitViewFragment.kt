@@ -18,13 +18,14 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitViewBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.utils.AsyncUpdateGarminData
 import de.drtobiasprinz.summitbook.utils.Constants
@@ -37,7 +38,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class SummitViewFragment : Fragment() {
     @Inject
-    lateinit var contactsAdapter: ContactsAdapter
+    lateinit var summitsAdapter: SummitsAdapter
     private lateinit var binding: FragmentSummitViewBinding
 
     @Inject
@@ -61,16 +62,16 @@ class SummitViewFragment : Fragment() {
 
     private fun adapterOnClickUpdateIsFavorite(summit: Summit) {
         summit.isFavorite = !summit.isFavorite
-        viewModel?.saveContact(true, summit)
+        viewModel?.saveSummit(true, summit)
     }
 
     private fun adapterOnClickUpdateIsPeak(summit: Summit) {
         summit.isPeak = !summit.isPeak
-        viewModel?.saveContact(true, summit)
+        viewModel?.saveSummit(true, summit)
     }
 
     private fun adapterOnClickDelete(summit: Summit) {
-        viewModel?.deleteContact(summit)
+        viewModel?.deleteSummit(summit)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -79,28 +80,28 @@ class SummitViewFragment : Fragment() {
             btnShowDialog.setOnClickListener {
                 startAddSummitDialog(null)
             }
-            rvContacts.apply {
+            recyclerView.apply {
                 layoutManager = LinearLayoutManager(requireContext())
-                adapter = contactsAdapter
-                contactsAdapter.onClickDelete = { e -> adapterOnClickDelete(e) }
-                contactsAdapter.onClickUpdateIsFavorite = { e -> adapterOnClickUpdateIsFavorite(e) }
-                contactsAdapter.onClickUpdateIsPeak = { e -> adapterOnClickUpdateIsPeak(e) }
+                adapter = summitsAdapter
+                summitsAdapter.onClickDelete = { e -> adapterOnClickDelete(e) }
+                summitsAdapter.onClickUpdateIsFavorite = { e -> adapterOnClickUpdateIsFavorite(e) }
+                summitsAdapter.onClickUpdateIsPeak = { e -> adapterOnClickUpdateIsPeak(e) }
             }
             if (showBookmarksOnly) {
                 viewModel?.getAllBookmarks()
                 viewModel?.bookmarksList?.observe(viewLifecycleOwner) {
                     when (it.status) {
                         DataStatus.Status.LOADING -> {
-                            loading.isVisible(true, rvContacts)
-                            emptyBody.isVisible(false, rvContacts)
+                            loading.isVisible(true, recyclerView)
+                            emptyBody.isVisible(false, recyclerView)
                         }
                         DataStatus.Status.SUCCESS -> {
                             it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
-                            loading.isVisible(false, rvContacts)
-                            contactsAdapter.differ.submitList(it.data)
+                            loading.isVisible(false, recyclerView)
+                            summitsAdapter.differ.submitList(it.data)
                         }
                         DataStatus.Status.ERROR -> {
-                            loading.isVisible(false, rvContacts)
+                            loading.isVisible(false, recyclerView)
                             Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
                         }
                     }
@@ -109,21 +110,21 @@ class SummitViewFragment : Fragment() {
                 viewModel?.summitsList?.observe(viewLifecycleOwner) {
                     when (it.status) {
                         DataStatus.Status.LOADING -> {
-                            loading.isVisible(true, rvContacts)
-                            emptyBody.isVisible(false, rvContacts)
+                            loading.isVisible(true, recyclerView)
+                            emptyBody.isVisible(false, recyclerView)
                         }
                         DataStatus.Status.SUCCESS -> {
                             it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
-                            loading.isVisible(false, rvContacts)
+                            loading.isVisible(false, recyclerView)
                             val data = sortFilterValues.apply(it.data ?: emptyList())
-                            contactsAdapter.differ.submitList(data)
+                            summitsAdapter.differ.submitList(data)
                             if (!startedScheduler) {
                                 addBackgroundTasks()
                                 startedScheduler = true
                             }
                         }
                         DataStatus.Status.ERROR -> {
-                            loading.isVisible(false, rvContacts)
+                            loading.isVisible(false, recyclerView)
                             Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
                         }
                     }
@@ -142,19 +143,19 @@ class SummitViewFragment : Fragment() {
 
                 override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                     val position = viewHolder.absoluteAdapterPosition
-                    val contact = contactsAdapter.differ.currentList[position]
+                    val summit = summitsAdapter.differ.currentList[position]
                     when (direction) {
                         ItemTouchHelper.LEFT -> {
-                            viewModel?.deleteContact(contact)
+                            viewModel?.deleteSummit(summit)
                             Snackbar.make(binding.root, "Item Deleted!", Snackbar.LENGTH_LONG)
                                 .apply {
                                     setAction("UNDO") {
-                                        viewModel?.saveContact(false, contact)
+                                        viewModel?.saveSummit(false, summit)
                                     }
                                 }.show()
                         }
                         ItemTouchHelper.RIGHT -> {
-                            startAddSummitDialog(contact)
+                            startAddSummitDialog(summit)
                         }
                     }
                 }
@@ -185,7 +186,7 @@ class SummitViewFragment : Fragment() {
             }
 
             val itemTouchHelper = ItemTouchHelper(swipeCallback)
-            itemTouchHelper.attachToRecyclerView(rvContacts)
+            itemTouchHelper.attachToRecyclerView(recyclerView)
 
         }
     }
@@ -219,7 +220,7 @@ class SummitViewFragment : Fragment() {
     private fun addBackgroundTasks() {
         val useSimplifiedTracks = sharedPreferences.getBoolean("use_simplified_tracks", true)
         if (useSimplifiedTracks) {
-            val entriesWithoutSimplifiedGpxTrack = contactsAdapter.differ.currentList.filter {
+            val entriesWithoutSimplifiedGpxTrack = summitsAdapter.differ.currentList.filter {
                 it.hasGpsTrack() && !it.hasGpsTrack(simplified = true)
             }.take(50)
             MainActivity.pythonInstance.let {
@@ -230,7 +231,7 @@ class SummitViewFragment : Fragment() {
                 }
             }
         } else {
-            contactsAdapter.differ.currentList.filter {
+            summitsAdapter.differ.currentList.filter {
                 it.hasGpsTrack(simplified = true)
             }.forEach {
                 val trackFile = it.getGpsTrackPath(simplified = true).toFile()
@@ -247,21 +248,18 @@ class SummitViewFragment : Fragment() {
                 )
             }
         }
-
-        if (sharedPreferences.getBoolean("startup_auto_update_switch", false)) {
+        val executor = pythonExecutor
+        if (sharedPreferences.getBoolean("startup_auto_update_switch", false) && executor != null) {
             binding.loading.visibility = View.VISIBLE
             @Suppress("DEPRECATION")
-            ((MainActivity.pythonExecutor)?.let {
-                AsyncUpdateGarminData(
-                    sharedPreferences,
-                    it,
-                    database,
-                    contactsAdapter.differ.currentList,
-                    requireContext(),
-                    binding.loading
-                ).execute()
-            })
+            AsyncUpdateGarminData(
+                sharedPreferences,
+                executor,
+                database,
+                summitsAdapter.differ.currentList,
+                requireContext(),
+                binding.loading
+            ).execute()
         }
     }
-
 }

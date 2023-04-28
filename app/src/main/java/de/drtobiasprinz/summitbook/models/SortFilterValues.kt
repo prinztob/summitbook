@@ -70,7 +70,7 @@ class SortFilterValues(
 
     private fun setDates() {
         val dt = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
-        if (wasFullYearSelected()) {
+        if (wasFullYearSelected() && getSelectedYear() != "") {
             startDate = dt.parse(
                 "${getSelectedYear()}-01-01 00:00:00"
             )
@@ -84,7 +84,7 @@ class SortFilterValues(
     }
 
     fun getSelectedYear(): String {
-        return if (wasFullYearSelected()) years[selectedDateSpinner - 2] else ""
+        return if (wasFullYearSelected() && years.isNotEmpty() && years.size > selectedDateSpinner - 2) years[selectedDateSpinner - 2] else ""
     }
 
     fun wasCurrentYearSelected(): Boolean {

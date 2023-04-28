@@ -12,11 +12,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.DialogShowNewSummitFromGarminBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
@@ -25,7 +24,6 @@ import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -34,8 +32,7 @@ import javax.inject.Inject
 class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
 
     @Inject
-    lateinit var contactsAdapter: ContactsAdapter
-    private val viewModel: DatabaseViewModel by activityViewModels()
+    lateinit var summitsAdapter: SummitsAdapter
 
     private lateinit var binding: DialogShowNewSummitFromGarminBinding
 
@@ -47,6 +44,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
     private lateinit var tableLayout: TableLayout
     private lateinit var database: AppDatabase
     private var activitiesIdIgnored: List<String> = emptyList()
+    var save: (List<Summit>, Boolean) -> Unit = { e, b -> }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -59,22 +57,28 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         super.onViewCreated(view, savedInstanceState)
         currentContext = requireContext()
         val sharedPreferences = context?.let { PreferenceManager.getDefaultSharedPreferences(it) }
-        val useTcx = sharedPreferences?.getBoolean("download_tcx", false) ?: false
         database = DatabaseModule.provideDatabase(currentContext)
         updateEntriesWithoutIgnored()
 
         binding.updateNewSummits.setOnClickListener {
-            val startDate = sharedPreferences?.getString("garmin_start_date", null) ?: ""
-            val current = LocalDateTime.now()
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            val endDate = current.format(formatter)
-            view.findViewById<RelativeLayout>(R.id.loadingPanel).visibility = View.VISIBLE
-            @Suppress("DEPRECATION") AsyncDownloadActivities(
-                pythonExecutor,
-                startDate,
-                endDate,
-                this
-            ).execute()
+            if (pythonExecutor != null) {
+                val startDate = sharedPreferences?.getString("garmin_start_date", null) ?: ""
+                val current = LocalDateTime.now()
+                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                val endDate = current.format(formatter)
+                binding.loadingPanel.visibility = View.VISIBLE
+                @Suppress("DEPRECATION") AsyncDownloadActivities(
+                    pythonExecutor,
+                    startDate,
+                    endDate,
+                    this
+                ).execute()
+            } else {
+                Toast.makeText(
+                    context,
+                    getString(R.string.set_user_pwd), Toast.LENGTH_LONG
+                ).show()
+            }
         }
         binding.showAll.setOnClickListener {
             if (showAllButtonEnabled) {
@@ -90,37 +94,16 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         binding.updateData.isEnabled = false
         binding.updateData.setOnClickListener {
             if (areEntriesChecked()) {
-                binding.loadingPanel.visibility = View.VISIBLE
-                binding.loadingPanel.tooltipText =
-                    getString(R.string.tool_tip_progress_new_garmin_activities,
-                        entriesWithoutIgnored.filter { summit -> summit.isSelected }
-                            .joinToString(", ") { it.name })
-                entriesWithoutIgnored.filter { summit -> summit.isSelected }.forEach { entry ->
-                    @Suppress("DEPRECATION")
-                    GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(
-                        listOf(entry), viewModel, useTcx, this
-                    ).execute()
-                }
+                save(entriesWithoutIgnored.filter { summit -> summit.isSelected }, false)
+                dialog?.dismiss()
             }
-            dialog?.cancel()
         }
         binding.addSummitMerge.isEnabled = false
         binding.addSummitMerge.setOnClickListener {
             if (canSelectedSummitsBeMerged()) {
-                binding.loadingPanel.visibility = View.VISIBLE
-                binding.loadingPanel.tooltipText =
-                    getString(R.string.tool_tip_progress_new_garmin_activities,
-                        entriesWithoutIgnored.filter { summit -> summit.isSelected }
-                            .joinToString(", ") { it.name })
-                @Suppress("DEPRECATION")
-                GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(
-                    entriesWithoutIgnored.filter { summit -> summit.isSelected },
-                    viewModel,
-                    useTcx,
-                    this
-                ).execute()
+                save(entriesWithoutIgnored.filter { summit -> summit.isSelected }, true)
+                dialog?.dismiss()
             }
-            dialog?.cancel()
         }
         binding.ignore.isEnabled = false
         binding.ignore.setOnClickListener {
@@ -155,7 +138,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
             database.ignoredActivityDao()?.allIgnoredActivities?.map { it.activityId }
                 ?: emptyList()
         val activityIdsInSummitBook =
-            contactsAdapter.differ.currentList.filter { !it.garminData?.activityIds.isNullOrEmpty() }
+            summitsAdapter.differ.currentList.filter { !it.garminData?.activityIds.isNullOrEmpty() }
                 .map { it.garminData?.activityIds as List<String> }.flatten()
         entriesWithoutIgnored = if (showAll) {
             getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activityIdsInSummitBook } as MutableList

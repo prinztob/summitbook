@@ -55,8 +55,10 @@
     <string name="action_search">Suche</string>
     <string name="empty" />
     <string name="km">km</string>
+    <string name="value_with_km">%1$s km</string>
     <string name="kmh">km/h</string>
     <string name="hm">hm</string>
+    <string name="value_with_hm">%1$s hm</string>
     <string name="total_height_meters">Gesammte Höhenmeter</string>
     <string name="total_kilometers">Gesammte Kilometer</string>
     <string name="total_activities">Anzahl Aktivitäten</string>
@@ -162,8 +164,8 @@
     <string name="delete_gps">"Koordinaten and GPX track des Gipfels %1$s wurden gelöscht."</string>
     <string name="delete_cancel">"Löschen wurde abgebrochen."</string>
     <string name="not_found">"Konnte %1$s nicht finden."</string>
-    <string name="delete_entry">"Gipfel %1$s wurde gelöscht."</string>
-    <string name="delete_entry_text">"Sind Sie sicher, dass sie den Gipfel löschen möchten?"</string>
+    <string name="delete_entry">"Gipfel %1$s soll gelöscht werden."</string>
+    <string name="delete_entry_text">"Sind Sie sicher, dass sie fortfahren möchten?"</string>
     <string name="add_gpx_successful">"Das Hinzufügen eines neuen GPX Track zu Gipfel %1$s war erfolgreich."</string>
     <string name="add_gpx_failed">"Das Hinzufügen eines neuen GPX Track zu Gipfel %1$s ist fehlgeschlagen."</string>
     <string name="garmin_add_cancel">"Hinzufügen einer Garmin Connect Aktivität wurde abgebrochen."</string>
@@ -311,6 +313,7 @@
     <string name="november">November</string>
     <string name="december">Dezember</string>
     <string name="next_year">Nächstes Jahr</string>
+    <string name="current_month">Aktueller Monat</string>
     <string name="current_year">Aktuelles Jahr</string>
     <string name="customize_track_color">Track Farbe anpassen</string>
     <string name="none">Keine</string>

@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui
 
-import android.os.AsyncTask
 import android.util.Log
 import com.chaquo.python.PyObject
 import com.chaquo.python.Python
@@ -10,12 +9,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
-import de.drtobiasprinz.summitbook.ui.dialog.BaseDialog
-import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
-import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader.Companion.getTempGpsFilePath
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.io.File
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -140,53 +134,6 @@ class GarminPythonExecutor(
 
     companion object {
 
-        @Suppress("DEPRECATION")
-        class AsyncDownloadGpxViaPython(
-            summits: List<Summit>,
-            private val viewModel: DatabaseViewModel,
-            useTcx: Boolean = false,
-            private val dialog: BaseDialog,
-            private val index: Int = -1
-        ) : AsyncTask<Void?, Void?, Void?>() {
-            private val downloader = GarminTrackAndDataDownloader(summits, pythonExecutor, useTcx)
-            override fun doInBackground(vararg params: Void?): Void? {
-                try {
-                    downloader.downloadTracks()
-                } catch (e: RuntimeException) {
-                    Log.e("AsyncDownloadGpxViaPython.doInBackground", e.message ?: "")
-                }
-                return null
-            }
-
-            override fun onPostExecute(param: Void?) {
-                try {
-                    downloader.extractFinalSummit()
-                    if (dialog.isStepByStepDownload()) {
-                        val activityId = downloader.finalEntry?.garminData?.activityId
-                        if (activityId != null) {
-                            downloader.composeFinalTrack(getTempGpsFilePath(activityId).toFile())
-                        }
-                    } else {
-                        downloader.composeFinalTrack()
-                        downloader.updateFinalEntry(viewModel)
-                    }
-                    if (index != -1) {
-                        dialog.doInPostExecute(index,
-                            downloader.downloadedTracks.none { !it.exists() })
-                    }
-                } catch (e: RuntimeException) {
-                    Log.e("AsyncDownloadGpxViaPython", e.message ?: "")
-                } finally {
-//                    SummitViewFragment.updateNewSummits(resultReceiver.getAllActivitiesFromThirdParty(), resultReceiver.getSortFilterHelper().entries, dialog.getDialogContext())
-//                    val progressBar = dialog.getProgressBarForAsyncTask()
-//                    if (progressBar != null) {
-//                        progressBar.visibility = View.GONE
-//                        progressBar.tooltipText = ""
-//                    }
-                }
-            }
-        }
-
         fun getSummitsAtDate(activities: JsonArray): List<Summit> {
             val entries = ArrayList<Summit>()
             for (i in 0 until activities.size()) {
@@ -204,8 +151,8 @@ class GarminPythonExecutor(
             val entries = mutableListOf<Summit>()
             if (directory != null && directory.exists() && directory.isDirectory) {
                 val files = directory.listFiles()
-                files.sortByDescending { it.absolutePath }
                 if (files?.isNotEmpty() == true) {
+                    files.sortByDescending { it.absolutePath }
                     files.forEach {
                         if (it.name.startsWith("activity_") && !it.name.endsWith("_splits.json")) {
                             try {

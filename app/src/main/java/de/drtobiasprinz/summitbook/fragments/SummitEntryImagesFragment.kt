@@ -40,7 +40,7 @@ class SummitEntryImagesFragment : Fragment() {
         if (summitEntry == null && savedInstanceState != null) {
             val summitEntryId = savedInstanceState.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
             if (summitEntryId != 0L) {
-                summitEntry = database?.summitsDao()?.getSummit(summitEntryId)
+                summitEntry = database?.summitsDao()?.getSummitDeprecated(summitEntryId)
             }
         }
         val localSummit = summitEntry
@@ -62,9 +62,7 @@ class SummitEntryImagesFragment : Fragment() {
             val display = activity?.display
             display?.getRealMetrics(metrics)
         } else {
-            @Suppress("DEPRECATION")
             val display = activity?.windowManager?.defaultDisplay
-            @Suppress("DEPRECATION")
             display?.getMetrics(metrics)
         }
         val carousel: ImageCarousel = root.findViewById(R.id.carousel)

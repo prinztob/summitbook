@@ -18,7 +18,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentLineChartBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.SolarIntensity
@@ -37,7 +37,7 @@ import javax.inject.Inject
 class LineChartSolarFragment : Fragment() {
 
     @Inject
-    lateinit var contactsAdapter: ContactsAdapter
+    lateinit var summitsAdapter: SummitsAdapter
     lateinit var database: AppDatabase
     private lateinit var binding: FragmentLineChartBinding
 
@@ -57,9 +57,9 @@ class LineChartSolarFragment : Fragment() {
         database = DatabaseModule.provideDatabase(requireContext())
 
         fillDateSpinner()
-        summits = contactsAdapter.differ.currentList
+        summits = summitsAdapter.differ.currentList
         solarIntensities = database.solarIntensityDao()?.getAll()
-        val numberActivitiesPerDay = summits.groupingBy { it.getDateAsString() }?.eachCount()
+        val numberActivitiesPerDay = summits.groupingBy { it.getDateAsString() }.eachCount()
         solarIntensities?.forEach {
             it.activitiesOnDay =
                 if (numberActivitiesPerDay?.keys?.contains(it.getDateAsString()) == true) numberActivitiesPerDay[it.getDateAsString()]
@@ -147,12 +147,12 @@ class LineChartSolarFragment : Fragment() {
                         val sorted = entries.sortedBy { it.getDateAsFloat() }
                         val newEntry = SolarIntensity(0,
                             sorted.first().date,
-                            sorted.sumByDouble { it.solarUtilizationInHours },
-                            sorted.sumByDouble { it.solarExposureInHours } / sorted.size,
+                            sorted.sumOf { it.solarUtilizationInHours },
+                            sorted.sumOf { it.solarExposureInHours } / sorted.size,
                             true)
                         newEntry.markerText =
                             "${dateFormat.format(sorted.first().date)} - ${dateFormat.format(sorted.last().date)}"
-                        newEntry.activitiesOnDay = sorted.sumBy { it.activitiesOnDay }
+                        newEntry.activitiesOnDay = sorted.sumOf { it.activitiesOnDay }
                         newEntry
                     }
             }
@@ -175,8 +175,8 @@ class LineChartSolarFragment : Fragment() {
                     val newEntry = if (entries != null && entries.isNotEmpty()) {
                         SolarIntensity(0,
                             entries.first().date,
-                            entries.sumByDouble { it.solarUtilizationInHours },
-                            entries.sumByDouble { it.solarExposureInHours } / entries.size,
+                            entries.sumOf { it.solarUtilizationInHours },
+                            entries.sumOf { it.solarExposureInHours } / entries.size,
                             true)
                     } else {
                         SolarIntensity(
@@ -184,7 +184,7 @@ class LineChartSolarFragment : Fragment() {
                             startDate, 0.0, 0.0, true
                         )
                     }
-                    newEntry.activitiesOnDay = entries?.sumBy { it.activitiesOnDay } ?: 0
+                    newEntry.activitiesOnDay = entries?.sumOf { it.activitiesOnDay } ?: 0
                     newEntry.markerText =
                         "${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}"
                     solarIntensitiesLocal.add(newEntry)

@@ -47,7 +47,7 @@ class SummitEntryDataFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         resultReceiver = context as SummitEntryResultReceiver
-        pageViewModel = ViewModelProvider(this).get(PageViewModel::class.java)
+        pageViewModel = ViewModelProvider(this)[PageViewModel::class.java]
         pageViewModel?.setIndex(TAG)
     }
 
@@ -804,13 +804,13 @@ class SummitEntryDataFragment : Fragment() {
         resultReceiver.getAllSegments().observe(viewLifecycleOwner) {
             it.data.let { segments ->
                 val segmentsForSummit =
-                    segments?.filter { it.segmentEntries.any { it.activityId == summitEntry.activityId } }
+                    segments?.filter { summit -> summit.segmentEntries.any { entry -> entry.activityId == summitEntry.activityId } }
                 if (segmentsForSummit != null && segmentsForSummit.isNotEmpty()) {
                     val list = mutableListOf<Triple<SegmentEntry, SegmentDetails, String>>()
                     segmentsForSummit.forEach { segment ->
-                        segment.segmentEntries.sortBy { it.duration }
+                        segment.segmentEntries.sortBy { entry -> entry.duration }
                         val relevantEntries =
-                            segment.segmentEntries.filter { it.activityId == summitEntry.activityId }
+                            segment.segmentEntries.filter { entry -> entry.activityId == summitEntry.activityId }
                         relevantEntries.forEach { segmentEntry ->
                             list.add(
                                 Triple(
@@ -830,36 +830,15 @@ class SummitEntryDataFragment : Fragment() {
                         chipGroup.visibility = View.GONE
                     } else {
                         for (entry in list) {
-                            val chip = Chip(requireContext())
-                            chip.text = entry.third
-                            chip.isClickable = false
-                            chip.chipIcon = ResourcesCompat.getDrawable(resources, imageId, null)
-                            when (requireContext().resources?.configuration?.uiMode?.and(
-                                Configuration.UI_MODE_NIGHT_MASK
-                            )) {
-                                Configuration.UI_MODE_NIGHT_YES -> {
-                                    chip.chipIconTint =
-                                        ContextCompat.getColorStateList(
-                                            requireContext(),
-                                            R.color.white
-                                        )
-                                }
-                                Configuration.UI_MODE_NIGHT_NO -> {
-                                    chip.chipIconTint =
-                                        ContextCompat.getColorStateList(
-                                            requireContext(),
-                                            R.color.black
-                                        )
-                                }
-                                Configuration.UI_MODE_NIGHT_UNDEFINED -> {
-                                    chip.chipIconTint =
-                                        ContextCompat.getColorStateList(
-                                            requireContext(),
-                                            R.color.black
-                                        )
-                                }
-                            }
-
+                            val chip = createChip(entry.third, imageId)
+//                            chip.setOnClickListener {
+//                                val fragment = SegmentEntryDetailsFragment()
+//                                fragment.segmentDetailsId = entry.second.segmentDetailsId
+//                                fragment.segmentEntryId = entry.first.entryId
+//                                childFragmentManager.beginTransaction()
+//                                    .replace(R.id.content_frame_pager, fragment, "SegmentEntryDetailsFragment")
+//                                    .addToBackStack(null).commit()
+//                            }
                             chipGroup.addView(chip)
                         }
                     }
@@ -875,28 +854,34 @@ class SummitEntryDataFragment : Fragment() {
             chipGroup.visibility = View.GONE
         } else {
             for (entry in list) {
-                val chip = Chip(requireContext())
-                chip.text = entry
-                chip.isClickable = false
-                chip.chipIcon = ResourcesCompat.getDrawable(resources, imageId, null)
-                when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
-                    Configuration.UI_MODE_NIGHT_YES -> {
-                        chip.chipIconTint =
-                            ContextCompat.getColorStateList(requireContext(), R.color.white)
-                    }
-                    Configuration.UI_MODE_NIGHT_NO -> {
-                        chip.chipIconTint =
-                            ContextCompat.getColorStateList(requireContext(), R.color.black)
-                    }
-                    Configuration.UI_MODE_NIGHT_UNDEFINED -> {
-                        chip.chipIconTint =
-                            ContextCompat.getColorStateList(requireContext(), R.color.black)
-                    }
-                }
-
-                chipGroup.addView(chip)
+                chipGroup.addView(createChip(entry, imageId))
             }
         }
+    }
+
+    private fun createChip(
+        entry: String,
+        imageId: Int
+    ): Chip {
+        val chip = Chip(requireContext())
+        chip.text = entry
+        chip.isClickable = false
+        chip.chipIcon = ResourcesCompat.getDrawable(resources, imageId, null)
+        when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+            Configuration.UI_MODE_NIGHT_YES -> {
+                chip.chipIconTint =
+                    ContextCompat.getColorStateList(requireContext(), R.color.white)
+            }
+            Configuration.UI_MODE_NIGHT_NO -> {
+                chip.chipIconTint =
+                    ContextCompat.getColorStateList(requireContext(), R.color.black)
+            }
+            Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                chip.chipIconTint =
+                    ContextCompat.getColorStateList(requireContext(), R.color.black)
+            }
+        }
+        return chip
     }
 
     override fun onDestroy() {

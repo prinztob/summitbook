@@ -53,7 +53,8 @@ import kotlin.math.roundToLong
 class SegmentEntryDetailsFragment : Fragment() {
 
     var segmentDetailsId: Long = -1L
-
+    var segmentEntryId: Long = -1L
+    var decending: Boolean = true
     private lateinit var binding: FragmentSegmentEntryDetailsBinding
     lateinit var database: AppDatabase
     private lateinit var allSegments: List<Segment>
@@ -66,7 +67,7 @@ class SegmentEntryDetailsFragment : Fragment() {
 
     private var setSortLabelFor: Int = 21
     private var sorter: (List<SegmentEntry>) -> List<SegmentEntry> =
-        { e -> e.sortedBy { it.duration } }
+        { e -> if (decending) e.sortedByDescending { it.duration } else e.sortedBy { it.duration } }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -85,7 +86,8 @@ class SegmentEntryDetailsFragment : Fragment() {
                 summits.add(entry)
             }
         }
-        segmentEntryToShow = segment?.segmentEntries?.let { sorter(it).first() }
+        segmentEntryToShow =
+            if (segmentEntryId == -1L) segment?.segmentEntries?.let { sorter(it).first() } else segment?.segmentEntries?.firstOrNull { it.entryId == segmentEntryId }
         summitShown = summits.firstOrNull { it?.activityId == segmentEntryToShow?.activityId }
         prepareMap()
         update(summitShown, segmentEntryToShow, segment)
@@ -436,7 +438,7 @@ class SegmentEntryDetailsFragment : Fragment() {
             getString(R.string.date),
             tableLayout,
             segment,
-            sorter = { e -> e.sortedBy { it.date } })
+            sorter = { e -> if (decending) e.sortedByDescending { it.date } else e.sortedBy { it.date } })
         addLabel(view, tableRowHead, 21, getString(R.string.minutes), tableLayout, segment)
         addLabel(view,
             tableRowHead,
@@ -444,21 +446,21 @@ class SegmentEntryDetailsFragment : Fragment() {
             getString(R.string.kmh),
             tableLayout,
             segment,
-            sorter = { e -> e.sortedBy { it.kilometers * 60 / it.duration }.reversed() })
+            sorter = { e -> if (decending) e.sortedByDescending { it.kilometers * 60 / it.duration } else e.sortedBy { it.kilometers * 60 / it.duration } })
         addLabel(view,
             tableRowHead,
             23,
             getString(R.string.bpm),
             tableLayout,
             segment,
-            sorter = { e -> e.sortedBy { it.averageHeartRate }.reversed() })
+            sorter = { e -> if (decending) e.sortedByDescending { it.averageHeartRate } else e.sortedBy { it.averageHeartRate } })
         addLabel(view,
             tableRowHead,
             24,
             getString(R.string.watt),
             tableLayout,
             segment,
-            sorter = { e -> e.sortedBy { it.averagePower }.reversed() })
+            sorter = { e -> if (decending) e.sortedByDescending { it.averagePower } else e.sortedBy { it.averagePower } })
         addLabel(view, tableRowHead, 25, "", tableLayout, segment)
         addLabel(view, tableRowHead, 26, "", tableLayout, segment)
         tableLayout.addView(
@@ -493,21 +495,26 @@ class SegmentEntryDetailsFragment : Fragment() {
         text: String,
         tableLayout: TableLayout,
         segment: Segment,
-        sorter: (List<SegmentEntry>) -> List<SegmentEntry> = { e -> e.sortedBy { it.duration } }
+        sorter: (List<SegmentEntry>) -> List<SegmentEntry> = {  e -> if (decending) e.sortedByDescending { it.duration } else e.sortedBy { it.duration } }
     ) {
         val label = TextView(view.context)
         label.id = id
         label.text = text
         if (id == setSortLabelFor) {
             label.setCompoundDrawablesWithIntrinsicBounds(
-                R.drawable.ic_baseline_keyboard_double_arrow_down_24, 0, 0, 0
+                if (decending) R.drawable.baseline_keyboard_double_arrow_down_black_24dp else R.drawable.baseline_keyboard_double_arrow_up_black_24dp,
+                0,
+                0,
+                0
             )
         }
         label.setOnClickListener {
+            decending = !decending
             this.sorter = sorter
             setSortLabelFor = id
             drawTable(view, tableLayout, segment)
         }
+        label.setTextColor(Color.BLACK)
         tr.addView(label)
     }
 

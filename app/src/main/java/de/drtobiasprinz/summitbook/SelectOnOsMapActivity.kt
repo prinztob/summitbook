@@ -18,7 +18,7 @@ import androidx.fragment.app.FragmentActivity
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.GPXParser
 import de.drtobiasprinz.gpx.TrackPoint
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.ActivitySelectOnOsmapBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.models.GpsTrack
@@ -55,7 +55,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
     private lateinit var binding: ActivitySelectOnOsmapBinding
 
     @Inject
-    lateinit var contactsAdapter: ContactsAdapter
+    lateinit var summitsAdapter: SummitsAdapter
     private val viewModel: DatabaseViewModel by viewModels()
     private var latLngSelectedPosition: TrackPoint? = null
     private var summitEntry: Summit? = null
@@ -83,7 +83,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
         val bundle = intent.extras
         if (bundle != null) {
             summitEntryId = bundle.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
-            summitEntry = database?.summitsDao()?.getSummit(summitEntryId)
+            summitEntry = database?.summitsDao()?.getSummitDeprecated(summitEntryId)
             binding.editLocation.setText(summitEntry?.name)
 
         }
@@ -141,7 +141,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     summit.lat = position.lat
                     summit.lng = position.lon
                     summit.latLng = latLngSelectedPosition
-                    viewModel.saveContact(true, summit)
+                    viewModel.saveSummit(true, summit)
                     finish()
                     Toast.makeText(
                         v.context,
@@ -166,7 +166,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     }
                 }
                 summit.setBoundingBoxFromTrack()
-                viewModel.saveContact(true, summit)
+                viewModel.saveSummit(true, summit)
             }
         }
         binding.addPositionCancel.setOnClickListener { v: View ->
@@ -192,7 +192,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                         }
                         summitEntryLocal.latLng = TrackPoint(0.0, 0.0)
 
-                        viewModel.saveContact(true, summitEntryLocal)
+                        viewModel.saveSummit(true, summitEntryLocal)
                         finish()
                         Toast.makeText(
                             v.context,

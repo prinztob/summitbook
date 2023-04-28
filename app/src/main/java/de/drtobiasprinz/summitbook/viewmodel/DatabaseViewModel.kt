@@ -29,9 +29,9 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val segmentsList: LiveData<DataStatus<List<Segment>>>
         get() = _segmentsList
 
-    private val _contactDetails = MutableLiveData<DataStatus<Summit>>()
-    val contactDetails: LiveData<DataStatus<Summit>>
-        get() = _contactDetails
+    private val _summitDetails = MutableLiveData<DataStatus<Summit>>()
+    val summitDetails: LiveData<DataStatus<Summit>>
+        get() = _summitDetails
 
     init {
         getAllSummits()
@@ -42,16 +42,16 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         _summitsList.value = _summitsList.value
     }
 
-    fun saveContact(isEdite: Boolean, entity: Summit) = viewModelScope.launch {
+    fun saveSummit(isEdite: Boolean, entity: Summit) = viewModelScope.launch {
         if (isEdite) {
-            repository.updateTask(entity)
+            repository.updateSummit(entity)
         } else {
-            repository.saveContact(entity)
+            repository.saveSummit(entity)
         }
     }
 
-    fun deleteContact(entity: Summit) = viewModelScope.launch {
-        repository.deleteContact(entity)
+    fun deleteSummit(entity: Summit) = viewModelScope.launch {
+        repository.deleteSummit(entity)
     }
 
     private fun getAllSummits() = viewModelScope.launch {
@@ -68,15 +68,15 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
             .collect { _bookmarksList.postValue(DataStatus.success(it, it.isEmpty())) }
     }
 
-    fun getSearchContacts(name: String) = viewModelScope.launch {
-        repository.searchContact(name).collect() {
+    fun getSearchSummit(name: String) = viewModelScope.launch {
+        repository.searchSummit(name).collect {
             _summitsList.postValue(DataStatus.success(it, it.isEmpty()))
         }
     }
 
-    fun getDetailsContact(id: Long) = viewModelScope.launch {
-        repository.getDetailsContact(id).collect {
-            _contactDetails.postValue(DataStatus.success(it, false))
+    fun getDetailsSummit(id: Long) = viewModelScope.launch {
+        repository.getDetailsSummit(id).collect {
+            _summitDetails.postValue(DataStatus.success(it, false))
         }
     }
 

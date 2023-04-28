@@ -23,7 +23,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
@@ -64,7 +63,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     SharedPreferences.OnSharedPreferenceChangeListener {
 
     private lateinit var database: AppDatabase
-    private lateinit var binding: ActivityMainBinding
+    lateinit var binding: ActivityMainBinding
     private lateinit var summitViewFragment: SummitViewFragment
 
     private val viewModel: DatabaseViewModel by viewModels()
@@ -124,22 +123,42 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         return@setOnMenuItemClickListener true
                     }
                     R.id.action_update -> {
-                        binding.loading.visibility = View.VISIBLE
-                        @Suppress("DEPRECATION")
-                        ((pythonExecutor)?.let {
+                        val executor = pythonExecutor
+                        if (executor != null) {
+                            binding.loading.visibility = View.VISIBLE
+                            @Suppress("DEPRECATION")
                             AsyncUpdateGarminData(
                                 sharedPreferences,
-                                it,
+                                executor,
                                 database,
-                                summitViewFragment.contactsAdapter.differ.currentList,
+                                summitViewFragment.summitsAdapter.differ.currentList,
                                 this@MainActivity,
                                 binding.loading
                             ).execute()
-                        })
+                        } else {
+                            Toast.makeText(
+                                this@MainActivity,
+                                getString(R.string.set_user_pwd), Toast.LENGTH_LONG
+                            ).show()
+                        }
                         return@setOnMenuItemClickListener true
                     }
                     (R.id.action_show_new_summits) -> {
-                        ShowNewSummitsFromGarminDialog().show(
+                        val dialog = ShowNewSummitsFromGarminDialog()
+                        dialog.save = { summits, isMerge ->
+                            binding.loading.visibility = View.VISIBLE
+                            binding.loading.tooltipText =
+                                getString(R.string.tool_tip_progress_new_garmin_activities,
+                                    summits.joinToString(", ") { it.name })
+                            if (isMerge) {
+                                executeDownload(summits)
+                            } else {
+                                summits.forEach {
+                                    executeDownload(listOf(it))
+                                }
+                            }
+                        }
+                        dialog.show(
                             supportFragmentManager,
                             "Show new summits from Garmin"
                         )
@@ -159,6 +178,24 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         addMissingBoundingBox()
     }
 
+    private fun executeDownload(summits: List<Summit>) {
+        val downloader = GarminTrackAndDataDownloader(
+            summits,
+            pythonExecutor,
+            sharedPreferences.getBoolean("download_tcx", false)
+        )
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                downloader.downloadTracks()
+            }
+            downloader.extractFinalSummit()
+            downloader.composeFinalTrack()
+            downloader.updateFinalEntry(viewModel)
+            binding.loading.visibility = View.GONE
+            binding.loading.tooltipText = ""
+        }
+    }
+
     private fun addMissingBoundingBox() {
         viewModel.summitsList.observe(this@MainActivity) {
             lifecycleScope.launch {
@@ -171,7 +208,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         entriesWithoutBoundingBox.remove(entryToCheck)
                         entryToCheck.setBoundingBoxFromTrack()
                         if (entryToCheck.trackBoundingBox != null) {
-                            viewModel.saveContact(true, entryToCheck)
+                            viewModel.saveSummit(true, entryToCheck)
                             Log.i(
                                 "MainActivity Background",
                                 "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining."
@@ -208,10 +245,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         )
     }
 
-    fun <T> MutableLiveData<T>.forceRefresh() {
-        this.value = this.value
-    }
-
     private fun filter() {
         val sortAndFilterFragment = SortAndFilterFragment()
         sortAndFilterFragment.apply = {
@@ -226,14 +259,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         menuInflater.inflate(R.menu.menu_toolbar, menu)
         val search = menu.findItem(R.id.actionSearch)
         val searchView = search.actionView as SearchView
-        searchView.queryHint = "Search..."
+        searchView.queryHint = getString(R.string.search)
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 return false
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                summitViewFragment.viewModel?.getSearchContacts(newText!!)
+                if (newText != null) {
+                    summitViewFragment.viewModel?.getSearchSummit(newText)
+                }
                 return true
             }
 
@@ -330,11 +365,22 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.export_csv_dialog))
             .setMessage(getString(R.string.export_csv_dialog_text))
-            .setPositiveButton(R.string.export_csv_dialog_neutral) { _: DialogInterface?, _: Int ->
+            .setPositiveButton(R.string.export_csv_dialog_positive) { _: DialogInterface?, _: Int ->
                 useFilteredSummits = false
                 startFileSelectorAndExportSummits(
                     String.format(
-                        "%s_summitbook_backup_ALL.zip",
+                        "%s_summit-book_backup_ALL.zip",
+                        LocalDate.now()
+                    )
+                )
+            }
+            .setNeutralButton(
+                R.string.export_csv_dialog_neutral
+            ) { _: DialogInterface?, _: Int ->
+                useFilteredSummits = true
+                startFileSelectorAndExportSummits(
+                    String.format(
+                        "%s_summit-book_backup_FILTERED.zip",
                         LocalDate.now()
                     )
                 )
@@ -374,7 +420,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     sharedPreferences.getBoolean("export_third_party_data", true)
                 val exportCalculatedData =
                     sharedPreferences.getBoolean("export_calculated_data", true)
-                val segments = DatabaseModule.provideDatabase(this).segmentsDao()?.getAllSegments()
+                val segments = DatabaseModule.provideDatabase(this).segmentsDao().getAllSegments()
                 val forecasts = DatabaseModule.provideDatabase(this).forecastDao()?.allForecasts
                 viewModel.summitsList.observe(
                     this,
@@ -386,7 +432,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                 AsyncExportZipFile(
                                     this@MainActivity,
                                     binding.loading,
-                                    t.data,
+                                    if (useFilteredSummits) sortFilterValues.apply(t.data) else t.data,
                                     result.data,
                                     segments,
                                     forecasts,
@@ -447,7 +493,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         override fun onPostExecute(param: Void?) {
             mainActivity.binding.loading.visibility = View.GONE
             reader.newSummits.forEach {
-                mainActivity.viewModel.saveContact(true, it)
+                mainActivity.viewModel.saveSummit(true, it)
             }
             reader.cleanUp()
             AlertDialog.Builder(mainActivity)
@@ -512,7 +558,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     class AsyncExportZipFile(
         val context: Context, private val progressBar: ProgressBar,
         val entries: List<Summit>, private val resultData: Intent?,
-        val segments: List<Segment>?, val forecasts: List<Forecast>?,
+        val segments: List<Segment>?, private val forecasts: List<Forecast>?,
         private val exportThirdPartyData: Boolean = true,
         private val exportCalculatedData: Boolean = true
     ) : AsyncTask<Uri, Int?, Void?>() {
@@ -529,7 +575,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     exportCalculatedData
                 )
                 context.contentResolver.openOutputStream(resultDataUri)
-                    ?.let { writer.writeToZipFile(it) }
+                    ?.let {
+                        writer.writeToZipFile(it)
+                        it.close()
+                    }
             }
             return null
         }
@@ -564,50 +613,62 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun openViewer() {
-        viewModel.summitsList.observe(this) {
-            it.data.let { summits ->
-                var allImages = getAllImages(summits)
-                var usePositionAfterTransition = -1
-                if (allImages.size < currentPosition) {
-                    usePositionAfterTransition = currentPosition
-                    currentPosition = 0
-                }
-                if (allImages.size > 0) {
-                    overlayView = PosterOverlayView(this).apply {
-                        update(allImages[currentPosition])
-                    }
-                    viewer = StfalconImageViewer.Builder(this, allImages) { view, poster ->
-                        Glide.with(this)
-                            .load(poster.url)
-                            .fitCenter()
-                            .diskCacheStrategy(DiskCacheStrategy.NONE)
-                            .skipMemoryCache(true)
-                            .into(view)
-                    }
-                        .withStartPosition(currentPosition)
-                        .withImageChangeListener {
-                            currentPosition = it
-                            val sizeBefore = allImages.size
-                            allImages = getAllImages(summits)
-                            val sizeAfter = allImages.size
-                            if (sizeAfter != sizeBefore) {
-                                viewer?.updateImages(allImages)
-                                if (usePositionAfterTransition >= 0) {
-                                    viewer?.setCurrentPosition(usePositionAfterTransition)
-                                }
-                            }
-                            overlayView?.update(allImages[it])
+        viewModel.summitsList.observe(
+            this,
+            object : androidx.lifecycle.Observer<DataStatus<List<Summit>>> {
+                override fun onChanged(t: DataStatus<List<Summit>>?) {
+                    viewModel.summitsList.removeObserver(this)
+                    t?.data.let { summits ->
+                        val sortFilterSummits = summits?.let { it1 -> sortFilterValues.apply(it1) }
+                        var allImages = getAllImages(sortFilterSummits)
+                        var usePositionAfterTransition = -1
+                        if (allImages.size < currentPosition) {
+                            usePositionAfterTransition = currentPosition
+                            currentPosition = 0
                         }
-                        .withOverlayView(overlayView)
-                        .withDismissListener { isDialogShown = false }
-                        .show(!isDialogShown)
-                    isDialogShown = true
-                } else {
-                    Toast.makeText(this, getString(R.string.no_image_selected), Toast.LENGTH_SHORT)
-                        .show()
+                        if (allImages.size > 0) {
+                            overlayView = PosterOverlayView(this@MainActivity).apply {
+                                update(allImages[currentPosition])
+                            }
+                            viewer = StfalconImageViewer.Builder(
+                                this@MainActivity,
+                                allImages
+                            ) { view, poster ->
+                                Glide.with(this@MainActivity)
+                                    .load(poster.url)
+                                    .fitCenter()
+                                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                    .skipMemoryCache(true)
+                                    .into(view)
+                            }
+                                .withStartPosition(currentPosition)
+                                .withImageChangeListener { position ->
+                                    currentPosition = position
+                                    val sizeBefore = allImages.size
+                                    allImages = getAllImages(sortFilterSummits)
+                                    val sizeAfter = allImages.size
+                                    if (sizeAfter != sizeBefore) {
+                                        viewer?.updateImages(allImages)
+                                        if (usePositionAfterTransition >= 0) {
+                                            viewer?.setCurrentPosition(usePositionAfterTransition)
+                                        }
+                                    }
+                                    overlayView?.update(allImages[position])
+                                }
+                                .withOverlayView(overlayView)
+                                .withDismissListener { isDialogShown = false }
+                                .show(!isDialogShown)
+                            isDialogShown = true
+                        } else {
+                            Toast.makeText(
+                                this@MainActivity,
+                                getString(R.string.no_image_selected),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                 }
-            }
-        }
+            })
     }
 
 
@@ -631,6 +692,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (key == "current_year_switch") {
             sortFilterValues.setInitialValues(database, sharedPreferences)
             viewModel.refresh()
+        }
+        if (key == "garmin_username" || key == "garmin_password") {
+            updatePythonExecutor()
         }
     }
 }

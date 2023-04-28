@@ -115,7 +115,7 @@
                         android:layout_alignTop="@id/osmap"
                         android:layout_alignParentEnd="true"
                         android:contentDescription="@string/customize_track_color"
-                        android:src="@drawable/ic_baseline_color_lens_24" />
+                        android:src="@drawable/baseline_color_lens_black_24dp" />
 
                     <TextView
                         android:id="@+id/track_value"

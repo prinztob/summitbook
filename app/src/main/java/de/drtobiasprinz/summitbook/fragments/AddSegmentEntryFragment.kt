@@ -25,7 +25,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.adapter.SegmentsViewAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentAddSegmentEntryBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
@@ -61,7 +61,7 @@ import kotlin.math.roundToLong
 class AddSegmentEntryFragment : Fragment() {
 
     @Inject
-    lateinit var contactsAdapter: ContactsAdapter
+    lateinit var summitsAdapter: SummitsAdapter
     lateinit var database: AppDatabase
     private lateinit var binding: FragmentAddSegmentEntryBinding
     private val viewModel: DatabaseViewModel by activityViewModels()

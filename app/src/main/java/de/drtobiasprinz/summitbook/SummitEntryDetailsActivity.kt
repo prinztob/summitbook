@@ -20,7 +20,6 @@ import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
-import org.osmdroid.views.overlay.Marker
 
 @AndroidEntryPoint
 class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceiver {
@@ -32,9 +31,6 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
     private var summitsToCompare: List<Summit> = emptyList()
     private lateinit var allSummits: LiveData<DataStatus<List<Summit>>>
 
-    private var startMarker: Marker? = null
-    private var stopMarker: Marker? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_summit_entry_details)
@@ -45,8 +41,8 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
         if (bundle != null) {
             val summitEntryId = intent.extras?.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
             if (summitEntryId != null) {
-                viewModel.getDetailsContact(summitEntryId)
-                viewModel.contactDetails.observe(this) { itData ->
+                viewModel.getDetailsSummit(summitEntryId)
+                viewModel.summitDetails.observe(this) { itData ->
                     itData.data?.let {
                         summitEntry = it
                         val tabsPagerAdapter = TabsPagerAdapter(this, summitEntry)
@@ -89,6 +85,11 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             supportActionBar?.hide()
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry.id)
     }
 
     companion object {

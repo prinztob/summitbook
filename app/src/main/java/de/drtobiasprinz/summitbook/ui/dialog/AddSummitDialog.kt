@@ -23,6 +23,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
@@ -33,13 +34,12 @@ import com.google.gson.JsonParser
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.DialogAddSummitBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.CONNECTED_ACTIVITY_PREFIX
 import de.drtobiasprinz.summitbook.di.DatabaseModule
-import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
@@ -54,6 +54,9 @@ import de.drtobiasprinz.summitbook.utils.Constants.BUNDLE_ID
 import de.drtobiasprinz.summitbook.utils.Constants.EDIT
 import de.drtobiasprinz.summitbook.utils.Constants.NEW
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.xmlpull.v1.XmlPullParserException
 import java.io.File
 import java.io.IOException
@@ -77,7 +80,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     lateinit var entity: Summit
 
     @Inject
-    lateinit var contactsAdapter: ContactsAdapter
+    lateinit var summitsAdapter: SummitsAdapter
 
 
     lateinit var database: AppDatabase
@@ -98,7 +101,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     private lateinit var participantsAdapter: ArrayAdapter<String>
     private lateinit var placesAdapter: ArrayAdapter<String>
 
-    private var contactId = 0L
+    private var summitId = 0L
 
     private var type = ""
     private var isEdit = false
@@ -115,9 +118,9 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val summits = contactsAdapter.differ.currentList
-        contactId = arguments?.getLong(BUNDLE_ID) ?: 0
-        if (contactId > 0) {
+        val summits = summitsAdapter.differ.currentList
+        summitId = arguments?.getLong(BUNDLE_ID) ?: 0
+        if (summitId > 0) {
             type = EDIT
             isEdit = true
         } else {
@@ -144,7 +147,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             placesAdapter = getPlacesSuggestions()
             summitName.setAdapter(getPlacesSuggestions(false))
             if (type == EDIT) {
-                val summitToEdit = summits.firstOrNull { it.id == contactId }
+                val summitToEdit = summits.firstOrNull { it.id == summitId }
                 if (summitToEdit != null) {
                     entity = summitToEdit
                     updateBaseBindings(view)
@@ -173,7 +176,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 if (isBookmark) {
                     entity.isBookmark = true
                 }
-                viewModel.saveContact(isEdit, entity)
+                viewModel.saveSummit(isEdit, entity)
                 dismiss()
             }
             addGpsTrack.setOnClickListener {
@@ -194,12 +197,12 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     val dateAsString = binding.tourDate.text.toString()
                     val contextLocal = context
                     if (dateAsString != "" && contextLocal != null) {
-                        val pythonExecutor = pythonExecutor
-                        if (pythonExecutor != null) {
+                        val executor = pythonExecutor
+                        if (executor != null) {
                             binding.loadingPanel.visibility = View.VISIBLE
                             @Suppress("DEPRECATION")
                             AsyncDownloadJsonViaPython(
-                                pythonExecutor,
+                                executor,
                                 dateAsString,
                                 this@AddSummitDialog
                             ).execute()
@@ -365,21 +368,21 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         powerData["entries"].asJsonArray.forEach {
             val element = it.asJsonObject
             when (element["duration"].asString) {
-                "1" -> power.oneSec = getJsonObjectEntryNotNone(element, "power").toInt()
-                "2" -> power.twoSec = getJsonObjectEntryNotNone(element, "power").toInt()
-                "5" -> power.fiveSec = getJsonObjectEntryNotNone(element, "power").toInt()
-                "10" -> power.tenSec = getJsonObjectEntryNotNone(element, "power").toInt()
-                "20" -> power.twentySec = getJsonObjectEntryNotNone(element, "power").toInt()
-                "30" -> power.thirtySec = getJsonObjectEntryNotNone(element, "power").toInt()
-                "60" -> power.oneMin = getJsonObjectEntryNotNone(element, "power").toInt()
-                "120" -> power.twoMin = getJsonObjectEntryNotNone(element, "power").toInt()
-                "300" -> power.fiveMin = getJsonObjectEntryNotNone(element, "power").toInt()
-                "600" -> power.tenMin = getJsonObjectEntryNotNone(element, "power").toInt()
-                "1200" -> power.twentyMin = getJsonObjectEntryNotNone(element, "power").toInt()
-                "1800" -> power.thirtyMin = getJsonObjectEntryNotNone(element, "power").toInt()
-                "3600" -> power.oneHour = getJsonObjectEntryNotNone(element, "power").toInt()
-                "7200" -> power.twoHours = getJsonObjectEntryNotNone(element, "power").toInt()
-                "18000" -> power.fiveHours = getJsonObjectEntryNotNone(element, "power").toInt()
+                "1" -> power.oneSec = getJsonObjectEntryNotNone(element).toInt()
+                "2" -> power.twoSec = getJsonObjectEntryNotNone(element).toInt()
+                "5" -> power.fiveSec = getJsonObjectEntryNotNone(element).toInt()
+                "10" -> power.tenSec = getJsonObjectEntryNotNone(element).toInt()
+                "20" -> power.twentySec = getJsonObjectEntryNotNone(element).toInt()
+                "30" -> power.thirtySec = getJsonObjectEntryNotNone(element).toInt()
+                "60" -> power.oneMin = getJsonObjectEntryNotNone(element).toInt()
+                "120" -> power.twoMin = getJsonObjectEntryNotNone(element).toInt()
+                "300" -> power.fiveMin = getJsonObjectEntryNotNone(element).toInt()
+                "600" -> power.tenMin = getJsonObjectEntryNotNone(element).toInt()
+                "1200" -> power.twentyMin = getJsonObjectEntryNotNone(element).toInt()
+                "1800" -> power.thirtyMin = getJsonObjectEntryNotNone(element).toInt()
+                "3600" -> power.oneHour = getJsonObjectEntryNotNone(element).toInt()
+                "7200" -> power.twoHours = getJsonObjectEntryNotNone(element).toInt()
+                "18000" -> power.fiveHours = getJsonObjectEntryNotNone(element).toInt()
             }
         }
     }
@@ -432,7 +435,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
     private fun getPlacesSuggestions(addConnectedEntryString: Boolean = true): ArrayAdapter<String> {
-        val summits = contactsAdapter.differ.currentList
+        val summits = summitsAdapter.differ.currentList
         val suggestions: MutableList<String> =
             (summits.flatMap { it.places } + summits.map { it.name }).filter {
                 !it.startsWith(
@@ -752,9 +755,32 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 }
                 updateMultiSpotActivityIds(pythonExecutor, entry)
             }
-            @Suppress("DEPRECATION") GarminPythonExecutor.Companion.AsyncDownloadGpxViaPython(
-                listOf(entry), viewModel, useTcx, this, index
-            ).execute()
+            val downloader = GarminTrackAndDataDownloader(
+                listOf(entry),
+                MainActivity.pythonExecutor, useTcx
+            )
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    downloader.downloadTracks()
+                }
+                val activityId = downloader.finalEntry?.garminData?.activityId
+                if (activityId != null) {
+                    downloader.composeFinalTrack(
+                        GarminTrackAndDataDownloader.getTempGpsFilePath(
+                            activityId
+                        ).toFile()
+                    )
+                }
+                if (index != -1) {
+                    listItemsGpsDownloadSuccessful?.set(
+                        index,
+                        downloader.downloadedTracks.none { !it.exists() })
+                    mDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled =
+                        listItemsGpsDownloadSuccessful?.contains(false) == false
+                }
+                binding.loadingPanel.visibility = View.GONE
+                binding.loadingPanel.tooltipText = ""
+            }
         } catch (e: java.lang.RuntimeException) {
             Log.e("AsyncDownloadActivities", e.message ?: "")
         }
@@ -809,16 +835,16 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             }
         }
 
-        private fun getJsonObjectEntryNotNone(jsonObject: JsonObject, key: String): Float {
-            return if (jsonObject[key].toString().toLowerCase(Locale.ROOT)
+        private fun getJsonObjectEntryNotNone(jsonObject: JsonObject): Float {
+            return if (jsonObject["power"].toString().lowercase(Locale.ROOT)
                     .contains("none")
-            ) 0.0f else jsonObject[key].asFloat
+            ) 0.0f else jsonObject["power"].asFloat
         }
 
         class AsyncDownloadJsonViaPython(
             private val pythonExecutor: GarminPythonExecutor,
             private val dateAsString: String,
-            private val contactFragment: AddSummitDialog? = null
+            private val addSummitDialog: AddSummitDialog? = null
         ) : AsyncTask<Void?, Void?, Void?>() {
 
             var entries: List<Summit>? = null
@@ -860,10 +886,10 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             override fun onPostExecute(param: Void?) {
                 val entriesLocal = entries
                 val progressBar =
-                    contactFragment?.view?.findViewById<RelativeLayout>(R.id.loadingPanel)
+                    addSummitDialog?.view?.findViewById<RelativeLayout>(R.id.loadingPanel)
                 if (entriesLocal != null) {
                     if (progressBar != null) {
-                        contactFragment?.showSummitsDialog(
+                        addSummitDialog?.showSummitsDialog(
                             pythonExecutor, entriesLocal, progressBar, powerData
                         )
                     }

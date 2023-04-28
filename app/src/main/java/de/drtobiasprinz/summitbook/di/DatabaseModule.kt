@@ -7,7 +7,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -40,7 +40,7 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideContactsAdapter() = ContactsAdapter()
+    fun provideSummitsAdapter() = SummitsAdapter()
 
     @Provides
     fun provideEntity() = Summit()

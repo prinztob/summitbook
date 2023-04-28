@@ -59,8 +59,10 @@ class TrackAnalyzer(object):
 
     def get_maximal_values(self):
         self.slope_100 = max(self.slopes)
-        self.vertical_velocities_60s = max(self.vertical_velocities["60"]) if len(self.vertical_velocities["60"]) > 0 else 0
-        self.vertical_velocities_600s = max(self.vertical_velocities["600"]) if len(self.vertical_velocities["600"]) > 0 else 0
+        self.vertical_velocities_60s = max(self.vertical_velocities["60"]) if len(
+            self.vertical_velocities["60"]) > 0 else 0
+        self.vertical_velocities_600s = max(self.vertical_velocities["600"]) if len(
+            self.vertical_velocities["600"]) > 0 else 0
         self.vertical_velocities_3600s = max(self.vertical_velocities["3600"]) if len(
             self.vertical_velocities["3600"]) > 0 else 0
 
@@ -129,40 +131,35 @@ class TrackAnalyzer(object):
                     middle_entry = self.all_points[i]
             i += 1
 
-    def set_vertical_velocity(self, max_time_interval, update_points=False, use_regression=False):
-        diff_times = 0.0
+    def set_vertical_velocity(self, max_time_interval, update_points=False):
         self.vertical_velocities[str(max_time_interval)] = []
+        vertical_velocity = 0
         i = 0
-        track_points_for_interval = []
-        middle_entry = None
-        while i < len(self.all_points) - 1:
-            vertical_velocity = 0
-            if middle_entry is not None and diff_times >= max_time_interval and len(track_points_for_interval) > 2:
-                reduced_track_points_for_interval = reduce_track_to_relevant_elevation_points(track_points_for_interval)
-                relevant_track_points_for_interval, gain, loss = remove_elevation_differences_smaller_as(
-                    reduced_track_points_for_interval, 10)
-                if len(relevant_track_points_for_interval) > 1:
-                    if use_regression:
-                        x_array = [(entry.time - self.all_points[0].time).total_seconds() for entry in
-                                   track_points_for_interval]
-                        y_array = [entry.elevation for entry in track_points_for_interval]
-                        if len(set(y_array)) > 1:
-                            linear_regression = estimate_coefficients(x_array, y_array)
-                            vertical_velocity = linear_regression[1] if linear_regression[2] > 0.9 else 0.0
-                    else:
-                        vertical_velocity = 0.0 if diff_times == 0.0 else (gain / diff_times)
+        while i < len(self.all_points):
+            j = i + 10
+            if j >= len(self.all_points) - 1:
+                break
+            diff_times = 0.0
+            while diff_times < max_time_interval:
+                if j >= len(self.all_points) - 1:
+                    break
+                diff_times = (self.all_points[j].time - self.all_points[i].time).total_seconds()
+                j += 1
+            track_points_for_interval = self.all_points[i:j]
+            reduced_track_points_for_interval = reduce_track_to_relevant_elevation_points(track_points_for_interval)
+            relevant_track_points_for_interval, gain, loss = remove_elevation_differences_smaller_as(
+                reduced_track_points_for_interval, 10)
+            current_velocity = 0.0 if diff_times == 0.0 else (gain / diff_times)
+            if current_velocity > vertical_velocity:
+                vertical_velocity = current_velocity
+                i += 1
+            else:
+                i += 25
+            if update_points and i < len(self.all_points):
+                self.set_tag_in_extensions(vertical_velocity * max_time_interval, self.all_points[i],
+                                           "vvelocity")
 
-                    self.vertical_velocities[str(max_time_interval)].append(vertical_velocity)
-                track_points_for_interval = track_points_for_interval[1: -1]
-                middle_entry = None
-            if update_points:
-                self.set_tag_in_extensions(vertical_velocity * max_time_interval, self.all_points[i], "vvelocity")
-            if not self.all_points[i].time is None and self.all_points[i].elevation:
-                track_points_for_interval.append(self.all_points[i])
-                diff_times = (track_points_for_interval[-1].time - track_points_for_interval[0].time).total_seconds()
-                if diff_times > max_time_interval / 2 and not middle_entry:
-                    middle_entry = self.all_points[i]
-            i += 1
+            self.vertical_velocities[str(max_time_interval)].append(vertical_velocity)
 
     def set_gpx_data(self):
         extremes = self.gpx.get_elevation_extremes()
@@ -204,7 +201,7 @@ def reduce_track_to_relevant_elevation_points(points):
         current_elevation = round(point.elevation)
         last_elevation = round(points_with_doubles[j - 1].elevation) if (j != 0) else current_elevation
         next_elevation = round(points_with_doubles[j + 1].elevation) if (
-                    j != len(points_with_doubles) - 1) else current_elevation
+                j != len(points_with_doubles) - 1) else current_elevation
         if j == 0 or j == len(points_with_doubles) - 1:
             reduced_points.append(point)
         elif current_elevation != last_elevation and current_elevation != next_elevation:

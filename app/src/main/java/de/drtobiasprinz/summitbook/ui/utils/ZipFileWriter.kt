@@ -15,11 +15,11 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class ZipFileWriter(val entries: List<Summit>, val segments: List<Segment>?,
-                    val forecasts: List<Forecast>?, val context: Context,
+                    private val forecasts: List<Forecast>?, val context: Context,
                     private val exportThirdPartyData: Boolean,
                     private val exportCalculatedData: Boolean) {
 
-    var entryNumber = 0
+    private var entryNumber = 0
     var withImages = 0
     var withGpsFile = 0
     var dir = MainActivity.cache

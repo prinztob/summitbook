@@ -64,7 +64,11 @@ class SummitEntryPowerFragment : Fragment() {
         summitEntry = resultReceiver.getSummit()
         summitToCompare = resultReceiver.getSelectedSummitForComparison()
         resultReceiver.getAllSummits().observe(viewLifecycleOwner) {
-            summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(it, summitEntry, onlyWithPowerData = true)
+            summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(
+                it,
+                summitEntry,
+                onlyWithPowerData = true
+            )
             if (summitEntry.isBookmark) {
                 binding.summitNameToCompare.visibility = View.GONE
             } else {
@@ -213,46 +217,55 @@ class SummitEntryPowerFragment : Fragment() {
             }
             val summits = resultReceiver.getAllSummits()
             summits.observe(viewLifecycleOwner) {
-                val filteredSummits = it.data?.let { it1 -> getFilteredSummits(it1) } ?: emptyList()
-                extremaValuesAllSummits =
-                    ExtremaValuesSummits(filteredSummits, excludeZeroValueFromMin = true)
-                val extremalChartEntries = getLineChartEntriesMax(extremaValuesAllSummits)
-                val minimalChartEntries = getLineChartEntriesMin(extremaValuesAllSummits)
-                val dataSetMaximalValues =
-                    LineDataSet(extremalChartEntries, getString(R.string.power_profile_max_label))
-                dataSetMaximalValues.fillFormatter = MyFillFormatter(
-                    LineDataSet(
-                        minimalChartEntries,
-                        getString(R.string.power_profile_min_label)
-                    )
-                )
-                binding.lineChart.renderer = MyLineLegendRenderer(
-                    binding.lineChart,
-                    binding.lineChart.animator,
-                    binding.lineChart.viewPortHandler
-                )
+                it.data?.let { summits ->
+                    val filteredSummits = getFilteredSummits(summits)
+                        extremaValuesAllSummits =
+                        ExtremaValuesSummits(filteredSummits, excludeZeroValueFromMin = true)
+                    val extremalChartEntries = getLineChartEntriesMax(extremaValuesAllSummits)
+                    val minimalChartEntries = getLineChartEntriesMin(extremaValuesAllSummits)
 
-                setGraphView(dataSetMaximalValues)
-                dataSets.add(dataSetMaximalValues)
-                dataSet.circleColors = chartEntries.mapIndexed { index, chartEntry ->
-                    val maxEntry = extremalChartEntries[index]
-                    val minEntry = minimalChartEntries[index]
-                    if (chartEntry != null && maxEntry != null && minEntry != null) {
-                        if (chartEntry.y >= maxEntry.y) {
-                            Color.rgb(255, 215, 0)
+                    binding.lineChart.axisLeft.axisMaximum = extremalChartEntries.maxOf { it?.y ?: 0f }
+                    binding.lineChart.axisRight.axisMaximum = extremalChartEntries.maxOf { it?.y ?: 0f }
+
+                    val dataSetMaximalValues =
+                        LineDataSet(
+                            extremalChartEntries,
+                            getString(R.string.power_profile_max_label)
+                        )
+                    dataSetMaximalValues.fillFormatter = MyFillFormatter(
+                        LineDataSet(
+                            minimalChartEntries,
+                            getString(R.string.power_profile_min_label)
+                        )
+                    )
+                    binding.lineChart.renderer = MyLineLegendRenderer(
+                        binding.lineChart,
+                        binding.lineChart.animator,
+                        binding.lineChart.viewPortHandler
+                    )
+
+                    setGraphView(dataSetMaximalValues)
+                    dataSets.add(dataSetMaximalValues)
+                    dataSet.circleColors = chartEntries.mapIndexed { index, chartEntry ->
+                        val maxEntry = extremalChartEntries[index]
+                        val minEntry = minimalChartEntries[index]
+                        if (chartEntry != null && maxEntry != null && minEntry != null) {
+                            if (chartEntry.y >= maxEntry.y) {
+                                Color.rgb(255, 215, 0)
+                            } else {
+                                ColorUtils.blendARGB(
+                                    Color.GREEN,
+                                    Color.RED,
+                                    1f - ((chartEntry.y - minEntry.y) / (maxEntry.y - minEntry.y))
+                                )
+                            }
                         } else {
-                            ColorUtils.blendARGB(
-                                Color.GREEN,
-                                Color.RED,
-                                1f - ((chartEntry.y - minEntry.y) / (maxEntry.y - minEntry.y))
-                            )
+                            Color.BLUE
                         }
-                    } else {
-                        Color.BLUE
                     }
                 }
+                dataSets.add(dataSet)
             }
-            dataSets.add(dataSet)
 
             binding.lineChart.setTouchEnabled(true)
             binding.lineChart.marker =

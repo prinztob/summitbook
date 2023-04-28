@@ -1,10 +1,8 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
-import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.io.File
 import java.nio.file.Path
@@ -49,7 +47,7 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
     fun updateFinalEntry(viewModel: DatabaseViewModel) {
         val finalEntryLocal = finalEntry
         if (finalEntryLocal != null) {
-            viewModel.saveContact(false, finalEntryLocal)
+            viewModel.saveSummit(false, finalEntryLocal)
         }
     }
 
@@ -118,7 +116,9 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
                     garminDataSets.sumOf { it?.calories?.toDouble() ?: 0.0 }.toFloat(),
                     (garminDataSets.sumOf {
                         (it?.averageHR?.toDouble() ?: 0.0) * (it?.duration ?: 0.0)
-                    } / entries.filter { it.garminData?.averageHR != null && (it.garminData?.averageHR ?: 0f) > 0 }.map { it.kilometers / it.velocityData.avgVelocity }.sum()).toFloat(),
+                    } / entries.filter {
+                        it.garminData?.averageHR != null && (it.garminData?.averageHR ?: 0f) > 0
+                    }.sumOf { it.kilometers / it.velocityData.avgVelocity }).toFloat(),
                     garminDataSets.maxByOrNull { it?.maxHR?.toDouble() ?: 0.0 }?.maxHR ?: 0f,
                     getPowerData(),
                     garminDataSets.maxByOrNull { it?.ftp ?: 0 }?.ftp ?: 0,
@@ -140,9 +140,12 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
     private fun getPowerData(): PowerData {
         val powerDataSets = entries.filter { it.garminData?.power != null }.map { it.garminData }
         return if (powerDataSets.isNotEmpty()) PowerData(
-                (powerDataSets.sumByDouble {
+                (powerDataSets.sumOf {
                     (it?.power?.avgPower?.toDouble() ?: 0.0) * (it?.duration ?: 0.0)
-                } / entries.filter { it.garminData?.power?.avgPower != null && (it.garminData?.power?.avgPower ?: 0f) > 0 }.map { it.kilometers / it.velocityData.avgVelocity }.sum()).toFloat(),
+                } / entries.filter {
+                    it.garminData?.power?.avgPower != null && (it.garminData?.power?.avgPower
+                        ?: 0f) > 0
+                }.sumOf { it.kilometers / it.velocityData.avgVelocity }).toFloat(),
                 powerDataSets.maxByOrNull { it?.power?.maxPower ?: 0f }?.power?.maxPower ?: 0f,
                 powerDataSets.maxByOrNull { it?.power?.normPower ?: 0f }?.power?.normPower ?: 0f,
                 powerDataSets.maxByOrNull { it?.power?.oneSec ?: 0 }?.power?.oneSec ?: 0,

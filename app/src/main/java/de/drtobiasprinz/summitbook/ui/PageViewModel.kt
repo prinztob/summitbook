@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 
 class PageViewModel : ViewModel() {
     private val mTitle = MutableLiveData<String>()
-    val text = Transformations.map(mTitle) { input -> "Contact not available in $input" }
+    val text = Transformations.map(mTitle) { input -> "Summit not available in $input" }
 
     fun setIndex(index: String) {
         mTitle.value = index

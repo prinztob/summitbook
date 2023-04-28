@@ -7,13 +7,13 @@ import javax.inject.Inject
 
 class DatabaseRepository @Inject constructor(private val summitsDao: SummitsDao, private val segmentsDao: SegmentsDao) {
 
-    suspend fun saveContact(entity: Summit) = summitsDao.saveContact(entity)
-    suspend fun updateTask(entity: Summit) = summitsDao.updateContact(entity)
-    suspend fun deleteContact(entity: Summit) = summitsDao.deleteContact(entity)
-    fun getDetailsContact(id: Long) = summitsDao.getContact(id)
+    suspend fun saveSummit(entity: Summit) = summitsDao.saveSummit(entity)
+    suspend fun updateSummit(entity: Summit) = summitsDao.updateSummit(entity)
+    suspend fun deleteSummit(entity: Summit) = summitsDao.deleteSummit(entity)
+    fun getDetailsSummit(id: Long) = summitsDao.getSummit(id)
     fun getAllSummits() = summitsDao.getAllSummits()
     fun getAllBookmarks() = summitsDao.getAllBookmarks()
-    fun searchContact(name: String) = summitsDao.searchContact(name)
+    fun searchSummit(name: String) = summitsDao.searchSummit(name)
 
     fun getAllSegments() = segmentsDao.getAllSegmentsFlow()
 

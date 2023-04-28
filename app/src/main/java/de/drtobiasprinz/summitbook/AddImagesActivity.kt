@@ -21,7 +21,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import com.github.dhaval2404.imagepicker.ImagePicker
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.summitbook.adapter.ContactsAdapter
+import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.ActivityAddImagesBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -38,7 +38,7 @@ class AddImagesActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddImagesBinding
 
     @Inject
-    lateinit var contactsAdapter: ContactsAdapter
+    lateinit var summitsAdapter: SummitsAdapter
     private val viewModel: DatabaseViewModel by viewModels()
 
     private var database: AppDatabase? = null
@@ -53,7 +53,7 @@ class AddImagesActivity : AppCompatActivity() {
         val bundle = intent.extras
         if (bundle != null) {
             val summitEntryId = bundle.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
-            summitEntry = database?.summitsDao()?.getSummit(summitEntryId)
+            summitEntry = database?.summitsDao()?.getSummitDeprecated(summitEntryId)
         }
         val localSummit = summitEntry
         if (localSummit != null) {
@@ -281,7 +281,7 @@ class AddImagesActivity : AppCompatActivity() {
         }
 
     private fun updateAdapterAndDatabase(localSummit: Summit) {
-        viewModel.saveContact(true, localSummit)
+        viewModel.saveSummit(true, localSummit)
     }
 
     private fun getLayoutParams(

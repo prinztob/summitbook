@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.ui.dialog
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
@@ -67,7 +68,7 @@ class ForecastDialog : DialogFragment() {
         setMissingForecasts(yearsWithForecasts, database)
         setAchievement()
         setForecastsInDialog(yearsWithForecasts[selectedSegmentedYear], view)
-        setOverview(yearsWithForecasts[selectedSegmentedYear], view)
+        setOverview(yearsWithForecasts[selectedSegmentedYear])
 
         binding.back.setOnClickListener {
             dialog?.dismiss()
@@ -81,14 +82,14 @@ class ForecastDialog : DialogFragment() {
         binding.groupForecastProperty.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 selectedSegmentedForecastProperty = checkedId
-                setOverview(yearsWithForecasts[selectedSegmentedYear], view)
+                setOverview(yearsWithForecasts[selectedSegmentedYear])
                 setForecastsInDialog(yearsWithForecasts[selectedSegmentedYear], view)
             }
         }
         binding.groupYear.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 selectedSegmentedYear = if (checkedId == binding.buttonCurrentYear.id) 0 else 1
-                setOverview(yearsWithForecasts[selectedSegmentedYear], view)
+                setOverview(yearsWithForecasts[selectedSegmentedYear])
                 setForecastsInDialog(yearsWithForecasts[selectedSegmentedYear], view)
             }
         }
@@ -118,7 +119,7 @@ class ForecastDialog : DialogFragment() {
         }
     }
 
-    private fun setOverview(year: Int, view: View) {
+    private fun setOverview(year: Int) {
         val sum = getSumForYear(
             year,
             forecasts,
@@ -161,6 +162,7 @@ class ForecastDialog : DialogFragment() {
         )
     }
 
+    @SuppressLint("DiscouragedApi")
     private fun setForecastsInDialog(year: Int, view: View) {
         forecasts.forEach {
             if (it.year == year) {
@@ -180,13 +182,13 @@ class ForecastDialog : DialogFragment() {
                         }
                         binding.buttonActivity.id -> {
                             slider.value = it.forecastNumberActivities.toFloat()
-                            slider.valueTo = 25F
+                            slider.valueTo = 20F
                             slider.stepSize = 1F
                         }
                         else -> {
                             slider.value = it.forecastHeightMeter.toFloat()
-                            slider.valueTo = 25000F
-                            slider.stepSize = 500F
+                            slider.valueTo = 15000F
+                            slider.stepSize = 250F
                         }
                     }
                     if (it.year == currentYear && it.month < currentMonth) {
@@ -204,7 +206,7 @@ class ForecastDialog : DialogFragment() {
                                     value.toInt()
                                 else -> it.forecastHeightMeter = value.toInt()
                             }
-                            setOverview(year, view)
+                            setOverview(year)
                             setForecastText(it, view, clickedSlider)
                         }
                     }
@@ -213,6 +215,7 @@ class ForecastDialog : DialogFragment() {
         }
     }
 
+    @SuppressLint("DiscouragedApi")
     private fun setForecastText(forecast: Forecast, view: View, slider: Slider) {
         val resourceIdText = resources.getIdentifier(
             "fulfilled_forecast_month${forecast.month}",
@@ -236,14 +239,20 @@ class ForecastDialog : DialogFragment() {
         }
         when (selectedSegmentedForecastProperty) {
             binding.buttonKilometers.id -> textView.text =
-                "${forecast.forecastDistance} ${resources.getString(R.string.km)}"
+                String.format(
+                    resources.getString(R.string.value_with_km),
+                    forecast.forecastDistance
+                )
             binding.buttonActivity.id -> textView.text =
                 forecast.forecastNumberActivities.toString()
-            else -> textView.text =
-                "${forecast.forecastHeightMeter} ${resources.getString(R.string.hm)}"
+            else -> textView.text = String.format(
+                resources.getString(R.string.value_with_hm),
+                forecast.forecastHeightMeter
+            )
         }
     }
 
+    @SuppressLint("DiscouragedApi")
     private fun setAchievementText(forecast: Forecast, view: View, slider: Slider) {
         val resourceIdText = resources.getIdentifier(
             "fulfilled_forecast_month${forecast.month}",

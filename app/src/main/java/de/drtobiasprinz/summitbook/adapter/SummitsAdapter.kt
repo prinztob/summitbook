@@ -23,7 +23,7 @@ import de.drtobiasprinz.summitbook.AddImagesActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
-import de.drtobiasprinz.summitbook.databinding.ItemContactsBinding
+import de.drtobiasprinz.summitbook.databinding.CardSummitBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
@@ -32,18 +32,18 @@ import javax.inject.Singleton
 
 
 @Singleton
-class ContactsAdapter() :
-    RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
+class SummitsAdapter :
+    RecyclerView.Adapter<SummitsAdapter.ViewHolder>() {
 
     lateinit var context: Context
-    var onClickUpdateIsFavorite: (Summit) -> Unit = { e -> }
-    var onClickUpdateIsPeak: (Summit) -> Unit = { e -> }
-    var onClickDelete: (Summit) -> Unit = { e -> }
+    var onClickUpdateIsFavorite: (Summit) -> Unit = {  }
+    var onClickUpdateIsPeak: (Summit) -> Unit = { }
+    var onClickDelete: (Summit) -> Unit = { }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         context = parent.context
         val binding =
-            ItemContactsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            CardSummitBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)
     }
 
@@ -55,7 +55,7 @@ class ContactsAdapter() :
         return differ.currentList.size
     }
 
-    inner class ViewHolder(var binding: ItemContactsBinding) :
+    inner class ViewHolder(var binding: CardSummitBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun setData(entity: Summit) {
             binding.apply {
@@ -107,7 +107,7 @@ class ContactsAdapter() :
 
         }
 
-        private fun ItemContactsBinding.setViewForSummitsOnly(entity: Summit) {
+        private fun CardSummitBinding.setViewForSummitsOnly(entity: Summit) {
             tourDate.text = entity.getDateAsString()
             setFavoriteImage(entity, entryFavorite)
             setMountainImage(entity, entrySummit)
@@ -137,7 +137,7 @@ class ContactsAdapter() :
             }
         }
 
-        private fun ItemContactsBinding.addImage(item: Summit) {
+        private fun CardSummitBinding.addImage(item: Summit) {
             if (item.hasImagePath()) {
                 sportTypeImage.setImageResource(item.sportType.imageIdWhite)
                 cardViewText.setBackgroundResource(R.color.translucent)
