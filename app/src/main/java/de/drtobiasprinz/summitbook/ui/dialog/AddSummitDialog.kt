@@ -659,7 +659,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             imageIds = mutableListOf(),
             garminData = null,
             trackBoundingBox = null,
-            isBookmark = false
+            isBookmark = isBookmark
         )
     }
 

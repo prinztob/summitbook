@@ -170,13 +170,6 @@ object OpenStreetMapUtils {
     fun addDefaultSettings(context: Context, mMapView: MapView, fragmentActivity: FragmentActivity) {
 
         val dm = context.resources.displayMetrics
-        //TODO: fix java.lang.IllegalStateException: register failed, the sensor listeners size has exceeded the maximum limit 128
-//        val mCompassOverlay = CompassOverlay(context, InternalCompassOrientationProvider(context),
-//                mMapView)
-//        mCompassOverlay.enableCompass()
-//        mMapView.overlays.add(mCompassOverlay)
-
-        //map scale
         val mScaleBarOverlay = ScaleBarOverlay(mMapView)
         mScaleBarOverlay.setCentred(true)
         mScaleBarOverlay.setScaleBarOffset(dm.widthPixels / 4, 10)

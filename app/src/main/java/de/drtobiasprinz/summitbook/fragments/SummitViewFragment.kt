@@ -77,6 +77,11 @@ class SummitViewFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.apply {
+            if (showBookmarksOnly) {
+                btnShowDialog.setImageResource(R.drawable.baseline_bookmark_add_black_24dp)
+            } else {
+                btnShowDialog.setImageResource(R.drawable.baseline_add_photo_alternate_black_24dp)
+            }
             btnShowDialog.setOnClickListener {
                 startAddSummitDialog(null)
             }
@@ -220,14 +225,21 @@ class SummitViewFragment : Fragment() {
     private fun addBackgroundTasks() {
         val useSimplifiedTracks = sharedPreferences.getBoolean("use_simplified_tracks", true)
         if (useSimplifiedTracks) {
-            val entriesWithoutSimplifiedGpxTrack = summitsAdapter.differ.currentList.filter {
-                it.hasGpsTrack() && !it.hasGpsTrack(simplified = true)
-            }.take(50)
-            MainActivity.pythonInstance.let {
-                if (it != null) {
-                    @Suppress("DEPRECATION")
-                    MainActivity.AsyncSimplifyGpsTracks(entriesWithoutSimplifiedGpxTrack, it)
-                        .execute()
+            viewModel?.summitsList?.observe(viewLifecycleOwner) {
+                if (it.data != null) {
+                    val entriesWithoutSimplifiedGpxTrack = it.data.filter {
+                        it.hasGpsTrack() && !it.hasGpsTrack(simplified = true)
+                    }.take(50)
+                    MainActivity.pythonInstance.let {
+                        if (it != null) {
+                            @Suppress("DEPRECATION")
+                            MainActivity.AsyncSimplifyGpsTracks(
+                                entriesWithoutSimplifiedGpxTrack,
+                                it
+                            )
+                                .execute()
+                        }
+                    }
                 }
             }
         } else {

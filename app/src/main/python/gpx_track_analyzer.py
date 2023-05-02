@@ -68,24 +68,24 @@ class TrackAnalyzer(object):
 
     def set_all_points_with_distance(self):
         _LOGGER.info(f"Read and add distance to track file {self.file}")
-        gpx_file = open(self.file, 'r')
-        self.gpx = gpxpy.parse(gpx_file)
-        distance = 0.0
-        for track in self.gpx.tracks:
-            for segment in track.segments:
-                last_point = None
-                points = []
-                for point in segment.points:
-                    if point.latitude != 0 and point.longitude != 0:
-                        if last_point:
-                            distance += geopy.distance.distance((last_point.latitude, last_point.longitude),
-                                                                (point.latitude, point.longitude)).km
-                        self.set_tag_in_extensions(distance * 1000, point, "distance")
-                        point.distance = distance * 1000
-                        last_point = point
-                        self.all_points.append(point)
-                        points.append(point)
-                segment.points = points
+        with open(self.file, 'r') as gpx_file:
+            self.gpx = gpxpy.parse(gpx_file)
+            distance = 0.0
+            for track in self.gpx.tracks:
+                for segment in track.segments:
+                    last_point = None
+                    points = []
+                    for point in segment.points:
+                        if point.latitude != 0 and point.longitude != 0:
+                            if last_point:
+                                distance += geopy.distance.distance((last_point.latitude, last_point.longitude),
+                                                                    (point.latitude, point.longitude)).km
+                            self.set_tag_in_extensions(distance * 1000, point, "distance")
+                            point.distance = distance * 1000
+                            last_point = point
+                            self.all_points.append(point)
+                            points.append(point)
+                    segment.points = points
 
     def set_tag_in_extensions(self, value, point, tag_name):
         tag = f"{self.NAMESPACE}{self.TRACK_EXTENSIONS}"

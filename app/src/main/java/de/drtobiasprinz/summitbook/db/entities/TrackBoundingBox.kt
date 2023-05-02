@@ -7,8 +7,6 @@ import org.osmdroid.util.GeoPoint
 class TrackBoundingBox(
         var latNorth: Double, var latSouth: Double, var lonWest: Double, var lonEast: Double
 ) {
-    @Ignore
-    private var factor = 1000
 
     @Ignore
     var trackBoundingRect = Rectangle(lonWest, latNorth, lonEast, latSouth)
@@ -18,7 +16,10 @@ class TrackBoundingBox(
         return boundingRect.intersect(trackBoundingRect)
     }
 
-
+    fun intersects(boundingBox: TrackBoundingBox): Boolean {
+        val boundingRect = Rectangle(boundingBox.lonWest , boundingBox.latNorth , boundingBox.lonEast , boundingBox.latSouth )
+        return boundingRect.intersect(trackBoundingRect)
+    }
 
     fun contains(geoPoint: GeoPoint): Boolean {
         return trackBoundingRect.left <= geoPoint.longitude

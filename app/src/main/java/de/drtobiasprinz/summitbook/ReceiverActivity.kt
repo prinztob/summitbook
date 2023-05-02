@@ -4,43 +4,44 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
-import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
+import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity.Companion.copyGpxFileToCache
+import de.drtobiasprinz.summitbook.databinding.ActivityReceiverBinding
 import de.drtobiasprinz.summitbook.models.TrackColor
-import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import java.io.File
 
+@AndroidEntryPoint
 class ReceiverActivity : AppCompatActivity() {
-    private lateinit var osMap: MapView
     private var gpxTrackUri: Uri? = null
+    lateinit var binding: ActivityReceiverBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_receiver)
+        binding = ActivityReceiverBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
         Log.i("ReceiverActivity", "onCreate")
         MainActivity.cache = applicationContext.cacheDir
         MainActivity.storage = applicationContext.filesDir
         MainActivity.activitiesDir = File(MainActivity.storage, "activities")
-        osMap = findViewById(R.id.osmap)
-        osMap.setTileSource(TileSourceFactory.OpenTopo)
+        binding.osmap.setTileSource(TileSourceFactory.OpenTopo)
 
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-        OpenStreetMapUtils.addDefaultSettings(this, osMap, this)
+        OpenStreetMapUtils.addDefaultSettings(this, binding.osmap, this)
 
-        val addSummitButton = findViewById<Button>(R.id.add_to_summits)
-        addSummitButton.setOnClickListener {
+        binding.addToSummits.setOnClickListener {
             if (gpxTrackUri != null) {
                 val addSummit = AddSummitDialog()
+                addSummit.gpxTrackUri = gpxTrackUri
                 supportFragmentManager.let {
                     addSummit.show(
                         it,
@@ -49,8 +50,7 @@ class ReceiverActivity : AppCompatActivity() {
                 }
             }
         }
-        val addBookmarkButton = findViewById<Button>(R.id.add_to_bookmarks)
-        addBookmarkButton.setOnClickListener {
+        binding.addToBookmarks.setOnClickListener {
             if (gpxTrackUri != null) {
                 val addSummit = AddSummitDialog()
                 addSummit.gpxTrackUri = gpxTrackUri
@@ -64,7 +64,7 @@ class ReceiverActivity : AppCompatActivity() {
             }
         }
 
-        findViewById<ImageButton>(R.id.back).setOnClickListener {
+        binding.back.setOnClickListener {
             finish()
         }
     }
@@ -83,11 +83,11 @@ class ReceiverActivity : AppCompatActivity() {
             }
             if (file.exists()) {
                 val gpsTrack = SelectOnOsMapActivity.prepareGpxTrack(file.toPath(), null)
-                gpsTrack?.addGpsTrack(osMap, TrackColor.None)
+                gpsTrack?.addGpsTrack(binding.osmap, TrackColor.None)
                 val highestTrackPoint = gpsTrack?.getHighestElevation()
                 if (highestTrackPoint != null) {
                     val highestGeoPoint = GeoPoint(highestTrackPoint.lat, highestTrackPoint.lon)
-                    val marker = Marker(osMap)
+                    val marker = Marker(binding.osmap)
                     marker.position = highestGeoPoint
                     marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     marker.icon = ResourcesCompat.getDrawable(
@@ -98,10 +98,10 @@ class ReceiverActivity : AppCompatActivity() {
                     marker.title = "New summit"
                 }
                 if (gpsTrack != null) {
-                    osMap.post {
+                    binding.osmap.post {
                         OpenStreetMapUtils.calculateBoundingBox(
-                            osMap,
-                            OpenStreetMapUtils.getTrackPointsFrom(gpsTrack)
+                            binding.osmap,
+                            gpsTrack.trackGeoPoints
                         )
                     }
                 }

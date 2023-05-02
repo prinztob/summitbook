@@ -130,49 +130,7 @@ class OpenStreetMapFragment : Fragment() {
         }
 
         binding.showAllTracks.setOnClickListener { _: View? ->
-            var pointsShown = mMarkersShown.sumOf {
-                (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size ?: 0
-            }
-            val markersInBoundingBox = mMarkers.filter {
-                val mapCustomInfoBubble: MapCustomInfoBubble = it?.infoWindow as MapCustomInfoBubble
-                val shouldBeShown = binding.osmap.boundingBox?.let { it1 ->
-                    mapCustomInfoBubble.entry.isInBoundingBox(it1)
-                }
-                if (shouldBeShown == false && it in mMarkersShown) {
-                    pointsShown -= mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0
-                    mapCustomInfoBubble.updateGpxTrack(forceRemove = true)
-                    mMarkersShown.remove(it)
-
-                }
-                shouldBeShown == true
-            }
-            markersInBoundingBox.forEach {
-                if (it != null) {
-                    val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
-                    if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
-                        if (pointsShown < maxPointsToShow) {
-                            infoWindow.updateGpxTrack(forceShow = true)
-                            pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0
-                            mMarkersShown.add(it)
-                        }
-                    }
-                }
-            }
-            if (pointsShown > maxPointsToShow) {
-                if (context != null) {
-                    Toast.makeText(
-                        context,
-                        String.format(
-                            requireContext().resources.getString(
-                                R.string.summits_shown,
-                                mMarkersShown.size.toString(),
-                                markersInBoundingBox.size.toString()
-                            )
-                        ),
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
+            showAllTracksOfSummitInBoundingbox()
         }
 
 //        requireActivity().findViewById<View>(R.id.add_new_summit).visibility = View.INVISIBLE
@@ -190,6 +148,52 @@ class OpenStreetMapFragment : Fragment() {
             }
             false
         }
+    }
+
+    private fun showAllTracksOfSummitInBoundingbox() {
+        var pointsShown = mMarkersShown.sumOf {
+            (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size ?: 0
+        }
+        val markersInBoundingBox = mMarkers.filter {
+            val mapCustomInfoBubble: MapCustomInfoBubble = it?.infoWindow as MapCustomInfoBubble
+            val shouldBeShown = binding.osmap.boundingBox?.let { it1 ->
+                mapCustomInfoBubble.entry.isInBoundingBox(it1)
+            }
+            if (shouldBeShown == false && it in mMarkersShown) {
+                pointsShown -= mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0
+                mapCustomInfoBubble.updateGpxTrack(forceRemove = true)
+                mMarkersShown.remove(it)
+            }
+            shouldBeShown == true
+        }
+        markersInBoundingBox.forEach {
+            if (it != null) {
+                val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
+                if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
+                    if (pointsShown < maxPointsToShow) {
+                        infoWindow.updateGpxTrack(forceShow = true)
+                        pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0
+                        mMarkersShown.add(it)
+                    }
+                }
+            }
+        }
+        if (pointsShown > maxPointsToShow) {
+            if (context != null) {
+                Toast.makeText(
+                    context,
+                    String.format(
+                        requireContext().resources.getString(
+                            R.string.summits_shown,
+                            mMarkersShown.size.toString(),
+                            markersInBoundingBox.size.toString()
+                        )
+                    ),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+        binding.osmap.zoomController.activate()
     }
 
     private fun addOverlays(summits: List<Summit>) {

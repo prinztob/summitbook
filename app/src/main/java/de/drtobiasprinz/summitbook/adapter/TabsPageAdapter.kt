@@ -14,20 +14,20 @@ class TabsPagerAdapter(fa: FragmentActivity?, private val summitEntry: Summit) :
 
     override fun createFragment(position: Int): Fragment {
         if (position == 0) {
-            return SummitEntryDataFragment.newInstance(summitEntry)
+            return SummitEntryDataFragment()
         }
         if (summitEntry.hasImagePath() && position == 1) {
-            return SummitEntryImagesFragment.newInstance(summitEntry)
+            return SummitEntryImagesFragment()
         }
         if ((summitEntry.hasGpsTrack() && summitEntry.hasImagePath() && position == 2) || (summitEntry.hasGpsTrack() && !summitEntry.hasImagePath() && position == 1)) {
-            return SummitEntryTrackFragment.newInstance(summitEntry)
+            return SummitEntryTrackFragment()
         }
         if ((summitEntry.hasGpsTrack() && summitEntry.hasImagePath() && summitEntry.garminData?.power != null && summitEntry.garminData?.power?.hasPowerData() == true && position == 3) ||
                 (summitEntry.hasGpsTrack() && !summitEntry.hasImagePath() && summitEntry.garminData?.power != null && summitEntry.garminData?.power?.hasPowerData() == true && position == 2) ||
                 (!summitEntry.hasGpsTrack() && summitEntry.hasImagePath() && summitEntry.garminData?.power != null && summitEntry.garminData?.power?.hasPowerData() == true && position == 2) ||
                 (!summitEntry.hasGpsTrack() && !summitEntry.hasImagePath() && summitEntry.garminData?.power != null && summitEntry.garminData?.power?.hasPowerData() == true && position == 1)
         ) {
-            return SummitEntryPowerFragment.newInstance(summitEntry)
+            return SummitEntryPowerFragment()
         }
         throw RuntimeException("NO WAY")
     }

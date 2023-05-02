@@ -11,7 +11,7 @@
         android:id="@+id/summit_name_to_use"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/summit_name_compare_hint"
+        android:hint="@string/summit_name_hint"
         app:smsp_enableErrorLabel="false"
         app:smsp_enableFloatingLabel="false"
         app:smsp_hint="@string/summit_name_compare_hint"
@@ -23,154 +23,148 @@
         app:smsp_searchHint="@string/extract_summit"
         app:smsp_selectedItemListColor="#FF5252" />
 
-    <TableLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:shrinkColumns="*"
-        android:stretchColumns="*">
 
-        <GridLayout
+    <GridLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:columnCount="3"
+        android:rowCount="4">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/save"
+            style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:columnCount="3"
-            android:rowCount="4">
+            android:backgroundTint="@color/green_500"
+            android:enabled="false"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="0dp"
+            android:text="@string/saveButtonText" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/save"
-                style="@style/Widget.MaterialComponents.Button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/green_500"
-                android:enabled="false"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:minHeight="0dp"
-                android:text="@string/saveButtonText" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/cancel"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/red_500"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="0dp"
+            android:text="@string/cancelButtonText" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/cancel"
-                style="@style/Widget.MaterialComponents.Button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/red_500"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:minHeight="0dp"
-                android:text="@string/cancelButtonText" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+        <TextView
+            android:id="@+id/tour_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginStart="20dp"
+            android:drawablePadding="5dp"
+            android:padding="1dp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            app:drawableStartCompat="@drawable/baseline_today_black_24dp"
+            app:drawableTint="?android:attr/colorControlNormal" />
 
-            <TextView
-                android:id="@+id/tour_date"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:layout_marginStart="20dp"
-                android:drawablePadding="5dp"
-                android:padding="1dp"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/baseline_today_black_24dp" />
+        <TextView
+            android:id="@+id/height_meter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginStart="20dp"
+            android:drawablePadding="5dp"
+            android:padding="1dp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            app:drawableStartCompat="@drawable/baseline_trending_up_black_24dp"
+            app:drawableTint="?android:attr/colorControlNormal" />
 
-            <TextView
-                android:id="@+id/height_meter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:layout_marginStart="20dp"
-                android:drawablePadding="5dp"
-                android:padding="1dp"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/baseline_trending_up_black_24dp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-
-            <TextView
-                android:id="@+id/kilometers"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:layout_marginStart="20dp"
-                android:drawablePadding="5dp"
-                android:padding="1dp"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/icons8_map_pinpoint_20" />
+        <TextView
+            android:id="@+id/kilometers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginStart="20dp"
+            android:drawablePadding="5dp"
+            android:padding="1dp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            app:drawableStartCompat="@drawable/icons8_map_pinpoint_20"
+            app:drawableTint="?android:attr/colorControlNormal" />
 
 
-            <TextView
-                android:id="@+id/averageHr"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:layout_marginStart="20dp"
-                android:drawablePadding="5dp"
-                android:padding="1dp"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_monitor_heart_24" />
+        <TextView
+            android:id="@+id/averageHr"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginStart="20dp"
+            android:drawablePadding="5dp"
+            android:padding="1dp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            app:drawableStartCompat="@drawable/ic_baseline_monitor_heart_24"
+            app:drawableTint="?android:attr/colorControlNormal" />
 
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/mapOnOff"
-                style="@style/Widget.App.Switch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:checked="true"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:minHeight="0dp"
-                android:text="@string/map"
-                app:thumbTint="@color/switch_thumb_selector"
-                app:trackTint="@color/switch_track_selector" />
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/mapOnOff"
+            style="@style/Widget.App.Switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:checked="true"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="0dp"
+            android:text="@string/map"
+            app:thumbTint="@color/switch_thumb_selector"
+            app:trackTint="@color/switch_track_selector" />
 
-            <TextView
-                android:id="@+id/duration"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:layout_marginStart="20dp"
-                android:drawablePadding="5dp"
-                android:padding="1dp"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_timer_24" />
+        <TextView
+            android:id="@+id/duration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginStart="20dp"
+            android:drawablePadding="5dp"
+            android:padding="1dp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            app:drawableStartCompat="@drawable/ic_baseline_timer_24"
+            app:drawableTint="?android:attr/colorControlNormal" />
 
-            <TextView
-                android:id="@+id/averagePower"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:layout_marginStart="20dp"
-                android:drawablePadding="5dp"
-                android:padding="1dp"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_power_24" />
+        <TextView
+            android:id="@+id/averagePower"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginStart="20dp"
+            android:drawablePadding="5dp"
+            android:padding="1dp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            app:drawableStartCompat="@drawable/ic_baseline_power_24"
+            app:drawableTint="?android:attr/colorControlNormal" />
 
 
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/chartOnOff"
-                style="@style/Widget.App.Switch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:checked="true"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:minHeight="0dp"
-                android:text="@string/chart"
-                app:thumbTint="@color/switch_thumb_selector"
-                app:trackTint="@color/switch_track_selector" />
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/chartOnOff"
+            style="@style/Widget.App.Switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:checked="true"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="0dp"
+            android:text="@string/chart"
+            app:thumbTint="@color/switch_thumb_selector"
+            app:trackTint="@color/switch_track_selector" />
 
-        </GridLayout>
-    </TableLayout>
+    </GridLayout>
 
     <RelativeLayout
         android:id="@+id/osmapLayout"

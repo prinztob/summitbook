@@ -9,14 +9,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.TextView
-import androidx.annotation.Px
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryDataBinding
@@ -25,30 +23,25 @@ import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.di.DatabaseModule
-import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
-import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
+import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
+@AndroidEntryPoint
 class SummitEntryDataFragment : Fragment() {
 
     private lateinit var binding: FragmentSummitEntryDataBinding
 
     private var pageViewModel: PageViewModel? = null
-    private lateinit var summitEntry: Summit
     private lateinit var database: AppDatabase
-    private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
-    private lateinit var resultReceiver: SummitEntryResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultReceiver = context as SummitEntryResultReceiver
-        pageViewModel = ViewModelProvider(this)[PageViewModel::class.java]
-        pageViewModel?.setIndex(TAG)
+        pageViewModel = (requireActivity() as SummitEntryDetailsActivity).pageViewModel
     }
 
     override fun onCreateView(
@@ -58,47 +51,61 @@ class SummitEntryDataFragment : Fragment() {
         binding = FragmentSummitEntryDataBinding.inflate(layoutInflater, container, false)
 
         database = DatabaseModule.provideDatabase(requireContext())
-        summitEntry = resultReceiver.getSummit()
-        summitToCompare = resultReceiver.getSelectedSummitForComparison()
-        resultReceiver.getAllSummits().observe(viewLifecycleOwner) {
-            summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(it, summitEntry)
-            it.data?.let { summits ->
-                val extrema = ExtremaValuesSummits(summits)
-                if (summitEntry.isBookmark) {
-                    binding.summitNameToCompare.visibility = View.GONE
-                } else {
-                    prepareCompareAutoComplete(extrema)
+        pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
+            it.data.let { summitToView ->
+                if (summitToView != null) {
+                    pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
+                        summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(
+                            summitsListData,
+                            summitToView
+                        )
+                        summitsListData.data.let { summits ->
+                            if (summits != null) {
+                                pageViewModel?.summitToVCompare?.observe(viewLifecycleOwner) { summitToCompare ->
+                                    val extrema = ExtremaValuesSummits(summits)
+                                    if (summitToView.isBookmark) {
+                                        binding.summitNameToCompare.visibility = View.GONE
+                                    } else {
+                                        prepareCompareAutoComplete(summitToView, summitToCompare.data)
+                                    }
+                                    setBaseData(summitToView, summitToCompare.data, extrema)
+                                    setThirdPartyData(summitToView, summitToCompare.data, extrema)
+                                }
+                            }
+                        }
+                    }
                 }
-                setBaseData(extrema)
-                setThirdPartyData(extrema)
             }
         }
-
         return binding.root
     }
 
-    private fun setBaseData(extrema: ExtremaValuesSummits?) {
-        binding.tourDate.text = summitEntry.getDateAsString()
-        binding.summitName.text = summitEntry.name
-        binding.sportTypeImage.setImageResource(summitEntry.sportType.imageIdBlack)
+    private fun setBaseData(
+        summitToView: Summit,
+        summitToCompare: Summit?,
+        extrema: ExtremaValuesSummits?
+    ) {
+        binding.tourDate.text = summitToView.getDateAsString()
+        binding.summitName.text = summitToView.name
+        binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
 
         setText(
-            binding.heightMeterText, binding.heightMeter, getString(R.string.hm), summitEntry,
+            binding.heightMeterText, binding.heightMeter, getString(R.string.hm), summitToView,
             extrema?.heightMetersMinMax?.first, extrema?.heightMetersMinMax?.second, summitToCompare
         ) { entry -> entry.elevationData.elevationGain }
         setText(
-            binding.kilometersText, binding.kilometers, getString(R.string.km), summitEntry,
+            binding.kilometersText, binding.kilometers, getString(R.string.km), summitToView,
             extrema?.kilometersMinMax?.first, extrema?.kilometersMinMax?.second, summitToCompare
         ) { entry -> entry.kilometers }
         setText(
-            binding.topElevationText, binding.topElevation, getString(R.string.hm), summitEntry,
+            binding.topElevationText, binding.topElevation, getString(R.string.hm), summitToView,
             extrema?.topElevationMinMax?.first, extrema?.topElevationMinMax?.second, summitToCompare
         ) { entry -> entry.elevationData.maxElevation }
         setText(
             binding.topVerticalVelocity1MinText,
             binding.topVerticalVelocity1Min,
             getString(R.string.m),
-            summitEntry,
+            summitToView,
             extrema?.topVerticalVelocity1MinMinMax?.first,
             extrema?.topVerticalVelocity1MinMinMax?.second,
             summitToCompare,
@@ -109,7 +116,7 @@ class SummitEntryDataFragment : Fragment() {
             binding.topVerticalVelocity10MinText,
             binding.topVerticalVelocity10Min,
             getString(R.string.m),
-            summitEntry,
+            summitToView,
             extrema?.topVerticalVelocity10MinMinMax?.first,
             extrema?.topVerticalVelocity10MinMinMax?.second,
             summitToCompare,
@@ -120,7 +127,7 @@ class SummitEntryDataFragment : Fragment() {
             binding.topVerticalVelocity1hText,
             binding.topVerticalVelocity1h,
             getString(R.string.m),
-            summitEntry,
+            summitToView,
             extrema?.topVerticalVelocity1hMinMax?.first,
             extrema?.topVerticalVelocity1hMinMax?.second,
             summitToCompare,
@@ -128,20 +135,20 @@ class SummitEntryDataFragment : Fragment() {
             digits = 0
         ) { entry -> entry.elevationData.maxVerticalVelocity1h }
         setText(
-            binding.topSlopeText, binding.topSlope, "%", summitEntry,
+            binding.topSlopeText, binding.topSlope, "%", summitToView,
             extrema?.topSlopeMinMax?.first, extrema?.topSlopeMinMax?.second, summitToCompare
         ) { entry -> entry.elevationData.maxSlope }
         setText(
-            binding.paceText, binding.pace, getString(R.string.kmh), summitEntry,
+            binding.paceText, binding.pace, getString(R.string.kmh), summitToView,
             extrema?.averageSpeedMinMax?.first, extrema?.averageSpeedMinMax?.second, summitToCompare
         ) { entry -> entry.velocityData.avgVelocity }
         setText(
-            binding.topSpeedText, binding.topSpeed, getString(R.string.kmh), summitEntry,
+            binding.topSpeedText, binding.topSpeed, getString(R.string.kmh), summitToView,
             extrema?.topSpeedMinMax?.first, extrema?.topSpeedMinMax?.second, summitToCompare
         ) { entry -> entry.velocityData.maxVelocity }
 
-        setAdditionalSpeedData(summitEntry, extrema)
-        if (summitEntry.velocityData.hasAdditionalData()) {
+        setAdditionalSpeedData(summitToView, summitToCompare, extrema)
+        if (summitToView.velocityData.hasAdditionalData()) {
             binding.expandMoreSpeedData.visibility = View.VISIBLE
             binding.expandMoreSpeedData.setOnClickListener {
                 if (binding.expandMoreSpeedData.text == getString(R.string.more_speed)) {
@@ -152,7 +159,7 @@ class SummitEntryDataFragment : Fragment() {
                         0,
                         0
                     )
-                    setAdditionalSpeedData(summitEntry, extrema, View.VISIBLE)
+                    setAdditionalSpeedData(summitToView, summitToCompare, extrema, View.VISIBLE)
                 } else {
                     binding.expandMoreSpeedData.text = getString(R.string.more_speed)
                     binding.expandMoreSpeedData.setCompoundDrawablesWithIntrinsicBounds(
@@ -162,7 +169,7 @@ class SummitEntryDataFragment : Fragment() {
                         0
                     )
                     binding.power1sec.visibility = View.GONE
-                    setAdditionalSpeedData(summitEntry, extrema)
+                    setAdditionalSpeedData(summitToView, summitToCompare, extrema)
                 }
             }
         } else {
@@ -173,26 +180,30 @@ class SummitEntryDataFragment : Fragment() {
             binding.durationText,
             binding.duration,
             "h",
-            summitEntry,
+            summitToView,
             extrema?.durationMinMax?.first,
             extrema?.durationMinMax?.second,
             summitToCompare,
             toHHms = true
         ) { entry -> entry.duration }
-        setText(summitEntry.comments, binding.comments, binding.comments)
+        setText(summitToView.comments, binding.comments, binding.comments)
         setChipsText(
             R.id.places,
-            summitEntry.getPlacesWithConnectedEntryString(requireContext(), database),
+            summitToView.getPlacesWithConnectedEntryString(requireContext(), database),
             R.drawable.baseline_place_black_24dp
         )
-        setChipsText(R.id.countries, summitEntry.countries, R.drawable.ic_baseline_flag_24)
-        setChipsText(R.id.participants, summitEntry.participants, R.drawable.ic_baseline_people_24)
-        setChipsText(R.id.equipments, summitEntry.equipments, R.drawable.ic_baseline_handyman_24)
-        setChipsTextForSegments(R.id.segments, R.drawable.ic_baseline_route_24)
+        setChipsText(R.id.countries, summitToView.countries, R.drawable.ic_baseline_flag_24)
+        setChipsText(R.id.participants, summitToView.participants, R.drawable.ic_baseline_people_24)
+        setChipsText(R.id.equipments, summitToView.equipments, R.drawable.ic_baseline_handyman_24)
+        setChipsTextForSegments(R.id.segments, R.drawable.ic_baseline_route_24, summitToView)
     }
 
-    private fun setThirdPartyData(extrema: ExtremaValuesSummits?) {
-        val garminData = summitEntry.garminData
+    private fun setThirdPartyData(
+        summitToView: Summit,
+        summitToCompare: Summit?,
+        extrema: ExtremaValuesSummits?
+    ) {
+        val garminData = summitToView.garminData
         if (garminData != null) {
             binding.link.isClickable = true
             binding.link.movementMethod = LinkMovementMethod.getInstance()
@@ -204,7 +215,7 @@ class SummitEntryDataFragment : Fragment() {
                 binding.averageHrText,
                 binding.averageHr,
                 getString(R.string.bpm),
-                summitEntry,
+                summitToView,
                 extrema?.averageHRMinMax?.first,
                 extrema?.averageHRMinMax?.second,
                 summitToCompare,
@@ -215,7 +226,7 @@ class SummitEntryDataFragment : Fragment() {
                 binding.maxHrText,
                 binding.maxHr,
                 getString(R.string.bpm),
-                summitEntry,
+                summitToView,
                 extrema?.maxHRMinMax?.first,
                 extrema?.maxHRMinMax?.second,
                 summitToCompare,
@@ -226,7 +237,7 @@ class SummitEntryDataFragment : Fragment() {
                 binding.caloriesText,
                 binding.calories,
                 getString(R.string.kcal),
-                summitEntry,
+                summitToView,
                 extrema?.caloriesMinMax?.first,
                 extrema?.caloriesMinMax?.second,
                 summitToCompare,
@@ -236,7 +247,7 @@ class SummitEntryDataFragment : Fragment() {
                 binding.maxPowerText,
                 binding.maxPower,
                 getString(R.string.watt),
-                summitEntry,
+                summitToView,
                 extrema?.maxPowerMinMax?.first,
                 extrema?.maxPowerMinMax?.second,
                 summitToCompare,
@@ -246,7 +257,7 @@ class SummitEntryDataFragment : Fragment() {
                 binding.averagePowerText,
                 binding.averagePower,
                 getString(R.string.watt),
-                summitEntry,
+                summitToView,
                 extrema?.averagePowerMinMax?.first,
                 extrema?.averagePowerMinMax?.second,
                 summitToCompare,
@@ -256,15 +267,15 @@ class SummitEntryDataFragment : Fragment() {
                 binding.normPowerText,
                 binding.normPower,
                 getString(R.string.watt),
-                summitEntry,
+                summitToView,
                 extrema?.normPowerMinMax?.first,
                 extrema?.normPowerMinMax?.second,
                 summitToCompare,
                 digits = 0
             ) { entry -> entry.garminData?.power?.normPower }
 
-            setAdditionalPowerData(summitEntry, extrema)
-            if (summitEntry.garminData?.power?.oneSec != null && (summitEntry.garminData?.power?.oneSec
+            setAdditionalPowerData(summitToView, summitToCompare, extrema)
+            if (summitToView.garminData?.power?.oneSec != null && (summitToView.garminData?.power?.oneSec
                     ?: 0) > 0
             ) {
                 binding.expandMorePowerData.visibility = View.VISIBLE
@@ -277,7 +288,7 @@ class SummitEntryDataFragment : Fragment() {
                             0,
                             0
                         )
-                        setAdditionalPowerData(summitEntry, extrema, View.VISIBLE)
+                        setAdditionalPowerData(summitToView, summitToCompare, extrema, View.VISIBLE)
                     } else {
                         binding.expandMorePowerData.text = getString(R.string.more_power)
                         binding.expandMorePowerData.setCompoundDrawablesWithIntrinsicBounds(
@@ -287,7 +298,7 @@ class SummitEntryDataFragment : Fragment() {
                             0
                         )
                         binding.power1sec.visibility = View.GONE
-                        setAdditionalPowerData(summitEntry, extrema)
+                        setAdditionalPowerData(summitToView, summitToCompare, extrema)
                     }
                 }
             } else {
@@ -297,7 +308,7 @@ class SummitEntryDataFragment : Fragment() {
                 binding.aerobicTrainingEffectText,
                 binding.aerobicTrainingEffect,
                 "",
-                summitEntry,
+                summitToView,
                 extrema?.aerobicTrainingEffectMinMax?.first,
                 extrema?.aerobicTrainingEffectMinMax?.second,
                 summitToCompare
@@ -306,70 +317,55 @@ class SummitEntryDataFragment : Fragment() {
                 binding.anaerobicTrainingEffectText,
                 binding.anaerobicTrainingEffect,
                 "",
-                summitEntry,
+                summitToView,
                 extrema?.anaerobicTrainingEffectMinMax?.first,
                 extrema?.anaerobicTrainingEffectMinMax?.second,
                 summitToCompare
             ) { entry -> entry.garminData?.anaerobicTrainingEffect }
             setText(
-                binding.gritText, binding.grit, "", summitEntry,
+                binding.gritText, binding.grit, "", summitToView,
                 extrema?.gritMinMax?.first, extrema?.gritMinMax?.second, summitToCompare
             ) { entry -> entry.garminData?.grit }
             setText(
-                binding.flowText, binding.flow, "", summitEntry,
+                binding.flowText, binding.flow, "", summitToView,
                 extrema?.flowMinMax?.first, extrema?.flowMinMax?.second, summitToCompare
             ) { entry -> entry.garminData?.flow }
             setText(
                 binding.trainingLoadText,
                 binding.trainingLoad,
                 "",
-                summitEntry,
+                summitToView,
                 extrema?.trainingsLoadMinMax?.first,
                 extrema?.trainingsLoadMinMax?.second,
                 summitToCompare
             ) { entry -> entry.garminData?.trainingLoad }
             setText(
-                binding.vo2MaxText, binding.vo2Max, "", summitEntry,
+                binding.vo2MaxText, binding.vo2Max, "", summitToView,
                 extrema?.vo2maxMinMax?.first, extrema?.vo2maxMinMax?.second, summitToCompare
             ) { entry -> entry.garminData?.vo2max }
             setText(
-                binding.FTPText, binding.FTP, "", summitEntry,
+                binding.FTPText, binding.FTP, "", summitToView,
                 extrema?.ftpMinMax?.first, extrema?.ftpMinMax?.second, summitToCompare
             ) { entry -> entry.garminData?.ftp }
         } else {
             binding.garminData.visibility = View.GONE
             binding.expandMorePowerData.visibility = View.GONE
         }
+
+
     }
 
-    private fun prepareCompareAutoComplete(extrema: ExtremaValuesSummits?) {
-        binding.summitNameToCompare.visibility = View.VISIBLE
-        val items = getSummitsSuggestions(summitEntry)
+    private fun prepareCompareAutoComplete(summitToView: Summit, summitToCompare: Summit?) {
+        val items = getSummitsSuggestions(summitToView)
         binding.summitNameToCompare.item = items
-        resultReceiver.getViewPager()
-            .registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-                override fun onPageScrolled(
-                    position: Int,
-                    positionOffset: Float,
-                    @Px positionOffsetPixels: Int
-                ) {
-                }
-
-                override fun onPageSelected(position: Int) {
-                    val summitToCompareLocal = resultReceiver.getSelectedSummitForComparison()
-                    if (summitToCompareLocal != null) {
-                        val name =
-                            "${summitToCompareLocal.getDateAsString()} ${summitToCompareLocal.name}"
-                        val index = items.indexOf(name)
-                        binding.summitNameToCompare.setSelection(index)
-                        setBaseData(extrema)
-                        setThirdPartyData(extrema)
-                    }
-                }
-
-                override fun onPageScrollStateChanged(state: Int) {}
-            })
-
+        var selectedPosition = -1
+        if (summitToCompare != null) {
+            selectedPosition =
+                items.indexOfFirst { "${summitToCompare.getDateAsString()} ${summitToCompare.name}" == it }
+            if (selectedPosition > -1) {
+                binding.summitNameToCompare.setSelection(selectedPosition)
+            }
+        }
         binding.summitNameToCompare.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
@@ -378,24 +374,23 @@ class SummitEntryDataFragment : Fragment() {
                     position: Int,
                     id: Long
                 ) {
-                    if (view != null) {
+                    if (view != null && selectedPosition != position) {
+                        selectedPosition = position
                         val text = items[position]
                         if (text != "") {
-                            summitToCompare =
+                            val newSummitToCompare =
                                 summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
-                            resultReceiver.setSelectedSummitForComparison(summitToCompare)
+                            newSummitToCompare?.id?.let { pageViewModel?.getSummitToCompare(it) }
                         }
-                        setBaseData(extrema)
-                        setThirdPartyData(extrema)
                     }
                 }
 
                 override fun onNothingSelected(adapterView: AdapterView<*>?) {
-                    setBaseData(extrema)
-                    setThirdPartyData(extrema)
+                    pageViewModel?.setSummitToCompareToNull()
                 }
             }
     }
+
 
     private fun getSummitsSuggestions(summit: Summit): List<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
@@ -414,6 +409,7 @@ class SummitEntryDataFragment : Fragment() {
 
     private fun setAdditionalSpeedData(
         localSummit: Summit,
+        summitToCompare: Summit?,
         extrema: ExtremaValuesSummits?,
         visibility: Int = View.GONE
     ) {
@@ -521,6 +517,7 @@ class SummitEntryDataFragment : Fragment() {
 
     private fun setAdditionalPowerData(
         summit: Summit,
+        summitToCompare: Summit?,
         extrema: ExtremaValuesSummits?,
         visibility: Int = View.GONE
     ) {
@@ -800,8 +797,8 @@ class SummitEntryDataFragment : Fragment() {
         textView.setCompoundDrawablesWithIntrinsicBounds(drawable, 0, 0, 0)
     }
 
-    private fun setChipsTextForSegments(id: Int, imageId: Int) {
-        resultReceiver.getAllSegments().observe(viewLifecycleOwner) {
+    private fun setChipsTextForSegments(id: Int, imageId: Int, summitEntry: Summit) {
+        pageViewModel?.segmentsList?.observe(viewLifecycleOwner) {
             it.data.let { segments ->
                 val segmentsForSummit =
                     segments?.filter { summit -> summit.segmentEntries.any { entry -> entry.activityId == summitEntry.activityId } }
@@ -889,18 +886,4 @@ class SummitEntryDataFragment : Fragment() {
         database.close()
     }
 
-    override fun onSaveInstanceState(savedInstanceState: Bundle) {
-        super.onSaveInstanceState(savedInstanceState)
-        savedInstanceState.putLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry.id)
-    }
-
-    companion object {
-        private const val TAG = "SummitEntryDataFragment"
-
-        fun newInstance(summitEntry: Summit): SummitEntryDataFragment {
-            val fragment = SummitEntryDataFragment()
-            fragment.summitEntry = summitEntry
-            return fragment
-        }
-    }
 }

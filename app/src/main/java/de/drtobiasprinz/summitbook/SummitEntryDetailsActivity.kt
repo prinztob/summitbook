@@ -4,45 +4,43 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.ViewModelProvider
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.TabsPagerAdapter
-import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportGroup
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
+import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.utils.DataStatus
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 
 @AndroidEntryPoint
-class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceiver {
-    private val viewModel: DatabaseViewModel by viewModels()
+class SummitEntryDetailsActivity : AppCompatActivity() {
+    var pageViewModel: PageViewModel? = null
 
     private lateinit var summitEntry: Summit
-    private lateinit var viewPager: ViewPager2
-    private var summitToCompare: Summit? = null
+    lateinit var viewPager: ViewPager2
     private var summitsToCompare: List<Summit> = emptyList()
     private lateinit var allSummits: LiveData<DataStatus<List<Summit>>>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pageViewModel = ViewModelProvider(this)[PageViewModel::class.java]
         setContentView(R.layout.activity_summit_entry_details)
-        allSummits = viewModel.summitsList
+        allSummits = pageViewModel?.summitsList!!
         setActionBar()
         OpenStreetMapUtils.setOsmConfForTiles()
         val bundle = intent.extras
         if (bundle != null) {
             val summitEntryId = intent.extras?.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
             if (summitEntryId != null) {
-                viewModel.getDetailsSummit(summitEntryId)
-                viewModel.summitDetails.observe(this) { itData ->
+                pageViewModel?.getSummitToView(summitEntryId)
+                pageViewModel?.summitToView?.observe(this) { itData ->
                     itData.data?.let {
                         summitEntry = it
                         val tabsPagerAdapter = TabsPagerAdapter(this, summitEntry)
@@ -54,7 +52,7 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
                             tab.text = getPageTitle(position)
                         }.attach()
 
-                        viewModel.summitsList.observe(this) { itData ->
+                        pageViewModel?.summitsList?.observe(this) { itData ->
                             summitsToCompare = getSummitsToCompare(itData, summitEntry)
                         }
                     }
@@ -133,30 +131,5 @@ class SummitEntryDetailsActivity : AppCompatActivity(), SummitEntryResultReceive
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         return true
     }
-
-    override fun getSummit(): Summit {
-        return summitEntry
-    }
-
-    override fun getSelectedSummitForComparison(): Summit? {
-        return summitToCompare
-    }
-
-    override fun setSelectedSummitForComparison(summit: Summit?) {
-        summitToCompare = summit
-    }
-
-    override fun getAllSummits(): LiveData<DataStatus<List<Summit>>> {
-        return allSummits
-    }
-
-    override fun getAllSegments(): LiveData<DataStatus<List<Segment>>> {
-        return viewModel.segmentsList
-    }
-
-    override fun getViewPager(): ViewPager2 {
-        return viewPager
-    }
-
 
 }

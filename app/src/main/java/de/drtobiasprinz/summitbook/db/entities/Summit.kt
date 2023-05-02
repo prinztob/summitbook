@@ -8,7 +8,6 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.utils.Constants
 import org.osmdroid.util.BoundingBox
@@ -182,8 +181,11 @@ class Summit(
     }
 
     fun hasGpsTrack(simplified: Boolean = false): Boolean {
-        hasTrack = getGpsTrackPath(simplified).toFile()?.exists() ?: false
-        return hasTrack
+        val checkIfHasTrack = getGpsTrackPath(simplified).toFile()?.exists() ?: false
+        if (!simplified) {
+            hasTrack = checkIfHasTrack
+        }
+        return checkIfHasTrack
     }
 
     fun isDuplicate(allExistingEntries: List<Summit>?): Boolean {

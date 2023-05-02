@@ -8,11 +8,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
-import androidx.annotation.Px
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import androidx.viewpager2.widget.ViewPager2
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.MarkerView
 import com.github.mikephil.charting.components.XAxis
@@ -23,36 +20,32 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.utils.MPPointF
+import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryPowerBinding
 import de.drtobiasprinz.summitbook.db.entities.PowerData
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.SummitEntryResultReceiver
-import de.drtobiasprinz.summitbook.ui.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
 import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
+import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import java.util.*
 import kotlin.math.*
 
+@AndroidEntryPoint
 class SummitEntryPowerFragment : Fragment() {
 
     private lateinit var binding: FragmentSummitEntryPowerBinding
     private var pageViewModel: PageViewModel? = null
-    private lateinit var summitEntry: Summit
     private lateinit var metrics: DisplayMetrics
     private var selectedTimeRangeSpinner: Int = 0
-    private var summitToCompare: Summit? = null
     private var summitsToCompare: List<Summit> = emptyList()
     private var extremaValuesAllSummits: ExtremaValuesSummits? = null
-    private lateinit var resultReceiver: SummitEntryResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        resultReceiver = context as SummitEntryResultReceiver
-        pageViewModel = ViewModelProvider(this).get(PageViewModel::class.java)
-        pageViewModel?.setIndex(TAG)
+        pageViewModel = (requireActivity() as SummitEntryDetailsActivity).pageViewModel
     }
 
     override fun onCreateView(
@@ -60,19 +53,40 @@ class SummitEntryPowerFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentSummitEntryPowerBinding.inflate(layoutInflater, container, false)
+        pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
+            it.data.let { summitToView ->
+                if (summitToView != null) {
+                    pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
+                        summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(
+                            summitsListData,
+                            summitToView,
+                            onlyWithPowerData = true
+                        )
+                        if (summitToView.isBookmark) {
+                            binding.summitNameToCompare.visibility = View.GONE
+                        } else {
+                            pageViewModel?.summitToVCompare?.observe(viewLifecycleOwner) {
+                                prepareCompareAutoComplete(summitToView, it.data)
+                            }
+                        }
+                        summitsListData.data.let { summits ->
+                            if (summits != null) {
 
-        summitEntry = resultReceiver.getSummit()
-        summitToCompare = resultReceiver.getSelectedSummitForComparison()
-        resultReceiver.getAllSummits().observe(viewLifecycleOwner) {
-            summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(
-                it,
-                summitEntry,
-                onlyWithPowerData = true
-            )
-            if (summitEntry.isBookmark) {
-                binding.summitNameToCompare.visibility = View.GONE
-            } else {
-                prepareCompareAutoComplete()
+                                pageViewModel?.summitToVCompare?.observe(viewLifecycleOwner) {
+                                    it.data.let { summitToCompare ->
+
+                                        drawChart(summitToView, summitToCompare, summits)
+                                        setTimeRangeAdapter(summitToView, summitToCompare, summits)
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                    binding.summitName.text = summitToView.name
+                    binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
+
+                }
             }
         }
         metrics = DisplayMetrics()
@@ -85,6 +99,10 @@ class SummitEntryPowerFragment : Fragment() {
             @Suppress("DEPRECATION")
             display?.getMetrics(metrics)
         }
+        return binding.root
+    }
+
+    private fun setTimeRangeAdapter(summitToView: Summit, summitToCompare: Summit?, summits: List<Summit>) {
         val timeRangeAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
@@ -98,12 +116,6 @@ class SummitEntryPowerFragment : Fragment() {
         timeRangeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerTimeRange.adapter = timeRangeAdapter
 
-
-
-        binding.summitName.text = summitEntry.name
-        binding.sportTypeImage.setImageResource(summitEntry.sportType.imageIdBlack)
-        drawChart()
-
         binding.spinnerTimeRange.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
@@ -113,40 +125,24 @@ class SummitEntryPowerFragment : Fragment() {
                     l: Long
                 ) {
                     selectedTimeRangeSpinner = i
-                    drawChart()
+                    drawChart(summitToView, summitToCompare, summits)
                 }
 
                 override fun onNothingSelected(adapterView: AdapterView<*>?) {}
             }
-        return binding.root
     }
 
-    private fun prepareCompareAutoComplete() {
-        val items = getSummitsSuggestions(summitEntry)
+    private fun prepareCompareAutoComplete(summitToView: Summit, summitToCompare: Summit?) {
+        val items = getSummitsSuggestions(summitToView)
         binding.summitNameToCompare.item = items
-        resultReceiver.getViewPager()
-            .registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-                override fun onPageScrolled(
-                    position: Int,
-                    positionOffset: Float,
-                    @Px positionOffsetPixels: Int
-                ) {
-                }
-
-                override fun onPageSelected(position: Int) {
-                    val summitToCompareLocal = resultReceiver.getSelectedSummitForComparison()
-                    if (summitToCompareLocal != null) {
-                        val name =
-                            "${summitToCompareLocal.getDateAsString()} ${summitToCompareLocal.name}"
-                        val index = items.indexOf(name)
-                        binding.summitNameToCompare.setSelection(index)
-                        drawChart()
-                    }
-                }
-
-                override fun onPageScrollStateChanged(state: Int) {}
-            })
-
+        var selectedPosition = -1
+        if (summitToCompare != null) {
+            selectedPosition =
+                items.indexOfFirst { "${summitToCompare.getDateAsString()} ${summitToCompare.name}" == it }
+            if (selectedPosition > -1) {
+                binding.summitNameToCompare.setSelection(selectedPosition)
+            }
+        }
         binding.summitNameToCompare.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
@@ -155,22 +151,23 @@ class SummitEntryPowerFragment : Fragment() {
                     position: Int,
                     id: Long
                 ) {
-                    if (view != null) {
+                    if (view != null && selectedPosition != position) {
+                        selectedPosition = position
                         val text = items[position]
                         if (text != "") {
-                            summitToCompare =
+                            val newSummitToCompare =
                                 summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
-                            resultReceiver.setSelectedSummitForComparison(summitToCompare)
+                            newSummitToCompare?.id?.let { pageViewModel?.getSummitToCompare(it) }
                         }
-                        drawChart()
                     }
                 }
 
                 override fun onNothingSelected(adapterView: AdapterView<*>?) {
-                    drawChart()
+                    pageViewModel?.setSummitToCompareToNull()
                 }
             }
     }
+
 
     private fun getSummitsSuggestions(localSummit: Summit): List<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
@@ -188,9 +185,9 @@ class SummitEntryPowerFragment : Fragment() {
     }
 
 
-    private fun drawChart() {
+    private fun drawChart(summitToView: Summit, summitToCompare: Summit?, summits: List<Summit>) {
         binding.lineChart.invalidate()
-        val power = summitEntry.garminData?.power
+        val power = summitToView.garminData?.power
         if (power != null) {
             setXAxis(binding.lineChart)
             binding.lineChart.axisLeft.axisMinimum = 0f
@@ -204,7 +201,6 @@ class SummitEntryPowerFragment : Fragment() {
             val chartEntries = getLineChartEntriesMax(power)
             val dataSet = LineDataSet(chartEntries, getString(R.string.power_profile_label))
             setGraphView(dataSet, false)
-
             val powerToCompare = summitToCompare?.garminData?.power
             if (powerToCompare != null) {
                 val chartEntriesComparator = getLineChartEntriesMax(powerToCompare)
@@ -215,57 +211,54 @@ class SummitEntryPowerFragment : Fragment() {
                 setGraphView(dataSetComparator, true, color = Color.GRAY)
                 dataSets.add(dataSetComparator)
             }
-            val summits = resultReceiver.getAllSummits()
-            summits.observe(viewLifecycleOwner) {
-                it.data?.let { summits ->
-                    val filteredSummits = getFilteredSummits(summits)
-                        extremaValuesAllSummits =
-                        ExtremaValuesSummits(filteredSummits, excludeZeroValueFromMin = true)
-                    val extremalChartEntries = getLineChartEntriesMax(extremaValuesAllSummits)
-                    val minimalChartEntries = getLineChartEntriesMin(extremaValuesAllSummits)
+            val filteredSummits = getFilteredSummits(summitToView, summits)
+            extremaValuesAllSummits =
+                ExtremaValuesSummits(filteredSummits, excludeZeroValueFromMin = true)
+            val extremalChartEntries = getLineChartEntriesMax(extremaValuesAllSummits)
+            val minimalChartEntries = getLineChartEntriesMin(extremaValuesAllSummits)
 
-                    binding.lineChart.axisLeft.axisMaximum = extremalChartEntries.maxOf { it?.y ?: 0f }
-                    binding.lineChart.axisRight.axisMaximum = extremalChartEntries.maxOf { it?.y ?: 0f }
+            binding.lineChart.axisLeft.axisMaximum =
+                extremalChartEntries.maxOf { it?.y ?: 0f }
+            binding.lineChart.axisRight.axisMaximum =
+                extremalChartEntries.maxOf { it?.y ?: 0f }
 
-                    val dataSetMaximalValues =
-                        LineDataSet(
-                            extremalChartEntries,
-                            getString(R.string.power_profile_max_label)
+            val dataSetMaximalValues =
+                LineDataSet(
+                    extremalChartEntries,
+                    getString(R.string.power_profile_max_label)
+                )
+            dataSetMaximalValues.fillFormatter = MyFillFormatter(
+                LineDataSet(
+                    minimalChartEntries,
+                    getString(R.string.power_profile_min_label)
+                )
+            )
+            binding.lineChart.renderer = MyLineLegendRenderer(
+                binding.lineChart,
+                binding.lineChart.animator,
+                binding.lineChart.viewPortHandler
+            )
+
+            setGraphView(dataSetMaximalValues)
+            dataSets.add(dataSetMaximalValues)
+            dataSet.circleColors = chartEntries.mapIndexed { index, chartEntry ->
+                val maxEntry = extremalChartEntries[index]
+                val minEntry = minimalChartEntries[index]
+                if (chartEntry != null && maxEntry != null && minEntry != null) {
+                    if (chartEntry.y >= maxEntry.y) {
+                        Color.rgb(255, 215, 0)
+                    } else {
+                        ColorUtils.blendARGB(
+                            Color.GREEN,
+                            Color.RED,
+                            1f - ((chartEntry.y - minEntry.y) / (maxEntry.y - minEntry.y))
                         )
-                    dataSetMaximalValues.fillFormatter = MyFillFormatter(
-                        LineDataSet(
-                            minimalChartEntries,
-                            getString(R.string.power_profile_min_label)
-                        )
-                    )
-                    binding.lineChart.renderer = MyLineLegendRenderer(
-                        binding.lineChart,
-                        binding.lineChart.animator,
-                        binding.lineChart.viewPortHandler
-                    )
-
-                    setGraphView(dataSetMaximalValues)
-                    dataSets.add(dataSetMaximalValues)
-                    dataSet.circleColors = chartEntries.mapIndexed { index, chartEntry ->
-                        val maxEntry = extremalChartEntries[index]
-                        val minEntry = minimalChartEntries[index]
-                        if (chartEntry != null && maxEntry != null && minEntry != null) {
-                            if (chartEntry.y >= maxEntry.y) {
-                                Color.rgb(255, 215, 0)
-                            } else {
-                                ColorUtils.blendARGB(
-                                    Color.GREEN,
-                                    Color.RED,
-                                    1f - ((chartEntry.y - minEntry.y) / (maxEntry.y - minEntry.y))
-                                )
-                            }
-                        } else {
-                            Color.BLUE
-                        }
                     }
+                } else {
+                    Color.BLUE
                 }
-                dataSets.add(dataSet)
             }
+            dataSets.add(dataSet)
 
             binding.lineChart.setTouchEnabled(true)
             binding.lineChart.marker =
@@ -274,12 +267,12 @@ class SummitEntryPowerFragment : Fragment() {
         }
     }
 
-    private fun getFilteredSummits(summits: List<Summit>): List<Summit> {
+    private fun getFilteredSummits(summitToView: Summit, summits: List<Summit>): List<Summit> {
         var filtered = listOf<Summit>()
         if (selectedTimeRangeSpinner != 0) {
             filtered = summits.filter { summit ->
                 val diff = Date().time - summit.date.time
-                if (summit == summitEntry) {
+                if (summit == summitToView) {
                     false
                 } else {
                     when (selectedTimeRangeSpinner) {
@@ -416,27 +409,6 @@ class SummitEntryPowerFragment : Fragment() {
         }
         set1?.setDrawHorizontalHighlightIndicator(true)
     }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry.id)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
-
-    companion object {
-        private const val TAG = "SummitEntryPowerFragment"
-
-        fun newInstance(summitEntry: Summit): SummitEntryPowerFragment {
-            val fragment = SummitEntryPowerFragment()
-            fragment.summitEntry = summitEntry
-            return fragment
-        }
-    }
-
 
     inner class PowerMarkerView(context: Context?, layoutResource: Int) :
         MarkerView(context, layoutResource) {
