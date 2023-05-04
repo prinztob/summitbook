@@ -22,6 +22,7 @@
     <string name="capricorn_caption">Capricorn in the alps</string>
     <string name="date">Date</string>
     <string name="yearly">Yearly</string>
+    <string name="yearly_until_today">Yearly until today</string>
     <string name="monthly">Monthly</string>
     <string name="calender_wek_abrv">cw</string>
     <string name="wekly">Weekly</string>

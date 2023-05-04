@@ -66,7 +66,10 @@ class SummitEntryDataFragment : Fragment() {
                                     if (summitToView.isBookmark) {
                                         binding.summitNameToCompare.visibility = View.GONE
                                     } else {
-                                        prepareCompareAutoComplete(summitToView, summitToCompare.data)
+                                        prepareCompareAutoComplete(
+                                            summitToView,
+                                            summitToCompare.data
+                                        )
                                     }
                                     setBaseData(summitToView, summitToCompare.data, extrema)
                                     setThirdPartyData(summitToView, summitToCompare.data, extrema)
@@ -87,7 +90,11 @@ class SummitEntryDataFragment : Fragment() {
     ) {
         binding.tourDate.text = summitToView.getDateAsString()
         binding.summitName.text = summitToView.name
-        binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
+        if (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
+            binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdWhite)
+        } else {
+            binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
+        }
 
         setText(
             binding.heightMeterText, binding.heightMeter, getString(R.string.hm), summitToView,

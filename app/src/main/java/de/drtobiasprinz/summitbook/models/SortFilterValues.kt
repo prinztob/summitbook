@@ -27,7 +27,7 @@ class SortFilterValues(
     var topElevationSlider: RangeSliderValues = RangeSliderValues("maxElevation",
         { e -> e.elevationData.maxElevation.toFloat() }),
     var elevationGainSlider: RangeSliderValues = RangeSliderValues("elevationGain",
-        { e -> e.elevationData.maxElevation.toFloat() }),
+        { e -> e.elevationData.elevationGain.toFloat() }),
 
     var peakFavoriteButtonGroup: PeakFavoriteButtonGroup = PeakFavoriteButtonGroup.Indifferent,
     var hasPositionButtonGroup: HasPositionButtonGroup = HasPositionButtonGroup.Indifferent,
@@ -166,8 +166,8 @@ class SortFilterValues(
     }
 
     fun setToDefault() {
-        setDates()
         selectedDateSpinner = selectedDateSpinnerDefault
+        setDates()
         sportType = null
         kilometersSlider = RangeSliderValues("kilometers",
             { e -> e.kilometers.toFloat() })

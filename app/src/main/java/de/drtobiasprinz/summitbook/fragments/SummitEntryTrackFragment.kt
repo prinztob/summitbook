@@ -62,6 +62,8 @@ class SummitEntryTrackFragment : Fragment() {
     private var usedItemsForColorCode: List<TrackColor> = emptyList()
     private var summitsToCompare: List<Summit> = emptyList()
 
+    private var allShown: Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pageViewModel = (requireActivity() as SummitEntryDetailsActivity).pageViewModel
@@ -104,6 +106,7 @@ class SummitEntryTrackFragment : Fragment() {
                                     summitsListData.data?.let { summits ->
                                         showAllTracksOfSummitInBoundingBox(
                                             summitToView,
+                                            summitToCompare,
                                             summits,
                                             numberOfPointsTOshow
                                         )
@@ -130,6 +133,8 @@ class SummitEntryTrackFragment : Fragment() {
         summitToView: Summit,
         summitToCompare: Summit?
     ) {
+        binding.osmap.overlays?.clear()
+        binding.osmap.overlayManager?.clear()
         setUsedItemsForColorCode(true)
         setOpenStreetMap(summitToView, summitToCompare)
         OpenStreetMapUtils.setOsmConfForTiles()
@@ -378,8 +383,6 @@ class SummitEntryTrackFragment : Fragment() {
 
     private fun setOpenStreetMap(summitToView: Summit, summitToCompare: Summit?) {
         val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || summitToView.latLng != null
-        binding.osmap.overlays?.clear()
-        binding.osmap.overlayManager?.clear()
         OpenStreetMapUtils.setTileSource(OpenStreetMapUtils.selectedItem, binding.osmap)
         binding.changeMapType.setImageResource(R.drawable.baseline_more_vert_black_24dp)
         binding.changeMapType.setOnClickListener {
@@ -500,43 +503,51 @@ class SummitEntryTrackFragment : Fragment() {
 
     private fun showAllTracksOfSummitInBoundingBox(
         summitToView: Summit,
+        summitToCompare: Summit?,
         summits: List<Summit>,
         maxPointsToShow: Int
     ) {
-        val summitsWithSameBoundingBox = summits.filter {
-            it.activityId != summitToView.activityId && summitToView.trackBoundingBox?.let { it1 ->
-                it.trackBoundingBox?.intersects(
-                    it1
-                )
-            } == true
-        }
-        var pointsShown = 0
-        var summitsShown = 0
-        summitsWithSameBoundingBox.forEach { entry ->
-            if (entry.hasGpsTrack() && pointsShown < maxPointsToShow) {
-                if (entry.gpsTrack == null) {
-                    entry.setGpsTrack()
+        binding.osmap.overlays.clear()
+        binding.osmap.overlayManager?.clear()
+        if (!allShown) {
+
+            val summitsWithSameBoundingBox = summits.filter {
+                it.activityId != summitToView.activityId && summitToView.trackBoundingBox?.let { it1 ->
+                    it.trackBoundingBox?.intersects(
+                        it1
+                    )
+                } == true
+            }
+            var pointsShown = 0
+            var summitsShown = 0
+            summitsWithSameBoundingBox.forEach { entry ->
+                if (entry.hasGpsTrack() && pointsShown < maxPointsToShow) {
+                    if (entry.gpsTrack == null) {
+                        entry.setGpsTrack()
+                    }
+                    entry.gpsTrack?.addGpsTrack(binding.osmap, TrackColor.None, summit = entry)
+                    summitsShown += 1
+                    pointsShown += entry.gpsTrack?.trackPoints?.size ?: 0
                 }
-                entry.gpsTrack?.addGpsTrack(binding.osmap, TrackColor.None, summit = entry)
-                summitsShown += 1
-                pointsShown += entry.gpsTrack?.trackPoints?.size ?: 0
+            }
+            if (pointsShown > maxPointsToShow) {
+                if (context != null) {
+                    Toast.makeText(
+                        context,
+                        String.format(
+                            requireContext().resources.getString(
+                                R.string.summits_shown,
+                                summitsShown.toString(),
+                                summitsWithSameBoundingBox.size.toString()
+                            )
+                        ),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
-        if (pointsShown > maxPointsToShow) {
-            if (context != null) {
-                Toast.makeText(
-                    context,
-                    String.format(
-                        requireContext().resources.getString(
-                            R.string.summits_shown,
-                            summitsShown.toString(),
-                            summitsWithSameBoundingBox.size.toString()
-                        )
-                    ),
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
+        allShown = !allShown
+        setOpenStreetMap(summitToView, summitToCompare)
         binding.osmap.zoomController.activate()
     }
 

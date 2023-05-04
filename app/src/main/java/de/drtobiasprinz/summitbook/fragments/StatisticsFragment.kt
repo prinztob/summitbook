@@ -88,9 +88,9 @@ class StatisticsFragment : Fragment() {
                     statisticEntry.calculate()
                     setProgressBar()
                     val extremaValuesSummits = ExtremaValuesSummits(
-                        summits, shouldIndoorActivityBeExcluded = true
+                        filteredSummits, shouldIndoorActivityBeExcluded = true
                     )
-                    setTextViews(summits, extremaValuesSummits)
+                    setTextViews(filteredSummits, extremaValuesSummits)
                 }
             }
         }

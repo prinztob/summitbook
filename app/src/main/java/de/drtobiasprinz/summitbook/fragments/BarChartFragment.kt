@@ -31,10 +31,10 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentBarChartBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Forecast
-import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.utils.BarChartCustomRenderer
 import de.drtobiasprinz.summitbook.ui.utils.IntervalHelper
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
@@ -65,6 +65,8 @@ class BarChartFragment : Fragment() {
     private lateinit var intervalHelper: IntervalHelper
     lateinit var database: AppDatabase
     private var minDate: Date = Date()
+    private var xValuesForecast: List<Float> = mutableListOf()
+    private var yValuesForecast: List<Int> = mutableListOf()
 
     private lateinit var sharedPreferences: SharedPreferences
 
@@ -105,7 +107,7 @@ class BarChartFragment : Fragment() {
 
     private fun drawChart() {
         binding.barChart.drawOrder = arrayOf(
-            DrawOrder.LINE, DrawOrder.BUBBLE, DrawOrder.CANDLE, DrawOrder.BAR, DrawOrder.SCATTER
+            DrawOrder.BUBBLE, DrawOrder.CANDLE, DrawOrder.BAR, DrawOrder.SCATTER, DrawOrder.LINE
         )
         binding.barChart.legend?.isWordWrapEnabled = true
         val combinedData = CombinedData()
@@ -129,9 +131,7 @@ class BarChartFragment : Fragment() {
         binding.barChart.setTouchEnabled(true)
         binding.barChart.marker =
             CustomMarkerView(requireContext(), R.layout.marker_graph_bar_chart)
-        if (selectedXAxisSpinnerEntry != XAxisSelector.DateByYear) {
-            binding.barChart.setVisibleXRangeMinimum(12f)
-        }
+        binding.barChart.setVisibleXRangeMinimum(12f)
         if (selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart != -1f) {
             binding.barChart.setVisibleXRangeMaximum(selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart)
             if (!selectedXAxisSpinnerEntry.isAQuality) {
@@ -163,7 +163,7 @@ class BarChartFragment : Fragment() {
         xAxis?.axisMinimum = min - 0.5f
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return if (selectedXAxisSpinnerEntry == XAxisSelector.DateByYear) {
+                return if (selectedXAxisSpinnerEntry == XAxisSelector.DateByYear  || selectedXAxisSpinnerEntry == XAxisSelector.DateByYearUnitlToday) {
                     String.format("%s", value.toInt())
                 } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByWeek) {
                     String.format("%s", value.toInt() % 52)
@@ -199,8 +199,8 @@ class BarChartFragment : Fragment() {
     }
 
     fun update(summits: List<Summit>) {
-        minDate = summits.minBy { it.date }.date
         val filteredSummits = sortFilterValues.apply(summits)
+        minDate = filteredSummits.minBy { it.date }.date
         intervalHelper = IntervalHelper(filteredSummits)
         val barChartCustomRenderer = BarChartCustomRenderer(
             binding.barChart,
@@ -267,7 +267,6 @@ class BarChartFragment : Fragment() {
 
     @Throws(ParseException::class)
     private fun updateBarChart(summits: List<Summit>) {
-        intervalHelper = IntervalHelper(summits)
         setForecastsChart()
         val rangeAndAnnotation = selectedXAxisSpinnerEntry.getRangeAndAnnotation(intervalHelper)
         val interval = rangeAndAnnotation.second
@@ -288,14 +287,16 @@ class BarChartFragment : Fragment() {
     private fun setForecastsChart() {
         if (selectedXAxisSpinnerEntry in listOf(
                 XAxisSelector.DateByMonth,
-                XAxisSelector.DateByYear
+                XAxisSelector.DateByYear,
+                XAxisSelector.DateByYearUnitlToday
             )
         ) {
             val forecasts = database.forecastDao()?.allForecasts
             val ranges = selectedXAxisSpinnerEntry.getRangeAndAnnotation(intervalHelper).second
-            val xValues = selectedXAxisSpinnerEntry.getRangeAndAnnotation(intervalHelper).first
-            val yValues = ranges.map { range ->
-                forecasts?.sumBy { forecast ->
+            xValuesForecast =
+                selectedXAxisSpinnerEntry.getRangeAndAnnotation(intervalHelper).first
+            yValuesForecast = ranges.map { range ->
+                forecasts?.sumOf { forecast ->
                     val date = forecast.getDate()
                     if (date != null && date in (range as ClosedRange<Date>)) {
                         selectedYAxisSpinnerEntry.getForecastValue(forecast).toInt()
@@ -304,9 +305,9 @@ class BarChartFragment : Fragment() {
                     }
                 } ?: 0
             }
-            yValues.forEachIndexed { index, yValue ->
+            yValuesForecast.forEachIndexed { index, yValue ->
                 lineChartEntriesForecast.add(
-                    Entry(xValues[index] - 0.5f, yValue.toFloat())
+                    Entry(xValuesForecast[index] - 0.5f, yValue.toFloat())
                 )
             }
         }
@@ -382,7 +383,7 @@ class BarChartFragment : Fragment() {
             try {
                 val value: String
                 if (e != null && highlight != null) {
-                    value = if (selectedXAxisSpinnerEntry == XAxisSelector.DateByYear) {
+                    value = if (selectedXAxisSpinnerEntry == XAxisSelector.DateByYear || selectedXAxisSpinnerEntry == XAxisSelector.DateByYearUnitlToday) {
                         String.format("%s", e.x.toInt())
                     } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByWeek) {
                         val week = (e.x % 52f).toInt()
@@ -402,26 +403,23 @@ class BarChartFragment : Fragment() {
                         getFormattedValueNormalMarker(e)
 
                     }
-                    val currentYear = Calendar.getInstance()[Calendar.YEAR].toString()
-                    val forecasts = database.forecastDao()?.allForecasts as ArrayList<Forecast>
-                    val forecast =
-                        forecasts.firstOrNull { it.month == e.x.toInt() && it.year.toString() == currentYear }
-
                     val selectedValue = (e as BarEntry).yVals[highlight.stackIndex].toInt()
                     val unitString = if (unit == "") "" else " $unit"
-                    if (selectedValue == 0) {
-                        val forecastValue =
-                            forecast?.let { selectedYAxisSpinnerEntry.getForecastValue(it) }
-                                ?: 0f
+                    if (selectedValue == 0 && xValuesForecast.indexOf(e.x) > -1) {
+                        val forecastValue = yValuesForecast[xValuesForecast.indexOf(e.x)]
                         tvContent?.text =
-                            if (forecastValue > 0 && selectedXAxisSpinnerEntry == XAxisSelector.DateByYear) {
+                            if (forecastValue > 0 && (
+                                        selectedXAxisSpinnerEntry == XAxisSelector.DateByMonth ||
+                                                selectedXAxisSpinnerEntry == XAxisSelector.DateByYear) ||
+                                                selectedXAxisSpinnerEntry == XAxisSelector.DateByYearUnitlToday
+                            ) {
                                 String.format(
                                     "%s%s\n%s\n%s: %s%s",
                                     e.getY().toInt(),
                                     unitString,
                                     value,
                                     getString(R.string.forecast_abbr),
-                                    forecastValue.toInt(),
+                                    forecastValue,
                                     unitString
                                 )
                             } else {
@@ -494,21 +492,28 @@ class BarChartFragment : Fragment() {
                 ?.filter { o: Summit ->
                     o.date in (range as ClosedRange<Date>)
                 }
-        }, { e -> e.getRangeAndAnnotationsForDate(Calendar.MONTH, Calendar.DAY_OF_MONTH, true) }),
+        }, { e -> e.dateByMonthRangeAndAnnotation }),
         DateByYear(R.string.yearly, R.string.empty, 0.0, false, 12f, { entries, range ->
             entries
                 ?.stream()
                 ?.filter { o: Summit ->
                     o.date in (range as ClosedRange<Date>)
                 }
-        }, { e -> e.getRangeAndAnnotationsForDate(Calendar.YEAR, Calendar.DAY_OF_YEAR) }),
+        }, { e -> e.dateByYearRangeAndAnnotation }),
+        DateByYearUnitlToday(R.string.yearly_until_today, R.string.empty, 0.0, false, 12f, { entries, range ->
+            entries
+                ?.stream()
+                ?.filter { o: Summit ->
+                    o.date in (range as ClosedRange<Date>)
+                }
+        }, { e -> e.dateByYearUntilTodayRangeAndAnnotation }),
         DateByWeek(R.string.wekly, R.string.empty, 0.0, false, 26f, { entries, range ->
             entries
                 ?.stream()
                 ?.filter { o: Summit ->
                     o.date in (range as ClosedRange<Date>)
                 }
-        }, { e -> e.getRangeAndAnnotationsForDate(Calendar.WEEK_OF_YEAR, Calendar.DAY_OF_WEEK) }),
+        }, { e -> e.dateByWeekRangeAndAnnotation }),
         Kilometers(
             R.string.kilometers_hint,
             R.string.km,
@@ -520,7 +525,7 @@ class BarChartFragment : Fragment() {
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.kilometers.toFloat() in (range as ClosedRange<Float>) }
             },
-            { e -> e.getRangeAndAnnotationsForSummitValue(IntervalHelper.kilometersStep.toFloat()) { it.kilometers.toFloat() } }),
+            { e -> e.kilometersRangeAndAnnotation }),
         ElevationGain(
             R.string.height_meter_hint,
             R.string.hm,
@@ -532,7 +537,7 @@ class BarChartFragment : Fragment() {
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.elevationData.elevationGain.toFloat() in range as ClosedRange<Float> }
             },
-            { e -> e.getRangeAndAnnotationsForSummitValue(IntervalHelper.elevationGainStep.toFloat()) { it.elevationData.elevationGain.toFloat() } }),
+            { e -> e.elevationGainRangeAndAnnotation }),
         TopElevation(
             R.string.top_elevation_hint,
             R.string.masl,
@@ -544,23 +549,23 @@ class BarChartFragment : Fragment() {
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.elevationData.maxElevation.toFloat() in (range as ClosedRange<Float>) }
             },
-            { e -> e.getRangeAndAnnotationsForSummitValue(IntervalHelper.topElevationStep.toFloat()) { it.elevationData.maxElevation.toFloat() } }),
+            { e -> e.topElevationRangeAndAnnotation }),
         Participants(R.string.participants, R.string.empty, 1.0, true, 12f, { entries, range ->
             entries
                 ?.stream()
                 ?.filter { o: Summit? -> o != null && o.participants.contains(range) }
-        }, { e -> e.getRangeAndAnnotationForSummitChipValues { summit -> summit.participants } }),
+        }, { e -> e.participantsRangeAndAnnotationForSummitChipValues }),
         Equipments(R.string.equipments, R.string.empty, 1.0, true, 12f, { entries, range ->
             entries
                 ?.stream()
                 ?.filter { o: Summit? -> o != null && o.equipments.contains(range) }
-        }, { e -> e.getRangeAndAnnotationForSummitChipValues { summit -> summit.equipments } }),
+        }, { e -> e.equipmentsRangeAndAnnotationForSummitChipValues }),
 
         Countries(R.string.country_hint, R.string.empty, 1.0, true, 12f, { entries, range ->
             entries
                 ?.stream()
                 ?.filter { o: Summit? -> o != null && o.countries.contains(range) }
-        }, { e -> e.getRangeAndAnnotationForSummitChipValues { summit -> summit.countries } })
+        }, { e -> e.countriesRangeAndAnnotationForSummitChipValues })
     }
 
     enum class YAxisSelector(
