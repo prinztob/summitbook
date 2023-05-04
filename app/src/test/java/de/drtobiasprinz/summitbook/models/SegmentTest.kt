@@ -53,7 +53,7 @@ class SegmentTest {
     fun parseNewSegmentFromCsvFileLine() {
         val newFormatLineToParse = "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
         Segment.parseFromCsvFileLine(newFormatLineToParse, mutableListOf(), db)
-        val segments = dao?.getAllSegments()
+        val segments = dao?.getAllSegmentsDeprecated()
         assert(segments?.size == 1)
         assert(segments?.firstOrNull()?.segmentEntries?.size == 1)
         assert(segments?.firstOrNull() == Segment(segmentDetail1, mutableListOf(segmentEntry1)))
@@ -62,12 +62,12 @@ class SegmentTest {
     @Test
     @Throws(Exception::class)
     fun parseSegmentFromCsvFileLineWithKnownSegmentDetail() {
-        val segmentsBefore = dao?.getAllSegments()
+        val segmentsBefore = dao?.getAllSegmentsDeprecated()
         val line1ToParse = "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
         Segment.parseFromCsvFileLine(line1ToParse, segmentsBefore, db)
         val line2ToParse = "start1;end1;2019-11-14;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
         Segment.parseFromCsvFileLine(line2ToParse, segmentsBefore, db)
-        val segmentsAfter = dao?.getAllSegments()
+        val segmentsAfter = dao?.getAllSegmentsDeprecated()
         assert(segmentsAfter?.size == 1)
         assert(segmentsAfter == segmentsBefore)
         assert(segmentsAfter?.firstOrNull()?.segmentEntries?.size == 2)
@@ -77,12 +77,12 @@ class SegmentTest {
     @Test
     @Throws(Exception::class)
     fun parseSegmentFromCsvFileLineDuplication() {
-        val segmentsBefore = dao?.getAllSegments()
+        val segmentsBefore = dao?.getAllSegmentsDeprecated()
         val line1ToParse = "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
         Segment.parseFromCsvFileLine(line1ToParse, segmentsBefore, db)
         val line2ToParse = "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
         Segment.parseFromCsvFileLine(line2ToParse, segmentsBefore, db)
-        val segmentsAfter = dao?.getAllSegments()
+        val segmentsAfter = dao?.getAllSegmentsDeprecated()
         assert(segmentsAfter?.size == 1)
         assert(segmentsAfter == segmentsBefore)
         assert(segmentsAfter?.firstOrNull()?.segmentEntries?.size == 1)

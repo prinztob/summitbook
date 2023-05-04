@@ -13,6 +13,7 @@ import android.widget.TableRow
 import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.*
@@ -24,16 +25,16 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.databinding.FragmentSegmentEntryDetailsBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.fragments.AddSegmentEntryFragment
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,47 +52,57 @@ import kotlin.math.roundToLong
 
 @AndroidEntryPoint
 class SegmentEntryDetailsFragment : Fragment() {
+    private val viewModel: DatabaseViewModel by viewModels()
 
     var segmentDetailsId: Long = -1L
-    var segmentEntryId: Long = -1L
-    var decending: Boolean = true
+    private var segmentEntryId: Long = -1L
+    private var descending: Boolean = true
     private lateinit var binding: FragmentSegmentEntryDetailsBinding
-    lateinit var database: AppDatabase
-    private lateinit var allSegments: List<Segment>
-    private var segment: Segment? = null
+
     private var summitShown: Summit? = null
     private var segmentEntryToShow: SegmentEntry? = null
-
-    private var summits: MutableList<Summit?> = mutableListOf()
     private var selectedCustomizeTrackItem = TrackColor.Elevation
 
+    private var relevantSummits: List<Summit?>? = emptyList()
     private var setSortLabelFor: Int = 21
     private var sorter: (List<SegmentEntry>) -> List<SegmentEntry> =
-        { e -> if (decending) e.sortedByDescending { it.duration } else e.sortedBy { it.duration } }
+        { e -> if (descending) e.sortedByDescending { it.duration } else e.sortedBy { it.duration } }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        binding = FragmentSegmentEntryDetailsBinding.inflate(layoutInflater, container, false)
         super.onCreate(savedInstanceState)
-        database = DatabaseModule.provideDatabase(requireContext())
-        allSegments = database.segmentsDao().getAllSegments() ?: emptyList()
         binding = FragmentSegmentEntryDetailsBinding.inflate(layoutInflater)
-        segment = allSegments.firstOrNull { it.segmentDetails.segmentDetailsId == segmentDetailsId }
-        segment?.segmentEntries?.forEach {
-            val entry = database.summitsDao().getSummitFromActivityId(
-                it.activityId
-            )
-            if (entry !in summits) {
-                summits.add(entry)
+
+        if (segmentDetailsId == -1L && savedInstanceState != null) {
+            segmentDetailsId =
+                savedInstanceState.getLong(SegmentDetails.SEGMENT_DETAILS_ID_EXTRA_IDENTIFIER)
+            segmentEntryId =
+                savedInstanceState.getLong(SegmentEntry.SEGMENT_ENTRY_ID_EXTRA_IDENTIFIER)
+        }
+
+        viewModel.summitsList.observe(viewLifecycleOwner) { itDataSummits ->
+            itDataSummits.data.let { summits ->
+                viewModel.segmentsList.observe(viewLifecycleOwner) { itDataSegments ->
+                    itDataSegments.data.let { segments ->
+                        val segmentToUse =
+                            segments?.firstOrNull { it.segmentDetails.segmentDetailsId == segmentDetailsId }
+                        relevantSummits = segmentToUse?.segmentEntries?.map { entry ->
+                            summits?.firstOrNull { it.activityId == entry.activityId }
+                        }
+                        if (segmentEntryId == -1L) {
+                            segmentEntryId = segmentToUse?.segmentEntries?.let { sorter(it).first() }?.entryId ?: -1
+                        }
+                        segmentEntryToShow =
+                            if (segmentEntryId == -1L) segmentToUse?.segmentEntries?.let { sorter(it).first() } else segmentToUse?.segmentEntries?.firstOrNull { it.entryId == segmentEntryId }
+                        summitShown =
+                            relevantSummits?.firstOrNull { it?.activityId == segmentEntryToShow?.activityId }
+                        prepareMap()
+                        update(summitShown, segmentEntryToShow, segmentToUse)
+                    }
+                }
             }
         }
-        segmentEntryToShow =
-            if (segmentEntryId == -1L) segment?.segmentEntries?.let { sorter(it).first() } else segment?.segmentEntries?.firstOrNull { it.entryId == segmentEntryId }
-        summitShown = summits.firstOrNull { it?.activityId == segmentEntryToShow?.activityId }
-        prepareMap()
-        update(summitShown, segmentEntryToShow, segment)
-
         return binding.root
     }
 
@@ -101,6 +112,7 @@ class SegmentEntryDetailsFragment : Fragment() {
         segmentToUse: Segment?
     ) {
         if (segmentEntryToShow != null && summitToShow != null && segmentToUse != null) {
+            binding.segmentName.text = segmentToUse.segmentDetails.getDisplayName()
             binding.osMap.overlays?.clear()
             binding.osMap.overlayManager?.clear()
             drawMarker(segmentToUse.segmentEntries)
@@ -263,7 +275,6 @@ class SegmentEntryDetailsFragment : Fragment() {
     }
 
     private fun setTextView(gpxTrack: GpsTrack, segmentEntry: SegmentEntry) {
-        binding.segmentName.text = segment?.segmentDetails?.getDisplayName()
         val allTrackPoints = gpxTrack.trackPoints
         if (allTrackPoints.isNotEmpty()) {
 
@@ -408,7 +419,7 @@ class SegmentEntryDetailsFragment : Fragment() {
         tableLayout.removeAllViews()
         addHeader(view, tableLayout, segment)
         sorter(segment.segmentEntries).forEachIndexed { index, entry ->
-            val summit = summits.firstOrNull {
+            val summit = relevantSummits?.firstOrNull {
                 it?.activityId == entry.activityId
             }
             if (summit != null) {
@@ -438,7 +449,7 @@ class SegmentEntryDetailsFragment : Fragment() {
             getString(R.string.date),
             tableLayout,
             segment,
-            sorter = { e -> if (decending) e.sortedByDescending { it.date } else e.sortedBy { it.date } })
+            sorter = { e -> if (descending) e.sortedByDescending { it.date } else e.sortedBy { it.date } })
         addLabel(view, tableRowHead, 21, getString(R.string.minutes), tableLayout, segment)
         addLabel(view,
             tableRowHead,
@@ -446,21 +457,21 @@ class SegmentEntryDetailsFragment : Fragment() {
             getString(R.string.kmh),
             tableLayout,
             segment,
-            sorter = { e -> if (decending) e.sortedByDescending { it.kilometers * 60 / it.duration } else e.sortedBy { it.kilometers * 60 / it.duration } })
+            sorter = { e -> if (descending) e.sortedByDescending { it.kilometers * 60 / it.duration } else e.sortedBy { it.kilometers * 60 / it.duration } })
         addLabel(view,
             tableRowHead,
             23,
             getString(R.string.bpm),
             tableLayout,
             segment,
-            sorter = { e -> if (decending) e.sortedByDescending { it.averageHeartRate } else e.sortedBy { it.averageHeartRate } })
+            sorter = { e -> if (descending) e.sortedByDescending { it.averageHeartRate } else e.sortedBy { it.averageHeartRate } })
         addLabel(view,
             tableRowHead,
             24,
             getString(R.string.watt),
             tableLayout,
             segment,
-            sorter = { e -> if (decending) e.sortedByDescending { it.averagePower } else e.sortedBy { it.averagePower } })
+            sorter = { e -> if (descending) e.sortedByDescending { it.averagePower } else e.sortedBy { it.averagePower } })
         addLabel(view, tableRowHead, 25, "", tableLayout, segment)
         addLabel(view, tableRowHead, 26, "", tableLayout, segment)
         tableLayout.addView(
@@ -495,21 +506,21 @@ class SegmentEntryDetailsFragment : Fragment() {
         text: String,
         tableLayout: TableLayout,
         segment: Segment,
-        sorter: (List<SegmentEntry>) -> List<SegmentEntry> = {  e -> if (decending) e.sortedByDescending { it.duration } else e.sortedBy { it.duration } }
+        sorter: (List<SegmentEntry>) -> List<SegmentEntry> = { e -> if (descending) e.sortedByDescending { it.duration } else e.sortedBy { it.duration } }
     ) {
         val label = TextView(view.context)
         label.id = id
         label.text = text
         if (id == setSortLabelFor) {
             label.setCompoundDrawablesWithIntrinsicBounds(
-                if (decending) R.drawable.baseline_keyboard_double_arrow_down_black_24dp else R.drawable.baseline_keyboard_double_arrow_up_black_24dp,
+                if (descending) R.drawable.baseline_keyboard_double_arrow_down_black_24dp else R.drawable.baseline_keyboard_double_arrow_up_black_24dp,
                 0,
                 0,
                 0
             )
         }
         label.setOnClickListener {
-            decending = !decending
+            descending = !descending
             this.sorter = sorter
             setSortLabelFor = id
             drawTable(view, tableLayout, segment)
@@ -532,6 +543,7 @@ class SegmentEntryDetailsFragment : Fragment() {
         val tr = TableRow(view.context)
         tr.setOnClickListener {
             segmentEntryToShow = entry
+            segmentEntryId = entry.entryId
             summitShown = summit
             update(summitShown, segmentEntryToShow, segment)
         }
@@ -597,10 +609,7 @@ class SegmentEntryDetailsFragment : Fragment() {
         val removeButton = ImageButton(view.context)
         removeButton.setImageResource(R.drawable.ic_baseline_delete_24)
         removeButton.setOnClickListener {
-            database.segmentsDao().deleteSegmentEntry(entry)
-            allSegments = database.segmentsDao().getAllSegments() ?: mutableListOf()
-            segment.segmentEntries.remove(entry)
-            drawTable(view, tableLayout, segment)
+            viewModel.deleteSegment(entry)
         }
         tr.addView(removeButton)
 
@@ -609,6 +618,12 @@ class SegmentEntryDetailsFragment : Fragment() {
                 TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT
             )
         )
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putLong(SegmentDetails.SEGMENT_DETAILS_ID_EXTRA_IDENTIFIER, segmentDetailsId)
+        outState.putLong(SegmentEntry.SEGMENT_ENTRY_ID_EXTRA_IDENTIFIER, segmentEntryId)
     }
 
 }

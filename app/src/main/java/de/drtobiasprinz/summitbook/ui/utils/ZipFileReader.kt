@@ -106,7 +106,7 @@ class ZipFileReader(private val baseDirectory: File, private val database: AppDa
     }
 
     private fun readSegments(inputCsvFile: File) {
-        val segments = database.segmentsDao()?.getAllSegments() as MutableList<Segment>
+        val segments = database.segmentsDao().getAllSegmentsDeprecated() as MutableList<Segment>
         val iStream: InputStream = FileInputStream(inputCsvFile)
         BufferedReader(InputStreamReader(iStream)).use { br ->
             var line: String?

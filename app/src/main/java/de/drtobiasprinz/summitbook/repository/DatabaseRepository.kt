@@ -2,6 +2,7 @@ package de.drtobiasprinz.summitbook.repository
 
 import de.drtobiasprinz.summitbook.db.dao.SegmentsDao
 import de.drtobiasprinz.summitbook.db.dao.SummitsDao
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import javax.inject.Inject
 
@@ -15,6 +16,7 @@ class DatabaseRepository @Inject constructor(private val summitsDao: SummitsDao,
     fun getAllBookmarks() = summitsDao.getAllBookmarks()
     fun searchSummit(name: String) = summitsDao.searchSummit(name)
 
-    fun getAllSegments() = segmentsDao.getAllSegmentsFlow()
+    fun getAllSegments() = segmentsDao.getAllSegments()
+    suspend fun deleteSegmentEntry(entity: SegmentEntry) = segmentsDao.deleteSegmentEntry(entity)
 
 }

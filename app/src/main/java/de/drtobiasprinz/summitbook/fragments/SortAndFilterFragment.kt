@@ -21,7 +21,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentSortAndFilterBinding
 import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.db.entities.SportType
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
@@ -250,7 +251,7 @@ class SortAndFilterFragment : DialogFragment() {
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
                     parent: AdapterView<*>?,
-                    view: View,
+                    view: View?,
                     position: Int,
                     id: Long
                 ) {
@@ -316,29 +317,31 @@ class SortAndFilterFragment : DialogFragment() {
         binding.spinnerDate.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
-                    parent: AdapterView<*>?,
-                    view: View,
+                    adapterView: AdapterView<*>?,
+                    view: View?,
                     position: Int,
                     id: Long
                 ) {
-                    sortFilterValues.selectedDateSpinner = position
-                    when (position) {
-                        1 -> {
-                            binding.dateStartEndSelector.visibility = View.VISIBLE
-                        }
-                        0 -> {
-                            binding.dateStartEndSelector.visibility = View.GONE
-                            sortFilterValues.startDate = null
-                            sortFilterValues.endDate = null
-                        }
-                        else -> {
-                            binding.dateStartEndSelector.visibility = View.GONE
-                            sortFilterValues.startDate = dt.parse(
-                                "${sortFilterValues.getSelectedYear()}-01-01 00:00:00"
-                            )
-                            sortFilterValues.endDate = dt.parse(
-                                "${sortFilterValues.getSelectedYear()}-12-31 23:59:59"
-                            )
+                    if (view != null) {
+                        sortFilterValues.selectedDateSpinner = position
+                        when (position) {
+                            1 -> {
+                                binding.dateStartEndSelector.visibility = View.VISIBLE
+                            }
+                            0 -> {
+                                binding.dateStartEndSelector.visibility = View.GONE
+                                sortFilterValues.startDate = null
+                                sortFilterValues.endDate = null
+                            }
+                            else -> {
+                                binding.dateStartEndSelector.visibility = View.GONE
+                                sortFilterValues.startDate = dt.parse(
+                                    "${sortFilterValues.getSelectedYear()}-01-01 00:00:00"
+                                )
+                                sortFilterValues.endDate = dt.parse(
+                                    "${sortFilterValues.getSelectedYear()}-12-31 23:59:59"
+                                )
+                            }
                         }
                     }
                 }

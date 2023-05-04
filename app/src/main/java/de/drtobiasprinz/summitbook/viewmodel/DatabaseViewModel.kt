@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.utils.DataStatus
@@ -84,6 +85,10 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         repository.getAllSegments().collect {
             _segmentsList.postValue(DataStatus.success(it, false))
         }
+    }
+
+    fun deleteSegment(entity: SegmentEntry) = viewModelScope.launch {
+        repository.deleteSegmentEntry(entity)
     }
 
 }

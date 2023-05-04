@@ -24,7 +24,7 @@ class SegmentsViewFragment : Fragment() {
         binding = FragmentRoutesViewBinding.inflate(layoutInflater, container, false)
         val database = context?.let { DatabaseModule.provideDatabase(it) }
 
-        segments = (database?.segmentsDao()?.getAllSegments() ?: listOf()) as MutableList
+        segments = (database?.segmentsDao()?.getAllSegmentsDeprecated() ?: listOf()) as MutableList
         adapter = SegmentsViewAdapter(segments)
         binding.root.adapter = adapter
         val layoutManager = LinearLayoutManager(activity)

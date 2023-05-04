@@ -420,7 +420,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     sharedPreferences.getBoolean("export_third_party_data", true)
                 val exportCalculatedData =
                     sharedPreferences.getBoolean("export_calculated_data", true)
-                val segments = DatabaseModule.provideDatabase(this).segmentsDao().getAllSegments()
+                val segments = DatabaseModule.provideDatabase(this).segmentsDao().getAllSegmentsDeprecated()
                 val forecasts = DatabaseModule.provideDatabase(this).forecastDao()?.allForecasts
                 viewModel.summitsList.observe(
                     this,

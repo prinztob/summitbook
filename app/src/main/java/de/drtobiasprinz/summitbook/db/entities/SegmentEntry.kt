@@ -81,6 +81,8 @@ data class SegmentEntry(
     }
 
     companion object {
+        const val SEGMENT_ENTRY_ID_EXTRA_IDENTIFIER = "SEGMENT_ENTRY_ID"
+
         fun getCsvHeadline(): String {
             return "Date;activityId;startPositionInTrack;startPositionLatitude;" +
                     "startPositionLongitude;endPositionInTrack;endPositionLatitude;" +

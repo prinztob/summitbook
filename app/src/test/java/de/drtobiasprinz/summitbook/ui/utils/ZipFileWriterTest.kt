@@ -24,7 +24,7 @@ class ZipFileWriterTest {
 
     @Before
     fun setUp() {
-        context = ApplicationProvider.getApplicationContext<Context>()
+        context = ApplicationProvider.getApplicationContext()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries()
             .build()
     }
@@ -164,21 +164,19 @@ class ZipFileWriterTest {
         db.summitsDao().addSummit(entry2)
         db.summitsDao().addSummit(entry3)
         db.summitsDao().addSummit(entry4)
-        val id = db.segmentsDao()?.addSegmentDetails(segmentDetail1)
-        if (id != null) {
-            segmentEntry1.segmentId = id
-            segmentEntry2.segmentId = id
-            db.segmentsDao()?.addSegmentEntry(segmentEntry1)
-            db.segmentsDao()?.addSegmentEntry(segmentEntry2)
-        }
+        val id = db.segmentsDao().addSegmentDetails(segmentDetail1)
+        segmentEntry1.segmentId = id
+        segmentEntry2.segmentId = id
+        db.segmentsDao().addSegmentEntry(segmentEntry1)
+        db.segmentsDao().addSegmentEntry(segmentEntry2)
         val summits = db.summitsDao().allSummit ?: emptyList()
-        val segments = db.segmentsDao()?.getAllSegments() ?: emptyList()
+        val segments = db.segmentsDao().getAllSegmentsDeprecated() ?: emptyList()
         val file = kotlin.io.path.createTempFile(suffix = ".zip").toFile()
 
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries()
             .build()
 
-        val writer = ZipFileWriter(summits, segments, emptyList(), context, true, true)
+        val writer = ZipFileWriter(summits, segments, emptyList(), context, exportThirdPartyData = true, exportCalculatedData = true)
         writer.dir = createTempDirectory().toFile()
         writer.writeToZipFile(file.outputStream())
 
@@ -187,7 +185,7 @@ class ZipFileWriterTest {
         reader.extractAndImport(file.inputStream())
 
         assert(summits == db.summitsDao().allSummit)
-        assert(segments == db.segmentsDao()?.getAllSegments())
+        assert(segments == db.segmentsDao().getAllSegmentsDeprecated())
 
     }
 

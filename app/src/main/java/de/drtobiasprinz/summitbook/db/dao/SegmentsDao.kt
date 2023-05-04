@@ -11,11 +11,11 @@ import kotlinx.coroutines.flow.Flow
 interface SegmentsDao {
     @Transaction
     @Query("select * from segmentdetails")
-    fun getAllSegments(): MutableList<Segment>?
+    fun getAllSegmentsDeprecated(): MutableList<Segment>?
 
     @Transaction
     @Query("select * from segmentdetails")
-    fun getAllSegmentsFlow(): Flow<MutableList<Segment>>
+    fun getAllSegments(): Flow<MutableList<Segment>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addSegmentDetails(segmentDetails: SegmentDetails?): Long
@@ -30,11 +30,13 @@ interface SegmentsDao {
     @Delete
     fun deleteSegmentDetails(segmentDetails: SegmentDetails?)
     @Delete
-    fun deleteSegmentEntry(segmentEntry: SegmentEntry?)
+    suspend fun deleteSegmentEntry(segmentEntry: SegmentEntry?)
+    @Delete
+    fun deleteSegmentEntryDeprecated(segmentEntry: SegmentEntry?)
 
     fun delete(segment: Segment) {
         for (entry in segment.segmentEntries) {
-            deleteSegmentEntry(entry)
+            deleteSegmentEntryDeprecated(entry)
         }
         deleteSegmentDetails(segment.segmentDetails)
     }
