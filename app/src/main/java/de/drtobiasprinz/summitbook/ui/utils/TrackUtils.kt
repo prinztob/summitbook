@@ -17,16 +17,16 @@ class TrackUtils {
                 if (index == 0 || index == points.size - 1) {
                     true
                 } else {
-                    val lastElevation = if (index != 0) (points[index - 1].ele
-                            ?: 0.0).roundToInt().toDouble() else currentElevation
+                    val lastElevation = (points[index - 1].ele ?: 0.0).roundToInt().toDouble()
                     currentElevation != lastElevation
                 }
             }
             return reducedPoints.filterIndexed { index, trackPoint ->
                 val currentElevation = (trackPoint.ele ?: 0.0).roundToInt().toDouble()
                 val lastElevation = if (index != 0) (reducedPoints[index - 1].ele
-                        ?: 0.0).roundToInt().toDouble() else currentElevation
-                val nextElevation = if (index != reducedPoints.size - 1) (reducedPoints[index + 1].ele
+                    ?: 0.0).roundToInt().toDouble() else currentElevation
+                val nextElevation =
+                    if (index != reducedPoints.size - 1) (reducedPoints[index + 1].ele
                         ?: 0.0).roundToInt().toDouble() else currentElevation
                 if (index == 0 || index == reducedPoints.size - 1) {
                     true
@@ -38,7 +38,10 @@ class TrackUtils {
             } as MutableList<TrackPoint>
         }
 
-        fun removeDeltasSmallerAs(minimalDelta: Int, points: MutableList<TrackPoint>): Triple<MutableList<TrackPoint>, Double, Double> {
+        fun removeDeltasSmallerAs(
+            minimalDelta: Int,
+            points: MutableList<TrackPoint>
+        ): Triple<MutableList<TrackPoint>, Double, Double> {
             val filteredPoints: MutableList<TrackPoint> = mutableListOf()
             var elevationGain = 0.0
             var elevationLoss = 0.0

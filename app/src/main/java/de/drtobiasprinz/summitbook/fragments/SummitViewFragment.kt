@@ -11,28 +11,33 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.chaquo.python.Python
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitViewBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.models.SortFilterValues
+import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
-import de.drtobiasprinz.summitbook.ui.utils.AsyncUpdateGarminData
+import de.drtobiasprinz.summitbook.ui.observeOnce
+import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.isVisible
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -45,7 +50,6 @@ class SummitViewFragment : Fragment() {
     lateinit var sortFilterValues: SortFilterValues
 
     private var startedScheduler: Boolean = false
-    private lateinit var database: AppDatabase
     val viewModel: DatabaseViewModel? by activityViewModels()
     private lateinit var sharedPreferences: SharedPreferences
 
@@ -55,7 +59,6 @@ class SummitViewFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentSummitViewBinding.inflate(layoutInflater, container, false)
-        database = DatabaseModule.provideDatabase(requireContext())
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         return binding.root
     }
@@ -112,25 +115,25 @@ class SummitViewFragment : Fragment() {
                     }
                 }
             } else {
-                viewModel?.summitsList?.observe(viewLifecycleOwner) {
-                    when (it.status) {
+                viewModel?.summitsList?.observe(viewLifecycleOwner) { dataStatus ->
+                    when (dataStatus.status) {
                         DataStatus.Status.LOADING -> {
                             loading.isVisible(true, recyclerView)
                             emptyBody.isVisible(false, recyclerView)
                         }
                         DataStatus.Status.SUCCESS -> {
-                            it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
+                            dataStatus.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
                             loading.isVisible(false, recyclerView)
-                            val data = sortFilterValues.apply(it.data ?: emptyList())
+                            val data = sortFilterValues.apply(dataStatus.data ?: emptyList())
                             summitsAdapter.differ.submitList(data)
                             if (!startedScheduler) {
-                                addBackgroundTasks()
+                                dataStatus.data?.let { addBackgroundTasks(it) }
                                 startedScheduler = true
                             }
                         }
                         DataStatus.Status.ERROR -> {
                             loading.isVisible(false, recyclerView)
-                            Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, dataStatus.message, Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -222,28 +225,24 @@ class SummitViewFragment : Fragment() {
         }
     }
 
-    private fun addBackgroundTasks() {
+    private fun addBackgroundTasks(summits: List<Summit>) {
         val useSimplifiedTracks = sharedPreferences.getBoolean("use_simplified_tracks", true)
         if (useSimplifiedTracks) {
-            viewModel?.summitsList?.observe(viewLifecycleOwner) {
-                if (it.data != null) {
-                    val entriesWithoutSimplifiedGpxTrack = it.data.filter {
-                        it.hasGpsTrack() && !it.hasGpsTrack(simplified = true)
-                    }.take(50)
-                    MainActivity.pythonInstance.let {
-                        if (it != null) {
-                            @Suppress("DEPRECATION")
-                            MainActivity.AsyncSimplifyGpsTracks(
-                                entriesWithoutSimplifiedGpxTrack,
-                                it
-                            )
-                                .execute()
-                        }
-                    }
+            val entriesWithoutSimplifiedGpxTrack = summits.filter {
+                it !in MainActivity.entriesToExcludeForSimplifyGpxTrack && it.hasGpsTrack() && !it.hasGpsTrack(
+                    simplified = true
+                )
+            }.take(50)
+            MainActivity.pythonInstance.let {
+                if (it != null) {
+                    asyncSimplifyGpsTracks(
+                        entriesWithoutSimplifiedGpxTrack,
+                        it
+                    )
                 }
             }
         } else {
-            summitsAdapter.differ.currentList.filter {
+            summits.filter {
                 it.hasGpsTrack(simplified = true)
             }.forEach {
                 val trackFile = it.getGpsTrackPath(simplified = true).toFile()
@@ -263,15 +262,60 @@ class SummitViewFragment : Fragment() {
         val executor = pythonExecutor
         if (sharedPreferences.getBoolean("startup_auto_update_switch", false) && executor != null) {
             binding.loading.visibility = View.VISIBLE
-            @Suppress("DEPRECATION")
-            AsyncUpdateGarminData(
-                sharedPreferences,
-                executor,
-                database,
-                summitsAdapter.differ.currentList,
-                requireContext(),
-                binding.loading
-            ).execute()
+            viewModel?.solarIntensitiesList?.observeOnce(viewLifecycleOwner) { solarListDataStatus ->
+                solarListDataStatus?.data.let { solarIntensities ->
+                    val updater = GarminDataUpdater(
+                        sharedPreferences,
+                        executor,
+                        summits,
+                        solarIntensities,
+                        viewModel
+                    )
+                    lifecycleScope.launch {
+                        withContext(Dispatchers.IO) {
+                            updater.update()
+                        }
+                        updater.onFinish(binding.loading, requireContext())
+                    }
+                }
+            }
         }
     }
+
+
+    private fun asyncSimplifyGpsTracks(
+        summitsWithoutSimplifiedTracks: List<Summit>,
+        pythonInstance: Python
+    ) {
+        var numberSimplifiedGpxTracks = 0
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                if (summitsWithoutSimplifiedTracks.isNotEmpty()) {
+                    summitsWithoutSimplifiedTracks.forEach {
+                        try {
+                            GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
+                                it.getGpsTrackPath(
+                                    simplified = false
+                                )
+                            )
+                            numberSimplifiedGpxTracks += 1
+                            Log.i(
+                                "AsyncSimplifyGpsTracks",
+                                "Simplify track for ${it.getDateAsString()}_${it.name}."
+                            )
+                        } catch (ex: RuntimeException) {
+                            Log.e(
+                                "AsyncSimplifyGpsTracks",
+                                "Error in simplify track for ${it.getDateAsString()}_${it.name}: ${ex.message}"
+                            )
+                            MainActivity.entriesToExcludeForSimplifyGpxTrack.add(it)
+                        }
+                    }
+                } else {
+                    Log.i("AsyncSimplifyGpsTracks", "No more gpx tracks to simplify.")
+                }
+            }
+        }
+    }
+
 }

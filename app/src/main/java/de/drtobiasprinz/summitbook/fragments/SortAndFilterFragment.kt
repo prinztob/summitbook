@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.fragments
 
+import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.content.Context
 import android.graphics.Color
@@ -14,24 +15,22 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
-import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.android.material.chip.Chip
 import com.google.android.material.slider.RangeSlider
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentSortAndFilterBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
-import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 
@@ -40,7 +39,6 @@ class SortAndFilterFragment : DialogFragment() {
 
     @Inject
     lateinit var sortFilterValues: SortFilterValues
-    lateinit var database: AppDatabase
     private val viewModel: DatabaseViewModel by activityViewModels()
 
     var apply: () -> Unit = { }
@@ -55,7 +53,6 @@ class SortAndFilterFragment : DialogFragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentSortAndFilterBinding.inflate(layoutInflater, container, false)
-        database = DatabaseModule.provideDatabase(requireContext())
         dialog!!.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         return binding.root
     }
@@ -84,7 +81,7 @@ class SortAndFilterFragment : DialogFragment() {
                     updateSportTypeSpinner()
                     addParticipantsFilter(summits)
                     updateButtonGroups()
-                    setRangeSliders()
+                    setRangeSliders(summits)
                 }
             }
         }
@@ -163,72 +160,88 @@ class SortAndFilterFragment : DialogFragment() {
         }
     }
 
-    private fun setRangeSliders() {
+    private fun setRangeSliders(summits: List<Summit>) {
         val sortFilterValues = sortFilterValues
         setRangeSlider(
+            summits,
             binding.minValueKm,
             binding.maxValueKm,
             getString(R.string.km),
             binding.rangeSliderKilometers,
             binding.layoutKilometers,
-            sortFilterValues.kilometersSlider
+            sortFilterValues.kilometersSlider,
+            5f
         )
         setRangeSlider(
+            summits,
             binding.minValueHm,
             binding.maxValueHm,
             getString(R.string.hm),
             binding.rangeSliderHeightMeter,
             binding.layoutHeightMeter,
-            sortFilterValues.elevationGainSlider
+            sortFilterValues.elevationGainSlider,
+            250f
         )
         setRangeSlider(
+            summits,
             binding.minValueTopElevation,
             binding.maxValueTopElevation,
             getString(R.string.masl),
             binding.rangeSliderTopElevation,
             binding.layoutTopElevation,
-            sortFilterValues.topElevationSlider
+            sortFilterValues.topElevationSlider,
+            250f
         )
     }
 
+    @SuppressLint("SetTextI18n")
     private fun setRangeSlider(
+        summits: List<Summit>,
         textMin: TextView,
         textMax: TextView,
         unit: String,
         slider: RangeSlider,
         layout: LinearLayout,
-        values: RangeSliderValues
+        values: RangeSliderValues,
+        stepSize: Float
     ) {
-        values.totalMin = database.summitsDao()
-            .get(SimpleSQLiteQuery("SELECT MIN(${values.dbColumnName}) FROM ${Constants.SUMMITS_TABLE} where isBookmark = 0"))
-            .toFloat()
-        values.totalMax = database.summitsDao()
-            .get(SimpleSQLiteQuery("SELECT MAX(${values.dbColumnName}) FROM ${Constants.SUMMITS_TABLE} where isBookmark = 0"))
-            .toFloat()
-        if (values.totalMax > 0) {
-            slider.visibility = View.VISIBLE
-            layout.visibility = View.VISIBLE
-            slider.valueFrom = values.totalMin
-            slider.valueTo = values.totalMax
-            if (values.selectedMin !in values.totalMin..values.totalMax) {
-                values.selectedMin = values.totalMin
+
+        if (summits.isNotEmpty()) {
+
+            val min = values.getValue(summits.minBy { values.getValue(it) })
+            values.totalMin = floor(min / stepSize) * stepSize
+            if (values.totalMin > 0) values.totalMin = 0f
+            val max = values.getValue(summits.maxBy { values.getValue(it) })
+            values.totalMax = ceil(max / stepSize) * stepSize
+            if (values.totalMax > 0) {
+                slider.visibility = View.VISIBLE
+                layout.visibility = View.VISIBLE
+                slider.valueFrom = values.totalMin
+                slider.valueTo = values.totalMax
+                if (values.selectedMin !in values.totalMin..values.totalMax) {
+                    values.selectedMin = values.totalMin
+                }
+                if (values.selectedMax !in values.totalMin..values.totalMax || values.selectedMax == 0f) {
+                    values.selectedMax = values.totalMax
+                }
+                slider.values = listOf(values.selectedMin, values.selectedMax)
+                slider.stepSize = stepSize
+                slider.addOnChangeListener { slider1, _, _ ->
+                    values.selectedMin = slider1.values[0]
+                    values.selectedMax = slider1.values[1]
+                    textMin.text = "${values.selectedMin.roundToInt()}"
+                    textMax.text = " ${values.selectedMax.roundToInt()} $unit"
+                }
+            } else {
+                slider.visibility = View.GONE
+                layout.visibility = View.GONE
             }
-            if (values.selectedMax !in values.totalMin..values.totalMax || values.selectedMax == 0f) {
-                values.selectedMax = values.totalMax
-            }
-            slider.values = listOf(values.selectedMin, values.selectedMax)
-            slider.addOnChangeListener { slider1, _, _ ->
-                values.selectedMin = slider1.values[0]
-                values.selectedMax = slider1.values[1]
-                textMin.text = "${values.selectedMin.roundToInt()}"
-                textMax.text = " ${values.selectedMax.roundToInt()} $unit"
-            }
+            textMin.text = "${values.selectedMin.roundToInt()}"
+            textMax.text = " ${values.selectedMax.roundToInt()} $unit"
         } else {
             slider.visibility = View.GONE
             layout.visibility = View.GONE
         }
-        textMin.text = "${values.selectedMin.roundToInt()}"
-        textMax.text = " ${values.selectedMax.roundToInt()} $unit"
     }
 
     private fun updateSportTypeSpinner() {

@@ -2,20 +2,19 @@ package de.drtobiasprinz.summitbook.db.dao
 
 import androidx.room.*
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
+import kotlinx.coroutines.flow.Flow
 
 
 @Dao
 interface IgnoredActivityDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun addActivity(ignoredActivity: IgnoredActivity?)
+    suspend fun add(ignoredActivity: IgnoredActivity?)
 
-    @get:Query("select * from ignoredactivity")
-    val allIgnoredActivities: List<IgnoredActivity>?
+    @Transaction
+    @Query("select * from ignoredactivity")
+    fun getAllIgnoredActivities(): Flow<List<IgnoredActivity>>
 
     @Delete
-    fun delete(ignoredActivity: IgnoredActivity?)
-
-    @Query("DELETE FROM ignoredactivity")
-    fun deleteAll()
+    suspend fun delete(ignoredActivity: IgnoredActivity?)
 
 }

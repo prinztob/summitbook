@@ -5,7 +5,6 @@ import android.content.res.Resources
 import androidx.room.*
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.ui.MainActivity
@@ -73,23 +72,21 @@ class Summit(
     }
 
     fun getImagePath(imageId: Int): Path {
-        val rootDirectoryImages = getRootDirectoryImages()
         return Paths.get(
-            rootDirectoryImages.toString(),
+            getRootDirectoryImages().toString(),
             String.format(Locale.ENGLISH, "%s.jpg", imageId)
         )
     }
 
     fun getImageUrl(imageId: Int): String {
-        val rootDirectoryImages = getRootDirectoryImages()
         return "file://" + Paths.get(
-            rootDirectoryImages.toString(),
+            getRootDirectoryImages().toString(),
             String.format(Locale.ENGLISH, "%s.jpg", imageId)
         ).toString()
     }
 
     private fun getRootDirectoryImages(): File {
-        val rootDirectoryImages = File(MainActivity.storage, "$subDirForImages/${id}")
+        val rootDirectoryImages = File(MainActivity.storage, "$subDirForImages/${activityId}")
         if (!rootDirectoryImages.exists()) {
             rootDirectoryImages.mkdirs()
         }
@@ -212,7 +209,6 @@ class Summit(
     fun setGpsTrack(
         useSimplifiedTrack: Boolean = true,
         updateTrack: Boolean = false,
-        loadFullTrackAsynchronous: Boolean = false,
         deleteEmptyTrack: Boolean = false
     ) {
         if (hasGpsTrack()) {
@@ -221,7 +217,7 @@ class Summit(
                     GpsTrack(getGpsTrackPath(), getGpsTrackPath(simplified = useSimplifiedTrack))
             }
             if (gpsTrack?.hasNoTrackPoints() == true) {
-                gpsTrack?.parseTrack(loadFullTrackAsynchronous = loadFullTrackAsynchronous)
+                gpsTrack?.parseTrack()
             }
             if (gpsTrack?.trackPoints?.isEmpty() == true && deleteEmptyTrack) {
                 if (getGpsTrackPath().toFile().exists()) {
@@ -286,9 +282,11 @@ class Summit(
     }
 
     fun toReadableString(context: Context): String {
-        return "${context.getString(R.string.tour_date)}: ${getDateAsString()}, ${context.getString(
+        return "${context.getString(R.string.tour_date)}: ${getDateAsString()}, ${
+            context.getString(
                 R.string.name
-            )}: ${name}, " +
+            )
+        }: ${name}, " +
                 "${context.getString(R.string.type)}: $sportType, ${elevationData.elevationGain} hm, $kilometers km"
     }
 
@@ -297,13 +295,13 @@ class Summit(
     }
 
 
-    fun getPlacesWithConnectedEntryString(context: Context, database: AppDatabase): List<String> {
+    fun getPlacesWithConnectedEntryString(context: Context, summits: List<Summit>): List<String> {
         val updatedPlaces = mutableListOf<String>()
         for (place in places) {
-            val matchResult = "$CONNECTED_ACTIVITY_PREFIX([0-9]*)".toRegex().find(place)
+            val matchResult = "$CONNECTED_ACTIVITY_PREFIX(\\d*)".toRegex().find(place)
             if (matchResult?.groupValues != null) {
-                val connectedSummit = database.summitsDao()
-                    .getSummitFromActivityId(matchResult.groupValues[1].toLong())
+                val connectedSummit =
+                    summits.firstOrNull { it.activityId == matchResult.groupValues[1].toLong() }
                 if (connectedSummit != null) {
                     updatedPlaces.add(connectedSummit.getConnectedEntryString(context))
                 } else {
@@ -316,35 +314,35 @@ class Summit(
         return updatedPlaces
     }
 
-    fun setConnectedEntries(connectedEntries: MutableList<Summit>, database: AppDatabase) {
-        setConnectedEntriesFromPlaces(database, connectedEntries)
-        setConnectedEntriesWhichReferenceThisEntry(database, connectedEntries)
+    fun setConnectedEntries(connectedEntries: MutableList<Summit>, summits: List<Summit>?) {
+        setConnectedEntriesFromPlaces(summits, connectedEntries)
+        setConnectedEntriesWhichReferenceThisEntry(summits, connectedEntries)
     }
 
     private fun setConnectedEntriesWhichReferenceThisEntry(
-        database: AppDatabase,
+        summits: List<Summit>?,
         connectedEntries: MutableList<Summit>
     ) {
-        val connectedSummit = database.summitsDao()
-            .getSummitsWithConnectedId("%$CONNECTED_ACTIVITY_PREFIX${activityId}%")
+        val connectedSummit =
+            summits?.firstOrNull { it.places.contains("%$CONNECTED_ACTIVITY_PREFIX${activityId}%") }
         if (connectedSummit != null) {
             connectedEntries.add(connectedSummit)
-            connectedSummit.setConnectedEntriesWhichReferenceThisEntry(database, connectedEntries)
+            connectedSummit.setConnectedEntriesWhichReferenceThisEntry(summits, connectedEntries)
         }
     }
 
     private fun setConnectedEntriesFromPlaces(
-        database: AppDatabase,
+        summits: List<Summit>?,
         connectedEntries: MutableList<Summit>
     ) {
         for (place in places) {
-            val matchResult = "$CONNECTED_ACTIVITY_PREFIX([0-9]*)".toRegex().find(place)
+            val matchResult = "$CONNECTED_ACTIVITY_PREFIX(\\d*)".toRegex().find(place)
             if (matchResult?.groupValues != null) {
-                val connectedSummit = database.summitsDao()
-                    .getSummitFromActivityId(matchResult.groupValues[1].toLong())
+                val connectedSummit =
+                    summits?.firstOrNull { it.activityId == (matchResult.groupValues[1].toLong()) }
                 if (connectedSummit != null) {
                     connectedEntries.add(connectedSummit)
-                    connectedSummit.setConnectedEntriesFromPlaces(database, connectedEntries)
+                    connectedSummit.setConnectedEntriesFromPlaces(summits, connectedEntries)
                 }
             }
         }
@@ -380,12 +378,11 @@ class Summit(
     }
 
 
-
     override fun hashCode(): Int {
         return Objects.hash(date, name, sportType, elevationData, kilometers)
     }
 
-    fun equalsInBaseProperties(other: Any?): Boolean {
+    private fun equalsInBaseProperties(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
         val that = other as Summit

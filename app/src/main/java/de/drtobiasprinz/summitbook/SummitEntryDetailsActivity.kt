@@ -24,7 +24,7 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
     var pageViewModel: PageViewModel? = null
 
     private lateinit var summitEntry: Summit
-    lateinit var viewPager: ViewPager2
+    private lateinit var viewPager: ViewPager2
     private var summitsToCompare: List<Summit> = emptyList()
     private lateinit var allSummits: LiveData<DataStatus<List<Summit>>>
 

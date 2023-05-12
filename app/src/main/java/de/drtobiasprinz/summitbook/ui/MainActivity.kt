@@ -1,19 +1,15 @@
 package de.drtobiasprinz.summitbook.ui
 
-import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
-import android.os.AsyncTask
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -23,6 +19,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
@@ -35,9 +33,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SettingsActivity
 import de.drtobiasprinz.summitbook.databinding.ActivityMainBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.db.entities.*
-import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.db.entities.Forecast
+import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.fragments.*
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.SortFilterValues
@@ -45,7 +43,6 @@ import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
 import de.drtobiasprinz.summitbook.ui.utils.*
-import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -54,7 +51,6 @@ import java.io.File
 import java.time.LocalDate
 import java.util.*
 import javax.inject.Inject
-import kotlin.math.round
 import kotlin.math.roundToLong
 
 
@@ -62,7 +58,6 @@ import kotlin.math.roundToLong
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener,
     SharedPreferences.OnSharedPreferenceChangeListener {
 
-    private lateinit var database: AppDatabase
     lateinit var binding: ActivityMainBinding
     private lateinit var summitViewFragment: SummitViewFragment
 
@@ -82,13 +77,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        database = DatabaseModule.provideDatabase(this)
         if (!Python.isStarted()) {
             Python.start(AndroidPlatform(this))
         }
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)
-        sortFilterValues.setInitialValues(database, sharedPreferences)
+        viewModel.summitsList.observe(this) {
+            it.data.let { summits ->
+                if (summits != null) {
+                    sortFilterValues.setInitialValues(summits, sharedPreferences)
+                }
+            }
+        }
         updatePythonExecutor()
         pythonInstance = Python.getInstance()
         cache = applicationContext.cacheDir
@@ -105,8 +105,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         )
         binding.drawerLayout.addDrawerListener(actionBarDrawerToggle)
         actionBarDrawerToggle.syncState()
-        if (DatabaseModule.provideDatabase(this).solarIntensityDao()?.getAll().isNullOrEmpty()) {
-            binding.navView.menu.findItem(R.id.nav_solar).isVisible = false
+        viewModel.solarIntensitiesList.observe(this) { solarListDataStatus ->
+            solarListDataStatus.data.let { solarIntensities ->
+                binding.navView.menu.findItem(R.id.nav_solar).isVisible =
+                    !solarIntensities.isNullOrEmpty()
+            }
         }
         binding.navView.setNavigationItemSelectedListener(this)
         summitViewFragment = SummitViewFragment()
@@ -126,15 +129,31 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         val executor = pythonExecutor
                         if (executor != null) {
                             binding.loading.visibility = View.VISIBLE
-                            @Suppress("DEPRECATION")
-                            AsyncUpdateGarminData(
-                                sharedPreferences,
-                                executor,
-                                database,
-                                summitViewFragment.summitsAdapter.differ.currentList,
-                                this@MainActivity,
-                                binding.loading
-                            ).execute()
+                            viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
+                                summitsListDataStatus?.data.let { summits ->
+                                    viewModel.solarIntensitiesList.observeOnce(this@MainActivity) { solarListDataStatus ->
+                                        solarListDataStatus?.data.let { solarIntensities ->
+                                            val updater = GarminDataUpdater(
+                                                sharedPreferences,
+                                                executor,
+                                                summits,
+                                                solarIntensities,
+                                                viewModel
+                                            )
+
+                                            lifecycleScope.launch {
+                                                withContext(Dispatchers.IO) {
+                                                    updater.update()
+                                                }
+                                                updater.onFinish(
+                                                    binding.loading,
+                                                    this@MainActivity
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         } else {
                             Toast.makeText(
                                 this@MainActivity,
@@ -197,9 +216,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun addMissingBoundingBox() {
-        viewModel.summitsList.observe(this@MainActivity) {
+        viewModel.summitsList.observeOnce(this@MainActivity) {
             lifecycleScope.launch {
-                withContext(Dispatchers.Default) {
+                withContext(Dispatchers.IO) {
                     val entriesWithoutBoundingBox = it.data?.filter { summit ->
                         summit.hasGpsTrack() && summit.trackBoundingBox == null && summit !in entriesToExcludeForBoundingBoxCalculation
                     } as MutableList<Summit>?
@@ -295,6 +314,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var CSV_FILE_NAME_FORECASTS: String = "de-prinz-summitbook-export-forecasts.csv"
 
         var entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
+        var entriesToExcludeForSimplifyGpxTrack: MutableList<Summit> = mutableListOf()
         var storage: File? = null
         var cache: File? = null
         var activitiesDir: File? = null
@@ -415,180 +435,137 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private val resultLauncherForExportZipSummits =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                binding.loading.visibility = View.VISIBLE
                 val exportThirdPartyData =
                     sharedPreferences.getBoolean("export_third_party_data", true)
                 val exportCalculatedData =
                     sharedPreferences.getBoolean("export_calculated_data", true)
-                val segments = DatabaseModule.provideDatabase(this).segmentsDao().getAllSegmentsDeprecated()
-                val forecasts = DatabaseModule.provideDatabase(this).forecastDao()?.allForecasts
-                viewModel.summitsList.observe(
-                    this,
-                    object : androidx.lifecycle.Observer<DataStatus<List<Summit>>> {
-                        override fun onChanged(t: DataStatus<List<Summit>>?) {
-                            viewModel.summitsList.removeObserver(this)
-                            if (t?.data != null) {
-                                @Suppress("DEPRECATION")
-                                AsyncExportZipFile(
-                                    this@MainActivity,
-                                    binding.loading,
-                                    if (useFilteredSummits) sortFilterValues.apply(t.data) else t.data,
-                                    result.data,
-                                    segments,
-                                    forecasts,
-                                    exportThirdPartyData,
-                                    exportCalculatedData
-                                ).execute()
+                viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
+                    summitsListDataStatus?.data.let { summits ->
+                        viewModel.forecastList.observeOnce(this@MainActivity) { forecastsListDataStatus ->
+                            forecastsListDataStatus?.data.let { forecasts ->
+                                viewModel.segmentsList.observeOnce(this@MainActivity) { segmentsListDataStatus ->
+                                    segmentsListDataStatus?.data.let { segments ->
+                                        if (summits != null) {
+                                            asyncExportZipFile(
+                                                if (useFilteredSummits) sortFilterValues.apply(
+                                                    summits
+                                                ) else summits,
+                                                result.data,
+                                                segments,
+                                                forecasts,
+                                                exportThirdPartyData,
+                                                exportCalculatedData
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
-                    })
+                    }
+                }
             }
         }
     private val resultLauncherForImportZip =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 result?.data?.data.also { uri ->
-                    binding.loading.visibility = View.VISIBLE
-                    @Suppress("DEPRECATION")
-                    AsyncImportZipFile(this).execute(uri)
+                    if (uri != null) {
+                        asyncImportZipFile(uri)
+                    }
                 }
             }
         }
 
-    @Suppress("DEPRECATION")
-    @SuppressLint("StaticFieldLeak")
-    class AsyncImportZipFile(private val mainActivity: MainActivity) :
-        AsyncTask<Uri, Int?, Void?>() {
+    private fun asyncImportZipFile(uri: Uri) {
+        viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
+            summitsListDataStatus?.data.let { summits ->
+                viewModel.forecastList.observeOnce(this@MainActivity) { forecastsListDataStatus ->
+                    forecastsListDataStatus?.data.let { forecasts ->
+                        viewModel.segmentsList.observeOnce(this@MainActivity) { segmentsListDataStatus ->
+                            segmentsListDataStatus?.data.let { segments ->
+                                lifecycleScope.launch {
+                                    binding.loading.visibility = View.VISIBLE
+                                    val reader = ZipFileReader(
+                                        File(cacheDir, "ZipFileReader_${Date().time}"),
+                                        summits as MutableList<Summit>,
+                                        forecasts as MutableList<Forecast>,
+                                        segments as MutableList<Segment>
+                                    )
+                                    withContext(Dispatchers.IO) {
+                                        reader.saveSummit = { isEdit, summit ->
+                                            viewModel.saveSummit(isEdit, summit)
+                                        }
+                                        reader.saveForecast = { forecast ->
+                                            viewModel.saveForecast(false, forecast)
+                                        }
+                                        reader.saveSegmentDetails = { details ->
+                                            viewModel.saveSegmentDetails(false, details)
+                                        }
+                                        reader.saveSegmentEntry = { entry ->
+                                            viewModel.saveSegmentEntry(false, entry)
+                                        }
+                                        contentResolver.openInputStream(uri)?.use { inputStream ->
+                                            reader.extractAndImport(inputStream)
+                                        }
+                                        reader.cleanUp()
 
-        private val reader = ZipFileReader(
-            File(mainActivity.cacheDir, "ZipFileReader_${Date().time}"),
-            mainActivity.database
-        )
-        private val database = mainActivity.database
-        override fun doInBackground(vararg uri: Uri): Void? {
-
-            mainActivity.contentResolver.openInputStream(uri[0])?.use { inputStream ->
-                reader.extractZip(inputStream)
+                                    }
+                                    AlertDialog.Builder(this@MainActivity)
+                                        .setTitle(getString(R.string.import_string_title))
+                                        .setMessage(
+                                            getString(
+                                                R.string.import_string,
+                                                (reader.successful + reader.unsuccessful + reader.duplicate).toString(),
+                                                reader.successful.toString(),
+                                                reader.unsuccessful.toString(),
+                                                reader.duplicate.toString()
+                                            )
+                                        )
+                                        .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
+                                        .setIcon(android.R.drawable.ic_dialog_info)
+                                        .show()
+                                    binding.loading.visibility = View.GONE
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            publishProgress(10)
-            reader.readFromCache()
-            publishProgress(20)
-            reader.newSummits.forEachIndexed { index, it ->
-                it.id = database.summitsDao().addSummit(it)
-                reader.readGpxFile(it)
-                reader.readImageFile(it)
-                publishProgress(round(index.toDouble() / reader.newSummits.size * 80.0).toInt() + 20)
-            }
-            return null
-        }
-
-        override fun onProgressUpdate(vararg values: Int?) {
-            super.onProgressUpdate(*values)
-            val percent = values[0]
-            if (percent != null) {
-                mainActivity.binding.loading.progress = percent
-            }
-        }
-
-        override fun onPostExecute(param: Void?) {
-            mainActivity.binding.loading.visibility = View.GONE
-            reader.newSummits.forEach {
-                mainActivity.viewModel.saveSummit(true, it)
-            }
-            reader.cleanUp()
-            AlertDialog.Builder(mainActivity)
-                .setTitle(mainActivity.getString(R.string.import_string_title))
-                .setMessage(
-                    mainActivity.getString(
-                        R.string.import_string,
-                        (reader.successful + reader.unsuccessful + reader.duplicate).toString(),
-                        reader.successful.toString(),
-                        reader.unsuccessful.toString(),
-                        reader.duplicate.toString()
-                    )
-                )
-                .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
-                .setIcon(android.R.drawable.ic_dialog_info)
-                .show()
         }
     }
 
+    private fun asyncExportZipFile(
+        entries: List<Summit>, resultData: Intent?,
+        segments: List<Segment>?, forecasts: List<Forecast>?,
+        exportThirdPartyData: Boolean = true,
+        exportCalculatedData: Boolean = true
+    ) {
 
-    @Suppress("DEPRECATION")
-    class AsyncSimplifyGpsTracks(
-        private val summitsWithoutSimplifiedTracks: List<Summit>,
-        private val pythonInstance: Python
-    ) : AsyncTask<Uri, Int?, Void?>() {
+        lifecycleScope.launch {
+            binding.loading.visibility = View.VISIBLE
+            val writer = ZipFileWriter(
+                entries,
+                segments,
+                forecasts,
+                this@MainActivity,
+                exportThirdPartyData,
+                exportCalculatedData
+            )
+            withContext(Dispatchers.IO) {
+                resultData?.data?.also { resultDataUri ->
+                    contentResolver.openOutputStream(resultDataUri)
+                        ?.let {
+                            writer.writeToZipFile(it)
+                            it.close()
+                        }
 
-        private var numberSimplifiedGpxTracks = 0
-        override fun doInBackground(vararg uri: Uri): Void? {
-            if (summitsWithoutSimplifiedTracks.isNotEmpty()) {
-                summitsWithoutSimplifiedTracks.forEach {
-                    try {
-                        GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
-                            it.getGpsTrackPath(
-                                simplified = false
-                            )
-                        )
-                        numberSimplifiedGpxTracks += 1
-                        Log.i(
-                            "AsyncSimplifyGpsTracks",
-                            "Simplify track for ${it.getDateAsString()}_${it.name}."
-                        )
-                    } catch (ex: RuntimeException) {
-                        Log.e(
-                            "AsyncSimplifyGpsTracks",
-                            "Error in simplify track for ${it.getDateAsString()}_${it.name}: ${ex.message}"
-                        )
-                    }
                 }
-            } else {
-                Log.i("AsyncSimplifyGpsTracks", "No more gpx tracks to simplify.")
             }
-            return null
-        }
-
-        override fun onPostExecute(param: Void?) {
-            Log.i("AsyncSimplifyGpsTracks", "$numberSimplifiedGpxTracks gpx tracks simplified.")
-        }
-    }
-
-    @Suppress("DEPRECATION")
-    @SuppressLint("StaticFieldLeak")
-    class AsyncExportZipFile(
-        val context: Context, private val progressBar: ProgressBar,
-        val entries: List<Summit>, private val resultData: Intent?,
-        val segments: List<Segment>?, private val forecasts: List<Forecast>?,
-        private val exportThirdPartyData: Boolean = true,
-        private val exportCalculatedData: Boolean = true
-    ) : AsyncTask<Uri, Int?, Void?>() {
-        private lateinit var writer: ZipFileWriter
-
-        override fun doInBackground(vararg uri: Uri): Void? {
-            resultData?.data?.also { resultDataUri ->
-                writer = ZipFileWriter(
-                    entries,
-                    segments,
-                    forecasts,
-                    context,
-                    exportThirdPartyData,
-                    exportCalculatedData
-                )
-                context.contentResolver.openOutputStream(resultDataUri)
-                    ?.let {
-                        writer.writeToZipFile(it)
-                        it.close()
-                    }
-            }
-            return null
-        }
-
-        override fun onPostExecute(param: Void?) {
-            progressBar.visibility = View.GONE
-            AlertDialog.Builder(context)
-                .setTitle(context.getString(R.string.export_csv_summary_title))
+            binding.loading.visibility = View.GONE
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle(getString(R.string.export_csv_summary_title))
                 .setMessage(
-                    context.getString(
+                    getString(
                         R.string.export_csv_summary_text,
                         entries.size.toString(),
                         writer.withGpsFile.toString(),
@@ -598,6 +575,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
                 .setIcon(android.R.drawable.ic_dialog_info)
                 .show()
+
         }
     }
 
@@ -613,62 +591,57 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun openViewer() {
-        viewModel.summitsList.observe(
-            this,
-            object : androidx.lifecycle.Observer<DataStatus<List<Summit>>> {
-                override fun onChanged(t: DataStatus<List<Summit>>?) {
-                    viewModel.summitsList.removeObserver(this)
-                    t?.data.let { summits ->
-                        val sortFilterSummits = summits?.let { it1 -> sortFilterValues.apply(it1) }
-                        var allImages = getAllImages(sortFilterSummits)
-                        var usePositionAfterTransition = -1
-                        if (allImages.size < currentPosition) {
-                            usePositionAfterTransition = currentPosition
-                            currentPosition = 0
-                        }
-                        if (allImages.size > 0) {
-                            overlayView = PosterOverlayView(this@MainActivity).apply {
-                                update(allImages[currentPosition])
-                            }
-                            viewer = StfalconImageViewer.Builder(
-                                this@MainActivity,
-                                allImages
-                            ) { view, poster ->
-                                Glide.with(this@MainActivity)
-                                    .load(poster.url)
-                                    .fitCenter()
-                                    .diskCacheStrategy(DiskCacheStrategy.NONE)
-                                    .skipMemoryCache(true)
-                                    .into(view)
-                            }
-                                .withStartPosition(currentPosition)
-                                .withImageChangeListener { position ->
-                                    currentPosition = position
-                                    val sizeBefore = allImages.size
-                                    allImages = getAllImages(sortFilterSummits)
-                                    val sizeAfter = allImages.size
-                                    if (sizeAfter != sizeBefore) {
-                                        viewer?.updateImages(allImages)
-                                        if (usePositionAfterTransition >= 0) {
-                                            viewer?.setCurrentPosition(usePositionAfterTransition)
-                                        }
-                                    }
-                                    overlayView?.update(allImages[position])
-                                }
-                                .withOverlayView(overlayView)
-                                .withDismissListener { isDialogShown = false }
-                                .show(!isDialogShown)
-                            isDialogShown = true
-                        } else {
-                            Toast.makeText(
-                                this@MainActivity,
-                                getString(R.string.no_image_selected),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
+        viewModel.summitsList.observeOnce(this) { dataStatusSummits ->
+            dataStatusSummits?.data.let { summits ->
+                val sortFilterSummits = summits?.let { it1 -> sortFilterValues.apply(it1) }
+                var allImages = getAllImages(sortFilterSummits)
+                var usePositionAfterTransition = -1
+                if (allImages.size < currentPosition) {
+                    usePositionAfterTransition = currentPosition
+                    currentPosition = 0
                 }
-            })
+                if (allImages.size > 0) {
+                    overlayView = PosterOverlayView(this@MainActivity).apply {
+                        update(allImages[currentPosition])
+                    }
+                    viewer = StfalconImageViewer.Builder(
+                        this@MainActivity,
+                        allImages
+                    ) { view, poster ->
+                        Glide.with(this@MainActivity)
+                            .load(poster.url)
+                            .fitCenter()
+                            .diskCacheStrategy(DiskCacheStrategy.NONE)
+                            .skipMemoryCache(true)
+                            .into(view)
+                    }
+                        .withStartPosition(currentPosition)
+                        .withImageChangeListener { position ->
+                            currentPosition = position
+                            val sizeBefore = allImages.size
+                            allImages = getAllImages(sortFilterSummits)
+                            val sizeAfter = allImages.size
+                            if (sizeAfter != sizeBefore) {
+                                viewer?.updateImages(allImages)
+                                if (usePositionAfterTransition >= 0) {
+                                    viewer?.setCurrentPosition(usePositionAfterTransition)
+                                }
+                            }
+                            overlayView?.update(allImages[position])
+                        }
+                        .withOverlayView(overlayView)
+                        .withDismissListener { isDialogShown = false }
+                        .show(!isDialogShown)
+                    isDialogShown = true
+                } else {
+                    Toast.makeText(
+                        this@MainActivity,
+                        getString(R.string.no_image_selected),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
     }
 
 
@@ -690,11 +663,30 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onSharedPreferenceChanged(preferences: SharedPreferences?, key: String?) {
         if (key == "current_year_switch") {
-            sortFilterValues.setInitialValues(database, sharedPreferences)
-            viewModel.refresh()
+            viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
+                summitsListDataStatus?.data.let { summits ->
+                    if (summits != null) {
+                        sortFilterValues.setInitialValues(summits, sharedPreferences)
+                    }
+                }
+
+                viewModel.refresh()
+            }
         }
         if (key == "garmin_username" || key == "garmin_password") {
             updatePythonExecutor()
         }
     }
+}
+
+fun <T> LiveData<T>.observeOnce(
+    lifecycleOwner: LifecycleOwner,
+    observer: androidx.lifecycle.Observer<T>
+) {
+    observe(lifecycleOwner, object : androidx.lifecycle.Observer<T> {
+        override fun onChanged(t: T?) {
+            observer.onChanged(t)
+            removeObserver(this)
+        }
+    })
 }

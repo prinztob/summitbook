@@ -16,8 +16,8 @@ import de.drtobiasprinz.summitbook.db.entities.*
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun summitsDao(): SummitsDao
-    abstract fun forecastDao(): ForecastDao?
+    abstract fun forecastDao(): ForecastDao
     abstract fun segmentsDao(): SegmentsDao
-    abstract fun solarIntensityDao(): SolarIntensityDao?
-    abstract fun ignoredActivityDao(): IgnoredActivityDao?
+    abstract fun solarIntensityDao(): SolarIntensityDao
+    abstract fun ignoredActivityDao(): IgnoredActivityDao
 }

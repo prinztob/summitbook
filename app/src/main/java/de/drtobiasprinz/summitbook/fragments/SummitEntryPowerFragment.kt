@@ -1,13 +1,15 @@
 package de.drtobiasprinz.summitbook.fragments
 
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Color
 import android.os.Bundle
-import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.TextView
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
 import com.github.mikephil.charting.charts.LineChart
@@ -38,7 +40,6 @@ class SummitEntryPowerFragment : Fragment() {
 
     private lateinit var binding: FragmentSummitEntryPowerBinding
     private var pageViewModel: PageViewModel? = null
-    private lateinit var metrics: DisplayMetrics
     private var selectedTimeRangeSpinner: Int = 0
     private var summitsToCompare: List<Summit> = emptyList()
     private var extremaValuesAllSummits: ExtremaValuesSummits? = null
@@ -65,15 +66,15 @@ class SummitEntryPowerFragment : Fragment() {
                         if (summitToView.isBookmark) {
                             binding.summitNameToCompare.visibility = View.GONE
                         } else {
-                            pageViewModel?.summitToVCompare?.observe(viewLifecycleOwner) {
-                                prepareCompareAutoComplete(summitToView, it.data)
+                            pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { itSummitData ->
+                                prepareCompareAutoComplete(summitToView, itSummitData.data)
                             }
                         }
                         summitsListData.data.let { summits ->
                             if (summits != null) {
 
-                                pageViewModel?.summitToVCompare?.observe(viewLifecycleOwner) {
-                                    it.data.let { summitToCompare ->
+                                pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) {itSummitData ->
+                                    itSummitData.data.let { summitToCompare ->
 
                                         drawChart(summitToView, summitToCompare, summits)
                                         setTimeRangeAdapter(summitToView, summitToCompare, summits)
@@ -89,20 +90,14 @@ class SummitEntryPowerFragment : Fragment() {
                 }
             }
         }
-        metrics = DisplayMetrics()
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            val display = activity?.display
-            display?.getRealMetrics(metrics)
-        } else {
-            @Suppress("DEPRECATION")
-            val display = activity?.windowManager?.defaultDisplay
-            @Suppress("DEPRECATION")
-            display?.getMetrics(metrics)
-        }
         return binding.root
     }
 
-    private fun setTimeRangeAdapter(summitToView: Summit, summitToCompare: Summit?, summits: List<Summit>) {
+    private fun setTimeRangeAdapter(
+        summitToView: Summit,
+        summitToCompare: Summit?,
+        summits: List<Summit>
+    ) {
         val timeRangeAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
@@ -194,7 +189,7 @@ class SummitEntryPowerFragment : Fragment() {
             binding.lineChart.axisRight.axisMinimum = 0f
 
             val params = binding.lineChart.layoutParams
-            params.height = (metrics.heightPixels * 0.65).toInt()
+            params.height = (Resources.getSystem().displayMetrics.heightPixels * 0.65).toInt()
             binding.lineChart.layoutParams = params
 
             val dataSets: MutableList<ILineDataSet?> = ArrayList()
@@ -276,7 +271,7 @@ class SummitEntryPowerFragment : Fragment() {
                     false
                 } else {
                     when (selectedTimeRangeSpinner) {
-                        1 -> summit.date.year == Date().year
+                        1 -> getYear(summit.date) == getYear(Date())
                         2 -> diff < 3 * 30 * 24 * 3600000L
                         3 -> diff < 12 * 30 * 24 * 3600000L
                         else -> true
@@ -285,6 +280,12 @@ class SummitEntryPowerFragment : Fragment() {
             }
         }
         return filtered.ifEmpty { summits }
+    }
+
+    private fun getYear(date: Date): Int {
+        val calendar: Calendar = GregorianCalendar()
+        calendar.time = date
+        return calendar[Calendar.YEAR]
     }
 
     private fun getLineChartEntriesMin(extremaValuesSummits: ExtremaValuesSummits?): MutableList<Entry?> {

@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Observer
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.*
 import com.github.mikephil.charting.data.Entry
@@ -21,19 +22,16 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
+import com.google.android.material.button.MaterialButton
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.adapter.SegmentsViewAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentAddSegmentEntryBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.di.DatabaseModule
-import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.TrackColor.Elevation
 import de.drtobiasprinz.summitbook.models.TrackColor.None
@@ -43,6 +41,7 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
+import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import org.osmdroid.api.IGeoPoint
 import org.osmdroid.config.Configuration
@@ -53,167 +52,148 @@ import org.osmdroid.views.overlay.simplefastpoint.LabelledGeoPoint
 import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlay
 import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlayOptions
 import org.osmdroid.views.overlay.simplefastpoint.SimplePointTheme
-import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 @AndroidEntryPoint
 class AddSegmentEntryFragment : Fragment() {
 
-    @Inject
-    lateinit var summitsAdapter: SummitsAdapter
-    lateinit var database: AppDatabase
+    private var summitsToCompare: List<Summit> = emptyList()
+    private var segmentEntry: SegmentEntry? = null
+
     private lateinit var binding: FragmentAddSegmentEntryBinding
     private val viewModel: DatabaseViewModel by activityViewModels()
 
-
-    private var gpsTrack: GpsTrack? = null
     private var startMarker: Marker? = null
     private var stopMarker: Marker? = null
     private var pointOverlay: SimpleFastPointOverlay? = null
-    private var summitToCompare: Summit? = null
-    private var summitsToCompare: List<Summit> = emptyList()
     private var selectedCustomizeTrackItem = None
     private var startSelected = true
     private var startPointId: Int = 0
     private var endPointId: Int = 0
     private var segmentId: Long = 0
     private var segmentEntryId: Long? = null
-    private var segmentEntry: SegmentEntry? = null
-    private var segment: Segment? = null
     private var segmentsViewAdapter: SegmentsViewAdapter? = null
     private var isUpdate = false
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        database = DatabaseModule.provideDatabase(requireContext())
-        segmentEntry = segmentEntryId?.let {
-            database.segmentsDao().getSegmentEntry(it)
-        }
-        segment =
-            segmentsViewAdapter?.segments?.first { it.segmentDetails.segmentDetailsId == segmentId }
-        summitToCompare = segmentEntry?.activityId?.let {
-            database.summitsDao().getSummitFromActivityId(it)
-        }
-    }
+    private var summitToCompare: Summit? = null
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentAddSegmentEntryBinding.inflate(layoutInflater, container, false)
         OpenStreetMapUtils.setOsmConfForTiles()
         setTileSource(selectedItem, binding.osmap)
-        binding.cancel.setOnClickListener {
-            activity?.supportFragmentManager?.popBackStack()
-        }
-        binding.save.findViewById<com.google.android.material.button.MaterialButton>(R.id.save)
-            .setOnClickListener {
-                val summit = summitToCompare
-                val segmentEntryLocal = segmentEntry
-                if (summit != null && segmentEntryLocal != null) {
-                    if (isUpdate) {
-                        database.segmentsDao().updateSegmentEntry(segmentEntryLocal)
-                        segmentsViewAdapter?.segments?.first { it.segmentDetails.segmentDetailsId == segmentId }?.segmentEntries?.remove(
-                            segmentEntryLocal
-                        )
-                    } else {
-                        database.segmentsDao().addSegmentEntry(segmentEntryLocal)
-                    }
-                    segmentsViewAdapter?.segments?.first { it.segmentDetails.segmentDetailsId == segmentId }?.segmentEntries?.add(
-                        segmentEntryLocal
-                    )
-                    segmentsViewAdapter?.notifyDataSetChanged()
-                }
-                activity?.supportFragmentManager?.popBackStack()
+        viewModel.segmentsList.observe(viewLifecycleOwner, object :
+            Observer<DataStatus<List<Segment>>> {
+            override fun onChanged(summitListDataStatus: DataStatus<List<Segment>>?) {
+                apply(summitListDataStatus)
             }
-
-        binding.startOrStop
-            .setOnCheckedChangeListener { _, isChecked ->
-                startSelected = !isChecked
-            }
-        binding.mapOnOff
-            .setOnCheckedChangeListener { _, isChecked ->
-                if (isChecked) {
-                    binding.osmap.visibility = View.VISIBLE
-                    val scale = binding.root.resources.displayMetrics.density
-                    val pixels = (150 * scale + 0.5f).toInt()
-                    binding.lineChart.layoutParams.height = pixels
-                } else {
-                    binding.osmap.visibility = View.GONE
-                    binding.lineChart.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-                }
-            }
-        binding.chartOnOff.setOnCheckedChangeListener { _, isChecked ->
-            binding.lineChart.visibility = if (isChecked) View.VISIBLE else View.GONE
-        }
-        if (summitToCompare != null) {
-            setGpsTrack(summitToCompare)
-            val segmentEntryLocal = segmentEntry
-            if (segmentEntryLocal != null) {
-                startPointId = segmentEntryLocal.startPositionInTrack
-                endPointId = segmentEntryLocal.endPositionInTrack
-            }
-            setOpenStreetMap()
-            setStartMarker(startPointId, false)
-            setEndMarker(endPointId)
-        }
-        prepareCompareAutoComplete()
+        })
         return binding.root
     }
 
-    private fun prepareCompareAutoComplete() {
-        val summitsToCompareFromActivity = viewModel.summitsList
-        summitsToCompareFromActivity.observe(viewLifecycleOwner) {
-            it.data.let { summits ->
-                if (summits != null) {
-                    val items = getSummitsSuggestions(summits)
-                    binding.summitNameToUse.item = items
-                    val summit = summitToCompare
-                    if (summit != null) {
-                        val position = items.indexOf("${summit.getDateAsString()} ${summit.name}")
-                        if (position >= 0) {
-                            binding.summitNameToUse.setSelection(position)
+    private fun Observer<DataStatus<List<Segment>>>.apply(
+        summitListDataStatus: DataStatus<List<Segment>>?
+    ) {
+        summitListDataStatus?.data.let { segments ->
+            val segment =
+                segments?.firstOrNull { entry -> entry.segmentDetails.segmentDetailsId == segmentId }
+            segmentEntry =
+                segment?.segmentEntries?.firstOrNull { entry -> entry.entryId == segmentEntryId }
+            viewModel.summitsList.observe(viewLifecycleOwner) { itSummitData ->
+                itSummitData.data.let { summits ->
+                    summitToCompare =
+                        summits?.firstOrNull { entry -> entry.activityId == segmentEntry?.activityId }
+                    binding.save.findViewById<MaterialButton>(R.id.save).setOnClickListener {
+                        viewModel.segmentsList.removeObserver(this)
+                        val segmentEntryLocal = segmentEntry
+                        if (summitToCompare != null && segmentEntryLocal != null) {
+                            viewModel.saveSegmentEntry(isUpdate, segmentEntryLocal)
+                                .invokeOnCompletion { activity?.supportFragmentManager?.popBackStack() }
+                        } else {
+                            activity?.supportFragmentManager?.popBackStack()
                         }
                     }
-                    binding.summitNameToUse.onItemSelectedListener =
-                        object : AdapterView.OnItemSelectedListener {
-                            override fun onItemSelected(
-                                adapterView: AdapterView<*>?,
-                                view: View?,
-                                position: Int,
-                                id: Long
-                            ) {
-                                if (view != null) {
-                                    val text = items[position]
-                                    if (text != "" && text != "None") {
-                                        val newlySelectedSummit =
-                                            summitsToCompare.find { text.startsWith("${it.getDateAsString()} ${it.name}") }
-                                        if (newlySelectedSummit != summitToCompare) {
-                                            summitToCompare = newlySelectedSummit
-                                            setGpsTrack(summitToCompare)
-                                            setOpenStreetMap()
-                                            drawChart()
-                                            setTextView()
-                                        }
-                                    }
-                                }
-                            }
-
-                            override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+                    prepareCompareAutoComplete(summits, segment)
+                    if (summitToCompare != null) {
+                        setGpsTrack()
+                        val localSegmentEntry = segmentEntry
+                        if (localSegmentEntry != null) {
+                            startPointId = localSegmentEntry.startPositionInTrack
+                            endPointId = localSegmentEntry.endPositionInTrack
+                            setStartMarker(startPointId, false)
+                            setEndMarker(endPointId)
                         }
+                        if (segment != null) {
+                            setOpenStreetMap(segment, summitToCompare)
+                        }
+                    }
                 }
             }
         }
+        binding.cancel.setOnClickListener {
+            activity?.supportFragmentManager?.popBackStack()
+        }
+        binding.startOrStop.setOnCheckedChangeListener { _, isChecked ->
+            startSelected = !isChecked
+        }
+        binding.mapOnOff.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                binding.osmap.visibility = View.VISIBLE
+                val scale = binding.root.resources.displayMetrics.density
+                val pixels = (150 * scale + 0.5f).toInt()
+                binding.lineChart.layoutParams.height = pixels
+            } else {
+                binding.osmap.visibility = View.GONE
+                binding.lineChart.layoutParams.height =
+                    ViewGroup.LayoutParams.MATCH_PARENT
+            }
+        }
+        binding.chartOnOff.setOnCheckedChangeListener { _, isChecked ->
+            binding.lineChart.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
     }
 
-    private fun setTextView() {
-        binding.tourDate.text = summitToCompare?.getDateAsString()
-        val allTrackPoints = gpsTrack?.trackPoints
-        val summit = summitToCompare
-        if (summit != null && allTrackPoints != null && allTrackPoints.isNotEmpty()) {
+    private fun prepareCompareAutoComplete(
+        summits: List<Summit>?,
+        segment: Segment?
+    ) {
+        val items = getSummitsSuggestions(summits, segment)
+        binding.summitNameToUse.item = items
+        val position =
+            items.indexOf("${summitToCompare?.getDateAsString()} ${summitToCompare?.name}")
+        if (position >= 0) {
+            binding.summitNameToUse.setSelection(position)
+        }
+        binding.summitNameToUse.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    adapterView: AdapterView<*>?, view: View?, position: Int, id: Long
+                ) {
+                    if (view != null) {
+                        val text = items[position]
+                        if (text != "" && text != "None") {
+                            val newlySelectedSummit =
+                                summitsToCompare.find { text.startsWith("${it.getDateAsString()} ${it.name}") }
+                            if (segment != null && newlySelectedSummit != null && newlySelectedSummit != summitToCompare) {
+                                summitToCompare = newlySelectedSummit
+                                setGpsTrack()
+                                setOpenStreetMap(segment, newlySelectedSummit)
+                                drawChart(newlySelectedSummit)
+                                setTextView(newlySelectedSummit)
+                            }
+                        }
+                    }
+                }
 
+                override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+            }
+    }
+
+    private fun setTextView(summitToCompare: Summit) {
+        binding.tourDate.text = summitToCompare.getDateAsString()
+        val allTrackPoints = summitToCompare.gpsTrack?.trackPoints
+        if (allTrackPoints != null && allTrackPoints.isNotEmpty()) {
             val startTrackPoint = allTrackPoints[startPointId]
             val endTrackPoint = allTrackPoints[endPointId]
             val selectedTrackPoints = allTrackPoints.subList(startPointId, endPointId)
@@ -228,10 +208,11 @@ class AddSegmentEntryFragment : Fragment() {
             val heightMeterResult =
                 TrackUtils.removeDeltasSmallerAs(10, pointsOnlyWithMaximalValues)
 
-            val duration = ((endTrackPoint.time ?: 0L) - (startTrackPoint.time
-                ?: 0L)).toDouble() / 60000.0
-            val distance = ((endTrackPoint.extension?.distance
-                ?: 0.0) - (startTrackPoint.extension?.distance ?: 0.0)) / 1000.0
+            val duration =
+                ((endTrackPoint.time ?: 0L) - (startTrackPoint.time ?: 0L)).toDouble() / 60000.0
+            val distance =
+                ((endTrackPoint.extension?.distance ?: 0.0) - (startTrackPoint.extension?.distance
+                    ?: 0.0)) / 1000.0
 
             binding.duration.text = String.format(
                 requireContext().resources.configuration.locales[0],
@@ -269,11 +250,10 @@ class AddSegmentEntryFragment : Fragment() {
                 binding.save.text = getString(R.string.update)
             }
             segmentEntry = SegmentEntry(
-                segmentEntryId
-                    ?: 0,
+                segmentEntryId ?: 0,
                 segmentId,
-                summit.date,
-                summit.activityId,
+                summitToCompare.date,
+                summitToCompare.activityId,
                 startPointId,
                 startTrackPoint.lat,
                 startTrackPoint.lon,
@@ -290,14 +270,14 @@ class AddSegmentEntryFragment : Fragment() {
         }
     }
 
-    private fun getSummitsSuggestions(summits: List<Summit>): List<String> {
+    private fun getSummitsSuggestions(summits: List<Summit>?, segment: Segment?): List<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
-        val summitsWithTrack = summits.filter { it.hasGpsTrack() }.sortedByDescending { it.date }
+        val summitsWithTrack =
+            summits?.filter { it.hasGpsTrack() }?.sortedByDescending { it.date } ?: emptyList()
         val entries = segment?.segmentEntries
         summitsToCompare = if (entries != null && entries.isNotEmpty()) {
             val startPoint = GeoPoint(
-                entries.first().startPositionLatitude,
-                entries.first().startPositionLongitude
+                entries.first().startPositionLatitude, entries.first().startPositionLongitude
             )
             val endPoint =
                 GeoPoint(entries.first().endPositionLatitude, entries.first().endPositionLongitude)
@@ -311,30 +291,31 @@ class AddSegmentEntryFragment : Fragment() {
         }
         summitsToCompare.forEach { summit: Summit ->
             val occurrence =
-                segment?.segmentEntries?.filter { it.activityId == summit.activityId }?.size
-                    ?: 0
+                segment?.segmentEntries?.filter { it.activityId == summit.activityId }?.size ?: 0
             suggestions.add("${summit.getDateAsString()} ${summit.name} ${if (occurrence > 0) "($occurrence)" else ""}")
         }
         return suggestions
     }
 
-    private fun setGpsTrack(localSummit: Summit?) {
-        if (localSummit != null && localSummit.hasGpsTrack()) {
-            localSummit.setGpsTrack(useSimplifiedTrack = false, loadFullTrackAsynchronous = true)
-            gpsTrack = localSummit.gpsTrack
-            startPointId = 0
-            endPointId = (gpsTrack?.trackGeoPoints?.size ?: 1) - 1
-            if (gpsTrack?.trackPoints?.any {
-                    val value = Elevation.f(it)
-                    value != null && value != 0.0
-                } == true) {
-                selectedCustomizeTrackItem = Elevation
+    private fun setGpsTrack() {
+        val summit = summitToCompare
+        if (summit != null) {
+            if (summit.hasGpsTrack()) {
+                summit.setGpsTrack(useSimplifiedTrack = false)
+                startPointId = 0
+                endPointId = (summit.gpsTrack?.trackGeoPoints?.size ?: 1) - 1
+                if (summit.gpsTrack?.trackPoints?.any {
+                        val value = Elevation.f(it)
+                        value != null && value != 0.0
+                    } == true) {
+                    selectedCustomizeTrackItem = Elevation
+                }
             }
         }
     }
 
-    private fun drawChart() {
-        val localGpsTrack = gpsTrack
+    private fun drawChart(summit: Summit) {
+        val localGpsTrack = summit.gpsTrack
         if (localGpsTrack != null) {
             binding.lineChart.clear()
             binding.lineChart.xAxis.removeAllLimitLines()
@@ -359,14 +340,18 @@ class AddSegmentEntryFragment : Fragment() {
                 override fun onValueSelected(e: Entry, h: Highlight?) {
                     if (e.data is TrackPoint) {
                         val trackPoint = e.data as TrackPoint
-                        val index = gpsTrack?.trackPoints?.indexOf(trackPoint)
+                        val index = summit.gpsTrack?.trackPoints?.indexOf(trackPoint)
                         if (index != null) {
                             if (startSelected) {
                                 setStartMarker(index)
                             } else {
                                 setEndMarker(index)
                             }
-                            binding.osmap.controller.setCenter(gpsTrack?.trackGeoPoints?.get(index))
+                            binding.osmap.controller.setCenter(
+                                summit.gpsTrack?.trackGeoPoints?.get(
+                                    index
+                                )
+                            )
                         }
                     }
                 }
@@ -374,15 +359,15 @@ class AddSegmentEntryFragment : Fragment() {
                 override fun onNothingSelected() {}
             })
             setLegend(binding.lineChart, label)
-            drawVerticalLine(startPointId, Color.GREEN)
-            drawVerticalLine(endPointId, Color.RED)
+            drawVerticalLine(summit, startPointId, Color.GREEN)
+            drawVerticalLine(summit, endPointId, Color.RED)
         } else {
             binding.lineChart.visibility = View.GONE
         }
     }
 
-    private fun drawVerticalLine(index: Int, color: Int) {
-        val distance = gpsTrack?.trackPoints?.get(index)?.extension?.distance?.toFloat()
+    private fun drawVerticalLine(summit: Summit, index: Int, color: Int) {
+        val distance = summit.gpsTrack?.trackPoints?.get(index)?.extension?.distance?.toFloat()
         if (distance != null) {
             val ll = LimitLine(distance)
             ll.lineColor = color
@@ -446,72 +431,66 @@ class AddSegmentEntryFragment : Fragment() {
         }
     }
 
-    private fun setOpenStreetMap() {
-        binding.osmap.overlays?.clear()
-        binding.osmap.overlayManager?.clear()
-        binding.changeMapType.setImageResource(R.drawable.baseline_more_vert_black_24dp)
-        binding.changeMapType.setOnClickListener {
-            showMapTypeSelectorDialog(
-                requireContext(),
-                binding.osmap
-            )
-        }
-        addDefaultSettings(requireContext(), binding.osmap, requireActivity())
-        Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-
+    private fun setOpenStreetMap(segment: Segment, summitToCompare: Summit?) {
         val summit = summitToCompare
         if (summit != null) {
-            val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || summit.latLng != null
-            if (summitToCompare != null && hasPoints) {
-                if (gpsTrack?.osMapRoute == null) {
-                    gpsTrack?.addGpsTrack(
-                        binding.osmap,
-                        selectedCustomizeTrackItem,
-                        rootView = binding.root
+
+            binding.osmap.overlays?.clear()
+            binding.osmap.overlayManager?.clear()
+            binding.changeMapType.setImageResource(R.drawable.baseline_more_vert_black_24dp)
+            binding.changeMapType.setOnClickListener {
+                showMapTypeSelectorDialog(
+                    requireContext(), binding.osmap
+                )
+            }
+            addDefaultSettings(requireContext(), binding.osmap, requireActivity())
+            Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
+
+            val hasPoints =
+                summit.gpsTrack?.hasOnlyZeroCoordinates() == false || summit.latLng != null
+            if (hasPoints) {
+                if (summit.gpsTrack?.osMapRoute == null) {
+                    summit.gpsTrack?.addGpsTrack(
+                        binding.osmap, selectedCustomizeTrackItem, rootView = binding.root
                     )
                 }
-                showSinglePoints()
+                showSinglePoints(summit)
                 binding.osmap.post {
-                    gpsTrack?.let {
+                    summit.gpsTrack?.let {
                         OpenStreetMapUtils.calculateBoundingBox(
-                            binding.osmap,
-                            it.trackGeoPoints
+                            binding.osmap, it.trackGeoPoints
                         )
                     }
                 }
             }
-        }
-        val entries = segment?.segmentEntries
-        if (entries != null && entries.isNotEmpty()) {
-            val firstStartPoint = GeoPoint(
-                entries.first().startPositionLatitude,
-                entries.first().startPositionLongitude
-            )
-            val firstEndPoint =
-                GeoPoint(entries.first().endPositionLatitude, entries.first().endPositionLongitude)
-            addMarker(
-                binding.osmap,
-                firstStartPoint,
-                ResourcesCompat.getDrawable(
-                    requireContext().resources,
-                    R.drawable.ic_filled_location_lightbrown_48,
-                    null
+            val entries = segment.segmentEntries
+            if (entries.isNotEmpty()) {
+                val firstStartPoint = GeoPoint(
+                    entries.first().startPositionLatitude, entries.first().startPositionLongitude
                 )
-            )
-            addMarker(
-                binding.osmap,
-                firstEndPoint,
-                ResourcesCompat.getDrawable(
-                    requireContext().resources,
-                    R.drawable.ic_filled_location_darkbrown_48,
-                    null
+                val firstEndPoint =
+                    GeoPoint(
+                        entries.first().endPositionLatitude,
+                        entries.first().endPositionLongitude
+                    )
+                addMarker(
+                    binding.osmap, firstStartPoint, ResourcesCompat.getDrawable(
+                        requireContext().resources,
+                        R.drawable.ic_filled_location_lightbrown_48,
+                        null
+                    )
                 )
-            )
+                addMarker(
+                    binding.osmap, firstEndPoint, ResourcesCompat.getDrawable(
+                        requireContext().resources, R.drawable.ic_filled_location_darkbrown_48, null
+                    )
+                )
+            }
         }
     }
 
-    private fun showSinglePoints() {
-        val trackGeoPoints = gpsTrack?.trackGeoPoints
+    private fun showSinglePoints(summit: Summit) {
+        val trackGeoPoints = summit.gpsTrack?.trackGeoPoints
         if (trackGeoPoints != null && trackGeoPoints.isNotEmpty()) {
             binding.osmap.overlays.remove(pointOverlay)
             val filteredPoints = ArrayList<IGeoPoint>()
@@ -519,9 +498,7 @@ class AddSegmentEntryFragment : Fragment() {
                 if (i > startPointId - 30 && i < endPointId + 30) {
                     filteredPoints.add(
                         LabelledGeoPoint(
-                            point.latitude,
-                            point.longitude,
-                            i.toString()
+                            point.latitude, point.longitude, i.toString()
                         )
                     )
                 }
@@ -542,10 +519,7 @@ class AddSegmentEntryFragment : Fragment() {
 
             val opt = SimpleFastPointOverlayOptions.getDefaultStyle()
                 .setAlgorithm(SimpleFastPointOverlayOptions.RenderingAlgorithm.NO_OPTIMIZATION)
-                .setRadius(10f)
-                .setIsClickable(true)
-                .setCellSize(20)
-                .setMinZoomShowLabels(19)
+                .setRadius(10f).setIsClickable(true).setCellSize(20).setMinZoomShowLabels(19)
                 .setTextStyle(textStyle)
             pointOverlay = SimpleFastPointOverlay(pt, opt)
             pointOverlay?.setOnClickListener { _: SimpleFastPointOverlay.PointAdapter, i: Int ->
@@ -563,55 +537,45 @@ class AddSegmentEntryFragment : Fragment() {
     private fun setEndMarker(i: Int) {
         if (i >= startPointId) {
             endPointId = i
-            updateMapAndChart()
+            summitToCompare?.let { updateMapAndChart(it) }
         } else {
             Toast.makeText(
-                requireContext(),
-                getString(R.string.stop_before_start),
-                Toast.LENGTH_SHORT
-            )
-                .show()
+                requireContext(), getString(R.string.stop_before_start), Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
     private fun setStartMarker(i: Int, updateView: Boolean = true) {
         if (i <= endPointId) {
             startPointId = i
-            updateMapAndChart(updateView)
+            summitToCompare?.let { updateMapAndChart(it, updateView) }
         } else {
             Toast.makeText(
-                requireContext(),
-                getString(R.string.start_after_stop),
-                Toast.LENGTH_SHORT
-            )
-                .show()
+                requireContext(), getString(R.string.start_after_stop), Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
-    private fun updateMapAndChart(updateView: Boolean = true) {
+    private fun updateMapAndChart(summit: Summit, updateView: Boolean = true) {
         if (updateView) {
-            drawChart()
-            showSinglePoints()
-            setTextView()
+            drawChart(summit)
+            showSinglePoints(summit)
+            setTextView(summit)
         }
         binding.osmap.overlays.remove(startMarker)
         binding.osmap.overlays.remove(stopMarker)
         startMarker = addMarker(
             binding.osmap,
-            gpsTrack?.trackGeoPoints?.get(startPointId),
+            summit.gpsTrack?.trackGeoPoints?.get(startPointId),
             ResourcesCompat.getDrawable(
-                requireContext().resources,
-                R.drawable.ic_filled_location_green_48,
-                null
+                requireContext().resources, R.drawable.ic_filled_location_green_48, null
             )
         )
         stopMarker = addMarker(
             binding.osmap,
-            gpsTrack?.trackGeoPoints?.get(endPointId),
+            summit.gpsTrack?.trackGeoPoints?.get(endPointId),
             ResourcesCompat.getDrawable(
-                requireContext().resources,
-                R.drawable.ic_filled_location_red_48,
-                null
+                requireContext().resources, R.drawable.ic_filled_location_red_48, null
             )
         )
     }
@@ -652,9 +616,7 @@ class AddSegmentEntryFragment : Fragment() {
 
     companion object {
         fun getInstance(
-            segmentId: Long,
-            segmentsViewAdapter: SegmentsViewAdapter?,
-            segmentEntryId: Long?
+            segmentId: Long, segmentsViewAdapter: SegmentsViewAdapter?, segmentEntryId: Long?
         ): AddSegmentEntryFragment {
             val fragment = AddSegmentEntryFragment()
             fragment.segmentId = segmentId

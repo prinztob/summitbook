@@ -1,7 +1,7 @@
 package de.drtobiasprinz.summitbook.fragments
 
+import android.content.res.Resources
 import android.os.Bundle
-import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -48,16 +48,8 @@ class SummitEntryImagesFragment : Fragment() {
     }
 
     private fun setImages(summitToView: Summit) {
-        val metrics = DisplayMetrics()
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            val display = activity?.display
-            display?.getRealMetrics(metrics)
-        } else {
-            val display = activity?.windowManager?.defaultDisplay
-            display?.getMetrics(metrics)
-        }
         val params = binding.carousel.layoutParams
-        params.height = (metrics.heightPixels * 0.7).toInt()
+        params.height = (Resources.getSystem().displayMetrics.heightPixels * 0.7).toInt()
         binding.carousel.layoutParams = params
         binding.carousel.invalidate()
 //        carousel.clearFindViewByIdCache()

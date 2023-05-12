@@ -3,15 +3,17 @@ package de.drtobiasprinz.summitbook.db.entities
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
-import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.db.entities.SportType
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
 
 @Entity
-class Forecast(
-        var year: Int, var month: Int, var forecastHeightMeter: Int, var forecastDistance: Int, var forecastNumberActivities: Int,
+data class Forecast(
+    var year: Int,
+    var month: Int,
+    var forecastHeightMeter: Int,
+    var forecastDistance: Int,
+    var forecastNumberActivities: Int,
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0
@@ -31,14 +33,14 @@ class Forecast(
             cal.time = it.date
             cal.get(Calendar.MONTH) + 1 == month && cal.get(Calendar.YEAR) == year
         }
-        actualHeightMeter = summitsInMonth.sumBy {
+        actualHeightMeter = summitsInMonth.sumOf {
             if (it.sportType != SportType.IndoorTrainer) {
                 it.elevationData.elevationGain
             } else {
                 it.elevationData.elevationGain * indoorHeightMeterPercent / 100
             }
         }
-        actualDistance = summitsInMonth.sumBy { it.kilometers.roundToInt() }
+        actualDistance = summitsInMonth.sumOf { it.kilometers.roundToInt() }
         actualNumberActivities = summitsInMonth.size
     }
 
@@ -70,6 +72,24 @@ class Forecast(
         return true
     }
 
+    fun equalsWithOutId(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Forecast
+
+        if (year != other.year) return false
+        if (month != other.month) return false
+        if (forecastHeightMeter != other.forecastHeightMeter) return false
+        if (forecastDistance != other.forecastDistance) return false
+        if (forecastNumberActivities != other.forecastNumberActivities) return false
+        if (actualHeightMeter != other.actualHeightMeter) return false
+        if (actualDistance != other.actualDistance) return false
+        if (actualNumberActivities != other.actualNumberActivities) return false
+
+        return true
+    }
+
     override fun hashCode(): Int {
         var result = year
         result = 31 * result + month
@@ -86,26 +106,58 @@ class Forecast(
     companion object {
         private const val NUMBER_OF_ELEMENTS = 5
 
-        fun getSumForYear(year: Int, forecasts: List<Forecast>, selectedSegmentedForecastProperty: Int, currentYear: Int, currentMonth: Int): Int {
+        fun getSumForYear(
+            year: Int,
+            forecasts: List<Forecast>,
+            selectedSegmentedForecastProperty: Int,
+            currentYear: Int,
+            currentMonth: Int
+        ): Int {
             var sum = 0
             forecasts.forEach {
                 if (it.year == year) {
                     sum += when (selectedSegmentedForecastProperty) {
-                        1 -> getSumPerYear(it, { e -> e.forecastDistance }, { e -> e.actualDistance }, currentYear, currentMonth)
-                        2 -> getSumPerYear(it, { e -> e.forecastNumberActivities }, { e -> e.actualNumberActivities }, currentYear, currentMonth)
-                        else -> getSumPerYear(it, { e -> e.forecastHeightMeter }, { e -> e.actualHeightMeter }, currentYear, currentMonth)
+                        1 -> getSumPerYear(
+                            it,
+                            { e -> e.forecastDistance },
+                            { e -> e.actualDistance },
+                            currentYear,
+                            currentMonth
+                        )
+                        2 -> getSumPerYear(
+                            it,
+                            { e -> e.forecastNumberActivities },
+                            { e -> e.actualNumberActivities },
+                            currentYear,
+                            currentMonth
+                        )
+                        else -> getSumPerYear(
+                            it,
+                            { e -> e.forecastHeightMeter },
+                            { e -> e.actualHeightMeter },
+                            currentYear,
+                            currentMonth
+                        )
                     }
                 }
             }
             return sum
         }
 
-        private fun getSumPerYear(forecast: Forecast, getForecast: (Forecast) -> Int, getActual: (Forecast) -> Int, currentYear: Int, currentMonth: Int): Int {
+        private fun getSumPerYear(
+            forecast: Forecast,
+            getForecast: (Forecast) -> Int,
+            getActual: (Forecast) -> Int,
+            currentYear: Int,
+            currentMonth: Int
+        ): Int {
             return if (forecast.year == currentYear) {
                 if (forecast.month < currentMonth) {
                     getActual(forecast)
                 } else if (forecast.month == currentMonth) {
-                    if (getForecast(forecast) < getActual(forecast)) getActual(forecast) else getForecast(forecast)
+                    if (getForecast(forecast) < getActual(forecast)) getActual(forecast) else getForecast(
+                        forecast
+                    )
                 } else {
                     getForecast(forecast)
                 }
@@ -113,22 +165,36 @@ class Forecast(
                 getForecast(forecast)
             }
         }
+
         private fun checkValidNumberOfElements(splitLine: List<String>) {
             if (splitLine.size != NUMBER_OF_ELEMENTS) {
-                throw Exception("Line ${splitLine.joinToString { ";" }} has ${splitLine.size} number " +
-                        "of elements. Expected are ${Segment.NUMBER_OF_ELEMENTS}")
+                throw Exception(
+                    "Line ${splitLine.joinToString { ";" }} has ${splitLine.size} number " +
+                            "of elements. Expected are ${Segment.NUMBER_OF_ELEMENTS}"
+                )
             }
         }
-        fun parseFromCsvFileLine(line: String, forecasts: MutableList<Forecast>, database: AppDatabase): Boolean {
+
+        fun parseFromCsvFileLine(
+            line: String,
+            forecasts: MutableList<Forecast>,
+            saveForecast: (Forecast) -> Unit
+        ): Boolean {
             val splitLine = line.split(";")
             checkValidNumberOfElements(splitLine)
-            val forecast = Forecast(splitLine[0].toInt(), splitLine[1].toInt(), splitLine[2].toInt(), splitLine[3].toInt(), splitLine[4].toInt())
-            if (forecasts.contains(forecast)) {
-                return false
+            val forecast = Forecast(
+                splitLine[0].toInt(),
+                splitLine[1].toInt(),
+                splitLine[2].toInt(),
+                splitLine[3].toInt(),
+                splitLine[4].toInt()
+            )
+            return if (forecasts.contains(forecast)) {
+                false
             } else {
-                database.forecastDao()?.addForecast(forecast)
+                saveForecast(forecast)
                 forecasts.add(forecast)
-                return true
+                true
             }
         }
 

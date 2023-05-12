@@ -7,12 +7,12 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
-import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
+import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.ITileSource
@@ -35,7 +35,15 @@ object OpenStreetMapUtils {
     var selectedItem = 0
 
     @JvmStatic
-    fun addTrackAndMarker(summitEntry: Summit, osMap: MapView, context: Context, forceAddTrack: Boolean, selectedCustomizeTrackItem: TrackColor, alwaysShowTrackOnMap: Boolean, rootView: View? = null): Marker? {
+    fun addTrackAndMarker(
+        summitEntry: Summit,
+        osMap: MapView,
+        context: Context,
+        forceAddTrack: Boolean,
+        selectedCustomizeTrackItem: TrackColor,
+        alwaysShowTrackOnMap: Boolean,
+        rootView: View? = null
+    ): Marker? {
         val mGeoPoints = ArrayList<GeoPoint>()
         val latLng = summitEntry.latLng
         var marker: Marker? = null
@@ -49,7 +57,15 @@ object OpenStreetMapUtils {
                 mapController.setCenter(point)
             }
         }
-        drawTrack(summitEntry, forceAddTrack, osMap, selectedCustomizeTrackItem, true, mGeoPoints, rootView = rootView)
+        drawTrack(
+            summitEntry,
+            forceAddTrack,
+            osMap,
+            selectedCustomizeTrackItem,
+            true,
+            mGeoPoints,
+            rootView = rootView
+        )
         if (marker != null) {
             osMap.overlays.add(marker)
         }
@@ -70,9 +86,14 @@ object OpenStreetMapUtils {
 
     @JvmStatic
     fun drawTrack(
-        summitEntry: Summit, forceAddTrack: Boolean, osMap: MapView, selectedCustomizeTrackItem: TrackColor,
-        calculateBondingBox: Boolean = false, mGeoPoints: ArrayList<GeoPoint> = arrayListOf(),
-        color: Int = Color.BLUE, rootView: View? = null
+        summitEntry: Summit,
+        forceAddTrack: Boolean,
+        osMap: MapView,
+        selectedCustomizeTrackItem: TrackColor,
+        calculateBondingBox: Boolean = false,
+        mGeoPoints: ArrayList<GeoPoint> = arrayListOf(),
+        color: Int = Color.BLUE,
+        rootView: View? = null
     ) {
         if (summitEntry.hasGpsTrack()) {
             if (summitEntry.gpsTrack == null) {
@@ -95,7 +116,7 @@ object OpenStreetMapUtils {
         }
     }
 
-    fun getTrackPointsFrom(gpsTrack: GpsTrack): List<GeoPoint> {
+    private fun getTrackPointsFrom(gpsTrack: GpsTrack): List<GeoPoint> {
         val mGeoPoints: MutableList<GeoPoint> = mutableListOf()
         val positions = gpsTrack.getTrackPositions()
         for (entry in positions) {
@@ -118,16 +139,31 @@ object OpenStreetMapUtils {
     }
 
     @JvmStatic
-    fun addMarker(mMapView: MapView, context: Context, startPoint: GeoPoint?, entry: Summit, addToOverlay: Boolean = true, alwaysShowTrackOnMap: Boolean = false): Marker? {
+    fun addMarker(
+        mMapView: MapView,
+        context: Context,
+        startPoint: GeoPoint?,
+        entry: Summit,
+        addToOverlay: Boolean = true,
+        alwaysShowTrackOnMap: Boolean = false
+    ): Marker? {
         try {
             val marker = Marker(mMapView)
             marker.position = startPoint
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
             marker.title = entry.id.toString()
             if (entry.hasGpsTrack()) {
-                marker.icon = ResourcesCompat.getDrawable(context.resources, entry.sportType.markerIdWithGpx, null)
+                marker.icon = ResourcesCompat.getDrawable(
+                    context.resources,
+                    entry.sportType.markerIdWithGpx,
+                    null
+                )
             } else {
-                marker.icon = ResourcesCompat.getDrawable(context.resources, entry.sportType.markerIdWithoutGpx, null)
+                marker.icon = ResourcesCompat.getDrawable(
+                    context.resources,
+                    entry.sportType.markerIdWithoutGpx,
+                    null
+                )
             }
             marker.infoWindow = MapCustomInfoBubble(mMapView, entry, context, alwaysShowTrackOnMap)
             marker.setOnMarkerClickListener { marker1, _ ->
@@ -167,7 +203,11 @@ object OpenStreetMapUtils {
     }
 
     @JvmStatic
-    fun addDefaultSettings(context: Context, mMapView: MapView, fragmentActivity: FragmentActivity) {
+    fun addDefaultSettings(
+        context: Context,
+        mMapView: MapView,
+        fragmentActivity: FragmentActivity
+    ) {
 
         val dm = context.resources.displayMetrics
         val mScaleBarOverlay = ScaleBarOverlay(mMapView)
@@ -196,8 +236,8 @@ object OpenStreetMapUtils {
         val builder = AlertDialog.Builder(context)
         builder.setTitle(fDialogTitle)
         builder.setSingleChoiceItems(
-                MAP_TYPE_ITEMS,
-                selectedItem
+            MAP_TYPE_ITEMS,
+            selectedItem
         ) { dialog: DialogInterface, item: Int ->
             setTileSource(item, mapView)
             selectedItem = item

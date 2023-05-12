@@ -11,17 +11,17 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.activityViewModels
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SegmentsViewAdapter
-import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
-import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.ParseException
 
 class AddSegmentDetailsDialog : DialogFragment() {
+    private val viewModel: DatabaseViewModel by activityViewModels()
+
     var isUpdate = false
-    private var database: AppDatabase? = null
     private var currentSegmentDetails: SegmentDetails? = null
     private var segmentsViewAdapter: SegmentsViewAdapter? = null
     private lateinit var usedView: View
@@ -30,13 +30,16 @@ class AddSegmentDetailsDialog : DialogFragment() {
     private lateinit var saveEntryButton: Button
 
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
         return inflater.inflate(R.layout.dialog_add_segment_details, container)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        database = context?.let { DatabaseModule.provideDatabase(it) }
         usedView = view
         saveEntryButton = view.findViewById(R.id.add_segment_save)
         saveEntryButton.isEnabled = false
@@ -46,7 +49,7 @@ class AddSegmentDetailsDialog : DialogFragment() {
         endPointName.addTextChangedListener(watcher)
 
         if (currentSegmentDetails == null) {
-            createNewBookmark()
+            createNewSegmentDetails()
         }
         if (isUpdate) {
             saveEntryButton.setText(R.string.updateButtonText)
@@ -57,26 +60,22 @@ class AddSegmentDetailsDialog : DialogFragment() {
             parseSegmentDetails()
             val segmentDetails = currentSegmentDetails
             if (segmentDetails != null) {
-                if (isUpdate) {
-                    database?.segmentsDao()?.updateSegmentDetails(segmentDetails)
-                } else {
-                    segmentDetails.segmentDetailsId = database?.segmentsDao()?.addSegmentDetails(segmentDetails)
-                            ?: 0L
-                    segmentsViewAdapter?.segments?.add(Segment(segmentDetails, mutableListOf()))
-                }
-                segmentsViewAdapter?.notifyDataSetChanged()
+                viewModel.saveSegmentDetails(isUpdate, segmentDetails)
                 dialog?.cancel()
             }
         }
         val closeDialogButton = view.findViewById<Button>(R.id.add_segment_cancel)
         closeDialogButton.setOnClickListener { v: View ->
             dialog?.cancel()
-            val text = if (currentSegmentDetails != null) getString(R.string.update_segment_cancel) else getString(R.string.add_new_segment_cancel)
+            val text =
+                if (currentSegmentDetails != null) getString(R.string.update_segment_cancel) else getString(
+                    R.string.add_new_segment_cancel
+                )
             Toast.makeText(v.context, text, Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun createNewBookmark() {
+    private fun createNewSegmentDetails() {
         currentSegmentDetails = SegmentDetails(0, "", "")
     }
 
@@ -100,11 +99,6 @@ class AddSegmentDetailsDialog : DialogFragment() {
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        database?.close()
-    }
-
     private val watcher: TextWatcher = object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
         override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
@@ -119,7 +113,10 @@ class AddSegmentDetailsDialog : DialogFragment() {
 
     companion object {
         @JvmStatic
-        fun getInstance(entry: SegmentDetails?, segmentsViewAdapter: SegmentsViewAdapter): AddSegmentDetailsDialog {
+        fun getInstance(
+            entry: SegmentDetails?,
+            segmentsViewAdapter: SegmentsViewAdapter
+        ): AddSegmentDetailsDialog {
             val add = AddSegmentDetailsDialog()
             add.isUpdate = entry != null
             add.currentSegmentDetails = entry

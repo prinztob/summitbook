@@ -1,16 +1,11 @@
 package de.drtobiasprinz.summitbook.models
 
 import android.content.SharedPreferences
-import android.util.Log
-import androidx.sqlite.db.SimpleSQLiteQuery
 import de.drtobiasprinz.summitbook.databinding.FragmentSortAndFilterBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.utils.Constants
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.roundToInt
 
 
 class SortFilterValues(
@@ -22,12 +17,9 @@ class SortFilterValues(
     var sportType: SportType? = null,
     var participants: List<String> = emptyList(),
 
-    var kilometersSlider: RangeSliderValues = RangeSliderValues("kilometers",
-        { e -> e.kilometers.toFloat() }),
-    var topElevationSlider: RangeSliderValues = RangeSliderValues("maxElevation",
-        { e -> e.elevationData.maxElevation.toFloat() }),
-    var elevationGainSlider: RangeSliderValues = RangeSliderValues("elevationGain",
-        { e -> e.elevationData.elevationGain.toFloat() }),
+    var kilometersSlider: RangeSliderValues = RangeSliderValues({ e -> e.kilometers.toFloat() }),
+    var topElevationSlider: RangeSliderValues = RangeSliderValues({ e -> e.elevationData.maxElevation.toFloat() }),
+    var elevationGainSlider: RangeSliderValues = RangeSliderValues({ e -> e.elevationData.elevationGain.toFloat() }),
 
     var peakFavoriteButtonGroup: PeakFavoriteButtonGroup = PeakFavoriteButtonGroup.Indifferent,
     var hasPositionButtonGroup: HasPositionButtonGroup = HasPositionButtonGroup.Indifferent,
@@ -38,20 +30,13 @@ class SortFilterValues(
     var orderByValueButtonGroup: OrderByValueButtonGroup = OrderByValueButtonGroup.Date,
     var years: List<String> = mutableListOf()
 ) {
-    fun setInitialValues(database: AppDatabase, sharedPreferences: SharedPreferences) {
-        val minDate = Date(
-            database.summitsDao()
-                .get(SimpleSQLiteQuery("SELECT MIN(date) FROM ${Constants.SUMMITS_TABLE} where isBookmark = 0"))
-                .toLong()
-        ).year + 1900
-
-        val maxDate = Date(
-            database.summitsDao()
-                .get(SimpleSQLiteQuery("SELECT MAX(date) FROM ${Constants.SUMMITS_TABLE} where isBookmark = 0"))
-                .toLong()
-        ).year + 1900
-        if (minDate != 1970 && maxDate != 1970) {
-            years = (minDate..maxDate).map { it.toString() }.sortedDescending()
+    fun setInitialValues(summits: List<Summit>, sharedPreferences: SharedPreferences) {
+        if (summits.isNotEmpty()) {
+            val minDate = getYear(summits.minBy { it.date }.date)
+            val maxDate = getYear(summits.maxBy { it.date }.date)
+            if (minDate != 1970 && maxDate != 1970) {
+                years = (minDate..maxDate).map { it.toString() }.sortedDescending()
+            }
         }
         if (sharedPreferences.getBoolean("current_year_switch", false)) {
             setSelectedDateSpinnerAndItsDefault(2, 2)
@@ -125,56 +110,13 @@ class SortFilterValues(
         return summit.participants.containsAll(participants)
     }
 
-    fun getSqlQuery(): String {
-        var query = "SELECT *  FROM ${Constants.SUMMITS_TABLE} WHERE isBookmark = 0"
-        query += addSportTypeFilter(sportType)
-        query += addTimeFilter(startDate, endDate)
-        query += addSliderFilter(kilometersSlider)
-        query += addSliderFilter(elevationGainSlider)
-        query += addSliderFilter(topElevationSlider)
-        query += hasImageButtonGroup.query
-        query += hasGpxTrackButtonGroup.query
-        query += hasPositionButtonGroup.query
-        query += peakFavoriteButtonGroup.query
-        query += " ORDER BY ${orderByValueButtonGroup.query} ${orderByAscDescButtonGroup.query};"
-        Log.i("SortFilterValues.", "getSqlQuery() = $query")
-        return query
-    }
-
-    private fun addTimeFilter(startDate: Date?, endDate: Date?): String {
-        return if (startDate != null && endDate != null) {
-            " AND (date BETWEEN ${startDate.time} and ${endDate.time})"
-        } else {
-            ""
-        }
-    }
-
-    private fun addSliderFilter(sliderValues: RangeSliderValues): String {
-        return if (sliderValues.selectedMin in (sliderValues.totalMin + 0.001f)..(sliderValues.totalMax - 0.001f) || sliderValues.selectedMax in (sliderValues.totalMin + 0.001f)..(sliderValues.totalMax - 0.001f)) {
-            " AND (${sliderValues.dbColumnName} BETWEEN " + "${if (sliderValues.selectedMin > sliderValues.totalMin) sliderValues.selectedMin.roundToInt() else sliderValues.totalMin.roundToInt()} " + "and " + "${if (sliderValues.selectedMax < sliderValues.totalMax) sliderValues.selectedMax.roundToInt() else sliderValues.totalMax.roundToInt()}" + ")"
-        } else {
-            ""
-        }
-    }
-
-    private fun addSportTypeFilter(sportType: SportType?): String {
-        return if (sportType != null) {
-            " and sportType == '${sportType.name}'"
-        } else {
-            ""
-        }
-    }
-
     fun setToDefault() {
         selectedDateSpinner = selectedDateSpinnerDefault
         setDates()
         sportType = null
-        kilometersSlider = RangeSliderValues("kilometers",
-            { e -> e.kilometers.toFloat() })
-        topElevationSlider = RangeSliderValues("maxElevation",
-            { e -> e.elevationData.elevationGain.toFloat() })
-        elevationGainSlider = RangeSliderValues("elevationGain",
-            { e -> e.elevationData.maxElevation.toFloat() })
+        kilometersSlider = RangeSliderValues({ e -> e.kilometers.toFloat() })
+        topElevationSlider = RangeSliderValues({ e -> e.elevationData.maxElevation.toFloat() })
+        elevationGainSlider = RangeSliderValues({ e -> e.elevationData.elevationGain.toFloat() })
 
         peakFavoriteButtonGroup = PeakFavoriteButtonGroup.Indifferent
         hasPositionButtonGroup = HasPositionButtonGroup.Indifferent
@@ -184,10 +126,17 @@ class SortFilterValues(
         orderByAscDescButtonGroup = OrderByAscDescButtonGroup.Descending
         orderByValueButtonGroup = OrderByValueButtonGroup.Date
     }
+
+    companion object {
+        fun getYear(date: Date): Int {
+            val calendar: Calendar = GregorianCalendar()
+            calendar.time = date
+            return calendar[Calendar.YEAR]
+        }
+    }
 }
 
 class RangeSliderValues(
-    var dbColumnName: String,
     var getValue: (Summit) -> Float,
     var totalMin: Float = 0f,
     var selectedMin: Float = 0f,

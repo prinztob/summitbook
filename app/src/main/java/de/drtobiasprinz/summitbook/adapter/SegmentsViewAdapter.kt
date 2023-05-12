@@ -16,19 +16,17 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SegmentEntryDetailsFragment
 import de.drtobiasprinz.summitbook.databinding.CardAddSegmentDetailsBinding
 import de.drtobiasprinz.summitbook.databinding.CardSegmentBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Segment
-import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.fragments.AddSegmentEntryFragment
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.dialog.AddSegmentDetailsDialog
 
 
-class SegmentsViewAdapter(var segments: MutableList<Segment>) :
+class SegmentsViewAdapter(var segments: List<Segment>) :
     RecyclerView.Adapter<SegmentsViewAdapter.ViewHolder?>() {
 
     private lateinit var context: Context
-    private var database: AppDatabase? = null
+    var onClickDelete: (Segment) -> Unit = { }
 
     override fun getItemCount(): Int {
         return segments.size + 1
@@ -67,7 +65,6 @@ class SegmentsViewAdapter(var segments: MutableList<Segment>) :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        database = context.let { DatabaseModule.provideDatabase(it) }
         if (holder.binding is CardAddSegmentDetailsBinding) {
             holder.binding.addSegmentDetail.setOnClickListener {
                 (context as AppCompatActivity).supportFragmentManager.let {
@@ -109,7 +106,7 @@ class SegmentsViewAdapter(var segments: MutableList<Segment>) :
 
         binding.entryDelete.setOnClickListener { v: View? ->
             v?.context?.let {
-                showAlertDialog(it, database, segment, v)
+                showAlertDialog(it, segment, v)
             }
         }
         binding.entryEdit.setOnClickListener { _: View? ->
@@ -142,7 +139,6 @@ class SegmentsViewAdapter(var segments: MutableList<Segment>) :
 
     private fun showAlertDialog(
         it: Context,
-        database: AppDatabase?,
         entry: Segment,
         v: View
     ): AlertDialog? {
@@ -155,9 +151,7 @@ class SegmentsViewAdapter(var segments: MutableList<Segment>) :
             )
             .setMessage(v.context.getString(R.string.delete_entry_text))
             .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                database?.let { database.segmentsDao()?.delete(entry) }
-                segments.remove(entry)
-                notifyDataSetChanged()
+                onClickDelete(entry)
                 Toast.makeText(
                     v.context,
                     v.context.getString(

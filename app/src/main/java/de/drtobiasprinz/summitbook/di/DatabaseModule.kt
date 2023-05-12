@@ -9,8 +9,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.utils.Constants.DATABASE
 import javax.inject.Singleton
 
@@ -22,8 +22,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context) = Room.databaseBuilder(
         context, AppDatabase::class.java, DATABASE
-    ).allowMainThreadQueries()
-        .fallbackToDestructiveMigration().build()
+    ).fallbackToDestructiveMigration().build()
 
 
     @Provides
@@ -33,6 +32,18 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideSegmentsDao(db: AppDatabase) = db.segmentsDao()
+
+    @Provides
+    @Singleton
+    fun provideForecastsDao(db: AppDatabase) = db.forecastDao()
+
+    @Provides
+    @Singleton
+    fun provideSolarIntensitiesDao(db: AppDatabase) = db.solarIntensityDao()
+
+    @Provides
+    @Singleton
+    fun provideIgnoredActivityDao(db: AppDatabase) = db.ignoredActivityDao()
 
     @Provides
     @Singleton

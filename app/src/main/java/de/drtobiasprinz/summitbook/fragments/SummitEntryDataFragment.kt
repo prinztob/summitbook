@@ -18,11 +18,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryDataBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import java.util.*
@@ -36,7 +34,6 @@ class SummitEntryDataFragment : Fragment() {
     private lateinit var binding: FragmentSummitEntryDataBinding
 
     private var pageViewModel: PageViewModel? = null
-    private lateinit var database: AppDatabase
     private var summitsToCompare: List<Summit> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,7 +47,6 @@ class SummitEntryDataFragment : Fragment() {
     ): View {
         binding = FragmentSummitEntryDataBinding.inflate(layoutInflater, container, false)
 
-        database = DatabaseModule.provideDatabase(requireContext())
         pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
             it.data.let { summitToView ->
                 if (summitToView != null) {
@@ -61,7 +57,7 @@ class SummitEntryDataFragment : Fragment() {
                         )
                         summitsListData.data.let { summits ->
                             if (summits != null) {
-                                pageViewModel?.summitToVCompare?.observe(viewLifecycleOwner) { summitToCompare ->
+                                pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { summitToCompare ->
                                     val extrema = ExtremaValuesSummits(summits)
                                     if (summitToView.isBookmark) {
                                         binding.summitNameToCompare.visibility = View.GONE
@@ -71,7 +67,12 @@ class SummitEntryDataFragment : Fragment() {
                                             summitToCompare.data
                                         )
                                     }
-                                    setBaseData(summitToView, summitToCompare.data, extrema)
+                                    setBaseData(
+                                        summitToView,
+                                        summitToCompare.data,
+                                        summits,
+                                        extrema
+                                    )
                                     setThirdPartyData(summitToView, summitToCompare.data, extrema)
                                 }
                             }
@@ -86,6 +87,7 @@ class SummitEntryDataFragment : Fragment() {
     private fun setBaseData(
         summitToView: Summit,
         summitToCompare: Summit?,
+        summits: List<Summit>,
         extrema: ExtremaValuesSummits?
     ) {
         binding.tourDate.text = summitToView.getDateAsString()
@@ -196,7 +198,7 @@ class SummitEntryDataFragment : Fragment() {
         setText(summitToView.comments, binding.comments, binding.comments)
         setChipsText(
             R.id.places,
-            summitToView.getPlacesWithConnectedEntryString(requireContext(), database),
+            summitToView.getPlacesWithConnectedEntryString(requireContext(), summits),
             R.drawable.baseline_place_black_24dp
         )
         setChipsText(R.id.countries, summitToView.countries, R.drawable.ic_baseline_flag_24)
@@ -887,10 +889,4 @@ class SummitEntryDataFragment : Fragment() {
         }
         return chip
     }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        database.close()
-    }
-
 }

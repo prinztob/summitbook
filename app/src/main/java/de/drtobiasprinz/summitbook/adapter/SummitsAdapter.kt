@@ -64,6 +64,8 @@ class SummitsAdapter :
                     "%s %s", entity.elevationData.elevationGain, "hm"
                 )
                 addImage(entity)
+
+                setAddVelocityData(entity)
                 if (entity.isBookmark) {
                     entryAddImage.setImageResource(R.drawable.ic_baseline_bookmarks_24)
                     tourDate.text = String.format(
@@ -71,7 +73,6 @@ class SummitsAdapter :
                     )
                     entryFavorite.visibility = View.INVISIBLE
                     entrySummit.visibility = View.INVISIBLE
-                    entryAddVelocityData.visibility = View.INVISIBLE
                 } else {
                     setViewForSummitsOnly(entity)
                 }
@@ -107,18 +108,7 @@ class SummitsAdapter :
 
         }
 
-        private fun CardSummitBinding.setViewForSummitsOnly(entity: Summit) {
-            tourDate.text = entity.getDateAsString()
-            setFavoriteImage(entity, entryFavorite)
-            setMountainImage(entity, entrySummit)
-
-            entryAddImage.setOnClickListener { v: View? ->
-                val context = v?.context
-                val intent = Intent(context, AddImagesActivity::class.java)
-                intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
-                v?.context?.startActivity(intent)
-            }
-
+        private fun CardSummitBinding.setAddVelocityData(entity: Summit) {
             if (entity.velocityData.hasAdditionalData() || entity.elevationData.hasAdditionalData()) {
                 entryAddVelocityData.setImageResource(R.drawable.baseline_speed_black_24dp)
             } else {
@@ -135,6 +125,20 @@ class SummitsAdapter :
                     "Show addition data"
                 )
             }
+        }
+
+        private fun CardSummitBinding.setViewForSummitsOnly(entity: Summit) {
+            tourDate.text = entity.getDateAsString()
+            setFavoriteImage(entity, entryFavorite)
+            setMountainImage(entity, entrySummit)
+
+            entryAddImage.setOnClickListener { v: View? ->
+                val context = v?.context
+                val intent = Intent(context, AddImagesActivity::class.java)
+                intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
+                v?.context?.startActivity(intent)
+            }
+
         }
 
         private fun CardSummitBinding.addImage(item: Summit) {

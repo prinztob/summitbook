@@ -28,9 +28,9 @@ class PageViewModel @Inject constructor(private val repository: DatabaseReposito
     val summitToView: LiveData<DataStatus<Summit>>
         get() = _summitToView
 
-    private val _summitToVCompare = MutableLiveData<DataStatus<Summit?>>()
-    val summitToVCompare: LiveData<DataStatus<Summit?>>
-        get() = _summitToVCompare
+    private val _summitToCompare = MutableLiveData<DataStatus<Summit?>>()
+    val summitToCompare: LiveData<DataStatus<Summit?>>
+        get() = _summitToCompare
 
     init {
         getAllSummits()
@@ -53,15 +53,15 @@ class PageViewModel @Inject constructor(private val repository: DatabaseReposito
 
     fun getSummitToCompare(id: Long) = viewModelScope.launch {
         repository.getDetailsSummit(id).collect {
-            _summitToVCompare.postValue(DataStatus.success(it, false))
+            _summitToCompare.postValue(DataStatus.success(it, false))
         }
     }
 
     fun setSummitToCompareToNull() {
-        _summitToVCompare.postValue(DataStatus.success(null, false))
+        _summitToCompare.postValue(DataStatus.success(null, false))
     }
 
-    fun getAllSegments() = viewModelScope.launch {
+    private fun getAllSegments() = viewModelScope.launch {
         repository.getAllSegments().collect {
             _segmentsList.postValue(DataStatus.success(it, false))
         }

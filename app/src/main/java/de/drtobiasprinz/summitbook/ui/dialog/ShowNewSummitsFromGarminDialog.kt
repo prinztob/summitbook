@@ -2,7 +2,6 @@ package de.drtobiasprinz.summitbook.ui.dialog
 
 import android.content.Context
 import android.graphics.Color
-import android.os.AsyncTask
 import android.os.Bundle
 import android.text.Html
 import android.text.method.LinkMovementMethod
@@ -12,18 +11,22 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.DialogShowNewSummitFromGarminBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -33,6 +36,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
 
     @Inject
     lateinit var summitsAdapter: SummitsAdapter
+    private val viewModel: DatabaseViewModel by viewModels()
 
     private lateinit var binding: DialogShowNewSummitFromGarminBinding
 
@@ -42,9 +46,9 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
     private var showAllButtonEnabled = false
     private lateinit var backButton: ImageButton
     private lateinit var tableLayout: TableLayout
-    private lateinit var database: AppDatabase
     private var activitiesIdIgnored: List<String> = emptyList()
-    var save: (List<Summit>, Boolean) -> Unit = { e, b -> }
+    private var ignoredActivities: List<IgnoredActivity> = emptyList()
+    var save: (List<Summit>, Boolean) -> Unit = { _, _ -> }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -57,86 +61,124 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         super.onViewCreated(view, savedInstanceState)
         currentContext = requireContext()
         val sharedPreferences = context?.let { PreferenceManager.getDefaultSharedPreferences(it) }
-        database = DatabaseModule.provideDatabase(currentContext)
-        updateEntriesWithoutIgnored()
 
-        binding.updateNewSummits.setOnClickListener {
-            if (pythonExecutor != null) {
-                val startDate = sharedPreferences?.getString("garmin_start_date", null) ?: ""
-                val current = LocalDateTime.now()
-                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                val endDate = current.format(formatter)
-                binding.loadingPanel.visibility = View.VISIBLE
-                @Suppress("DEPRECATION") AsyncDownloadActivities(
-                    pythonExecutor,
-                    startDate,
-                    endDate,
-                    this
-                ).execute()
-            } else {
-                Toast.makeText(
-                    context,
-                    getString(R.string.set_user_pwd), Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-        binding.showAll.setOnClickListener {
-            if (showAllButtonEnabled) {
-                binding.showAll.alpha = .5f
-            } else {
-                binding.showAll.alpha = 1f
-            }
-            showAllButtonEnabled = !showAllButtonEnabled
-            updateEntriesWithoutIgnored(showAllButtonEnabled)
-            tableLayout.removeAllViews()
-            drawTable(view)
-        }
-        binding.updateData.isEnabled = false
-        binding.updateData.setOnClickListener {
-            if (areEntriesChecked()) {
-                save(entriesWithoutIgnored.filter { summit -> summit.isSelected }, false)
-                dialog?.dismiss()
-            }
-        }
-        binding.addSummitMerge.isEnabled = false
-        binding.addSummitMerge.setOnClickListener {
-            if (canSelectedSummitsBeMerged()) {
-                save(entriesWithoutIgnored.filter { summit -> summit.isSelected }, true)
-                dialog?.dismiss()
-            }
-        }
-        binding.ignore.isEnabled = false
-        binding.ignore.setOnClickListener {
-            if (areEntriesChecked()) {
-                entriesWithoutIgnored.filter { summit -> summit.isSelected }.forEach {
-                    entriesWithoutIgnored.remove(it)
-                    it.garminData?.activityId?.let { ignoredEntry ->
-                        database.ignoredActivityDao()?.addActivity(IgnoredActivity(ignoredEntry))
+        viewModel.ignoredActivityList.observe(viewLifecycleOwner) {
+            it.data.let { entries ->
+                ignoredActivities = entries ?: emptyList()
+                updateEntriesWithoutIgnored()
+
+                binding.updateNewSummits.setOnClickListener {
+                    if (pythonExecutor != null) {
+                        val startDate =
+                            sharedPreferences?.getString("garmin_start_date", null) ?: ""
+                        val current = LocalDateTime.now()
+                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                        val endDate = current.format(formatter)
+                        binding.loadingPanel.visibility = View.VISIBLE
+                        asyncDownloadActivities(pythonExecutor, startDate, endDate)
+                    } else {
+                        Toast.makeText(
+                            context,
+                            getString(R.string.set_user_pwd), Toast.LENGTH_LONG
+                        ).show()
                     }
                 }
-            }
-            tableLayout.removeAllViews()
-            drawTable(view)
-        }
-        backButton = view.findViewById(R.id.back)
-        backButton.setOnClickListener {
-            dialog?.cancel()
-        }
+                binding.showAll.setOnClickListener {
+                    if (showAllButtonEnabled) {
+                        binding.showAll.alpha = .5f
+                    } else {
+                        binding.showAll.alpha = 1f
+                    }
+                    showAllButtonEnabled = !showAllButtonEnabled
+                    updateEntriesWithoutIgnored(showAllButtonEnabled)
+                    tableLayout.removeAllViews()
+                    drawTable(view)
+                }
+                binding.updateData.isEnabled = false
+                binding.updateData.setOnClickListener {
+                    if (areEntriesChecked()) {
+                        save(entriesWithoutIgnored.filter { summit -> summit.isSelected }, false)
+                        dialog?.dismiss()
+                    }
+                }
+                binding.addSummitMerge.isEnabled = false
+                binding.addSummitMerge.setOnClickListener {
+                    if (canSelectedSummitsBeMerged()) {
+                        save(entriesWithoutIgnored.filter { summit -> summit.isSelected }, true)
+                        dialog?.dismiss()
+                    }
+                }
+                binding.ignore.isEnabled = false
+                binding.ignore.setOnClickListener {
+                    if (areEntriesChecked()) {
+                        entriesWithoutIgnored.filter { summit -> summit.isSelected }
+                            .forEach { summit ->
+                                entriesWithoutIgnored.remove(summit)
+                                summit.garminData?.activityId?.let { ignoredEntry ->
+                                    viewModel.saveIgnoredActivity(IgnoredActivity(ignoredEntry))
+                                }
+                            }
+                    }
+                    tableLayout.removeAllViews()
+                    drawTable(view)
+                }
+                backButton = view.findViewById(R.id.back)
+                backButton.setOnClickListener {
+                    dialog?.cancel()
+                }
 
-        tableLayout = view.findViewById(R.id.tableSummits) as TableLayout
-        drawTable(view)
+                tableLayout = view.findViewById(R.id.tableSummits) as TableLayout
+                drawTable(view)
+            }
+        }
 
     }
 
+    private fun asyncDownloadActivities(
+        pythonExecutor: GarminPythonExecutor?,
+        startDate: String,
+        endDate: String
+    ) {
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    activitiesDir?.let {
+                        pythonExecutor?.downloadActivitiesByDate(
+                            it, startDate, endDate
+                        )
+                    }
+                } catch (e: RuntimeException) {
+                    Log.e("AsyncDownloadActivities", e.message ?: "")
+                }
+            }
+
+            if (activitiesDir?.exists() == true && activitiesDir?.isDirectory == true) {
+                val files = activitiesDir?.listFiles()
+                if (files?.isNotEmpty() == true) {
+                    val edit =
+                        PreferenceManager.getDefaultSharedPreferences(requireContext())
+                            .edit()
+                    edit.putString("garmin_start_date", endDate)
+                    edit.apply()
+                }
+            }
+            updateEntriesWithoutIgnored()
+            tableLayout.removeAllViews()
+            view?.let { drawTable(it) }
+            binding.loadingPanel.visibility = View.GONE
+
+        }
+    }
 
     private fun getAllActivitiesFromThirdParty(): MutableList<Summit> {
         return GarminPythonExecutor.getAllDownloadedSummitsFromGarmin(activitiesDir)
     }
 
     private fun updateEntriesWithoutIgnored(showAll: Boolean = false) {
-        activitiesIdIgnored =
-            database.ignoredActivityDao()?.allIgnoredActivities?.map { it.activityId }
-                ?: emptyList()
+
+        activitiesIdIgnored = ignoredActivities.map {
+            it.activityId
+        }
         val activityIdsInSummitBook =
             summitsAdapter.differ.currentList.filter { !it.garminData?.activityIds.isNullOrEmpty() }
                 .map { it.garminData?.activityIds as List<String> }.flatten()
@@ -145,6 +187,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         } else {
             getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
         }
+
     }
 
     private fun drawTable(view: View) {
@@ -253,59 +296,6 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
 
     private fun areEntriesChecked(): Boolean {
         return entriesWithoutIgnored.map { it.isSelected }.contains(true)
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        database.close()
-    }
-
-    companion object {
-
-        @Suppress("DEPRECATION")
-        class AsyncDownloadActivities(
-            private val pythonExecutor: GarminPythonExecutor?,
-            private val startDate: String,
-            private val endDate: String,
-            val dialog: ShowNewSummitsFromGarminDialog?
-        ) : AsyncTask<Void?, Void?, Void?>() {
-
-            override fun doInBackground(vararg params: Void?): Void? {
-                try {
-                    activitiesDir?.let {
-                        pythonExecutor?.downloadActivitiesByDate(
-                            it, startDate, endDate
-                        )
-                    }
-                } catch (e: java.lang.RuntimeException) {
-                    Log.e("AsyncDownloadActivities", e.message ?: "")
-                }
-                return null
-            }
-
-            override fun onPostExecute(param: Void?) {
-                if (dialog != null) {
-                    if (activitiesDir?.exists() == true && activitiesDir?.isDirectory == true) {
-                        val files = activitiesDir?.listFiles()
-                        if (files?.isNotEmpty() == true) {
-                            val edit =
-                                PreferenceManager.getDefaultSharedPreferences(dialog.requireContext())
-                                    .edit()
-                            edit.putString("garmin_start_date", endDate)
-                            edit.apply()
-                        }
-                    }
-                    dialog.updateEntriesWithoutIgnored()
-                    dialog.tableLayout.removeAllViews()
-                    dialog.view?.let { dialog.drawTable(it) }
-                    dialog.view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility =
-                        View.GONE
-                }
-
-            }
-        }
-
-
     }
 
     override fun getDialogContext(): Context {

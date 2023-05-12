@@ -1,8 +1,8 @@
 package de.drtobiasprinz.summitbook.fragments
 
+import android.content.res.Resources
 import android.graphics.Color
 import android.os.Bundle
-import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,10 +24,10 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentLineChartBinding
-import de.drtobiasprinz.summitbook.models.LineChartSpinnerEntry
-import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.models.LineChartSpinnerEntry
+import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerLineChart
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerView
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
@@ -68,17 +68,8 @@ class LineChartFragment : Fragment() {
     }
 
     private fun resizeChart() {
-        val metrics = DisplayMetrics()
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            val display = activity?.display
-            display?.getRealMetrics(metrics)
-        } else {
-            @Suppress("DEPRECATION")
-            val display = activity?.windowManager?.defaultDisplay
-            @Suppress("DEPRECATION")
-            display?.getMetrics(metrics)
-        }
-        binding.lineChart.minimumHeight = (metrics.heightPixels * 0.7).toInt()
+        binding.lineChart.minimumHeight =
+            (Resources.getSystem().displayMetrics.heightPixels * 0.7).toInt()
     }
 
     private fun drawLineChart(summits: List<Summit>) {

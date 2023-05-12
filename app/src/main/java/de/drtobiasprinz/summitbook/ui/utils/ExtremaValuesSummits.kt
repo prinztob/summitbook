@@ -2,20 +2,11 @@ package de.drtobiasprinz.summitbook.ui.utils
 
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import kotlin.math.ceil
 
 class ExtremaValuesSummits(val entries: List<Summit>, val shouldIndoorActivityBeExcluded: Boolean = false, private val excludeZeroValueFromMin: Boolean = false) {
     var averageSpeedMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.velocityData.avgVelocity }
-    var minAverageSpeed = averageSpeedMinMax?.first?.velocityData?.avgVelocity ?: 0.0
-    var maxAverageSpeed = averageSpeedMinMax?.second?.velocityData?.avgVelocity ?: 0.0
-    val maxAverageSpeedCeil = ceil(averageSpeedMinMax?.second?.velocityData?.avgVelocity
-            ?: 0.0).toInt()
-
     var durationMinMax = getMinMax { e -> if (e.duration < 24.0) e.duration else 0.0 }
     var topSpeedMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.velocityData.maxVelocity }
-    var minTopSpeed = topSpeedMinMax?.first?.velocityData?.maxVelocity ?: 0.0
-    var maxTopSpeed = topSpeedMinMax?.second?.velocityData?.maxVelocity ?: 0.0
-    val maxTopSpeedCeil = ceil(topSpeedMinMax?.second?.velocityData?.maxVelocity ?: 0.0).toInt()
     var oneKmMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.velocityData.oneKilometer }
     var fiveKmMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.velocityData.fiveKilometer }
     var tenKmMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.velocityData.tenKilometers }
@@ -28,17 +19,10 @@ class ExtremaValuesSummits(val entries: List<Summit>, val shouldIndoorActivityBe
     var hundredKmMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.velocityData.hundredKilometers }
 
     var kilometersMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.kilometers }
-    var minKilometers = kilometersMinMax?.first?.kilometers ?: 0.0
-    var maxKilometers = kilometersMinMax?.second?.kilometers ?: 0.0
-    val maxKilometersCeil = ceil(kilometersMinMax?.second?.kilometers ?: 0.0).toInt()
 
     var heightMetersMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.elevationData.elevationGain }
-    var minHeightMeters = heightMetersMinMax?.first?.elevationData?.elevationGain ?: 0
-    var maxHeightMeters = heightMetersMinMax?.second?.elevationData?.elevationGain ?: 0
 
     var topElevationMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.elevationData.maxElevation }
-    var minTopElevation = topElevationMinMax?.first?.elevationData?.maxElevation ?: 0
-    var maxTopElevation = topElevationMinMax?.second?.elevationData?.maxElevation ?: 0
     var topSlopeMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.elevationData.maxSlope }
     var topVerticalVelocity1MinMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.elevationData.maxVerticalVelocity1Min }
     var topVerticalVelocity10MinMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.elevationData.maxVerticalVelocity10Min }

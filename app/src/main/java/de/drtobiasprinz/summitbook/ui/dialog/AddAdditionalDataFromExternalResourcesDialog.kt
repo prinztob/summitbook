@@ -106,6 +106,10 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             val instance = pythonInstance
             if (instance != null) {
                 lifecycleScope.launch {
+                    Log.i(
+                        "AddAdditionalDataFromExternalResourcesDialog.asyncAnalyzeGpsTracks",
+                        "Entry ${summit.name} will be simplified again in order to obtain newest data"
+                    )
                     withContext(Dispatchers.IO) {
                         GpxPyExecutor(instance).createSimplifiedGpxTrack(
                             summit.getGpsTrackPath(
@@ -589,33 +593,6 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             dialog.summitEntry = entry
             return dialog
         }
-
-//        @SuppressLint("StaticFieldLeak")
-//        class AsyncDownloadSpeedDataForActivity(
-//            private val summit: Summit,
-//            var database: AppDatabase
-//        ) : AsyncTask<Void?, Void?, Void?>() {
-//            private var json: JsonObject? = null
-//            override fun doInBackground(vararg params: Void?): Void? {
-//                try {
-//                    summit.garminData?.activityId?.let {
-//                        json = pythonExecutor?.downloadSpeedDataForActivity(it)
-//                    }
-//                } catch (e: java.lang.RuntimeException) {
-//                    Log.e("AsyncDownloadActivities", e.message ?: "")
-//                }
-//                return null
-//            }
-//
-//            override fun onPostExecute(param: Void?) {
-//                val jsonLocal = json
-//                if (jsonLocal != null) {
-//                    setVelocityData(jsonLocal, summit, database)
-//                }
-//            }
-//        }
-
-
     }
 
     class TableEntry(

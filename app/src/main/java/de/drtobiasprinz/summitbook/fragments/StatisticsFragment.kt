@@ -17,12 +17,10 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentStatisticsBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Forecast
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.models.StatisticEntry
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.util.*
@@ -43,11 +41,9 @@ class StatisticsFragment : Fragment() {
     private var annualTargetHm: String = ""
     private var indoorHeightMeterPercent: Int = 0
     private lateinit var sharedPreferences: SharedPreferences
-    lateinit var database: AppDatabase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        database = DatabaseModule.provideDatabase(requireContext())
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         annualTargetActivity = sharedPreferences.getString("annual_target_activities", "52") ?: "52"
         annualTargetKm = sharedPreferences.getString("annual_target_km", "1200") ?: "1200"
@@ -67,36 +63,47 @@ class StatisticsFragment : Fragment() {
         binding.apply {
             viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
                 itData.data?.let { summits ->
-                    val filteredSummits = sortFilterValues.apply(summits)
-                    val sharedPreferences =
-                        PreferenceManager.getDefaultSharedPreferences(requireContext())
-                    val annualTargetActivity =
-                        sharedPreferences.getString("annual_target_activities", "52")?.toInt() ?: 52
-                    val annualTargetKm =
-                        sharedPreferences.getString("annual_target_km", "1200")?.toInt() ?: 1200
-                    val annualTargetHm =
-                        sharedPreferences.getString("annual_target", "50000")?.toInt() ?: 50000
-                    indoorHeightMeterPercent =
-                        sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0
-                    statisticEntry = StatisticEntry(
-                        filteredSummits,
-                        annualTargetActivity,
-                        annualTargetKm,
-                        annualTargetHm,
-                        indoorHeightMeterPercent
-                    )
-                    statisticEntry.calculate()
-                    setProgressBar()
-                    val extremaValuesSummits = ExtremaValuesSummits(
-                        filteredSummits, shouldIndoorActivityBeExcluded = true
-                    )
-                    setTextViews(filteredSummits, extremaValuesSummits)
+                    viewModel.forecastList.observe(viewLifecycleOwner) { itDataForecasts ->
+                        itDataForecasts.data?.let { forecasts ->
+                            val filteredSummits = sortFilterValues.apply(summits)
+                            val sharedPreferences =
+                                PreferenceManager.getDefaultSharedPreferences(requireContext())
+                            val annualTargetActivity =
+                                sharedPreferences.getString("annual_target_activities", "52")
+                                    ?.toInt() ?: 52
+                            val annualTargetKm =
+                                sharedPreferences.getString("annual_target_km", "1200")?.toInt()
+                                    ?: 1200
+                            val annualTargetHm =
+                                sharedPreferences.getString("annual_target", "50000")?.toInt()
+                                    ?: 50000
+                            indoorHeightMeterPercent =
+                                sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0
+                            statisticEntry = StatisticEntry(
+                                filteredSummits,
+                                annualTargetActivity,
+                                annualTargetKm,
+                                annualTargetHm,
+                                indoorHeightMeterPercent
+                            )
+                            statisticEntry.calculate()
+                            setProgressBar()
+                            val extremaValuesSummits = ExtremaValuesSummits(
+                                filteredSummits, shouldIndoorActivityBeExcluded = true
+                            )
+                            setTextViews(filteredSummits, forecasts, extremaValuesSummits)
+                        }
+                    }
                 }
             }
         }
     }
 
-    private fun setTextViews(summits: List<Summit>, extremaValuesSummits: ExtremaValuesSummits?) {
+    private fun setTextViews(
+        summits: List<Summit>,
+        forecasts: List<Forecast>?,
+        extremaValuesSummits: ExtremaValuesSummits?
+    ) {
         if (statisticEntry.getTotalActivities() > 0) {
             binding.textTotalSummits.text = String.format("%s", statisticEntry.getTotalSummits())
             binding.textTotalActivities.text =
@@ -112,7 +119,6 @@ class StatisticsFragment : Fragment() {
             val currentYear: Int = (Calendar.getInstance())[Calendar.YEAR]
             val currentMonth: Int = (Calendar.getInstance())[Calendar.MONTH] + 1
             if (sortFilterValues.wasCurrentYearSelected()) {
-                val forecasts = database.forecastDao()?.allForecasts
                 forecasts?.forEach {
                     it.setActual(
                         summits, indoorHeightMeterPercent

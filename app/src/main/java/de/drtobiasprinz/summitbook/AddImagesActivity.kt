@@ -4,8 +4,6 @@ import android.app.Activity
 import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.drawable.BitmapDrawable
-import android.net.Uri
-import android.os.AsyncTask
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -16,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
@@ -23,15 +22,15 @@ import com.github.dhaval2404.imagepicker.ImagePicker
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.ActivityAddImagesBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
-@Suppress("DEPRECATION")
 @AndroidEntryPoint
 class AddImagesActivity : AppCompatActivity() {
 
@@ -41,7 +40,6 @@ class AddImagesActivity : AppCompatActivity() {
     lateinit var summitsAdapter: SummitsAdapter
     private val viewModel: DatabaseViewModel by viewModels()
 
-    private var database: AppDatabase? = null
     private var summitEntry: Summit? = null
     private var canImageBeOnFirstPosition: Map<Int, Boolean>? = emptyMap()
 
@@ -49,35 +47,37 @@ class AddImagesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityAddImagesBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        database = DatabaseModule.provideDatabase(applicationContext)
         val bundle = intent.extras
         if (bundle != null) {
             val summitEntryId = bundle.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
-            summitEntry = database?.summitsDao()?.getSummitDeprecated(summitEntryId)
-        }
-        val localSummit = summitEntry
-        if (localSummit != null) {
-            binding.summitName.text = localSummit.name
-            binding.back.setOnClickListener {
-                finish()
+            viewModel.getDetailsSummit(summitEntryId)
+            viewModel.summitDetails.observe(this) {
+                it.data.let { summit ->
+                    summitEntry = summit
+                    if (summit != null) {
+                        binding.summitName.text = summit.name
+                        binding.back.setOnClickListener {
+                            finish()
+                        }
+                        binding.sportTypeImage.setImageResource(summit.sportType.imageIdBlack)
+                        drawLayout(summit, binding.images)
+
+                        val data = Intent()
+                        data.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
+                        setResult(Activity.RESULT_OK, data)
+                    }
+                }
             }
-            binding.sportTypeImage.setImageResource(localSummit.sportType.imageIdBlack)
-            drawLayout(localSummit, binding.images)
-
-            val data = Intent()
-            data.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, localSummit.id)
-            setResult(Activity.RESULT_OK, data)
-
         }
     }
 
     private fun drawLayout(localSummit: Summit, layout: RelativeLayout) {
         var id = 0
         if (localSummit.hasImagePath()) {
-            canImageBeOnFirstPosition = summitEntry?.imageIds?.map {
+            canImageBeOnFirstPosition = summitEntry?.imageIds?.associate {
                 val bitmap = BitmapDrawable(resources, localSummit.getImagePath(it).toString())
                 it to (bitmap.bitmap.height < bitmap.bitmap.width)
-            }?.toMap()
+            }
             for ((position, imageId) in localSummit.imageIds.withIndex()) {
                 id = addImage(localSummit, imageId, layout, id, position)
             }
@@ -121,8 +121,13 @@ class AddImagesActivity : AppCompatActivity() {
         removeButton.id = View.generateViewId()
         removeButton.setImageResource(R.drawable.baseline_delete_black_24dp)
         removeButton.setOnClickListener { v: View ->
-            @Suppress("DEPRECATION")
-            AsyncClearCache(Glide.get(applicationContext)).execute()
+
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    Glide.get(applicationContext)
+                }
+            }
+
             AlertDialog.Builder(v.context)
                 .setTitle(v.context.getString(R.string.delete_image, summitEntry?.name))
                 .setMessage(getString(R.string.delete_image_text))
@@ -308,11 +313,6 @@ class AddImagesActivity : AppCompatActivity() {
         summitEntry?.id?.let { outState.putLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        database?.close()
-    }
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
             finish()
@@ -323,15 +323,6 @@ class AddImagesActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         return true
-    }
-
-    companion object {
-        internal class AsyncClearCache(private val glide: Glide) : AsyncTask<Uri, Int?, Void?>() {
-            override fun doInBackground(vararg p0: Uri?): Void? {
-                glide.clearDiskCache()
-                return null
-            }
-        }
     }
 
 }

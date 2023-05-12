@@ -1,8 +1,8 @@
 package de.drtobiasprinz.summitbook.fragments
 
+import android.content.res.Resources
 import android.graphics.Color
 import android.os.Bundle
-import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,7 +10,11 @@ import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
-import com.github.mikephil.charting.components.*
+import androidx.fragment.app.activityViewModels
+import com.github.mikephil.charting.components.Legend
+import com.github.mikephil.charting.components.LegendEntry
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
@@ -20,12 +24,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentLineChartBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.SolarIntensity
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerLineChart
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerViewSolarIntensity
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.time.YearMonth
@@ -35,13 +38,12 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class LineChartSolarFragment : Fragment() {
+    private val viewModel: DatabaseViewModel by activityViewModels()
 
     @Inject
     lateinit var summitsAdapter: SummitsAdapter
-    lateinit var database: AppDatabase
     private lateinit var binding: FragmentLineChartBinding
 
-    private var solarIntensities: List<SolarIntensity>? = null
     private var lineChartEntriesBatteryGain: MutableList<Entry?> = mutableListOf()
     private var lineChartEntriesSolarExposure: MutableList<Entry?> = mutableListOf()
     private var lineChartEntriesActivities: MutableList<Entry?> = mutableListOf()
@@ -54,42 +56,36 @@ class LineChartSolarFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         binding = FragmentLineChartBinding.inflate(layoutInflater, container, false)
-        database = DatabaseModule.provideDatabase(requireContext())
 
         fillDateSpinner()
         summits = summitsAdapter.differ.currentList
-        solarIntensities = database.solarIntensityDao()?.getAll()
-        val numberActivitiesPerDay = summits.groupingBy { it.getDateAsString() }.eachCount()
-        solarIntensities?.forEach {
-            it.activitiesOnDay =
-                if (numberActivitiesPerDay?.keys?.contains(it.getDateAsString()) == true) numberActivitiesPerDay[it.getDateAsString()]
-                    ?: 0 else 0
+        viewModel.solarIntensitiesList.observe(viewLifecycleOwner) { solarListDataStatus ->
+            solarListDataStatus.data.let { solarIntensities ->
+                val numberActivitiesPerDay = summits.groupingBy { it.getDateAsString() }.eachCount()
+                solarIntensities?.forEach {
+                    it.activitiesOnDay =
+                        if (numberActivitiesPerDay.keys.contains(it.getDateAsString())) numberActivitiesPerDay[it.getDateAsString()]
+                            ?: 0 else 0
+                }
+                resizeChart()
+                if (solarIntensities != null) {
+                    listenOnDataSpinner(solarIntensities)
+                    drawLineChart(solarIntensities)
+                }
+            }
         }
-        resizeChart()
-        listenOnDataSpinner()
-        drawLineChart()
         return binding.root
     }
 
     private fun resizeChart() {
-        val metrics = DisplayMetrics()
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            val display = activity?.display
-            display?.getRealMetrics(metrics)
-        } else {
-            @Suppress("DEPRECATION")
-            val display = activity?.windowManager?.defaultDisplay
-            @Suppress("DEPRECATION")
-            display?.getMetrics(metrics)
-        }
-        binding.lineChart.minimumHeight = (metrics.heightPixels * 0.7).toInt()
+        binding.lineChart.minimumHeight =
+            (Resources.getSystem().displayMetrics.heightPixels * 0.7).toInt()
     }
 
-    private fun drawLineChart() {
-        setLineChartEntries()
+    private fun drawLineChart(solarIntensities: List<SolarIntensity>) {
+        setLineChartEntries(solarIntensities)
         val dataSets: MutableList<ILineDataSet?> = ArrayList()
-        binding.lineChart.let { setLegend(it) }
-
+        setLegend(binding.lineChart)
 
         val dataSetBatteryGain = LineDataSet(
             lineChartEntriesBatteryGain,
@@ -132,18 +128,18 @@ class LineChartSolarFragment : Fragment() {
         binding.lineChart.invalidate()
     }
 
-    private fun setLineChartEntries() {
+    private fun setLineChartEntries(solarIntensities: List<SolarIntensity>) {
         val dateFormat: DateFormat = SimpleDateFormat(Summit.DATE_FORMAT, Locale.ENGLISH)
         val data = when (lineChartSpinnerEntry) {
             XAxisSelector.Days -> {
-                solarIntensities?.sortedBy { it.date }
+                solarIntensities.sortedBy { it.date }
             }
             XAxisSelector.Weeks -> {
                 solarIntensities
-                    ?.sortedBy { it.date }
-                    ?.chunked(7)
-                    ?.filter { it.isNotEmpty() }
-                    ?.map { entries ->
+                    .sortedBy { it.date }
+                    .chunked(7)
+                    .filter { it.isNotEmpty() }
+                    .map { entries ->
                         val sorted = entries.sortedBy { it.getDateAsFloat() }
                         val newEntry = SolarIntensity(0,
                             sorted.first().date,
@@ -169,10 +165,10 @@ class LineChartSolarFragment : Fragment() {
                             .atStartOfDay(ZoneId.systemDefault()).toInstant()
                     )
 
-                    val entries = solarIntensities?.filter {
+                    val entries = solarIntensities.filter {
                         it.date.before(endDate) && (it.date.after(startDate) || it.date == startDate)
                     }
-                    val newEntry = if (entries != null && entries.isNotEmpty()) {
+                    val newEntry = if (entries.isNotEmpty()) {
                         SolarIntensity(0,
                             entries.first().date,
                             entries.sumOf { it.solarUtilizationInHours },
@@ -184,7 +180,7 @@ class LineChartSolarFragment : Fragment() {
                             startDate, 0.0, 0.0, true
                         )
                     }
-                    newEntry.activitiesOnDay = entries?.sumOf { it.activitiesOnDay } ?: 0
+                    newEntry.activitiesOnDay = entries.sumOf { it.activitiesOnDay }
                     newEntry.markerText =
                         "${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}"
                     solarIntensitiesLocal.add(newEntry)
@@ -192,20 +188,20 @@ class LineChartSolarFragment : Fragment() {
                 solarIntensitiesLocal.sortedBy { it.date }
             }
         }
-        lineChartEntriesBatteryGain = data?.mapIndexed { index, entry ->
+        lineChartEntriesBatteryGain = data.mapIndexed { index, entry ->
             Entry(index.toFloat(), (entry.solarUtilizationInHours).toFloat(), entry)
-        }?.toMutableList() ?: mutableListOf()
-        lineChartEntriesSolarExposure = data?.mapIndexed { index, entry ->
+        }.toMutableList()
+        lineChartEntriesSolarExposure = data.mapIndexed { index, entry ->
             Entry(index.toFloat(), (entry.solarExposureInHours).toFloat(), entry)
-        }?.toMutableList() ?: mutableListOf()
-        lineChartEntriesActivities = data?.mapIndexed { index, entry ->
+        }.toMutableList()
+        lineChartEntriesActivities = data.mapIndexed { index, entry ->
             Entry(index.toFloat() - 0.5F, entry.activitiesOnDay.toFloat(), entry)
-        }?.toMutableList() ?: mutableListOf()
+        }.toMutableList()
         val lastEntry = lineChartEntriesActivities.last()
         if (lastEntry != null) {
             lineChartEntriesActivities.add(Entry(lastEntry.x + 1f, lastEntry.y))
         }
-        lineChartColors = data?.map { if (it.isForWholeDay) Color.BLUE else Color.RED }
+        lineChartColors = data.map { if (it.isForWholeDay) Color.BLUE else Color.RED }
 
     }
 
@@ -310,7 +306,7 @@ class LineChartSolarFragment : Fragment() {
         legend.isEnabled = true
     }
 
-    private fun listenOnDataSpinner() {
+    private fun listenOnDataSpinner(solarIntensities: List<SolarIntensity>) {
         binding.spinnerData.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onItemSelected(
                 adapterView: AdapterView<*>?,
@@ -320,7 +316,7 @@ class LineChartSolarFragment : Fragment() {
             ) {
                 lineChartSpinnerEntry = XAxisSelector.values()[i]
                 resetChart()
-                drawLineChart()
+                drawLineChart(solarIntensities)
             }
 
             override fun onNothingSelected(adapterView: AdapterView<*>?) {}
@@ -328,7 +324,8 @@ class LineChartSolarFragment : Fragment() {
     }
 
     private fun fillDateSpinner() {
-        val dateAdapter = ArrayAdapter(requireContext(),
+        val dateAdapter = ArrayAdapter(
+            requireContext(),
             android.R.layout.simple_spinner_item,
             XAxisSelector.values().map { resources.getString(it.nameId) }.toTypedArray()
         )

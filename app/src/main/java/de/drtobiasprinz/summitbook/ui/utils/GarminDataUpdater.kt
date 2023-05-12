@@ -2,18 +2,16 @@ package de.drtobiasprinz.summitbook.ui.utils
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.net.Uri
-import android.os.AsyncTask
 import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.Toast
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.SolarIntensity
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
-import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
+import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -22,23 +20,20 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 
-class AsyncUpdateGarminData(
+class GarminDataUpdater(
     val sharedPreferences: SharedPreferences,
     private val pythonExecutor: GarminPythonExecutor,
-    val database: AppDatabase,
-    val entries: List<Summit>,
-    val context: Context,
-    val progressBar: ProgressBar
-) : AsyncTask<Uri, Int?, Void?>() {
-
+    val entries: List<Summit>?,
+    private val solarIntensities: List<SolarIntensity>?,
+    private val databaseViewModel: DatabaseViewModel?
+) {
     private var endDate: String = ""
     private var startDate: String = ""
 
-    override fun doInBackground(vararg uri: Uri): Void? {
+    fun update() {
         startDate = sharedPreferences.getString("garmin_start_date", null) ?: ""
         updateSolarIntensities()
         updateActivities()
-        return null
     }
 
     private fun updateActivities() {
@@ -46,18 +41,31 @@ class AsyncUpdateGarminData(
             val current = LocalDateTime.now()
             val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
             endDate = current.format(formatter)
-            @Suppress("DEPRECATION")
-            ShowNewSummitsFromGarminDialog.Companion.AsyncDownloadActivities(
+            asyncDownloadActivities(
                 pythonExecutor,
                 startDate,
                 endDate,
-                null
-            ).execute()
+            )
+        }
+    }
+
+    private fun asyncDownloadActivities(
+        pythonExecutor: GarminPythonExecutor?,
+        startDate: String,
+        endDate: String
+    ) {
+        try {
+            MainActivity.activitiesDir?.let {
+                pythonExecutor?.downloadActivitiesByDate(
+                    it, startDate, endDate
+                )
+            }
+        } catch (e: RuntimeException) {
+            Log.e("AsyncDownloadActivities", e.message ?: "")
         }
     }
 
     private fun updateSolarIntensities() {
-        val solarIntensities = database.solarIntensityDao()?.getAll()
         val df = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
         if (startDate != "") {
             var deviceId: String? = null
@@ -73,10 +81,14 @@ class AsyncUpdateGarminData(
                     val solarIntensityJson = pythonExecutor
                         .getSolarIntensityForDate(df.format(it.date), deviceIdLocal)
                     val solarIntensity =
-                        solarIntensityJson.let { SolarIntensity.parseFromJson(it) }
+                        solarIntensityJson.let { jsonObject ->
+                            SolarIntensity.parseFromJson(
+                                jsonObject
+                            )
+                        }
                     if (solarIntensity != null) {
                         solarIntensity.entryId = it.entryId
-                        database.solarIntensityDao()?.update(solarIntensity)
+                        databaseViewModel?.saveSolarIntensity(true, solarIntensity)
                     }
                 } catch (e: RuntimeException) {
                     Log.e("AsyncUpdateGarminData", e.message ?: "")
@@ -105,11 +117,10 @@ class AsyncUpdateGarminData(
                             solarIntensities.firstOrNull { it.date == dateToCheck }
                         if (entryToUpdate != null) {
                             solarIntensity.entryId = entryToUpdate.entryId
-                            database.solarIntensityDao()?.update(solarIntensity)
+                            databaseViewModel?.saveSolarIntensity(true, solarIntensity)
                         } else {
-                            database.solarIntensityDao()?.add(solarIntensity)
+                            databaseViewModel?.saveSolarIntensity(false, solarIntensity)
                         }
-                        solarIntensities.add(solarIntensity)
                     }
                 } catch (e: RuntimeException) {
                     Log.e("AsyncUpdateGarminData", e.message ?: "")
@@ -118,7 +129,7 @@ class AsyncUpdateGarminData(
         }
     }
 
-    override fun onPostExecute(param: Void?) {
+    fun onFinish(progressBar: ProgressBar, context: Context) {
         progressBar.visibility = View.GONE
         val edit = sharedPreferences.edit()
         edit.putString("garmin_start_date", endDate)

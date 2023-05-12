@@ -6,12 +6,6 @@ import android.content.res.TypedArray
 import android.util.AttributeSet
 import androidx.preference.DialogPreference
 
-
-/**
- * A dialog preference that shown calendar in the dialog.
- *
- * Saves a string value.
- */
 class DatePreference(context: Context, attrs: AttributeSet?) : DialogPreference(context, attrs) {
     private var mDateValue: String? = null
     override fun onGetDefaultValue(a: TypedArray, index: Int): Any {

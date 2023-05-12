@@ -91,10 +91,10 @@ class SegmentEntryDetailsFragment : Fragment() {
                             summits?.firstOrNull { it.activityId == entry.activityId }
                         }
                         if (segmentEntryId == -1L) {
-                            segmentEntryId = segmentToUse?.segmentEntries?.let { sorter(it).first() }?.entryId ?: -1
+                            segmentEntryId = segmentToUse?.segmentEntries?.let { sorter(it).firstOrNull() }?.entryId ?: -1
                         }
                         segmentEntryToShow =
-                            if (segmentEntryId == -1L) segmentToUse?.segmentEntries?.let { sorter(it).first() } else segmentToUse?.segmentEntries?.firstOrNull { it.entryId == segmentEntryId }
+                            if (segmentEntryId == -1L) segmentToUse?.segmentEntries?.let { sorter(it).firstOrNull() } else segmentToUse?.segmentEntries?.firstOrNull { it.entryId == segmentEntryId }
                         summitShown =
                             relevantSummits?.firstOrNull { it?.activityId == segmentEntryToShow?.activityId }
                         prepareMap()
@@ -609,7 +609,7 @@ class SegmentEntryDetailsFragment : Fragment() {
         val removeButton = ImageButton(view.context)
         removeButton.setImageResource(R.drawable.ic_baseline_delete_24)
         removeButton.setOnClickListener {
-            viewModel.deleteSegment(entry)
+            viewModel.deleteSegmentEntry(entry)
         }
         tr.addView(removeButton)
 

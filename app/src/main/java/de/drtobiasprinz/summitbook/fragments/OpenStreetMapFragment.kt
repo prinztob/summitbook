@@ -129,8 +129,8 @@ class OpenStreetMapFragment : Fragment() {
             )
         }
 
-        binding.showAllTracks.setOnClickListener { _: View? ->
-            showAllTracksOfSummitInBoundingbox()
+        binding.showAllTracks.setOnClickListener {
+            showAllTracksOfSummitInBoundingBox()
         }
 
 //        requireActivity().findViewById<View>(R.id.add_new_summit).visibility = View.INVISIBLE
@@ -150,7 +150,7 @@ class OpenStreetMapFragment : Fragment() {
         }
     }
 
-    private fun showAllTracksOfSummitInBoundingbox() {
+    private fun showAllTracksOfSummitInBoundingBox() {
         var pointsShown = mMarkersShown.sumOf {
             (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size ?: 0
         }

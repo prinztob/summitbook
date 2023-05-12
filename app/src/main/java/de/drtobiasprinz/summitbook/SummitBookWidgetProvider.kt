@@ -30,7 +30,7 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
         val entries = database.summitsDao().allSummit
 
         if (entries != null) {
-            val forecasts = database.forecastDao()?.allForecasts
+            val forecasts = database.forecastDao().allForecastsDeprecated
 
             val thisWidget = ComponentName(context, SummitBookWidgetProvider::class.java)
             val allWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)

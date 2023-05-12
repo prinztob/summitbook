@@ -5,9 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import de.drtobiasprinz.summitbook.db.entities.Segment
-import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
-import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import kotlinx.coroutines.flow.catch
@@ -30,6 +28,18 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val segmentsList: LiveData<DataStatus<List<Segment>>>
         get() = _segmentsList
 
+    private val _forecastsList = MutableLiveData<DataStatus<List<Forecast>>>()
+    val forecastList: LiveData<DataStatus<List<Forecast>>>
+        get() = _forecastsList
+
+    private val _solarIntensitiesList = MutableLiveData<DataStatus<List<SolarIntensity>>>()
+    val solarIntensitiesList: LiveData<DataStatus<List<SolarIntensity>>>
+        get() = _solarIntensitiesList
+
+    private val _ignoredActivityList = MutableLiveData<DataStatus<List<IgnoredActivity>>>()
+    val ignoredActivityList: LiveData<DataStatus<List<IgnoredActivity>>>
+        get() = _ignoredActivityList
+
     private val _summitDetails = MutableLiveData<DataStatus<Summit>>()
     val summitDetails: LiveData<DataStatus<Summit>>
         get() = _summitDetails
@@ -37,6 +47,9 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     init {
         getAllSummits()
         getAllSegments()
+        getAllForecasts()
+        getAllSolarIntensities()
+        getAllIgnoredActivities()
     }
 
     fun refresh() {
@@ -81,14 +94,83 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         }
     }
 
-    fun getAllSegments() = viewModelScope.launch {
+    private fun getAllSegments() = viewModelScope.launch {
         repository.getAllSegments().collect {
             _segmentsList.postValue(DataStatus.success(it, false))
         }
     }
 
-    fun deleteSegment(entity: SegmentEntry) = viewModelScope.launch {
+    fun deleteSegmentEntry(entity: SegmentEntry) = viewModelScope.launch {
         repository.deleteSegmentEntry(entity)
+    }
+
+    fun deleteSegment(entity: Segment) = viewModelScope.launch {
+        repository.deleteSegment(entity)
+    }
+
+    fun saveSegmentDetails(isEdite: Boolean, entity: SegmentDetails) = viewModelScope.launch {
+        if (isEdite) {
+            repository.updateSegmentDetails(entity)
+        } else {
+            entity.segmentDetailsId = repository.saveSegmentDetails(entity)
+        }
+    }
+
+    fun saveSegmentEntry(isEdite: Boolean, entity: SegmentEntry) = viewModelScope.launch {
+        if (isEdite) {
+            repository.updateSegmentEntry(entity)
+        } else {
+            repository.saveSegmentEntry(entity)
+        }
+    }
+
+    private fun getAllForecasts() = viewModelScope.launch {
+        repository.getAllForecasts().collect {
+            _forecastsList.postValue(DataStatus.success(it, false))
+        }
+    }
+
+    fun saveForecast(isEdite: Boolean, entity: Forecast) = viewModelScope.launch {
+        if (isEdite) {
+            repository.updateForecast(entity)
+        } else {
+            repository.saveForecast(entity)
+        }
+    }
+
+    fun saveForecasts(isEdite: Boolean, entities: List<Forecast>) = viewModelScope.launch {
+        entities.forEach { entity ->
+            if (isEdite) {
+                repository.updateForecast(entity)
+            } else {
+                repository.saveForecast(entity)
+            }
+        }
+    }
+
+
+    private fun getAllSolarIntensities() = viewModelScope.launch {
+        repository.getAllSolarIntensities().collect {
+            _solarIntensitiesList.postValue(DataStatus.success(it, false))
+        }
+    }
+
+    fun saveSolarIntensity(isEdite: Boolean, entity: SolarIntensity) = viewModelScope.launch {
+        if (isEdite) {
+            repository.updateSolarIntensity(entity)
+        } else {
+            repository.saveSolarIntensity(entity)
+        }
+    }
+
+    private fun getAllIgnoredActivities() = viewModelScope.launch {
+        repository.getIgnoredActivities().collect {
+            _ignoredActivityList.postValue(DataStatus.success(it, false))
+        }
+    }
+
+    fun saveIgnoredActivity(entity: IgnoredActivity) = viewModelScope.launch {
+        repository.saveIgnoredActivity(entity)
     }
 
 }

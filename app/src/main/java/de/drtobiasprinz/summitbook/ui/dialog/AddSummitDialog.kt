@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.dialog
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Context
@@ -9,7 +8,6 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
-import android.os.AsyncTask
 import android.os.Bundle
 import android.text.*
 import android.util.Log
@@ -36,10 +34,8 @@ import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.DialogAddSummitBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.CONNECTED_ACTIVITY_PREFIX
-import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
@@ -47,6 +43,7 @@ import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
 import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
@@ -82,8 +79,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     @Inject
     lateinit var summitsAdapter: SummitsAdapter
 
-
-    lateinit var database: AppDatabase
     private val viewModel: DatabaseViewModel by activityViewModels()
 
     private lateinit var binding: DialogAddSummitBinding
@@ -112,7 +107,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     ): View {
         binding = DialogAddSummitBinding.inflate(layoutInflater, container, false)
         dialog!!.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        database = DatabaseModule.provideDatabase(requireContext())
         return binding.root
     }
 
@@ -146,16 +140,21 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 summits.flatMap { it.equipments }.distinct().filter { it != "" })
             placesAdapter = getPlacesSuggestions()
             summitName.setAdapter(getPlacesSuggestions(false))
-            if (type == EDIT) {
-                val summitToEdit = summits.firstOrNull { it.id == summitId }
-                if (summitToEdit != null) {
-                    entity = summitToEdit
-                    updateBaseBindings(view)
-                    updateDialogFields(true)
-                    btnSave.text = getString(R.string.update)
+
+            viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
+                itData.data?.let { summits ->
+                    if (type == EDIT) {
+                        val summitToEdit = summits.firstOrNull { it.id == summitId }
+                        if (summitToEdit != null) {
+                            entity = summitToEdit
+                            updateBaseBindings(view, summits)
+                            updateDialogFields(true)
+                            btnSave.text = getString(R.string.update)
+                        }
+                    } else {
+                        updateBaseBindings(view, summits)
+                    }
                 }
-            } else {
-                updateBaseBindings(view)
             }
 
             btnSave.setOnClickListener {
@@ -200,12 +199,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                         val executor = pythonExecutor
                         if (executor != null) {
                             binding.loadingPanel.visibility = View.VISIBLE
-                            @Suppress("DEPRECATION")
-                            AsyncDownloadJsonViaPython(
-                                executor,
-                                dateAsString,
-                                this@AddSummitDialog
-                            ).execute()
+                            pythonExecutor?.let { it1 -> downloadJsonViaPython(dateAsString, it1) }
                         } else {
                             Toast.makeText(
                                 context,
@@ -222,6 +216,53 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 setExpandMoreButtons()
             }
         }
+    }
+
+    private fun downloadJsonViaPython(dateAsString: String, pythonExecutor: GarminPythonExecutor) {
+        var entries: List<Summit> = emptyList()
+        var powerData: JsonObject? = null
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    val allKnownEntries = getAllDownloadedSummitsFromGarmin(activitiesDir)
+                    val firstDate =
+                        allKnownEntries.minByOrNull { it.getDateAsFloat() }?.getDateAsString()
+                    val lastDate =
+                        allKnownEntries.maxByOrNull { it.getDateAsFloat() }?.getDateAsString()
+                    val knownEntriesOnDate =
+                        allKnownEntries.filter { it.getDateAsString() == dateAsString }
+                    entries =
+                        if (dateAsString != firstDate && dateAsString != lastDate && knownEntriesOnDate.isNotEmpty()) {
+                            knownEntriesOnDate
+                        } else {
+                            pythonExecutor.getActivityJsonAtDate(dateAsString)
+                        }
+                    powerData = getPowerDataFromEntries(entries, pythonExecutor, dateAsString)
+                } catch (e: RuntimeException) {
+                    Log.e("AsyncDownloadJsonViaPython", e.message ?: "")
+                }
+            }
+            if (entries.isNotEmpty()) {
+                showSummitsDialog(
+                    pythonExecutor, entries, binding.loadingPanel, powerData
+                )
+            } else {
+                binding.loadingPanel.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun getPowerDataFromEntries(
+        entries: List<Summit>,
+        pythonExecutor: GarminPythonExecutor,
+        dateAsString: String
+    ): JsonObject? {
+        for (entry in entries) {
+            if (entry.sportType == SportType.BikeAndHike) {
+                return pythonExecutor.getMultiSportPowerData(dateAsString)
+            }
+        }
+        return null
     }
 
     private fun DialogAddSummitBinding.setExpandMoreButtons() {
@@ -259,7 +300,8 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
     private fun DialogAddSummitBinding.updateBaseBindings(
-        view: View
+        view: View,
+        summits: List<Summit>
     ) {
         heightMeter.addTextChangedListener(watcher)
         kilometers.addTextChangedListener(watcher)
@@ -279,7 +321,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 .toTypedArray()
         )
         setImageColor()
-        addPlaces(view)
+        addPlaces(view, summits)
         addCountries(view)
         addParticipants(view)
         addEquipments(view)
@@ -298,7 +340,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
 
-    fun showSummitsDialog(
+    private fun showSummitsDialog(
         pythonExecutor: GarminPythonExecutor,
         entries: List<Summit>,
         progressBar: RelativeLayout,
@@ -418,10 +460,10 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         )
     }
 
-    private fun addPlaces(view: View) {
+    private fun addPlaces(view: View, summits: List<Summit>) {
         CustomAutoCompleteChips(view).addChips(
             placesAdapter, entity.getPlacesWithConnectedEntryString(
-                requireContext(), database
+                requireContext(), summits
             ), binding.autoCompleteTextViewPlaces, binding.chipGroupPlaces
         )
     }
@@ -611,30 +653,21 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         }
         if (temporaryGpxFile == null) {
             temporaryGpxFile = GarminTrackAndDataDownloader.getTempGpsFilePath(
-                SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(
-                    Date()
-                )
+                SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(Date())
             ).toFile()
         }
         if (uri != null) {
-            context?.contentResolver?.openInputStream(uri)?.use { inputStream ->
+            requireContext().contentResolver?.openInputStream(uri)?.use { inputStream ->
                 uploadGpxFile(inputStream, entity, view)
                 view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility = View.VISIBLE
-                var python = MainActivity.pythonInstance
+                var python = pythonInstance
                 if (python == null) {
                     if (!Python.isStarted()) {
                         Python.start(AndroidPlatform(requireContext()))
                     }
                     python = Python.getInstance()
                 }
-                AsyncAnalyzeGpsTracks(
-                    entity,
-                    python,
-                    database,
-                    binding,
-                    view?.resources?.configuration?.locales?.get(0) ?: Locale.ENGLISH,
-                    false
-                ).execute()
+                asyncAnalyzeGpsTracks(entity, python)
             }
         }
     }
@@ -706,11 +739,11 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         var month = calendar[Calendar.MONTH]
         var year = calendar[Calendar.YEAR]
         if (eText.text.toString().trim() != "") {
-            val dateSplitted = eText.text.toString().trim().split("-".toRegex()).toTypedArray()
-            if (dateSplitted.size == 3) {
-                day = dateSplitted[2].toInt()
-                month = dateSplitted[1].toInt() - 1
-                year = dateSplitted[0].toInt()
+            val dateSplit = eText.text.toString().trim().split("-".toRegex()).toTypedArray()
+            if (dateSplit.size == 3) {
+                day = dateSplit[2].toInt()
+                month = dateSplit[1].toInt() - 1
+                year = dateSplit[0].toInt()
             }
         }
         val picker = DatePickerDialog(
@@ -826,6 +859,107 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         return countries
     }
 
+    private fun asyncAnalyzeGpsTracks(entry: Summit, python: Python) {
+        var highestElevation: TrackPoint? = null
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    if (entry.hasGpsTrack()) {
+                        Log.i(
+                            "AddSummitDialog.asyncAnalyzeGpsTracks",
+                            "Entry ${entry.name} will be simplified"
+                        )
+                        GpxPyExecutor(python).createSimplifiedGpxTrack(entry.getGpsTrackPath())
+                        entry.setGpsTrack()
+                        highestElevation = entry.gpsTrack?.getHighestElevation()
+                        entry.gpsTrack?.setDistance()
+
+                    } else {
+                        Log.i(
+                            "asyncAnalyzeGpsTracks",
+                            "Entry ${entry.name} has no gpx track -> Nothing to simplify"
+                        )
+                    }
+                } catch (ex: RuntimeException) {
+                    Log.e("asyncAnalyzeGpsTracks", "Error in simplify track: ${ex.message}")
+                }
+
+            }
+            Log.i("asyncAnalyzeGpaTracks", "Gpx tracks simplified.")
+            binding.loadingPanel.visibility = View.GONE
+            entry.lat = highestElevation?.lat
+            entry.lng = highestElevation?.lon
+            entry.latLng = highestElevation
+            viewModel.saveSummit(true, entry)
+            val gpsTrack = entry.gpsTrack
+            if (gpsTrack != null) {
+                val nameFromTrack = gpsTrack.gpxTrack?.metadata?.name
+                    ?: gpsTrack.gpxTrack?.tracks?.toList()?.blockingGet()?.first()?.name
+                binding.summitName.setText(nameFromTrack)
+                if (gpsTrack.hasNoTrackPoints()) {
+                    gpsTrack.parseTrack(useSimplifiedIfExists = false)
+                }
+            }
+            val gpxPyJsonFile = entry.getGpxPyPath().toFile()
+            if (gpxPyJsonFile.exists()) {
+                val gpxPyJson =
+                    JsonParser.parseString(JsonUtils.getJsonData(gpxPyJsonFile)) as JsonObject
+
+                val elevationGain = try {
+                    gpxPyJson.getAsJsonPrimitive("elevation_gain").asDouble.roundToInt()
+                } catch (_: ClassCastException) {
+                    0
+                }
+                entry.elevationData.elevationGain = elevationGain
+                binding.heightMeter.filters = arrayOf()
+                binding.heightMeter.setText(elevationGain.toString())
+                binding.heightMeter.filters =
+                    arrayOf<InputFilter>(InputFilterMinMax(0, 9999))
+
+                val maxElevation = try {
+                    gpxPyJson.getAsJsonPrimitive("max_elevation").asDouble.roundToInt()
+                } catch (_: ClassCastException) {
+                    0
+                }
+                if (maxElevation > 0) {
+                    entry.elevationData.maxElevation = maxElevation
+                    binding.topElevation.setText(maxElevation.toString())
+                }
+                var distance = try {
+                    gpxPyJson.getAsJsonPrimitive("moving_distance").asDouble / 1000
+                } catch (_: ClassCastException) {
+                    0.0
+                }
+                if (distance == 0.0 && gpsTrack != null) {
+                    distance = (gpsTrack.trackPoints.last().extension?.distance
+                        ?: 0.0) / 1000
+                }
+                entry.kilometers = distance
+                binding.kilometers.filters = arrayOf()
+                binding.kilometers.setText(
+                    String.format(
+                        requireContext().resources.configuration.locales[0],
+                        "%.1f",
+                        distance
+                    )
+                )
+                binding.kilometers.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
+                val movingDuration = try {
+                    gpxPyJson.getAsJsonPrimitive("moving_time").asDouble
+                } catch (_: ClassCastException) {
+                    0.0
+                }
+                if (movingDuration > 0) {
+                    val pace = distance / movingDuration * 3600
+                    entry.velocityData.avgVelocity = pace
+                    if (!isBookmark) {
+                        binding.pace.setText(pace.toString())
+                    }
+                }
+            }
+        }
+    }
+
     companion object {
 
         private fun setTextIfNotAlreadySet(editText: EditText, setValue: String) {
@@ -841,166 +975,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             ) 0.0f else jsonObject["power"].asFloat
         }
 
-        class AsyncDownloadJsonViaPython(
-            private val pythonExecutor: GarminPythonExecutor,
-            private val dateAsString: String,
-            private val addSummitDialog: AddSummitDialog? = null
-        ) : AsyncTask<Void?, Void?, Void?>() {
-
-            var entries: List<Summit>? = null
-            private var powerData: JsonObject? = null
-
-            override fun doInBackground(vararg params: Void?): Void? {
-                try {
-                    val allKnownEntries = getAllDownloadedSummitsFromGarmin(activitiesDir)
-                    val firstDate =
-                        allKnownEntries.minByOrNull { it.getDateAsFloat() }?.getDateAsString()
-                    val lastDate =
-                        allKnownEntries.maxByOrNull { it.getDateAsFloat() }?.getDateAsString()
-                    val knownEntriesOnDate =
-                        allKnownEntries.filter { it.getDateAsString() == dateAsString }
-                    entries =
-                        if (dateAsString != firstDate && dateAsString != lastDate && knownEntriesOnDate.isNotEmpty()) {
-                            knownEntriesOnDate
-                        } else {
-                            pythonExecutor.getActivityJsonAtDate(dateAsString)
-                        }
-                    powerData = getPowerDataFromEntries(entries)
-                } catch (e: RuntimeException) {
-                    Log.e("AsyncDownloadJsonViaPython", e.message ?: "")
-                }
-                return null
-            }
-
-            private fun getPowerDataFromEntries(entries: List<Summit>?): JsonObject? {
-                if (entries != null) {
-                    for (entry in entries) {
-                        if (entry.sportType == SportType.BikeAndHike) {
-                            return pythonExecutor.getMultiSportPowerData(dateAsString)
-                        }
-                    }
-                }
-                return null
-            }
-
-            override fun onPostExecute(param: Void?) {
-                val entriesLocal = entries
-                val progressBar =
-                    addSummitDialog?.view?.findViewById<RelativeLayout>(R.id.loadingPanel)
-                if (entriesLocal != null) {
-                    if (progressBar != null) {
-                        addSummitDialog?.showSummitsDialog(
-                            pythonExecutor, entriesLocal, progressBar, powerData
-                        )
-                    }
-                } else {
-                    progressBar?.visibility = View.GONE
-                }
-            }
-        }
-
-        @SuppressLint("StaticFieldLeak")
-        class AsyncAnalyzeGpsTracks(
-            private val entry: Summit?,
-            private val pythonInstance: Python,
-            private val database: AppDatabase,
-            private val binding: DialogAddSummitBinding,
-            private val locale: Locale,
-            private val isBookmark: Boolean = true
-        ) : AsyncTask<Uri, Int?, Void?>() {
-            private var highestElevation: TrackPoint? = null
-            override fun doInBackground(vararg uri: Uri): Void? {
-                try {
-                    if (entry?.hasGpsTrack() == true) {
-                        GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(entry.getGpsTrackPath())
-                        entry.setGpsTrack()
-                        highestElevation = entry.gpsTrack?.getHighestElevation()
-                        entry.gpsTrack?.setDistance()
-                    }
-                } catch (ex: RuntimeException) {
-                    Log.e("AsyncAnalyzeGpaTracks", "Error in simplify track: ${ex.message}")
-                }
-                return null
-            }
-
-            override fun onPostExecute(param: Void?) {
-                Log.i("AsyncAnalyzeGpaTracks", "Gpx tracks simplified.")
-                binding.loadingPanel.visibility = View.GONE
-                if (entry != null) {
-                    entry.lat = highestElevation?.lat
-                    entry.lng = highestElevation?.lon
-                    entry.latLng = highestElevation
-                    highestElevation?.lat?.let { database.summitsDao().updateLat(entry.id, it) }
-                    highestElevation?.lon?.let { database.summitsDao().updateLng(entry.id, it) }
-                    val gpsTrack = entry.gpsTrack
-                    if (gpsTrack != null) {
-                        val nameFromTrack = gpsTrack.gpxTrack?.metadata?.name
-                            ?: gpsTrack.gpxTrack?.tracks?.toList()?.blockingGet()?.first()?.name
-                        binding.summitName.setText(nameFromTrack)
-                        if (gpsTrack.hasNoTrackPoints()) {
-                            gpsTrack.parseTrack(useSimplifiedIfExists = false)
-                        }
-                    }
-                    val gpxPyJsonFile = entry.getGpxPyPath().toFile()
-                    if (gpxPyJsonFile.exists()) {
-                        val gpxPyJson =
-                            JsonParser.parseString(JsonUtils.getJsonData(gpxPyJsonFile)) as JsonObject
-
-                        val elevationGain = try {
-                            gpxPyJson.getAsJsonPrimitive("elevation_gain").asDouble.roundToInt()
-                        } catch (_: ClassCastException) {
-                            0
-                        }
-                        entry.elevationData.elevationGain = elevationGain
-                        binding.heightMeter.filters = arrayOf()
-                        binding.heightMeter.setText(elevationGain.toString())
-                        binding.heightMeter.filters =
-                            arrayOf<InputFilter>(InputFilterMinMax(0, 9999))
-
-                        val maxElevation = try {
-                            gpxPyJson.getAsJsonPrimitive("max_elevation").asDouble.roundToInt()
-                        } catch (_: ClassCastException) {
-                            0
-                        }
-                        if (maxElevation > 0) {
-                            entry.elevationData.maxElevation = maxElevation
-                            binding.topElevation.setText(maxElevation.toString())
-                        }
-                        var distance = try {
-                            gpxPyJson.getAsJsonPrimitive("moving_distance").asDouble / 1000
-                        } catch (_: ClassCastException) {
-                            0.0
-                        }
-                        if (distance == 0.0 && gpsTrack != null) {
-                            distance = (gpsTrack.trackPoints.last().extension?.distance
-                                ?: 0.0) / 1000
-                        }
-                        entry.kilometers = distance
-                        binding.kilometers.filters = arrayOf()
-                        binding.kilometers.setText(
-                            String.format(
-                                locale,
-                                "%.1f",
-                                distance
-                            )
-                        )
-                        binding.kilometers.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
-                        val movingDuration = try {
-                            gpxPyJson.getAsJsonPrimitive("moving_time").asDouble
-                        } catch (_: ClassCastException) {
-                            0.0
-                        }
-                        if (movingDuration > 0) {
-                            val pace = distance / movingDuration * 3600
-                            entry.velocityData.avgVelocity = pace
-                            if (!isBookmark) {
-                                binding.pace.setText(pace.toString())
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
     }
 

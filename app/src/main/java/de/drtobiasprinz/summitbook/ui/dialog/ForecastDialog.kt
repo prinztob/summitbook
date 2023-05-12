@@ -1,7 +1,6 @@
 package de.drtobiasprinz.summitbook.ui.dialog
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Bundle
@@ -10,29 +9,27 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.viewModels
 import androidx.preference.PreferenceManager
 import com.google.android.material.slider.Slider
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.DialogForecastBinding
-import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Forecast.Companion.getSumForYear
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.di.DatabaseModule
+import de.drtobiasprinz.summitbook.models.SortFilterValues.Companion.getYear
+import de.drtobiasprinz.summitbook.utils.DataStatus
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.util.*
 import kotlin.math.round
 
 @AndroidEntryPoint
 class ForecastDialog : DialogFragment() {
-    private lateinit var database: AppDatabase
-
     private lateinit var binding: DialogForecastBinding
     private lateinit var sharedPreferences: SharedPreferences
+    private val viewModel: DatabaseViewModel by viewModels()
 
-    private lateinit var currentContext: Context
-    private lateinit var forecasts: ArrayList<Forecast>
-    private lateinit var summits: List<Summit>
     private var selectedSegmentedYear: Int = 0
     private var selectedSegmentedForecastProperty: Int = 0
     private var currentYear: Int = (Calendar.getInstance())[Calendar.YEAR]
@@ -47,10 +44,8 @@ class ForecastDialog : DialogFragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
-        currentContext = requireContext()
         binding = DialogForecastBinding.inflate(layoutInflater, container, false)
-        database = DatabaseModule.provideDatabase(currentContext)
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(currentContext)
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         return binding.root
     }
 
@@ -60,58 +55,104 @@ class ForecastDialog : DialogFragment() {
         annualTargetActivity = sharedPreferences.getString("annual_target_activities", "52") ?: "52"
         annualTargetKm = sharedPreferences.getString("annual_target_km", "1200") ?: "1200"
         annualTargetHm = sharedPreferences.getString("annual_target", "50000") ?: "50000"
-
-        forecasts = database.forecastDao()?.allForecasts as ArrayList<Forecast>
         val range: Date = Summit.parseDate("${currentYear}-01-01")
+        viewModel.summitsList.observe(viewLifecycleOwner,
+            object : androidx.lifecycle.Observer<DataStatus<List<Summit>>> {
+                override fun onChanged(summitsListDataStatus: DataStatus<List<Summit>>?) {
+                    summitsListDataStatus?.data.let { summits ->
+                        val summitsForSelectedYear =
+                            summits?.filter { summit -> getYear(summit.date) == getYear(range) }
+                        viewModel.forecastList.observe(viewLifecycleOwner) { itDataStatusForecasts ->
+                            itDataStatusForecasts.data.let { forecasts ->
+                                val forecastsOriginal = forecasts?.map { it.copy() } ?: emptyList()
+                                setMissingForecasts(yearsWithForecasts, forecasts)
 
-        summits = database.summitsDao().getAllSummitForYear(range.time) as List<Summit>
-        setMissingForecasts(yearsWithForecasts, database)
-        setAchievement()
-        setForecastsInDialog(yearsWithForecasts[selectedSegmentedYear], view)
-        setOverview(yearsWithForecasts[selectedSegmentedYear])
+                                if (forecasts != null) {
+                                    if (summitsForSelectedYear != null) {
+                                        setAchievement(forecasts, summitsForSelectedYear)
+                                    }
+                                    setForecastsInDialog(
+                                        forecasts,
+                                        yearsWithForecasts[selectedSegmentedYear],
+                                        view
+                                    )
+                                    setOverview(
+                                        forecasts,
+                                        yearsWithForecasts[selectedSegmentedYear]
+                                    )
+                                }
 
-        binding.back.setOnClickListener {
-            dialog?.dismiss()
-        }
-        binding.save.setOnClickListener {
-            forecasts.forEach {
-                database.forecastDao()?.updateForecast(it)
-            }
-            dialog?.dismiss()
-        }
-        binding.groupForecastProperty.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                selectedSegmentedForecastProperty = checkedId
-                setOverview(yearsWithForecasts[selectedSegmentedYear])
-                setForecastsInDialog(yearsWithForecasts[selectedSegmentedYear], view)
-            }
-        }
-        binding.groupYear.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                selectedSegmentedYear = if (checkedId == binding.buttonCurrentYear.id) 0 else 1
-                setOverview(yearsWithForecasts[selectedSegmentedYear])
-                setForecastsInDialog(yearsWithForecasts[selectedSegmentedYear], view)
-            }
-        }
+                                binding.back.setOnClickListener {
+                                    dialog?.dismiss()
+                                }
+                                binding.save.setOnClickListener {
+                                    binding.loadingPanel.visibility = View.VISIBLE
+                                    viewModel.summitsList.removeObserver(this)
+                                    if (forecasts != null) {
+                                        val forecastsWithChanges = forecasts.filter { forecast ->
+                                            !forecastsOriginal.any {
+                                                it.equalsWithOutId(forecast)
+                                            }
+                                        }
+                                        val job = viewModel.saveForecasts(
+                                            true,
+                                            forecastsWithChanges
+                                        )
+                                        job.invokeOnCompletion {
+                                            binding.loadingPanel.visibility = View.GONE
+                                            dialog?.dismiss()
+                                        }
+                                    }
+                                }
+                                binding.groupForecastProperty.addOnButtonCheckedListener { _, checkedId, isChecked ->
+                                    if (isChecked && forecasts != null) {
+                                        selectedSegmentedForecastProperty = checkedId
+                                        setOverview(
+                                            forecasts,
+                                            yearsWithForecasts[selectedSegmentedYear]
+                                        )
+                                        setForecastsInDialog(
+                                            forecasts,
+                                            yearsWithForecasts[selectedSegmentedYear],
+                                            view
+                                        )
+                                    }
+                                }
+                                binding.groupYear.addOnButtonCheckedListener { _, checkedId, isChecked ->
+                                    if (isChecked && forecasts != null) {
+                                        selectedSegmentedYear =
+                                            if (checkedId == binding.buttonCurrentYear.id) 0 else 1
+                                        setOverview(
+                                            forecasts,
+                                            yearsWithForecasts[selectedSegmentedYear]
+                                        )
+                                        setForecastsInDialog(
+                                            forecasts,
+                                            yearsWithForecasts[selectedSegmentedYear],
+                                            view
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            })
     }
 
-    private fun setMissingForecasts(dates: List<Int>, database: AppDatabase) {
+    private fun setMissingForecasts(dates: List<Int>, forecasts: List<Forecast>?) {
         for (date in dates) {
             for (i in 1..12) {
-                var forecast = forecasts.firstOrNull { it.month == i && it.year == date }
+                var forecast = forecasts?.firstOrNull { it.month == i && it.year == date }
                 if (forecast == null) {
                     forecast = Forecast(date, i, 0, 0, 0)
-                    val id = database.forecastDao()?.addForecast(forecast)
-                    if (id != null) {
-                        forecast.id = id
-                    }
-                    forecasts.add(forecast)
+                    viewModel.saveForecast(false, forecast)
                 }
             }
         }
     }
 
-    private fun setAchievement() {
+    private fun setAchievement(forecasts: List<Forecast>, summits: List<Summit>) {
         forecasts.forEach {
             if (it.year == currentYear && it.month <= currentMonth) {
                 it.setActual(summits, indoorHeightMeterPercent)
@@ -119,7 +160,7 @@ class ForecastDialog : DialogFragment() {
         }
     }
 
-    private fun setOverview(year: Int) {
+    private fun setOverview(forecasts: List<Forecast>, year: Int) {
         val sum = getSumForYear(
             year,
             forecasts,
@@ -130,7 +171,7 @@ class ForecastDialog : DialogFragment() {
         val annualTarget: Int
         when (selectedSegmentedForecastProperty) {
             binding.buttonKilometers.id -> {
-                binding.overview.text = currentContext.getString(
+                binding.overview.text = requireContext().getString(
                     R.string.forecast_info_km,
                     year.toString(),
                     sum.toString(),
@@ -139,7 +180,7 @@ class ForecastDialog : DialogFragment() {
                 annualTarget = annualTargetKm.toInt()
             }
             binding.buttonActivity.id -> {
-                binding.overview.text = currentContext.getString(
+                binding.overview.text = requireContext().getString(
                     R.string.forecast_info_activities,
                     year.toString(),
                     sum.toString(),
@@ -148,7 +189,7 @@ class ForecastDialog : DialogFragment() {
                 annualTarget = annualTargetActivity.toInt()
             }
             else -> {
-                binding.overview.text = currentContext.getString(
+                binding.overview.text = requireContext().getString(
                     R.string.forecast_info_hm,
                     year.toString(),
                     sum.toString(),
@@ -163,7 +204,7 @@ class ForecastDialog : DialogFragment() {
     }
 
     @SuppressLint("DiscouragedApi")
-    private fun setForecastsInDialog(year: Int, view: View) {
+    private fun setForecastsInDialog(forecasts: List<Forecast>, year: Int, view: View) {
         forecasts.forEach {
             if (it.year == year) {
                 val resourceIdSlider = resources.getIdentifier(
@@ -206,7 +247,7 @@ class ForecastDialog : DialogFragment() {
                                     value.toInt()
                                 else -> it.forecastHeightMeter = value.toInt()
                             }
-                            setOverview(year)
+                            setOverview(forecasts, year)
                             setForecastText(it, view, clickedSlider)
                         }
                     }

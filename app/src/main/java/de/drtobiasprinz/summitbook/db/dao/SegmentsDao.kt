@@ -18,32 +18,39 @@ interface SegmentsDao {
     fun getAllSegments(): Flow<MutableList<Segment>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun addSegmentDetails(segmentDetails: SegmentDetails?): Long
+    suspend fun addSegmentDetails(segmentDetails: SegmentDetails?): Long
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun addSegmentEntry(segmentEntry: SegmentEntry?): Long
+    suspend fun addSegmentEntry(segmentEntry: SegmentEntry?): Long
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    fun updateSegmentDetails(segmentDetails: SegmentDetails?)
+    suspend fun updateSegmentDetails(segmentDetails: SegmentDetails?)
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    fun updateSegmentEntry(segmentEntry: SegmentEntry?)
+    suspend fun updateSegmentEntry(segmentEntry: SegmentEntry?)
 
     @Delete
     fun deleteSegmentDetails(segmentDetails: SegmentDetails?)
     @Delete
     suspend fun deleteSegmentEntry(segmentEntry: SegmentEntry?)
-    @Delete
-    fun deleteSegmentEntryDeprecated(segmentEntry: SegmentEntry?)
 
-    fun delete(segment: Segment) {
+    suspend fun deleteSegment(segment: Segment) {
         for (entry in segment.segmentEntries) {
-            deleteSegmentEntryDeprecated(entry)
+            deleteSegmentEntry(entry)
         }
         deleteSegmentDetails(segment.segmentDetails)
     }
 
-    @Query("select * from segmentdetails where segmentDetailsId = :id")
-    fun getSegmentDetails(id: Long): SegmentDetails?
+    suspend fun updateSegment(segment: Segment) {
+        for (entry in segment.segmentEntries) {
+            updateSegmentEntry(entry)
+        }
+        updateSegmentDetails(segment.segmentDetails)
+    }
 
-    @Query("select * from segmententry where entryId = :id")
-    fun getSegmentEntry(id: Long): SegmentEntry?
+    suspend fun saveSegment(segment: Segment) {
+        for (entry in segment.segmentEntries) {
+            addSegmentEntry(entry)
+        }
+        addSegmentDetails(segment.segmentDetails)
+    }
+
 }

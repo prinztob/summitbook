@@ -45,14 +45,14 @@ class StatisticEntry {
         totalActivities = filteredSummitEntries?.size ?: 0
         totalSummits = filteredSummitEntries?.filter { it.isPeak }?.size ?: 0
         visitedCountries = filteredSummitEntries?.flatMap { it.countries }?.toSet()?.filter { it != "" }?.size ?: 0
-        totalHm = filteredSummitEntries?.map {
+        totalHm = filteredSummitEntries?.sumOf {
             if (it.sportType == SportType.IndoorTrainer) {
                 it.elevationData.elevationGain * indoorHeightMeterPercent / 100
             } else {
                 it.elevationData.elevationGain
             }
-        }?.sum() ?: 0
-        totalKm = filteredSummitEntries?.map { it.kilometers }?.sum() ?: 0.0
+        } ?: 0
+        totalKm = filteredSummitEntries?.sumOf { it.kilometers } ?: 0.0
         achievementActivity = (totalSummits * 100.0 / activitiesPerYear).roundToInt().toDouble()
         achievementKm = totalKm * 100.0 / kilometerPerYear
         achievementHm = totalHm * 100.0 / elevationGainPerYear

@@ -2,20 +2,21 @@ package de.drtobiasprinz.summitbook.db.dao
 
 import androidx.room.*
 import de.drtobiasprinz.summitbook.db.entities.SolarIntensity
+import kotlinx.coroutines.flow.Flow
 
 
 @Dao
 interface SolarIntensityDao {
     @Transaction
     @Query("select * from solarintensity")
-    fun getAll(): MutableList<SolarIntensity>?
+    fun getAllSolarIntensities(): Flow<MutableList<SolarIntensity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun add(solarIntensity: SolarIntensity?): Long
+    suspend fun add(solarIntensity: SolarIntensity?): Long
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    fun update(solarIntensity: SolarIntensity?)
+    suspend fun update(solarIntensity: SolarIntensity?)
 
     @Delete
-    fun delete(solarIntensity: SolarIntensity?)
+    suspend fun delete(solarIntensity: SolarIntensity?)
 }
