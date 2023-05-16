@@ -70,7 +70,7 @@ class SummitEntryTrackFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?,
     ): View {
         binding = FragmentSummitEntryTrackBinding.inflate(layoutInflater, container, false)
-
+        Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
         pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
             it.data.let { summitToView ->
 
@@ -279,7 +279,6 @@ class SummitEntryTrackFragment : Fragment() {
 
 
     private fun drawChart(summitToView: Summit) {
-        Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
         if (summitToView.hasGpsTrack()) {
             val localGpsTrack = gpsTrack
             if (localGpsTrack != null) {
@@ -394,7 +393,6 @@ class SummitEntryTrackFragment : Fragment() {
             )
         }
         OpenStreetMapUtils.addDefaultSettings(requireContext(), binding.osmap, requireActivity())
-        Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
         val height = if (hasPoints) 0.7 else 0.0
         val params = binding.osmap.layoutParams
         params?.height = (Resources.getSystem().displayMetrics.heightPixels * height).toInt()

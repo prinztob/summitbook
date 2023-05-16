@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentOpenStreetMapBinding
 import de.drtobiasprinz.summitbook.models.SortFilterValues
@@ -122,6 +123,7 @@ class OpenStreetMapFragment : Fragment() {
 
 
     private fun setMap() {
+        Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
         binding.changeMap.setOnClickListener {
             showMapTypeSelectorDialog(
                 requireContext(),
@@ -132,8 +134,6 @@ class OpenStreetMapFragment : Fragment() {
         binding.showAllTracks.setOnClickListener {
             showAllTracksOfSummitInBoundingBox()
         }
-
-//        requireActivity().findViewById<View>(R.id.add_new_summit).visibility = View.INVISIBLE
 
         binding.osmap.setOnGenericMotionListener { _: View?, event: MotionEvent ->
             if (0 != event.source and InputDevice.SOURCE_CLASS_POINTER) {

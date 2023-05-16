@@ -36,9 +36,10 @@ class SummitsAdapter :
     RecyclerView.Adapter<SummitsAdapter.ViewHolder>() {
 
     lateinit var context: Context
-    var onClickUpdateIsFavorite: (Summit) -> Unit = {  }
+    var onClickUpdateIsFavorite: (Summit) -> Unit = { }
     var onClickUpdateIsPeak: (Summit) -> Unit = { }
     var onClickDelete: (Summit) -> Unit = { }
+    var isBookmark: Boolean = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         context = parent.context
@@ -86,6 +87,7 @@ class SummitsAdapter :
                     val bundle = Bundle()
                     bundle.putLong(Constants.BUNDLE_ID, entity.id)
                     addSummitDialog.arguments = bundle
+                    addSummitDialog.isBookmark = isBookmark
                     addSummitDialog.show(
                         (FragmentComponentManager.findActivity(v?.context) as FragmentActivity).supportFragmentManager,
                         AddSummitDialog().tag

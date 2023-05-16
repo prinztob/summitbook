@@ -101,6 +101,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     private var type = ""
     private var isEdit = false
     var isBookmark = false
+    var fromReceiverActivity = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -112,7 +113,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val summits = summitsAdapter.differ.currentList
         summitId = arguments?.getLong(BUNDLE_ID) ?: 0
         if (summitId > 0) {
             type = EDIT
@@ -121,6 +121,30 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             isEdit = false
             type = NEW
         }
+        val list = if (isBookmark) {
+            if (fromReceiverActivity) {
+                viewModel.getAllBookmarks()
+            }
+            viewModel.bookmarksList
+        } else {
+            if (fromReceiverActivity) {
+                viewModel.getAllSummits()
+            }
+            viewModel.summitsList
+        }
+        list.observe(viewLifecycleOwner) { summitData ->
+                summitData.data.let { summits ->
+                    if (summits != null) {
+                        setData(summits, view)
+                    }
+                }
+            }
+    }
+
+    private fun setData(
+        summits: List<Summit>,
+        view: View
+    ) {
 
         binding.apply {
             if (gpxTrackUri != null) {
@@ -129,7 +153,9 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             btnCancel.setOnClickListener {
                 dismiss()
                 val text =
-                    if (isEdit) getString(R.string.update_summit_cancel) else getString(R.string.add_new_summit_cancel)
+                    if (isEdit) getString(R.string.update_summit_cancel) else getString(
+                        R.string.add_new_summit_cancel
+                    )
                 Snackbar.make(it, text, Snackbar.LENGTH_SHORT).show()
             }
             participantsAdapter = ArrayAdapter(requireContext(),
@@ -141,20 +167,17 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             placesAdapter = getPlacesSuggestions()
             summitName.setAdapter(getPlacesSuggestions(false))
 
-            viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
-                itData.data?.let { summits ->
-                    if (type == EDIT) {
-                        val summitToEdit = summits.firstOrNull { it.id == summitId }
-                        if (summitToEdit != null) {
-                            entity = summitToEdit
-                            updateBaseBindings(view, summits)
-                            updateDialogFields(true)
-                            btnSave.text = getString(R.string.update)
-                        }
-                    } else {
-                        updateBaseBindings(view, summits)
-                    }
+            if (type == EDIT) {
+                val summitToEdit = summits.firstOrNull { it.id == summitId }
+                if (summitToEdit != null) {
+                    entity = summitToEdit
+                    updateBaseBindings(view, summits)
+                    updateDialogFields(true)
+                    btnSave.text = getString(R.string.update)
+                    isBookmark = entity.isBookmark
                 }
+            } else {
+                updateBaseBindings(view, summits)
             }
 
             btnSave.setOnClickListener {
@@ -199,7 +222,12 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                         val executor = pythonExecutor
                         if (executor != null) {
                             binding.loadingPanel.visibility = View.VISIBLE
-                            pythonExecutor?.let { it1 -> downloadJsonViaPython(dateAsString, it1) }
+                            pythonExecutor?.let { it1 ->
+                                downloadJsonViaPython(
+                                    dateAsString,
+                                    it1
+                                )
+                            }
                         } else {
                             Toast.makeText(
                                 context,
@@ -938,7 +966,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 binding.kilometers.filters = arrayOf()
                 binding.kilometers.setText(
                     String.format(
-                        requireContext().resources.configuration.locales[0],
+                        Locale.ENGLISH,
                         "%.1f",
                         distance
                     )

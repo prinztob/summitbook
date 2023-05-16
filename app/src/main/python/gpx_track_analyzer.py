@@ -22,6 +22,7 @@ class TrackAnalyzer(object):
         self.file = file
         self.data = {}
         self.all_points = []
+        self.points_with_time = []
         self.gpx = None
         self.slopes = []
         self.vertical_velocities = {}
@@ -84,6 +85,8 @@ class TrackAnalyzer(object):
                             point.distance = distance * 1000
                             last_point = point
                             self.all_points.append(point)
+                            if point.time:
+                                self.points_with_time.append(point)
                             points.append(point)
                     segment.points = points
 
@@ -133,33 +136,34 @@ class TrackAnalyzer(object):
 
     def set_vertical_velocity(self, max_time_interval, update_points=False):
         self.vertical_velocities[str(max_time_interval)] = []
-        vertical_velocity = 0
-        i = 0
-        while i < len(self.all_points):
-            j = i + 10
-            if j >= len(self.all_points) - 1:
-                break
-            diff_times = 0.0
-            while diff_times < max_time_interval:
-                if j >= len(self.all_points) - 1:
+        if len(self.points_with_time) > 0:
+            vertical_velocity = 0
+            i = 0
+            while i < len(self.points_with_time):
+                j = i + 10
+                if j >= len(self.points_with_time) - 1:
                     break
-                diff_times = (self.all_points[j].time - self.all_points[i].time).total_seconds()
-                j += 1
-            track_points_for_interval = self.all_points[i:j]
-            reduced_track_points_for_interval = reduce_track_to_relevant_elevation_points(track_points_for_interval)
-            relevant_track_points_for_interval, gain, loss = remove_elevation_differences_smaller_as(
-                reduced_track_points_for_interval, 10)
-            current_velocity = 0.0 if diff_times == 0.0 else (gain / diff_times)
-            if current_velocity > vertical_velocity:
-                vertical_velocity = current_velocity
-                i += 1
-            else:
-                i += 25
-            if update_points and i < len(self.all_points):
-                self.set_tag_in_extensions(vertical_velocity * max_time_interval, self.all_points[i],
-                                           "vvelocity")
+                diff_times = 0.0
+                while diff_times < max_time_interval:
+                    if j >= len(self.points_with_time) - 1:
+                        break
+                    diff_times = (self.points_with_time[j].time - self.points_with_time[i].time).total_seconds()
+                    j += 1
+                track_points_for_interval = self.points_with_time[i:j]
+                reduced_track_points_for_interval = reduce_track_to_relevant_elevation_points(track_points_for_interval)
+                relevant_track_points_for_interval, gain, loss = remove_elevation_differences_smaller_as(
+                    reduced_track_points_for_interval, 10)
+                current_velocity = 0.0 if diff_times == 0.0 else (gain / diff_times)
+                if current_velocity > vertical_velocity:
+                    vertical_velocity = current_velocity
+                    i += 1
+                else:
+                    i += 25
+                if update_points and i < len(self.all_points):
+                    self.set_tag_in_extensions(vertical_velocity * max_time_interval, self.all_points[i],
+                                               "vvelocity")
 
-            self.vertical_velocities[str(max_time_interval)].append(vertical_velocity)
+                self.vertical_velocities[str(max_time_interval)].append(vertical_velocity)
 
     def set_gpx_data(self):
         extremes = self.gpx.get_elevation_extremes()

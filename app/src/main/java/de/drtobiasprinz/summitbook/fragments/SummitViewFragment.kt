@@ -94,6 +94,7 @@ class SummitViewFragment : Fragment() {
                 summitsAdapter.onClickDelete = { e -> adapterOnClickDelete(e) }
                 summitsAdapter.onClickUpdateIsFavorite = { e -> adapterOnClickUpdateIsFavorite(e) }
                 summitsAdapter.onClickUpdateIsPeak = { e -> adapterOnClickUpdateIsPeak(e) }
+                summitsAdapter.isBookmark = showBookmarksOnly
             }
             if (showBookmarksOnly) {
                 viewModel?.getAllBookmarks()

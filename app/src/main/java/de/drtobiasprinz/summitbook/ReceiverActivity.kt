@@ -42,12 +42,11 @@ class ReceiverActivity : AppCompatActivity() {
             if (gpxTrackUri != null) {
                 val addSummit = AddSummitDialog()
                 addSummit.gpxTrackUri = gpxTrackUri
-                supportFragmentManager.let {
-                    addSummit.show(
-                        it,
-                        getString(R.string.add_new_bookmark)
-                    )
-                }
+                addSummit.fromReceiverActivity = true
+                addSummit.show(
+                    supportFragmentManager,
+                    getString(R.string.add_new_summit)
+                )
             }
         }
         binding.addToBookmarks.setOnClickListener {
@@ -55,12 +54,11 @@ class ReceiverActivity : AppCompatActivity() {
                 val addSummit = AddSummitDialog()
                 addSummit.gpxTrackUri = gpxTrackUri
                 addSummit.isBookmark = true
-                supportFragmentManager.let {
-                    addSummit.show(
-                        it,
-                        getString(R.string.add_new_bookmark)
-                    )
-                }
+                addSummit.fromReceiverActivity = true
+                addSummit.show(
+                    supportFragmentManager,
+                    getString(R.string.add_new_bookmark)
+                )
             }
         }
 

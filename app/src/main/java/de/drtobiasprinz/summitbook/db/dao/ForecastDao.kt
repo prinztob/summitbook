@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.db.dao
 
+import androidx.lifecycle.LiveData
 import androidx.room.*
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.*
@@ -17,6 +18,10 @@ interface ForecastDao {
     @Transaction
     @Query("select * from forecast")
     fun getAllForecasts(): Flow<MutableList<Forecast>>
+
+    @Transaction
+    @Query("select * from forecast")
+    fun getAllForecastsLiveData(): LiveData<MutableList<Forecast>>
 
     @Query("select * from forecast where id = :id")
     fun getForecast(id: Long): Forecast?

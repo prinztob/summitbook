@@ -68,7 +68,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         repository.deleteSummit(entity)
     }
 
-    private fun getAllSummits() = viewModelScope.launch {
+    fun getAllSummits() = viewModelScope.launch {
         _summitsList.postValue(DataStatus.loading())
         repository.getAllSummits()
             .catch { _summitsList.postValue(DataStatus.error(it.message.toString())) }

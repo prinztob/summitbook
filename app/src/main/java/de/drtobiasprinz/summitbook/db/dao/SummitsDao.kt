@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.db.dao
 
+import androidx.lifecycle.LiveData
 import androidx.room.*
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMITS_TABLE
@@ -21,6 +22,9 @@ interface SummitsDao {
 
     @Query("SELECT * FROM $SUMMITS_TABLE where isBookmark = 0")
     fun getAllSummits(): Flow<MutableList<Summit>>
+
+    @Query("SELECT * FROM $SUMMITS_TABLE where isBookmark = 0")
+    fun getAllSummitsLiveData(): LiveData<MutableList<Summit>>
 
     @Query("SELECT * FROM $SUMMITS_TABLE where isBookmark = 1")
     fun getAllBookmarks(): Flow<MutableList<Summit>>

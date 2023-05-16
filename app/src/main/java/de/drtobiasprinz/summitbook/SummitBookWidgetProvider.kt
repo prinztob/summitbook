@@ -12,49 +12,57 @@ import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
 import androidx.preference.PreferenceManager
+import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.di.DatabaseModule
 import de.drtobiasprinz.summitbook.models.StatisticEntry
+import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import java.util.*
+import javax.inject.Inject
 import kotlin.math.roundToInt
 
-
+@AndroidEntryPoint
 class SummitBookWidgetProvider : AppWidgetProvider() {
+    @Inject
+    lateinit var repository: DatabaseRepository
     override fun onUpdate(
         context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray
     ) {
-        val database = DatabaseModule.provideDatabase(context)
-        val entries = database.summitsDao().allSummit
+        val summitsLiveData = repository.getAllSummitsLiveData()
+        val forecastsLiveData = repository.getAllForecastsLiveData()
+        summitsLiveData.observeForever { summits ->
+            if (summits != null) {
+                val thisWidget = ComponentName(context, SummitBookWidgetProvider::class.java)
+                val allWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
+                for (widgetId in allWidgetIds) {
+                    val remoteViews = RemoteViews(context.packageName, R.layout.widget_layout)
+                    forecastsLiveData.observeForever { forecasts ->
+                        if (forecasts != null && forecasts.any { it.year == (Calendar.getInstance())[Calendar.YEAR] }) {
+                            Log.i("Widget", "1")
+                            setRemoteViewsFromForecast(
+                                forecasts,
+                                summits,
+                                remoteViews,
+                                context
+                            )
+                        } else {
+                            Log.i("Widget", "2")
+                            setTextFromStatisticEntry(summits, remoteViews, context)
+                        }
+                        val configIntent = Intent(context, MainActivity::class.java)
+                        val pIntent = PendingIntent.getActivity(
+                            context,
+                            0,
+                            configIntent,
+                            FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                        remoteViews.setOnClickPendingIntent(R.id.widget, pIntent)
 
-        if (entries != null) {
-            val forecasts = database.forecastDao().allForecastsDeprecated
-
-            val thisWidget = ComponentName(context, SummitBookWidgetProvider::class.java)
-            val allWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
-            for (widgetId in allWidgetIds) {
-                val remoteViews = RemoteViews(context.packageName, R.layout.widget_layout)
-                if (forecasts != null && forecasts.any { it.year == (Calendar.getInstance())[Calendar.YEAR] }) {
-                    Log.i("Widget", "1")
-                    setRemoteViewsFromForecast(
-                        forecasts,
-                        entries,
-                        remoteViews,
-                        context
-                    )
-                } else {
-                    Log.i("Widget", "2")
-                    setTextFromStatisticEntry(entries, remoteViews, context)
+                        appWidgetManager.updateAppWidget(widgetId, remoteViews)
+                    }
                 }
-                val configIntent = Intent(context, MainActivity::class.java)
-                val pIntent = PendingIntent.getActivity(
-                    context, 0, configIntent, FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-                remoteViews.setOnClickPendingIntent(R.id.widget, pIntent)
-
-                appWidgetManager.updateAppWidget(widgetId, remoteViews)
             }
         }
     }
