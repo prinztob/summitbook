@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.models
 
 import android.content.SharedPreferences
+import android.util.Log
 import de.drtobiasprinz.summitbook.databinding.FragmentSortAndFilterBinding
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -30,18 +31,25 @@ class SortFilterValues(
     var orderByValueButtonGroup: OrderByValueButtonGroup = OrderByValueButtonGroup.Date,
     var years: List<String> = mutableListOf()
 ) {
+    private var initialized: Boolean = false
+
     fun setInitialValues(summits: List<Summit>, sharedPreferences: SharedPreferences) {
-        if (summits.isNotEmpty()) {
-            val minDate = getYear(summits.minBy { it.date }.date)
-            val maxDate = getYear(summits.maxBy { it.date }.date)
-            if (minDate != 1970 && maxDate != 1970) {
-                years = (minDate..maxDate).map { it.toString() }.sortedDescending()
+        if (!initialized) {
+            Log.i("SortFilterValues", "initialized")
+            initialized = true
+            if (summits.isNotEmpty()) {
+                val minDate = getYear(summits.minBy { it.date }.date)
+                val maxDate = getYear(summits.maxBy { it.date }.date)
+                if (minDate != 1970 && maxDate != 1970) {
+                    years = (minDate..maxDate).map { it.toString() }.sortedDescending()
+                }
             }
-        }
-        if (sharedPreferences.getBoolean("current_year_switch", false)) {
-            setSelectedDateSpinnerAndItsDefault(2, 2)
-        } else {
-            setSelectedDateSpinnerAndItsDefault(0, 0)
+            if (sharedPreferences.getBoolean("current_year_switch", false)) {
+                Log.i("SortFilterValues", "current_year_switch=true")
+                setSelectedDateSpinnerAndItsDefault(2, 2)
+            } else {
+                setSelectedDateSpinnerAndItsDefault(0, 0)
+            }
         }
     }
 
@@ -80,7 +88,9 @@ class SortFilterValues(
         return selectedDateSpinner >= 2
     }
 
-    fun apply(summits: List<Summit>): List<Summit> {
+    fun apply(summits: List<Summit>, sharedPreferences: SharedPreferences): List<Summit> {
+        setInitialValues(summits, sharedPreferences)
+        Log.i("SortFilterValues", "apply")
         val filteredSummits = summits.filter {
             filterDate(it) &&
                     filterParticipants(it) &&

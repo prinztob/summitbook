@@ -8,7 +8,9 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.*
+import android.widget.ImageButton
+import android.widget.RelativeLayout
+import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -18,17 +20,15 @@ import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
-import com.github.dhaval2404.imagepicker.ImagePicker
+import com.github.drjacky.imagepicker.ImagePicker
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.ActivityAddImagesBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -241,14 +241,13 @@ class AddImagesActivity : AppCompatActivity() {
         localSummitImage: PhotoView, cropX: Float, cropY: Float, idOtherButton: Int = 0
     ) {
         button.setOnClickListener {
-            ImagePicker.with(this)
-                .crop(cropX, cropY)
-                .compress(1024)
-                .galleryOnly()
-                .saveDir(File(MainActivity.cache, "SummitBookImageCache"))
-                .createIntent { intent ->
-                    startForProfileImageResult.launch(intent)
-                }
+            startForProfileImageResult.launch(
+                ImagePicker.with(this)
+                    .crop(cropX, cropY)
+                    .maxResultSize(2048, 2048)
+                    .galleryOnly()
+                    .createIntent()
+            )
         }
         if (idOtherButton > 0) {
             layout.addView(

@@ -30,6 +30,16 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(
         context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray
     ) {
+        val widgetManager = AppWidgetManager.getInstance(context.applicationContext)
+        widgetManager.notifyAppWidgetViewDataChanged(
+            widgetManager.getAppWidgetIds(
+                ComponentName(
+                    context.applicationContext.packageName,
+                    SummitBookWidgetProvider::class.java.name
+                )
+            ),
+            R.id.widget
+        )
         val summitsLiveData = repository.getAllSummitsLiveData()
         val forecastsLiveData = repository.getAllForecastsLiveData()
         summitsLiveData.observeForever { summits ->

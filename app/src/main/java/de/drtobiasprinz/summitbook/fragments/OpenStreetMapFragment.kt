@@ -94,7 +94,7 @@ class OpenStreetMapFragment : Fragment() {
         binding.apply {
             viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
                 itData.data?.let { summits ->
-                    val filteredSummits = sortFilterValues.apply(summits)
+                    val filteredSummits = sortFilterValues.apply(summits, sharedPreferences)
                         .filter { it.sportType != SportType.IndoorTrainer && it.lat != null && it.lat != 0.0 && it.lng != null && it.lng != 0.0 }
                     setTileSource(selectedItem, binding.osmap)
                     addOverlays(filteredSummits)

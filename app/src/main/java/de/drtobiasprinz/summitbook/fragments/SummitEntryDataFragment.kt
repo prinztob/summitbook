@@ -23,10 +23,9 @@ import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
-import java.util.*
+import java.text.NumberFormat
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
 @AndroidEntryPoint
 class SummitEntryDataFragment : Fragment() {
@@ -35,7 +34,7 @@ class SummitEntryDataFragment : Fragment() {
 
     private var pageViewModel: PageViewModel? = null
     private var summitsToCompare: List<Summit> = emptyList()
-
+    private lateinit var numberFormat: NumberFormat
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pageViewModel = (requireActivity() as SummitEntryDetailsActivity).pageViewModel
@@ -46,7 +45,7 @@ class SummitEntryDataFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentSummitEntryDataBinding.inflate(layoutInflater, container, false)
-
+        numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
         pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
             it.data.let { summitToView ->
                 if (summitToView != null) {
@@ -346,7 +345,8 @@ class SummitEntryDataFragment : Fragment() {
                 summitToView,
                 extrema?.trainingsLoadMinMax?.first,
                 extrema?.trainingsLoadMinMax?.second,
-                summitToCompare
+                summitToCompare,
+                digits = 0
             ) { entry -> entry.garminData?.trainingLoad }
             setText(
                 binding.vo2MaxText, binding.vo2Max, "", summitToView,
@@ -725,56 +725,35 @@ class SummitEntryDataFragment : Fragment() {
         } else {
             descriptionTextView.visibility = visibility
             valueTextView.visibility = visibility
-            if (value is Int || digits == 0) {
-                valueTextView.text = if (valueToCompare != null && valueToCompare.toInt() != 0) {
-                    String.format(
-                        "%s (%s) %s",
-                        (value.toDouble() * factor).roundToInt(),
-                        (valueToCompare.toDouble() * factor).roundToInt(),
-                        unit
+            if (toHHms) {
+                val valueInMs = (value.toDouble() * 3600000.0).toLong()
+                val valueInMsCompareSummit = ((valueToCompare?.toDouble()
+                    ?: 0.0) * 3600000.0).toLong()
+                if (valueInMsCompareSummit > 0) {
+                    valueTextView.text = String.format(
+                        "%02dh %02dm (%02dh %02dm)", TimeUnit.MILLISECONDS.toHours(valueInMs),
+                        TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
+                        TimeUnit.MILLISECONDS.toHours(valueInMsCompareSummit),
+                        TimeUnit.MILLISECONDS.toMinutes(valueInMsCompareSummit) % TimeUnit.HOURS.toMinutes(
+                            1
+                        )
                     )
                 } else {
-                    String.format("%s %s", (value.toDouble() * factor).roundToInt(), unit)
+                    valueTextView.text = String.format(
+                        "%02dh %02dm", TimeUnit.MILLISECONDS.toHours(valueInMs),
+                        TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1)
+                    )
                 }
             } else {
-                if (toHHms) {
-                    val valueInMs = (value.toDouble() * 3600000.0).toLong()
-                    val valueInMsCompareSummit = ((valueToCompare?.toDouble()
-                        ?: 0.0) * 3600000.0).toLong()
-                    if (valueInMsCompareSummit > 0) {
-                        valueTextView.text = String.format(
-                            "%02dh %02dm (%02dh %02dm)", TimeUnit.MILLISECONDS.toHours(valueInMs),
-                            TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
-                            TimeUnit.MILLISECONDS.toHours(valueInMsCompareSummit),
-                            TimeUnit.MILLISECONDS.toMinutes(valueInMsCompareSummit) % TimeUnit.HOURS.toMinutes(
-                                1
-                            )
-                        )
+                numberFormat.maximumFractionDigits = digits
+                valueTextView.text =
+                    if (valueToCompare != null && valueToCompare.toInt() != 0) {
+                        "${numberFormat.format(value.toDouble() * factor)} " +
+                                "(${numberFormat.format(valueToCompare.toDouble() * factor)}) " +
+                                unit
                     } else {
-                        valueTextView.text = String.format(
-                            "%02dh %02dm", TimeUnit.MILLISECONDS.toHours(valueInMs),
-                            TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1)
-                        )
+                        "${numberFormat.format(value.toDouble() * factor)} $unit"
                     }
-                } else {
-                    valueTextView.text =
-                        if (valueToCompare != null && valueToCompare.toInt() != 0) {
-                            String.format(
-                                Locale.US,
-                                "%.${digits}f (%.${digits}f) %s",
-                                value.toDouble() * factor,
-                                valueToCompare.toDouble() * factor,
-                                unit
-                            )
-                        } else {
-                            String.format(
-                                Locale.US,
-                                "%.${digits}f %s",
-                                value.toDouble() * factor,
-                                unit
-                            )
-                        }
-                }
             }
             drawCircleWithIndication(valueTextView, minSummit?.let { f(it)?.toDouble() }
                 ?: 0.0, maxSummit?.let { f(it)?.toDouble() }, value.toDouble(), reverse)

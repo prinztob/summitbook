@@ -184,7 +184,7 @@ class BarChartFragment : Fragment() {
     }
 
     fun update(summits: List<Summit>) {
-        val filteredSummits = sortFilterValues.apply(summits)
+        val filteredSummits = sortFilterValues.apply(summits, sharedPreferences)
         minDate = filteredSummits.minBy { it.date }.date
         intervalHelper = IntervalHelper(filteredSummits)
         val barChartCustomRenderer = BarChartCustomRenderer(

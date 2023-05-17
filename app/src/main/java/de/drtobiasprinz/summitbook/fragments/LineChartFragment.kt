@@ -12,6 +12,7 @@ import android.widget.ArrayAdapter
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.preference.PreferenceManager
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.LegendEntry
 import com.github.mikephil.charting.components.XAxis
@@ -57,7 +58,10 @@ class LineChartFragment : Fragment() {
         binding.apply {
             viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
                 itData.data?.let { summits ->
-                    val filteredSummits = sortFilterValues.apply(summits)
+                    val filteredSummits = sortFilterValues.apply(
+                        summits,
+                        PreferenceManager.getDefaultSharedPreferences(requireContext())
+                    )
                     resizeChart()
                     listenOnDataSpinner(filteredSummits)
                     drawLineChart(filteredSummits)

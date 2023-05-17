@@ -85,17 +85,17 @@ class AddSegmentEntryFragment : Fragment() {
         setTileSource(selectedItem, binding.osmap)
         viewModel.segmentsList.observe(viewLifecycleOwner, object :
             Observer<DataStatus<List<Segment>>> {
-            override fun onChanged(summitListDataStatus: DataStatus<List<Segment>>?) {
-                apply(summitListDataStatus)
+            override fun onChanged(value: DataStatus<List<Segment>>) {
+                apply(value)
             }
         })
         return binding.root
     }
 
     private fun Observer<DataStatus<List<Segment>>>.apply(
-        summitListDataStatus: DataStatus<List<Segment>>?
+        summitListDataStatus: DataStatus<List<Segment>>
     ) {
-        summitListDataStatus?.data.let { segments ->
+        summitListDataStatus.data.let { segments ->
             val segment =
                 segments?.firstOrNull { entry -> entry.segmentDetails.segmentDetailsId == segmentId }
             segmentEntry =

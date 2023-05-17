@@ -48,10 +48,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.text.NumberFormat
 import java.time.LocalDate
 import java.util.*
 import javax.inject.Inject
-import kotlin.math.roundToLong
 
 
 @AndroidEntryPoint
@@ -82,13 +82,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)
-        viewModel.summitsList.observe(this) {
-            it.data.let { summits ->
-                if (summits != null) {
-                    sortFilterValues.setInitialValues(summits, sharedPreferences)
-                }
-            }
-        }
+
         updatePythonExecutor()
         pythonInstance = Python.getInstance()
         cache = applicationContext.cacheDir
@@ -130,9 +124,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         if (executor != null) {
                             binding.loading.visibility = View.VISIBLE
                             viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
-                                summitsListDataStatus?.data.let { summits ->
+                                summitsListDataStatus.data.let { summits ->
                                     viewModel.solarIntensitiesList.observeOnce(this@MainActivity) { solarListDataStatus ->
-                                        solarListDataStatus?.data.let { solarIntensities ->
+                                        solarListDataStatus.data.let { solarIntensities ->
                                             val updater = GarminDataUpdater(
                                                 sharedPreferences,
                                                 executor,
@@ -190,7 +184,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             viewModel.summitsList.observe(this@MainActivity) { itData ->
                 itData.data?.let { summits ->
-                    setOverviewText(sortFilterValues.apply(summits))
+                    setOverviewText(sortFilterValues.apply(summits, sharedPreferences))
                 }
             }
         }
@@ -223,21 +217,23 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         summit.hasGpsTrack() && summit.trackBoundingBox == null && summit !in entriesToExcludeForBoundingBoxCalculation
                     } as MutableList<Summit>?
                     if (entriesWithoutBoundingBox != null && entriesWithoutBoundingBox.isNotEmpty()) {
-                        val entryToCheck = entriesWithoutBoundingBox.first()
-                        entriesWithoutBoundingBox.remove(entryToCheck)
-                        entryToCheck.setBoundingBoxFromTrack()
-                        if (entryToCheck.trackBoundingBox != null) {
-                            viewModel.saveSummit(true, entryToCheck)
-                            Log.i(
-                                "MainActivity Background",
-                                "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining."
-                            )
-                        } else {
-                            Log.i(
-                                "Scheduler",
-                                "Updated bounding box for ${entryToCheck.name} failed, remove it from update list."
-                            )
-                            entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
+                        val entriesToCheck = entriesWithoutBoundingBox.take(100)
+                        entriesToCheck.forEach { entryToCheck ->
+                            entriesWithoutBoundingBox.remove(entryToCheck)
+                            entryToCheck.setBoundingBoxFromTrack()
+                            if (entryToCheck.trackBoundingBox != null) {
+                                viewModel.saveSummit(true, entryToCheck)
+                                Log.i(
+                                    "MainActivity Background",
+                                    "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining."
+                                )
+                            } else {
+                                Log.i(
+                                    "Scheduler",
+                                    "Updated bounding box for ${entryToCheck.name} failed, remove it from update list."
+                                )
+                                entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
+                            }
                         }
                     }
                 }
@@ -246,21 +242,23 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun setOverviewText(summits: List<Summit>) {
+        val numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
+        numberFormat.maximumFractionDigits = 0
         val indoorHeightMeterPercent = sharedPreferences.getInt("indoor_height_meter_per_cent", 0)
         val statisticEntry = StatisticEntry(summits, indoorHeightMeterPercent)
         statisticEntry.calculate()
         val peaks = summits.filter { it.isPeak }
         binding.overview.text = getString(
             R.string.base_info_activities,
-            summits.size.toString(),
-            statisticEntry.totalKm.roundToLong().toInt().toString(),
-            statisticEntry.totalHm.toFloat().roundToLong().toString()
+            numberFormat.format(summits.size),
+            numberFormat.format(statisticEntry.totalKm),
+            numberFormat.format(statisticEntry.totalHm)
         )
         binding.overviewSummits.text = getString(
             R.string.base_info_summits,
-            peaks.size.toString(),
-            peaks.sumOf { it.kilometers }.toInt().toString(),
-            peaks.sumOf { it.elevationData.elevationGain }.toString()
+            numberFormat.format(peaks.size),
+            numberFormat.format(peaks.sumOf { it.kilometers }),
+            numberFormat.format(peaks.sumOf { it.elevationData.elevationGain })
         )
     }
 
@@ -440,15 +438,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 val exportCalculatedData =
                     sharedPreferences.getBoolean("export_calculated_data", true)
                 viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
-                    summitsListDataStatus?.data.let { summits ->
+                    summitsListDataStatus.data.let { summits ->
                         viewModel.forecastList.observeOnce(this@MainActivity) { forecastsListDataStatus ->
-                            forecastsListDataStatus?.data.let { forecasts ->
+                            forecastsListDataStatus.data.let { forecasts ->
                                 viewModel.segmentsList.observeOnce(this@MainActivity) { segmentsListDataStatus ->
-                                    segmentsListDataStatus?.data.let { segments ->
+                                    segmentsListDataStatus.data.let { segments ->
                                         if (summits != null) {
                                             asyncExportZipFile(
                                                 if (useFilteredSummits) sortFilterValues.apply(
-                                                    summits
+                                                    summits, sharedPreferences
                                                 ) else summits,
                                                 result.data,
                                                 segments,
@@ -478,11 +476,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun asyncImportZipFile(uri: Uri) {
         viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
-            summitsListDataStatus?.data.let { summits ->
+            summitsListDataStatus.data.let { summits ->
                 viewModel.forecastList.observeOnce(this@MainActivity) { forecastsListDataStatus ->
-                    forecastsListDataStatus?.data.let { forecasts ->
+                    forecastsListDataStatus.data.let { forecasts ->
                         viewModel.segmentsList.observeOnce(this@MainActivity) { segmentsListDataStatus ->
-                            segmentsListDataStatus?.data.let { segments ->
+                            segmentsListDataStatus.data.let { segments ->
                                 lifecycleScope.launch {
                                     binding.loading.visibility = View.VISIBLE
                                     val reader = ZipFileReader(
@@ -592,8 +590,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun openViewer() {
         viewModel.summitsList.observeOnce(this) { dataStatusSummits ->
-            dataStatusSummits?.data.let { summits ->
-                val sortFilterSummits = summits?.let { it1 -> sortFilterValues.apply(it1) }
+            dataStatusSummits.data.let { summits ->
+                val sortFilterSummits =
+                    summits?.let { it1 -> sortFilterValues.apply(it1, sharedPreferences) }
                 var allImages = getAllImages(sortFilterSummits)
                 var usePositionAfterTransition = -1
                 if (allImages.size < currentPosition) {
@@ -664,7 +663,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onSharedPreferenceChanged(preferences: SharedPreferences?, key: String?) {
         if (key == "current_year_switch") {
             viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
-                summitsListDataStatus?.data.let { summits ->
+                summitsListDataStatus.data.let { summits ->
                     if (summits != null) {
                         sortFilterValues.setInitialValues(summits, sharedPreferences)
                     }
@@ -684,8 +683,8 @@ fun <T> LiveData<T>.observeOnce(
     observer: androidx.lifecycle.Observer<T>
 ) {
     observe(lifecycleOwner, object : androidx.lifecycle.Observer<T> {
-        override fun onChanged(t: T?) {
-            observer.onChanged(t)
+        override fun onChanged(value: T) {
+            observer.onChanged(value)
             removeObserver(this)
         }
     })

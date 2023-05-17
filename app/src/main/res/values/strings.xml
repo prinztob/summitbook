@@ -59,6 +59,10 @@
     <string name="kmh">km/h</string>
     <string name="value_with_hm">%1$s hm</string>
     <string name="hm">hm</string>
+    <string name="value_with_per_cent">%1$s %%</string>
+    <string name="value_with_kmh">%1$s km/h</string>
+    <string name="value_with_m">%1$s m</string>
+    <string name="value_with_h">%1$s h</string>
     <string name="total_height_meters">Total height meters</string>
     <string name="total_kilometers">Total kilometers</string>
     <string name="total_activities">Total activities</string>
@@ -280,7 +284,10 @@
     <string name="more_performance">Update Performance data</string>
     <string name="less_performance">Close Performance Data</string>
     <string name="watt">W</string>
+    <string name="value_with_watt">%1$s W</string>
     <string name="bpm">bpm</string>
+    <string name="value_with_bpm">%1$s bpm</string>
+    <string name="value_only">%1$s</string>
     <string name="show_new_summits">Show new summits from Garmin</string>
     <string name="update_new_summits">Update summits from Garmin</string>
     <string name="merge">Merge</string>
@@ -322,6 +329,7 @@
     <string name="slope">Slope (50m)</string>
     <string name="vertical_speed">Vertical Speed (1min)</string>
     <string name="masl">m.a.s.l.</string>
+    <string name="value_with_masl">%1$s m.a.s.l.</string>
     <string name="show_all">Show all</string>
     <string name="marked_summits">Marked Summits</string>
     <string name="pts">Pts</string>

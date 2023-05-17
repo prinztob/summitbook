@@ -125,7 +125,7 @@ class SummitViewFragment : Fragment() {
                         DataStatus.Status.SUCCESS -> {
                             dataStatus.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
                             loading.isVisible(false, recyclerView)
-                            val data = sortFilterValues.apply(dataStatus.data ?: emptyList())
+                            val data = sortFilterValues.apply(dataStatus.data ?: emptyList(), sharedPreferences)
                             summitsAdapter.differ.submitList(data)
                             if (!startedScheduler) {
                                 dataStatus.data?.let { addBackgroundTasks(it) }

@@ -23,9 +23,9 @@ import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import java.text.NumberFormat
 import java.util.*
 import javax.inject.Inject
-import kotlin.math.roundToLong
 
 @AndroidEntryPoint
 class StatisticsFragment : Fragment() {
@@ -34,7 +34,7 @@ class StatisticsFragment : Fragment() {
 
     private lateinit var binding: FragmentStatisticsBinding
     private val viewModel: DatabaseViewModel by activityViewModels()
-
+    private lateinit var numberFormat: NumberFormat
     private lateinit var statisticEntry: StatisticEntry
     private var annualTargetActivity: String = ""
     private var annualTargetKm: String = ""
@@ -55,6 +55,7 @@ class StatisticsFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentStatisticsBinding.inflate(layoutInflater, container, false)
+        numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
         update()
         return binding.root
     }
@@ -65,7 +66,7 @@ class StatisticsFragment : Fragment() {
                 itData.data?.let { summits ->
                     viewModel.forecastList.observe(viewLifecycleOwner) { itDataForecasts ->
                         itDataForecasts.data?.let { forecasts ->
-                            val filteredSummits = sortFilterValues.apply(summits)
+                            val filteredSummits = sortFilterValues.apply(summits, sharedPreferences)
                             val sharedPreferences =
                                 PreferenceManager.getDefaultSharedPreferences(requireContext())
                             val annualTargetActivity =
@@ -105,17 +106,22 @@ class StatisticsFragment : Fragment() {
         extremaValuesSummits: ExtremaValuesSummits?
     ) {
         if (statisticEntry.getTotalActivities() > 0) {
-            binding.textTotalSummits.text = String.format("%s", statisticEntry.getTotalSummits())
+            numberFormat.maximumFractionDigits = 0
+            binding.textTotalSummits.text = numberFormat.format(statisticEntry.getTotalSummits())
             binding.textTotalActivities.text =
-                String.format("%s", statisticEntry.getTotalActivities())
-            binding.textTotalKm.text = String.format(
-                requireContext().resources.configuration.locales[0],
-                "%.1f km",
-                statisticEntry.totalKm
-            )
+                numberFormat.format(statisticEntry.getTotalActivities())
             binding.textTotalHm.text = String.format(
-                requireContext().resources.configuration.locales[0], "%s hm", statisticEntry.totalHm
+                resources.getString(R.string.value_with_hm),
+                numberFormat.format(statisticEntry.totalHm)
             )
+
+            numberFormat.maximumFractionDigits = 1
+            binding.textTotalKm.text = String.format(
+                resources.getString(R.string.value_with_km),
+                numberFormat.format(statisticEntry.totalKm)
+            )
+
+            numberFormat.maximumFractionDigits = 0
             val currentYear: Int = (Calendar.getInstance())[Calendar.YEAR]
             val currentMonth: Int = (Calendar.getInstance())[Calendar.MONTH] + 1
             if (sortFilterValues.wasCurrentYearSelected()) {
@@ -133,8 +139,8 @@ class StatisticsFragment : Fragment() {
                     binding.textTotalHmInfo.visibility = View.VISIBLE
                     binding.textTotalHmInfo.text = getString(
                         R.string.forecast_info_hm,
-                        currentYear.toString(),
-                        sumCurrentYear.toString(),
+                        numberFormat.format(currentYear),
+                        numberFormat.format(sumCurrentYear),
                         annualTargetHm
                     )
                     binding.textTotalHmInfo.setTextColor(
@@ -146,7 +152,7 @@ class StatisticsFragment : Fragment() {
                     binding.textTotalHmInfo.visibility = View.VISIBLE
                     binding.textTotalHmInfo.text = getString(
                         R.string.current_estimate,
-                        statisticEntry.expectedAchievementHmAbsolute.toInt().toString()
+                        numberFormat.format(statisticEntry.expectedAchievementHmAbsolute)
                     )
                 }
                 val sumNextYear = forecasts?.filter { it.year == currentYear + 1 }
@@ -155,8 +161,8 @@ class StatisticsFragment : Fragment() {
                     binding.textTotalHmForecastInfo.visibility = View.VISIBLE
                     binding.textTotalHmForecastInfo.text = getString(
                         R.string.forecast_info_hm,
-                        (currentYear + 1).toString(),
-                        sumNextYear.toString(),
+                        numberFormat.format((currentYear + 1)),
+                        numberFormat.format(sumNextYear),
                         annualTargetHm
                     )
                     binding.textTotalHmForecastInfo.setTextColor(
@@ -168,11 +174,11 @@ class StatisticsFragment : Fragment() {
                 binding.textTotalHmForecastInfo.visibility = View.GONE
             }
             if (sortFilterValues.wasFullYearSelected()) {
+                numberFormat.maximumFractionDigits = 1
                 binding.achievementInfo.visibility = View.VISIBLE
                 binding.textAchievement.text = String.format(
-                    requireContext().resources.configuration.locales[0],
-                    "%.1f %%",
-                    statisticEntry.getAchievement()
+                    resources.getString(R.string.value_with_per_cent),
+                    numberFormat.format(statisticEntry.getAchievement())
                 )
             } else {
                 binding.achievementInfo.visibility = View.GONE
@@ -182,7 +188,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutLongestDistance,
                 binding.textLongestDistance,
                 binding.textLongestDistanceInfo,
-                getString(R.string.km),
+                getString(R.string.value_with_km),
                 getValueOrNull(extremaValuesSummits?.kilometersMinMax?.second) { e -> e.kilometers },
                 1
             )
@@ -198,7 +204,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestAverageSpeed,
                 binding.textHeighestAverageSpeed,
                 binding.textHeighestAverageSpeedInfo,
-                getString(R.string.kmh),
+                getString(R.string.value_with_kmh),
                 getValueOrNull(extremaValuesSummits?.averageSpeedMinMax?.second) { e -> e.velocityData.avgVelocity },
                 1
             )
@@ -207,7 +213,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutLongestDuration,
                 binding.textLongestDuration,
                 binding.textLongestDurationInfo,
-                "h",
+                getString(R.string.value_with_h),
                 getValueOrNull(extremaValuesSummits?.durationMinMax?.second) { e -> e.duration },
                 1
             )
@@ -217,7 +223,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutMaxSlope,
                 binding.textMaxSlope,
                 binding.textMaxSlopeInfo,
-                "%",
+                getString(R.string.value_with_per_cent),
                 getValueOrNull(extremaValuesSummits?.topSlopeMinMax?.second) { e -> e.elevationData.maxSlope },
                 1
             )
@@ -232,7 +238,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutMaxVerticalVelocity1Min,
                 binding.textMaxVerticalVelocity1Min,
                 binding.textMaxVerticalVelocity1MinInfo,
-                getString(R.string.m),
+                getString(R.string.value_with_m),
                 getValueOrNull(extremaValuesSummits?.topVerticalVelocity1MinMinMax?.second) { e -> e.elevationData.maxVerticalVelocity1Min },
                 factor = 60,
                 digits = 0
@@ -242,7 +248,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutMaxVerticalVelocity10Min,
                 binding.textMaxVerticalVelocity10Min,
                 binding.textMaxVerticalVelocity10MinInfo,
-                getString(R.string.m),
+                getString(R.string.value_with_m),
                 getValueOrNull(extremaValuesSummits?.topVerticalVelocity10MinMinMax?.second) { e -> e.elevationData.maxVerticalVelocity10Min },
                 factor = 600,
                 digits = 0
@@ -252,7 +258,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutMaxVerticalVelocity1h,
                 binding.textMaxVerticalVelocity1h,
                 binding.textMaxVerticalVelocity1hInfo,
-                getString(R.string.m),
+                getString(R.string.value_with_m),
                 getValueOrNull(extremaValuesSummits?.topVerticalVelocity1hMinMax?.second) { e -> e.elevationData.maxVerticalVelocity1h },
                 factor = 3600,
                 digits = 0
@@ -267,7 +273,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutTopSpeed,
                 binding.textTopSpeed,
                 binding.textTopSpeedInfo,
-                getString(R.string.kmh),
+                getString(R.string.value_with_kmh),
                 getValueOrNull(extremaValuesSummits?.topSpeedMinMax?.second) { e -> e.velocityData.maxVelocity },
                 1
             )
@@ -276,7 +282,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutTopSpeed1Km,
                 binding.textTopSpeed1Km,
                 binding.textTopSpeed1KmInfo,
-                getString(R.string.kmh),
+                getString(R.string.value_with_kmh),
                 getValueOrNull(extremaValuesSummits?.oneKmMinMax?.second) { e -> e.velocityData.oneKilometer },
                 1
             )
@@ -285,7 +291,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutTopSpeed5Km,
                 binding.textTopSpeed5Km,
                 binding.textTopSpeed5KmInfo,
-                getString(R.string.kmh),
+                getString(R.string.value_with_kmh),
                 getValueOrNull(extremaValuesSummits?.fiveKmMinMax?.second) { e -> e.velocityData.fiveKilometer },
                 1
             )
@@ -294,7 +300,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutTopSpeed10Km,
                 binding.textTopSpeed10Km,
                 binding.textTopSpeed10KmInfo,
-                getString(R.string.kmh),
+                getString(R.string.value_with_kmh),
                 getValueOrNull(extremaValuesSummits?.tenKmMinMax?.second) { e -> e.velocityData.tenKilometers },
                 1
             )
@@ -303,7 +309,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutTopSpeed15Km,
                 binding.textTopSpeed15Km,
                 binding.textTopSpeed15KmInfo,
-                getString(R.string.kmh),
+                getString(R.string.value_with_kmh),
                 getValueOrNull(extremaValuesSummits?.fifteenKmMinMax?.second) { e -> e.velocityData.fifteenKilometers },
                 1
             )
@@ -312,7 +318,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutTopSpeed20Km,
                 binding.textTopSpeed20Km,
                 binding.textTopSpeed20KmInfo,
-                getString(R.string.kmh),
+                getString(R.string.value_with_kmh),
                 getValueOrNull(extremaValuesSummits?.twentyKmMinMax?.second) { e -> e.velocityData.twentyKilometers },
                 1
             )
@@ -321,7 +327,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutTopSpeed30Km,
                 binding.textTopSpeed30Km,
                 binding.textTopSpeed30KmInfo,
-                getString(R.string.kmh),
+                getString(R.string.value_with_kmh),
                 getValueOrNull(extremaValuesSummits?.thirtyKmMinMax?.second) { e -> e.velocityData.thirtyKilometers },
                 1
             )
@@ -330,7 +336,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutTopSpeed40Km,
                 binding.textTopSpeed40Km,
                 binding.textTopSpeed40KmInfo,
-                getString(R.string.kmh),
+                getString(R.string.value_with_kmh),
                 getValueOrNull(extremaValuesSummits?.fortyKmMinMax?.second) { e -> e.velocityData.fortyKilometers },
                 1
             )
@@ -339,7 +345,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutTopSpeed50Km,
                 binding.textTopSpeed50Km,
                 binding.textTopSpeed50KmInfo,
-                getString(R.string.kmh),
+                getString(R.string.value_with_kmh),
                 getValueOrNull(extremaValuesSummits?.fiftyKmMinMax?.second) { e -> e.velocityData.fiftyKilometers },
                 1
             )
@@ -348,7 +354,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutTopSpeed75Km,
                 binding.textTopSpeed75Km,
                 binding.textTopSpeed75KmInfo,
-                getString(R.string.kmh),
+                getString(R.string.value_with_kmh),
                 getValueOrNull(extremaValuesSummits?.seventyFiveKmMinMax?.second) { e -> e.velocityData.seventyFiveKilometers },
                 1
             )
@@ -357,7 +363,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutTopSpeed100Km,
                 binding.textTopSpeed100Km,
                 binding.textTopSpeed100KmInfo,
-                getString(R.string.kmh),
+                getString(R.string.value_with_kmh),
                 getValueOrNull(extremaValuesSummits?.hundredKmMinMax?.second) { e -> e.velocityData.hundredKilometers },
                 1
             )
@@ -366,19 +372,19 @@ class StatisticsFragment : Fragment() {
                 binding.layoutMostHeightMeter,
                 binding.textMostHeightMeter,
                 binding.textMostHeightMeterInfo,
-                getString(R.string.m),
+                getString(R.string.value_with_m),
                 getValueOrNull(extremaValuesSummits?.heightMetersMinMax?.second) { e -> e.elevationData.elevationGain.toDouble() })
             setTextViewData(extremaValuesSummits?.topElevationMinMax?.second,
                 binding.layoutHighestPeak,
                 binding.textHighestPeak,
                 binding.textHighestPeakInfo,
-                getString(R.string.masl),
+                getString(R.string.value_with_masl),
                 getValueOrNull(extremaValuesSummits?.topElevationMinMax?.second) { e -> e.elevationData.maxElevation.toDouble() })
             setTextViewData(extremaValuesSummits?.normPowerMinMax?.second,
                 binding.layoutHighestPower,
                 binding.textHeighestPower,
                 binding.textHeighestPowerInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.normPowerMinMax?.second) { e ->
                     e.garminData?.power?.normPower?.toDouble() ?: 0.0
                 })
@@ -391,7 +397,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower1sec,
                 binding.textHeighestPower1sec,
                 binding.textHeighestPower1secInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power1sMinMax?.second) { e ->
                     e.garminData?.power?.oneSec?.toDouble() ?: 0.0
                 })
@@ -399,7 +405,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower2sec,
                 binding.textHeighestPower2sec,
                 binding.textHeighestPower2secInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power2sMinMax?.second) { e ->
                     e.garminData?.power?.twoSec?.toDouble() ?: 0.0
                 })
@@ -407,7 +413,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower5sec,
                 binding.textHeighestPower5sec,
                 binding.textHeighestPower5secInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power5sMinMax?.second) { e ->
                     e.garminData?.power?.fiveSec?.toDouble() ?: 0.0
                 })
@@ -415,7 +421,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower10sec,
                 binding.textHeighestPower10sec,
                 binding.textHeighestPower10secInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power10sMinMax?.second) { e ->
                     e.garminData?.power?.tenSec?.toDouble() ?: 0.0
                 })
@@ -423,7 +429,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower20sec,
                 binding.textHeighestPower20sec,
                 binding.textHeighestPower20secInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power20sMinMax?.second) { e ->
                     e.garminData?.power?.twentySec?.toDouble() ?: 0.0
                 })
@@ -431,7 +437,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower30sec,
                 binding.textHeighestPower30sec,
                 binding.textHeighestPower30secInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power30sMinMax?.second) { e ->
                     e.garminData?.power?.thirtySec?.toDouble() ?: 0.0
                 })
@@ -439,7 +445,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower1min,
                 binding.textHeighestPower1min,
                 binding.textHeighestPower1minInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power1minMinMax?.second) { e ->
                     e.garminData?.power?.oneMin?.toDouble() ?: 0.0
                 })
@@ -447,7 +453,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower2min,
                 binding.textHeighestPower2min,
                 binding.textHeighestPower2minInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power2minMinMax?.second) { e ->
                     e.garminData?.power?.twoMin?.toDouble() ?: 0.0
                 })
@@ -455,7 +461,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower5min,
                 binding.textHeighestPower5min,
                 binding.textHeighestPower5minInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power5minMinMax?.second) { e ->
                     e.garminData?.power?.fiveMin?.toDouble() ?: 0.0
                 })
@@ -463,7 +469,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower10min,
                 binding.textHeighestPower10min,
                 binding.textHeighestPower10minInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power10minMinMax?.second) { e ->
                     e.garminData?.power?.tenMin?.toDouble() ?: 0.0
                 })
@@ -471,7 +477,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower20min,
                 binding.textHeighestPower20min,
                 binding.textHeighestPower20minInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power20minMinMax?.second) { e ->
                     e.garminData?.power?.twentyMin?.toDouble() ?: 0.0
                 })
@@ -479,7 +485,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower30min,
                 binding.textHeighestPower30min,
                 binding.textHeighestPower30minInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power30minMinMax?.second) { e ->
                     e.garminData?.power?.thirtyMin?.toDouble() ?: 0.0
                 })
@@ -487,7 +493,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower1h,
                 binding.textHeighestPower1h,
                 binding.textHeighestPower1hInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power1hMinMax?.second) { e ->
                     e.garminData?.power?.oneHour?.toDouble() ?: 0.0
                 })
@@ -495,7 +501,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower2h,
                 binding.textHeighestPower2h,
                 binding.textHeighestPower2hInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power2hMinMax?.second) { e ->
                     e.garminData?.power?.twoHours?.toDouble() ?: 0.0
                 })
@@ -503,7 +509,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestPower5h,
                 binding.textHeighestPower5h,
                 binding.textHeighestPower5hInfo,
-                getString(R.string.watt),
+                getString(R.string.value_with_watt),
                 getValueOrNull(extremaValuesSummits?.power5hMinMax?.second) { e ->
                     e.garminData?.power?.fiveHours?.toDouble() ?: 0.0
                 })
@@ -511,7 +517,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestAverageHR,
                 binding.textHeighestAverageHR,
                 binding.textHeighestAverageHRInfo,
-                getString(R.string.bpm),
+                getString(R.string.value_with_bpm),
                 getValueOrNull(extremaValuesSummits?.averageHRMinMax?.second) { e ->
                     e.garminData?.averageHR?.toDouble() ?: 0.0
                 })
@@ -520,7 +526,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestFlow,
                 binding.textHeighestFlow,
                 binding.textHeighestFlowInfo,
-                "",
+                getString(R.string.value_only),
                 getValueOrNull(extremaValuesSummits?.flowMinMax?.second) { e ->
                     e.garminData?.flow?.toDouble() ?: 0.0
                 },
@@ -530,7 +536,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestGrit,
                 binding.textHeighestGrit,
                 binding.textHeighestGritInfo,
-                "",
+                getString(R.string.value_only),
                 getValueOrNull(extremaValuesSummits?.gritMinMax?.second) { e ->
                     e.garminData?.grit?.toDouble() ?: 0.0
                 })
@@ -538,7 +544,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestTrainingLoad,
                 binding.textHeighestTrainingLoad,
                 binding.textHeighestTrainingLoadInfo,
-                "",
+                getString(R.string.value_only),
                 getValueOrNull(extremaValuesSummits?.trainingsLoadMinMax?.second) { e ->
                     e.garminData?.trainingLoad?.toDouble() ?: 0.0
                 })
@@ -546,7 +552,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestFTP,
                 binding.textHeighestFTP,
                 binding.textHeighestFTPInfo,
-                "",
+                getString(R.string.value_only),
                 getValueOrNull(extremaValuesSummits?.ftpMinMax?.second) { e ->
                     e.garminData?.ftp?.toDouble() ?: 0.0
                 })
@@ -554,7 +560,7 @@ class StatisticsFragment : Fragment() {
                 binding.layoutHighestVO2MAX,
                 binding.textHeighestVO2MAX,
                 binding.textHeighestVO2MAXInfo,
-                "",
+                getString(R.string.value_only),
                 getValueOrNull(extremaValuesSummits?.vo2maxMinMax?.second) { e ->
                     e.garminData?.vo2max?.toDouble() ?: 0.0
                 })
@@ -567,7 +573,7 @@ class StatisticsFragment : Fragment() {
 
     private fun setTextViewData(
         entry: Summit?, layout: LinearLayout, data: TextView, info: TextView,
-        unit: String?, value: Double, digits: Int = 0, factor: Int = 1,
+        unit: String, value: Double, digits: Int = 0, factor: Int = 1,
     ) {
         if (entry != null) {
             layout.setOnClickListener { v: View ->
@@ -577,21 +583,9 @@ class StatisticsFragment : Fragment() {
                 context.startActivity(intent)
             }
             layout.visibility = View.VISIBLE
-            if (digits > 0) {
-                data.text = String.format(
-                    requireContext().resources.configuration.locales[0],
-                    "%." + digits + "f %s",
-                    value * factor,
-                    unit
-                )
-            } else {
-                data.text = String.format(
-                    requireContext().resources.configuration.locales[0],
-                    "%s %s",
-                    (value * factor).roundToLong(),
-                    unit
-                )
-            }
+
+            numberFormat.maximumFractionDigits = digits
+            data.text = String.format(unit, numberFormat.format(value * factor))
             info.text = String.format(
                 requireContext().resources.configuration.locales[0],
                 "%s: %s\n%s: %s",

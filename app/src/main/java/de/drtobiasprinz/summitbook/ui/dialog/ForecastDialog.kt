@@ -58,8 +58,8 @@ class ForecastDialog : DialogFragment() {
         val range: Date = Summit.parseDate("${currentYear}-01-01")
         viewModel.summitsList.observe(viewLifecycleOwner,
             object : androidx.lifecycle.Observer<DataStatus<List<Summit>>> {
-                override fun onChanged(summitsListDataStatus: DataStatus<List<Summit>>?) {
-                    summitsListDataStatus?.data.let { summits ->
+                override fun onChanged(value: DataStatus<List<Summit>>) {
+                    value.data.let { summits ->
                         val summitsForSelectedYear =
                             summits?.filter { summit -> getYear(summit.date) == getYear(range) }
                         viewModel.forecastList.observe(viewLifecycleOwner) { itDataStatusForecasts ->
