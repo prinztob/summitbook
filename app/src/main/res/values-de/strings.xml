@@ -24,6 +24,7 @@
     <string name="date">Datum</string>
     <string name="yearly">Jährlich</string>
     <string name="yearly_until_today">Jährlich bis heute</string>
+    <string name="quarterly">Quartalsweise</string>
     <string name="monthly">Monatlich</string>
     <string name="wekly">Wöchenlich</string>
     <string name="calender_wek_abrv">KW</string>

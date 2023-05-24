@@ -56,7 +56,7 @@ class SegmentEntryDetailsFragment : Fragment() {
 
     var segmentDetailsId: Long = -1L
     private var segmentEntryId: Long = -1L
-    private var descending: Boolean = true
+    private var descending: Boolean = false
     private lateinit var binding: FragmentSegmentEntryDetailsBinding
 
     private var summitShown: Summit? = null

@@ -17,7 +17,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest= Config.NONE)
+@Config(manifest = Config.NONE)
 class SegmentTest {
 
     private lateinit var db: AppDatabase
@@ -27,8 +27,8 @@ class SegmentTest {
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
-                .allowMainThreadQueries()
-                .build()
+            .allowMainThreadQueries()
+            .build()
         dao = db.segmentsDao()
     }
 
@@ -39,20 +39,25 @@ class SegmentTest {
 
     companion object {
         private var segmentDetail1 = SegmentDetails(0, "start1", "end1")
-        private val segmentEntry1 = SegmentEntry(0, 0, Summit.parseDate("2019-11-13"), 1L, 1,
-                44.44, 33.33, 10, 44.94, 33.94,
-                18.1, 2.9, 220, 0, 157, 1)
-        private val segmentEntry2 = SegmentEntry(0, 0, Summit.parseDate("2019-11-14"), 1L, 1,
-                44.44, 33.33, 10, 44.94, 33.94,
-                18.1, 2.9, 220, 0, 157, 1)
+        private val segmentEntry1 = SegmentEntry(
+            0, 0, Summit.parseDate("2019-11-13"), 1L, 1,
+            44.44, 33.33, 10, 44.94, 33.94,
+            18.1, 2.9, 220, 0, 157, 1
+        )
+        private val segmentEntry2 = SegmentEntry(
+            0, 0, Summit.parseDate("2019-11-14"), 1L, 1,
+            44.44, 33.33, 10, 44.94, 33.94,
+            18.1, 2.9, 220, 0, 157, 1
+        )
 
     }
 
     @Test
     @Throws(Exception::class)
     fun parseNewSegmentFromCsvFileLine() {
-        val newFormatLineToParse = "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
-        Segment.parseFromCsvFileLine(newFormatLineToParse, mutableListOf(), db)
+        val newFormatLineToParse =
+            "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
+        Segment.parseFromCsvFileLine(newFormatLineToParse, mutableListOf())
         val segments = dao?.getAllSegmentsDeprecated()
         assert(segments?.size == 1)
         assert(segments?.firstOrNull()?.segmentEntries?.size == 1)
@@ -63,30 +68,44 @@ class SegmentTest {
     @Throws(Exception::class)
     fun parseSegmentFromCsvFileLineWithKnownSegmentDetail() {
         val segmentsBefore = dao?.getAllSegmentsDeprecated()
-        val line1ToParse = "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
-        Segment.parseFromCsvFileLine(line1ToParse, segmentsBefore, db)
-        val line2ToParse = "start1;end1;2019-11-14;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
-        Segment.parseFromCsvFileLine(line2ToParse, segmentsBefore, db)
+        val line1ToParse =
+            "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
+        Segment.parseFromCsvFileLine(line1ToParse, segmentsBefore)
+        val line2ToParse =
+            "start1;end1;2019-11-14;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
+        Segment.parseFromCsvFileLine(line2ToParse, segmentsBefore)
         val segmentsAfter = dao?.getAllSegmentsDeprecated()
         assert(segmentsAfter?.size == 1)
         assert(segmentsAfter == segmentsBefore)
         assert(segmentsAfter?.firstOrNull()?.segmentEntries?.size == 2)
-        assert(segmentsAfter?.firstOrNull() == Segment(segmentDetail1, mutableListOf(segmentEntry1, segmentEntry2)))
+        assert(
+            segmentsAfter?.firstOrNull() == Segment(
+                segmentDetail1,
+                mutableListOf(segmentEntry1, segmentEntry2)
+            )
+        )
     }
 
     @Test
     @Throws(Exception::class)
     fun parseSegmentFromCsvFileLineDuplication() {
         val segmentsBefore = dao?.getAllSegmentsDeprecated()
-        val line1ToParse = "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
-        Segment.parseFromCsvFileLine(line1ToParse, segmentsBefore, db)
-        val line2ToParse = "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
-        Segment.parseFromCsvFileLine(line2ToParse, segmentsBefore, db)
+        val line1ToParse =
+            "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
+        Segment.parseFromCsvFileLine(line1ToParse, segmentsBefore)
+        val line2ToParse =
+            "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
+        Segment.parseFromCsvFileLine(line2ToParse, segmentsBefore)
         val segmentsAfter = dao?.getAllSegmentsDeprecated()
         assert(segmentsAfter?.size == 1)
         assert(segmentsAfter == segmentsBefore)
         assert(segmentsAfter?.firstOrNull()?.segmentEntries?.size == 1)
-        assert(segmentsAfter?.firstOrNull() == Segment(segmentDetail1, mutableListOf(segmentEntry1)))
+        assert(
+            segmentsAfter?.firstOrNull() == Segment(
+                segmentDetail1,
+                mutableListOf(segmentEntry1)
+            )
+        )
     }
 
 

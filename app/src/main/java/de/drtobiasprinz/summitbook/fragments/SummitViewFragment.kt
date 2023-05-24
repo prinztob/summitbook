@@ -107,7 +107,8 @@ class SummitViewFragment : Fragment() {
                         DataStatus.Status.SUCCESS -> {
                             it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
                             loading.isVisible(false, recyclerView)
-                            summitsAdapter.differ.submitList(it.data)
+                            val data = sortFilterValues.applyForBookmarks(it.data ?: emptyList())
+                            summitsAdapter.differ.submitList(data)
                         }
                         DataStatus.Status.ERROR -> {
                             loading.isVisible(false, recyclerView)
@@ -264,7 +265,7 @@ class SummitViewFragment : Fragment() {
         if (sharedPreferences.getBoolean("startup_auto_update_switch", false) && executor != null) {
             binding.loading.visibility = View.VISIBLE
             viewModel?.solarIntensitiesList?.observeOnce(viewLifecycleOwner) { solarListDataStatus ->
-                solarListDataStatus?.data.let { solarIntensities ->
+                solarListDataStatus.data.let { solarIntensities ->
                     val updater = GarminDataUpdater(
                         sharedPreferences,
                         executor,

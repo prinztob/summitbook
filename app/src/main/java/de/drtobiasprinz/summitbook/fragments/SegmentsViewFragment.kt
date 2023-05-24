@@ -7,12 +7,17 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.SegmentsViewAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentRoutesViewBinding
+import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import javax.inject.Inject
 
-
+@AndroidEntryPoint
 class SegmentsViewFragment : Fragment() {
+    @Inject
+    lateinit var sortFilterValues: SortFilterValues
     private lateinit var binding: FragmentRoutesViewBinding
 
     private val viewModel: DatabaseViewModel by activityViewModels()
@@ -25,7 +30,8 @@ class SegmentsViewFragment : Fragment() {
         viewModel.segmentsList.observe(viewLifecycleOwner) {
             it.data.let { segments ->
                 if (segments != null) {
-                    val adapter = SegmentsViewAdapter(segments)
+                    val data = sortFilterValues.apply(it.data ?: emptyList())
+                    val adapter = SegmentsViewAdapter(data)
                     adapter.onClickDelete = { segment -> viewModel.deleteSegment(segment) }
                     binding.root.adapter = adapter
                 }

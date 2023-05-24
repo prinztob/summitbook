@@ -22,7 +22,6 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentLineChartBinding
 import de.drtobiasprinz.summitbook.db.entities.SolarIntensity
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -34,20 +33,16 @@ import java.text.SimpleDateFormat
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.*
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class LineChartSolarFragment : Fragment() {
     private val viewModel: DatabaseViewModel by activityViewModels()
 
-    @Inject
-    lateinit var summitsAdapter: SummitsAdapter
     private lateinit var binding: FragmentLineChartBinding
 
     private var lineChartEntriesBatteryGain: MutableList<Entry?> = mutableListOf()
     private var lineChartEntriesSolarExposure: MutableList<Entry?> = mutableListOf()
     private var lineChartEntriesActivities: MutableList<Entry?> = mutableListOf()
-    private lateinit var summits: List<Summit>
     private var lineChartSpinnerEntry: XAxisSelector = XAxisSelector.Days
     private var lineChartColors: List<Int>? = mutableListOf()
 
@@ -58,19 +53,25 @@ class LineChartSolarFragment : Fragment() {
         binding = FragmentLineChartBinding.inflate(layoutInflater, container, false)
 
         fillDateSpinner()
-        summits = summitsAdapter.differ.currentList
         viewModel.solarIntensitiesList.observe(viewLifecycleOwner) { solarListDataStatus ->
             solarListDataStatus.data.let { solarIntensities ->
-                val numberActivitiesPerDay = summits.groupingBy { it.getDateAsString() }.eachCount()
-                solarIntensities?.forEach {
-                    it.activitiesOnDay =
-                        if (numberActivitiesPerDay.keys.contains(it.getDateAsString())) numberActivitiesPerDay[it.getDateAsString()]
-                            ?: 0 else 0
-                }
-                resizeChart()
-                if (solarIntensities != null) {
-                    listenOnDataSpinner(solarIntensities)
-                    drawLineChart(solarIntensities)
+                viewModel.summitsList.observe(viewLifecycleOwner) { summitListDataStatus ->
+                    summitListDataStatus.data.let { summits ->
+                        if (summits != null) {
+                            val numberActivitiesPerDay =
+                                summits.groupingBy { it.getDateAsString() }.eachCount()
+                            solarIntensities?.forEach {
+                                it.activitiesOnDay =
+                                    if (numberActivitiesPerDay.keys.contains(it.getDateAsString())) numberActivitiesPerDay[it.getDateAsString()]
+                                        ?: 0 else 0
+                            }
+                        }
+                        resizeChart()
+                        if (solarIntensities != null) {
+                            listenOnDataSpinner(solarIntensities)
+                            drawLineChart(solarIntensities)
+                        }
+                    }
                 }
             }
         }

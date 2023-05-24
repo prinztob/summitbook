@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.models
 import android.content.SharedPreferences
 import android.util.Log
 import de.drtobiasprinz.summitbook.databinding.FragmentSortAndFilterBinding
+import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import java.text.SimpleDateFormat
@@ -90,9 +91,9 @@ class SortFilterValues(
 
     fun apply(summits: List<Summit>, sharedPreferences: SharedPreferences): List<Summit> {
         setInitialValues(summits, sharedPreferences)
-        Log.i("SortFilterValues", "apply")
         val filteredSummits = summits.filter {
-            filterDate(it) &&
+            !it.isBookmark &&
+                    filterDate(it) &&
                     filterParticipants(it) &&
                     (sportType == null || sportType == it.sportType) &&
                     kilometersSlider.filter(it) &&
@@ -104,6 +105,17 @@ class SortFilterValues(
                     hasPositionButtonGroup.filter(it)
         }
         return orderByValueButtonGroup.sort(filteredSummits, orderByAscDescButtonGroup)
+    }
+
+    fun applyForBookmarks(summits: List<Summit>): List<Summit> {
+        val filteredSummits = summits.filter {
+            it.isBookmark
+        }
+        return orderByValueButtonGroup.sort(filteredSummits, orderByAscDescButtonGroup)
+    }
+
+    fun apply(segments: List<Segment>): List<Segment> {
+        return orderByValueButtonGroup.sortSegments(segments, orderByAscDescButtonGroup)
     }
 
     private fun filterDate(summit: Summit): Boolean {
@@ -172,13 +184,20 @@ enum class OrderByAscDescButtonGroup(
 enum class OrderByValueButtonGroup(
     val query: String,
     val bindingId: (FragmentSortAndFilterBinding) -> Int,
-    val sort: (List<Summit>, OrderByAscDescButtonGroup) -> List<Summit>
+    val sort: (List<Summit>, OrderByAscDescButtonGroup) -> List<Summit>,
+    val sortSegments: (List<Segment>, OrderByAscDescButtonGroup) -> List<Segment>
 ) {
     Date("date", { e -> e.buttonByDate.id }, { e, order ->
         if (order == OrderByAscDescButtonGroup.Descending) {
             e.sortedByDescending { it.date.time }
         } else {
             e.sortedBy { it.date.time }
+        }
+    }, { e, order ->
+        if (order == OrderByAscDescButtonGroup.Descending) {
+            e.sortedByDescending { it.segmentEntries.maxByOrNull { it.date }?.date }
+        } else {
+            e.sortedBy { it.segmentEntries.maxByOrNull { it.date }?.date }
         }
     }),
     Name("name", { e -> e.buttonByName.id }, { e, order ->
@@ -187,12 +206,24 @@ enum class OrderByValueButtonGroup(
         } else {
             e.sortedBy { it.name }
         }
+    }, { e, order ->
+        if (order == OrderByAscDescButtonGroup.Descending) {
+            e.sortedByDescending { it.segmentDetails.getDisplayName() }
+        } else {
+            e.sortedBy { it.segmentDetails.getDisplayName() }
+        }
     }),
     HeightMeter("elevationGain", { e -> e.buttonByHeightMeter.id }, { e, order ->
         if (order == OrderByAscDescButtonGroup.Descending) {
             e.sortedByDescending { it.elevationData.elevationGain }
         } else {
             e.sortedBy { it.elevationData.elevationGain }
+        }
+    }, { e, order ->
+        if (order == OrderByAscDescButtonGroup.Descending) {
+            e.sortedByDescending { it.segmentEntries.firstOrNull()?.heightMetersUp }
+        } else {
+            e.sortedBy { it.segmentEntries.firstOrNull()?.heightMetersUp }
         }
     }),
     Kilometer("kilometer", { e -> e.buttonByKilometers.id }, { e, order ->
@@ -201,12 +232,24 @@ enum class OrderByValueButtonGroup(
         } else {
             e.sortedBy { it.kilometers }
         }
+    }, { e, order ->
+        if (order == OrderByAscDescButtonGroup.Descending) {
+            e.sortedByDescending { it.segmentEntries.firstOrNull()?.kilometers }
+        } else {
+            e.sortedBy { it.segmentEntries.firstOrNull()?.kilometers }
+        }
     }),
     TopElevation("maxElevation", { e -> e.buttonByElevation.id }, { e, order ->
         if (order == OrderByAscDescButtonGroup.Descending) {
             e.sortedByDescending { it.elevationData.maxElevation }
         } else {
             e.sortedBy { it.elevationData.maxElevation }
+        }
+    }, { e, order ->
+        if (order == OrderByAscDescButtonGroup.Descending) {
+            e.sortedByDescending { it.segmentEntries.firstOrNull()?.heightMetersUp }
+        } else {
+            e.sortedBy { it.segmentEntries.firstOrNull()?.heightMetersUp }
         }
     })
 }

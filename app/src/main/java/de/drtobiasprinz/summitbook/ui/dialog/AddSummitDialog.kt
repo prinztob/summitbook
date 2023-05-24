@@ -32,7 +32,6 @@ import com.google.gson.JsonParser
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.DialogAddSummitBinding
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.CONNECTED_ACTIVITY_PREFIX
@@ -75,9 +74,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
 
     @Inject
     lateinit var entity: Summit
-
-    @Inject
-    lateinit var summitsAdapter: SummitsAdapter
 
     private val viewModel: DatabaseViewModel by activityViewModels()
 
@@ -133,12 +129,12 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             viewModel.summitsList
         }
         list.observe(viewLifecycleOwner) { summitData ->
-                summitData.data.let { summits ->
-                    if (summits != null) {
-                        setData(summits, view)
-                    }
+            summitData.data.let { summits ->
+                if (summits != null) {
+                    setData(summits, view)
                 }
             }
+        }
     }
 
     private fun setData(
@@ -164,8 +160,8 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             equipmentsAdapter = ArrayAdapter(requireContext(),
                 android.R.layout.simple_dropdown_item_1line,
                 summits.flatMap { it.equipments }.distinct().filter { it != "" })
-            placesAdapter = getPlacesSuggestions()
-            summitName.setAdapter(getPlacesSuggestions(false))
+            placesAdapter = getPlacesSuggestions(summits)
+            summitName.setAdapter(getPlacesSuggestions(summits, false))
 
             if (type == EDIT) {
                 val summitToEdit = summits.firstOrNull { it.id == summitId }
@@ -504,8 +500,10 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         }
     }
 
-    private fun getPlacesSuggestions(addConnectedEntryString: Boolean = true): ArrayAdapter<String> {
-        val summits = summitsAdapter.differ.currentList
+    private fun getPlacesSuggestions(
+        summits: List<Summit>,
+        addConnectedEntryString: Boolean = true
+    ): ArrayAdapter<String> {
         val suggestions: MutableList<String> =
             (summits.flatMap { it.places } + summits.map { it.name }).filter {
                 !it.startsWith(

@@ -54,6 +54,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
 
     fun refresh() {
         _summitsList.value = _summitsList.value
+        _segmentsList.value = _segmentsList.value
     }
 
     fun saveSummit(isEdite: Boolean, entity: Summit) = viewModelScope.launch {

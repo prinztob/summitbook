@@ -40,7 +40,7 @@ import java.util.*
 import java.util.function.Supplier
 import java.util.stream.Stream
 import javax.inject.Inject
-import kotlin.math.ceil
+import kotlin.math.floor
 
 @AndroidEntryPoint
 class BarChartFragment : Fragment() {
@@ -157,6 +157,8 @@ class BarChartFragment : Fragment() {
                         "%s",
                         DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[(value % 12f).toInt()]
                     )
+                } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByQuarter) {
+                    String.format("%s", toRomanNumerics((value.toInt() + 1) % 4))
                 } else if (selectedXAxisSpinnerEntry.isAQuality) {
                     getFormattedValueForQuantity(value)
                 } else {
@@ -235,6 +237,8 @@ class BarChartFragment : Fragment() {
                 annualTarget /= 52f
             } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByMonth) {
                 annualTarget /= 12f
+            } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByQuarter) {
+                annualTarget /= 4f
             }
             val line1 = LimitLine(annualTarget)
             binding.barChart.axisLeft?.addLimitLine(line1)
@@ -273,7 +277,8 @@ class BarChartFragment : Fragment() {
         if (selectedXAxisSpinnerEntry in listOf(
                 XAxisSelector.DateByMonth,
                 XAxisSelector.DateByYear,
-                XAxisSelector.DateByYearUntilToday
+                XAxisSelector.DateByYearUntilToday,
+                XAxisSelector.DateByQuarter
             )
         ) {
             viewModel.forecastList.observe(viewLifecycleOwner) {
@@ -377,7 +382,7 @@ class BarChartFragment : Fragment() {
                             String.format("%s", e.x.toInt())
                         } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByWeek) {
                             val week = (e.x % 52f).toInt()
-                            val year = ceil((e.x + 1f) / 52f).toInt() + getYear(minDate)
+                            val year = floor(e.x / 52f).toInt() + getYear(minDate)
                             String.format(
                                 "%s %s/%s",
                                 getString(R.string.calender_wek_abrv),
@@ -386,12 +391,16 @@ class BarChartFragment : Fragment() {
                             )
                         } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByMonth) {
                             val month = (e.x % 12f).toInt()
-                            val year = ceil((e.x + 1f) / 12f).toInt() + getYear(minDate)
+                            val year = floor((e.x + 1f) / 12f).toInt() + getYear(minDate)
                             String.format(
                                 "%s %s",
                                 DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month],
                                 year
                             )
+                        } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByQuarter) {
+                            val quarter = ((e.x + 1f) % 4f).toInt()
+                            val year = floor((e.x + 1f) / 4f).toInt() + getYear(minDate)
+                            "${toRomanNumerics(quarter)} $year"
                         } else if (selectedXAxisSpinnerEntry.isAQuality) {
                             getFormattedValueForQuantity(e.x)
                         } else {
@@ -406,7 +415,8 @@ class BarChartFragment : Fragment() {
                             if (forecastValue > 0 && (
                                         selectedXAxisSpinnerEntry == XAxisSelector.DateByMonth ||
                                                 selectedXAxisSpinnerEntry == XAxisSelector.DateByYear) ||
-                                selectedXAxisSpinnerEntry == XAxisSelector.DateByYearUntilToday
+                                selectedXAxisSpinnerEntry == XAxisSelector.DateByYearUntilToday ||
+                                selectedXAxisSpinnerEntry == XAxisSelector.DateByQuarter
                             ) {
                                 String.format(
                                     "%s%s\n%s\n%s: %s%s",
@@ -453,6 +463,13 @@ class BarChartFragment : Fragment() {
             return MPPointF(-(width / 2f), (-height).toFloat())
         }
 
+    }
+
+    private fun toRomanNumerics(quarter: Int) = when (quarter) {
+        1 -> "I"
+        2 -> "II"
+        3 -> "III"
+        else -> "IV"
     }
 
     private fun getYear(date: Date): Int {
@@ -523,6 +540,20 @@ class BarChartFragment : Fragment() {
                     o.date in (range as ClosedRange<Date>)
                 }
         }, { e -> e.dateByWeekRangeAndAnnotation }),
+        DateByQuarter(
+            R.string.quarterly,
+            R.string.empty,
+            0.0,
+            false,
+            4f,
+            { entries, range ->
+                entries
+                    ?.stream()
+                    ?.filter { o: Summit ->
+                        o.date in (range as ClosedRange<Date>)
+                    }
+            },
+            { e -> e.dateByQuarterRangeAndAnnotation }),
         Kilometers(
             R.string.kilometers_hint,
             R.string.km,

@@ -16,7 +16,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.DialogShowNewSummitFromGarminBinding
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -29,13 +28,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
 
-    @Inject
-    lateinit var summitsAdapter: SummitsAdapter
     private val viewModel: DatabaseViewModel by viewModels()
 
     private lateinit var binding: DialogShowNewSummitFromGarminBinding
@@ -179,15 +175,20 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         activitiesIdIgnored = ignoredActivities.map {
             it.activityId
         }
-        val activityIdsInSummitBook =
-            summitsAdapter.differ.currentList.filter { !it.garminData?.activityIds.isNullOrEmpty() }
-                .map { it.garminData?.activityIds as List<String> }.flatten()
-        entriesWithoutIgnored = if (showAll) {
-            getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
-        } else {
-            getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
+        viewModel.summitsList.observe(viewLifecycleOwner) { summitListDataStatus ->
+            summitListDataStatus.data.let { summits ->
+                if (summits != null) {
+                    val activityIdsInSummitBook =
+                        summits.filter { !it.garminData?.activityIds.isNullOrEmpty() }
+                            .map { it.garminData?.activityIds as List<String> }.flatten()
+                    entriesWithoutIgnored = if (showAll) {
+                        getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
+                    } else {
+                        getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
+                    }
+                }
+            }
         }
-
     }
 
     private fun drawTable(view: View) {

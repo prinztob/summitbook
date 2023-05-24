@@ -18,16 +18,18 @@ internal class IntervalHelperTest {
                 Summit(Summit.parseDate("2020-11-13"))
             )
         )
-        val weeks = helper.getRangeAndAnnotationsForDate(Calendar.WEEK_OF_YEAR, Calendar.DAY_OF_WEEK)
+        val weeks =
+            helper.getRangeAndAnnotationsForDate(Calendar.WEEK_OF_YEAR, Calendar.DAY_OF_WEEK)
         Assert.assertEquals(57, weeks.second.size)
         weeks.second.forEachIndexed { index, closedRange ->
             if (index > 0) {
-                assert(closedRange.start.time - weeks.second[index -1 ].endInclusive.time < 2000)
+                assert(closedRange.start.time - weeks.second[index - 1].endInclusive.time < 2000)
             }
         }
         val months = helper.getRangeAndAnnotationsForDate(Calendar.MONTH, Calendar.DAY_OF_MONTH)
         Assert.assertEquals(14, months.second.size)
-        val monthsUntilEndOfCurrentYear = helper.getRangeAndAnnotationsForDate(Calendar.MONTH, Calendar.DAY_OF_MONTH, true)
+        val monthsUntilEndOfCurrentYear =
+            helper.getRangeAndAnnotationsForDate(Calendar.MONTH, Calendar.DAY_OF_MONTH, true)
         Assert.assertEquals(15, monthsUntilEndOfCurrentYear.second.size)
         val years = helper.getRangeAndAnnotationsForDate(Calendar.YEAR, Calendar.DAY_OF_YEAR)
         Assert.assertEquals(2, years.second.size)
@@ -46,8 +48,22 @@ internal class IntervalHelperTest {
                 Summit(Date(1681898400000))
             )
         )
-        val weeks = helper.getRangeAndAnnotationsForDate(Calendar.WEEK_OF_YEAR, Calendar.DAY_OF_WEEK)
+        val weeks =
+            helper.getRangeAndAnnotationsForDate(Calendar.WEEK_OF_YEAR, Calendar.DAY_OF_WEEK)
         Assert.assertEquals(16, weeks.second.size)
+    }
+
+    @Test
+    @Throws(ParseException::class)
+    fun testQuarterlyRanges() {
+        val helper = IntervalHelper(
+            listOf(
+                Summit(Summit.parseDate("2019-10-13")),
+                Summit(Summit.parseDate("2020-11-13"))
+            )
+        )
+        val quarter = helper.getRangeAndAnnotationQuarterly()
+        Assert.assertEquals(8, quarter.second.size)
     }
 
     @Test
@@ -59,9 +75,11 @@ internal class IntervalHelperTest {
                 Summit(Summit.parseDate("2020-12-13"), elevationData = ElevationData(3000, 1000))
             )
         )
-        val maxElevation = helper.getRangeAndAnnotationsForSummitValue(250f) { summit -> summit.elevationData.maxElevation.toFloat() }
+        val maxElevation =
+            helper.getRangeAndAnnotationsForSummitValue(250f) { summit -> summit.elevationData.maxElevation.toFloat() }
         Assert.assertEquals(13, maxElevation.second.size)
-        val elevationGain = helper.getRangeAndAnnotationsForSummitValue(250f) { summit -> summit.elevationData.elevationGain.toFloat() }
+        val elevationGain =
+            helper.getRangeAndAnnotationsForSummitValue(250f) { summit -> summit.elevationData.elevationGain.toFloat() }
         Assert.assertEquals(9, elevationGain.second.size)
         Assert.assertTrue(250f !in elevationGain.second[0])
         Assert.assertTrue(250f in elevationGain.second[1])
@@ -76,7 +94,8 @@ internal class IntervalHelperTest {
                 Summit(Summit.parseDate("2020-12-13"), participants = listOf("part1", "part3"))
             )
         )
-        val participants = helper.getRangeAndAnnotationForSummitChipValues { summit -> summit.participants }
+        val participants =
+            helper.getRangeAndAnnotationForSummitChipValues { summit -> summit.participants }
         Assert.assertEquals(4, participants.second.size)
     }
 }

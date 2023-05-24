@@ -9,32 +9,35 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
     val participantsRangeAndAnnotationForSummitChipValues: Pair<MutableList<Float>, MutableList<String>> by lazy {
         getRangeAndAnnotationForSummitChipValues { summit -> summit.participants }
     }
-    val equipmentsRangeAndAnnotationForSummitChipValues: Pair<MutableList<Float>, MutableList<String>>by lazy {
+    val equipmentsRangeAndAnnotationForSummitChipValues: Pair<MutableList<Float>, MutableList<String>> by lazy {
         getRangeAndAnnotationForSummitChipValues { summit -> summit.equipments }
     }
-    val countriesRangeAndAnnotationForSummitChipValues: Pair<MutableList<Float>, MutableList<String>>by lazy {
+    val countriesRangeAndAnnotationForSummitChipValues: Pair<MutableList<Float>, MutableList<String>> by lazy {
         getRangeAndAnnotationForSummitChipValues { summit -> summit.countries }
     }
-    val topElevationRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Float>>>by lazy {
+    val topElevationRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Float>>> by lazy {
         getRangeAndAnnotationsForSummitValue(topElevationStep.toFloat()) { it.elevationData.maxElevation.toFloat() }
     }
-    val elevationGainRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Float>>>by lazy {
+    val elevationGainRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Float>>> by lazy {
         getRangeAndAnnotationsForSummitValue(elevationGainStep.toFloat()) { it.elevationData.elevationGain.toFloat() }
     }
-    val kilometersRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Float>>>by lazy {
+    val kilometersRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Float>>> by lazy {
         getRangeAndAnnotationsForSummitValue(kilometersStep.toFloat()) { it.kilometers.toFloat() }
     }
-    val dateByWeekRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>>by lazy {
+    val dateByWeekRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> by lazy {
         getRangeAndAnnotationsForDate(Calendar.WEEK_OF_YEAR, Calendar.DAY_OF_WEEK)
     }
-    val dateByMonthRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>>by lazy {
+    val dateByMonthRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> by lazy {
         getRangeAndAnnotationsForDate(Calendar.MONTH, Calendar.DAY_OF_MONTH, true)
     }
-    val dateByYearRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>>by lazy {
+    val dateByYearRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> by lazy {
         getRangeAndAnnotationsForDate(Calendar.YEAR, Calendar.DAY_OF_YEAR)
     }
-    val dateByYearUntilTodayRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>>by lazy {
+    val dateByYearUntilTodayRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> by lazy {
         getRangeAndAnnotationsForDate(Calendar.YEAR, Calendar.DAY_OF_YEAR, untilToday = true)
+    }
+    val dateByQuarterRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> by lazy {
+        getRangeAndAnnotationQuarterly()
     }
 
     fun getRangeAndAnnotationForSummitChipValues(getValue: (Summit) -> List<String>): Pair<MutableList<Float>, MutableList<String>> {
@@ -76,6 +79,42 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
         return cal
     }
 
+    fun getRangeAndAnnotationQuarterly(): Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> {
+        val cal: Calendar = Calendar.getInstance(TimeZone.getDefault())
+        var minDate = summitEntries.minBy { it.date }.date
+        cal.time = minDate
+        cal.set(Calendar.DAY_OF_YEAR, cal.getActualMinimum(Calendar.DAY_OF_YEAR))
+        minDate = cal.time
+
+        var maxDate = summitEntries.maxBy { it.date }.date
+        cal.time = maxDate
+        cal.set(Calendar.DAY_OF_YEAR, cal.getActualMaximum(Calendar.DAY_OF_YEAR))
+        maxDate = cal.time
+        var i = 0f
+        val ranges: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> =
+            Pair(mutableListOf(), mutableListOf())
+        var date = minDate
+        var to = minDate
+        while (to < maxDate) {
+            val cal1: Calendar = calendarStartOrEndOfDate(date)
+            val from = cal1.time
+            cal1.add(Calendar.MONTH, 3)
+            date = cal1.time
+            cal1.add(Calendar.SECOND, -1)
+            to = cal1.time
+            val last = ranges.first.lastOrNull() ?: -1f
+            if (i > last) {
+                ranges.first.add(i)
+            } else {
+                ranges.first.add(last + 1f)
+            }
+            ranges.second.add(from..to)
+
+            i += 1f
+        }
+        return ranges
+    }
+
     fun getRangeAndAnnotationsForDate(
         rangeTypeForDelta: Int,
         rangeTypeForRange: Int,
@@ -95,7 +134,13 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
         return if (rangeTypeForRange == Calendar.DAY_OF_WEEK) {
             getRangeForWeek(minDate, maxDate, rangeTypeForRange, rangeTypeForDelta)
         } else {
-            getRangeForMonthAndYear(minDate, maxDate, rangeTypeForRange, rangeTypeForDelta, untilToday)
+            getRangeForMonthAndYear(
+                minDate,
+                maxDate,
+                rangeTypeForRange,
+                rangeTypeForDelta,
+                untilToday
+            )
         }
     }
 

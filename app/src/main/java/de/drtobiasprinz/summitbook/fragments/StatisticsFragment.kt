@@ -139,7 +139,7 @@ class StatisticsFragment : Fragment() {
                     binding.textTotalHmInfo.visibility = View.VISIBLE
                     binding.textTotalHmInfo.text = getString(
                         R.string.forecast_info_hm,
-                        numberFormat.format(currentYear),
+                        currentYear.toString(),
                         numberFormat.format(sumCurrentYear),
                         annualTargetHm
                     )
@@ -591,7 +591,7 @@ class StatisticsFragment : Fragment() {
                 "%s: %s\n%s: %s",
                 getString(R.string.name),
                 entry.name,
-                getString(R.string.tour_date),
+                getString(R.string.date),
                 entry.getDateAsString()
             )
         } else {

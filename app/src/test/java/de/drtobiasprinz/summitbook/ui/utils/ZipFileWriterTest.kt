@@ -158,7 +158,7 @@ class ZipFileWriterTest {
     @ExperimentalPathApi
     @Test
     @Throws(Exception::class)
-    fun exportAndImportFromZipFile() {
+    suspend fun exportAndImportFromZipFile() {
         // given
         db.summitsDao().addSummit(entry1)
         db.summitsDao().addSummit(entry2)
@@ -176,12 +176,24 @@ class ZipFileWriterTest {
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries()
             .build()
 
-        val writer = ZipFileWriter(summits, segments, emptyList(), context, exportThirdPartyData = true, exportCalculatedData = true)
+        val writer = ZipFileWriter(
+            summits,
+            segments,
+            emptyList(),
+            context,
+            exportThirdPartyData = true,
+            exportCalculatedData = true
+        )
         writer.dir = createTempDirectory().toFile()
         writer.writeToZipFile(file.outputStream())
 
 
-        val reader = ZipFileReader(createTempDirectory().toFile(), db)
+        val reader = ZipFileReader(
+            createTempDirectory().toFile(),
+            mutableListOf(),
+            mutableListOf(),
+            mutableListOf()
+        )
         reader.extractAndImport(file.inputStream())
 
         assert(summits == db.summitsDao().allSummit)

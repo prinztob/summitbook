@@ -75,6 +75,9 @@ class SummitsAdapter :
                     entryFavorite.visibility = View.INVISIBLE
                     entrySummit.visibility = View.INVISIBLE
                 } else {
+                    entryAddImage.setImageResource(R.drawable.baseline_add_a_photo_black_24dp)
+                    entryFavorite.visibility = View.VISIBLE
+                    entrySummit.visibility = View.VISIBLE
                     setViewForSummitsOnly(entity)
                 }
                 entryDelete.setOnClickListener { v: View? ->
