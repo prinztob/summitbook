@@ -282,7 +282,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             if (useSimplifiedIfExists && simplifiedGpsTrackPath != null && simplifiedGpsTrackPath.toFile()
                     .exists()
             ) simplifiedGpsTrackPath.toFile() else gpsTrackPath.toFile()
-        gpxTrack = getTrack(fileToUse)
+        gpxTrack = getTrack(fileToUse, gpsTrackPath.toFile())
         trackPoints = getTrackPoints(gpxTrack)
         trackGeoPoints = getGeoPoints(trackPoints)
         if (trackPoints.size > 0 && trackPoints.first().extension?.distance == null) {
@@ -375,7 +375,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             } as MutableList<GeoPoint>
         }
 
-        private fun getTrack(fileToUse: File): Gpx? {
+        private fun getTrack(fileToUse: File, fileInCaseOfException: File? = null): Gpx? {
             val mParser = GPXParser()
             try {
                 val inputStream: InputStream = FileInputStream(fileToUse)
@@ -385,7 +385,11 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             } catch (e: NumberFormatException) {
                 e.printStackTrace()
             } catch (e: XmlPullParserException) {
-                e.printStackTrace()
+                if (fileInCaseOfException != null && fileInCaseOfException != fileToUse) {
+                    return getTrack(fileInCaseOfException)
+                } else {
+                    e.printStackTrace()
+                }
             } catch (e: ArrayIndexOutOfBoundsException) {
                 e.printStackTrace()
             }

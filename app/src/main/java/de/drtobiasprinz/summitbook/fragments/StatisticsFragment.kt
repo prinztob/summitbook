@@ -161,7 +161,7 @@ class StatisticsFragment : Fragment() {
                     binding.textTotalHmForecastInfo.visibility = View.VISIBLE
                     binding.textTotalHmForecastInfo.text = getString(
                         R.string.forecast_info_hm,
-                        numberFormat.format((currentYear + 1)),
+                        (currentYear + 1).toString(),
                         numberFormat.format(sumNextYear),
                         annualTargetHm
                     )

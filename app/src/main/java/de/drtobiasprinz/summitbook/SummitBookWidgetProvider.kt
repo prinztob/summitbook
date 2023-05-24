@@ -19,6 +19,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.MainActivity
+import java.text.NumberFormat
 import java.util.*
 import javax.inject.Inject
 import kotlin.math.roundToInt
@@ -88,12 +89,17 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
         drawableGreen: Int? = null,
         drawableRed: Int? = null
     ) {
+        val numberFormat = NumberFormat.getInstance(context.resources.configuration.locales[0])
+        numberFormat.maximumFractionDigits = 0
 
         remoteViews.setViewVisibility(id, View.VISIBLE)
         val unitString = if (unit != null) context.getString(unit) else ""
         remoteViews.setTextViewText(
             id,
-            "$actualValue ${context.getString(R.string.of)} $expectedValue $unitString"
+            "${numberFormat.format(actualValue)} " +
+                    "${context.getString(R.string.of)} " +
+                    "${numberFormat.format(expectedValue)} " +
+                    unitString
         )
         if (expectedValue > actualValue) {
             remoteViews.setTextColor(id, Color.rgb(226, 223, 210))
