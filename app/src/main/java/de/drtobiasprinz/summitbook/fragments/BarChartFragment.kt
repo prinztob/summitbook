@@ -260,14 +260,13 @@ class BarChartFragment : Fragment() {
         val rangeAndAnnotation = selectedXAxisSpinnerEntry.getRangeAndAnnotation(intervalHelper)
         val interval = rangeAndAnnotation.second
         val annotation = rangeAndAnnotation.first
+        label = getString(selectedYAxisSpinnerEntry.nameId)
+        unit = getString(selectedYAxisSpinnerEntry.unitId)
         for (i in interval.indices) {
             val streamSupplier: Supplier<Stream<Summit?>?> = Supplier {
                 selectedXAxisSpinnerEntry.getStream(summits, interval[i])
             }
             val xValue = annotation[i]
-
-            label = getString(selectedYAxisSpinnerEntry.nameId)
-            unit = getString(selectedYAxisSpinnerEntry.unitId)
             val yValues = getValueForEntry(streamSupplier)
             barChartEntries.add(BarEntry(xValue, yValues))
         }

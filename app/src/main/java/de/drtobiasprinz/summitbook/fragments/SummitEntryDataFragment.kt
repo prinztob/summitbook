@@ -802,7 +802,7 @@ class SummitEntryDataFragment : Fragment() {
                                     segmentEntry, segment.segmentDetails,
                                     String.format(
                                         getString(R.string.rank_in_activity),
-                                        segment.segmentEntries.indexOf(segmentEntry),
+                                        segment.segmentEntries.indexOf(segmentEntry) + 1,
                                         segment.segmentDetails.getDisplayName()
                                     )
                                 )

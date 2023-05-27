@@ -37,7 +37,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
     private lateinit var binding: DialogShowNewSummitFromGarminBinding
 
     private lateinit var currentContext: Context
-    private lateinit var entriesWithoutIgnored: MutableList<Summit>
+    private var entriesWithoutIgnored: MutableList<Summit> = mutableListOf()
 
     private var showAllButtonEnabled = false
     private lateinit var backButton: ImageButton
@@ -60,77 +60,90 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
 
         viewModel.ignoredActivityList.observe(viewLifecycleOwner) {
             it.data.let { entries ->
-                ignoredActivities = entries ?: emptyList()
-                updateEntriesWithoutIgnored()
 
-                binding.updateNewSummits.setOnClickListener {
-                    if (pythonExecutor != null) {
-                        val startDate =
-                            sharedPreferences?.getString("garmin_start_date", null) ?: ""
-                        val current = LocalDateTime.now()
-                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                        val endDate = current.format(formatter)
-                        binding.loadingPanel.visibility = View.VISIBLE
-                        asyncDownloadActivities(pythonExecutor, startDate, endDate)
-                    } else {
-                        Toast.makeText(
-                            context,
-                            getString(R.string.set_user_pwd), Toast.LENGTH_LONG
-                        ).show()
-                    }
-                }
-                binding.showAll.setOnClickListener {
-                    if (showAllButtonEnabled) {
-                        binding.showAll.alpha = .5f
-                    } else {
-                        binding.showAll.alpha = 1f
-                    }
-                    showAllButtonEnabled = !showAllButtonEnabled
-                    updateEntriesWithoutIgnored(showAllButtonEnabled)
-                    tableLayout.removeAllViews()
-                    drawTable(view)
-                }
-                binding.updateData.isEnabled = false
-                binding.updateData.setOnClickListener {
-                    if (areEntriesChecked()) {
-                        save(entriesWithoutIgnored.filter { summit -> summit.isSelected }, false)
-                        dialog?.dismiss()
-                    }
-                }
-                binding.addSummitMerge.isEnabled = false
-                binding.addSummitMerge.setOnClickListener {
-                    if (canSelectedSummitsBeMerged()) {
-                        save(entriesWithoutIgnored.filter { summit -> summit.isSelected }, true)
-                        dialog?.dismiss()
-                    }
-                }
-                binding.ignore.isEnabled = false
-                binding.ignore.setOnClickListener {
-                    if (areEntriesChecked()) {
-                        entriesWithoutIgnored.filter { summit -> summit.isSelected }
-                            .forEach { summit ->
-                                entriesWithoutIgnored.remove(summit)
-                                summit.garminData?.activityId?.let { ignoredEntry ->
-                                    viewModel.saveIgnoredActivity(IgnoredActivity(ignoredEntry))
-                                }
+                viewModel.summitsList.observe(viewLifecycleOwner) { summitListDataStatus ->
+                    summitListDataStatus.data.let { summits ->
+                        ignoredActivities = entries ?: emptyList()
+                        summits?.let { summitsNotNull -> updateEntriesWithoutIgnored(summitsNotNull) }
+
+                        binding.updateNewSummits.setOnClickListener {
+                            if (pythonExecutor != null) {
+                                val startDate =
+                                    sharedPreferences?.getString("garmin_start_date", null) ?: ""
+                                val current = LocalDateTime.now()
+                                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                                val endDate = current.format(formatter)
+                                binding.loadingPanel.visibility = View.VISIBLE
+                                asyncDownloadActivities(summits, pythonExecutor, startDate, endDate)
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    getString(R.string.set_user_pwd), Toast.LENGTH_LONG
+                                ).show()
                             }
-                    }
-                    tableLayout.removeAllViews()
-                    drawTable(view)
-                }
-                backButton = view.findViewById(R.id.back)
-                backButton.setOnClickListener {
-                    dialog?.cancel()
-                }
+                        }
+                        binding.showAll.setOnClickListener {
+                            if (showAllButtonEnabled) {
+                                binding.showAll.alpha = .5f
+                            } else {
+                                binding.showAll.alpha = 1f
+                            }
+                            showAllButtonEnabled = !showAllButtonEnabled
+                            summits?.let { summitsNotNull -> updateEntriesWithoutIgnored(summitsNotNull, showAllButtonEnabled) }
+                            drawTable(view)
+                        }
+                        binding.updateData.isEnabled = false
+                        binding.updateData.setOnClickListener {
+                            if (areEntriesChecked()) {
+                                save(
+                                    entriesWithoutIgnored.filter { summit -> summit.isSelected },
+                                    false
+                                )
+                                dialog?.dismiss()
+                            }
+                        }
+                        binding.addSummitMerge.isEnabled = false
+                        binding.addSummitMerge.setOnClickListener {
+                            if (canSelectedSummitsBeMerged()) {
+                                save(
+                                    entriesWithoutIgnored.filter { summit -> summit.isSelected },
+                                    true
+                                )
+                                dialog?.dismiss()
+                            }
+                        }
+                        binding.ignore.isEnabled = false
+                        binding.ignore.setOnClickListener {
+                            if (areEntriesChecked()) {
+                                entriesWithoutIgnored.filter { summit -> summit.isSelected }
+                                    .forEach { summit ->
+                                        entriesWithoutIgnored.remove(summit)
+                                        summit.garminData?.activityId?.let { ignoredEntry ->
+                                            viewModel.saveIgnoredActivity(
+                                                IgnoredActivity(
+                                                    ignoredEntry
+                                                )
+                                            )
+                                        }
+                                    }
+                            }
+                            drawTable(view)
+                        }
+                        backButton = view.findViewById(R.id.back)
+                        backButton.setOnClickListener {
+                            dialog?.cancel()
+                        }
 
-                tableLayout = view.findViewById(R.id.tableSummits) as TableLayout
-                drawTable(view)
+                        tableLayout = view.findViewById(R.id.tableSummits) as TableLayout
+                        drawTable(view)
+                    }
+                }
             }
         }
-
     }
 
     private fun asyncDownloadActivities(
+        summits: List<Summit>?,
         pythonExecutor: GarminPythonExecutor?,
         startDate: String,
         endDate: String
@@ -158,8 +171,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                     edit.apply()
                 }
             }
-            updateEntriesWithoutIgnored()
-            tableLayout.removeAllViews()
+            summits?.let { updateEntriesWithoutIgnored(it) }
             view?.let { drawTable(it) }
             binding.loadingPanel.visibility = View.GONE
 
@@ -170,28 +182,22 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         return GarminPythonExecutor.getAllDownloadedSummitsFromGarmin(activitiesDir)
     }
 
-    private fun updateEntriesWithoutIgnored(showAll: Boolean = false) {
-
+    private fun updateEntriesWithoutIgnored(summits: List<Summit>, showAll: Boolean = false) {
         activitiesIdIgnored = ignoredActivities.map {
             it.activityId
         }
-        viewModel.summitsList.observe(viewLifecycleOwner) { summitListDataStatus ->
-            summitListDataStatus.data.let { summits ->
-                if (summits != null) {
-                    val activityIdsInSummitBook =
-                        summits.filter { !it.garminData?.activityIds.isNullOrEmpty() }
-                            .map { it.garminData?.activityIds as List<String> }.flatten()
-                    entriesWithoutIgnored = if (showAll) {
-                        getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
-                    } else {
-                        getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
-                    }
-                }
-            }
+        val activityIdsInSummitBook =
+            summits.filter { !it.garminData?.activityIds.isNullOrEmpty() }
+                .map { it.garminData?.activityIds as List<String> }.flatten()
+        entriesWithoutIgnored = if (showAll) {
+            getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
+        } else {
+            getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
         }
     }
 
     private fun drawTable(view: View) {
+        tableLayout.removeAllViews()
         addHeader(view, tableLayout)
         for ((i, entry) in entriesWithoutIgnored.sortedBy { it.getDateAsString() }.reversed()
             .withIndex()) {

@@ -13,7 +13,7 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
         getRangeAndAnnotationForSummitChipValues { summit -> summit.equipments }
     }
     val countriesRangeAndAnnotationForSummitChipValues: Pair<MutableList<Float>, MutableList<String>> by lazy {
-        getRangeAndAnnotationForSummitChipValues { summit -> summit.countries }
+        getRangeAndAnnotationForSummitChipValues(true) { summit -> summit.countries }
     }
     val topElevationRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Float>>> by lazy {
         getRangeAndAnnotationsForSummitValue(topElevationStep.toFloat()) { it.elevationData.maxElevation.toFloat() }
@@ -40,7 +40,7 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
         getRangeAndAnnotationQuarterly()
     }
 
-    fun getRangeAndAnnotationForSummitChipValues(getValue: (Summit) -> List<String>): Pair<MutableList<Float>, MutableList<String>> {
+    fun getRangeAndAnnotationForSummitChipValues(addEmptyEntry: Boolean = false, getValue: (Summit) -> List<String>): Pair<MutableList<Float>, MutableList<String>> {
         val values = summitEntries.flatMap { getValue(it) }.filter { it != "" }
         val countPerValue = values.toSet().map { name ->
             name to values.count { it == name }
@@ -48,7 +48,9 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
         val comparable =
             countPerValue.toList().sortedByDescending { (_, value) -> value }.toMap()
                 .map { (key, _) -> key } as MutableList<String>
-        comparable.add("")
+        if (addEmptyEntry) {
+            comparable.add("")
+        }
         val annotation =
             (0 until comparable.size).map { it.toFloat() } as MutableList<Float>
         return Pair(annotation, comparable)
