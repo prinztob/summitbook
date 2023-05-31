@@ -206,6 +206,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             downloader.updateFinalEntry(viewModel)
             binding.loading.visibility = View.GONE
             binding.loading.tooltipText = ""
+            Toast.makeText(
+                this@MainActivity, getString(R.string.add_new_summit_successful),
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 

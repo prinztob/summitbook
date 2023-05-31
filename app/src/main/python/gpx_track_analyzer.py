@@ -156,12 +156,15 @@ class TrackAnalyzer(object):
                 current_velocity = 0.0 if diff_times == 0.0 else (gain / diff_times)
                 if current_velocity > vertical_velocity:
                     vertical_velocity = current_velocity
+                    index = [i]
                     i += 1
                 else:
+                    index = [k for k in range(i, i + 25)]
                     i += 25
-                if update_points and i < len(self.all_points):
-                    self.set_tag_in_extensions(vertical_velocity * max_time_interval, self.all_points[i],
-                                               "vvelocity")
+                if update_points and max(index) < len(self.all_points):
+                    for k in index:
+                        self.set_tag_in_extensions(vertical_velocity * max_time_interval, self.all_points[k],
+                                                   "vvelocity")
 
                 self.vertical_velocities[str(max_time_interval)].append(vertical_velocity)
 

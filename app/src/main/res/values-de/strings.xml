@@ -179,6 +179,7 @@
     <string name="choose_item">"Wähle ein Item aus"</string>
     <string name="update_summit_cancel">"Aktualisierung des Gipfels wurde abgebrochen."</string>
     <string name="add_new_summit_cancel">"Das Hinzufügen eines neuen Gipfels wurde abgebrochen."</string>
+    <string name="add_new_summit_successful">"Das Hinzufügen eines neuen Gipfels war erfolgreich."</string>
     <string name="heart_rate_profile_label">"Herzfrequenzprofil"</string>
     <string name="slope_profile_label">"Neigung"</string>
     <string name="cadence_profile_label">"Kadenceprofil"</string>

@@ -2,6 +2,7 @@ package de.drtobiasprinz.summitbook.fragments
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Canvas
 import android.graphics.Color
@@ -53,6 +54,7 @@ class BarChartFragment : Fragment() {
 
     private var selectedYAxisSpinnerEntry: YAxisSelector = YAxisSelector.Count
     private var indoorHeightMeterPercent = 0
+    private var selectedXAxisSpinnerMonth: Int = 0
     private var selectedXAxisSpinnerEntry: XAxisSelector = XAxisSelector.DateByMonth
     private var barChartEntries: MutableList<BarEntry?> = mutableListOf()
     private var lineChartEntriesForecast: MutableList<Entry?> = mutableListOf()
@@ -95,6 +97,26 @@ class BarChartFragment : Fragment() {
             DrawOrder.BUBBLE, DrawOrder.CANDLE, DrawOrder.BAR, DrawOrder.SCATTER, DrawOrder.LINE
         )
         binding.barChart.legend?.isWordWrapEnabled = true
+        when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+            Configuration.UI_MODE_NIGHT_YES -> {
+                binding.barChart.xAxis.textColor = Color.BLACK
+                binding.barChart.axisRight.textColor = Color.WHITE
+                binding.barChart.axisLeft.textColor = Color.WHITE
+                binding.barChart.legend?.textColor = Color.WHITE
+            }
+            Configuration.UI_MODE_NIGHT_NO -> {
+                binding.barChart.xAxis.textColor = Color.BLACK
+                binding.barChart.axisRight.textColor = Color.BLACK
+                binding.barChart.axisLeft.textColor = Color.BLACK
+                binding.barChart.legend?.textColor = Color.BLACK
+            }
+            Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                binding.barChart.xAxis.textColor = Color.BLACK
+                binding.barChart.axisRight.textColor = Color.WHITE
+                binding.barChart.axisLeft.textColor = Color.WHITE
+                binding.barChart.legend?.textColor = Color.WHITE
+            }
+        }
         val combinedData = CombinedData()
 
         setBarData(combinedData)
@@ -233,12 +255,20 @@ class BarChartFragment : Fragment() {
                 selectedYAxisSpinnerEntry.defaultAnnualTarget.toString()
             )?.toFloat()
                 ?: selectedYAxisSpinnerEntry.defaultAnnualTarget.toFloat()
-            if (selectedXAxisSpinnerEntry == XAxisSelector.DateByWeek) {
-                annualTarget /= 52f
-            } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByMonth) {
-                annualTarget /= 12f
-            } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByQuarter) {
-                annualTarget /= 4f
+            when (selectedXAxisSpinnerEntry) {
+                XAxisSelector.DateByWeek -> {
+                    annualTarget /= 52f
+                }
+                XAxisSelector.DateByMonth -> {
+                    annualTarget /= 12f
+                }
+                XAxisSelector.DateByQuarter -> {
+                    annualTarget /= 4f
+                }
+                else -> {
+                    // DO NOTHING
+                }
+
             }
             val line1 = LimitLine(annualTarget)
             binding.barChart.axisLeft?.addLimitLine(line1)
@@ -257,6 +287,7 @@ class BarChartFragment : Fragment() {
     @Throws(ParseException::class)
     private fun updateBarChart(summits: List<Summit>) {
         setForecastsChart()
+        val calender = Calendar.getInstance(TimeZone.getDefault())
         val rangeAndAnnotation = selectedXAxisSpinnerEntry.getRangeAndAnnotation(intervalHelper)
         val interval = rangeAndAnnotation.second
         val annotation = rangeAndAnnotation.first
@@ -264,7 +295,12 @@ class BarChartFragment : Fragment() {
         unit = getString(selectedYAxisSpinnerEntry.unitId)
         for (i in interval.indices) {
             val streamSupplier: Supplier<Stream<Summit?>?> = Supplier {
-                selectedXAxisSpinnerEntry.getStream(summits, interval[i])
+                selectedXAxisSpinnerEntry.getStream(
+                    summits,
+                    interval[i],
+                    calender,
+                    selectedXAxisSpinnerMonth
+                )
             }
             val xValue = annotation[i]
             val yValues = getValueForEntry(streamSupplier)
@@ -343,6 +379,25 @@ class BarChartFragment : Fragment() {
                 l: Long
             ) {
                 selectedXAxisSpinnerEntry = XAxisSelector.values()[i]
+                if (selectedXAxisSpinnerEntry == XAxisSelector.DateByYear) {
+                    binding.barChartSpinnerMonth.visibility = View.VISIBLE
+                } else {
+                    binding.barChartSpinnerMonth.visibility = View.GONE
+                }
+                selectedDataSpinner(summits)
+                drawChart()
+            }
+
+            override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+        }
+        binding.barChartSpinnerMonth.onItemSelectedListener = object : OnItemSelectedListener {
+            override fun onItemSelected(
+                adapterView: AdapterView<*>?,
+                view: View?,
+                i: Int,
+                l: Long
+            ) {
+                selectedXAxisSpinnerMonth = i
                 selectedDataSpinner(summits)
                 drawChart()
             }
@@ -366,6 +421,14 @@ class BarChartFragment : Fragment() {
         )
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.barChartSpinnerXAxis.adapter = xAxisAdapter
+        val symbols = DateFormatSymbols()
+        val monthNames = mutableListOf(getString(R.string.all))
+        symbols.shortMonths.forEach { monthNames.add(it) }
+        binding.barChartSpinnerMonth.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            monthNames
+        )
     }
 
     inner class CustomMarkerView(context: Context?, layoutResource: Int) :
@@ -501,21 +564,22 @@ class BarChartFragment : Fragment() {
         val stepsSize: Double,
         val isAQuality: Boolean,
         val maxVisibilityRangeForBarChart: Float,
-        val getStream: (entries: List<Summit>?, start: Any) -> Stream<Summit?>?,
+        val getStream: (entries: List<Summit>?, range: Any, calender: Calendar, month: Int) -> Stream<Summit?>?,
         val getRangeAndAnnotation: (IntervalHelper) -> Pair<List<Float>, List<Any>>,
     ) {
-        DateByMonth(R.string.monthly, R.string.empty, 0.0, false, 25f, { entries, range ->
+        DateByMonth(R.string.monthly, R.string.empty, 0.0, false, 25f, { entries, range, _, _ ->
             entries
                 ?.stream()
                 ?.filter { o: Summit ->
                     o.date in (range as ClosedRange<Date>)
                 }
         }, { e -> e.dateByMonthRangeAndAnnotation }),
-        DateByYear(R.string.yearly, R.string.empty, 0.0, false, 12f, { entries, range ->
+        DateByYear(R.string.yearly, R.string.empty, 0.0, false, 12f, { entries, range, cal, month ->
             entries
                 ?.stream()
                 ?.filter { o: Summit ->
-                    o.date in (range as ClosedRange<Date>)
+                    cal.time = o.date
+                    o.date in (range as ClosedRange<Date>) && (month == 0 || cal.get(Calendar.MONTH) + 1 == month)
                 }
         }, { e -> e.dateByYearRangeAndAnnotation }),
         DateByYearUntilToday(
@@ -524,7 +588,7 @@ class BarChartFragment : Fragment() {
             0.0,
             false,
             12f,
-            { entries, range ->
+            { entries, range, _, _ ->
                 entries
                     ?.stream()
                     ?.filter { o: Summit ->
@@ -532,7 +596,7 @@ class BarChartFragment : Fragment() {
                     }
             },
             { e -> e.dateByYearUntilTodayRangeAndAnnotation }),
-        DateByWeek(R.string.wekly, R.string.empty, 0.0, false, 26f, { entries, range ->
+        DateByWeek(R.string.wekly, R.string.empty, 0.0, false, 26f, { entries, range, _, _ ->
             entries
                 ?.stream()
                 ?.filter { o: Summit ->
@@ -545,7 +609,7 @@ class BarChartFragment : Fragment() {
             0.0,
             false,
             4f,
-            { entries, range ->
+            { entries, range, _, _ ->
                 entries
                     ?.stream()
                     ?.filter { o: Summit ->
@@ -559,7 +623,7 @@ class BarChartFragment : Fragment() {
             IntervalHelper.kilometersStep,
             false,
             -1f,
-            { entries, range ->
+            { entries, range, _, _ ->
                 entries
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.kilometers.toFloat() in (range as ClosedRange<Float>) }
@@ -571,7 +635,7 @@ class BarChartFragment : Fragment() {
             IntervalHelper.elevationGainStep,
             false,
             -1f,
-            { entries, range ->
+            { entries, range, _, _ ->
                 entries
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.elevationData.elevationGain.toFloat() in range as ClosedRange<Float> }
@@ -583,24 +647,31 @@ class BarChartFragment : Fragment() {
             IntervalHelper.topElevationStep,
             false,
             -1f,
-            { entries, range ->
+            { entries, range, _, _ ->
                 entries
                     ?.stream()
                     ?.filter { o: Summit? -> o != null && o.elevationData.maxElevation.toFloat() in (range as ClosedRange<Float>) }
             },
             { e -> e.topElevationRangeAndAnnotation }),
-        Participants(R.string.participants, R.string.empty, 1.0, true, 12f, { entries, range ->
-            entries
-                ?.stream()
-                ?.filter { o: Summit? -> o != null && o.participants.contains(range) }
-        }, { e -> e.participantsRangeAndAnnotationForSummitChipValues }),
-        Equipments(R.string.equipments, R.string.empty, 1.0, true, 12f, { entries, range ->
+        Participants(
+            R.string.participants,
+            R.string.empty,
+            1.0,
+            true,
+            12f,
+            { entries, range, _, _ ->
+                entries
+                    ?.stream()
+                    ?.filter { o: Summit? -> o != null && o.participants.contains(range) }
+            },
+            { e -> e.participantsRangeAndAnnotationForSummitChipValues }),
+        Equipments(R.string.equipments, R.string.empty, 1.0, true, 12f, { entries, range, _, _ ->
             entries
                 ?.stream()
                 ?.filter { o: Summit? -> o != null && o.equipments.contains(range) }
         }, { e -> e.equipmentsRangeAndAnnotationForSummitChipValues }),
 
-        Countries(R.string.country_hint, R.string.empty, 1.0, true, 12f, { entries, range ->
+        Countries(R.string.country_hint, R.string.empty, 1.0, true, 12f, { entries, range, _, _ ->
             entries
                 ?.stream()
                 ?.filter { o: Summit? -> o != null && o.countries.contains(range) }

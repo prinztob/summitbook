@@ -176,6 +176,7 @@
     <string name="choose_item">"Choose an item"</string>
     <string name="update_summit_cancel">"Updating an existing summit was canceled."</string>
     <string name="add_new_summit_cancel">"Adding a new summit was canceled."</string>
+    <string name="add_new_summit_successful">"Adding a new summit was successful."</string>
     <string name="heart_rate_profile_label">"Heart rate profile"</string>
     <string name="slope_profile_label">"Slope profile"</string>
     <string name="cadence_profile_label">"Cadence profile"</string>

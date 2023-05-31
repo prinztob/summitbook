@@ -138,7 +138,13 @@ class Summit(
             String.format(Locale.ENGLISH, "id_%s", activityId),
             ".gpx", dir
         )
-        if (hasGpsTrack()) {
+        if (hasGpsTrack(true)) {
+            Files.copy(
+                getGpsTrackPath(true),
+                tempFile.toPath(),
+                StandardCopyOption.REPLACE_EXISTING
+            )
+        } else if (hasGpsTrack()) {
             Files.copy(getGpsTrackPath(), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
         }
         return tempFile
