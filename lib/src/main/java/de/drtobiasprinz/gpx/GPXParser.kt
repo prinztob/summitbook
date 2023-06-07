@@ -37,11 +37,11 @@ import java.util.*
 
 class GPXParser {
     @Throws(XmlPullParserException::class, IOException::class)
-    fun parse(`in`: InputStream): Gpx {
-        return `in`.use { `in` ->
+    fun parse(inputStream: InputStream): Gpx {
+        return inputStream.use { usedInputStream ->
             val parser = Xml.newPullParser()
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
-            parser.setInput(`in`, null)
+            parser.setInput(usedInputStream, null)
             parser.nextTag()
             readGpx(parser)
         }
