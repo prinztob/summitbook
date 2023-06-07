@@ -96,7 +96,13 @@ class SummitsAdapter :
                         AddSummitDialog().tag
                     )
                 }
-                setIconForPositionButton(entryAddCoordinate, entity)
+                if (entity.latLng == null) {
+                    entryAddCoordinate.setImageResource(R.drawable.baseline_add_location_black_24dp)
+                } else if (entity.hasGpsTrack(true)) {
+                    entryAddCoordinate.setImageResource(R.drawable.baseline_edit_location_alt_24)
+                } else {
+                    entryAddCoordinate.setImageResource(R.drawable.baseline_edit_location_black_24dp)
+                }
                 entryAddCoordinate.setOnClickListener { v: View? ->
                     val context = v?.context
                     val intent = Intent(context, SelectOnOsMapActivity::class.java)
@@ -165,10 +171,12 @@ class SummitsAdapter :
                         sportTypeImage.setImageResource(item.sportType.imageIdWhite)
                         summitName.setTextColor(Color.WHITE)
                     }
+
                     Configuration.UI_MODE_NIGHT_NO -> {
                         sportTypeImage.setImageResource(item.sportType.imageIdBlack)
                         summitName.setTextColor(Color.BLACK)
                     }
+
                     Configuration.UI_MODE_NIGHT_UNDEFINED -> {
                         sportTypeImage.setImageResource(item.sportType.imageIdWhite)
                         summitName.setTextColor(Color.GRAY)
@@ -265,13 +273,4 @@ class SummitsAdapter :
     }
     val differ = AsyncListDiffer(this, differCallback)
 
-    companion object {
-        fun setIconForPositionButton(addPosition: ImageButton?, entry: Summit?) {
-            if (entry?.latLng == null) {
-                addPosition?.setImageResource(R.drawable.baseline_add_location_black_24dp)
-            } else {
-                addPosition?.setImageResource(R.drawable.baseline_edit_location_black_24dp)
-            }
-        }
-    }
 }

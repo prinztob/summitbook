@@ -75,6 +75,12 @@ class SummitViewFragment : Fragment() {
 
     private fun adapterOnClickDelete(summit: Summit) {
         viewModel?.deleteSummit(summit)
+        Snackbar.make(binding.root, getString(R.string.delete_entry_done), Snackbar.LENGTH_LONG)
+            .apply {
+                setAction(getString(R.string.delete_undo)) {
+                    viewModel?.saveSummit(false, summit)
+                }
+            }.show()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -104,12 +110,14 @@ class SummitViewFragment : Fragment() {
                             loading.isVisible(true, recyclerView)
                             emptyBody.isVisible(false, recyclerView)
                         }
+
                         DataStatus.Status.SUCCESS -> {
                             it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
                             loading.isVisible(false, recyclerView)
                             val data = sortFilterValues.applyForBookmarks(it.data ?: emptyList())
                             summitsAdapter.differ.submitList(data)
                         }
+
                         DataStatus.Status.ERROR -> {
                             loading.isVisible(false, recyclerView)
                             Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
@@ -123,16 +131,21 @@ class SummitViewFragment : Fragment() {
                             loading.isVisible(true, recyclerView)
                             emptyBody.isVisible(false, recyclerView)
                         }
+
                         DataStatus.Status.SUCCESS -> {
                             dataStatus.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
                             loading.isVisible(false, recyclerView)
-                            val data = sortFilterValues.apply(dataStatus.data ?: emptyList(), sharedPreferences)
+                            val data = sortFilterValues.apply(
+                                dataStatus.data ?: emptyList(),
+                                sharedPreferences
+                            )
                             summitsAdapter.differ.submitList(data)
                             if (!startedScheduler) {
                                 dataStatus.data?.let { addBackgroundTasks(it) }
                                 startedScheduler = true
                             }
                         }
+
                         DataStatus.Status.ERROR -> {
                             loading.isVisible(false, recyclerView)
                             Toast.makeText(context, dataStatus.message, Toast.LENGTH_SHORT).show()
@@ -156,14 +169,9 @@ class SummitViewFragment : Fragment() {
                     val summit = summitsAdapter.differ.currentList[position]
                     when (direction) {
                         ItemTouchHelper.LEFT -> {
-                            viewModel?.deleteSummit(summit)
-                            Snackbar.make(binding.root, "Item Deleted!", Snackbar.LENGTH_LONG)
-                                .apply {
-                                    setAction("UNDO") {
-                                        viewModel?.saveSummit(false, summit)
-                                    }
-                                }.show()
+                            startAddSummitDialog(summit)
                         }
+
                         ItemTouchHelper.RIGHT -> {
                             startAddSummitDialog(summit)
                         }
@@ -181,10 +189,13 @@ class SummitViewFragment : Fragment() {
                 ) {
                     RecyclerViewSwipeDecorator.Builder(
                         c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive
-                    ).addSwipeLeftLabel("Delete").addSwipeLeftBackgroundColor(Color.RED)
-                        .addSwipeLeftActionIcon(R.drawable.ic_baseline_delete_24)
-                        .setSwipeLeftLabelColor(Color.WHITE).setSwipeLeftActionIconTint(Color.WHITE)
-                        .addSwipeRightLabel("Edit").addSwipeRightBackgroundColor(Color.GREEN)
+                    ).addSwipeLeftLabel(getString(R.string.update))
+                        .addSwipeLeftBackgroundColor(Color.GREEN)
+                        .setSwipeLeftLabelColor(Color.WHITE)
+                        .setSwipeLeftActionIconTint(Color.WHITE)
+                        .addSwipeLeftActionIcon(R.drawable.ic_baseline_edit_24)
+                        .addSwipeRightLabel(getString(R.string.update))
+                        .addSwipeRightBackgroundColor(Color.GREEN)
                         .setSwipeRightLabelColor(Color.WHITE)
                         .setSwipeRightActionIconTint(Color.WHITE)
                         .addSwipeRightActionIcon(R.drawable.ic_baseline_edit_24).create().decorate()
@@ -234,11 +245,11 @@ class SummitViewFragment : Fragment() {
                 it !in MainActivity.entriesToExcludeForSimplifyGpxTrack && it.hasGpsTrack() && !it.hasGpsTrack(
                     simplified = true
                 )
-            }.take(50)
+            }.sortedByDescending { it.date }
             MainActivity.pythonInstance.let {
                 if (it != null) {
                     asyncSimplifyGpsTracks(
-                        entriesWithoutSimplifiedGpxTrack,
+                        entriesWithoutSimplifiedGpxTrack.take(50),
                         it
                     )
                 }
@@ -264,13 +275,13 @@ class SummitViewFragment : Fragment() {
         val executor = pythonExecutor
         if (sharedPreferences.getBoolean("startup_auto_update_switch", false) && executor != null) {
             binding.loading.visibility = View.VISIBLE
-            viewModel?.solarIntensitiesList?.observeOnce(viewLifecycleOwner) { solarListDataStatus ->
-                solarListDataStatus.data.let { solarIntensities ->
+            viewModel?.dailyReportDataList?.observeOnce(viewLifecycleOwner) { dailyReportDataStatus ->
+                dailyReportDataStatus.data.let { dailyReportData ->
                     val updater = GarminDataUpdater(
                         sharedPreferences,
                         executor,
                         summits,
-                        solarIntensities,
+                        dailyReportData,
                         viewModel
                     )
                     lifecycleScope.launch {

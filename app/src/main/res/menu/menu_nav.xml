@@ -48,9 +48,9 @@
             android:icon="@drawable/baseline_download_black_24dp"
             android:title="@string/nav_import" />
         <item
-            android:id="@+id/nav_solar"
+            android:id="@+id/nav_daily_data"
             android:icon="@drawable/ic_baseline_solar_power_24"
-            android:title="@string/solar_power_fenix_6" />
+            android:title="@string/daily_report_data" />
     </group>
     <group  android:checkableBehavior="single">
         <item

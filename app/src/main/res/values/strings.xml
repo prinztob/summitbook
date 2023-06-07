@@ -169,6 +169,8 @@
     <string name="not_found">"Could not find %1$s."</string>
     <string name="delete_entry">"Going to delete entry %1$s."</string>
     <string name="delete_entry_text">"Are you sure you want to proceed?"</string>
+    <string name="delete_entry_done">"Deleted summit %1$s"</string>
+    <string name="delete_undo">"Undo deletion"</string>
     <string name="add_gpx_successful">"Adding a new gps track to summit %1$s was successful."</string>
     <string name="add_gpx_failed">"Adding a new gps track to summit %1$s failed."</string>
     <string name="garmin_add_cancel">"Adding Garmin connect activities was canceled."</string>
@@ -273,7 +275,11 @@
     <string name="power_2h">Power 2h</string>
     <string name="power_5h">Power 5h</string>
     <string name="solar_50000_lux_condition">50000 Lux condition</string>
-    <string name="solar_exposure">Average Solar Exposure</string>
+    <string name="solar_exposure">Solar Exposure</string>
+    <string name="solar_intensity">Solar Intensity</string>
+    <string name="active_duration">Active Minutes</string>
+    <string name="moderate_intensity_minutes">moderate intensity minutes</string>
+    <string name="vigorous_intensity_minutes">vigorous intensity minutes</string>
     <string name="vo2Max">Vo2Max</string>
     <string name="ftp">FTP</string>
     <string name="tab_text_4">Power meter profile</string>
@@ -393,10 +399,12 @@
     <string name="days">days</string>
     <string name="weeks">weeks</string>
     <string name="months">months</string>
-    <string name="solar_power_fenix_6">Solar power Fenix 6</string>
+    <string name="daily_report_data">Daily Report Data</string>
     <string name="part_day">Part of day</string>
     <string name="whole_day">Complete day</string>
     <string name="update_done">Update of third party data done</string>
     <string name="no_summit">There is no summit for this criteria</string>
+    <string name="floors_climbed">Climbed Floors\n</string>
+    <string name="steps">Steps</string>
 
 </resources>

@@ -32,9 +32,9 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val forecastList: LiveData<DataStatus<List<Forecast>>>
         get() = _forecastsList
 
-    private val _solarIntensitiesList = MutableLiveData<DataStatus<List<SolarIntensity>>>()
-    val solarIntensitiesList: LiveData<DataStatus<List<SolarIntensity>>>
-        get() = _solarIntensitiesList
+    private val _dailyReportDataList = MutableLiveData<DataStatus<List<DailyReportData>>>()
+    val dailyReportDataList: LiveData<DataStatus<List<DailyReportData>>>
+        get() = _dailyReportDataList
 
     private val _ignoredActivityList = MutableLiveData<DataStatus<List<IgnoredActivity>>>()
     val ignoredActivityList: LiveData<DataStatus<List<IgnoredActivity>>>
@@ -48,7 +48,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         getAllSummits()
         getAllSegments()
         getAllForecasts()
-        getAllSolarIntensities()
+        getAllDailyReportData()
         getAllIgnoredActivities()
     }
 
@@ -61,7 +61,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         if (isEdite) {
             repository.updateSummit(entity)
         } else {
-            repository.saveSummit(entity)
+            entity.id = repository.saveSummit(entity)
         }
     }
 
@@ -150,17 +150,17 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     }
 
 
-    private fun getAllSolarIntensities() = viewModelScope.launch {
-        repository.getAllSolarIntensities().collect {
-            _solarIntensitiesList.postValue(DataStatus.success(it, false))
+    private fun getAllDailyReportData() = viewModelScope.launch {
+        repository.getAllDailyReportData().collect {
+            _dailyReportDataList.postValue(DataStatus.success(it, false))
         }
     }
 
-    fun saveSolarIntensity(isEdite: Boolean, entity: SolarIntensity) = viewModelScope.launch {
+    fun saveDailyReportData(isEdite: Boolean, entity: DailyReportData) = viewModelScope.launch {
         if (isEdite) {
-            repository.updateSolarIntensity(entity)
+            repository.updateDailyReportData(entity)
         } else {
-            repository.saveSolarIntensity(entity)
+            repository.saveDailyReport(entity)
         }
     }
 

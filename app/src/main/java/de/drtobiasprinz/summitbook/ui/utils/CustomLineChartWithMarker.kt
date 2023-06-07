@@ -6,7 +6,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import com.github.mikephil.charting.charts.LineChart
 
-class CustomMarkerLineChart : LineChart {
+class CustomLineChartWithMarker : LineChart {
 
     constructor(context: Context?) : super(context)
     constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)

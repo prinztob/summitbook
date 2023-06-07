@@ -8,7 +8,7 @@ class DatabaseRepository @Inject constructor(
     private val summitsDao: SummitsDao,
     private val segmentsDao: SegmentsDao,
     private val forecastDao: ForecastDao,
-    private val solarIntensityDao: SolarIntensityDao,
+    private val dailyReportDataDao: DailyReportDataDao,
     private val ignoredActivityDao: IgnoredActivityDao
 ) {
 
@@ -38,9 +38,9 @@ class DatabaseRepository @Inject constructor(
     suspend fun updateForecast(entity: Forecast) = forecastDao.updateForecast(entity)
 
 
-    fun getAllSolarIntensities() = solarIntensityDao.getAllSolarIntensities()
-    suspend fun saveSolarIntensity(entity: SolarIntensity) = solarIntensityDao.add(entity)
-    suspend fun updateSolarIntensity(entity: SolarIntensity) = solarIntensityDao.update(entity)
+    fun getAllDailyReportData() = dailyReportDataDao.getAllDailyReportData()
+    suspend fun saveDailyReport(entity: DailyReportData) = dailyReportDataDao.add(entity)
+    suspend fun updateDailyReportData(entity: DailyReportData) = dailyReportDataDao.update(entity)
 
     fun getIgnoredActivities() = ignoredActivityDao.getAllIgnoredActivities()
     suspend fun saveIgnoredActivity(entity: IgnoredActivity) = ignoredActivityDao.add(entity)

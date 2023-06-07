@@ -39,7 +39,7 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideSolarIntensitiesDao(db: AppDatabase) = db.solarIntensityDao()
+    fun provideDailyReportDataDao(db: AppDatabase) = db.dailyReportDataDao()
 
     @Provides
     @Singleton

@@ -7,7 +7,7 @@ import android.view.View
 import android.widget.ProgressBar
 import android.widget.Toast
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.SolarIntensity
+import de.drtobiasprinz.summitbook.db.entities.DailyReportData
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
@@ -17,14 +17,15 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.*
-
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class GarminDataUpdater(
     val sharedPreferences: SharedPreferences,
     private val pythonExecutor: GarminPythonExecutor,
     val entries: List<Summit>?,
-    private val solarIntensities: List<SolarIntensity>?,
+    private val dailyReportData: List<DailyReportData>?,
     private val databaseViewModel: DatabaseViewModel?
 ) {
     private var endDate: String = ""
@@ -32,8 +33,15 @@ class GarminDataUpdater(
 
     fun update() {
         startDate = sharedPreferences.getString("garmin_start_date", null) ?: ""
-        updateSolarIntensities()
-        updateActivities()
+        try {
+            updateDailyReportData()
+            updateActivities()
+        } catch (ex: RuntimeException) {
+            Log.e(
+                "GarminDataUpdater",
+                "Error in updating activities and daily report data: ${ex.message}. Please try later"
+            )
+        }
     }
 
     private fun updateActivities() {
@@ -65,38 +73,48 @@ class GarminDataUpdater(
         }
     }
 
-    private fun updateSolarIntensities() {
+    private fun updateDailyReportData() {
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.MONTH, -3)
+        val filterEntriesOldThan = calendar.time
         val df = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
         if (startDate != "") {
             var deviceId: String? = null
             val datesBetween = getDatesBetween(startDate)
-            solarIntensities?.filter { !it.isForWholeDay }?.forEach {
-                try {
-                    var deviceIdLocal = deviceId
-                    if (deviceIdLocal == null) {
-                        deviceIdLocal =
-                            pythonExecutor.getDeviceIdForSolarOutput()
-                        deviceId = deviceIdLocal
-                    }
-                    val solarIntensityJson = pythonExecutor
-                        .getSolarIntensityForDate(df.format(it.date), deviceIdLocal)
-                    val solarIntensity =
-                        solarIntensityJson.let { jsonObject ->
-                            SolarIntensity.parseFromJson(
-                                jsonObject
-                            )
+            dailyReportData?.filter { !it.isForWholeDay && it.date.after(filterEntriesOldThan) }
+                ?.forEach {
+                    try {
+                        var deviceIdLocal = deviceId
+                        if (deviceIdLocal == null) {
+                            deviceIdLocal =
+                                pythonExecutor.getDeviceIdForSolarOutput()
+                            deviceId = deviceIdLocal
                         }
-                    if (solarIntensity != null) {
-                        solarIntensity.entryId = it.entryId
-                        databaseViewModel?.saveSolarIntensity(true, solarIntensity)
+                        val solarIntensityJson = pythonExecutor
+                            .getSolarIntensityForDate(df.format(it.date), deviceIdLocal)
+                        val dailyEventsJsonArray =
+                            pythonExecutor.getDailyEventsForDate(df.format(it.date))
+                        val summaryData =
+                            pythonExecutor.getSummaryData(df.format(it.date))
+                        val hrvdData =
+                            pythonExecutor.getHearRateVariabilityData(df.format(it.date))
+                        val reportData =
+                            DailyReportData.parseFromJson(
+                                it.date,
+                                solarIntensityJson,
+                                dailyEventsJsonArray,
+                                summaryData,
+                                hrvdData
+                            )
+                        reportData.entryId = it.entryId
+                        databaseViewModel?.saveDailyReportData(true, reportData)
+                    } catch (e: RuntimeException) {
+                        Log.e("AsyncUpdateGarminData", e.message ?: "")
                     }
-                } catch (e: RuntimeException) {
-                    Log.e("AsyncUpdateGarminData", e.message ?: "")
                 }
-            }
             for (dateToCheck in datesBetween) {
                 try {
-                    if (dateToCheck != null && solarIntensities?.none { it.date == dateToCheck } == true) {
+                    if (dateToCheck != null && dailyReportData?.none { it.date == dateToCheck } == true) {
                         var deviceIdForLoop = deviceId
                         if (deviceIdForLoop == null) {
                             deviceIdForLoop = pythonExecutor.getDeviceIdForSolarOutput()
@@ -104,22 +122,33 @@ class GarminDataUpdater(
                         }
                         Log.i(
                             "Scheduler",
-                            "Check solar intensity for date ${df.format(dateToCheck)}."
+                            "Check daily report data for date ${df.format(dateToCheck)}."
                         )
                         val solarIntensityJson = pythonExecutor.getSolarIntensityForDate(
                             df.format(dateToCheck),
                             deviceIdForLoop
                         )
-                        val solarIntensity =
-                            solarIntensityJson.let { SolarIntensity.parseFromJson(it) }
-                                ?: SolarIntensity(0, dateToCheck, 0.0, 0.0, false)
+                        val dailyEventsJsonArray =
+                            pythonExecutor.getDailyEventsForDate(df.format(dateToCheck))
+                        val stepsData =
+                            pythonExecutor.getSummaryData(df.format(dateToCheck))
+                        val floorsClimbedData =
+                            pythonExecutor.getHearRateVariabilityData(df.format(dateToCheck))
+                        val reportData =
+                            DailyReportData.parseFromJson(
+                                dateToCheck,
+                                solarIntensityJson,
+                                dailyEventsJsonArray,
+                                stepsData,
+                                floorsClimbedData
+                            )
                         val entryToUpdate =
-                            solarIntensities.firstOrNull { it.date == dateToCheck }
+                            dailyReportData.firstOrNull { it.date == dateToCheck }
                         if (entryToUpdate != null) {
-                            solarIntensity.entryId = entryToUpdate.entryId
-                            databaseViewModel?.saveSolarIntensity(true, solarIntensity)
+                            reportData.entryId = entryToUpdate.entryId
+                            databaseViewModel?.saveDailyReportData(true, reportData)
                         } else {
-                            databaseViewModel?.saveSolarIntensity(false, solarIntensity)
+                            databaseViewModel?.saveDailyReportData(false, reportData)
                         }
                     }
                 } catch (e: RuntimeException) {

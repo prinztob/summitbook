@@ -36,13 +36,24 @@ import de.drtobiasprinz.summitbook.databinding.ActivityMainBinding
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.fragments.*
+import de.drtobiasprinz.summitbook.fragments.BarChartFragment
+import de.drtobiasprinz.summitbook.fragments.LineChartDailyReportData
+import de.drtobiasprinz.summitbook.fragments.LineChartFragment
+import de.drtobiasprinz.summitbook.fragments.OpenStreetMapFragment
+import de.drtobiasprinz.summitbook.fragments.SegmentsViewFragment
+import de.drtobiasprinz.summitbook.fragments.SortAndFilterFragment
+import de.drtobiasprinz.summitbook.fragments.StatisticsFragment
+import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
-import de.drtobiasprinz.summitbook.ui.utils.*
+import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
+import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
+import de.drtobiasprinz.summitbook.ui.utils.PosterOverlayView
+import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
+import de.drtobiasprinz.summitbook.ui.utils.ZipFileWriter
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -50,7 +61,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.NumberFormat
 import java.time.LocalDate
-import java.util.*
+import java.util.Date
 import javax.inject.Inject
 
 
@@ -82,7 +93,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)
-
         updatePythonExecutor()
         pythonInstance = Python.getInstance()
         cache = applicationContext.cacheDir
@@ -99,10 +109,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         )
         binding.drawerLayout.addDrawerListener(actionBarDrawerToggle)
         actionBarDrawerToggle.syncState()
-        viewModel.solarIntensitiesList.observe(this) { solarListDataStatus ->
-            solarListDataStatus.data.let { solarIntensities ->
-                binding.navView.menu.findItem(R.id.nav_solar).isVisible =
-                    !solarIntensities.isNullOrEmpty()
+        viewModel.dailyReportDataList.observe(this) { dailyReportDataStatus ->
+            dailyReportDataStatus.data.let { dailyReportData ->
+                binding.navView.menu.findItem(R.id.nav_daily_data).isVisible =
+                    !dailyReportData.isNullOrEmpty()
             }
         }
         binding.navView.setNavigationItemSelectedListener(this)
@@ -119,19 +129,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         filter()
                         return@setOnMenuItemClickListener true
                     }
+
                     R.id.action_update -> {
                         val executor = pythonExecutor
                         if (executor != null) {
                             binding.loading.visibility = View.VISIBLE
                             viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
                                 summitsListDataStatus.data.let { summits ->
-                                    viewModel.solarIntensitiesList.observeOnce(this@MainActivity) { solarListDataStatus ->
-                                        solarListDataStatus.data.let { solarIntensities ->
+                                    viewModel.dailyReportDataList.observeOnce(this@MainActivity) { dailyReportDataStatus ->
+                                        dailyReportDataStatus.data.let { dailyReportData ->
                                             val updater = GarminDataUpdater(
                                                 sharedPreferences,
                                                 executor,
                                                 summits,
-                                                solarIntensities,
+                                                dailyReportData,
                                                 viewModel
                                             )
 
@@ -156,6 +167,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         }
                         return@setOnMenuItemClickListener true
                     }
+
                     (R.id.action_show_new_summits) -> {
                         val dialog = ShowNewSummitsFromGarminDialog()
                         dialog.save = { summits, isMerge ->
@@ -177,6 +189,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         )
                         return@setOnMenuItemClickListener true
                     }
+
                     else -> {
                         return@setOnMenuItemClickListener false
                     }
@@ -338,27 +351,35 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 fragment.showBookmarksOnly = true
                 commitFragment(fragment)
             }
+
             R.id.nav_routes -> {
                 commitFragment(SegmentsViewFragment())
             }
+
             R.id.nav_statistics -> {
                 commitFragment(StatisticsFragment())
             }
+
             R.id.nav_diagrams -> {
                 commitFragment(LineChartFragment())
             }
+
             R.id.nav_barChart -> {
                 commitFragment(BarChartFragment())
             }
+
             R.id.nav_osmap -> {
                 commitFragment(OpenStreetMapFragment())
             }
+
             R.id.nav_forecast -> {
                 ForecastDialog().show(this.supportFragmentManager, "ForecastDialog")
             }
+
             R.id.nav_diashow -> {
                 openViewer()
             }
+
             R.id.import_csv -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
@@ -366,16 +387,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
                 resultLauncherForImportZip.launch(intent)
             }
+
             R.id.export_csv -> {
                 showExportCsvDialog()
             }
-            R.id.nav_solar -> {
-                commitFragment(LineChartSolarFragment())
+
+            R.id.nav_daily_data -> {
+                commitFragment(LineChartDailyReportData())
             }
+
             R.id.action_settings -> {
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
             }
+
             else -> {
                 commitFragment(SummitViewFragment())
             }
@@ -666,15 +691,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onSharedPreferenceChanged(preferences: SharedPreferences?, key: String?) {
         if (key == "current_year_switch") {
-            viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
-                summitsListDataStatus.data.let { summits ->
-                    if (summits != null) {
-                        sortFilterValues.setInitialValues(summits, sharedPreferences)
-                    }
-                }
-
-                viewModel.refresh()
-            }
+            sortFilterValues.updateCurrentYearSwitch(
+                sharedPreferences.getBoolean("current_year_switch", false)
+            )
+            viewModel.refresh()
         }
         if (key == "garmin_username" || key == "garmin_password") {
             updatePythonExecutor()

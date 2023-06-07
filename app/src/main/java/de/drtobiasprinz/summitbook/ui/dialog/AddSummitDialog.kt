@@ -179,22 +179,23 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             btnSave.setOnClickListener {
                 val sportType = SportType.values()[activities.selectedItemPosition]
                 parseSummit(sportType)
-                val garminDataLocal = entity.garminData
-                val gpsTrackPath = entity.getGpsTrackPath().toFile()
-                val temporaryGpxFileLocal = temporaryGpxFile
-                if (garminDataLocal != null && temporaryGpxFileLocal != null && temporaryGpxFileLocal.exists() && gpsTrackPath != null) {
-                    temporaryGpxFileLocal.copyTo(gpsTrackPath, overwrite = true)
-                }
+
                 val latlngHighestPointLocal = latlngHighestPoint
                 if (entity.latLng == null && latlngHighestPointLocal != null) {
                     entity.latLng = latlngHighestPointLocal
                 }
-                entity.hasGpsTrack()
-                entity.setBoundingBoxFromTrack()
+                entity.hasTrack = true
                 if (isBookmark) {
                     entity.isBookmark = true
                 }
-                viewModel.saveSummit(isEdit, entity)
+                viewModel.saveSummit(isEdit, entity).invokeOnCompletion {
+                    val garminDataLocal = entity.garminData
+                    val gpsTrackPath = entity.getGpsTrackPath().toFile()
+                    val temporaryGpxFileLocal = temporaryGpxFile
+                    if (garminDataLocal != null && temporaryGpxFileLocal != null && temporaryGpxFileLocal.exists() && gpsTrackPath != null) {
+                        temporaryGpxFileLocal.copyTo(gpsTrackPath, overwrite = true)
+                    }
+                }
                 dismiss()
             }
             addGpsTrack.setOnClickListener {

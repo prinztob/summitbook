@@ -1,12 +1,14 @@
 import json
 import os
 from datetime import date
+
 from garminconnect import (
     Garmin,
     GarminConnectConnectionError,
     GarminConnectTooManyRequestsError,
     GarminConnectAuthenticationError,
 )
+
 from gpx_track_analyzer import TrackAnalyzer
 
 BASE_URL = 'https://connect.garmin.com'
@@ -58,6 +60,60 @@ def get_excercise_sets(api, activity_id):
     activity_id = str(activity_id)
     url = f"proxy/activity-service/activity/{activity_id}"
     return api.modern_rest_client.get(url).json()
+
+
+def get_daily_events(api, cdate):
+    try:
+        url = f"proxy/wellness-service/wellness/dailyEvents/{api.display_name}"
+        params = {
+            "calendarDate": str(cdate),
+        }
+        print(f"Fetching daily events with url {url} for date {cdate}")
+        return api.modern_rest_client.get(url, params=params).json()
+    except (
+            GarminConnectConnectionError,
+            GarminConnectAuthenticationError,
+            GarminConnectTooManyRequestsError,
+    ) as err:
+        return "return code: 1: Error occurred during Garmin Connect Client get daily events for date {cdate}: {err}"
+    except Exception as err:
+        return f"return code: 1Unknown error occurred during Garmin Connect Client get daily events for date {cdate}: {err}"
+
+def get_user_summary(api, date):
+    try:
+        url = f"proxy/usersummary-service/usersummary/daily/{api.display_name}"
+        params = {
+            "calendarDate": str(date),
+        }
+        return api.modern_rest_client.get(url, params=params).json()
+    except (
+            GarminConnectConnectionError,
+            GarminConnectAuthenticationError,
+            GarminConnectTooManyRequestsError,
+    ) as err:
+        return f"return code: 1: Error occurred during Garmin Connect Client get user summary for date {date}: {err}"
+    except Exception as err:
+        return f"return code: 1Unknown error occurred during Garmin Connect Client get user summary for date {date}: {err}"
+
+
+def get_hrv(api, date):
+    try:
+        print(f"Requesting daily hrv data for date {date}")
+        return api.get_hrv_data(date)
+    except (
+            GarminConnectConnectionError,
+            GarminConnectAuthenticationError,
+            GarminConnectTooManyRequestsError,
+    ) as err:
+        return ""
+    except (
+            GarminConnectConnectionError,
+            GarminConnectAuthenticationError,
+            GarminConnectTooManyRequestsError,
+    ) as err:
+        return f"return code: 1: Error occurred during Garmin Connect Client get daily hrv for for {date}: {err}"
+    except Exception as err:
+        return f"return code: 1Unknown error occurred during Garmin Connect Client get daily hrv for date {date}: {err}"
 
 
 def get_activity_json_for_date(client, date):
@@ -285,10 +341,12 @@ def get_battery_charged_in_percent(solar):
 
                 solar_exposition = [intensity["solarUtilization"] for intensity in solar_reading_for_date if
                                     intensity["solarUtilization"] > 5]
-                start_date = datetime.strptime(solar_reading_for_date[0]["readingTimestampLocal"], '%Y-%m-%dT%H:%M:%S.%f')
-                end_date = datetime.strptime(solar_reading_for_date[-1]["readingTimestampLocal"], '%Y-%m-%dT%H:%M:%S.%f')
+                start_date = datetime.strptime(solar_reading_for_date[0]["readingTimestampLocal"],
+                                               '%Y-%m-%dT%H:%M:%S.%f')
+                end_date = datetime.strptime(solar_reading_for_date[-1]["readingTimestampLocal"],
+                                             '%Y-%m-%dT%H:%M:%S.%f')
                 seconds = (end_date - start_date).seconds
-                multiplicand = 0.2 /  (60 * 100)  # 0.2 % per 60 minutes 100% solar intensity (Fenix 6)
+                multiplicand = 0.2 / (60 * 100)  # 0.2 % per 60 minutes 100% solar intensity (Fenix 6)
                 return sum(solar_utilization) * multiplicand, \
                        len(solar_exposition) / 60, \
                        86400 - seconds < 999

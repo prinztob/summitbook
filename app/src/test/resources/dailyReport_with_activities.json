@@ -1,0 +1,42 @@
+[
+  {
+    "userProfilePk": 59110423,
+    "deviceId": 3321943163,
+    "calendarDate": "2023-06-05",
+    "startTimestampGMT": "2023-06-05T05:55:00.0",
+    "endTimestampGMT": "2023-06-05T06:24:00.0",
+    "duration": 20,
+    "activityType": "cycling",
+    "activitySubType": null,
+    "startTimestampLocal": "2023-06-05T07:55:00.0",
+    "endTimestampLocal": "2023-06-05T08:24:00.0"
+  },
+  {
+    "userProfilePk": 59110423,
+    "deviceId": 3321943163,
+    "calendarDate": "2023-06-05",
+    "startTimestampGMT": "2023-06-05T13:20:00.0",
+    "endTimestampGMT": "2023-06-05T14:21:00.0",
+    "duration": 60,
+    "activityType": "cycling",
+    "activitySubType": null,
+    "startTimestampLocal": "2023-06-05T15:20:00.0",
+    "endTimestampLocal": "2023-06-05T16:21:00.0",
+    "moderateIntensityMinutes": 5,
+    "vigorousIntensityMinutes": 50
+  },
+  {
+    "userProfilePk": 59110423,
+    "deviceId": 3321943163,
+    "calendarDate": "2023-06-05",
+    "startTimestampGMT": "2023-06-05T15:19:00.0",
+    "endTimestampGMT": "2023-06-05T16:32:00.0",
+    "duration": 70,
+    "activityType": "cycling",
+    "activitySubType": null,
+    "startTimestampLocal": "2023-06-05T17:19:00.0",
+    "endTimestampLocal": "2023-06-05T18:32:00.0",
+    "moderateIntensityMinutes": 10,
+    "vigorousIntensityMinutes": 50
+  }
+]

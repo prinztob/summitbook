@@ -1,8 +1,9 @@
 package de.drtobiasprinz.summitbook.db
 
 import androidx.room.TypeConverter
+import de.drtobiasprinz.summitbook.db.entities.DailyEvent
 import de.drtobiasprinz.summitbook.db.entities.SportType
-import java.util.*
+import java.util.Date
 
 
 class Converters {
@@ -33,7 +34,8 @@ class Converters {
 
     @TypeConverter
     fun stringToIntArrayList(listAsString: String?): MutableList<Int> {
-        return if (listAsString == "") mutableListOf() else listAsString?.split(",")?.map { it.toInt() } as MutableList<Int>
+        return if (listAsString == "") mutableListOf() else listAsString?.split(",")
+            ?.map { it.toInt() } as MutableList<Int>
     }
 
     @TypeConverter
@@ -46,4 +48,27 @@ class Converters {
         return sportType?.let { SportType.valueOf(it) }
     }
 
+    @TypeConverter
+    fun fromDailyEvents(dailyEvents: List<DailyEvent>): String {
+        return dailyEvents.joinToString(separator = ";") { it.toString() }
+    }
+
+    @TypeConverter
+    fun stringToDailyEvents(dailyEvents: String?): List<DailyEvent> {
+        val events = mutableListOf<DailyEvent>()
+        dailyEvents?.split(";")?.forEach {
+            val entries = it.split(",")
+            if (entries.size == 4) {
+                events.add(
+                    DailyEvent(
+                        SportType.valueOf(entries[0]),
+                        entries[1].toInt(),
+                        entries[2].toInt(),
+                        entries[3].toInt()
+                    )
+                )
+            }
+        }
+        return events
+    }
 }

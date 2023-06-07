@@ -8,20 +8,33 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.SolarIntensity
+import de.drtobiasprinz.summitbook.db.entities.DailyReportData
 
-class CustomMarkerViewSolarIntensity(context: Context?, layoutResource: Int) : MarkerView(context, layoutResource) {
+class CustomMarkerViewDailyReportData(private var context: Context?, layoutResource: Int) :
+    MarkerView(context, layoutResource) {
 
     private val tvContent: TextView? = findViewById(R.id.tvContent)
 
-    var drawingPosX = 0f
-    var drawingPosY = 0f
+    private var drawingPosX = 0f
+    private var drawingPosY = 0f
 
     override fun refreshContent(e: Entry?, highlight: Highlight?) {
         try {
-            val entry = e?.data as SolarIntensity?
+            val entry = e?.data as DailyReportData?
             if (entry != null) {
-                tvContent?.text = String.format("%s\n%.2f %s\n%.2f %s", entry.markerText, entry.solarUtilizationInHours, "h", entry.solarExposureInHours, "h")
+                tvContent?.text = String.format(
+                    "%s\n%s: %.2f %s\n%s: %.2f %s\n%s: %s %s",
+                    entry.markerText,
+                    context?.getString(R.string.solar_50000_lux_condition),
+                    entry.solarUtilizationInHours,
+                    "h",
+                    context?.getString(R.string.solar_exposure),
+                    entry.solarExposureInHours,
+                    "h",
+                    context?.getString(R.string.active_duration),
+                    entry.events.sumOf { it.duration },
+                    "min"
+                )
             } else {
                 tvContent?.text = ""
             }

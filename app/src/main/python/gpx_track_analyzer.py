@@ -1,15 +1,10 @@
 import datetime
 import json
-import logging
 import math
 
 import geopy.distance
 import gpxpy.gpx
 import lxml.etree as mod_etree
-
-logging.basicConfig(format="%(asctime)s %(levelname)8s %(pathname)s: %(message)s", level=logging.INFO,
-                    datefmt="%y-%m-%dT%H:%M:%S")
-_LOGGER = logging.getLogger(__name__)
 
 
 class TrackAnalyzer(object):
@@ -56,7 +51,7 @@ class TrackAnalyzer(object):
         self.set_vertical_velocity(3600)
         self.set_slope(100)
         self.duration = (datetime.datetime.now() - start_time).total_seconds()
-        _LOGGER.info(f"Took {self.duration}")
+        print(f"Took {self.duration}")
 
     def get_maximal_values(self):
         self.slope_100 = max(self.slopes)
@@ -68,7 +63,7 @@ class TrackAnalyzer(object):
             self.vertical_velocities["3600"]) > 0 else 0
 
     def set_all_points_with_distance(self):
-        _LOGGER.info(f"Read and add distance to track file {self.file}")
+        print(f"Read and add distance to track file {self.file}")
         with open(self.file, 'r') as gpx_file:
             self.gpx = gpxpy.parse(gpx_file)
             distance = 0.0

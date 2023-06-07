@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.fragments
 
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Color
 import android.os.Bundle
@@ -29,7 +30,7 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.LineChartSpinnerEntry
 import de.drtobiasprinz.summitbook.models.SortFilterValues
-import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerLineChart
+import de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerView
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.SimpleDateFormat
@@ -72,6 +73,26 @@ class LineChartFragment : Fragment() {
     }
 
     private fun resizeChart() {
+        when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+            Configuration.UI_MODE_NIGHT_YES -> {
+                binding.lineChart.xAxis.textColor = Color.BLACK
+                binding.lineChart.axisRight.textColor = Color.WHITE
+                binding.lineChart.axisLeft.textColor = Color.WHITE
+                binding.lineChart.legend?.textColor = Color.WHITE
+            }
+            Configuration.UI_MODE_NIGHT_NO -> {
+                binding.lineChart.xAxis.textColor = Color.BLACK
+                binding.lineChart.axisRight.textColor = Color.BLACK
+                binding.lineChart.axisLeft.textColor = Color.BLACK
+                binding.lineChart.legend?.textColor = Color.BLACK
+            }
+            Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                binding.lineChart.xAxis.textColor = Color.BLACK
+                binding.lineChart.axisRight.textColor = Color.WHITE
+                binding.lineChart.axisLeft.textColor = Color.WHITE
+                binding.lineChart.legend?.textColor = Color.WHITE
+            }
+        }
         binding.lineChart.minimumHeight =
             (Resources.getSystem().displayMetrics.heightPixels * 0.7).toInt()
     }
@@ -151,7 +172,6 @@ class LineChartFragment : Fragment() {
 
     private fun setGraphView(dataSet: LineDataSet) {
         dataSet.setDrawValues(false)
-        dataSet.color = R.color.colorPrimaryDark
         dataSet.circleColors = lineChartColors
         dataSet.highLightColor = Color.RED
         dataSet.lineWidth = 5f
@@ -160,11 +180,24 @@ class LineChartFragment : Fragment() {
         dataSet.mode = LineDataSet.Mode.HORIZONTAL_BEZIER
         dataSet.cubicIntensity = 0.2f
         dataSet.setDrawFilled(true)
-        dataSet.fillColor = Color.BLACK
         dataSet.fillAlpha = 60
+        when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+            Configuration.UI_MODE_NIGHT_YES -> {
+                dataSet.color = R.color.White
+                dataSet.fillColor = Color.WHITE
+            }
+            Configuration.UI_MODE_NIGHT_NO -> {
+                dataSet.color = R.color.colorPrimaryDark
+                dataSet.fillColor = Color.WHITE
+            }
+            Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                dataSet.color = R.color.White
+                dataSet.fillColor = Color.WHITE
+            }
+        }
     }
 
-    private fun setLegend(lineChart: CustomMarkerLineChart, label: String) {
+    private fun setLegend(lineChart: CustomLineChartWithMarker, label: String) {
         val l: Legend = lineChart.legend
         l.entries
         l.yEntrySpace = 10f
@@ -195,7 +228,7 @@ class LineChartFragment : Fragment() {
     }
 
     private fun listenOnDataSpinner(summits: List<Summit>) {
-        binding.spinnerData.onItemSelectedListener = object : OnItemSelectedListener {
+        binding.spinnerXAxis.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onItemSelected(
                 adapterView: AdapterView<*>?,
                 view: View?,
@@ -217,7 +250,8 @@ class LineChartFragment : Fragment() {
             LineChartSpinnerEntry.values().map { resources.getString(it.nameId) }.toTypedArray()
         )
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.spinnerData.adapter = dateAdapter
+        binding.spinnerXAxis.adapter = dateAdapter
+        binding.spinnerYAxis.visibility = View.GONE
     }
 
 

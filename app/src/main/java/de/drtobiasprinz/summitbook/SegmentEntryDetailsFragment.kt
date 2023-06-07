@@ -16,7 +16,11 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.*
+import com.github.mikephil.charting.components.Legend
+import com.github.mikephil.charting.components.LegendEntry
+import com.github.mikephil.charting.components.LimitLine
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
@@ -81,20 +85,22 @@ class SegmentEntryDetailsFragment : Fragment() {
                 savedInstanceState.getLong(SegmentEntry.SEGMENT_ENTRY_ID_EXTRA_IDENTIFIER)
         }
 
-        viewModel.summitsList.observe(viewLifecycleOwner) { itDataSummits ->
-            itDataSummits.data.let { summits ->
-                viewModel.segmentsList.observe(viewLifecycleOwner) { itDataSegments ->
-                    itDataSegments.data.let { segments ->
-                        val segmentToUse =
-                            segments?.firstOrNull { it.segmentDetails.segmentDetailsId == segmentDetailsId }
+        viewModel.segmentsList.observe(viewLifecycleOwner) { itDataSegments ->
+            itDataSegments.data.let { segments ->
+                val segmentToUse =
+                    segments?.firstOrNull { it.segmentDetails.segmentDetailsId == segmentDetailsId }
+                if (segmentEntryId == -1L) {
+                    segmentEntryId =
+                        segmentToUse?.segmentEntries?.let { sorter(it).firstOrNull() }?.entryId
+                            ?: -1
+                }
+                segmentEntryToShow =
+                    if (segmentEntryId == -1L) segmentToUse?.segmentEntries?.let { sorter(it).firstOrNull() } else segmentToUse?.segmentEntries?.firstOrNull { it.entryId == segmentEntryId }
+                viewModel.summitsList.observe(viewLifecycleOwner) { itDataSummits ->
+                    itDataSummits.data.let { summits ->
                         relevantSummits = segmentToUse?.segmentEntries?.map { entry ->
                             summits?.firstOrNull { it.activityId == entry.activityId }
                         }
-                        if (segmentEntryId == -1L) {
-                            segmentEntryId = segmentToUse?.segmentEntries?.let { sorter(it).firstOrNull() }?.entryId ?: -1
-                        }
-                        segmentEntryToShow =
-                            if (segmentEntryId == -1L) segmentToUse?.segmentEntries?.let { sorter(it).firstOrNull() } else segmentToUse?.segmentEntries?.firstOrNull { it.entryId == segmentEntryId }
                         summitShown =
                             relevantSummits?.firstOrNull { it?.activityId == segmentEntryToShow?.activityId }
                         prepareMap()

@@ -172,6 +172,8 @@
     <string name="not_found">"Konnte %1$s nicht finden."</string>
     <string name="delete_entry">"Gipfel %1$s soll gelöscht werden."</string>
     <string name="delete_entry_text">"Sind Sie sicher, dass sie fortfahren möchten?"</string>
+    <string name="delete_entry_done">"Gipfel %1$s wurde gelöscht"</string>
+    <string name="delete_undo">"Löschen rückgängig machen"</string>
     <string name="add_gpx_successful">"Das Hinzufügen eines neuen GPX Track zu Gipfel %1$s war erfolgreich."</string>
     <string name="add_gpx_failed">"Das Hinzufügen eines neuen GPX Track zu Gipfel %1$s ist fehlgeschlagen."</string>
     <string name="garmin_add_cancel">"Hinzufügen einer Garmin Connect Aktivität wurde abgebrochen."</string>
@@ -222,7 +224,7 @@
     <string name="export_csv_dialog">Export von Gipfel?</string>
     <string name="export_csv_dialog_text">Exportiere gerade gefilterte Gipfel?</string>
     <string name="export_csv_dialog_positive">Alle Gipfel</string>
-    <string name="export_csv_dialog_neutral">Exportiere Gipfel</string>
+    <string name="export_csv_dialog_neutral">Gefilterte Gipfel</string>
     <string name="export_csv_dialog_negative_text">Export ist agebrochen worden</string>
     <string name="export_csv_summary_title">"Export war erfolgreich"</string>
     <string name="export_csv_summary_text">"Anzahl an Gipfel exportiert in Datei: %1$s\nGipfel mit gps Datei: %2$s\nGipfel mit Bildern: %3$s"</string>
@@ -274,7 +276,11 @@
     <string name="power_2h">Leistung 2h</string>
     <string name="power_5h">Leistung 5h</string>
     <string name="solar_50000_lux_condition">50000 Lux Konditionen</string>
-    <string name="solar_exposure">Durchschn. Sonneaufenthalt</string>
+    <string name="solar_exposure">Sonneaufenthalt</string>
+    <string name="solar_intensity">Sonnenintensität</string>
+    <string name="active_duration">Aktivitätsminuten</string>
+    <string name="moderate_intensity_minutes">Mäßige Intensitätsminuten</string>
+    <string name="vigorous_intensity_minutes">Hohe Intensitätsminuten</string>
     <string name="vo2Max">Vo2max</string>
     <string name="ftp">FTP</string>
     <string name="tab_text_4">Leistungsprofil</string>
@@ -395,9 +401,11 @@
     <string name="days">Tage</string>
     <string name="weeks">Wochen</string>
     <string name="months">Monate</string>
-    <string name="solar_power_fenix_6">Solarleistung Fenix 6</string>
+    <string name="daily_report_data">Täglicher Report</string>
     <string name="part_day">Nicht vollständig</string>
     <string name="whole_day">Ganzer Tag</string>
     <string name="update_done">Update von Drittanbieterdaten durchgeführt</string>
     <string name="no_summit">Es gibt keinen Gipfel für diese Kriterien</string>
+    <string name="floors_climbed">Hochgestiegene Stockwerke\n</string>
+    <string name="steps">Schritte</string>
 </resources>

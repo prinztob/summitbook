@@ -4,7 +4,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import java.util.*
 import kotlin.math.ceil
 
-class IntervalHelper(private val summitEntries: List<Summit>) {
+class IntervalHelper(private val summitEntries: List<Summit>, private val startDate: Date? = null, private val endDate: Date? = null) {
 
     val participantsRangeAndAnnotationForSummitChipValues: Pair<MutableList<Float>, MutableList<String>> by lazy {
         getRangeAndAnnotationForSummitChipValues { summit -> summit.participants }
@@ -29,6 +29,9 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
     }
     val dateByMonthRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> by lazy {
         getRangeAndAnnotationsForDate(Calendar.MONTH, Calendar.DAY_OF_MONTH, true)
+    }
+    val dateByMonthRangeAndAnnotationUntilToday: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> by lazy {
+        getRangeAndAnnotationsForDate(Calendar.MONTH, Calendar.DAY_OF_MONTH)
     }
     val dateByYearRangeAndAnnotation: Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> by lazy {
         getRangeAndAnnotationsForDate(Calendar.YEAR, Calendar.DAY_OF_YEAR)
@@ -83,12 +86,12 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
 
     fun getRangeAndAnnotationQuarterly(): Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> {
         val cal: Calendar = Calendar.getInstance(TimeZone.getDefault())
-        var minDate = summitEntries.minBy { it.date }.date
+        var minDate = startDate ?: summitEntries.minBy { it.date }.date
         cal.time = minDate
         cal.set(Calendar.DAY_OF_YEAR, cal.getActualMinimum(Calendar.DAY_OF_YEAR))
         minDate = cal.time
 
-        var maxDate = summitEntries.maxBy { it.date }.date
+        var maxDate = endDate ?: summitEntries.maxBy { it.date }.date
         cal.time = maxDate
         cal.set(Calendar.DAY_OF_YEAR, cal.getActualMaximum(Calendar.DAY_OF_YEAR))
         maxDate = cal.time
@@ -123,8 +126,8 @@ class IntervalHelper(private val summitEntries: List<Summit>) {
         untilEndOfYear: Boolean = false,
         untilToday: Boolean = false
     ): Pair<MutableList<Float>, MutableList<ClosedRange<Date>>> {
-        val minDate = summitEntries.minBy { it.date }.date
-        var maxDate = summitEntries.maxBy { it.date }.date
+        val minDate = startDate ?: summitEntries.minBy { it.date }.date
+        var maxDate = endDate ?: summitEntries.maxBy { it.date }.date
         if (untilEndOfYear) {
             val cal: Calendar = Calendar.getInstance(TimeZone.getDefault())
             cal.time = maxDate

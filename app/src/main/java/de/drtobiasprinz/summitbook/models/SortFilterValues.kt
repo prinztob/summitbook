@@ -45,12 +45,17 @@ class SortFilterValues(
                     years = (minDate..maxDate).map { it.toString() }.sortedDescending()
                 }
             }
-            if (sharedPreferences.getBoolean("current_year_switch", false)) {
-                Log.i("SortFilterValues", "current_year_switch=true")
-                setSelectedDateSpinnerAndItsDefault(2, 2)
-            } else {
-                setSelectedDateSpinnerAndItsDefault(0, 0)
-            }
+            val showOnlyCurrentYear = sharedPreferences.getBoolean("current_year_switch", false)
+            updateCurrentYearSwitch(showOnlyCurrentYear)
+        }
+    }
+
+    fun updateCurrentYearSwitch(showOnlyCurrentYear: Boolean) {
+        if (showOnlyCurrentYear) {
+            Log.i("SortFilterValues", "current_year_switch=true")
+            setSelectedDateSpinnerAndItsDefault(2, 2)
+        } else {
+            setSelectedDateSpinnerAndItsDefault(0, 0)
         }
     }
 
