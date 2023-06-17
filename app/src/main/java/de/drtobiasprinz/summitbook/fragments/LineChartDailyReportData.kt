@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.fragments
 
+import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Color
@@ -31,6 +32,7 @@ import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerViewDailyReportData
 import de.drtobiasprinz.summitbook.ui.utils.IntervalHelper
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.SimpleDateFormat
+import java.util.Date
 
 @AndroidEntryPoint
 class LineChartDailyReportData : Fragment() {
@@ -47,8 +49,11 @@ class LineChartDailyReportData : Fragment() {
     private var lineChartEntriesVigorousIntensityMinutes: MutableList<Entry?> = mutableListOf()
     private var lineChartEntriesSteps: MutableList<Entry?> = mutableListOf()
     private var lineChartEntriesFloorsClimbed: MutableList<Entry?> = mutableListOf()
-    private var lineChartEntriesHeartRate: MutableList<Entry?> = mutableListOf()
-    private var lineChartXAxisSpinner: XAxisSelector = XAxisSelector.Days
+    private var lineChartEntriesRestingHeartRate: MutableList<Entry?> = mutableListOf()
+    private var lineChartEntriesMinHeartRate: MutableList<Entry?> = mutableListOf()
+    private var lineChartEntriesMaxHeartRate: MutableList<Entry?> = mutableListOf()
+    private var lineChartEntriesSleepData: MutableList<Entry?> = mutableListOf()
+    private var lineChartXAxisSpinner: XAxisSelector = XAxisSelector.Days7
     private var lineChartYAxisSpinner: YAxisSelector = YAxisSelector.SolarIntensity
     private var lineChartColors: List<Int>? = mutableListOf()
 
@@ -201,13 +206,40 @@ class LineChartDailyReportData : Fragment() {
                 )
             )
         }
+        if (lineChartYAxisSpinner == YAxisSelector.SleepHours) {
+            legends.add(
+                addData(
+                    lineChartEntriesSleepData,
+                    dataSets,
+                    Color.GREEN,
+                    getString(R.string.sleep_hours)
+                )
+            )
+        }
+
         if (lineChartYAxisSpinner == YAxisSelector.HeartRate) {
             legends.add(
                 addData(
-                    lineChartEntriesHeartRate,
+                    lineChartEntriesRestingHeartRate,
+                    dataSets,
+                    Color.BLUE,
+                    getString(R.string.resting_heart_rate)
+                )
+            )
+            legends.add(
+                addData(
+                    lineChartEntriesMinHeartRate,
+                    dataSets,
+                    Color.RED,
+                    getString(R.string.min_heart_rate)
+                )
+            )
+            legends.add(
+                addData(
+                    lineChartEntriesMaxHeartRate,
                     dataSets,
                     Color.GREEN,
-                    getString(R.string.heart_rate)
+                    getString(R.string.max_heart_rate)
                 )
             )
         }
@@ -223,7 +255,8 @@ class LineChartDailyReportData : Fragment() {
         binding.lineChart.marker =
             CustomMarkerViewDailyReportData(
                 requireContext(),
-                R.layout.marker_graph_daily_report_data
+                R.layout.marker_graph_daily_report_data,
+                lineChartYAxisSpinner
             )
         binding.lineChart.invalidate()
     }
@@ -302,10 +335,31 @@ class LineChartDailyReportData : Fragment() {
                     entry
                 )
             }.toMutableList()
-            lineChartEntriesHeartRate = data.mapIndexed { index, entry ->
+            lineChartEntriesRestingHeartRate = data.mapIndexed { index, entry ->
                 Entry(
                     index.toFloat(),
                     entry.restingHeartRate.toFloat(),
+                    entry
+                )
+            }.toMutableList()
+            lineChartEntriesMinHeartRate = data.mapIndexed { index, entry ->
+                Entry(
+                    index.toFloat(),
+                    entry.minHeartRate.toFloat(),
+                    entry
+                )
+            }.toMutableList()
+            lineChartEntriesMaxHeartRate = data.mapIndexed { index, entry ->
+                Entry(
+                    index.toFloat(),
+                    entry.maxHeartRate.toFloat(),
+                    entry
+                )
+            }.toMutableList()
+            lineChartEntriesSleepData = data.mapIndexed { index, entry ->
+                Entry(
+                    index.toFloat(),
+                    entry.sleepHours.toFloat(),
                     entry
                 )
             }.toMutableList()
@@ -450,70 +504,45 @@ class LineChartDailyReportData : Fragment() {
         binding.spinnerYAxis.adapter = yAxisAdapter
     }
 
-}
+    companion object {
 
-enum class YAxisSelector(
-    val nameId: Int,
-    val unit: String,
-) {
-    SolarIntensity(R.string.solar_intensity, "h"),
-    ActivityMinutes(R.string.active_duration, "h"),
-    Steps(R.string.steps, ""),
-    FloorsClimbed(R.string.floors_climbed, ""),
-    HeartRate(R.string.heart_rate, "bpm"),
-}
+        fun filterDailyReportDataPerMonth(
+            dailyReportData: List<DailyReportData>,
+            intervalHelper: IntervalHelper
+        ): List<DailyReportData> {
+            val minDate = dailyReportData.minBy { it.date }.date
+            return intervalHelper.dateByMonthRangeAndAnnotationUntilToday.second.filter { it.start >= minDate }
+                .map { range ->
+                    filter(dailyReportData, range)
+                }
+        }
 
-enum class XAxisSelector(
-    val nameId: Int,
-    val filterData: (IntervalHelper, List<DailyReportData>) -> List<DailyReportData>?,
-) {
-    Days(R.string.days, { _, dailyReportData ->
-        dailyReportData.sortedBy { it.date }
-    }),
-    Weeks(R.string.weeks, { intervalHelper, dailyReportData ->
-        val minDate = dailyReportData.minBy { it.date }.date
-        intervalHelper.dateByWeekRangeAndAnnotation.second.filter { it.start >= minDate }
-            .map { range ->
-                val relevantData = dailyReportData.filter { data -> data.date in range }
-                DailyReportData(
-                    0,
-                    range.start,
-                    relevantData.sumOf { it.solarUtilizationInHours },
-                    relevantData.sumOf { it.solarExposureInHours },
-                    relevantData.sumOf { it.steps },
-                    relevantData.sumOf { it.floorsClimbed },
-                    relevantData.flatMap { it.events },
-                    true,
-                    relevantData.sumOf { it.totalIntensityMinutes },
-                    relevantData.sumOf { it.restingHeartRate },
-                    relevantData.minOf { it.minHeartRate },
-                    relevantData.maxOf { it.maxHeartRate },
-                    relevantData.sumOf { it.heartRateVariability } / relevantData.size,
-                    relevantData.sumOf { it.sleepHours } / relevantData.size,
-                )
+        fun filterDailyReportDataPerQuarter(
+            dailyReportData: List<DailyReportData>,
+            intervalHelper: IntervalHelper
+        ): List<DailyReportData> {
+            return intervalHelper.dateByQuarterRangeAndAnnotation.second.map { range ->
+                filter(dailyReportData, range)
             }
-    }),
-    Months(R.string.months, { intervalHelper, dailyReportData ->
-        val minDate = dailyReportData.minBy { it.date }.date
-        intervalHelper.dateByMonthRangeAndAnnotationUntilToday.second.filter { it.start >= minDate }
-            .map { range ->
-                val relevantData = dailyReportData.filter { data -> data.date in range }
-                DailyReportData(
-                    0,
-                    range.start,
-                    relevantData.sumOf { it.solarUtilizationInHours },
-                    relevantData.sumOf { it.solarExposureInHours },
-                    relevantData.sumOf { it.steps },
-                    relevantData.sumOf { it.floorsClimbed },
-                    relevantData.flatMap { it.events },
-                    true
-                )
-            }
-    }),
-    Quarterly(R.string.quarterly, { intervalHelper, dailyReportData ->
-        intervalHelper.dateByQuarterRangeAndAnnotation.second.map { range ->
+        }
+
+        fun filterDailyReportDataPerWeek(
+            dailyReportData: List<DailyReportData>,
+            intervalHelper: IntervalHelper
+        ): List<DailyReportData> {
+            val minDate = dailyReportData.minBy { it.date }.date
+            return intervalHelper.dateByWeekRangeAndAnnotation.second.filter { it.start >= minDate }
+                .map { range ->
+                    filter(dailyReportData, range)
+                }
+        }
+
+        private fun filter(
+            dailyReportData: List<DailyReportData>,
+            range: ClosedRange<Date>
+        ): DailyReportData {
             val relevantData = dailyReportData.filter { data -> data.date in range }
-            DailyReportData(
+            return DailyReportData(
                 0,
                 range.start,
                 relevantData.sumOf { it.solarUtilizationInHours },
@@ -521,8 +550,127 @@ enum class XAxisSelector(
                 relevantData.sumOf { it.steps },
                 relevantData.sumOf { it.floorsClimbed },
                 relevantData.flatMap { it.events },
-                true
+                true,
+                relevantData.sumOf { it.totalIntensityMinutes },
+                relevantData.sumOf { it.restingHeartRate } / relevantData.size,
+                relevantData.minOf { it.minHeartRate },
+                relevantData.maxOf { it.maxHeartRate },
+                relevantData.sumOf { it.heartRateVariability } / relevantData.size,
+                relevantData.sumOf { it.sleepHours } / relevantData.size,
             )
         }
-    })
+    }
+
+}
+
+enum class YAxisSelector(
+    val nameId: Int,
+    val unit: String,
+    val getStringForCustomMarker: (DailyReportData, Context) -> String
+) {
+    SolarIntensity(R.string.solar_intensity, "h", { entry, context ->
+        String.format(
+            "%s\n%s: %.2f %s\n%s: %.2f %s",
+            entry.markerText,
+            context.getString(R.string.solar_50000_lux_condition),
+            entry.solarUtilizationInHours,
+            "h",
+            context.getString(R.string.solar_exposure),
+            entry.solarExposureInHours,
+            "h"
+        )
+    }),
+    ActivityMinutes(R.string.active_duration, "h", { entry, context ->
+        String.format(
+            "%s\n%s: %s %s\n%s: %s %s\n%s: %s %s",
+            entry.markerText,
+            context.getString(R.string.active_duration),
+            entry.totalIntensityMinutes,
+            context.getString(R.string.min),
+            context.getString(R.string.moderate_intensity_minutes),
+            entry.events.sumOf { it.moderateIntensityMinutes },
+            context.getString(R.string.min),
+            context.getString(R.string.vigorous_intensity_minutes),
+            entry.events.sumOf { it.vigorousIntensityMinutes },
+            context.getString(R.string.min),
+        )
+    }),
+    Steps(R.string.steps, "", { entry, context ->
+        String.format(
+            "%s\n%s: %s",
+            entry.markerText,
+            context.getString(R.string.steps),
+            entry.steps
+        )
+    }),
+    FloorsClimbed(R.string.floors_climbed, "", { entry, context ->
+        String.format(
+            "%s\n%s: %s",
+            entry.markerText,
+            context.getString(R.string.floors_climbed),
+            entry.floorsClimbed
+        )
+    }),
+    HeartRate(R.string.heart_rate, "bpm", { entry, context ->
+        String.format(
+            "%s\n%s: %s %s\n%s: %s %s\n%s: %s %s",
+            entry.markerText,
+            context.getString(R.string.min_heart_rate),
+            entry.minHeartRate,
+            context.getString(R.string.bpm),
+            context.getString(R.string.resting_heart_rate),
+            entry.restingHeartRate,
+            context.getString(R.string.bpm),
+            context.getString(R.string.max_heart_rate),
+            entry.maxHeartRate,
+            context.getString(R.string.bpm),
+        )
+    }),
+    SleepHours(R.string.sleep_hours, "h", { entry, context ->
+        String.format(
+            "%s\n%s: %s",
+            entry.markerText,
+            context.getString(R.string.sleep_hours),
+            entry.sleepHours
+        )
+    }),
+}
+
+enum class XAxisSelector(
+    val nameId: Int,
+    val filterData: (IntervalHelper, List<DailyReportData>) -> List<DailyReportData>?
+) {
+    Days7(R.string.seven_days, { _, dailyReportData ->
+        dailyReportData.sortedBy { it.date }.takeLast(7)
+    }),
+    Days28(R.string.twenty_eight_days, { _, dailyReportData ->
+        dailyReportData.sortedBy { it.date }.takeLast(28)
+    }),
+    Days(R.string.days, { _, dailyReportData ->
+        dailyReportData.sortedBy { it.date }
+    }),
+    Weeks12(R.string.twelf_weeks, { intervalHelper, dailyReportData ->
+        LineChartDailyReportData.filterDailyReportDataPerWeek(
+            dailyReportData,
+            intervalHelper
+        ).takeLast(12)
+    }),
+    Weeks(R.string.weeks, { intervalHelper, dailyReportData ->
+        LineChartDailyReportData.filterDailyReportDataPerWeek(
+            dailyReportData,
+            intervalHelper
+        )
+    }),
+    Months(R.string.months, { intervalHelper, dailyReportData ->
+        LineChartDailyReportData.filterDailyReportDataPerMonth(
+            dailyReportData,
+            intervalHelper
+        )
+    }),
+    Quarterly(R.string.quarterly, { intervalHelper, dailyReportData ->
+        LineChartDailyReportData.filterDailyReportDataPerQuarter(
+            dailyReportData,
+            intervalHelper
+        )
+    });
 }

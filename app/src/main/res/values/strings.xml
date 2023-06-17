@@ -102,6 +102,9 @@
     <string name="power">Power</string>
     <string name="cadence">Cadence</string>
     <string name="heart_rate">Heart Rate</string>
+    <string name="resting_heart_rate">Resting Heart Rate</string>
+    <string name="min_heart_rate">Minimal Heart Rate</string>
+    <string name="max_heart_rate">Maximal Heart Rate</string>
     <string name="by_elevation">height</string>
     <string name="sort_by">Sort by</string>
     <string name="yes">Yes</string>
@@ -397,7 +400,10 @@
     <string name="percent">%</string>
     <string name="h">h</string>
     <string name="days">days</string>
+    <string name="seven_days">last 7d</string>
+    <string name="twenty_eight_days">last 28d</string>
     <string name="weeks">weeks</string>
+    <string name="twelf_weeks">last 12w</string>
     <string name="months">months</string>
     <string name="daily_report_data">Daily Report Data</string>
     <string name="part_day">Part of day</string>
@@ -406,5 +412,6 @@
     <string name="no_summit">There is no summit for this criteria</string>
     <string name="floors_climbed">Climbed Floors\n</string>
     <string name="steps">Steps</string>
+    <string name="sleep_hours">Sleep Hours</string>
 
 </resources>

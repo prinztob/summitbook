@@ -101,6 +101,9 @@
     <string name="power">Leistung</string>
     <string name="cadence">Kadenz</string>
     <string name="heart_rate">Herzfrequenz</string>
+    <string name="resting_heart_rate">Herzfrequenz in Ruhe</string>
+    <string name="min_heart_rate">Minimale Herzfrequenz</string>
+    <string name="max_heart_rate">Maximale Herzfrequenz</string>
     <string name="height_meter_done">Meisten Höhenmeter</string>
     <string name="by_elevation">Höhe</string>
     <string name="sort_by">Sortierung</string>
@@ -232,7 +235,7 @@
     <string name="bicycle">Fahrrad</string>
     <string name="mountainbike">Mountainbike</string>
     <string name="bikeAndHike">Bike&amp;Hike</string>
-    <string name="climb">Klettern</string>
+    <string name="climb">Bergsteigen</string>
     <string name="hike">Wandern</string>
     <string name="skitour">Skitour</string>
     <string name="racer">Rennrad</string>
@@ -399,7 +402,10 @@
     <string name="h">h</string>
 
     <string name="days">Tage</string>
+    <string name="seven_days">letzten 7T</string>
+    <string name="twenty_eight_days">letzten 28T</string>
     <string name="weeks">Wochen</string>
+    <string name="twelf_weeks">letzten 12W</string>
     <string name="months">Monate</string>
     <string name="daily_report_data">Täglicher Report</string>
     <string name="part_day">Nicht vollständig</string>
@@ -408,4 +414,5 @@
     <string name="no_summit">Es gibt keinen Gipfel für diese Kriterien</string>
     <string name="floors_climbed">Hochgestiegene Stockwerke\n</string>
     <string name="steps">Schritte</string>
+    <string name="sleep_hours">Schlaf in Std.</string>
 </resources>

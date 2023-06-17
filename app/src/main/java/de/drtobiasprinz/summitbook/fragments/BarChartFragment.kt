@@ -467,7 +467,6 @@ class BarChartFragment : Fragment() {
                             getFormattedValueForQuantity(e.x)
                         } else {
                             getFormattedValueNormalMarker(e)
-
                         }
                     val selectedValue = (e as BarEntry).yVals[highlight.stackIndex].toInt()
                     val unitString = if (unit == "") "" else " $unit"
@@ -499,7 +498,7 @@ class BarChartFragment : Fragment() {
                             e.getY().toInt(),
                             unitString,
                             value,
-                            SportType.values()[highlight.stackIndex].name
+                            getString(SportType.values()[highlight.stackIndex].sportNameStringId)
                         )
                     }
                 }

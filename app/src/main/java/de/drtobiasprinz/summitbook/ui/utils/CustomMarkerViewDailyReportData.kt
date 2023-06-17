@@ -9,8 +9,9 @@ import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.DailyReportData
+import de.drtobiasprinz.summitbook.fragments.YAxisSelector
 
-class CustomMarkerViewDailyReportData(private var context: Context?, layoutResource: Int) :
+class CustomMarkerViewDailyReportData(private var context: Context?, layoutResource: Int, private var yAxisSelector: YAxisSelector) :
     MarkerView(context, layoutResource) {
 
     private val tvContent: TextView? = findViewById(R.id.tvContent)
@@ -22,19 +23,8 @@ class CustomMarkerViewDailyReportData(private var context: Context?, layoutResou
         try {
             val entry = e?.data as DailyReportData?
             if (entry != null) {
-                tvContent?.text = String.format(
-                    "%s\n%s: %.2f %s\n%s: %.2f %s\n%s: %s %s",
-                    entry.markerText,
-                    context?.getString(R.string.solar_50000_lux_condition),
-                    entry.solarUtilizationInHours,
-                    "h",
-                    context?.getString(R.string.solar_exposure),
-                    entry.solarExposureInHours,
-                    "h",
-                    context?.getString(R.string.active_duration),
-                    entry.events.sumOf { it.duration },
-                    "min"
-                )
+                tvContent?.text =
+                    context?.let { yAxisSelector.getStringForCustomMarker(entry, it) }
             } else {
                 tvContent?.text = ""
             }
