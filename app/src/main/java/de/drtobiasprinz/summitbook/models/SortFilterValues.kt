@@ -7,7 +7,10 @@ import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.GregorianCalendar
+import java.util.Locale
 
 
 class SortFilterValues(
@@ -30,7 +33,8 @@ class SortFilterValues(
 
     var orderByAscDescButtonGroup: OrderByAscDescButtonGroup = OrderByAscDescButtonGroup.Descending,
     var orderByValueButtonGroup: OrderByValueButtonGroup = OrderByValueButtonGroup.Date,
-    var years: List<String> = mutableListOf()
+    var years: List<String> = mutableListOf(),
+    var searchString: String = ""
 ) {
     private var initialized: Boolean = false
 
@@ -96,18 +100,26 @@ class SortFilterValues(
 
     fun apply(summits: List<Summit>, sharedPreferences: SharedPreferences): List<Summit> {
         setInitialValues(summits, sharedPreferences)
-        val filteredSummits = summits.filter {
-            !it.isBookmark &&
-                    filterDate(it) &&
-                    filterParticipants(it) &&
-                    (sportType == null || sportType == it.sportType) &&
-                    kilometersSlider.filter(it) &&
-                    elevationGainSlider.filter(it) &&
-                    topElevationSlider.filter(it) &&
-                    peakFavoriteButtonGroup.filter(it) &&
-                    hasImageButtonGroup.filter(it) &&
-                    hasGpxTrackButtonGroup.filter(it) &&
-                    hasPositionButtonGroup.filter(it)
+        val filteredSummits = if (searchString != "" && searchString.length > 1) {
+            summits.filter {
+                it.name.contains(searchString, ignoreCase = true) ||
+                        it.comments.contains(searchString, ignoreCase = true) ||
+                        it.places.joinToString(";").contains(searchString, ignoreCase = true)
+            }
+        } else {
+            summits.filter {
+                !it.isBookmark &&
+                        filterDate(it) &&
+                        filterParticipants(it) &&
+                        (sportType == null || sportType == it.sportType) &&
+                        kilometersSlider.filter(it) &&
+                        elevationGainSlider.filter(it) &&
+                        topElevationSlider.filter(it) &&
+                        peakFavoriteButtonGroup.filter(it) &&
+                        hasImageButtonGroup.filter(it) &&
+                        hasGpxTrackButtonGroup.filter(it) &&
+                        hasPositionButtonGroup.filter(it)
+            }
         }
         return orderByValueButtonGroup.sort(filteredSummits, orderByAscDescButtonGroup)
     }

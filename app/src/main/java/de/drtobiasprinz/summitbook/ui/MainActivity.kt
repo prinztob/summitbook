@@ -299,14 +299,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 return false
             }
 
-            override fun onQueryTextChange(newText: String?): Boolean {
-                if (newText != null) {
-                    summitViewFragment.viewModel?.getSearchSummit(newText)
+            override fun onQueryTextChange(query: String?): Boolean {
+                if (query != null) {
+                    sortFilterValues.searchString = query
+                    summitViewFragment.viewModel?.refresh()
                 }
                 return true
             }
 
         })
+
         return super.onCreateOptionsMenu(menu)
     }
 
