@@ -121,6 +121,7 @@
             </TableRow>
 
             <RelativeLayout
+                android:id="@+id/cardRelativeLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="5dp"
@@ -132,11 +133,10 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentStart="true"
                     android:layout_margin="5dp"
-                    android:layout_marginBottom="5dp"
                     android:background="@color/color_white"
                     android:contentDescription="@string/add_image"
                     android:paddingStart="15dp"
-                    android:paddingEnd="5dp"
+                    android:paddingEnd="0dp"
                     android:src="@drawable/baseline_add_a_photo_black_24dp" />
 
                 <ImageButton
@@ -144,11 +144,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_margin="5dp"
-                    android:layout_marginBottom="5dp"
                     android:layout_toEndOf="@id/entry_add_image"
                     android:background="@color/color_white"
                     android:contentDescription="@string/add_image"
-                    android:paddingStart="15dp"
+                    android:paddingStart="5dp"
                     android:paddingEnd="5dp"
                     android:src="@drawable/baseline_more_time_black_24dp" />
 
@@ -158,12 +157,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_margin="5dp"
-                    android:layout_marginBottom="5dp"
                     android:layout_toEndOf="@id/entry_add_velocity_data"
                     android:background="@color/color_white"
                     android:contentDescription="@string/add_coordinate"
                     android:paddingStart="5dp"
-                    android:paddingEnd="5dp"
+                    android:paddingEnd="0dp"
                     android:src="@drawable/baseline_edit_location_black_24dp" />
 
                 <ImageButton
@@ -171,12 +169,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_margin="5dp"
-                    android:layout_marginBottom="5dp"
                     android:layout_toEndOf="@id/entry_add_coordinate"
                     android:background="@color/color_white"
                     android:contentDescription="@string/edit_icon"
                     android:paddingStart="5dp"
-                    android:paddingEnd="5dp"
+                    android:paddingEnd="0dp"
                     android:src="@drawable/baseline_mode_edit_black_24dp" />
 
                 <ImageButton
@@ -184,12 +181,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_margin="5dp"
-                    android:layout_marginBottom="5dp"
                     android:layout_toEndOf="@id/entry_edit"
                     android:background="@color/color_white"
                     android:contentDescription="@string/delete_icon"
                     android:paddingStart="5dp"
-                    android:paddingEnd="5dp"
+                    android:paddingEnd="0dp"
                     android:src="@drawable/baseline_delete_black_24dp" />
 
 
@@ -198,12 +194,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_margin="5dp"
-                    android:layout_marginBottom="5dp"
                     android:layout_toEndOf="@id/entry_delete"
                     android:background="@color/color_white"
                     android:contentDescription="@string/is_favorite"
                     android:paddingStart="5dp"
-                    android:paddingEnd="5dp"
+                    android:paddingEnd="0dp"
                     android:src="@drawable/baseline_star_border_black_24dp" />
 
 
@@ -212,13 +207,38 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_margin="5dp"
-                    android:layout_marginBottom="5dp"
                     android:layout_toEndOf="@id/entry_favorite"
                     android:background="@color/color_white"
                     android:contentDescription="@string/is_favorite"
                     android:paddingStart="5dp"
-                    android:paddingEnd="5dp"
+                    android:paddingEnd="0dp"
                     android:src="@drawable/icons8_mountain_24" />
+
+
+                <ImageView
+                    android:id="@+id/power_record"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:layout_toEndOf="@id/entry_summit"
+                    android:background="@color/color_white"
+                    android:contentDescription="@string/new_power_record"
+                    android:paddingStart="5dp"
+                    android:paddingEnd="0dp"
+                    android:src="@drawable/ic_baseline_power_24"
+                    android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/segment_record"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:layout_toEndOf="@id/power_record"
+                    android:contentDescription="@string/new_segment_record"
+                    android:paddingStart="5dp"
+                    android:paddingEnd="0dp"
+                    android:src="@drawable/ic_baseline_route_24"
+                    android:visibility="gone" />
 
             </RelativeLayout>
 

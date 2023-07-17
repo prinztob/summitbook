@@ -82,6 +82,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             val copyVelocityData = summit.velocityData.clone()
             tableEntries.forEach { it.update() }
             if (copyElevationData != summit.elevationData || copyVelocityData != summit.velocityData) {
+                summit.updated += 1
                 viewModel.saveSummit(true, summit)
             }
             dialog?.cancel()

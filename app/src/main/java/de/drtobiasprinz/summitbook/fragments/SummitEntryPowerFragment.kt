@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.fragments
 
 import android.content.Context
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Color
 import android.os.Bundle
@@ -32,8 +33,14 @@ import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
 import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
-import java.util.*
-import kotlin.math.*
+import java.util.Calendar
+import java.util.Date
+import java.util.GregorianCalendar
+import kotlin.math.abs
+import kotlin.math.log10
+import kotlin.math.pow
+import kotlin.math.round
+import kotlin.math.roundToInt
 
 @AndroidEntryPoint
 class SummitEntryPowerFragment : Fragment() {
@@ -73,7 +80,7 @@ class SummitEntryPowerFragment : Fragment() {
                         summitsListData.data.let { summits ->
                             if (summits != null) {
 
-                                pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) {itSummitData ->
+                                pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { itSummitData ->
                                     itSummitData.data.let { summitToCompare ->
 
                                         drawChart(summitToView, summitToCompare, summits)
@@ -188,6 +195,27 @@ class SummitEntryPowerFragment : Fragment() {
             binding.lineChart.axisLeft.axisMinimum = 0f
             binding.lineChart.axisRight.axisMinimum = 0f
 
+            when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+                Configuration.UI_MODE_NIGHT_YES -> {
+                    binding.lineChart.xAxis.textColor = Color.BLACK
+                    binding.lineChart.axisRight.textColor = Color.WHITE
+                    binding.lineChart.axisLeft.textColor = Color.WHITE
+                    binding.lineChart.legend?.textColor = Color.WHITE
+                }
+                Configuration.UI_MODE_NIGHT_NO -> {
+                    binding.lineChart.xAxis.textColor = Color.BLACK
+                    binding.lineChart.axisRight.textColor = Color.BLACK
+                    binding.lineChart.axisLeft.textColor = Color.BLACK
+                    binding.lineChart.legend?.textColor = Color.BLACK
+                }
+                Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                    binding.lineChart.xAxis.textColor = Color.BLACK
+                    binding.lineChart.axisRight.textColor = Color.WHITE
+                    binding.lineChart.axisLeft.textColor = Color.WHITE
+                    binding.lineChart.legend?.textColor = Color.WHITE
+                }
+            }
+
             val params = binding.lineChart.layoutParams
             params.height = (Resources.getSystem().displayMetrics.heightPixels * 0.65).toInt()
             binding.lineChart.layoutParams = params
@@ -267,19 +295,16 @@ class SummitEntryPowerFragment : Fragment() {
         if (selectedTimeRangeSpinner != 0) {
             filtered = summits.filter { summit ->
                 val diff = Date().time - summit.date.time
-                if (summit == summitToView) {
-                    false
-                } else {
-                    when (selectedTimeRangeSpinner) {
-                        1 -> getYear(summit.date) == getYear(Date())
-                        2 -> diff < 3 * 30 * 24 * 3600000L
-                        3 -> diff < 12 * 30 * 24 * 3600000L
-                        else -> true
-                    }
+
+                when (selectedTimeRangeSpinner) {
+                    1 -> getYear(summit.date) == getYear(Date())
+                    2 -> diff < 3 * 30 * 24 * 3600000L
+                    3 -> diff < 12 * 30 * 24 * 3600000L
+                    else -> true
                 }
             }
         }
-        return filtered.ifEmpty { summits }
+        return filtered.ifEmpty { summits }.filter { !it.equalsInBaseProperties(summitToView) }
     }
 
     private fun getYear(date: Date): Int {

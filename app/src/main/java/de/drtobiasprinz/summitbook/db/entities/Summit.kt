@@ -62,6 +62,12 @@ class Summit(
     @Ignore
     var isSelected: Boolean = false
 
+    @Ignore
+    var updated: Int = 0
+
+    @Ignore
+    var segmentInfo: List<Triple<SegmentEntry, SegmentDetails, Int>> = mutableListOf()
+
     private fun getWellDefinedDuration(): Double {
         val dur = if (velocityData.avgVelocity > 0) kilometers / velocityData.avgVelocity else 0.0
         return if (dur < 24) {
@@ -383,12 +389,37 @@ class Summit(
         }
     }
 
+    fun updateSegmentInfo(segments: List<Segment>) {
+        val segmentsForSummit =
+            segments.filter { summit ->
+                summit.segmentEntries
+                    .any { entry -> entry.activityId == this.activityId }
+            }
+        if (segmentsForSummit.isNotEmpty()) {
+            val list = mutableListOf<Triple<SegmentEntry, SegmentDetails, Int>>()
+            segmentsForSummit.forEach { segment ->
+                segment.segmentEntries.sortBy { entry -> entry.duration }
+                val relevantEntries = segment.segmentEntries
+                    .filter { entry -> entry.activityId == this.activityId }
+                relevantEntries.forEach { segmentEntry ->
+                    list.add(
+                        Triple(
+                            segmentEntry, segment.segmentDetails,
+                            segment.segmentEntries.indexOf(segmentEntry) + 1
+                        )
+                    )
+                }
+            }
+            segmentInfo = list
+        }
+    }
+
 
     override fun hashCode(): Int {
         return Objects.hash(date, name, sportType, elevationData, kilometers)
     }
 
-    private fun equalsInBaseProperties(other: Any?): Boolean {
+    fun equalsInBaseProperties(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
         val that = other as Summit
@@ -424,6 +455,7 @@ class Summit(
         if (duration != other.duration) return false
         if (gpsTrack != other.gpsTrack) return false
         if (isSelected != other.isSelected) return false
+        if (updated != other.updated) return false
 
         return true
     }

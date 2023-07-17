@@ -402,7 +402,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     selectedEntries.add(entries[i])
                 }
             }
-            val downloader = GarminTrackAndDataDownloader(selectedEntries, pythonExecutor)
+            val downloader = GarminTrackAndDataDownloader(selectedEntries, pythonExecutor, useTcx)
             downloader.downloadTracks(true)
             downloader.extractFinalSummit()
             val entry = downloader.finalEntry
@@ -686,7 +686,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         if (uri != null) {
             requireContext().contentResolver?.openInputStream(uri)?.use { inputStream ->
                 uploadGpxFile(inputStream, entity, view)
-                view?.findViewById<RelativeLayout>(R.id.loadingPanel)?.visibility = View.VISIBLE
+                binding.loadingPanel.visibility = View.VISIBLE
                 var python = pythonInstance
                 if (python == null) {
                     if (!Python.isStarted()) {
@@ -958,7 +958,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     0.0
                 }
                 if (distance == 0.0 && gpsTrack != null) {
-                    distance = (gpsTrack.trackPoints.last().extension?.distance
+                    distance = (gpsTrack.trackPoints.lastOrNull()?.extension?.distance
                         ?: 0.0) / 1000
                 }
                 entry.kilometers = distance

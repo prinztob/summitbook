@@ -288,6 +288,9 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         if (trackPoints.size > 0 && trackPoints.first().extension?.distance == null) {
             setDistance()
         }
+        if (trackPoints.isEmpty()) {
+            fileToUse.delete()
+        }
     }
 
 

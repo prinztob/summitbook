@@ -18,8 +18,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryDataBinding
-import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
-import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
@@ -788,34 +786,21 @@ class SummitEntryDataFragment : Fragment() {
     private fun setChipsTextForSegments(id: Int, imageId: Int, summitEntry: Summit) {
         pageViewModel?.segmentsList?.observe(viewLifecycleOwner) {
             it.data.let { segments ->
-                val segmentsForSummit =
-                    segments?.filter { summit -> summit.segmentEntries.any { entry -> entry.activityId == summitEntry.activityId } }
-                if (segmentsForSummit != null && segmentsForSummit.isNotEmpty()) {
-                    val list = mutableListOf<Triple<SegmentEntry, SegmentDetails, String>>()
-                    segmentsForSummit.forEach { segment ->
-                        segment.segmentEntries.sortBy { entry -> entry.duration }
-                        val relevantEntries =
-                            segment.segmentEntries.filter { entry -> entry.activityId == summitEntry.activityId }
-                        relevantEntries.forEach { segmentEntry ->
-                            list.add(
-                                Triple(
-                                    segmentEntry, segment.segmentDetails,
-                                    String.format(
-                                        getString(R.string.rank_in_activity),
-                                        segment.segmentEntries.indexOf(segmentEntry) + 1,
-                                        segment.segmentDetails.getDisplayName()
-                                    )
-                                )
-                            )
-                        }
-                    }
-                    val chipGroup: ChipGroup = binding.root.findViewById(id)
-                    chipGroup.removeAllViews()
-                    if (list.isEmpty() || list.first().third == "") {
-                        chipGroup.visibility = View.GONE
-                    } else {
-                        for (entry in list) {
-                            val chip = createChip(entry.third, imageId)
+                segments?.let { segmentList -> summitEntry.updateSegmentInfo(segmentList) }
+                val chipGroup: ChipGroup = binding.root.findViewById(id)
+                chipGroup.removeAllViews()
+                if (summitEntry.segmentInfo.isEmpty()) {
+                    chipGroup.visibility = View.GONE
+                } else {
+                    for (entry in summitEntry.segmentInfo) {
+                        val chip = createChip(
+                            String.format(
+                                getString(R.string.rank_in_activity),
+                                entry.third,
+                                entry.second.getDisplayName()
+                            ), imageId
+                        )
+// TODO: implement setOnClickListener
 //                            chip.setOnClickListener {
 //                                val fragment = SegmentEntryDetailsFragment()
 //                                fragment.segmentDetailsId = entry.second.segmentDetailsId
@@ -824,8 +809,7 @@ class SummitEntryDataFragment : Fragment() {
 //                                    .replace(R.id.content_frame_pager, fragment, "SegmentEntryDetailsFragment")
 //                                    .addToBackStack(null).commit()
 //                            }
-                            chipGroup.addView(chip)
-                        }
+                        chipGroup.addView(chip)
                     }
                 }
             }
@@ -857,10 +841,12 @@ class SummitEntryDataFragment : Fragment() {
                 chip.chipIconTint =
                     ContextCompat.getColorStateList(requireContext(), R.color.white)
             }
+
             Configuration.UI_MODE_NIGHT_NO -> {
                 chip.chipIconTint =
                     ContextCompat.getColorStateList(requireContext(), R.color.black)
             }
+
             Configuration.UI_MODE_NIGHT_UNDEFINED -> {
                 chip.chipIconTint =
                     ContextCompat.getColorStateList(requireContext(), R.color.black)

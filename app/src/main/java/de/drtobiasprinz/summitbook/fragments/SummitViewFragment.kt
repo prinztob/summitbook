@@ -126,33 +126,45 @@ class SummitViewFragment : Fragment() {
                 }
             } else {
                 viewModel?.summitsList?.observe(viewLifecycleOwner) { dataStatus ->
-                    when (dataStatus.status) {
-                        DataStatus.Status.LOADING -> {
-                            loading.isVisible(true, recyclerView)
-                            emptyBody.isVisible(false, recyclerView)
-                        }
-
-                        DataStatus.Status.SUCCESS -> {
-                            dataStatus.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
-                            loading.isVisible(false, recyclerView)
-                            val data = sortFilterValues.apply(
-                                dataStatus.data ?: emptyList(),
-                                sharedPreferences
-                            )
-                            summitsAdapter.differ.submitList(data)
-                            if (!startedScheduler) {
-                                dataStatus.data?.let { addBackgroundTasks(it) }
-                                startedScheduler = true
+                    viewModel?.segmentsList?.observe(viewLifecycleOwner) {
+                        when (dataStatus.status) {
+                            DataStatus.Status.LOADING -> {
+                                loading.isVisible(true, recyclerView)
+                                emptyBody.isVisible(false, recyclerView)
                             }
-                        }
 
-                        DataStatus.Status.ERROR -> {
-                            loading.isVisible(false, recyclerView)
-                            Toast.makeText(context, dataStatus.message, Toast.LENGTH_SHORT).show()
+                            DataStatus.Status.SUCCESS -> {
+                                dataStatus.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
+                                loading.isVisible(false, recyclerView)
+                                val data = sortFilterValues.apply(
+                                    dataStatus.data ?: emptyList(),
+                                    sharedPreferences
+                                )
+                                it.data.let { segments ->
+                                    if (segments != null) {
+                                        data.forEach {summit ->
+                                             summit.updateSegmentInfo(segments)
+                                        }
+                                    }
+                                }
+                                summitsAdapter.differ.submitList(data)
+                                if (!startedScheduler) {
+                                    dataStatus.data?.let { summitsListData -> addBackgroundTasks(summitsListData) }
+                                    startedScheduler = true
+                                }
+                            }
+
+                            DataStatus.Status.ERROR -> {
+                                loading.isVisible(false, recyclerView)
+                                Toast.makeText(context, dataStatus.message, Toast.LENGTH_SHORT)
+                                    .show()
+                            }
                         }
                     }
                 }
             }
+
+
 
             val swipeCallback = object :
                 ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {

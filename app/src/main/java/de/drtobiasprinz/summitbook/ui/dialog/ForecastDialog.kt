@@ -22,6 +22,7 @@ import de.drtobiasprinz.summitbook.models.SortFilterValues.Companion.getYear
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.util.*
+import kotlin.math.floor
 import kotlin.math.round
 
 @AndroidEntryPoint
@@ -38,6 +39,9 @@ class ForecastDialog : DialogFragment() {
     private var annualTargetActivity: String = ""
     private var annualTargetKm: String = ""
     private var annualTargetHm: String = ""
+    private var stepSizeActivity: Int = 1
+    private var stepSizeKm: Int = 10
+    private var stepSizeHm: Int = 250
     private var indoorHeightMeterPercent = 0
 
     override fun onCreateView(
@@ -145,7 +149,12 @@ class ForecastDialog : DialogFragment() {
             for (i in 1..12) {
                 var forecast = forecasts?.firstOrNull { it.month == i && it.year == date }
                 if (forecast == null) {
-                    forecast = Forecast(date, i, 0, 0, 0)
+                    forecast = Forecast(
+                        date, i,
+                        (floor((annualTargetHm.toInt() / 12.0) / stepSizeHm) * stepSizeHm).toInt(),
+                        (floor((annualTargetKm.toInt() / 12.0) / stepSizeKm) * stepSizeKm).toInt(),
+                        (floor((annualTargetActivity.toInt() / 12.0) / stepSizeActivity) * stepSizeActivity).toInt()
+                    )
                     viewModel.saveForecast(false, forecast)
                 }
             }
@@ -179,6 +188,7 @@ class ForecastDialog : DialogFragment() {
                 )
                 annualTarget = annualTargetKm.toInt()
             }
+
             binding.buttonActivity.id -> {
                 binding.overview.text = requireContext().getString(
                     R.string.forecast_info_activities,
@@ -188,6 +198,7 @@ class ForecastDialog : DialogFragment() {
                 )
                 annualTarget = annualTargetActivity.toInt()
             }
+
             else -> {
                 binding.overview.text = requireContext().getString(
                     R.string.forecast_info_hm,
@@ -219,17 +230,19 @@ class ForecastDialog : DialogFragment() {
                         binding.buttonKilometers.id -> {
                             slider.value = it.forecastDistance.toFloat()
                             slider.valueTo = 500F
-                            slider.stepSize = 10F
+                            slider.stepSize = stepSizeKm.toFloat()
                         }
+
                         binding.buttonActivity.id -> {
                             slider.value = it.forecastNumberActivities.toFloat()
                             slider.valueTo = 20F
-                            slider.stepSize = 1F
+                            slider.stepSize = stepSizeActivity.toFloat()
                         }
+
                         else -> {
                             slider.value = it.forecastHeightMeter.toFloat()
                             slider.valueTo = 15000F
-                            slider.stepSize = 250F
+                            slider.stepSize = stepSizeHm.toFloat()
                         }
                     }
                     if (it.year == currentYear && it.month < currentMonth) {
@@ -245,6 +258,7 @@ class ForecastDialog : DialogFragment() {
                                 binding.buttonKilometers.id -> it.forecastDistance = value.toInt()
                                 binding.buttonActivity.id -> it.forecastNumberActivities =
                                     value.toInt()
+
                                 else -> it.forecastHeightMeter = value.toInt()
                             }
                             setOverview(forecasts, year)
@@ -284,8 +298,10 @@ class ForecastDialog : DialogFragment() {
                     resources.getString(R.string.value_with_km),
                     forecast.forecastDistance
                 )
+
             binding.buttonActivity.id -> textView.text =
                 forecast.forecastNumberActivities.toString()
+
             else -> textView.text = String.format(
                 resources.getString(R.string.value_with_hm),
                 forecast.forecastHeightMeter
@@ -312,12 +328,14 @@ class ForecastDialog : DialogFragment() {
                 resources.getString(R.string.km),
                 textView
             )
+
             binding.buttonActivity.id -> setTextAndColor(
                 forecast.actualNumberActivities,
                 forecast.forecastNumberActivities,
                 "",
                 textView
             )
+
             else -> setTextAndColor(
                 forecast.actualHeightMeter,
                 forecast.forecastHeightMeter,

@@ -413,5 +413,7 @@
     <string name="floors_climbed">Climbed Floors\n</string>
     <string name="steps">Steps</string>
     <string name="sleep_hours">Sleep Hours</string>
+    <string name="new_power_record">New power record</string>
+    <string name="new_segment_record">New segment record</string>
 
 </resources>

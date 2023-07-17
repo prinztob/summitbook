@@ -59,8 +59,6 @@ class SummitEntryTrackFragment : Fragment() {
     private var usedItemsForColorCode: List<TrackColor> = emptyList()
     private var summitsToCompare: List<Summit> = emptyList()
 
-    private var allShown: Boolean = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pageViewModel = (requireActivity() as SummitEntryDetailsActivity).pageViewModel
@@ -274,6 +272,9 @@ class SummitEntryTrackFragment : Fragment() {
             if (localGpsTrack?.trackPoints?.isNotEmpty() == true && trackSlopeGraph.isEmpty()) {
                 trackSlopeGraph = localGpsTrack.getTrackSlopeGraph()
             }
+            if (localGpsTrack?.trackPoints?.isEmpty() == true) {
+                localSummit.getGpsTrackPath()
+            }
         }
     }
 
@@ -300,7 +301,7 @@ class SummitEntryTrackFragment : Fragment() {
 
                 val dataSet = LineDataSet(lineChartEntries, label)
                 setGraphView(dataSet)
-                setColors(lineChartEntries, dataSet)
+                setColors(lineChartEntries, dataSet, summitToView)
                 dataSets.add(dataSet)
                 lineChart.data = LineData(dataSets)
                 lineChart.setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
@@ -349,7 +350,31 @@ class SummitEntryTrackFragment : Fragment() {
         l.isEnabled = true
     }
 
-    private fun setColors(lineChartEntries: MutableList<Entry>, dataSet: LineDataSet) {
+    private fun setColors(lineChartEntries: MutableList<Entry>, dataSet: LineDataSet, summitToView: Summit) {
+
+        when (requireContext().resources?.configuration?.uiMode?.and(android.content.res.Configuration.UI_MODE_NIGHT_MASK)) {
+            android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
+                binding.lineChart.xAxis.textColor = Color.BLACK
+                binding.lineChart.axisRight.textColor = Color.WHITE
+                binding.lineChart.axisLeft.textColor = Color.WHITE
+                binding.lineChart.legend?.textColor = Color.WHITE
+                binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdWhite)
+            }
+            android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
+                binding.lineChart.xAxis.textColor = Color.BLACK
+                binding.lineChart.axisRight.textColor = Color.BLACK
+                binding.lineChart.axisLeft.textColor = Color.BLACK
+                binding.lineChart.legend?.textColor = Color.BLACK
+                binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
+            }
+            android.content.res.Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                binding.lineChart.xAxis.textColor = Color.BLACK
+                binding.lineChart.axisRight.textColor = Color.WHITE
+                binding.lineChart.axisLeft.textColor = Color.WHITE
+                binding.lineChart.legend?.textColor = Color.WHITE
+                binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdWhite)
+            }
+        }
         val min = lineChartEntries.minByOrNull { it.y }?.y
         val max = lineChartEntries.maxByOrNull { it.y }?.y
         if (min != null && max != null) {
@@ -382,7 +407,8 @@ class SummitEntryTrackFragment : Fragment() {
     private fun setOpenStreetMap(
         summitToView: Summit,
         summitToCompare: Summit?,
-        summits: List<Summit>?
+        summits: List<Summit>?,
+        calculateBondingBox: Boolean = true
     ) {
         val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || summitToView.latLng != null
         OpenStreetMapUtils.setTileSource(OpenStreetMapUtils.selectedItem, binding.osmap)
@@ -422,19 +448,29 @@ class SummitEntryTrackFragment : Fragment() {
                 true,
                 selectedCustomizeTrackItem,
                 true,
-                rootView = binding.root
+                rootView = binding.root,
+                calculateBondingBox = calculateBondingBox
             )
             binding.customizeTrack.setOnClickListener {
                 customizeTrackDialog(summitToView, summitToCompare, summits)
             }
         } else {
+            binding.osmap.visibility = View.GONE
             binding.customizeTrack.visibility = View.GONE
-            binding.osmapLayout.visibility = View.GONE
+            binding.changeMapType.visibility = View.GONE
+            binding.gpsShare.visibility = View.GONE
+            binding.gpsOpenWith.visibility = View.GONE
+            binding.customizeTrack.visibility = View.GONE
+            binding.customizeTrack.visibility = View.GONE
         }
 
     }
 
-    private fun customizeTrackDialog(summitToView: Summit, summitToCompare: Summit?, summits: List<Summit>?) {
+    private fun customizeTrackDialog(
+        summitToView: Summit,
+        summitToCompare: Summit?,
+        summits: List<Summit>?
+    ) {
         val fDialogTitle = getString(R.string.color_code_selection)
         setUsedItemsForColorCode()
         val builder = AlertDialog.Builder(requireContext())
@@ -507,45 +543,42 @@ class SummitEntryTrackFragment : Fragment() {
     ) {
         binding.osmap.overlays.clear()
         binding.osmap.overlayManager?.clear()
-        if (!allShown) {
 
-            val summitsWithSameBoundingBox = summits.filter {
-                it.activityId != summitToView.activityId && summitToView.trackBoundingBox?.let { it1 ->
-                    it.trackBoundingBox?.intersects(
-                        it1
-                    )
-                } == true
-            }
-            var pointsShown = 0
-            var summitsShown = 0
-            summitsWithSameBoundingBox.forEach { entry ->
-                if (entry.hasGpsTrack() && pointsShown < maxPointsToShow) {
-                    if (entry.gpsTrack == null) {
-                        entry.setGpsTrack()
-                    }
-                    entry.gpsTrack?.addGpsTrack(binding.osmap, TrackColor.None, summit = entry)
-                    summitsShown += 1
-                    pointsShown += entry.gpsTrack?.trackPoints?.size ?: 0
+        val summitsWithSameBoundingBox = summits.filter {
+            it.activityId != summitToView.activityId && binding.osmap.boundingBox?.let { it1 ->
+                it.trackBoundingBox?.intersects(
+                    it1
+                )
+            } == true
+        }
+        var pointsShown = 0
+        var summitsShown = 0
+        summitsWithSameBoundingBox.forEach { entry ->
+            if (entry.hasGpsTrack() && pointsShown < maxPointsToShow) {
+                if (entry.gpsTrack == null) {
+                    entry.setGpsTrack()
                 }
-            }
-            if (pointsShown > maxPointsToShow) {
-                if (context != null) {
-                    Toast.makeText(
-                        context,
-                        String.format(
-                            requireContext().resources.getString(
-                                R.string.summits_shown,
-                                summitsShown.toString(),
-                                summitsWithSameBoundingBox.size.toString()
-                            )
-                        ),
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+                entry.gpsTrack?.addGpsTrack(binding.osmap, TrackColor.None, summit = entry)
+                summitsShown += 1
+                pointsShown += entry.gpsTrack?.trackPoints?.size ?: 0
             }
         }
-        allShown = !allShown
-        setOpenStreetMap(summitToView, summitToCompare, summits)
+        if (pointsShown > maxPointsToShow) {
+            if (context != null) {
+                Toast.makeText(
+                    context,
+                    String.format(
+                        requireContext().resources.getString(
+                            R.string.summits_shown,
+                            summitsShown.toString(),
+                            summitsWithSameBoundingBox.size.toString()
+                        )
+                    ),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+        setOpenStreetMap(summitToView, summitToCompare, summits, false)
         binding.osmap.zoomController.activate()
     }
 

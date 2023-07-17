@@ -42,7 +42,8 @@ object OpenStreetMapUtils {
         forceAddTrack: Boolean,
         selectedCustomizeTrackItem: TrackColor,
         alwaysShowTrackOnMap: Boolean,
-        rootView: View? = null
+        rootView: View? = null,
+        calculateBondingBox: Boolean = true
     ): Marker? {
         val mGeoPoints = ArrayList<GeoPoint>()
         val latLng = summitEntry.latLng
@@ -62,7 +63,7 @@ object OpenStreetMapUtils {
             forceAddTrack,
             osMap,
             selectedCustomizeTrackItem,
-            true,
+            calculateBondingBox,
             mGeoPoints,
             rootView = rootView
         )
