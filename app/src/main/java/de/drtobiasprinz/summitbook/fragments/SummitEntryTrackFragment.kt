@@ -75,10 +75,15 @@ class SummitEntryTrackFragment : Fragment() {
                 pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { itData ->
                     itData.data.let { summitToCompare ->
 
-                        pageViewModel?.summitsList?.observe(viewLifecycleOwner) { itDataSummits ->
-                            itDataSummits.data.let { allSummits ->
-
+                        pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
+                            summitsListData.data.let { allSummits ->
                                 if (summitToView != null) {
+                                    summitsToCompare =
+                                        SummitEntryDetailsActivity.getSummitsToCompare(
+                                            summitsListData,
+                                            summitToView,
+                                            onlyWithPowerData = true
+                                        )
                                     if (summitToView.isBookmark) {
                                         binding.summitNameToCompare.visibility = View.GONE
                                     } else {
@@ -91,28 +96,20 @@ class SummitEntryTrackFragment : Fragment() {
                                     updateMap(summitToView, summitToCompare, allSummits)
                                     drawChart(summitToView)
                                     setButtons(summitToView)
-                                    pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
-                                        summitsToCompare =
-                                            SummitEntryDetailsActivity.getSummitsToCompare(
-                                                summitsListData,
+                                    val numberOfPointsToShow =
+                                        PreferenceManager.getDefaultSharedPreferences(
+                                            requireContext()
+                                        )
+                                            .getString("max_number_points", "10000")?.toInt()
+                                            ?: 10000
+                                    binding.showAllTracks.setOnClickListener { _: View? ->
+                                        summitsListData.data?.let { summits ->
+                                            showAllTracksOfSummitInBoundingBox(
                                                 summitToView,
-                                                onlyWithPowerData = true
+                                                summitToCompare,
+                                                summits,
+                                                numberOfPointsToShow
                                             )
-                                        val numberOfPointsToShow =
-                                            PreferenceManager.getDefaultSharedPreferences(
-                                                requireContext()
-                                            )
-                                                .getString("max_number_points", "10000")?.toInt()
-                                                ?: 10000
-                                        binding.showAllTracks.setOnClickListener { _: View? ->
-                                            summitsListData.data?.let { summits ->
-                                                showAllTracksOfSummitInBoundingBox(
-                                                    summitToView,
-                                                    summitToCompare,
-                                                    summits,
-                                                    numberOfPointsToShow
-                                                )
-                                            }
                                         }
                                     }
                                 }
@@ -350,7 +347,11 @@ class SummitEntryTrackFragment : Fragment() {
         l.isEnabled = true
     }
 
-    private fun setColors(lineChartEntries: MutableList<Entry>, dataSet: LineDataSet, summitToView: Summit) {
+    private fun setColors(
+        lineChartEntries: MutableList<Entry>,
+        dataSet: LineDataSet,
+        summitToView: Summit
+    ) {
 
         when (requireContext().resources?.configuration?.uiMode?.and(android.content.res.Configuration.UI_MODE_NIGHT_MASK)) {
             android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
@@ -360,6 +361,7 @@ class SummitEntryTrackFragment : Fragment() {
                 binding.lineChart.legend?.textColor = Color.WHITE
                 binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdWhite)
             }
+
             android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
                 binding.lineChart.xAxis.textColor = Color.BLACK
                 binding.lineChart.axisRight.textColor = Color.BLACK
@@ -367,6 +369,7 @@ class SummitEntryTrackFragment : Fragment() {
                 binding.lineChart.legend?.textColor = Color.BLACK
                 binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
             }
+
             android.content.res.Configuration.UI_MODE_NIGHT_UNDEFINED -> {
                 binding.lineChart.xAxis.textColor = Color.BLACK
                 binding.lineChart.axisRight.textColor = Color.WHITE

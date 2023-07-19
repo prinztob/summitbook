@@ -8,7 +8,6 @@ import de.drtobiasprinz.gpx.Metadata.Companion.TAG_METADATA
 import de.drtobiasprinz.gpx.Point.Companion.TAG_ELEVATION
 import de.drtobiasprinz.gpx.Point.Companion.TAG_LAT
 import de.drtobiasprinz.gpx.Point.Companion.TAG_LON
-import de.drtobiasprinz.gpx.TrackPoint.Companion.TAG_TRACK_POINT
 import de.drtobiasprinz.gpx.PointExtension.Companion.TAG_ATEMP
 import de.drtobiasprinz.gpx.PointExtension.Companion.TAG_CADENCE
 import de.drtobiasprinz.gpx.PointExtension.Companion.TAG_DISTANCE
@@ -27,13 +26,13 @@ import de.drtobiasprinz.gpx.Track.Companion.TAG_NUMBER
 import de.drtobiasprinz.gpx.Track.Companion.TAG_SRC
 import de.drtobiasprinz.gpx.Track.Companion.TAG_TRACK
 import de.drtobiasprinz.gpx.Track.Companion.TAG_TYPE
+import de.drtobiasprinz.gpx.TrackPoint.Companion.TAG_TRACK_POINT
 import de.drtobiasprinz.gpx.TrackSegment.Companion.TAG_SEGMENT
 import de.drtobiasprinz.gpx.Waypoint.Companion.TAG_WAY_POINT
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException
 import java.io.InputStream
-import java.util.*
 
 class GPXParser {
     @Throws(XmlPullParserException::class, IOException::class)
@@ -182,7 +181,7 @@ class GPXParser {
             when (parser.name) {
                 TAG_NAME -> metadataBuilder.name = readName(parser)
                 TAG_DESC -> metadataBuilder.desc = readDesc(parser)
-                TAG_AUTHOR -> metadataBuilder.author = readAuthor(parser)
+                TAG_AUTHOR -> readAuthor(parser)
                 else -> skip(parser)
             }
         }
@@ -192,19 +191,19 @@ class GPXParser {
 
     @Throws(XmlPullParserException::class, IOException::class)
     private fun readAuthor(parser: XmlPullParser): String {
+        var author = "unknown"
         parser.require(XmlPullParser.START_TAG, namespace, TAG_AUTHOR)
         while (loopMustContinue(parser.next())) {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
             when (parser.name) {
-                TAG_NAME -> return readString(parser, TAG_NAME)
+                TAG_NAME -> author = readString(parser, TAG_NAME)
                 else -> skip(parser)
             }
         }
-         TAG_AUTHOR
         parser.require(XmlPullParser.END_TAG, namespace, TAG_AUTHOR)
-        return "unknown"
+        return author
     }
 
 
@@ -242,7 +241,12 @@ class GPXParser {
                 continue
             }
             when (parser.name) {
-                TAG_TRACK_POINT_EXTENSIONS -> readTrackPointExtensions(parser, extensionBuilder, parser.prefix)
+                TAG_TRACK_POINT_EXTENSIONS -> readTrackPointExtensions(
+                    parser,
+                    extensionBuilder,
+                    parser.prefix
+                )
+
                 else -> skip(parser)
             }
         }
@@ -250,7 +254,11 @@ class GPXParser {
         return extensionBuilder.build()
     }
 
-    private fun readTrackPointExtensions(parser: XmlPullParser, extensionBuilder: PointExtension.Builder, extensionNamespace: String) {
+    private fun readTrackPointExtensions(
+        parser: XmlPullParser,
+        extensionBuilder: PointExtension.Builder,
+        extensionNamespace: String
+    ) {
         parser.require(XmlPullParser.START_TAG, namespace, TAG_TRACK_POINT_EXTENSIONS)
         while (loopMustContinue(parser.next())) {
             if (parser.eventType != XmlPullParser.START_TAG) {
@@ -261,13 +269,17 @@ class GPXParser {
             }
             when (parser.name) {
                 TAG_CADENCE -> extensionBuilder.cadence = readString(parser, TAG_CADENCE).toInt()
-                TAG_DISTANCE -> extensionBuilder.distanceMeters = readString(parser, TAG_DISTANCE).toDouble()
+                TAG_DISTANCE -> extensionBuilder.distanceMeters =
+                    readString(parser, TAG_DISTANCE).toDouble()
+
                 TAG_HR -> extensionBuilder.heartRate = readString(parser, TAG_HR).toInt()
                 TAG_POWER -> extensionBuilder.power = readString(parser, TAG_POWER).toInt()
                 TAG_SPEED -> extensionBuilder.speed = readString(parser, TAG_SPEED).toDouble()
                 TAG_ATEMP -> extensionBuilder.temp = readString(parser, TAG_ATEMP).toDouble()
                 TAG_SLOPE -> extensionBuilder.slope = readString(parser, TAG_SLOPE).toDouble()
-                TAG_VERT_VELOCITY -> extensionBuilder.verticalVelocity = readString(parser, TAG_VERT_VELOCITY).toDouble()
+                TAG_VERT_VELOCITY -> extensionBuilder.verticalVelocity =
+                    readString(parser, TAG_VERT_VELOCITY).toDouble()
+
                 else -> skip(parser)
             }
         }

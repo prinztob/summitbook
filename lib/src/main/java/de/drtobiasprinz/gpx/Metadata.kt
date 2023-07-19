@@ -5,19 +5,20 @@ import de.drtobiasprinz.gpx.xml.XmlWrite
 import io.reactivex.Observable
 
 data class Metadata(
-        val name: String? = null,
-        val description: String? = null,
-        val author: String? = null
+    val name: String? = null,
+    val description: String? = null,
+    val author: String? = null
 ) : XmlWritable {
 
     private fun hasMetadata(): Boolean =
-            name != null || description != null || author != null
+        name != null || description != null || author != null
 
     override val writeOperations: Observable<XmlWrite>
-        get() = if (hasMetadata()) newTag(TAG_METADATA,
-                optionalTagWithText(TAG_NAME, name),
-                optionalTagWithText(TAG_DESC, description),
-                optionalTagWithText(TAG_AUTHOR, author)
+        get() = if (hasMetadata()) newTag(
+            TAG_METADATA,
+            optionalTagWithText(TAG_NAME, name),
+            optionalTagWithText(TAG_DESC, description),
+            optionalTagWithText(TAG_AUTHOR, author)
         ) else Observable.empty()
 
     class Builder {

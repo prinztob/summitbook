@@ -41,7 +41,12 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.infowindow.MarkerInfoWindow
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -95,7 +100,12 @@ class SelectOnOsMapActivity : FragmentActivity() {
                             TrackColor.None,
                             alwaysShowTrackOnMap = false
                         )
-                        entry.trackBoundingBox?.let { boundingBox -> drawBoundingBox(binding.osmap, boundingBox) }
+                        entry.trackBoundingBox?.let { boundingBox ->
+                            drawBoundingBox(
+                                binding.osmap,
+                                boundingBox
+                            )
+                        }
                     }
                     addDefaultSettings(this, binding.osmap, this)
                     val mReceive: MapEventsReceiver = object : MapEventsReceiver {
@@ -104,16 +114,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                                 updateSavePositionButton(true)
                                 latLngSelectedPosition = TrackPoint(p.latitude, p.longitude)
                                 addMarker(binding.osmap, applicationContext, p, entry)
-                                prepareGpxTrack(
-                                    selectedGpsPath,
-                                    entry
-                                )?.let { track ->
-                                    addSelectedPositionAndTrack(
-                                        TrackPoint(p.latitude, p.longitude),
-                                        track,
-                                        binding.osmap
-                                    )
-                                }
+                                binding.osmap.zoomController.activate()
                             }
                             return false
                         }
