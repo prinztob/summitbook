@@ -407,6 +407,10 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             downloader.extractFinalSummit()
             val entry = downloader.finalEntry
             if (entry != null) {
+                entry.activityId = entity.activityId
+                entry.id = entity.id
+                entry.imageIds = entity.imageIds
+                entry.velocityData = entity.velocityData
                 entity = entry
                 temporaryGpxFile = getTempGpsFilePath(entry.date).toFile()
                 downloader.composeFinalTrack(temporaryGpxFile)
@@ -564,7 +568,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             getTextWithDefaultDouble(binding.averageHr).toFloat()
         garminDataFromGarminConnect?.maxHR = getTextWithDefaultDouble(binding.maxHr).toFloat()
         garminDataFromGarminConnect?.ftp = getTextWithDefaultInt(binding.ftp)
-        garminDataFromGarminConnect?.vo2max = getTextWithDefaultInt(binding.vo2Max)
+        garminDataFromGarminConnect?.vo2max = getTextWithDefaultDouble(binding.vo2Max).toFloat()
         garminDataFromGarminConnect?.power?.avgPower =
             getTextWithDefaultDouble(binding.avgPower).toFloat()
         garminDataFromGarminConnect?.power?.normPower =

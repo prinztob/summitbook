@@ -80,12 +80,14 @@ class LineChartFragment : Fragment() {
                 binding.lineChart.axisLeft.textColor = Color.WHITE
                 binding.lineChart.legend?.textColor = Color.WHITE
             }
+
             Configuration.UI_MODE_NIGHT_NO -> {
                 binding.lineChart.xAxis.textColor = Color.BLACK
                 binding.lineChart.axisRight.textColor = Color.BLACK
                 binding.lineChart.axisLeft.textColor = Color.BLACK
                 binding.lineChart.legend?.textColor = Color.BLACK
             }
+
             Configuration.UI_MODE_NIGHT_UNDEFINED -> {
                 binding.lineChart.xAxis.textColor = Color.BLACK
                 binding.lineChart.axisRight.textColor = Color.WHITE
@@ -160,9 +162,11 @@ class LineChartFragment : Fragment() {
     private fun setYAxis(yAxis: YAxis?) {
         yAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
+                val format =
+                    if (lineChartSpinnerEntry == LineChartSpinnerEntry.Vo2Max) "%.1f %s" else "%.0f %s"
                 return String.format(
                     requireContext().resources.configuration.locales[0],
-                    "%.0f %s",
+                    format,
                     value,
                     lineChartSpinnerEntry.unit
                 )
@@ -186,10 +190,12 @@ class LineChartFragment : Fragment() {
                 dataSet.color = R.color.White
                 dataSet.fillColor = Color.WHITE
             }
+
             Configuration.UI_MODE_NIGHT_NO -> {
                 dataSet.color = R.color.colorPrimaryDark
                 dataSet.fillColor = Color.WHITE
             }
+
             Configuration.UI_MODE_NIGHT_UNDEFINED -> {
                 dataSet.color = R.color.White
                 dataSet.fillColor = Color.WHITE

@@ -347,8 +347,14 @@ class SummitEntryDataFragment : Fragment() {
                 digits = 0
             ) { entry -> entry.garminData?.trainingLoad }
             setText(
-                binding.vo2MaxText, binding.vo2Max, "", summitToView,
-                extrema?.vo2maxMinMax?.first, extrema?.vo2maxMinMax?.second, summitToCompare
+                binding.vo2MaxText,
+                binding.vo2Max,
+                "",
+                summitToView,
+                extrema?.vo2maxMinMax?.first,
+                extrema?.vo2maxMinMax?.second,
+                summitToCompare,
+                digits = 2
             ) { entry -> entry.garminData?.vo2max }
             setText(
                 binding.FTPText, binding.FTP, "", summitToView,

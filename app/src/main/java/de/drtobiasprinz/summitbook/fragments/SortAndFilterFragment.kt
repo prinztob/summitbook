@@ -26,6 +26,7 @@ import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -40,6 +41,7 @@ class SortAndFilterFragment : DialogFragment() {
     @Inject
     lateinit var sortFilterValues: SortFilterValues
     private val viewModel: DatabaseViewModel by activityViewModels()
+    private val df: DateFormat = SimpleDateFormat(Summit.DATE_FORMAT, Locale.ENGLISH)
 
     var apply: () -> Unit = { }
 
@@ -63,6 +65,16 @@ class SortAndFilterFragment : DialogFragment() {
             dismiss()
         }
         binding.apply.setOnClickListener {
+            if (sortFilterValues.selectedDateSpinner == 1 &&
+                binding.dateStart.text.toString().trim { it <= ' ' } != ""
+            ) {
+                sortFilterValues.startDate = Summit.parseDate(binding.dateStart.text.toString())
+            }
+            if (sortFilterValues.selectedDateSpinner == 1 &&
+                binding.dateEnd.text.toString().trim { it <= ' ' } != ""
+            ) {
+                sortFilterValues.endDate = Summit.parseDate(binding.dateEnd.text.toString())
+            }
             sortFilterValues.participants =
                 binding.chipGroupParticipants.children.toList().map { (it as Chip).text.toString() }
             apply()
@@ -339,15 +351,26 @@ class SortAndFilterFragment : DialogFragment() {
                         sortFilterValues.selectedDateSpinner = position
                         when (position) {
                             1 -> {
-                                binding.dateStartEndSelector.visibility = View.VISIBLE
+                                sortFilterValues.startDate?.let {
+                                    binding.dateStart.setText(df.format(it))
+                                }
+                                sortFilterValues.endDate?.let {
+                                    binding.dateEnd.setText(df.format(it))
+                                }
+                                binding.dateStart.visibility = View.VISIBLE
+                                binding.dateEnd.visibility = View.VISIBLE
                             }
+
                             0 -> {
-                                binding.dateStartEndSelector.visibility = View.GONE
+                                binding.dateStart.visibility = View.GONE
+                                binding.dateEnd.visibility = View.GONE
                                 sortFilterValues.startDate = null
                                 sortFilterValues.endDate = null
                             }
+
                             else -> {
-                                binding.dateStartEndSelector.visibility = View.GONE
+                                binding.dateStart.visibility = View.GONE
+                                binding.dateEnd.visibility = View.GONE
                                 sortFilterValues.startDate = dt.parse(
                                     "${sortFilterValues.getSelectedYear()}-01-01 00:00:00"
                                 )
@@ -371,11 +394,11 @@ class SortAndFilterFragment : DialogFragment() {
         var month = cldr[Calendar.MONTH]
         var year = cldr[Calendar.YEAR]
         if (eText.text.toString().trim() != "") {
-            val dateSplitted = eText.text.toString().trim().split("-".toRegex()).toTypedArray()
-            if (dateSplitted.size == 3) {
-                day = dateSplitted[2].toInt()
-                month = dateSplitted[1].toInt() - 1
-                year = dateSplitted[0].toInt()
+            val dateSplit = eText.text.toString().trim().split("-".toRegex()).toTypedArray()
+            if (dateSplit.size == 3) {
+                day = dateSplit[2].toInt()
+                month = dateSplit[1].toInt() - 1
+                year = dateSplit[0].toInt()
             }
         }
         val picker = DatePickerDialog(

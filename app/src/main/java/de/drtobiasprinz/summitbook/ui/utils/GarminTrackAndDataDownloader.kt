@@ -122,7 +122,7 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
                     garminDataSets.maxByOrNull { it?.maxHR?.toDouble() ?: 0.0 }?.maxHR ?: 0f,
                     getPowerData(),
                     garminDataSets.maxByOrNull { it?.ftp ?: 0 }?.ftp ?: 0,
-                    garminDataSets.maxByOrNull { it?.vo2max ?: 0 }?.vo2max ?: 0,
+                    garminDataSets.maxByOrNull { it?.vo2max ?: 0f }?.vo2max ?: 0f,
                     garminDataSets.maxByOrNull {
                         it?.aerobicTrainingEffect?.toDouble() ?: 0.0
                     }?.aerobicTrainingEffect ?: 0f,

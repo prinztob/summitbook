@@ -10,15 +10,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp">
+
         <ImageView
             android:id="@+id/imgClose"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_marginTop="20dp"
+            android:contentDescription="@string/back"
             android:src="@drawable/ic_baseline_clear_24"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:contentDescription="@string/back" />
+            app:layout_constraintTop_toTopOf="parent" />
 
 
         <LinearLayout
@@ -31,11 +32,11 @@
             android:padding="3dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/imgClose">
+            app:layout_constraintTop_toBottomOf="@id/imgClose"
+            app:layout_constraintTop_toTopOf="parent">
 
 
-        <ImageView
+            <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/set_date"
@@ -49,43 +50,36 @@
 
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/date_start_end_selector"
-            android:layout_width="match_parent"
+        <EditText
+            android:id="@+id/date_start"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="0"
-            android:background="#fff"
-            android:orientation="horizontal"
-            android:padding="3dp"
+            android:drawableStart="@drawable/baseline_today_black_24dp"
+            android:drawablePadding="10dp"
+            android:ems="7"
+            android:hint="@string/from"
+            android:importantForAutofill="no"
+            android:inputType="date"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_spinner_data"/>
+
+
+        <EditText
+            android:id="@+id/date_end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:drawableStart="@drawable/baseline_today_black_24dp"
+            android:drawablePadding="10dp"
+            android:ems="7"
+            android:hint="@string/until"
+            android:importantForAutofill="no"
+            android:inputType="date"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_spinner_data">
+            app:layout_constraintStart_toEndOf="@+id/date_start"
+            app:layout_constraintTop_toBottomOf="@id/layout_spinner_data"/>
 
-            <EditText
-                android:id="@+id/date_start"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/baseline_today_black_24dp"
-                android:drawablePadding="10dp"
-                android:ems="6"
-                android:hint="@string/from"
-                android:importantForAutofill="no"
-                android:inputType="date" />
-
-
-            <EditText
-                android:id="@+id/date_end"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/baseline_today_black_24dp"
-                android:drawablePadding="10dp"
-                android:ems="6"
-                android:hint="@string/until"
-                android:importantForAutofill="no"
-                android:inputType="date" />
-
-        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/layout_spinner_sport_type"
@@ -97,7 +91,7 @@
             android:padding="3dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/date_start_end_selector">
+            app:layout_constraintTop_toBottomOf="@id/date_start">
 
             <ImageView
                 android:layout_width="wrap_content"
@@ -215,10 +209,10 @@
                 android:id="@+id/button_by_date"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="60dp"
-                android:insetRight="-15dp"
-                android:insetLeft="-15dp"
                 android:layout_height="wrap_content"
                 android:breakStrategy="balanced"
+                android:insetLeft="-15dp"
+                android:insetRight="-15dp"
                 android:text="@string/by_date"
                 android:textSize="11sp" />
 
@@ -226,9 +220,9 @@
                 android:id="@+id/button_by_name"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="60dp"
-                android:insetRight="-15dp"
-                android:insetLeft="-15dp"
                 android:layout_height="wrap_content"
+                android:insetLeft="-15dp"
+                android:insetRight="-15dp"
                 android:text="@string/by_name"
                 android:textSize="11sp" />
 
@@ -236,9 +230,9 @@
                 android:id="@+id/button_by_elevation"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="60dp"
-                android:insetRight="-15dp"
-                android:insetLeft="-15dp"
                 android:layout_height="wrap_content"
+                android:insetLeft="-15dp"
+                android:insetRight="-15dp"
                 android:text="@string/by_elevation"
                 android:textSize="11sp" />
 
@@ -246,9 +240,9 @@
                 android:id="@+id/button_by_height_meter"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="60dp"
-                android:insetRight="-15dp"
-                android:insetLeft="-15dp"
                 android:layout_height="wrap_content"
+                android:insetLeft="-15dp"
+                android:insetRight="-15dp"
                 android:text="@string/by_height_meter"
                 android:textSize="11sp" />
 
@@ -256,9 +250,9 @@
                 android:id="@+id/button_by_kilometers"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="60dp"
-                android:insetRight="-15dp"
-                android:insetLeft="-15dp"
                 android:layout_height="wrap_content"
+                android:insetLeft="-15dp"
+                android:insetRight="-15dp"
                 android:text="@string/by_km"
                 android:textSize="11sp" />
         </com.google.android.material.button.MaterialButtonToggleGroup>

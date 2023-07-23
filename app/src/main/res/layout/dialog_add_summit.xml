@@ -509,7 +509,7 @@
                     android:layout_toEndOf="@+id/vo2Max_text"
                     android:hint="@string/vo2Max"
                     android:importantForAutofill="no"
-                    android:inputType="number" />
+                    android:inputType="numberDecimal" />
             </RelativeLayout>
 
             <RelativeLayout

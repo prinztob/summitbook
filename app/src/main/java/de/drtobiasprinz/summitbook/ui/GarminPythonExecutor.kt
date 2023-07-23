@@ -15,6 +15,7 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 class GarminPythonExecutor(
@@ -202,6 +203,13 @@ class GarminPythonExecutor(
             return entries
         }
 
+        private fun roundToTwoDigits(value: Float): Float {
+            return (value * 100f).roundToInt() / 100f
+        }
+        private fun roundToTwoDigits(value: Double): Double {
+            return (value * 100.0).roundToInt() / 100.0
+        }
+
         @Throws(ParseException::class)
         fun parseJsonObject(jsonObject: JsonObject): Summit {
             val date = SimpleDateFormat(
@@ -216,6 +224,12 @@ class GarminPythonExecutor(
             if (jsonObject.has("childIds")) {
                 activityIds.addAll(jsonObject["childIds"].asJsonArray.map { it.asString })
             }
+            val vo2max = if (jsonObject.has("vo2MaxPreciseValue")) {
+                roundToTwoDigits(getJsonObjectEntryNotNull(jsonObject, "vo2MaxPreciseValue"))
+            } else {
+                roundToTwoDigits(getJsonObjectEntryNotNull(jsonObject, "vO2MaxValue"))
+            }
+
             val garminData = GarminData(
                 activityIds,
                 getJsonObjectEntryNotNull(jsonObject, "calories"),
@@ -223,7 +237,7 @@ class GarminPythonExecutor(
                 getJsonObjectEntryNotNull(jsonObject, "maxHR"),
                 getPower(jsonObject),
                 getJsonObjectEntryNotNull(jsonObject, "maxFtp").toInt(),
-                getJsonObjectEntryNotNull(jsonObject, "vO2MaxValue").toInt(),
+                vo2max,
                 getJsonObjectEntryNotNull(jsonObject, "aerobicTrainingEffect"),
                 getJsonObjectEntryNotNull(jsonObject, "anaerobicTrainingEffect"),
                 getJsonObjectEntryNotNull(jsonObject, "grit"),
@@ -242,7 +256,7 @@ class GarminPythonExecutor(
                         jsonObject["maxElevation"].asDouble
                     ).toInt() else 0, getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt()
                 ),
-                round(
+                roundToTwoDigits(
                     convertMeterToKm(
                         getJsonObjectEntryNotNull(
                             jsonObject, "distance"

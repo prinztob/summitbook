@@ -568,7 +568,7 @@ class Summit(
                             0,
                             0
                         ),
-                        0, 0,
+                        0, 0f,
                         splitLine[24].toFloat(), splitLine[25].toFloat(),
                         splitLine[26].toFloat(), splitLine[27].toFloat(), splitLine[28].toFloat()
                     )
@@ -577,7 +577,7 @@ class Summit(
                         splitLine[15].split(",") as MutableList<String>,
                         splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
                         PowerData.parse(splitLine[19].split(",")),
-                        splitLine[20].toInt(), splitLine[21].toInt(),
+                        splitLine[20].toInt(), splitLine[21].toFloat(),
                         splitLine[22].toFloat(), splitLine[23].toFloat(),
                         splitLine[24].toFloat(), splitLine[25].toFloat(), splitLine[26].toFloat()
                     )

@@ -74,7 +74,7 @@ def get_daily_events(api, cdate):
             GarminConnectConnectionError,
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
-    ) as err:
+    ):
         return "return code: 1: Error occurred during Garmin Connect Client get daily events for date {cdate}: {err}"
     except Exception as err:
         return f"return code: 1Unknown error occurred during Garmin Connect Client get daily events for date {cdate}: {err}"
@@ -119,6 +119,8 @@ def get_hrv(api, date):
 def get_activity_json_for_date(client, date):
     try:
         activities = get_activities_by_date(client, date, date, None)
+        for activity in activities:
+            update_vo2max(activity, client, date)
         return json.dumps(activities)
     except (
             GarminConnectConnectionError,
@@ -229,6 +231,9 @@ def download_activities_by_date(api, folder, start_date, end_date=date.today()):
                     update_power_data(activity, api, date[0])
             else:
                 activity["childIds"] = []
+            date = activity["startTimeLocal"].split(" ")
+            if date and len(date) == 2:
+                update_vo2max(activity, api, date[0])
             output_file = f"{folder}/activity_{str(activity_id)}.json"
             if not os.path.exists(output_file):
                 with open(output_file, "w+") as fb:
@@ -245,6 +250,15 @@ def download_activities_by_date(api, folder, start_date, end_date=date.today()):
         return "return code: 1Error occurred during Garmin Connect Client download activities by date: %s" % err
     except Exception as err:  # pylint: disable=broad-except
         return "return code: 1Unknown error occurred during Garmin Connect Client download activities by date %s" % err
+
+
+def update_vo2max(activity, api, date):
+    data = api.get_max_metrics(date)
+    if len(data) > 0:
+        if data[0]["generic"] and "vo2MaxPreciseValue" in data[0]["generic"]:
+            activity["vo2MaxPreciseValue"] = data[0]["generic"]['vo2MaxPreciseValue']
+        elif data[0]["cycling"] and "vo2MaxPreciseValue" in data[0]["cycling"]:
+            activity["vo2MaxPreciseValue"] = data[0]["cycling"]['vo2MaxPreciseValue']
 
 
 def download_splits(api, activity_id, folder):

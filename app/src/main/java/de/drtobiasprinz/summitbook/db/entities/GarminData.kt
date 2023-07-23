@@ -8,7 +8,7 @@ import java.util.*
 
 class GarminData(
     var activityIds: MutableList<String>, var calories: Float, var averageHR: Float, var maxHR: Float,
-    @Embedded var power: PowerData, var ftp: Int, var vo2max: Int,
+    @Embedded var power: PowerData, var ftp: Int, var vo2max: Float,
     var aerobicTrainingEffect: Float, var anaerobicTrainingEffect: Float, var grit: Float, var flow: Float, var trainingLoad: Float,
 ) {
 

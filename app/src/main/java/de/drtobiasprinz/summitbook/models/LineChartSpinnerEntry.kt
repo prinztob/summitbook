@@ -13,6 +13,7 @@ enum class LineChartSpinnerEntry(val nameId: Int, val unit: String, val accumula
     Elevation(R.string.highest_peak, "hm", f = { e -> e.elevationData.maxElevation.toFloat() }),
     AverageSpeed(R.string.pace_hint, "km/h", f = { e -> e.velocityData.avgVelocity.toFloat() }),
     TopSpeed(R.string.top_speed, "km/h", f = { e -> e.velocityData.maxVelocity.toFloat() }),
+    Vo2Max(R.string.vo2Max, "", includeIndoorActivities = true, f = { e -> e.garminData?.vo2max }),
     AverageHeartRate(R.string.average_hr, "bpm", includeIndoorActivities = true, f = { e -> e.garminData?.averageHR }),
     NormalizedPower(R.string.normalized_power, "W", includeIndoorActivities = true, f = { e -> e.garminData?.power?.normPower }),
     Power20Min(R.string.power_20min, "W", includeIndoorActivities = true, f = { e -> e.garminData?.power?.twentyMin?.toFloat() }),
