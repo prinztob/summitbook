@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.Legend
@@ -40,6 +41,9 @@ import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
@@ -92,10 +96,14 @@ class SummitEntryTrackFragment : Fragment() {
                                     binding.summitName.text = summitToView.name
                                     binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
                                     binding.osmap.overlays.clear()
-                                    setGpsTrack(summitToView)
-                                    updateMap(summitToView, summitToCompare, allSummits)
-                                    drawChart(summitToView)
-                                    setButtons(summitToView)
+                                    lifecycleScope.launch {
+                                        withContext(Dispatchers.Default) {
+                                            setGpsTrack(summitToView)
+                                        }
+                                        drawChart(summitToView)
+                                        updateMap(summitToView, summitToCompare, allSummits)
+                                        setButtons(summitToView)
+                                    }
                                     val numberOfPointsToShow =
                                         PreferenceManager.getDefaultSharedPreferences(
                                             requireContext()
@@ -260,10 +268,10 @@ class SummitEntryTrackFragment : Fragment() {
 
     private fun setGpsTrack(localSummit: Summit) {
         if (localSummit.hasGpsTrack()) {
-            localSummit.setGpsTrack()
+            localSummit.setGpsTrack(useSimplifiedTrack = false)
             gpsTrack = localSummit.gpsTrack
             if (gpsTrack?.hasNoTrackPoints() == true) {
-                gpsTrack?.parseTrack()
+                gpsTrack?.parseTrack(useSimplifiedIfExists = false)
             }
             val localGpsTrack = gpsTrack
             if (localGpsTrack?.trackPoints?.isNotEmpty() == true && trackSlopeGraph.isEmpty()) {

@@ -277,7 +277,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         return MilestoneManager(pMilestoneLister, MilestoneLineDisplayer(slicePaint))
     }
 
-    fun parseTrack(useSimplifiedIfExists: Boolean = true) {
+    fun parseTrack(useSimplifiedIfExists: Boolean = true, deleteEmptyTrack: Boolean = false) {
         val fileToUse =
             if (useSimplifiedIfExists && simplifiedGpsTrackPath != null && simplifiedGpsTrackPath.toFile()
                     .exists()
@@ -288,7 +288,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         if (trackPoints.size > 0 && trackPoints.first().extension?.distance == null) {
             setDistance()
         }
-        if (trackPoints.isEmpty()) {
+        if (trackPoints.isEmpty() && deleteEmptyTrack) {
             fileToUse.delete()
         }
     }
