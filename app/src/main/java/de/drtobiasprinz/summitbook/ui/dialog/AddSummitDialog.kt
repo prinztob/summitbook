@@ -154,15 +154,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     )
                 Snackbar.make(it, text, Snackbar.LENGTH_SHORT).show()
             }
-            participantsAdapter = ArrayAdapter(requireContext(),
-                android.R.layout.simple_dropdown_item_1line,
-                summits.flatMap { it.participants }.distinct().filter { it != "" })
-            equipmentsAdapter = ArrayAdapter(requireContext(),
-                android.R.layout.simple_dropdown_item_1line,
-                summits.flatMap { it.equipments }.distinct().filter { it != "" })
-            placesAdapter = getPlacesSuggestions(summits)
-            summitName.setAdapter(getPlacesSuggestions(summits, false))
-
             if (type == EDIT) {
                 val summitToEdit = summits.firstOrNull { it.id == summitId }
                 if (summitToEdit != null) {
@@ -346,10 +337,22 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 .toTypedArray()
         )
         setImageColor()
-        addPlaces(view, summits)
-        addCountries(view)
-        addParticipants(view)
-        addEquipments(view)
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                participantsAdapter = ArrayAdapter(requireContext(),
+                    android.R.layout.simple_dropdown_item_1line,
+                    summits.flatMap { it.participants }.distinct().filter { it != "" })
+                equipmentsAdapter = ArrayAdapter(requireContext(),
+                    android.R.layout.simple_dropdown_item_1line,
+                    summits.flatMap { it.equipments }.distinct().filter { it != "" })
+                placesAdapter = getPlacesSuggestions(summits)
+            }
+            summitName.setAdapter(getPlacesSuggestions(summits, false))
+            addPlaces(view, summits)
+            addCountries(view)
+            addParticipants(view)
+            addEquipments(view)
+        }
     }
 
     private fun setImageColor() {
@@ -511,7 +514,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     ): ArrayAdapter<String> {
         val suggestions: MutableList<String> =
             (summits.flatMap { it.places } + summits.map { it.name }).filter {
-                !it.startsWith(
+                it != "" && !it.startsWith(
                     CONNECTED_ACTIVITY_PREFIX
                 )
             } as MutableList<String>

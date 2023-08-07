@@ -326,27 +326,25 @@ class Summit(
         return updatedPlaces
     }
 
-    fun setConnectedEntries(connectedEntries: MutableList<Summit>, summits: List<Summit>?) {
-        setConnectedEntriesFromPlaces(summits, connectedEntries)
-        setConnectedEntriesWhichReferenceThisEntry(summits, connectedEntries)
+    fun getConnectedEntries(summits: List<Summit>?): MutableList<Summit> {
+        val connectedEntries = getConnectedEntriesFromPlaces(summits)
+        connectedEntries.addAll(getConnectedEntriesWhichReferenceThisEntry(summits))
+        return connectedEntries
     }
 
-    private fun setConnectedEntriesWhichReferenceThisEntry(
-        summits: List<Summit>?,
-        connectedEntries: MutableList<Summit>
-    ) {
+    private fun getConnectedEntriesWhichReferenceThisEntry(summits: List<Summit>?): MutableList<Summit> {
+        val connectedEntries = mutableListOf<Summit>()
         val connectedSummit =
-            summits?.firstOrNull { it.places.contains("%$CONNECTED_ACTIVITY_PREFIX${activityId}%") }
+            summits?.firstOrNull { it.places.contains("$CONNECTED_ACTIVITY_PREFIX${activityId}") }
         if (connectedSummit != null) {
             connectedEntries.add(connectedSummit)
-            connectedSummit.setConnectedEntriesWhichReferenceThisEntry(summits, connectedEntries)
+            connectedEntries.addAll(connectedSummit.getConnectedEntriesWhichReferenceThisEntry(summits))
         }
+        return connectedEntries
     }
 
-    private fun setConnectedEntriesFromPlaces(
-        summits: List<Summit>?,
-        connectedEntries: MutableList<Summit>
-    ) {
+    private fun getConnectedEntriesFromPlaces(summits: List<Summit>?): MutableList<Summit> {
+        val connectedEntries = mutableListOf<Summit>()
         for (place in places) {
             val matchResult = "$CONNECTED_ACTIVITY_PREFIX(\\d*)".toRegex().find(place)
             if (matchResult?.groupValues != null) {
@@ -354,10 +352,11 @@ class Summit(
                     summits?.firstOrNull { it.activityId == (matchResult.groupValues[1].toLong()) }
                 if (connectedSummit != null) {
                     connectedEntries.add(connectedSummit)
-                    connectedSummit.setConnectedEntriesFromPlaces(summits, connectedEntries)
+                    connectedEntries.addAll(connectedSummit.getConnectedEntriesFromPlaces(summits))
                 }
             }
         }
+        return connectedEntries
     }
 
     fun setBoundingBoxFromTrack() {

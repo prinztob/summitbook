@@ -444,8 +444,7 @@ class SummitEntryTrackFragment : Fragment() {
                     color = Color.BLACK
                 )
             } else {
-                val connectedEntries = mutableListOf<Summit>()
-                summitToView.setConnectedEntries(connectedEntries, summits)
+                 val connectedEntries = summitToView.getConnectedEntries(summits)
                 for (entry in connectedEntries) {
                     OpenStreetMapUtils.drawTrack(
                         entry, true, binding.osmap, TrackColor.None, color = Color.BLACK
