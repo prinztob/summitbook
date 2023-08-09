@@ -139,10 +139,10 @@ class Summit(
     }
 
     @Throws(IOException::class)
-    fun copyGpsTrackToTempFile(dir: File?): File? {
-        val tempFile = File.createTempFile(
-            String.format(Locale.ENGLISH, "id_%s", activityId),
-            ".gpx", dir
+    fun copyGpsTrackToTempFile(cacheDir: File?): File? {
+        val tempFile = File(
+            cacheDir,
+            String.format(Locale.ENGLISH, "Summit_%s.gpx", name)
         )
         if (hasGpsTrack(true)) {
             Files.copy(
@@ -150,10 +150,12 @@ class Summit(
                 tempFile.toPath(),
                 StandardCopyOption.REPLACE_EXISTING
             )
+            return tempFile
         } else if (hasGpsTrack()) {
             Files.copy(getGpsTrackPath(), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            return tempFile
         }
-        return tempFile
+        return null
     }
 
     fun getExportImagePath(): String {
@@ -338,7 +340,11 @@ class Summit(
             summits?.firstOrNull { it.places.contains("$CONNECTED_ACTIVITY_PREFIX${activityId}") }
         if (connectedSummit != null) {
             connectedEntries.add(connectedSummit)
-            connectedEntries.addAll(connectedSummit.getConnectedEntriesWhichReferenceThisEntry(summits))
+            connectedEntries.addAll(
+                connectedSummit.getConnectedEntriesWhichReferenceThisEntry(
+                    summits
+                )
+            )
         }
         return connectedEntries
     }

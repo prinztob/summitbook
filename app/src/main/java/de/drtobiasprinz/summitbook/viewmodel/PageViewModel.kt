@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.utils.DataStatus
@@ -64,6 +65,14 @@ class PageViewModel @Inject constructor(private val repository: DatabaseReposito
     private fun getAllSegments() = viewModelScope.launch {
         repository.getAllSegments().collect {
             _segmentsList.postValue(DataStatus.success(it, false))
+        }
+    }
+
+    fun saveSegmentEntry(isEdite: Boolean, entity: SegmentEntry) = viewModelScope.launch {
+        if (isEdite) {
+            repository.updateSegmentEntry(entity)
+        } else {
+            repository.saveSegmentEntry(entity)
         }
     }
 }

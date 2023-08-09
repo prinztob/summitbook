@@ -67,7 +67,6 @@ class SegmentEntryDetailsFragment : Fragment() {
     private var segmentEntryToShow: SegmentEntry? = null
     private var selectedCustomizeTrackItem = TrackColor.Elevation
 
-    private var relevantSummits: List<Summit?>? = emptyList()
     private var setSortLabelFor: Int = 21
     private var sorter: (List<SegmentEntry>) -> List<SegmentEntry> =
         { e -> if (descending) e.sortedByDescending { it.duration } else e.sortedBy { it.duration } }
@@ -98,13 +97,15 @@ class SegmentEntryDetailsFragment : Fragment() {
                     if (segmentEntryId == -1L) segmentToUse?.segmentEntries?.let { sorter(it).firstOrNull() } else segmentToUse?.segmentEntries?.firstOrNull { it.entryId == segmentEntryId }
                 viewModel.summitsList.observe(viewLifecycleOwner) { itDataSummits ->
                     itDataSummits.data.let { summits ->
-                        relevantSummits = segmentToUse?.segmentEntries?.map { entry ->
+                        val relevantSummits = segmentToUse?.segmentEntries?.mapNotNull { entry ->
                             summits?.firstOrNull { it.activityId == entry.activityId }
                         }
                         summitShown =
-                            relevantSummits?.firstOrNull { it?.activityId == segmentEntryToShow?.activityId }
-                        prepareMap()
-                        update(summitShown, segmentEntryToShow, segmentToUse)
+                            relevantSummits?.firstOrNull { it.activityId == segmentEntryToShow?.activityId }
+                        if (relevantSummits != null && summitShown != null) {
+                            prepareMap()
+                            update(summitShown, segmentEntryToShow, segmentToUse, relevantSummits)
+                        }
                     }
                 }
             }
@@ -115,7 +116,8 @@ class SegmentEntryDetailsFragment : Fragment() {
     private fun update(
         summitToShow: Summit?,
         segmentEntryToShow: SegmentEntry?,
-        segmentToUse: Segment?
+        segmentToUse: Segment?,
+        relevantSummits: List<Summit>
     ) {
         if (segmentEntryToShow != null && summitToShow != null && segmentToUse != null) {
             binding.segmentName.text = segmentToUse.segmentDetails.getDisplayName()
@@ -123,7 +125,7 @@ class SegmentEntryDetailsFragment : Fragment() {
             binding.osMap.overlayManager?.clear()
             drawMarker(segmentToUse.segmentEntries)
             drawGpxTrackAndItsProfile(summitToShow, segmentEntryToShow)
-            drawTable(binding.root, binding.tableSegments, segmentToUse)
+            drawTable(binding.root, binding.tableSegments, segmentToUse, relevantSummits)
         }
     }
 
@@ -421,12 +423,17 @@ class SegmentEntryDetailsFragment : Fragment() {
     }
 
 
-    private fun drawTable(view: View, tableLayout: TableLayout, segment: Segment) {
+    private fun drawTable(
+        view: View,
+        tableLayout: TableLayout,
+        segment: Segment,
+        relevantSummits: List<Summit>
+    ) {
         tableLayout.removeAllViews()
-        addHeader(view, tableLayout, segment)
+        addHeader(view, tableLayout, segment, relevantSummits)
         sorter(segment.segmentEntries).forEachIndexed { index, entry ->
-            val summit = relevantSummits?.firstOrNull {
-                it?.activityId == entry.activityId
+            val summit = relevantSummits.firstOrNull {
+                it.activityId == entry.activityId
             }
             if (summit != null) {
                 addSegmentToTable(
@@ -436,13 +443,19 @@ class SegmentEntryDetailsFragment : Fragment() {
                     index,
                     tableLayout,
                     segment,
-                    summit == summitShown && segmentEntryToShow == entry
+                    summit == summitShown && segmentEntryToShow == entry,
+                    relevantSummits
                 )
             }
         }
     }
 
-    private fun addHeader(view: View, tableLayout: TableLayout, segment: Segment) {
+    private fun addHeader(
+        view: View,
+        tableLayout: TableLayout,
+        segment: Segment,
+        relevantSummits: List<Summit>
+    ) {
         val tableRowHead = TableRow(view.context)
         10.also { tableRowHead.id = it }
         tableRowHead.setBackgroundColor(Color.WHITE)
@@ -455,14 +468,24 @@ class SegmentEntryDetailsFragment : Fragment() {
             getString(R.string.date),
             tableLayout,
             segment,
+            relevantSummits,
             sorter = { e -> if (descending) e.sortedByDescending { it.date } else e.sortedBy { it.date } })
-        addLabel(view, tableRowHead, 21, getString(R.string.minutes), tableLayout, segment)
+        addLabel(
+            view,
+            tableRowHead,
+            21,
+            getString(R.string.minutes),
+            tableLayout,
+            segment,
+            relevantSummits
+        )
         addLabel(view,
             tableRowHead,
             22,
             getString(R.string.kmh),
             tableLayout,
             segment,
+            relevantSummits,
             sorter = { e -> if (descending) e.sortedByDescending { it.kilometers * 60 / it.duration } else e.sortedBy { it.kilometers * 60 / it.duration } })
         addLabel(view,
             tableRowHead,
@@ -470,6 +493,7 @@ class SegmentEntryDetailsFragment : Fragment() {
             getString(R.string.bpm),
             tableLayout,
             segment,
+            relevantSummits,
             sorter = { e -> if (descending) e.sortedByDescending { it.averageHeartRate } else e.sortedBy { it.averageHeartRate } })
         addLabel(view,
             tableRowHead,
@@ -477,9 +501,10 @@ class SegmentEntryDetailsFragment : Fragment() {
             getString(R.string.watt),
             tableLayout,
             segment,
+            relevantSummits,
             sorter = { e -> if (descending) e.sortedByDescending { it.averagePower } else e.sortedBy { it.averagePower } })
-        addLabel(view, tableRowHead, 25, "", tableLayout, segment)
-        addLabel(view, tableRowHead, 26, "", tableLayout, segment)
+        addLabel(view, tableRowHead, 25, "", tableLayout, segment, relevantSummits)
+        addLabel(view, tableRowHead, 26, "", tableLayout, segment, relevantSummits)
         tableLayout.addView(
             tableRowHead, TableLayout.LayoutParams(
                 TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT
@@ -512,6 +537,7 @@ class SegmentEntryDetailsFragment : Fragment() {
         text: String,
         tableLayout: TableLayout,
         segment: Segment,
+        relevantSummits: List<Summit>,
         sorter: (List<SegmentEntry>) -> List<SegmentEntry> = { e -> if (descending) e.sortedByDescending { it.duration } else e.sortedBy { it.duration } }
     ) {
         val label = TextView(view.context)
@@ -529,7 +555,7 @@ class SegmentEntryDetailsFragment : Fragment() {
             descending = !descending
             this.sorter = sorter
             setSortLabelFor = id
-            drawTable(view, tableLayout, segment)
+            drawTable(view, tableLayout, segment, relevantSummits)
         }
         label.setTextColor(Color.BLACK)
         tr.addView(label)
@@ -542,7 +568,8 @@ class SegmentEntryDetailsFragment : Fragment() {
         i: Int,
         tableLayout: TableLayout,
         segment: Segment,
-        mark: Boolean
+        mark: Boolean,
+        relevantSummits: List<Summit>
     ) {
         val dateParts = (summit.getDateAsString() ?: "").split("-")
         val date = "${dateParts[0]}\n${dateParts[1]}-${dateParts[2]}"
@@ -551,7 +578,7 @@ class SegmentEntryDetailsFragment : Fragment() {
             segmentEntryToShow = entry
             segmentEntryId = entry.entryId
             summitShown = summit
-            update(summitShown, segmentEntryToShow, segment)
+            update(summitShown, segmentEntryToShow, segment, relevantSummits)
         }
         if (mark) {
             tr.setBackgroundColor(Color.YELLOW)

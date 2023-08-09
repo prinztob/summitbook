@@ -412,4 +412,6 @@
     <string name="new_segment_record">New segment record</string>
     <string name="title">Title</string>
     <string name="description">Description</string>
+    <string name="summits_for_segments_not_found">Es wurde keine Aktivität für Segment gefunden.</string>
+
 </resources>

@@ -39,6 +39,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.TrackColor
+import de.drtobiasprinz.summitbook.ui.observeOnce
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import kotlinx.coroutines.Dispatchers
@@ -100,6 +101,8 @@ class SummitEntryTrackFragment : Fragment() {
                                         withContext(Dispatchers.Default) {
                                             setGpsTrack(summitToView)
                                         }
+//TODO remove after all segments are fixed
+                                        updateActivityIdInSegment(summitToView)
                                         drawChart(summitToView)
                                         updateMap(summitToView, summitToCompare, allSummits)
                                         setButtons(summitToView)
@@ -130,6 +133,32 @@ class SummitEntryTrackFragment : Fragment() {
         return binding.root
     }
 
+    private fun updateActivityIdInSegment(summitToView: Summit) {
+        pageViewModel?.segmentsList?.observeOnce(viewLifecycleOwner) { segmentData ->
+            segmentData.data.let { segments ->
+                segments?.forEach { segment ->
+                    segment.segmentEntries.forEach { entry ->
+                        if (entry.endPositionInTrack < (gpsTrack?.trackPoints?.size ?: 0) &&
+                            gpsTrack?.trackPoints?.get(entry.startPositionInTrack)?.lat == entry.startPositionLatitude &&
+                            gpsTrack?.trackPoints?.get(entry.startPositionInTrack)?.lon == entry.startPositionLongitude &&
+                            gpsTrack?.trackPoints?.get(entry.endPositionInTrack)?.lat == entry.endPositionLatitude &&
+                            gpsTrack?.trackPoints?.get(entry.endPositionInTrack)?.lon == entry.endPositionLongitude &&
+                            entry.activityId != summitToView.activityId
+                        ) {
+                            Toast.makeText(
+                                context,
+                                getString(R.string.update),
+                                Toast.LENGTH_LONG
+                            ).show()
+                            entry.activityId = summitToView.activityId
+                            pageViewModel?.saveSegmentEntry(true, entry)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun updateMap(
         summitToView: Summit,
         summitToCompare: Summit?,
@@ -147,12 +176,13 @@ class SummitEntryTrackFragment : Fragment() {
             if (summitToView.hasGpsTrack()) {
                 try {
                     val uri =
-                        summitToView.copyGpsTrackToTempFile(requireActivity().externalCacheDir)
-                            ?.let {
-                                FileProvider.getUriForFile(
-                                    requireContext(), BuildConfig.APPLICATION_ID + ".provider", it
-                                )
-                            }
+                        summitToView.copyGpsTrackToTempFile(requireActivity().externalCacheDir)?.let {
+                            FileProvider.getUriForFile(
+                                requireContext(),
+                                BuildConfig.APPLICATION_ID + ".provider",
+                                it
+                            )
+                        }
                     val intent = Intent(Intent.ACTION_VIEW)
                     intent.setDataAndType(uri, "application/gpx")
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -175,12 +205,13 @@ class SummitEntryTrackFragment : Fragment() {
             if (summitToView.hasGpsTrack()) {
                 try {
                     val uri =
-                        summitToView.copyGpsTrackToTempFile(requireActivity().externalCacheDir)
-                            ?.let {
-                                FileProvider.getUriForFile(
-                                    requireContext(), BuildConfig.APPLICATION_ID + ".provider", it
-                                )
-                            }
+                        summitToView.copyGpsTrackToTempFile(requireActivity().externalCacheDir)?.let {
+                            FileProvider.getUriForFile(
+                                requireContext(),
+                                BuildConfig.APPLICATION_ID + ".provider",
+                                it
+                            )
+                        }
                     val intentShareFile = Intent(Intent.ACTION_SEND)
                     intentShareFile.type = "application/pdf"
                     intentShareFile.putExtra(Intent.EXTRA_STREAM, uri)
@@ -444,7 +475,7 @@ class SummitEntryTrackFragment : Fragment() {
                     color = Color.BLACK
                 )
             } else {
-                 val connectedEntries = summitToView.getConnectedEntries(summits)
+                val connectedEntries = summitToView.getConnectedEntries(summits)
                 for (entry in connectedEntries) {
                     OpenStreetMapUtils.drawTrack(
                         entry, true, binding.osmap, TrackColor.None, color = Color.BLACK
