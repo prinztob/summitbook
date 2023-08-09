@@ -114,7 +114,7 @@ class LineChartFragment : Fragment() {
         val yAxisRight = binding.lineChart.axisRight
         setYAxis(yAxisRight)
         binding.lineChart.setTouchEnabled(true)
-        binding.lineChart.marker = CustomMarkerView(requireContext(), R.layout.marker_graph)
+        binding.lineChart.marker = CustomMarkerView(requireContext(), R.layout.marker_graph, lineChartSpinnerEntry)
         binding.lineChart.invalidate()
     }
 
@@ -168,7 +168,7 @@ class LineChartFragment : Fragment() {
                     requireContext().resources.configuration.locales[0],
                     format,
                     value,
-                    lineChartSpinnerEntry.unit
+                    context?.getString(lineChartSpinnerEntry.unit)
                 )
             }
         }

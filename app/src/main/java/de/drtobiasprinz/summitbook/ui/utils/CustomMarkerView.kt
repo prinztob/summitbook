@@ -11,8 +11,13 @@ import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.models.LineChartSpinnerEntry
 
-class CustomMarkerView(context: Context?, layoutResource: Int) : MarkerView(context, layoutResource) {
+class CustomMarkerView(
+    context: Context?,
+    layoutResource: Int,
+    private val lineChartSpinnerEntry: LineChartSpinnerEntry
+) : MarkerView(context, layoutResource) {
 
     private val tvContent: TextView? = findViewById(R.id.tvContent)
     private lateinit var summit: Summit
@@ -23,7 +28,15 @@ class CustomMarkerView(context: Context?, layoutResource: Int) : MarkerView(cont
     override fun refreshContent(e: Entry?, highlight: Highlight?) {
         try {
             summit = e?.data as Summit
-            tvContent?.text = String.format("%s\n%s\n%s hm", summit.name, summit.getDateAsString(), summit.elevationData.elevationGain)
+            val format =
+                if (lineChartSpinnerEntry == LineChartSpinnerEntry.Vo2Max) "%s\n%s\n%.1f %s" else "%s\n%s\n%.0f %s"
+            tvContent?.text = String.format(
+                format,
+                summit.name,
+                summit.getDateAsString(),
+                lineChartSpinnerEntry.f(summit),
+                context.getString(lineChartSpinnerEntry.unit)
+            )
         } catch (ex: Exception) {
             ex.printStackTrace()
         }
