@@ -28,9 +28,10 @@ import com.github.mikephil.charting.utils.MPPointF
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentBarChartBinding
-import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.models.BarChartXAxisSelector
+import de.drtobiasprinz.summitbook.models.BarChartYAxisSelector
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.utils.BarChartCustomRenderer
 import de.drtobiasprinz.summitbook.ui.utils.IntervalHelper
@@ -52,10 +53,10 @@ class BarChartFragment : Fragment() {
     @Inject
     lateinit var sortFilterValues: SortFilterValues
 
-    private var selectedYAxisSpinnerEntry: YAxisSelector = YAxisSelector.Count
+    private var selectedYAxisSpinnerEntry: BarChartYAxisSelector = BarChartYAxisSelector.Count
     private var indoorHeightMeterPercent = 0
     private var selectedXAxisSpinnerMonth: Int = 0
-    private var selectedXAxisSpinnerEntry: XAxisSelector = XAxisSelector.DateByMonth
+    private var selectedXAxisSpinnerEntry: BarChartXAxisSelector = BarChartXAxisSelector.DateByMonth
     private var barChartEntries: MutableList<BarEntry?> = mutableListOf()
     private var lineChartEntriesForecast: MutableList<Entry?> = mutableListOf()
     private var unit: String = "hm"
@@ -104,12 +105,14 @@ class BarChartFragment : Fragment() {
                 binding.barChart.axisLeft.textColor = Color.WHITE
                 binding.barChart.legend?.textColor = Color.WHITE
             }
+
             Configuration.UI_MODE_NIGHT_NO -> {
                 binding.barChart.xAxis.textColor = Color.BLACK
                 binding.barChart.axisRight.textColor = Color.BLACK
                 binding.barChart.axisLeft.textColor = Color.BLACK
                 binding.barChart.legend?.textColor = Color.BLACK
             }
+
             Configuration.UI_MODE_NIGHT_UNDEFINED -> {
                 binding.barChart.xAxis.textColor = Color.BLACK
                 binding.barChart.axisRight.textColor = Color.WHITE
@@ -170,16 +173,16 @@ class BarChartFragment : Fragment() {
         xAxis?.axisMinimum = min - 0.5f
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return if (selectedXAxisSpinnerEntry == XAxisSelector.DateByYear || selectedXAxisSpinnerEntry == XAxisSelector.DateByYearUntilToday) {
+                return if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByYear || selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByYearUntilToday) {
                     String.format("%s", value.toInt())
-                } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByWeek) {
+                } else if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByWeek) {
                     String.format("%s", value.toInt() % 52)
-                } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByMonth) {
+                } else if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByMonth) {
                     String.format(
                         "%s",
                         DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[(value % 12f).toInt()]
                     )
-                } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByQuarter) {
+                } else if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByQuarter) {
                     String.format("%s", toRomanNumerics((value.toInt() + 1) % 4))
                 } else if (selectedXAxisSpinnerEntry.isAQuality) {
                     getFormattedValueForQuantity(value)
@@ -256,15 +259,18 @@ class BarChartFragment : Fragment() {
             )?.toFloat()
                 ?: selectedYAxisSpinnerEntry.defaultAnnualTarget.toFloat()
             when (selectedXAxisSpinnerEntry) {
-                XAxisSelector.DateByWeek -> {
+                BarChartXAxisSelector.DateByWeek -> {
                     annualTarget /= 52f
                 }
-                XAxisSelector.DateByMonth -> {
+
+                BarChartXAxisSelector.DateByMonth -> {
                     annualTarget /= 12f
                 }
-                XAxisSelector.DateByQuarter -> {
+
+                BarChartXAxisSelector.DateByQuarter -> {
                     annualTarget /= 4f
                 }
+
                 else -> {
                     // DO NOTHING
                 }
@@ -310,10 +316,10 @@ class BarChartFragment : Fragment() {
 
     private fun setForecastsChart() {
         if (selectedXAxisSpinnerEntry in listOf(
-                XAxisSelector.DateByMonth,
-                XAxisSelector.DateByYear,
-                XAxisSelector.DateByYearUntilToday,
-                XAxisSelector.DateByQuarter
+                BarChartXAxisSelector.DateByMonth,
+                BarChartXAxisSelector.DateByYear,
+                BarChartXAxisSelector.DateByYearUntilToday,
+                BarChartXAxisSelector.DateByQuarter
             )
         ) {
             viewModel.forecastList.observe(viewLifecycleOwner) {
@@ -364,7 +370,7 @@ class BarChartFragment : Fragment() {
                 i: Int,
                 l: Long
             ) {
-                selectedYAxisSpinnerEntry = YAxisSelector.values()[i]
+                selectedYAxisSpinnerEntry = BarChartYAxisSelector.values()[i]
                 selectedDataSpinner(summits)
                 drawChart()
             }
@@ -378,8 +384,8 @@ class BarChartFragment : Fragment() {
                 i: Int,
                 l: Long
             ) {
-                selectedXAxisSpinnerEntry = XAxisSelector.values()[i]
-                if (selectedXAxisSpinnerEntry == XAxisSelector.DateByYear) {
+                selectedXAxisSpinnerEntry = BarChartXAxisSelector.values()[i]
+                if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByYear) {
                     binding.barChartSpinnerMonth.visibility = View.VISIBLE
                 } else {
                     binding.barChartSpinnerMonth.visibility = View.GONE
@@ -410,14 +416,14 @@ class BarChartFragment : Fragment() {
         val dateAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            YAxisSelector.values().map { resources.getString(it.nameId) }.toTypedArray()
+            BarChartYAxisSelector.values().map { resources.getString(it.nameId) }.toTypedArray()
         )
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.barChartSpinnerData.adapter = dateAdapter
         val xAxisAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            XAxisSelector.values().map { resources.getString(it.nameId) }.toTypedArray()
+            BarChartXAxisSelector.values().map { resources.getString(it.nameId) }.toTypedArray()
         )
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.barChartSpinnerXAxis.adapter = xAxisAdapter
@@ -440,9 +446,9 @@ class BarChartFragment : Fragment() {
                 val value: String
                 if (e != null && highlight != null) {
                     value =
-                        if (selectedXAxisSpinnerEntry == XAxisSelector.DateByYear || selectedXAxisSpinnerEntry == XAxisSelector.DateByYearUntilToday) {
+                        if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByYear || selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByYearUntilToday) {
                             String.format("%s", e.x.toInt())
-                        } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByWeek) {
+                        } else if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByWeek) {
                             val week = (e.x % 52f).toInt()
                             val year = floor(e.x / 52f).toInt() + getYear(minDate)
                             String.format(
@@ -451,7 +457,7 @@ class BarChartFragment : Fragment() {
                                 week,
                                 year
                             )
-                        } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByMonth) {
+                        } else if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByMonth) {
                             val month = (e.x % 12f).toInt()
                             val year = floor((e.x + 1f) / 12f).toInt() + getYear(minDate)
                             String.format(
@@ -459,7 +465,7 @@ class BarChartFragment : Fragment() {
                                 DateFormatSymbols(requireContext().resources.configuration.locales[0]).months[month],
                                 year
                             )
-                        } else if (selectedXAxisSpinnerEntry == XAxisSelector.DateByQuarter) {
+                        } else if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByQuarter) {
                             val quarter = ((e.x + 1f) % 4f).toInt()
                             val year = floor((e.x + 1f) / 4f).toInt() + getYear(minDate)
                             "${toRomanNumerics(quarter)} $year"
@@ -474,10 +480,10 @@ class BarChartFragment : Fragment() {
                         val forecastValue = yValuesForecast[xValuesForecast.indexOf(e.x)]
                         tvContent?.text =
                             if (forecastValue > 0 && (
-                                        selectedXAxisSpinnerEntry == XAxisSelector.DateByMonth ||
-                                                selectedXAxisSpinnerEntry == XAxisSelector.DateByYear) ||
-                                selectedXAxisSpinnerEntry == XAxisSelector.DateByYearUntilToday ||
-                                selectedXAxisSpinnerEntry == XAxisSelector.DateByQuarter
+                                        selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByMonth ||
+                                                selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByYear) ||
+                                selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByYearUntilToday ||
+                                selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByQuarter
                             ) {
                                 String.format(
                                     "%s%s\n%s\n%s: %s%s",
@@ -555,162 +561,5 @@ class BarChartFragment : Fragment() {
         } else {
             ""
         }
-
-    @Suppress("UNCHECKED_CAST")
-    enum class XAxisSelector(
-        val nameId: Int,
-        val unitId: Int,
-        val stepsSize: Double,
-        val isAQuality: Boolean,
-        val maxVisibilityRangeForBarChart: Float,
-        val getStream: (entries: List<Summit>?, range: Any, calender: Calendar, month: Int) -> Stream<Summit?>?,
-        val getRangeAndAnnotation: (IntervalHelper) -> Pair<List<Float>, List<Any>>,
-    ) {
-        DateByMonth(R.string.monthly, R.string.empty, 0.0, false, 25f, { entries, range, _, _ ->
-            entries
-                ?.stream()
-                ?.filter { o: Summit ->
-                    o.date in (range as ClosedRange<Date>)
-                }
-        }, { e -> e.dateByMonthRangeAndAnnotation }),
-        DateByYear(R.string.yearly, R.string.empty, 0.0, false, 12f, { entries, range, cal, month ->
-            entries
-                ?.stream()
-                ?.filter { o: Summit ->
-                    cal.time = o.date
-                    o.date in (range as ClosedRange<Date>) && (month == 0 || cal.get(Calendar.MONTH) + 1 == month)
-                }
-        }, { e -> e.dateByYearRangeAndAnnotation }),
-        DateByYearUntilToday(
-            R.string.yearly_until_today,
-            R.string.empty,
-            0.0,
-            false,
-            12f,
-            { entries, range, _, _ ->
-                entries
-                    ?.stream()
-                    ?.filter { o: Summit ->
-                        o.date in (range as ClosedRange<Date>)
-                    }
-            },
-            { e -> e.dateByYearUntilTodayRangeAndAnnotation }),
-        DateByWeek(R.string.wekly, R.string.empty, 0.0, false, 26f, { entries, range, _, _ ->
-            entries
-                ?.stream()
-                ?.filter { o: Summit ->
-                    o.date in (range as ClosedRange<Date>)
-                }
-        }, { e -> e.dateByWeekRangeAndAnnotation }),
-        DateByQuarter(
-            R.string.quarterly,
-            R.string.empty,
-            0.0,
-            false,
-            4f,
-            { entries, range, _, _ ->
-                entries
-                    ?.stream()
-                    ?.filter { o: Summit ->
-                        o.date in (range as ClosedRange<Date>)
-                    }
-            },
-            { e -> e.dateByQuarterRangeAndAnnotation }),
-        Kilometers(
-            R.string.kilometers_hint,
-            R.string.km,
-            IntervalHelper.kilometersStep,
-            false,
-            -1f,
-            { entries, range, _, _ ->
-                entries
-                    ?.stream()
-                    ?.filter { o: Summit? -> o != null && o.kilometers.toFloat() in (range as ClosedRange<Float>) }
-            },
-            { e -> e.kilometersRangeAndAnnotation }),
-        ElevationGain(
-            R.string.height_meter_hint,
-            R.string.hm,
-            IntervalHelper.elevationGainStep,
-            false,
-            -1f,
-            { entries, range, _, _ ->
-                entries
-                    ?.stream()
-                    ?.filter { o: Summit? -> o != null && o.elevationData.elevationGain.toFloat() in range as ClosedRange<Float> }
-            },
-            { e -> e.elevationGainRangeAndAnnotation }),
-        TopElevation(
-            R.string.top_elevation_hint,
-            R.string.masl,
-            IntervalHelper.topElevationStep,
-            false,
-            -1f,
-            { entries, range, _, _ ->
-                entries
-                    ?.stream()
-                    ?.filter { o: Summit? -> o != null && o.elevationData.maxElevation.toFloat() in (range as ClosedRange<Float>) }
-            },
-            { e -> e.topElevationRangeAndAnnotation }),
-        Participants(
-            R.string.participants,
-            R.string.empty,
-            1.0,
-            true,
-            12f,
-            { entries, range, _, _ ->
-                entries
-                    ?.stream()
-                    ?.filter { o: Summit? -> o != null && o.participants.contains(range) }
-            },
-            { e -> e.participantsRangeAndAnnotationForSummitChipValues }),
-        Equipments(R.string.equipments, R.string.empty, 1.0, true, 12f, { entries, range, _, _ ->
-            entries
-                ?.stream()
-                ?.filter { o: Summit? -> o != null && o.equipments.contains(range) }
-        }, { e -> e.equipmentsRangeAndAnnotationForSummitChipValues }),
-
-        Countries(R.string.country_hint, R.string.empty, 1.0, true, 12f, { entries, range, _, _ ->
-            entries
-                ?.stream()
-                ?.filter { o: Summit? -> o != null && o.countries.contains(range) }
-        }, { e -> e.countriesRangeAndAnnotationForSummitChipValues })
-    }
-
-    enum class YAxisSelector(
-        val nameId: Int,
-        val unitId: Int,
-        val sharedPreferenceKey: String,
-        val defaultAnnualTarget: Int,
-        val f: (Stream<Summit?>?, Int) -> Float,
-        val getForecastValue: (Forecast) -> Float
-    ) {
-        Count(R.string.count, R.string.empty, "annual_target_activities", 52, { stream, _ ->
-            stream?.count()?.toFloat() ?: 0f
-        }, { forecast -> forecast.forecastNumberActivities.toFloat() }),
-        Kilometers(R.string.kilometers_hint, R.string.km, "annual_target_km", 1200, { stream, _ ->
-            stream
-                ?.mapToInt { o: Summit? -> o?.kilometers?.toInt() ?: 0 }
-                ?.sum()?.toFloat() ?: 0.0f
-        }, { forecast -> forecast.forecastDistance.toFloat() }),
-        ElevationGain(
-            R.string.height_meter_hint,
-            R.string.hm,
-            "annual_target",
-            50000,
-            { stream, indoorHeightMeterPercent ->
-                stream
-                    ?.mapToInt {
-                        if (it?.sportType == SportType.IndoorTrainer) {
-                            it.elevationData.elevationGain * indoorHeightMeterPercent / 100
-                        } else {
-                            it?.elevationData?.elevationGain ?: 0
-                        }
-                    }
-                    ?.sum()?.toFloat() ?: 0.0f
-            },
-            { forecast -> forecast.forecastHeightMeter.toFloat() })
-
-    }
 
 }

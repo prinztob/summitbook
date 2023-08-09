@@ -9,9 +9,9 @@ import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.DailyReportData
-import de.drtobiasprinz.summitbook.fragments.YAxisSelector
+import de.drtobiasprinz.summitbook.models.LineChartDailyReportYAxisSelector
 
-class CustomMarkerViewDailyReportData(private var context: Context?, layoutResource: Int, private var yAxisSelector: YAxisSelector) :
+class CustomMarkerViewDailyReportData(private var context: Context?, layoutResource: Int, private var lineChartDailyReportYAxisSelector: LineChartDailyReportYAxisSelector) :
     MarkerView(context, layoutResource) {
 
     private val tvContent: TextView? = findViewById(R.id.tvContent)
@@ -24,7 +24,7 @@ class CustomMarkerViewDailyReportData(private var context: Context?, layoutResou
             val entry = e?.data as DailyReportData?
             if (entry != null) {
                 tvContent?.text =
-                    context?.let { yAxisSelector.getStringForCustomMarker(entry, it) }
+                    context?.let { lineChartDailyReportYAxisSelector.getStringForCustomMarker(entry, it) }
             } else {
                 tvContent?.text = ""
             }

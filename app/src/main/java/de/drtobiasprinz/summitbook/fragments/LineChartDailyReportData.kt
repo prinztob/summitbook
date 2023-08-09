@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.fragments
 
-import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Color
@@ -27,6 +26,8 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentLineChartBinding
 import de.drtobiasprinz.summitbook.db.entities.DailyReportData
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.models.LineChartDailyReportYAxisSelector
+import de.drtobiasprinz.summitbook.models.XAxisSelectorLineChartDailyReportXAxisSelector
 import de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerViewDailyReportData
 import de.drtobiasprinz.summitbook.ui.utils.IntervalHelper
@@ -53,8 +54,10 @@ class LineChartDailyReportData : Fragment() {
     private var lineChartEntriesMinHeartRate: MutableList<Entry?> = mutableListOf()
     private var lineChartEntriesMaxHeartRate: MutableList<Entry?> = mutableListOf()
     private var lineChartEntriesSleepData: MutableList<Entry?> = mutableListOf()
-    private var lineChartXAxisSpinner: XAxisSelector = XAxisSelector.Days7
-    private var lineChartYAxisSpinner: YAxisSelector = YAxisSelector.SolarIntensity
+    private var lineChartXAxisSpinner: XAxisSelectorLineChartDailyReportXAxisSelector =
+        XAxisSelectorLineChartDailyReportXAxisSelector.Days7
+    private var lineChartYAxisSpinner: LineChartDailyReportYAxisSelector =
+        LineChartDailyReportYAxisSelector.SolarIntensity
     private var lineChartColors: List<Int>? = mutableListOf()
 
     override fun onCreateView(
@@ -125,7 +128,7 @@ class LineChartDailyReportData : Fragment() {
         setLineChartEntries(dailyReportData)
         val dataSets: MutableList<ILineDataSet?> = ArrayList()
         val legends = mutableListOf<LegendEntry>()
-        if (lineChartYAxisSpinner == YAxisSelector.SolarIntensity) {
+        if (lineChartYAxisSpinner == LineChartDailyReportYAxisSelector.SolarIntensity) {
             legends.add(
                 addData(
                     lineChartEntriesBatteryGain,
@@ -160,7 +163,7 @@ class LineChartDailyReportData : Fragment() {
                 )
             )
         }
-        if (lineChartYAxisSpinner == YAxisSelector.ActivityMinutes) {
+        if (lineChartYAxisSpinner == LineChartDailyReportYAxisSelector.ActivityMinutes) {
             legends.add(
                 addData(
                     lineChartEntriesActiveDuration,
@@ -186,7 +189,7 @@ class LineChartDailyReportData : Fragment() {
                 )
             )
         }
-        if (lineChartYAxisSpinner == YAxisSelector.Steps) {
+        if (lineChartYAxisSpinner == LineChartDailyReportYAxisSelector.Steps) {
             legends.add(
                 addData(
                     lineChartEntriesSteps,
@@ -196,7 +199,7 @@ class LineChartDailyReportData : Fragment() {
                 )
             )
         }
-        if (lineChartYAxisSpinner == YAxisSelector.FloorsClimbed) {
+        if (lineChartYAxisSpinner == LineChartDailyReportYAxisSelector.FloorsClimbed) {
             legends.add(
                 addData(
                     lineChartEntriesFloorsClimbed,
@@ -206,7 +209,7 @@ class LineChartDailyReportData : Fragment() {
                 )
             )
         }
-        if (lineChartYAxisSpinner == YAxisSelector.SleepHours) {
+        if (lineChartYAxisSpinner == LineChartDailyReportYAxisSelector.SleepHours) {
             legends.add(
                 addData(
                     lineChartEntriesSleepData,
@@ -217,7 +220,7 @@ class LineChartDailyReportData : Fragment() {
             )
         }
 
-        if (lineChartYAxisSpinner == YAxisSelector.HeartRate) {
+        if (lineChartYAxisSpinner == LineChartDailyReportYAxisSelector.HeartRate) {
             legends.add(
                 addData(
                     lineChartEntriesRestingHeartRate,
@@ -463,7 +466,7 @@ class LineChartDailyReportData : Fragment() {
                 i: Int,
                 l: Long
             ) {
-                lineChartXAxisSpinner = XAxisSelector.values()[i]
+                lineChartXAxisSpinner = XAxisSelectorLineChartDailyReportXAxisSelector.values()[i]
                 resetChart()
                 drawLineChart(dailyReportData)
             }
@@ -477,7 +480,7 @@ class LineChartDailyReportData : Fragment() {
                 i: Int,
                 l: Long
             ) {
-                lineChartYAxisSpinner = YAxisSelector.values()[i]
+                lineChartYAxisSpinner = LineChartDailyReportYAxisSelector.values()[i]
                 resetChart()
                 drawLineChart(dailyReportData)
             }
@@ -490,7 +493,8 @@ class LineChartDailyReportData : Fragment() {
         val xAxisAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            XAxisSelector.values().map { resources.getString(it.nameId) }.toTypedArray()
+            XAxisSelectorLineChartDailyReportXAxisSelector.values()
+                .map { resources.getString(it.nameId) }.toTypedArray()
         )
         xAxisAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerXAxis.adapter = xAxisAdapter
@@ -498,7 +502,8 @@ class LineChartDailyReportData : Fragment() {
         val yAxisAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            YAxisSelector.values().map { resources.getString(it.nameId) }.toTypedArray()
+            LineChartDailyReportYAxisSelector.values().map { resources.getString(it.nameId) }
+                .toTypedArray()
         )
         yAxisAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerYAxis.adapter = yAxisAdapter
@@ -563,114 +568,3 @@ class LineChartDailyReportData : Fragment() {
 
 }
 
-enum class YAxisSelector(
-    val nameId: Int,
-    val unit: String,
-    val getStringForCustomMarker: (DailyReportData, Context) -> String
-) {
-    SolarIntensity(R.string.solar_intensity, "h", { entry, context ->
-        String.format(
-            "%s\n%s: %.2f %s\n%s: %.2f %s",
-            entry.markerText,
-            context.getString(R.string.solar_50000_lux_condition),
-            entry.solarUtilizationInHours,
-            "h",
-            context.getString(R.string.solar_exposure),
-            entry.solarExposureInHours,
-            "h"
-        )
-    }),
-    ActivityMinutes(R.string.active_duration, "h", { entry, context ->
-        String.format(
-            "%s\n%s: %s %s\n%s: %s %s\n%s: %s %s",
-            entry.markerText,
-            context.getString(R.string.active_duration),
-            entry.totalIntensityMinutes,
-            context.getString(R.string.min),
-            context.getString(R.string.moderate_intensity_minutes),
-            entry.events.sumOf { it.moderateIntensityMinutes },
-            context.getString(R.string.min),
-            context.getString(R.string.vigorous_intensity_minutes),
-            entry.events.sumOf { it.vigorousIntensityMinutes },
-            context.getString(R.string.min),
-        )
-    }),
-    Steps(R.string.steps, "", { entry, context ->
-        String.format(
-            "%s\n%s: %s",
-            entry.markerText,
-            context.getString(R.string.steps),
-            entry.steps
-        )
-    }),
-    FloorsClimbed(R.string.floors_climbed, "", { entry, context ->
-        String.format(
-            "%s\n%s: %s",
-            entry.markerText,
-            context.getString(R.string.floors_climbed),
-            entry.floorsClimbed
-        )
-    }),
-    HeartRate(R.string.heart_rate, "bpm", { entry, context ->
-        String.format(
-            "%s\n%s: %s %s\n%s: %s %s\n%s: %s %s",
-            entry.markerText,
-            context.getString(R.string.min_heart_rate),
-            entry.minHeartRate,
-            context.getString(R.string.bpm),
-            context.getString(R.string.resting_heart_rate),
-            entry.restingHeartRate,
-            context.getString(R.string.bpm),
-            context.getString(R.string.max_heart_rate),
-            entry.maxHeartRate,
-            context.getString(R.string.bpm),
-        )
-    }),
-    SleepHours(R.string.sleep_hours, "h", { entry, context ->
-        String.format(
-            "%s\n%s: %s",
-            entry.markerText,
-            context.getString(R.string.sleep_hours),
-            entry.sleepHours
-        )
-    }),
-}
-
-enum class XAxisSelector(
-    val nameId: Int,
-    val filterData: (IntervalHelper, List<DailyReportData>) -> List<DailyReportData>?
-) {
-    Days7(R.string.seven_days, { _, dailyReportData ->
-        dailyReportData.sortedBy { it.date }.takeLast(7)
-    }),
-    Days28(R.string.twenty_eight_days, { _, dailyReportData ->
-        dailyReportData.sortedBy { it.date }.takeLast(28)
-    }),
-    Days(R.string.days, { _, dailyReportData ->
-        dailyReportData.sortedBy { it.date }
-    }),
-    Weeks12(R.string.twelf_weeks, { intervalHelper, dailyReportData ->
-        LineChartDailyReportData.filterDailyReportDataPerWeek(
-            dailyReportData,
-            intervalHelper
-        ).takeLast(12)
-    }),
-    Weeks(R.string.weeks, { intervalHelper, dailyReportData ->
-        LineChartDailyReportData.filterDailyReportDataPerWeek(
-            dailyReportData,
-            intervalHelper
-        )
-    }),
-    Months(R.string.months, { intervalHelper, dailyReportData ->
-        LineChartDailyReportData.filterDailyReportDataPerMonth(
-            dailyReportData,
-            intervalHelper
-        )
-    }),
-    Quarterly(R.string.quarterly, { intervalHelper, dailyReportData ->
-        LineChartDailyReportData.filterDailyReportDataPerQuarter(
-            dailyReportData,
-            intervalHelper
-        )
-    });
-}
