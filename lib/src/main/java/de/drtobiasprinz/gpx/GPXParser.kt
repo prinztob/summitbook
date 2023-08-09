@@ -124,7 +124,7 @@ class GPXParser {
 
     @Throws(IOException::class, XmlPullParserException::class)
     private fun readRoute(parser: XmlPullParser): Route {
-        val points: MutableList<RoutePoint> = ArrayList<RoutePoint>()
+        val points: MutableList<RoutePoint> = ArrayList()
         parser.require(XmlPullParser.START_TAG, namespace, TAG_ROUTE)
         val routeBuilder: Route.Builder = Route.Builder()
         while (loopMustContinue(parser.next())) {

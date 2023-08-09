@@ -18,7 +18,7 @@ class DatePreferenceDialogFragment : PreferenceDialogFragmentCompat() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         var dateValue: String? = datePreference.date
-        if (dateValue == null || dateValue.isEmpty()) {
+        if (dateValue.isNullOrEmpty()) {
             val calendar = Calendar.getInstance()
             val df = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
             dateValue = df.format(calendar.time)

@@ -20,8 +20,7 @@ fun Observable<XmlWrite>.writeTo(writer: Writer, charset: Charset = StandardChar
                 writer.close()
             })
             .reduce(
-                    Xml.newSerializer().apply { setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true) },
-                    { xml, write -> xml.apply { write(this) } }
-            )
-            .map { writer }
+                    Xml.newSerializer().apply { setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true) }
+            ) { xml, write -> xml.apply { write(this) } }
+        .map { writer }
 }

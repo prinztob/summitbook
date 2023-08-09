@@ -613,7 +613,7 @@ class SegmentEntryDetailsFragment : Fragment() {
         }
         tr.addView(updateButton)
         val removeButton = ImageButton(view.context)
-        removeButton.setImageResource(R.drawable.ic_baseline_delete_24)
+        removeButton.setImageResource(R.drawable.ic_baseline_delete_forever_24)
         removeButton.setOnClickListener {
             viewModel.deleteSegmentEntry(entry)
         }

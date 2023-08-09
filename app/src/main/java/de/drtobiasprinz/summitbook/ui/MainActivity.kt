@@ -233,7 +233,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     val entriesWithoutBoundingBox = it.data?.filter { summit ->
                         summit.hasGpsTrack() && summit.trackBoundingBox == null && summit !in entriesToExcludeForBoundingBoxCalculation
                     } as MutableList<Summit>?
-                    if (entriesWithoutBoundingBox != null && entriesWithoutBoundingBox.isNotEmpty()) {
+                    if (!entriesWithoutBoundingBox.isNullOrEmpty()) {
                         val entriesToCheck = entriesWithoutBoundingBox.take(100)
                         entriesToCheck.forEach { entryToCheck ->
                             entriesWithoutBoundingBox.remove(entryToCheck)

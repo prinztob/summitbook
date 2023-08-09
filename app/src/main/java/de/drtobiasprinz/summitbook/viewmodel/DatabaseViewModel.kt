@@ -83,12 +83,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
             .collect { _bookmarksList.postValue(DataStatus.success(it, it.isEmpty())) }
     }
 
-    fun getSearchSummit(name: String) = viewModelScope.launch {
-        repository.searchSummit(name).collect {
-            _summitsList.postValue(DataStatus.success(it, it.isEmpty()))
-        }
-    }
-
     fun getDetailsSummit(id: Long) = viewModelScope.launch {
         repository.getDetailsSummit(id).collect {
             _summitDetails.postValue(DataStatus.success(it, false))

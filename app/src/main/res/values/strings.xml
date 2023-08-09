@@ -90,7 +90,6 @@
     <string name="filterByHm">Filter by height meter</string>
     <string name="filterByTopSpeed">Filter by top speed</string>
     <string name="filterByTopElevation">Filter by top elevation</string>
-    <string name="filter_by_average_speed">Filter by average Speed</string>
     <string name="highest_peak">Highest Peak</string>
     <string name="top_speed">Top Speed</string>
     <string name="highest_average_speed">Highest average speed</string>
@@ -174,7 +173,6 @@
     <string name="delete_entry_text">"Are you sure you want to proceed?"</string>
     <string name="delete_entry_done">"Deleted summit %1$s"</string>
     <string name="delete_undo">"Undo deletion"</string>
-    <string name="add_gpx_successful">"Adding a new gps track to summit %1$s was successful."</string>
     <string name="add_gpx_failed">"Adding a new gps track to summit %1$s failed."</string>
     <string name="garmin_add_cancel">"Adding Garmin connect activities was canceled."</string>
     <string name="garmin_add_successful">"Successful requested entry %1$s from Garmin Connect"</string>
@@ -353,7 +351,6 @@
     <string name="add_position_to_summit_successful">Adding a new position to summit %1$s was successful.</string>
     <string name="no_email_program_installed">E-Mail program not installed</string>
     <string name="add_new_summit">Add new summit</string>
-    <string name="change_map_type">Change map type</string>
     <string name="add_new_bookmark">Add new bookmark</string>
     <string name="color_code_selection">Select value used for color code</string>
     <string name="entry">Entry</string>
@@ -370,7 +367,6 @@
     <string name="sec">sec</string>
     <string name="delete_coordinates">Delete coordinates and GPS track</string>
     <string name="delete_coordinates_message">Are you sure you want to delete the selected coordinates and the added GPS track?</string>
-    <string name="filter_sort">Filter and sorting</string>
     <string name="apply">apply</string>
     <string name="set_to_default">Set to default</string>
     <string name="set_user_pwd">Please set Username and Password for Garmin connect in settings</string>
@@ -384,7 +380,6 @@
     <string name="add_track_as_bookmark">New bookmark</string>
 
     <string name="segments">Segments</string>
-    <string name="add_new_segment">Add new segment</string>
     <string name="add_new_segment_details">Add new segment details</string>
     <string name="segment_end_point">Segment end point</string>
     <string name="segment_start_point">Segment start point</string>
@@ -397,8 +392,6 @@
     <string name="stop_before_start">Selected end point is before start point</string>
     <string name="chart">Chart</string>
     <string name="map">Map </string>
-    <string name="percent">%</string>
-    <string name="h">h</string>
     <string name="days">days</string>
     <string name="seven_days">last 7d</string>
     <string name="twenty_eight_days">last 28d</string>
@@ -415,5 +408,7 @@
     <string name="sleep_hours">Sleep Hours</string>
     <string name="new_power_record">New power record</string>
     <string name="new_segment_record">New segment record</string>
+    <string name="title">Title</string>
+    <string name="description">Description</string>
 
 </resources>

@@ -91,7 +91,6 @@
     <string name="filterByHm">Höhenmetern</string>
     <string name="filterByTopSpeed">Höchstgeschw.</string>
     <string name="filterByTopElevation">Höchster Punkt</string>
-    <string name="filter_by_average_speed">Durschnittsgeschw.</string>
     <string name="highest_peak">Höchster Gipfel</string>
     <string name="top_speed">Höchstgeschw.</string>
     <string name="highest_average_speed">Höchste Durschnittsgeschw.</string>
@@ -177,7 +176,6 @@
     <string name="delete_entry_text">"Sind Sie sicher, dass sie fortfahren möchten?"</string>
     <string name="delete_entry_done">"Gipfel %1$s wurde gelöscht"</string>
     <string name="delete_undo">"Löschen rückgängig machen"</string>
-    <string name="add_gpx_successful">"Das Hinzufügen eines neuen GPX Track zu Gipfel %1$s war erfolgreich."</string>
     <string name="add_gpx_failed">"Das Hinzufügen eines neuen GPX Track zu Gipfel %1$s ist fehlgeschlagen."</string>
     <string name="garmin_add_cancel">"Hinzufügen einer Garmin Connect Aktivität wurde abgebrochen."</string>
     <string name="garmin_add_successful">"Erfolgreich Gipfel %1$s von Garmin Connect abgefragt"</string>
@@ -354,7 +352,6 @@
     <string name="add_position_to_summit_successful">Hinzufügen einer neuen position zu Gipfel %1$s war erfolgreich.</string>
     <string name="no_email_program_installed">E-Mail program not installed</string>
     <string name="add_new_summit">Füge neuen Gipfel hinzu</string>
-    <string name="change_map_type">Ändere Kartentyp</string>
     <string name="add_new_bookmark">Füge neues Lesezeichen hinzu</string>
     <string name="color_code_selection">Wähle aus was für das Einfärben des Tracks verwendet werden soll</string>
     <string name="entry">Eintrag</string>
@@ -371,7 +368,6 @@
     <string name="sec">sec</string>
     <string name="delete_coordinates">Lösche Koordinaten und GPS Track</string>
     <string name="delete_coordinates_message">Sind Sie sicher, dass sie die selectierten Koordinaten und den hinzugefügten GPS Track löschen möchten ?</string>
-    <string name="filter_sort">Filtern und Sortieren</string>
     <string name="apply">Anwenden</string>
     <string name="set_to_default">Auf Default setzen</string>
     <string name="set_user_pwd">Bitte setzen Sie Benutzername und Passowrt für Garmin connect in den Settings</string>
@@ -385,7 +381,6 @@
     <string name="add_track_as_bookmark">neues Lesezeichen</string>
 
     <string name="segments">Abschnitte</string>
-    <string name="add_new_segment">Füge neuen Abschnitt hinzu</string>
     <string name="add_new_segment_details">Füge neue Abschnitt Details hnzu</string>
     <string name="segment_end_point">Abschnittendpunkt</string>
     <string name="segment_start_point">Abschnittanfangpunkt</string>
@@ -398,8 +393,6 @@
     <string name="stop_before_start">Ausgewälter Endpunkt ist vor Startpunkt</string>
     <string name="chart">Chart </string>
     <string name="map">Karte</string>
-    <string name="percent">%</string>
-    <string name="h">h</string>
 
     <string name="days">Tage</string>
     <string name="seven_days">letzten 7T</string>
@@ -417,4 +410,6 @@
     <string name="sleep_hours">Schlaf in Std.</string>
     <string name="new_power_record">New power record</string>
     <string name="new_segment_record">New segment record</string>
+    <string name="title">Title</string>
+    <string name="description">Description</string>
 </resources>

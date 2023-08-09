@@ -18,9 +18,9 @@ enum class OrderByValueButtonGroup(
         }
     }, { e, order ->
         if (order == OrderByAscDescButtonGroup.Descending) {
-            e.sortedByDescending { it.segmentEntries.maxByOrNull { it.date }?.date }
+            e.sortedByDescending { segment -> segment.segmentEntries.maxByOrNull { it.date }?.date }
         } else {
-            e.sortedBy { it.segmentEntries.maxByOrNull { it.date }?.date }
+            e.sortedBy { segment -> segment.segmentEntries.maxByOrNull { it.date }?.date }
         }
     }),
     Name("name", { e -> e.buttonByName.id }, { e, order ->

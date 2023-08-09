@@ -193,7 +193,7 @@ class AddSegmentEntryFragment : Fragment() {
     private fun setTextView(summitToCompare: Summit) {
         binding.tourDate.text = summitToCompare.getDateAsString()
         val allTrackPoints = summitToCompare.gpsTrack?.trackPoints
-        if (allTrackPoints != null && allTrackPoints.isNotEmpty()) {
+        if (!allTrackPoints.isNullOrEmpty()) {
             val startTrackPoint = allTrackPoints[startPointId]
             val endTrackPoint = allTrackPoints[endPointId]
             val selectedTrackPoints = allTrackPoints.subList(startPointId, endPointId)
@@ -275,7 +275,7 @@ class AddSegmentEntryFragment : Fragment() {
         val summitsWithTrack =
             summits?.filter { it.hasGpsTrack() }?.sortedByDescending { it.date } ?: emptyList()
         val entries = segment?.segmentEntries
-        summitsToCompare = if (entries != null && entries.isNotEmpty()) {
+        summitsToCompare = if (!entries.isNullOrEmpty()) {
             val startPoint = GeoPoint(
                 entries.first().startPositionLatitude, entries.first().startPositionLongitude
             )
@@ -491,7 +491,7 @@ class AddSegmentEntryFragment : Fragment() {
 
     private fun showSinglePoints(summit: Summit) {
         val trackGeoPoints = summit.gpsTrack?.trackGeoPoints
-        if (trackGeoPoints != null && trackGeoPoints.isNotEmpty()) {
+        if (!trackGeoPoints.isNullOrEmpty()) {
             binding.osmap.overlays.remove(pointOverlay)
             val filteredPoints = ArrayList<IGeoPoint>()
             for ((i, point) in trackGeoPoints.withIndex()) {

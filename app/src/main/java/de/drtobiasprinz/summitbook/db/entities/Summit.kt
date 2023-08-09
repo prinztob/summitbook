@@ -467,7 +467,7 @@ class Summit(
         const val SUMMIT_ID_EXTRA_IDENTIFIER = "SUMMIT_ID"
         private const val NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY = 28
         private const val NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY = 16
-        const val REFERENCE_VALUE_DATE = 946681200000f
+        const val REFERENCE_VALUE_DATE: Long = 946681200000
 
         var subDirForGpsTracks: String = "summitbook_tracks"
         var subDirForGpsTracksBookmark: String = "summitbook_tracks_bookmark"

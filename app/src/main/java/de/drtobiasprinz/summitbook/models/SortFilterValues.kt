@@ -37,7 +37,7 @@ class SortFilterValues(
 ) {
     private var initialized: Boolean = false
 
-    fun setInitialValues(summits: List<Summit>, sharedPreferences: SharedPreferences) {
+    private fun setInitialValues(summits: List<Summit>, sharedPreferences: SharedPreferences) {
         if (!initialized) {
             Log.i("SortFilterValues", "initialized")
             initialized = true

@@ -24,7 +24,7 @@ data class Metadata(
     class Builder {
         var name: String? = null
         var desc: String? = null
-        var author: String? = null
+        private var author: String? = null
 
         fun build(): Metadata {
             return Metadata(name = name, description = desc, author = author)

@@ -16,11 +16,6 @@ class TrackBoundingBox(
         return boundingRect.intersect(trackBoundingRect)
     }
 
-    fun intersects(boundingBox: TrackBoundingBox): Boolean {
-        val boundingRect = Rectangle(boundingBox.lonWest , boundingBox.latNorth , boundingBox.lonEast , boundingBox.latSouth )
-        return boundingRect.intersect(trackBoundingRect)
-    }
-
     fun contains(geoPoint: GeoPoint): Boolean {
         return trackBoundingRect.left <= geoPoint.longitude
                 && trackBoundingRect.right >= geoPoint.longitude
