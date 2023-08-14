@@ -45,17 +45,17 @@
                 android:id="@+id/summit_name_to_compare"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/summit_name_compare_hint"
                 android:background="?android:colorBackground"
-                app:smsp_searchHeaderText="@string/select_item"
-                app:smsp_searchHint="@string/summit_name_compare_hint"
+                android:hint="@string/summit_name_compare_hint"
+                app:smsp_enableErrorLabel="false"
+                app:smsp_enableFloatingLabel="false"
                 app:smsp_hint="@string/summit_name_compare_hint"
+                app:smsp_isSearchable="true"
                 app:smsp_itemColor="#512DA8"
                 app:smsp_itemListColor="#7C4DFF"
                 app:smsp_itemListHintBackgroundColor="#808080"
-                app:smsp_isSearchable="true"
-                app:smsp_enableErrorLabel="false"
-                app:smsp_enableFloatingLabel="false"
+                app:smsp_searchHeaderText="@string/select_item"
+                app:smsp_searchHint="@string/summit_name_compare_hint"
                 app:smsp_selectedItemListColor="#FF5252" />
 
             <GridLayout
@@ -75,8 +75,8 @@
                     android:padding="1dp"
                     android:text="@string/tour_date"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_today_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_today_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/tour_date"
@@ -98,8 +98,8 @@
                     android:padding="1dp"
                     android:text="@string/height_meter_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_trending_up_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_trending_up_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/height_meter"
@@ -121,8 +121,8 @@
                     android:padding="1dp"
                     android:text="@string/kilometers_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/icons8_map_pinpoint_20" />
+                    app:drawableStartCompat="@drawable/icons8_map_pinpoint_20"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/kilometers"
@@ -144,8 +144,8 @@
                     android:padding="1dp"
                     android:text="@string/top_elevation_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/icons8_mountain_20" />
+                    app:drawableStartCompat="@drawable/icons8_mountain_20"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/top_elevation"
@@ -166,8 +166,8 @@
                     android:padding="1dp"
                     android:text="@string/max_slope"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/icons8_mountain_20" />
+                    app:drawableStartCompat="@drawable/icons8_mountain_20"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/top_slope"
@@ -188,8 +188,8 @@
                     android:padding="1dp"
                     android:text="@string/max_verticalVelocity_1Min"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/icons8_mountain_20" />
+                    app:drawableStartCompat="@drawable/icons8_mountain_20"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/top_verticalVelocity1Min"
@@ -210,8 +210,8 @@
                     android:padding="1dp"
                     android:text="@string/max_verticalVelocity_10Min"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/icons8_mountain_20" />
+                    app:drawableStartCompat="@drawable/icons8_mountain_20"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/top_verticalVelocity10Min"
@@ -232,8 +232,8 @@
                     android:padding="1dp"
                     android:text="@string/max_verticalVelocity_1h"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/icons8_mountain_20" />
+                    app:drawableStartCompat="@drawable/icons8_mountain_20"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/top_verticalVelocity1h"
@@ -255,8 +255,8 @@
                     android:padding="1dp"
                     android:text="@string/pace_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/pace"
@@ -278,8 +278,8 @@
                     android:padding="1dp"
                     android:text="@string/duration"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/ic_baseline_timer_24" />
+                    app:drawableStartCompat="@drawable/ic_baseline_timer_24"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/duration"
@@ -300,8 +300,8 @@
                     android:padding="1dp"
                     android:text="@string/top_speed_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/top_speed"
@@ -322,8 +322,8 @@
                     android:padding="1dp"
                     android:text="@string/more_speed"
                     android:visibility="gone"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/ic_baseline_expand_more_24" />
+                    app:drawableStartCompat="@drawable/ic_baseline_expand_more_24"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -331,8 +331,8 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:visibility="gone"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/oneKM_top_speedText"
@@ -344,8 +344,8 @@
                     android:padding="1dp"
                     android:text="@string/top_speed_1km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/oneKM_top_speed"
@@ -367,8 +367,8 @@
                     android:padding="1dp"
                     android:text="@string/top_speed_5km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/fiveKM_top_speed"
@@ -390,8 +390,8 @@
                     android:padding="1dp"
                     android:text="@string/top_speed_10km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/tenKM_top_speed"
@@ -413,8 +413,8 @@
                     android:padding="1dp"
                     android:text="@string/top_speed_15km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/fifteenKM_top_speed"
@@ -436,8 +436,8 @@
                     android:padding="1dp"
                     android:text="@string/top_speed_20km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/twentyKM_top_speed"
@@ -458,8 +458,8 @@
                     android:padding="1dp"
                     android:text="@string/top_speed_30km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/thirtyKM_top_speed"
@@ -481,8 +481,8 @@
                     android:padding="1dp"
                     android:text="@string/top_speed_40km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/fourtyKM_top_speed"
@@ -504,8 +504,8 @@
                     android:padding="1dp"
                     android:text="@string/top_speed_50km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/fiftyKM_top_speed"
@@ -527,8 +527,8 @@
                     android:padding="1dp"
                     android:text="@string/top_speed_75km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/seventyfiveKM_top_speed"
@@ -549,8 +549,8 @@
                     android:padding="1dp"
                     android:text="@string/top_speed_100km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:id="@+id/hundretKM_top_speed"
@@ -665,7 +665,96 @@
                         app:layout_constraintHorizontal_bias="0.0"
                         app:singleLine="true" />
                 </HorizontalScrollView>
+            </TableRow>
 
+            <TableRow
+                android:id="@+id/segmentDetails"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <GridLayout
+                    android:id="@+id/gridLayout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_margin="5dp"
+                    android:columnCount="2"
+                    android:rowCount="3"
+
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <TextView
+                        android:id="@+id/segmentName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        app:drawableStartCompat="@drawable/baseline_today_black_24dp"
+                        app:drawableTint="?android:attr/colorControlNormal" />
+
+                    <TextView
+                        android:id="@+id/heightMeterSegment"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        app:drawableStartCompat="@drawable/baseline_trending_up_black_24dp"
+                        app:drawableTint="?android:attr/colorControlNormal" />
+
+                    <TextView
+                        android:id="@+id/kilometersSegment"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        app:drawableStartCompat="@drawable/icons8_map_pinpoint_20"
+                        app:drawableTint="?android:attr/colorControlNormal" />
+
+
+                    <TextView
+                        android:id="@+id/averageHrSegment"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        app:drawableStartCompat="@drawable/ic_baseline_monitor_heart_24"
+                        app:drawableTint="?android:attr/colorControlNormal" />
+
+                    <TextView
+                        android:id="@+id/durationSegment"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        app:drawableStartCompat="@drawable/ic_baseline_timer_24"
+                        app:drawableTint="?android:attr/colorControlNormal" />
+
+                    <TextView
+                        android:id="@+id/averagePowerSegment"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                        app:drawableTint="?android:attr/colorControlNormal" />
+
+                </GridLayout>
             </TableRow>
 
             <TableRow
@@ -710,8 +799,8 @@
                     android:drawablePadding="5dp"
                     android:padding="1dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/baseline_speaker_notes_black_24dp" />
+                    app:drawableStartCompat="@drawable/baseline_speaker_notes_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal" />
             </TableRow>
 
             <GridLayout
@@ -868,8 +957,8 @@
                     android:padding="1dp"
                     android:text="@string/more_power"
                     android:visibility="gone"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:drawableStartCompat="@drawable/ic_baseline_expand_more_24" />
+                    app:drawableStartCompat="@drawable/ic_baseline_expand_more_24"
+                    app:drawableTint="?android:attr/colorControlNormal" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -877,8 +966,8 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:visibility="gone"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:visibility="gone" />
 
 
                 <TextView
@@ -889,8 +978,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_1sec"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power1sec"
@@ -899,8 +987,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power2secText"
@@ -910,8 +997,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_2sec"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power2sec"
@@ -920,8 +1006,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power5secText"
@@ -931,8 +1016,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_5sec"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power5sec"
@@ -941,8 +1025,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power10secText"
@@ -952,8 +1035,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_10sec"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power10sec"
@@ -962,8 +1044,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power20secText"
@@ -973,8 +1054,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_20sec"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power20sec"
@@ -983,8 +1063,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power30secText"
@@ -994,7 +1073,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_30sec"
-                    android:textAppearance="?android:attr/textAppearanceSmall"/>
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power30sec"
@@ -1003,7 +1082,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"/>
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
 
                 <TextView
@@ -1014,7 +1093,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_1min"
-                    android:textAppearance="?android:attr/textAppearanceSmall"/>
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power1min"
@@ -1033,8 +1112,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_2min"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power2min"
@@ -1043,8 +1121,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power5minText"
@@ -1054,8 +1131,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_5min"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power5min"
@@ -1064,8 +1140,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power10minText"
@@ -1075,8 +1150,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_10min"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power10min"
@@ -1085,8 +1159,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power20minText"
@@ -1096,8 +1169,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_20min"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power20min"
@@ -1106,8 +1178,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power30minText"
@@ -1117,8 +1188,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_30min"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power30min"
@@ -1127,8 +1197,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power1hText"
@@ -1138,8 +1207,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_1h"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power1h"
@@ -1148,8 +1216,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power2hText"
@@ -1159,8 +1226,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_2h"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power2h"
@@ -1169,8 +1235,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power5hText"
@@ -1180,8 +1245,7 @@
                     android:layout_marginStart="20dp"
                     android:padding="1dp"
                     android:text="@string/power_5h"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/power5h"
@@ -1190,8 +1254,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    />
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 <TextView
                     android:id="@+id/aerobicTrainingEffectText"

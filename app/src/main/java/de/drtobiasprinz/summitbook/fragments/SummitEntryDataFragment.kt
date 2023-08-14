@@ -806,6 +806,45 @@ class SummitEntryDataFragment : Fragment() {
                                 entry.second.getDisplayName()
                             ), imageId
                         )
+                        chip.setOnClickListener {
+                            if (binding.segmentDetails.visibility == View.GONE) {
+                                binding.segmentDetails.visibility = View.VISIBLE
+                                binding.segmentName.text = entry.second.getDisplayName()
+                                binding.durationSegment.text = String.format(
+                                    resources.configuration.locales[0],
+                                    "%.1f %s",
+                                    entry.first.duration,
+                                    getString(R.string.min)
+                                )
+                                binding.kilometersSegment.text = String.format(
+                                    resources.configuration.locales[0],
+                                    "%.1f %s",
+                                    entry.first.kilometers,
+                                    getString(R.string.km)
+                                )
+                                binding.averageHrSegment.text = String.format(
+                                    resources.configuration.locales[0],
+                                    "%s %s",
+                                    entry.first.averageHeartRate,
+                                    getString(R.string.bpm)
+                                )
+                                binding.averagePowerSegment.text = String.format(
+                                    resources.configuration.locales[0],
+                                    "%s %s",
+                                    entry.first.averagePower,
+                                    getString(R.string.watt)
+                                )
+                                binding.heightMeterSegment.text = String.format(
+                                    resources.configuration.locales[0],
+                                    "%s/%s %s",
+                                    entry.first.heightMetersUp,
+                                    entry.first.heightMetersDown,
+                                    getString(R.string.hm)
+                                )
+                            } else {
+                                binding.segmentDetails.visibility = View.GONE
+                            }
+                        }
 // TODO: implement setOnClickListener
 //                            chip.setOnClickListener {
 //                                val fragment = SegmentEntryDetailsFragment()
