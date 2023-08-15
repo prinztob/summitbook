@@ -3,11 +3,12 @@ package de.drtobiasprinz.summitbook.models
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
 
-enum class LineChartSpinnerEntry(
+enum class OrderBySpinnerEntry(
     val nameId: Int, val unit: Int = R.string.empty, val accumulate: Boolean = false,
-    var includeIndoorActivities: Boolean = false,
+    var includeIndoorActivities: Boolean = false, var excludeFromLineChart: Boolean = false,
     var f: (Summit) -> Float?
 ) {
+    Date(R.string.date, R.string.empty, excludeFromLineChart = true, f = { e -> e.getDateAsFloat() }),
     HeightMeter(R.string.height_meter, R.string.hm, f = { e -> e.elevationData.elevationGain.toFloat() }),
     HeightMeterAccumulated(
         R.string.height_meter_accumulated,

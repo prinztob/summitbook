@@ -11,12 +11,12 @@ import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.LineChartSpinnerEntry
+import de.drtobiasprinz.summitbook.models.OrderBySpinnerEntry
 
 class CustomMarkerView(
     context: Context?,
     layoutResource: Int,
-    private val lineChartSpinnerEntry: LineChartSpinnerEntry
+    private val lineChartSpinnerEntry: OrderBySpinnerEntry
 ) : MarkerView(context, layoutResource) {
 
     private val tvContent: TextView? = findViewById(R.id.tvContent)
@@ -29,7 +29,7 @@ class CustomMarkerView(
         try {
             summit = e?.data as Summit
             val format =
-                if (lineChartSpinnerEntry == LineChartSpinnerEntry.Vo2Max) "%s\n%s\n%.1f %s" else "%s\n%s\n%.0f %s"
+                if (lineChartSpinnerEntry == OrderBySpinnerEntry.Vo2Max) "%s\n%s\n%.1f %s" else "%s\n%s\n%.0f %s"
             tvContent?.text = String.format(
                 format,
                 summit.name,

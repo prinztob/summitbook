@@ -2,7 +2,6 @@
     <string name="app_name">Summit Book</string>
     <string name="required">required</string>
     <string name="optional">optional</string>
-    <string name="user_name">spot@prinz.de</string>
     <string name="nav_summits">Summits</string>
     <string name="nav_statistics">Statistics</string>
     <string name="nav_diagrams">Diagrams</string>
@@ -19,7 +18,6 @@
     <string name="summit_name_compare_hint">Compare with summit</string>
     <string name="height_meter_hint">Elevation gain</string>
     <string name="action_share">share</string>
-    <string name="capricorn_caption">Capricorn in the alps</string>
     <string name="date">Date</string>
     <string name="yearly">Yearly</string>
     <string name="yearly_until_today">Yearly until today</string>

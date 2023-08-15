@@ -31,7 +31,7 @@ class SortFilterValues(
     var hasGpxTrackButtonGroup: HasGpxTrackButtonGroup = HasGpxTrackButtonGroup.Indifferent,
 
     var orderByAscDescButtonGroup: OrderByAscDescButtonGroup = OrderByAscDescButtonGroup.Descending,
-    var orderByValueButtonGroup: OrderByValueButtonGroup = OrderByValueButtonGroup.Date,
+    var orderByValueSpinner: OrderBySpinnerEntry = OrderBySpinnerEntry.Date,
     var years: List<String> = mutableListOf(),
     var searchString: String = ""
 ) {
@@ -56,18 +56,10 @@ class SortFilterValues(
     fun updateCurrentYearSwitch(showOnlyCurrentYear: Boolean) {
         if (showOnlyCurrentYear) {
             Log.i("SortFilterValues", "current_year_switch=true")
-            setSelectedDateSpinnerAndItsDefault(2, 2)
+            setSelectedDateSpinnerAndItsDefault(this, 2, 2)
         } else {
-            setSelectedDateSpinnerAndItsDefault(0, 0)
+            setSelectedDateSpinnerAndItsDefault(this, 0, 0)
         }
-    }
-
-    private fun setSelectedDateSpinnerAndItsDefault(
-        selectedDateSpinner: Int, selectedDateSpinnerDefault: Int
-    ) {
-        this.selectedDateSpinner = selectedDateSpinner
-        this.selectedDateSpinnerDefault = selectedDateSpinnerDefault
-        setDates()
     }
 
     private fun setDates() {
@@ -120,18 +112,26 @@ class SortFilterValues(
                         hasPositionButtonGroup.filter(it)
             }
         }
-        return orderByValueButtonGroup.sort(filteredSummits, orderByAscDescButtonGroup)
+        return sortByAscOrDesc(filteredSummits)
+    }
+
+    private fun sortByAscOrDesc(filteredSummits: List<Summit>): List<Summit> {
+        return if (orderByAscDescButtonGroup == OrderByAscDescButtonGroup.Ascending) {
+            filteredSummits.sortedBy { orderByValueSpinner.f(it) }
+        } else {
+            filteredSummits.sortedByDescending { orderByValueSpinner.f(it) }
+        }
     }
 
     fun applyForBookmarks(summits: List<Summit>): List<Summit> {
         val filteredSummits = summits.filter {
             it.isBookmark
         }
-        return orderByValueButtonGroup.sort(filteredSummits, orderByAscDescButtonGroup)
+        return sortByAscOrDesc(filteredSummits)
     }
 
     fun apply(segments: List<Segment>): List<Segment> {
-        return orderByValueButtonGroup.sortSegments(segments, orderByAscDescButtonGroup)
+        return segments
     }
 
     private fun filterDate(summit: Summit): Boolean {
@@ -162,7 +162,7 @@ class SortFilterValues(
         hasGpxTrackButtonGroup = HasGpxTrackButtonGroup.Indifferent
 
         orderByAscDescButtonGroup = OrderByAscDescButtonGroup.Descending
-        orderByValueButtonGroup = OrderByValueButtonGroup.Date
+        orderByValueSpinner = OrderBySpinnerEntry.Date
     }
 
     companion object {
@@ -170,6 +170,14 @@ class SortFilterValues(
             val calendar: Calendar = GregorianCalendar()
             calendar.time = date
             return calendar[Calendar.YEAR]
+        }
+
+        private fun setSelectedDateSpinnerAndItsDefault(
+            sortFilterValues: SortFilterValues, selectedDateSpinner: Int, selectedDateSpinnerDefault: Int
+        ) {
+            sortFilterValues.selectedDateSpinner = selectedDateSpinner
+            sortFilterValues.selectedDateSpinnerDefault = selectedDateSpinnerDefault
+            sortFilterValues.setDates()
         }
     }
 }

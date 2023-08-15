@@ -62,7 +62,7 @@
             android:inputType="date"
             android:visibility="gone"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_spinner_data"/>
+            app:layout_constraintTop_toBottomOf="@id/layout_spinner_data" />
 
 
         <EditText
@@ -78,8 +78,50 @@
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/date_start"
-            app:layout_constraintTop_toBottomOf="@id/layout_spinner_data"/>
+            app:layout_constraintTop_toBottomOf="@id/layout_spinner_data" />
 
+
+        <LinearLayout
+            android:id="@+id/layout_sort_by"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/date_start">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sort_by" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layout_spinner_sort_by"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:background="?android:colorBackground"
+            android:orientation="horizontal"
+            android:padding="3dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_sort_by">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/set_activity"
+                android:src="@drawable/baseline_trending_up_black_24dp" />
+
+            <Spinner
+                android:id="@+id/spinner_sort_by"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal" />
+
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/layout_spinner_sport_type"
@@ -91,7 +133,7 @@
             android:padding="3dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/date_start">
+            app:layout_constraintTop_toBottomOf="@id/layout_spinner_sort_by">
 
             <ImageView
                 android:layout_width="wrap_content"
@@ -107,6 +149,38 @@
 
         </LinearLayout>
 
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/group_sort_asc_desc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_margin="-15dp"
+            android:elevation="2dp"
+            app:checkedButton="@id/button_ascending"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_spinner_sport_type"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <Button
+                android:id="@+id/button_ascending"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:breakStrategy="balanced"
+                android:text="@string/ascending"
+                android:textSize="11sp" />
+
+            <Button
+                android:id="@+id/button_descending"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/descending"
+                android:textSize="11sp" />
+
+        </com.google.android.material.button.MaterialButtonToggleGroup>
         <!-- PARTICIPANTS START       -->
         <RelativeLayout
             android:id="@+id/layout_participants"
@@ -114,7 +188,7 @@
             android:layout_height="wrap_content"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_spinner_sport_type">
+            app:layout_constraintTop_toBottomOf="@id/group_sort_asc_desc">
 
             <ImageView
                 android:id="@+id/imageParticipants"
@@ -143,129 +217,13 @@
         <!-- PARTICIPANTS END       -->
 
         <LinearLayout
-            android:id="@+id/layout_sort_by"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_participants">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/sort_by" />
-
-        </LinearLayout>
-
-        <com.google.android.material.button.MaterialButtonToggleGroup
-            android:id="@+id/group_sort_asc_desc"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:layout_margin="-15dp"
-            android:elevation="2dp"
-            app:checkedButton="@id/button_ascending"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_sort_by"
-            app:selectionRequired="true"
-            app:singleSelection="true">
-
-            <Button
-                android:id="@+id/button_ascending"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:breakStrategy="balanced"
-                android:text="@string/ascending"
-                android:textSize="11sp" />
-
-            <Button
-                android:id="@+id/button_descending"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/descending"
-                android:textSize="11sp" />
-
-        </com.google.android.material.button.MaterialButtonToggleGroup>
-
-        <com.google.android.material.button.MaterialButtonToggleGroup
-            android:id="@+id/group_sort_by"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:layout_margin="-15dp"
-            android:elevation="2dp"
-            app:checkedButton="@id/button_by_date"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/group_sort_asc_desc"
-            app:selectionRequired="true"
-            app:singleSelection="true">
-
-            <Button
-                android:id="@+id/button_by_date"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:breakStrategy="balanced"
-                android:insetLeft="-15dp"
-                android:insetRight="-15dp"
-                android:text="@string/by_date"
-                android:textSize="11sp" />
-
-            <Button
-                android:id="@+id/button_by_name"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:insetLeft="-15dp"
-                android:insetRight="-15dp"
-                android:text="@string/by_name"
-                android:textSize="11sp" />
-
-            <Button
-                android:id="@+id/button_by_elevation"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:insetLeft="-15dp"
-                android:insetRight="-15dp"
-                android:text="@string/by_elevation"
-                android:textSize="11sp" />
-
-            <Button
-                android:id="@+id/button_by_height_meter"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:insetLeft="-15dp"
-                android:insetRight="-15dp"
-                android:text="@string/by_height_meter"
-                android:textSize="11sp" />
-
-            <Button
-                android:id="@+id/button_by_kilometers"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:insetLeft="-15dp"
-                android:insetRight="-15dp"
-                android:text="@string/by_km"
-                android:textSize="11sp" />
-        </com.google.android.material.button.MaterialButtonToggleGroup>
-
-
-        <LinearLayout
             android:id="@+id/layout_gpx"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/group_sort_by">
+            app:layout_constraintTop_toBottomOf="@id/layout_participants">
 
             <TextView
                 android:layout_width="wrap_content"

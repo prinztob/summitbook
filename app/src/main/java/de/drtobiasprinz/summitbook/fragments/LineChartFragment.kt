@@ -28,7 +28,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentLineChartBinding
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.LineChartSpinnerEntry
+import de.drtobiasprinz.summitbook.models.OrderBySpinnerEntry
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerView
@@ -45,7 +45,7 @@ class LineChartFragment : Fragment() {
     private lateinit var binding: FragmentLineChartBinding
     private val viewModel: DatabaseViewModel by activityViewModels()
 
-    private var lineChartSpinnerEntry: LineChartSpinnerEntry = LineChartSpinnerEntry.HeightMeter
+    private var lineChartSpinnerEntry: OrderBySpinnerEntry = OrderBySpinnerEntry.HeightMeter
     private var lineChartEntries: MutableList<Entry?> = ArrayList()
     private var lineChartColors: List<Int>? = mutableListOf()
 
@@ -114,7 +114,8 @@ class LineChartFragment : Fragment() {
         val yAxisRight = binding.lineChart.axisRight
         setYAxis(yAxisRight)
         binding.lineChart.setTouchEnabled(true)
-        binding.lineChart.marker = CustomMarkerView(requireContext(), R.layout.marker_graph, lineChartSpinnerEntry)
+        binding.lineChart.marker =
+            CustomMarkerView(requireContext(), R.layout.marker_graph, lineChartSpinnerEntry)
         binding.lineChart.invalidate()
     }
 
@@ -163,7 +164,7 @@ class LineChartFragment : Fragment() {
         yAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 val format =
-                    if (lineChartSpinnerEntry == LineChartSpinnerEntry.Vo2Max) "%.1f %s" else "%.0f %s"
+                    if (lineChartSpinnerEntry == OrderBySpinnerEntry.Vo2Max) "%.1f %s" else "%.0f %s"
                 return String.format(
                     requireContext().resources.configuration.locales[0],
                     format,
@@ -241,7 +242,8 @@ class LineChartFragment : Fragment() {
                 i: Int,
                 l: Long
             ) {
-                lineChartSpinnerEntry = LineChartSpinnerEntry.values()[i]
+                lineChartSpinnerEntry =
+                    (OrderBySpinnerEntry.values().filter { !it.excludeFromLineChart })[i]
                 drawLineChart(summits)
             }
 
@@ -253,7 +255,9 @@ class LineChartFragment : Fragment() {
         val dateAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            LineChartSpinnerEntry.values().map { resources.getString(it.nameId) }.toTypedArray()
+            (OrderBySpinnerEntry.values()
+                .filter { !it.excludeFromLineChart }).map { resources.getString(it.nameId) }
+                .toTypedArray()
         )
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerXAxis.adapter = dateAdapter

@@ -90,7 +90,7 @@ class SortAndFilterFragment : DialogFragment() {
                 if (summits != null) {
                     setExtremeValues(summits)
                     updateDateSpinner()
-                    updateSportTypeSpinner()
+                    updateSpinner()
                     addParticipantsFilter(summits)
                     updateButtonGroups()
                     setRangeSliders(summits)
@@ -100,19 +100,6 @@ class SortAndFilterFragment : DialogFragment() {
     }
 
     private fun updateButtonGroups() {
-        binding.groupSortBy.check(
-            sortFilterValues.orderByValueButtonGroup.bindingId(
-                binding
-            )
-        )
-        binding.groupSortBy.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                sortFilterValues.orderByValueButtonGroup =
-                    OrderByValueButtonGroup.values().firstOrNull {
-                        it.bindingId(binding) == checkedId
-                    } ?: OrderByValueButtonGroup.Date
-            }
-        }
         binding.groupSortAscDesc.check(
             sortFilterValues.orderByAscDescButtonGroup.bindingId(
                 binding
@@ -256,7 +243,7 @@ class SortAndFilterFragment : DialogFragment() {
         }
     }
 
-    private fun updateSportTypeSpinner() {
+    private fun updateSpinner() {
         val sportTypes: ArrayList<String> = arrayListOf(requireContext().getString(R.string.all))
         for (value in SportType.values()) {
             sportTypes.add(getString(value.sportNameStringId))
@@ -289,6 +276,31 @@ class SortAndFilterFragment : DialogFragment() {
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
+
+        val dateAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            (OrderBySpinnerEntry.values()
+                .filter { !it.accumulate }).map { resources.getString(it.nameId) }.toTypedArray()
+        )
+        dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerSortBy.adapter = dateAdapter
+        binding.spinnerSortBy.setSelection(
+            (OrderBySpinnerEntry.values().filter { !it.accumulate })
+                .indexOfFirst { it == sortFilterValues.orderByValueSpinner })
+        binding.spinnerSortBy.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                adapterView: AdapterView<*>?,
+                view: View?,
+                i: Int,
+                l: Long
+            ) {
+                sortFilterValues.orderByValueSpinner =
+                    (OrderBySpinnerEntry.values().filter { !it.accumulate })[i]
+            }
+
+            override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+        }
     }
 
     private fun addParticipantsFilter(summits: List<Summit>) {
