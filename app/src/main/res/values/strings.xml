@@ -59,6 +59,7 @@
     <string name="value_with_hm">%1$s hm</string>
     <string name="hm">hm</string>
     <string name="value_with_per_cent">%1$s %%</string>
+    <string name="per_cent">%</string>
     <string name="value_with_kmh">%1$s km/h</string>
     <string name="value_with_m">%1$s m</string>
     <string name="value_with_h">%1$s h</string>
@@ -94,7 +95,7 @@
     <string name="longest_distance">Longest Distance</string>
     <string name="visited_countries">Number of visited Countries</string>
     <string name="height_meter_done">Most height meter done</string>
-    <string name="height_meter">Height meter</string>
+    <string name="elevationGain">Height meter</string>
     <string name="height_meter_accumulated">Height meter accumulated</string>
     <string name="power">Power</string>
     <string name="cadence">Cadence</string>
@@ -104,6 +105,7 @@
     <string name="max_heart_rate">Maximal Heart Rate</string>
     <string name="by_elevation">height</string>
     <string name="sort_by">Sort by</string>
+    <string name="filter_by">Filter by</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="all">All</string>
@@ -299,6 +301,7 @@
     <string name="update_new_summits">Update summits from Garmin</string>
     <string name="merge">Merge</string>
     <string name="rank_in_activity">"Ranked %1$s in activity '%2$s'"</string>
+    <string name="ranked">"Ranked %1$s"</string>
     <string name="ignore">Ignore</string>
     <string name="back">Back</string>
     <string name="revert_ignored_summits">Clean ignored summits</string>

@@ -280,13 +280,13 @@ class SortAndFilterFragment : DialogFragment() {
         val dateAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            (OrderBySpinnerEntry.values()
-                .filter { !it.accumulate }).map { resources.getString(it.nameId) }.toTypedArray()
+            OrderBySpinnerEntry.getSpinnerEntriesWithoutAccumulated()
+                .map { resources.getString(it.nameId) }.toTypedArray()
         )
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerSortBy.adapter = dateAdapter
         binding.spinnerSortBy.setSelection(
-            (OrderBySpinnerEntry.values().filter { !it.accumulate })
+            OrderBySpinnerEntry.getSpinnerEntriesWithoutAccumulated()
                 .indexOfFirst { it == sortFilterValues.orderByValueSpinner })
         binding.spinnerSortBy.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
@@ -296,7 +296,7 @@ class SortAndFilterFragment : DialogFragment() {
                 l: Long
             ) {
                 sortFilterValues.orderByValueSpinner =
-                    (OrderBySpinnerEntry.values().filter { !it.accumulate })[i]
+                    OrderBySpinnerEntry.getSpinnerEntriesWithoutAccumulated()[i]
             }
 
             override fun onNothingSelected(adapterView: AdapterView<*>?) {}

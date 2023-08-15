@@ -243,7 +243,7 @@ class LineChartFragment : Fragment() {
                 l: Long
             ) {
                 lineChartSpinnerEntry =
-                    (OrderBySpinnerEntry.values().filter { !it.excludeFromLineChart })[i]
+                    OrderBySpinnerEntry.getSpinnerEntriesWithoutExcludedFromLineChart()[i]
                 drawLineChart(summits)
             }
 
@@ -255,8 +255,8 @@ class LineChartFragment : Fragment() {
         val dateAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            (OrderBySpinnerEntry.values()
-                .filter { !it.excludeFromLineChart }).map { resources.getString(it.nameId) }
+            OrderBySpinnerEntry.getSpinnerEntriesWithoutExcludedFromLineChart()
+                .map { resources.getString(it.nameId) }
                 .toTypedArray()
         )
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)

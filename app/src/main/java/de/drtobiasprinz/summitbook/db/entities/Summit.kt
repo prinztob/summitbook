@@ -650,7 +650,7 @@ class Summit(
                     "${resources.getString(R.string.place_hint)}; " +
                     "${resources.getString(R.string.country_hint)}; " +
                     "${resources.getString(R.string.comment_hint)}; " +
-                    "${resources.getString(R.string.height_meter)}; " +
+                    "${resources.getString(R.string.elevationGain)}; " +
                     "${resources.getString(R.string.kilometers_hint)} (${resources.getString(R.string.km)}); " +
                     "${resources.getString(R.string.pace_hint)} (${resources.getString(R.string.kmh)}); " +
                     "${resources.getString(R.string.top_speed)} (${resources.getString(R.string.kmh)}); " +

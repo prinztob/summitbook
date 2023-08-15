@@ -123,32 +123,6 @@
 
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/layout_spinner_sport_type"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="0"
-            android:background="?android:colorBackground"
-            android:orientation="horizontal"
-            android:padding="3dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_spinner_sort_by">
-
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@string/set_activity"
-                android:src="@drawable/baseline_directions_walk_black_24dp" />
-
-            <Spinner
-                android:id="@+id/spinner_sports_type"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal" />
-
-        </LinearLayout>
-
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/group_sort_asc_desc"
             android:layout_width="match_parent"
@@ -159,7 +133,7 @@
             app:checkedButton="@id/button_ascending"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_spinner_sport_type"
+            app:layout_constraintTop_toBottomOf="@id/layout_spinner_sort_by"
             app:selectionRequired="true"
             app:singleSelection="true">
 
@@ -181,6 +155,50 @@
                 android:textSize="11sp" />
 
         </com.google.android.material.button.MaterialButtonToggleGroup>
+
+
+        <LinearLayout
+            android:id="@+id/layout_filter_by"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/group_sort_asc_desc">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filter_by" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layout_spinner_sport_type"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:background="?android:colorBackground"
+            android:orientation="horizontal"
+            android:padding="3dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_filter_by">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/set_activity"
+                android:src="@drawable/baseline_directions_walk_black_24dp" />
+
+            <Spinner
+                android:id="@+id/spinner_sports_type"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal" />
+
+        </LinearLayout>
+
         <!-- PARTICIPANTS START       -->
         <RelativeLayout
             android:id="@+id/layout_participants"
@@ -188,7 +206,7 @@
             android:layout_height="wrap_content"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/group_sort_asc_desc">
+            app:layout_constraintTop_toBottomOf="@id/layout_spinner_sport_type">
 
             <ImageView
                 android:id="@+id/imageParticipants"

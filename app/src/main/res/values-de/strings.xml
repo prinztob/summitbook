@@ -60,6 +60,7 @@
     <string name="hm">hm</string>
     <string name="value_with_hm">%1$s hm</string>
     <string name="value_with_per_cent">%1$s %%</string>
+    <string name="per_cent">%</string>
     <string name="value_with_kmh">%1$s km/h</string>
     <string name="value_with_m">%1$s m</string>
     <string name="value_with_h">%1$s Std.</string>
@@ -93,7 +94,7 @@
     <string name="top_speed">Höchstgeschw.</string>
     <string name="highest_average_speed">Höchste Durschnittsgeschw.</string>
     <string name="longest_distance">Längste Strecke</string>
-    <string name="height_meter">Höhenmeter</string>
+    <string name="elevationGain">Höhenmeter</string>
     <string name="height_meter_accumulated">Höhenmeter aufsummiert</string>
     <string name="power">Leistung</string>
     <string name="cadence">Kadenz</string>
@@ -103,7 +104,8 @@
     <string name="max_heart_rate">Maximale Herzfrequenz</string>
     <string name="height_meter_done">Meisten Höhenmeter</string>
     <string name="by_elevation">Höhe</string>
-    <string name="sort_by">Sortierung</string>
+    <string name="sort_by">Sortieren nach</string>
+    <string name="filter_by">Filtern nach</string>
     <string name="yes">Ja</string>
     <string name="no">Nein</string>
     <string name="all">Alle</string>
@@ -299,7 +301,8 @@
     <string name="show_new_summits">Zeige neue Gipfel von Garmin</string>
     <string name="update_new_summits">Aktualisiere Gipfel von Garmin</string>
     <string name="merge">Merge</string>
-    <string name="rank_in_activity">"Plazierung %1$s in Aktivität '%2$s'"</string>
+    <string name="rank_in_activity">"%1$s. Platz in Aktivität '%2$s'"</string>
+    <string name="ranked">"Platz %1$s"</string>
     <string name="ignore">Ignorieren</string>
     <string name="back">Zurück</string>
     <string name="revert_ignored_summits">Lösche ignorierte Gipfel</string>

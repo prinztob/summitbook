@@ -270,6 +270,8 @@ class SummitEntryPowerFragment : Fragment() {
                 if (chartEntry != null && maxEntry != null && minEntry != null) {
                     if (chartEntry.y >= maxEntry.y) {
                         Color.rgb(255, 215, 0)
+                    } else if (chartEntry.y < minEntry.y) {
+                        Color.RED
                     } else {
                         ColorUtils.blendARGB(
                             Color.GREEN,
