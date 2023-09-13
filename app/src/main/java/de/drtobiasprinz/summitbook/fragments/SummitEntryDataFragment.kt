@@ -43,6 +43,9 @@ class SummitEntryDataFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentSummitEntryDataBinding.inflate(layoutInflater, container, false)
+        binding.table.visibility = View.GONE
+        binding.loadingPanel.visibility = View.VISIBLE
+
         numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
         pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
             it.data.let { summitToView ->
@@ -55,6 +58,9 @@ class SummitEntryDataFragment : Fragment() {
                         summitsListData.data.let { summits ->
                             if (summits != null) {
                                 pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { summitToCompare ->
+                                    binding.table.visibility = View.VISIBLE
+                                    binding.loadingPanel.visibility = View.GONE
+
                                     val extrema = ExtremaValuesSummits(summits)
                                     if (summitToView.isBookmark) {
                                         binding.summitNameToCompare.visibility = View.GONE

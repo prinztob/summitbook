@@ -5,7 +5,11 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
-import android.view.*
+import android.view.InputDevice
+import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
@@ -15,9 +19,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentOpenStreetMapBinding
-import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
@@ -36,7 +40,6 @@ import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
-import java.util.*
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -54,6 +57,8 @@ class OpenStreetMapFragment : Fragment() {
     private var mMarkersShown: MutableList<Marker?> = ArrayList()
     private var gotoLocationDialog: AlertDialog? = null
     private var maxPointsToShow: Int = 10000
+
+    private lateinit var mLocationOverlay: MyLocationNewOverlay
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -99,7 +104,7 @@ class OpenStreetMapFragment : Fragment() {
                     setTileSource(selectedItem, binding.osmap)
                     addOverlays(filteredSummits)
                     val context: Context? = this@OpenStreetMapFragment.activity
-                    val mLocationOverlay =
+                    mLocationOverlay =
                         MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
                     mLocationOverlay.enableMyLocation()
                     binding.osmap.overlays.add(mLocationOverlay)
@@ -133,6 +138,14 @@ class OpenStreetMapFragment : Fragment() {
 
         binding.showAllTracks.setOnClickListener {
             showAllTracksOfSummitInBoundingBox()
+        }
+
+        binding.centerOnLocation.setOnClickListener {
+            if (mLocationOverlay.isMyLocationEnabled) {
+                val mapController = binding.osmap.controller
+                mapController.setZoom(10.0)
+                mapController.setCenter(mLocationOverlay.myLocation)
+            }
         }
 
         binding.osmap.setOnGenericMotionListener { _: View?, event: MotionEvent ->

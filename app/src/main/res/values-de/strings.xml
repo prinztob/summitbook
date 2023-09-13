@@ -414,5 +414,6 @@
     <string name="title">Title</string>
     <string name="description">Description</string>
     <string name="summits_for_segments_not_found">Es wurde keine Aktivität für Segment gefunden.</string>
+    <string name="center_on_current_location">Zentriere auf aktuelle Position</string>
 
 </resources>

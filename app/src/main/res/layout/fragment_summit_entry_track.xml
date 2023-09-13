@@ -70,6 +70,16 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/summit_name_to_compare" />
 
+            <ProgressBar
+                android:id="@+id/loadingPanel"
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:gravity="center"
+                android:indeterminate="true"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/show_all_tracks" />
+
+
             <ImageButton
                 android:id="@+id/show_all_tracks"
                 android:layout_width="wrap_content"
@@ -106,13 +116,24 @@
                 app:layout_constraintStart_toEndOf="@+id/gps_share"
                 app:layout_constraintTop_toTopOf="@+id/osmap" />
 
+
+            <ImageButton
+                android:id="@+id/centerOnLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignTop="@id/osmap"
+                android:contentDescription="@string/center_on_current_location"
+                android:src="@drawable/baseline_center_focus_strong_24"
+                app:layout_constraintStart_toEndOf="@+id/gps_open_with"
+                app:layout_constraintTop_toTopOf="@+id/osmap" />
+
             <ImageButton
                 android:id="@+id/customize_track"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/customize_track_color"
                 android:src="@drawable/baseline_color_lens_black_24dp"
-                app:layout_constraintStart_toEndOf="@+id/gps_open_with"
+                app:layout_constraintStart_toEndOf="@+id/centerOnLocation"
                 app:layout_constraintTop_toTopOf="@+id/osmap" />
 
             <TextView

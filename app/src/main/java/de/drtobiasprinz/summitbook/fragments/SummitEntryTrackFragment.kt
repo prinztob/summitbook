@@ -48,6 +48,8 @@ import kotlinx.coroutines.withContext
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.IOException
 import kotlin.math.roundToLong
 
@@ -63,6 +65,7 @@ class SummitEntryTrackFragment : Fragment() {
     private var gpsTrack: GpsTrack? = null
     private var usedItemsForColorCode: List<TrackColor> = emptyList()
     private var summitsToCompare: List<Summit> = emptyList()
+    private lateinit var mLocationOverlay: MyLocationNewOverlay
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,6 +77,12 @@ class SummitEntryTrackFragment : Fragment() {
     ): View {
         binding = FragmentSummitEntryTrackBinding.inflate(layoutInflater, container, false)
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
+        mLocationOverlay =
+            MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
+        mLocationOverlay.enableMyLocation()
+        binding.osmap.overlays.add(mLocationOverlay)
+        binding.loadingPanel.visibility = View.VISIBLE
+        binding.lineChart.visibility = View.GONE
         pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
             it.data.let { summitToView ->
 
@@ -101,6 +110,8 @@ class SummitEntryTrackFragment : Fragment() {
                                         withContext(Dispatchers.Default) {
                                             setGpsTrack(summitToView)
                                         }
+                                        binding.loadingPanel.visibility = View.GONE
+                                        binding.lineChart.visibility = View.VISIBLE
 //TODO remove after all segments are fixed
                                         updateActivityIdInSegment(summitToView)
                                         drawChart(summitToView)
@@ -121,6 +132,14 @@ class SummitEntryTrackFragment : Fragment() {
                                                 summits,
                                                 numberOfPointsToShow
                                             )
+                                        }
+                                    }
+
+                                    binding.centerOnLocation.setOnClickListener {
+                                        if (mLocationOverlay.isMyLocationEnabled) {
+                                            val mapController = binding.osmap.controller
+                                            mapController.setZoom(15.0)
+                                            mapController.setCenter(mLocationOverlay.myLocation)
                                         }
                                     }
                                 }
@@ -166,6 +185,7 @@ class SummitEntryTrackFragment : Fragment() {
     ) {
         binding.osmap.overlays?.clear()
         binding.osmap.overlayManager?.clear()
+        binding.osmap.overlays.add(mLocationOverlay)
         setUsedItemsForColorCode(true)
         setOpenStreetMap(summitToView, summitToCompare, summits)
         OpenStreetMapUtils.setOsmConfForTiles()
@@ -176,13 +196,14 @@ class SummitEntryTrackFragment : Fragment() {
             if (summitToView.hasGpsTrack()) {
                 try {
                     val uri =
-                        summitToView.copyGpsTrackToTempFile(requireActivity().externalCacheDir)?.let {
-                            FileProvider.getUriForFile(
-                                requireContext(),
-                                BuildConfig.APPLICATION_ID + ".provider",
-                                it
-                            )
-                        }
+                        summitToView.copyGpsTrackToTempFile(requireActivity().externalCacheDir)
+                            ?.let {
+                                FileProvider.getUriForFile(
+                                    requireContext(),
+                                    BuildConfig.APPLICATION_ID + ".provider",
+                                    it
+                                )
+                            }
                     val intent = Intent(Intent.ACTION_VIEW)
                     intent.setDataAndType(uri, "application/gpx")
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -205,13 +226,14 @@ class SummitEntryTrackFragment : Fragment() {
             if (summitToView.hasGpsTrack()) {
                 try {
                     val uri =
-                        summitToView.copyGpsTrackToTempFile(requireActivity().externalCacheDir)?.let {
-                            FileProvider.getUriForFile(
-                                requireContext(),
-                                BuildConfig.APPLICATION_ID + ".provider",
-                                it
-                            )
-                        }
+                        summitToView.copyGpsTrackToTempFile(requireActivity().externalCacheDir)
+                            ?.let {
+                                FileProvider.getUriForFile(
+                                    requireContext(),
+                                    BuildConfig.APPLICATION_ID + ".provider",
+                                    it
+                                )
+                            }
                     val intentShareFile = Intent(Intent.ACTION_SEND)
                     intentShareFile.type = "application/pdf"
                     intentShareFile.putExtra(Intent.EXTRA_STREAM, uri)
