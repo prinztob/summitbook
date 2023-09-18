@@ -24,14 +24,23 @@
         app:layout_constraintStart_toEndOf="@+id/imageView"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <ImageView
+        android:id="@+id/calender"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:contentDescription="@string/choose_data_source"
+        android:src="@drawable/baseline_today_black_24dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/imageView" />
+
     <Spinner
         android:id="@+id/barChartSpinnerMonth"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="5"
         android:visibility="gone"
-        app:layout_constraintStart_toStartOf="@+id/barChartSpinnerXAxis"
-        app:layout_constraintEnd_toEndOf="@+id/barChartSpinnerXAxis"
+        app:layout_constraintStart_toEndOf="@+id/calender"
         app:layout_constraintTop_toBottomOf="@+id/barChartSpinnerXAxis" />
 
     <TextView

@@ -262,19 +262,20 @@ class BarChartFragment : Fragment() {
                 BarChartXAxisSelector.DateByWeek -> {
                     annualTarget /= 52f
                 }
-
+                BarChartXAxisSelector.DateByYear -> {
+                    if (selectedXAxisSpinnerMonth != 0) {
+                        annualTarget /= 12f
+                    }
+                }
                 BarChartXAxisSelector.DateByMonth -> {
                     annualTarget /= 12f
                 }
-
                 BarChartXAxisSelector.DateByQuarter -> {
                     annualTarget /= 4f
                 }
-
                 else -> {
                     // DO NOTHING
                 }
-
             }
             val line1 = LimitLine(annualTarget)
             binding.barChart.axisLeft?.addLimitLine(line1)
@@ -331,7 +332,8 @@ class BarChartFragment : Fragment() {
                     yValuesForecast = ranges.filterIsInstance<ClosedRange<Date>>().map { range ->
                         forecasts.sumOf { forecast ->
                             val date = forecast.getDate()
-                            if (date != null && date in range) {
+                            val shouldAddThisMonth = selectedXAxisSpinnerEntry != BarChartXAxisSelector.DateByYear || selectedXAxisSpinnerMonth == 0 || selectedXAxisSpinnerMonth == forecast.month
+                            if (date != null && date in range && shouldAddThisMonth) {
                                 selectedYAxisSpinnerEntry.getForecastValue(forecast).toInt()
                             } else {
                                 0
@@ -387,8 +389,10 @@ class BarChartFragment : Fragment() {
                 selectedXAxisSpinnerEntry = BarChartXAxisSelector.values()[i]
                 if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByYear) {
                     binding.barChartSpinnerMonth.visibility = View.VISIBLE
+                    binding.calender.visibility = View.VISIBLE
                 } else {
                     binding.barChartSpinnerMonth.visibility = View.GONE
+                    binding.calender.visibility = View.GONE
                 }
                 selectedDataSpinner(summits)
                 drawChart()
