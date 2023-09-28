@@ -557,11 +557,11 @@ class LineChartDailyReportData : Fragment() {
                 relevantData.flatMap { it.events },
                 true,
                 relevantData.sumOf { it.totalIntensityMinutes },
-                relevantData.sumOf { it.restingHeartRate } / relevantData.size,
-                relevantData.minOf { it.minHeartRate },
-                relevantData.maxOf { it.maxHeartRate },
-                relevantData.sumOf { it.heartRateVariability } / relevantData.size,
-                relevantData.sumOf { it.sleepHours } / relevantData.size,
+                if (relevantData.isNotEmpty()) relevantData.sumOf { it.restingHeartRate } / relevantData.size else 0,
+                relevantData.minOfOrNull { it.minHeartRate } ?: 0,
+                relevantData.maxOfOrNull { it.maxHeartRate } ?: 0,
+                if (relevantData.isNotEmpty()) relevantData.sumOf { it.heartRateVariability } / relevantData.size else 0,
+                if (relevantData.isNotEmpty()) relevantData.sumOf { it.sleepHours } / relevantData.size else 0.0,
             )
         }
     }
