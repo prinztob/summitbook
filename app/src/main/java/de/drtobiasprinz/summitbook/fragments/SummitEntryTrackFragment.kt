@@ -39,7 +39,6 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.TrackColor
-import de.drtobiasprinz.summitbook.ui.observeOnce
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import kotlinx.coroutines.Dispatchers
@@ -108,12 +107,17 @@ class SummitEntryTrackFragment : Fragment() {
                                     binding.osmap.overlays.clear()
                                     lifecycleScope.launch {
                                         withContext(Dispatchers.Default) {
-                                            setGpsTrack(summitToView)
+                                            setGpsTrack(summitToView, useSimplifiedTrack = true)
                                         }
                                         binding.loadingPanel.visibility = View.GONE
                                         binding.lineChart.visibility = View.VISIBLE
-//TODO remove after all segments are fixed
-                                        updateActivityIdInSegment(summitToView)
+                                        drawChart(summitToView)
+                                        updateMap(summitToView, summitToCompare, allSummits)
+                                    }
+                                    lifecycleScope.launch {
+                                        withContext(Dispatchers.Default) {
+                                            setGpsTrack(summitToView, forceUpdate = true)
+                                        }
                                         drawChart(summitToView)
                                         updateMap(summitToView, summitToCompare, allSummits)
                                         setButtons(summitToView)
@@ -150,32 +154,6 @@ class SummitEntryTrackFragment : Fragment() {
             }
         }
         return binding.root
-    }
-
-    private fun updateActivityIdInSegment(summitToView: Summit) {
-        pageViewModel?.segmentsList?.observeOnce(viewLifecycleOwner) { segmentData ->
-            segmentData.data.let { segments ->
-                segments?.forEach { segment ->
-                    segment.segmentEntries.forEach { entry ->
-                        if (entry.endPositionInTrack < (gpsTrack?.trackPoints?.size ?: 0) &&
-                            gpsTrack?.trackPoints?.get(entry.startPositionInTrack)?.lat == entry.startPositionLatitude &&
-                            gpsTrack?.trackPoints?.get(entry.startPositionInTrack)?.lon == entry.startPositionLongitude &&
-                            gpsTrack?.trackPoints?.get(entry.endPositionInTrack)?.lat == entry.endPositionLatitude &&
-                            gpsTrack?.trackPoints?.get(entry.endPositionInTrack)?.lon == entry.endPositionLongitude &&
-                            entry.activityId != summitToView.activityId
-                        ) {
-                            Toast.makeText(
-                                context,
-                                getString(R.string.update),
-                                Toast.LENGTH_LONG
-                            ).show()
-                            entry.activityId = summitToView.activityId
-                            pageViewModel?.saveSegmentEntry(true, entry)
-                        }
-                    }
-                }
-            }
-        }
     }
 
     private fun updateMap(
@@ -319,19 +297,19 @@ class SummitEntryTrackFragment : Fragment() {
         return suggestions
     }
 
-    private fun setGpsTrack(localSummit: Summit) {
-        if (localSummit.hasGpsTrack()) {
-            localSummit.setGpsTrack(useSimplifiedTrack = false)
+    private fun setGpsTrack(localSummit: Summit, useSimplifiedTrack: Boolean = false, forceUpdate: Boolean = false) {
+        if (localSummit.hasGpsTrack(useSimplifiedTrack)) {
+            localSummit.setGpsTrack(useSimplifiedTrack = useSimplifiedTrack)
             gpsTrack = localSummit.gpsTrack
-            if (gpsTrack?.hasNoTrackPoints() == true) {
-                gpsTrack?.parseTrack(useSimplifiedIfExists = false)
+            if (gpsTrack?.hasNoTrackPoints() == true || forceUpdate) {
+                gpsTrack?.parseTrack(useSimplifiedIfExists = useSimplifiedTrack)
             }
             val localGpsTrack = gpsTrack
             if (localGpsTrack?.trackPoints?.isNotEmpty() == true && trackSlopeGraph.isEmpty()) {
                 trackSlopeGraph = localGpsTrack.getTrackSlopeGraph()
             }
             if (localGpsTrack?.trackPoints?.isEmpty() == true) {
-                localSummit.getGpsTrackPath()
+                localSummit.getGpsTrackPath(useSimplifiedTrack)
             }
         }
     }
