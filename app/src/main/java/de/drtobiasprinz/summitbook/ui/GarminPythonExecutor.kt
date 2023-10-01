@@ -25,13 +25,16 @@ class GarminPythonExecutor(
     private var client: PyObject? = null
 
     private fun login() {
+        val storage = MainActivity.storage
         if (client == null) {
             if (Python.isStarted()) {
                 pythonModule = pythonInstance?.getModule("entry_point")
                 Log.i("GarminPythonExecutor", "do login")
-                val result = pythonModule?.callAttr("get_authenticated_client", username, password)
-                checkOutput(result)
-                client = result
+                if (storage != null) {
+                    val result = pythonModule?.callAttr("init_api", username, password, storage.absolutePath)
+                    checkOutput(result)
+                    client = result
+                }
             }
         }
     }
