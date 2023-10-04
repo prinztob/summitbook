@@ -213,9 +213,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 downloader.downloadTracks()
+                downloader.extractFinalSummit()
+                downloader.composeFinalTrack()
             }
-            downloader.extractFinalSummit()
-            downloader.composeFinalTrack()
             downloader.updateFinalEntry(viewModel)
             binding.loading.visibility = View.GONE
             binding.loading.tooltipText = ""

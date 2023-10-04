@@ -543,6 +543,8 @@ class SummitEntryTrackFragment : Fragment() {
         }
         if (setDefault && TrackColor.Elevation !in usedItemsForColorCode) {
             selectedCustomizeTrackItem = TrackColor.None
+        } else if (TrackColor.Elevation in usedItemsForColorCode) {
+            selectedCustomizeTrackItem = TrackColor.Elevation
         }
     }
 

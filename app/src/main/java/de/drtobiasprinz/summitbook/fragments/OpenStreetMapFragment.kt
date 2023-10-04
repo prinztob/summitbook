@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.BuildConfig
@@ -30,6 +31,9 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.bonuspack.utils.BonusPackHelper
 import org.osmdroid.config.Configuration
@@ -184,9 +188,16 @@ class OpenStreetMapFragment : Fragment() {
                 val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
                 if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
                     if (pointsShown < maxPointsToShow) {
-                        infoWindow.updateGpxTrack(forceShow = true)
-                        pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0
-                        mMarkersShown.add(it)
+                        if (infoWindow.entry.hasGpsTrack()) {
+                            lifecycleScope.launch {
+                                withContext(Dispatchers.Default) {
+                                    infoWindow.entry.setGpsTrack()
+                                }
+                                infoWindow.updateGpxTrack(forceShow = true)
+                            }
+                            pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0
+                            mMarkersShown.add(it)
+                        }
                     }
                 }
             }

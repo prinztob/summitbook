@@ -9,12 +9,22 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
-import android.text.*
+import android.text.Editable
+import android.text.InputFilter
+import android.text.InputType
+import android.text.TextUtils
+import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
+import android.widget.DatePicker
+import android.widget.EditText
+import android.widget.ProgressBar
+import android.widget.RelativeLayout
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -33,8 +43,13 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.DialogAddSummitBinding
-import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.db.entities.ElevationData
+import de.drtobiasprinz.summitbook.db.entities.GarminData
+import de.drtobiasprinz.summitbook.db.entities.PowerData
+import de.drtobiasprinz.summitbook.db.entities.SportType
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.CONNECTED_ACTIVITY_PREFIX
+import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
@@ -63,7 +78,9 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.round
@@ -172,7 +189,8 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 parseSummit(sportType)
 
                 val latlngHighestPointLocal = latlngHighestPoint
-                if (entity.latLng == null && latlngHighestPointLocal != null) {
+                if (entity.latLng == null && latlngHighestPointLocal != null &&
+                    latlngHighestPointLocal.lat != 0.0 && latlngHighestPointLocal.lon != 0.0) {
                     entity.latLng = latlngHighestPointLocal
                 }
                 entity.hasTrack = true
@@ -405,27 +423,35 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     selectedEntries.add(entries[i])
                 }
             }
+
             val downloader = GarminTrackAndDataDownloader(selectedEntries, pythonExecutor, useTcx)
-            downloader.downloadTracks(true)
-            downloader.extractFinalSummit()
-            val entry = downloader.finalEntry
-            if (entry != null) {
-                entry.activityId = entity.activityId
-                entry.id = entity.id
-                entry.imageIds = entity.imageIds
-                entry.velocityData = entity.velocityData
-                entity = entry
-                temporaryGpxFile = getTempGpsFilePath(entry.date).toFile()
-                downloader.composeFinalTrack(temporaryGpxFile)
-                latlngHighestPoint = entry.latLng
-                updateDialogFields(!isEdit)
-                Toast.makeText(
-                    context,
-                    context?.getString(R.string.garmin_add_successful, entry.name),
-                    Toast.LENGTH_LONG
-                ).show()
+            lifecycleScope.launch {
+                withContext(Dispatchers.Default) {
+                    downloader.downloadTracks(true)
+                    downloader.extractFinalSummit()
+                    val entry = downloader.finalEntry
+                    if (entry != null) {
+                        entry.activityId = entity.activityId
+                        entry.id = entity.id
+                        entry.imageIds = entity.imageIds
+                        entry.velocityData = entity.velocityData
+                        entity = entry
+                        temporaryGpxFile = getTempGpsFilePath(entry.date).toFile()
+                        downloader.composeFinalTrack(temporaryGpxFile)
+                    }
+                }
+                val entry = downloader.finalEntry
+                if (entry != null) {
+                    latlngHighestPoint = entry.latLng
+                    updateDialogFields(!isEdit)
+                    Toast.makeText(
+                        context,
+                        context?.getString(R.string.garmin_add_successful, entry.name),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                progressBar.visibility = View.GONE
             }
-            progressBar.visibility = View.GONE
         }.setNegativeButton(R.string.cancelButtonText) { _: DialogInterface?, _: Int ->
             Toast.makeText(
                 context, context?.getString(R.string.garmin_add_cancel), Toast.LENGTH_SHORT
@@ -829,14 +855,14 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     downloader.downloadTracks()
-                }
-                val activityId = downloader.finalEntry?.garminData?.activityId
-                if (activityId != null) {
-                    downloader.composeFinalTrack(
-                        GarminTrackAndDataDownloader.getTempGpsFilePath(
-                            activityId
-                        ).toFile()
-                    )
+                    val activityId = downloader.finalEntry?.garminData?.activityId
+                    if (activityId != null) {
+                        downloader.composeFinalTrack(
+                            GarminTrackAndDataDownloader.getTempGpsFilePath(
+                                activityId
+                            ).toFile()
+                        )
+                    }
                 }
                 if (index != -1) {
                     listItemsGpsDownloadSuccessful?.set(

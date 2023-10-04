@@ -61,8 +61,9 @@ class GarminTrackAndDataDownloader(var entries: List<Summit>, private val garmin
             if (finalEntryLocal.latLng == null || finalEntryLocal.latLng?.lat == 0.0) {
                 val points = tracks.map { it.segments.toList().blockingGet() }.flatten().map { it.points.toList().blockingGet() }.flatten()
                 if (points.isNotEmpty()) {
-                    var highestTrackPoint = points.first()
-                    for (point in points) {
+                    val notZeroLatLonPoints = points.filter { it.lat != 0.0 && it.lon != 0.0 }
+                    var highestTrackPoint = notZeroLatLonPoints.first()
+                    for (point in notZeroLatLonPoints) {
                         if ((point.ele ?: 0.0) > (highestTrackPoint.ele ?: 0.0)) {
                             highestTrackPoint = point
                         }
