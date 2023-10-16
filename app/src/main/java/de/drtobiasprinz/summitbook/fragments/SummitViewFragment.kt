@@ -29,6 +29,7 @@ import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.observeOnce
+import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.utils.DataStatus
@@ -142,14 +143,32 @@ class SummitViewFragment : Fragment() {
                                 )
                                 it.data.let { segments ->
                                     if (segments != null) {
-                                        data.forEach {summit ->
-                                             summit.updateSegmentInfo(segments)
+                                        data.forEach { summit ->
+                                            summit.updateSegmentInfo(segments)
                                         }
+                                    }
+                                }
+                                val maxSummits = TimeIntervalPower.values().map {
+                                    it.getMaxSummit(
+                                        ExtremaValuesSummits(
+                                            data,
+                                            excludeZeroValueFromMin = true
+                                        )
+                                    )
+                                }
+                                data.forEach {
+                                    it.hasPowerRecord = it in maxSummits
+                                    if (it.segmentInfo.isNotEmpty()) {
+                                        it.bestPositionInSegment = it.segmentInfo.minOf { it.third }
                                     }
                                 }
                                 summitsAdapter.differ.submitList(data)
                                 if (!startedScheduler) {
-                                    dataStatus.data?.let { summitsListData -> addBackgroundTasks(summitsListData) }
+                                    dataStatus.data?.let { summitsListData ->
+                                        addBackgroundTasks(
+                                            summitsListData
+                                        )
+                                    }
                                     startedScheduler = true
                                 }
                             }
@@ -163,7 +182,6 @@ class SummitViewFragment : Fragment() {
                     }
                 }
             }
-
 
 
             val swipeCallback = object :

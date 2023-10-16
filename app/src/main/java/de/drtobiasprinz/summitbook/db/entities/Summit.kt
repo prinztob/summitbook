@@ -68,6 +68,12 @@ class Summit(
     @Ignore
     var segmentInfo: List<Triple<SegmentEntry, SegmentDetails, Int>> = mutableListOf()
 
+    @Ignore
+    var hasPowerRecord: Boolean = false
+
+    @Ignore
+    var bestPositionInSegment: Int = -1
+
     private fun getWellDefinedDuration(): Double {
         val dur = if (velocityData.avgVelocity > 0) kilometers / velocityData.avgVelocity else 0.0
         return if (dur < 24) {

@@ -25,12 +25,9 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.CardSummitBinding
-import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.fragments.TimeIntervalPower
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
-import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.utils.Constants
 import javax.inject.Singleton
 
@@ -44,7 +41,6 @@ class SummitsAdapter :
     var onClickUpdateIsPeak: (Summit) -> Unit = { }
     var onClickDelete: (Summit) -> Unit = { }
     var isBookmark: Boolean = false
-    var segments: List<Segment> = emptyList()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         context = parent.context
@@ -270,12 +266,9 @@ class SummitsAdapter :
     }
 
     private fun setRecords(entity: Summit, segmentRecord: ImageView, powerRecord: ImageView) {
-        if (entity.segmentInfo.isNotEmpty()) {
-            val placement = entity.segmentInfo.minOf { it.third }
-            if (placement in 1..3) {
-                segmentRecord.visibility = View.VISIBLE
-            }
-            when (placement) {
+        if (entity.bestPositionInSegment in 1..3) {
+            segmentRecord.visibility = View.VISIBLE
+            when (entity.bestPositionInSegment) {
                 1 -> segmentRecord.setColorFilter(Color.rgb(255, 215, 0))
                 2 -> segmentRecord.setColorFilter(Color.rgb(192, 192, 192))
                 3 -> segmentRecord.setColorFilter(Color.rgb(168, 112, 0))
@@ -284,14 +277,7 @@ class SummitsAdapter :
         } else {
             segmentRecord.visibility = View.GONE
         }
-        if (TimeIntervalPower.values().map {
-                it.getMaxSummit(
-                    ExtremaValuesSummits(
-                        differ.currentList,
-                        excludeZeroValueFromMin = true
-                    )
-                ) == entity
-            }.contains(true)) {
+        if (entity.hasPowerRecord) {
             powerRecord.visibility = View.VISIBLE
             powerRecord.setColorFilter(Color.rgb(255, 215, 0))
         } else {

@@ -167,12 +167,12 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                 TableEntry(
                     getString(R.string.height_meter_hint),
                     elevationGain.toDouble(),
-                    "hm",
+                    getString(R.string.hm),
                     summit.elevationData.elevationGain == elevationGain,
                     { e ->
                         summit.elevationData.elevationGain = e.toInt()
                     },
-                    summit.elevationData.elevationGain.toDouble()
+                    summit.elevationData.elevationGain.toDouble(), isInt = true
                 )
             )
         }
@@ -184,12 +184,12 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                 TableEntry(
                     getString(R.string.top_elevation_hint),
                     maxElevation.toDouble(),
-                    "hm",
+                    getString(R.string.hm),
                     summit.elevationData.maxElevation == maxElevation,
                     { e ->
                         summit.elevationData.maxElevation = e.toInt()
                     },
-                    summit.elevationData.maxElevation.toDouble()
+                    summit.elevationData.maxElevation.toDouble(), isInt = true
                 )
             )
         }
@@ -201,7 +201,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                 TableEntry(
                     getString(R.string.kilometers_hint),
                     distance,
-                    "km", abs(summit.kilometers - distance) < 0.05,
+                    getString(R.string.km), abs(summit.kilometers - distance) < 0.05,
                     { e -> summit.kilometers = e },
                     summit.kilometers
                 )
@@ -216,7 +216,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                 TableEntry(
                     getString(R.string.pace_hint),
                     pace,
-                    "km/h",
+                    getString(R.string.kmh),
                     abs(summit.velocityData.avgVelocity - pace) < 0.05,
                     { e -> summit.velocityData.avgVelocity = e },
                     summit.velocityData.avgVelocity
@@ -230,7 +230,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(
                     getString(R.string.top_speed),
-                    maxVelocity, "hm/h",
+                    maxVelocity, getString(R.string.kmh),
                     abs(summit.velocityData.maxVelocity - maxVelocity) < 0.05,
                     { e -> summit.velocityData.maxVelocity = e },
                     summit.velocityData.maxVelocity
@@ -242,7 +242,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(
                     getString(R.string.max_slope),
-                    value, "%",
+                    value, getString(R.string.per_cent),
                     abs(summit.elevationData.maxSlope - value) < 0.05,
                     { e -> summit.elevationData.maxSlope = e },
                     0.0
@@ -255,7 +255,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(
                     getString(R.string.max_verticalVelocity_1Min),
-                    value, "m",
+                    value, getString(R.string.m),
                     summit.elevationData.maxVerticalVelocity1Min != 0.0 && abs(
                         summit.elevationData.maxVerticalVelocity1Min - value
                     ) * 60 < 0.05,
@@ -273,7 +273,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(
                     getString(R.string.max_verticalVelocity_10Min),
-                    value, "m",
+                    value, getString(R.string.m),
                     summit.elevationData.maxVerticalVelocity10Min != 0.0 && abs(
                         summit.elevationData.maxVerticalVelocity10Min - value
                     ) * 600 < 0.05,
@@ -291,7 +291,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(
                     getString(R.string.max_verticalVelocity_1h),
-                    value, "m",
+                    value, getString(R.string.m),
                     summit.elevationData.maxVerticalVelocity1h != 0.0 && abs(
                         summit.elevationData.maxVerticalVelocity1h - value
                     ) * 3600 < 0.05,
@@ -318,7 +318,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                     1.0,
                     velocityEntries
                 ),
-                "km/h",
+                getString(R.string.kmh),
                 summit.velocityData.oneKilometer > 0.0,
                 { e -> summit.velocityData.oneKilometer = e })
         )
@@ -329,7 +329,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                         5.0,
                         velocityEntries
                     ),
-                    "km/h",
+                    getString(R.string.kmh),
                     summit.velocityData.fiveKilometer > 0.0,
                     { e ->
                         summit.velocityData.fiveKilometer = e
@@ -343,7 +343,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                         10.0,
                         velocityEntries
                     ),
-                    "km/h",
+                    getString(R.string.kmh),
                     summit.velocityData.tenKilometers > 0.0,
                     { e ->
                         summit.velocityData.tenKilometers = e
@@ -357,7 +357,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                         15.0,
                         velocityEntries
                     ),
-                    "km/h",
+                    getString(R.string.kmh),
                     summit.velocityData.fifteenKilometers > 0.0,
                     { e ->
                         summit.velocityData.fifteenKilometers = e
@@ -371,7 +371,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                         20.0,
                         velocityEntries
                     ),
-                    "km/h",
+                    getString(R.string.kmh),
                     summit.velocityData.twentyKilometers > 0.0,
                     { e ->
                         summit.velocityData.twentyKilometers = e
@@ -385,7 +385,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                         30.0,
                         velocityEntries
                     ),
-                    "km/h",
+                    getString(R.string.kmh),
                     summit.velocityData.thirtyKilometers > 0.0,
                     { e ->
                         summit.velocityData.thirtyKilometers = e
@@ -399,7 +399,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                         40.0,
                         velocityEntries
                     ),
-                    "km/h",
+                    getString(R.string.kmh),
                     summit.velocityData.fortyKilometers > 0.0,
                     { e ->
                         summit.velocityData.fortyKilometers = e
@@ -413,7 +413,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                         50.0,
                         velocityEntries
                     ),
-                    "km/h",
+                    getString(R.string.kmh),
                     summit.velocityData.fiftyKilometers > 0.0,
                     { e ->
                         summit.velocityData.fiftyKilometers = e
@@ -427,7 +427,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                         75.0,
                         velocityEntries
                     ),
-                    "km/h",
+                    getString(R.string.kmh),
                     summit.velocityData.seventyFiveKilometers > 0.0,
                     { e ->
                         summit.velocityData.seventyFiveKilometers =
@@ -442,7 +442,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                         100.0,
                         velocityEntries
                     ),
-                    "km/h",
+                    getString(R.string.kmh),
                     summit.velocityData.hundredKilometers > 0.0,
                     { e ->
                         summit.velocityData.hundredKilometers = e
@@ -507,7 +507,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             201 + i,
             String.format(
                 requireContext().resources.configuration.locales[0],
-                "%.1f",
+                if (entry.isInt) "%.0f" else "%.1f",
                 entry.value * entry.scaleFactor
             ),
             padding = 2,
@@ -516,7 +516,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         val defaultValueAsString =
             if (abs(entry.defaultValue) < 0.05 || abs(entry.value - entry.defaultValue) < 0.05) "-" else String.format(
                 requireContext().resources.configuration.locales[0],
-                "%.1f",
+                if (entry.isInt) "%.0f" else "%.1f",
                 entry.defaultValue * entry.scaleFactor
             )
         addLabel(
@@ -603,7 +603,8 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         var isChecked: Boolean,
         var f: (Double) -> Unit,
         var defaultValue: Double = 0.0,
-        var scaleFactor: Int = 1
+        var scaleFactor: Int = 1,
+        var isInt: Boolean = false
     ) {
         var isSet: Boolean = true
         fun update() {
