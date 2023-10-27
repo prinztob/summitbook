@@ -161,7 +161,7 @@
     <string name="base_info_summits">"%1$s summits (%2$s km; %3$s hm)"</string>
     <string name="forecast_info_hm">"%1$s: Estimated elevation gain: %2$s m (Goal: %3$s m)."</string>
     <string name="forecast_info_km">"%1$s: Estimated distance: %2$s km (Goal: %3$s km)."</string>
-    <string name="forecast_info_activities">"%1$s: Estimated activities: %2$s m (Goal: %3$s)."</string>
+    <string name="forecast_info_activities">"%1$s: Estimated activities: %2$s (Goal: %3$s)."</string>
     <string name="import_string_title">"Import successful"</string>
     <string name="import_string">"Finished import of Zip File with in total %1$s entries in CSV file\nImported entries: %2$s\nInvalid entries: %3$s\nDuplicate entries: %4$s"</string>
     <string name="current_estimate">"Current estimate from annual target: %1$s hm."</string>
@@ -373,6 +373,8 @@
     <string name="set_user_pwd">Please set Username and Password for Garmin connect in settings</string>
     <string name="date_garmin_connect">Please set a date to be able to retrieve data from Garmin connect</string>
     <string name="indoor_hm_percent">Indoor height meter inclusion %</string>
+    <string name="forecast_average_title">Average of last X years for forecast</string>
+    <string name="forecast_average_summary">Use average of last X years to calculate forecast. Set to 0 to just use annual target.</string>
     <string name="start_date_sync_garmin">Start date for syncing Garmin Activities</string>
     <string name="tool_tip_progress_new_garmin_activities">"Add summits %1$s and download its tracks. This may take a while."</string>
     <string name="select_map_type">Select Map Type</string>

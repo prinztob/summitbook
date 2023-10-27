@@ -2,6 +2,7 @@ package de.drtobiasprinz.summitbook.ui.dialog
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import androidx.preference.PreferenceManager
 import com.google.android.material.slider.Slider
 import dagger.hilt.android.AndroidEntryPoint
@@ -22,7 +24,6 @@ import de.drtobiasprinz.summitbook.models.SortFilterValues.Companion.getYear
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.util.*
-import kotlin.math.floor
 import kotlin.math.round
 
 @AndroidEntryPoint
@@ -39,10 +40,9 @@ class ForecastDialog : DialogFragment() {
     private var annualTargetActivity: String = ""
     private var annualTargetKm: String = ""
     private var annualTargetHm: String = ""
-    private var stepSizeActivity: Int = 1
-    private var stepSizeKm: Int = 10
-    private var stepSizeHm: Int = 250
     private var indoorHeightMeterPercent = 0
+    private var averageOfLastXYears: Int = 0
+    private var forecastsUpdated: Boolean = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -56,12 +56,13 @@ class ForecastDialog : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         indoorHeightMeterPercent = sharedPreferences.getInt("indoor_height_meter_per_cent", 0)
+        averageOfLastXYears = sharedPreferences.getInt("forecast_average_of_last_x_years", 3)
         annualTargetActivity = sharedPreferences.getString("annual_target_activities", "52") ?: "52"
         annualTargetKm = sharedPreferences.getString("annual_target_km", "1200") ?: "1200"
         annualTargetHm = sharedPreferences.getString("annual_target", "50000") ?: "50000"
         val range: Date = Summit.parseDate("${currentYear}-01-01")
         viewModel.summitsList.observe(viewLifecycleOwner,
-            object : androidx.lifecycle.Observer<DataStatus<List<Summit>>> {
+            object : Observer<DataStatus<List<Summit>>> {
                 override fun onChanged(value: DataStatus<List<Summit>>) {
                     value.data.let { summits ->
                         val summitsForSelectedYear =
@@ -69,7 +70,10 @@ class ForecastDialog : DialogFragment() {
                         viewModel.forecastList.observe(viewLifecycleOwner) { itDataStatusForecasts ->
                             itDataStatusForecasts.data.let { forecasts ->
                                 val forecastsOriginal = forecasts?.map { it.copy() } ?: emptyList()
-                                setMissingForecasts(yearsWithForecasts, forecasts)
+                                if (summits != null && !forecastsUpdated) {
+                                    forecastsUpdated = true
+                                    setMissingForecasts(yearsWithForecasts, forecasts, summits)
+                                }
 
                                 if (forecasts != null) {
                                     if (summitsForSelectedYear != null) {
@@ -144,17 +148,15 @@ class ForecastDialog : DialogFragment() {
             })
     }
 
-    private fun setMissingForecasts(dates: List<Int>, forecasts: List<Forecast>?) {
-        for (date in dates) {
-            for (i in 1..12) {
-                var forecast = forecasts?.firstOrNull { it.month == i && it.year == date }
-                if (forecast == null) {
-                    forecast = Forecast(
-                        date, i,
-                        (floor((annualTargetHm.toInt() / 12.0) / stepSizeHm) * stepSizeHm).toInt(),
-                        (floor((annualTargetKm.toInt() / 12.0) / stepSizeKm) * stepSizeKm).toInt(),
-                        (floor((annualTargetActivity.toInt() / 12.0) / stepSizeActivity) * stepSizeActivity).toInt()
-                    )
+    private fun setMissingForecasts(
+        years: List<Int>,
+        forecasts: List<Forecast>?,
+        summits: List<Summit>
+    ) {
+        for (year in years) {
+            for (month in 1..12) {
+                if (forecasts?.firstOrNull { it.month == month && it.year == year } == null) {
+                    val forecast = Forecast.getNewForecastFrom(month, year, summits, averageOfLastXYears, annualTargetActivity, annualTargetKm, annualTargetHm)
                     viewModel.saveForecast(false, forecast)
                 }
             }
@@ -170,10 +172,23 @@ class ForecastDialog : DialogFragment() {
     }
 
     private fun setOverview(forecasts: List<Forecast>, year: Int) {
+        val id = when (selectedSegmentedForecastProperty) {
+            binding.buttonKilometers.id -> {
+                1
+            }
+
+            binding.buttonActivity.id -> {
+                2
+            }
+
+            else -> {
+                0
+            }
+        }
         val sum = getSumForYear(
             year,
             forecasts,
-            selectedSegmentedForecastProperty,
+            id,
             currentYear,
             currentMonth
         )
@@ -278,7 +293,15 @@ class ForecastDialog : DialogFragment() {
             requireContext().packageName
         )
         val textView: TextView = view.findViewById(resourceIdText)
-        textView.setTextColor(Color.BLACK)
+        when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+            Configuration.UI_MODE_NIGHT_YES -> {
+                textView.setTextColor(Color.WHITE)
+            }
+
+            else -> {
+                textView.setTextColor(Color.BLACK)
+            }
+        }
         if (forecast.year == currentYear && forecast.month <= currentMonth) {
             textView.setCompoundDrawablesWithIntrinsicBounds(
                 R.drawable.ic_baseline_edit_12,
@@ -353,7 +376,21 @@ class ForecastDialog : DialogFragment() {
         if (percentAchievement > 0 && actual > 0) {
             textView.setTextColor(if (percentAchievement >= 100) Color.GREEN else Color.RED)
         } else {
-            textView.setTextColor(Color.BLACK)
+            when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+                Configuration.UI_MODE_NIGHT_YES -> {
+                    textView.setTextColor(Color.WHITE)
+                }
+
+                else -> {
+                    textView.setTextColor(Color.BLACK)
+                }
+            }
         }
+    }
+
+    companion object {
+        const val stepSizeActivity: Int = 1
+        const val stepSizeKm: Int = 10
+        const val stepSizeHm: Int = 250
     }
 }

@@ -164,7 +164,7 @@
     <string name="base_info_summits">"%1$s Gipfel (%2$s km; %3$s hm)"</string>
     <string name="forecast_info_hm">"%1$s: Schätzung Höhenmeter: %2$s hm (Ziel: %3$s hm)."</string>
     <string name="forecast_info_km">"%1$s: Schätzung Entfernung: %2$s km (Ziel: %3$s km)."</string>
-    <string name="forecast_info_activities">"%1$s: Schätzung Gipfel: %2$s m (Ziel: %3$s)."</string>
+    <string name="forecast_info_activities">"%1$s: Schätzung Gipfel: %2$s (Ziel: %3$s)."</string>
     <string name="import_string_title">"Import erfolgreich"</string>
     <string name="import_string">"Der Import der Zip Datei ist abgeschlossen mit Zeilen in CSV Datei: %1$s\nImportierte Gipfel: %2$s\nInvalide Gipfel: %3$s\nDuplizierte Gipfel: %4$s"</string>
     <string name="current_estimate">"Aktuelle Hochrechnung für Jahresziel: %1$s hm."</string>
@@ -374,6 +374,8 @@
     <string name="set_user_pwd">Bitte setzen Sie Benutzername und Passowrt für Garmin connect in den Settings</string>
     <string name="date_garmin_connect">Bitte setzen sie ein Startdatum in den Settings um das Synchronisieren der Garmin Activitäten on Garmin Connect zu ermöglichen </string>
     <string name="indoor_hm_percent">Prozentuale Einbeziehung von Indoor Höhenmetern</string>
+    <string name="forecast_average_title">Durchschnitt der letzten X Jahre für Schätzung</string>
+    <string name="forecast_average_summary">Verwende Durchschnitt der letzten X Jahre für Schätzung. Wenn das Jahresziel dafür verwendet werden soll setzte es auf 0.</string>
     <string name="start_date_sync_garmin">Startdatum für Synchronisierung von Garmin Activitäten</string>
     <string name="tool_tip_progress_new_garmin_activities">"Füge Gipfel %1$s hinzu und download seine Tracks. Das kann etwas dauern."</string>
     <string name="select_map_type">Wähle Kartentyp aus</string>

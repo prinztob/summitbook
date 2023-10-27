@@ -3,8 +3,10 @@ package de.drtobiasprinz.summitbook.db.entities
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
+import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 @Entity
@@ -105,6 +107,43 @@ data class Forecast(
 
     companion object {
         private const val NUMBER_OF_ELEMENTS = 5
+
+        fun getNewForecastFrom(
+            month: Int,
+            year: Int,
+            summits: List<Summit>,
+            averageOfLastXYears: Int,
+            annualTargetActivity: String,
+            annualTargetKm: String,
+            annualTargetHm: String,
+            today: Date = Date()
+        ): Forecast {
+
+            val summitsInTimeRange = if (averageOfLastXYears > 0) {
+                summits.filter {
+                    val cal = Calendar.getInstance()
+                    cal.time = it.date
+                    cal.get(Calendar.MONTH) == month - 1 && (today.time - it.date.time) / 31536000000.0 in 0.0..averageOfLastXYears.toDouble()
+                }
+            } else emptyList()
+            val hmForecast = if (summitsInTimeRange.isNotEmpty()) {
+                summitsInTimeRange.sumOf { it.elevationData.elevationGain }
+                    .toDouble() / averageOfLastXYears
+            } else annualTargetHm.toInt() / 12.0
+            val kmForecast = if (summitsInTimeRange.isNotEmpty()) {
+                summitsInTimeRange.sumOf { it.kilometers } / averageOfLastXYears
+            } else annualTargetKm.toInt() / 12.0
+            val numberActivitiesForecast = if (summitsInTimeRange.isNotEmpty()) {
+                summitsInTimeRange.size.toDouble() / averageOfLastXYears
+            } else annualTargetActivity.toInt() / 12.0
+            val forecast = Forecast(
+                year, month,
+                (floor((hmForecast) / ForecastDialog.stepSizeHm) * ForecastDialog.stepSizeHm).toInt(),
+                (floor((kmForecast) / ForecastDialog.stepSizeKm) * ForecastDialog.stepSizeKm).toInt(),
+                (floor((numberActivitiesForecast) / ForecastDialog.stepSizeActivity) * ForecastDialog.stepSizeActivity).toInt()
+            )
+            return forecast
+        }
 
         fun getSumForYear(
             year: Int,

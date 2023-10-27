@@ -70,6 +70,14 @@
         app:showSeekBarValue="true"
         app:key="indoor_height_meter_per_cent"
         app:title="@string/indoor_hm_percent"/>
+    <SeekBarPreference
+        app:defaultValue="3"
+        android:min="0"
+        android:max="10"
+        app:showSeekBarValue="true"
+        app:key="forecast_average_of_last_x_years"
+        app:title="@string/forecast_average_title"
+        app:summary="@string/forecast_average_summary"/>
     <SwitchPreference
         android:defaultValue="true"
         android:key="export_third_party_data"

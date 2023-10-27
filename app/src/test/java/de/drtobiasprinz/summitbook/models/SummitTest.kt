@@ -54,7 +54,7 @@ class SummitTest {
     fun parseGarminDataFromCsvFileLine() {
         val lineWithGarminToParse = "2020-01-02;Isar-Radweg;Bicycle;Unterbiberg;D;Mirjam Jonah;125;28.68;16.45;41.8;570;48.0764305405319;11.622356493026;participant1;210479206;4393181740;952;129;155;75,100,50,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15;236;53;2.7;0;0;0;0;1\n"
         val entry: Summit = Summit.parseFromCsvFileLine(lineWithGarminToParse)
-        Assert.assertEquals(entry.garminData, GarminData(mutableListOf("4393181740"), 952F, 129F, 155F, PowerData(75F, 100F, 50F, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15), 236, 53, 2.7f, 0f, 0f, 0f, 0f))
+        Assert.assertEquals(entry.garminData, GarminData(mutableListOf("4393181740"), 952F, 129F, 155F, PowerData(75F, 100F, 50F, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15), 236, 53f, 2.7f, 0f, 0f, 0f, 0f))
         Assert.assertTrue(entry.isFavorite)
     }
 
