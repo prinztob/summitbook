@@ -8,6 +8,7 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.db.entities.SportType.Companion.getSportTypeFromGarminId
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import java.io.File
@@ -320,15 +321,7 @@ class GarminPythonExecutor(
         }
 
         private fun parseSportType(jsonObject: JsonObject): SportType {
-            return when (jsonObject["typeId"].asInt) {
-                1 -> SportType.Running
-                2 -> SportType.Bicycle
-                5 -> SportType.Mountainbike
-                25 -> SportType.IndoorTrainer
-                89 -> SportType.BikeAndHike
-                169 -> SportType.Skitour
-                else -> SportType.Hike
-            }
+            return getSportTypeFromGarminId(jsonObject["typeId"].asInt)
         }
 
         private fun round(value: Double): Double {
