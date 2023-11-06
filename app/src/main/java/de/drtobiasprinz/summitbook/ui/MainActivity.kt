@@ -62,6 +62,8 @@ import java.io.File
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.util.Date
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 
@@ -227,32 +229,158 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun addMissingBoundingBox() {
-        viewModel.summitsList.observeOnce(this@MainActivity) {
-            lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    val entriesWithoutBoundingBox = it.data?.filter { summit ->
-                        summit.hasGpsTrack() && summit.trackBoundingBox == null && summit !in entriesToExcludeForBoundingBoxCalculation
-                    } as MutableList<Summit>?
-                    if (!entriesWithoutBoundingBox.isNullOrEmpty()) {
-                        val entriesToCheck = entriesWithoutBoundingBox.take(100)
-                        entriesToCheck.forEach { entryToCheck ->
-                            entriesWithoutBoundingBox.remove(entryToCheck)
-                            entryToCheck.setBoundingBoxFromTrack()
-                            if (entryToCheck.trackBoundingBox != null) {
-                                viewModel.saveSummit(true, entryToCheck)
-                                Log.i(
-                                    "MainActivity Background",
-                                    "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining."
+        val scheduler = Executors.newScheduledThreadPool(5)
+        scheduler.scheduleWithFixedDelay({
+            val summits = summitViewFragment.summitsAdapter.differ.currentList
+            val executor = pythonExecutor
+            if (summits.isNotEmpty()) {
+                updateBoundingBox(summits)
+                updateSimplifiedTracks(summits)
+                updateDailyReportData(executor, summits)
+            }
+
+        }, 1, 1, TimeUnit.MINUTES)
+    }
+
+    private fun updateDailyReportData(
+        executor: GarminPythonExecutor?,
+        summits: List<Summit>?
+    ) {
+        if (sharedPreferences.getBoolean(
+                "startup_auto_update_switch",
+                false
+            ) && executor != null
+        ) {
+            binding.loading.visibility = View.VISIBLE
+            viewModel.dailyReportDataList.observeOnce(this) { dailyReportDataStatus ->
+                dailyReportDataStatus.data.let { dailyReportData ->
+                    val updater = GarminDataUpdater(
+                        sharedPreferences,
+                        executor,
+                        summits,
+                        dailyReportData,
+                        viewModel
+                    )
+                    lifecycleScope.launch {
+                        withContext(Dispatchers.IO) {
+                            updater.update()
+                        }
+                        updater.onFinish(binding.loading, this@MainActivity)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateSimplifiedTracks(summits: List<Summit>) {
+        val useSimplifiedTracks =
+            sharedPreferences.getBoolean("use_simplified_tracks", true)
+        if (useSimplifiedTracks) {
+            val entriesWithoutSimplifiedGpxTrack = summits.filter {
+                it !in entriesToExcludeForSimplifyGpxTrack && it.hasGpsTrack() && !it.hasGpsTrack(
+                    simplified = true
+                )
+            }.sortedByDescending { it.date }
+            if (entriesWithoutSimplifiedGpxTrack.isEmpty()) {
+                Log.i(
+                    "Scheduler",
+                    "No more tracks to simplify."
+                )
+            }
+            pythonInstance.let {
+                if (it != null) {
+                    asyncSimplifyGpsTracks(
+                        entriesWithoutSimplifiedGpxTrack.take(5),
+                        it
+                    )
+                }
+            }
+        } else {
+            summits.filter {
+                it.hasGpsTrack(simplified = true)
+            }.forEach {
+                val trackFile = it.getGpsTrackPath(simplified = true).toFile()
+                if (trackFile.exists()) {
+                    trackFile.delete()
+                }
+                val gpxPyFile = it.getGpxPyPath().toFile()
+                if (gpxPyFile.exists()) {
+                    gpxPyFile.delete()
+                }
+                Log.e(
+                    "useSimplifiedTracks",
+                    "Deleted ${it.getDateAsString()}_${it.name} because useSimplifiedTracks was set to false."
+                )
+            }
+        }
+    }
+
+    private fun updateBoundingBox(summits: List<Summit>) {
+        val entriesWithoutBoundingBox = summits.filter {
+            it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingBoxCalculation
+        } as MutableList<Summit>?
+        if (!entriesWithoutBoundingBox.isNullOrEmpty()) {
+            val entriesToCheck = entriesWithoutBoundingBox.take(25)
+            entriesToCheck.forEach { entryToCheck ->
+                entriesWithoutBoundingBox.remove(entryToCheck)
+                lifecycleScope.launch {
+                    withContext(Dispatchers.IO) {
+                        entryToCheck.setBoundingBoxFromTrack()
+                    }
+                    if (entryToCheck.trackBoundingBox != null) {
+                        viewModel.saveSummit(true, entryToCheck)
+                        Log.i(
+                            "Scheduler",
+                            "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining."
+                        )
+                    } else {
+                        Log.i(
+                            "Scheduler",
+                            "Updated bounding box for ${entryToCheck.name} failed, remove it from update list."
+                        )
+                        entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
+                    }
+                }
+            }
+            if (entriesToCheck.isEmpty()) {
+                Log.i(
+                    "Scheduler",
+                    "No more bounding boxes to update."
+                )
+            }
+        }
+    }
+
+    private fun asyncSimplifyGpsTracks(
+        summitsWithoutSimplifiedTracks: List<Summit>,
+        pythonInstance: Python
+    ) {
+        var numberSimplifiedGpxTracks = 0
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                if (summitsWithoutSimplifiedTracks.isNotEmpty()) {
+                    summitsWithoutSimplifiedTracks.forEach {
+                        try {
+                            GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
+                                it.getGpsTrackPath(
+                                    simplified = false
                                 )
-                            } else {
-                                Log.i(
-                                    "Scheduler",
-                                    "Updated bounding box for ${entryToCheck.name} failed, remove it from update list."
-                                )
-                                entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
-                            }
+                            )
+                            numberSimplifiedGpxTracks += 1
+                            Log.i(
+                                "AsyncSimplifyGpsTracks",
+                                "Simplify track for ${it.getDateAsString()}_${it.name}."
+                            )
+                        } catch (ex: RuntimeException) {
+                            Log.e(
+                                "AsyncSimplifyGpsTracks",
+                                "Error in simplify track for ${it.getDateAsString()}_${it.name}: ${ex.message}"
+                            )
+                            entriesToExcludeForSimplifyGpxTrack.add(it)
                         }
                     }
+                } else {
+                    Log.i("AsyncSimplifyGpsTracks", "No more gpx tracks to simplify.")
                 }
             }
         }

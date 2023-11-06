@@ -5,7 +5,9 @@ import de.drtobiasprinz.gpx.xml.XmlWrite
 import io.reactivex.Observable
 import java.text.FieldPosition
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 /**
  * @param date: Timestamp in milliseconds since epoch
@@ -14,30 +16,40 @@ data class Time(val date: Long?) : XmlWritable {
 
     companion object {
         const val TAG_TIME = "time"
-        private val dateFormat = object : SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH) {
+        private val dateFormat =
+            object : SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH) {
 
-            init {
-                timeZone = TimeZone.getTimeZone("UTC")
+                init {
+                    timeZone = TimeZone.getTimeZone("UTC")
+                }
+
+                // Workaround to generate a 'Z' at the end of the string to denote UTC
+                // which does not rely on the 'X' format string character (only available from Android 24)
+                // See: https://developer.android.com/reference/java/text/SimpleDateFormat.html
+                override fun format(
+                    date: Date,
+                    toAppendTo: StringBuffer,
+                    pos: FieldPosition
+                ): StringBuffer {
+                    return super.format(date, toAppendTo, pos).append('Z')
+                }
+
             }
-
-            // Workaround to generate a 'Z' at the end of the string to denote UTC
-            // which does not rely on the 'X' format string character (only available from Android 24)
-            // See: https://developer.android.com/reference/java/text/SimpleDateFormat.html
-            override fun format(date: Date, toAppendTo: StringBuffer, pos: FieldPosition): StringBuffer {
-                return super.format(date, toAppendTo, pos).append('Z')
-            }
-
-        }
 
 
         @JvmStatic
         fun parse(time: String): Time {
-            return Time(dateFormat.parse(time).time)
+            try {
+                val time1 = dateFormat.parse(time)
+                return Time(time1?.time ?: 0L)
+            } catch (e: ArrayIndexOutOfBoundsException) {
+                return Time(0L)
+            }
         }
     }
 
     override val writeOperations: Observable<XmlWrite>
         get() = if (date != null) newTag(TAG_TIME, withText(dateFormat.format(Date(date))))
-                else Observable.empty()
+        else Observable.empty()
 
 }
