@@ -54,7 +54,10 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
     }
 
     private fun getPageTitle(position: Int): CharSequence {
-        val tabTitles = mutableListOf(R.string.tab_text_1)
+        val tabTitles = mutableListOf(R.string.tab_text_0)
+        if (summitEntry.garminData != null) {
+            tabTitles.add(R.string.tab_text_1)
+        }
         if (summitEntry.hasImagePath()) {
             tabTitles.add(R.string.tab_text_2)
         }

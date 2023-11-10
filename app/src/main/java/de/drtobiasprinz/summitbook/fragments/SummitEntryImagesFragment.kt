@@ -32,6 +32,11 @@ class SummitEntryImagesFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentSummitEntryImagesBinding.inflate(layoutInflater, container, false)
+        return binding.root
+    }
+
+    override fun onResume() {
+        super.onResume()
         pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
             it.data.let { summitToView ->
                 if (summitToView != null) {
@@ -43,8 +48,6 @@ class SummitEntryImagesFragment : Fragment() {
                 }
             }
         }
-
-        return binding.root
     }
 
     private fun setImages(summitToView: Summit) {

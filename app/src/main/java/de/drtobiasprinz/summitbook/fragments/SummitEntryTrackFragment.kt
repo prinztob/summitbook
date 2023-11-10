@@ -82,6 +82,10 @@ class SummitEntryTrackFragment : Fragment() {
         binding.osmap.overlays.add(mLocationOverlay)
         binding.loadingPanel.visibility = View.VISIBLE
         binding.lineChart.visibility = View.GONE
+        return binding.root
+    }
+
+    private fun setContent() {
         pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
             it.data.let { summitToView ->
 
@@ -106,21 +110,21 @@ class SummitEntryTrackFragment : Fragment() {
                                     binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
                                     binding.osmap.overlays.clear()
                                     lifecycleScope.launch {
-                                        withContext(Dispatchers.Default) {
+                                        withContext(Dispatchers.IO) {
                                             setGpsTrack(summitToView, useSimplifiedTrack = true)
                                         }
                                         binding.loadingPanel.visibility = View.GONE
                                         binding.lineChart.visibility = View.VISIBLE
                                         drawChart(summitToView)
                                         updateMap(summitToView, summitToCompare, allSummits)
-                                    }
-                                    lifecycleScope.launch {
-                                        withContext(Dispatchers.Default) {
-                                            setGpsTrack(summitToView, forceUpdate = true)
+                                        lifecycleScope.launch {
+                                            withContext(Dispatchers.IO) {
+                                                setGpsTrack(summitToView, forceUpdate = true)
+                                            }
+                                            drawChart(summitToView)
+                                            updateMap(summitToView, summitToCompare, allSummits)
+                                            setButtons(summitToView)
                                         }
-                                        drawChart(summitToView)
-                                        updateMap(summitToView, summitToCompare, allSummits)
-                                        setButtons(summitToView)
                                     }
                                     val numberOfPointsToShow =
                                         PreferenceManager.getDefaultSharedPreferences(
@@ -153,7 +157,11 @@ class SummitEntryTrackFragment : Fragment() {
                 }
             }
         }
-        return binding.root
+    }
+
+    override fun onResume() {
+        super.onResume()
+        setContent()
     }
 
     private fun updateMap(

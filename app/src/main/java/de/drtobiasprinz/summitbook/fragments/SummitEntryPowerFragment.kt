@@ -61,6 +61,15 @@ class SummitEntryPowerFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentSummitEntryPowerBinding.inflate(layoutInflater, container, false)
+        return binding.root
+    }
+
+    override fun onResume() {
+        super.onResume()
+        setContent()
+    }
+
+    private fun setContent() {
         pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
             it.data.let { summitToView ->
                 if (summitToView != null) {
@@ -97,7 +106,6 @@ class SummitEntryPowerFragment : Fragment() {
                 }
             }
         }
-        return binding.root
     }
 
     private fun setTimeRangeAdapter(
