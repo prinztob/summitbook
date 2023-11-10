@@ -139,7 +139,8 @@
         <item>Custom</item>
     </string-array>
 
-    <string name="tab_text_1">Data</string>
+    <string name="tab_text_0">Data</string>
+    <string name="tab_text_1">Thirdparty Data</string>
     <string name="tab_text_2">Images</string>
     <string name="tab_text_3">Map and height profile</string>
 

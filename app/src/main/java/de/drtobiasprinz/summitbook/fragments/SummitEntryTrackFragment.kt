@@ -106,21 +106,21 @@ class SummitEntryTrackFragment : Fragment() {
                                     binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
                                     binding.osmap.overlays.clear()
                                     lifecycleScope.launch {
-                                        withContext(Dispatchers.Default) {
+                                        withContext(Dispatchers.IO) {
                                             setGpsTrack(summitToView, useSimplifiedTrack = true)
                                         }
                                         binding.loadingPanel.visibility = View.GONE
                                         binding.lineChart.visibility = View.VISIBLE
                                         drawChart(summitToView)
                                         updateMap(summitToView, summitToCompare, allSummits)
-                                    }
-                                    lifecycleScope.launch {
-                                        withContext(Dispatchers.Default) {
-                                            setGpsTrack(summitToView, forceUpdate = true)
+                                        lifecycleScope.launch {
+                                            withContext(Dispatchers.IO) {
+                                                setGpsTrack(summitToView, forceUpdate = true)
+                                            }
+                                            drawChart(summitToView)
+                                            updateMap(summitToView, summitToCompare, allSummits)
+                                            setButtons(summitToView)
                                         }
-                                        drawChart(summitToView)
-                                        updateMap(summitToView, summitToCompare, allSummits)
-                                        setButtons(summitToView)
                                     }
                                     val numberOfPointsToShow =
                                         PreferenceManager.getDefaultSharedPreferences(

@@ -2,23 +2,21 @@ package de.drtobiasprinz.summitbook.fragments
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.text.Html
+import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.TextView
-import androidx.core.content.ContextCompat
-import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
-import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
-import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryDataBinding
+import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryThirdPartyBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.TextField
-import de.drtobiasprinz.summitbook.models.TextFieldGroup
+import de.drtobiasprinz.summitbook.models.TextFieldGroupThirdPArty
+import de.drtobiasprinz.summitbook.models.TextFieldThirdParty
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import java.text.NumberFormat
@@ -26,9 +24,9 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
 @AndroidEntryPoint
-class SummitEntryDataFragment : Fragment() {
+class SummitEntryThirdPartyFragment : Fragment() {
 
-    private lateinit var binding: FragmentSummitEntryDataBinding
+    private lateinit var binding: FragmentSummitEntryThirdPartyBinding
 
     private var pageViewModel: PageViewModel? = null
     private var summitsToCompare: List<Summit> = emptyList()
@@ -42,7 +40,7 @@ class SummitEntryDataFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
-        binding = FragmentSummitEntryDataBinding.inflate(layoutInflater, container, false)
+        binding = FragmentSummitEntryThirdPartyBinding.inflate(layoutInflater, container, false)
         binding.table.visibility = View.GONE
         binding.loadingPanel.visibility = View.VISIBLE
 
@@ -50,7 +48,13 @@ class SummitEntryDataFragment : Fragment() {
         pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
             it.data.let { summitToView ->
                 if (summitToView != null) {
-                    setBaseData(summitToView)
+                    binding.summitName.text = summitToView.name
+                    if (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
+                        binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdWhite)
+                    } else {
+                        binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
+                    }
+                    setThirdPartyData(summitToView)
                     pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
                         summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(
                             summitsListData,
@@ -71,26 +75,8 @@ class SummitEntryDataFragment : Fragment() {
                                             summitToCompare.data
                                         )
                                     }
-                                    if (summitToCompare.data != null) {
-                                        setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
-                                            summitToView,
-                                            summitToCompare.data
-                                        )
-                                    }
-                                    setCircleBeforeTextForAllTextFields(summitToView, extrema)
-                                    setAdditionalSpeedData(
-                                        summitToView,
-                                        extrema,
-                                        summitToCompare.data
-                                    )
-                                    setChipsText(
-                                        R.id.places,
-                                        summitToView.getPlacesWithConnectedEntryString(
-                                            requireContext(),
-                                            summits
-                                        ),
-                                        R.drawable.baseline_place_black_24dp
-                                    )
+
+                                    setThirdPartyData(summitToView, summitToCompare.data, extrema)
                                 }
                             }
                         }
@@ -101,35 +87,14 @@ class SummitEntryDataFragment : Fragment() {
         return binding.root
     }
 
-    private fun setBaseData(
-        summitToView: Summit,
-    ) {
-        binding.tourDate.text = summitToView.getDateAsString()
-        binding.summitName.text = summitToView.name
-        if (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
-            binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdWhite)
-        } else {
-            binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
-        }
-        setText(summitToView.comments, binding.comments, binding.comments)
-
-        TextField.values().filter { it.group == TextFieldGroup.Base }.forEach {
-            setTextOnlyForCurrentSummit(it, summitToView)
-        }
-
-        setChipsText(R.id.countries, summitToView.countries, R.drawable.ic_baseline_flag_24)
-        setChipsText(R.id.participants, summitToView.participants, R.drawable.ic_baseline_people_24)
-        setChipsText(R.id.equipments, summitToView.equipments, R.drawable.ic_baseline_handyman_24)
-        setChipsTextForSegments(R.id.segments, R.drawable.ic_baseline_route_24, summitToView)
-    }
 
     private fun setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
         summitToView: Summit,
         summitToCompare: Summit?,
-        textFieldGroup: TextFieldGroup = TextFieldGroup.Base,
+        textFieldGroup: TextFieldGroupThirdPArty = TextFieldGroupThirdPArty.ThirdParty,
         visibility: Int = View.VISIBLE
     ) {
-        TextField.values().filter { it.group == textFieldGroup }.forEach {
+        TextFieldThirdParty.values().filter { it.group == textFieldGroup }.forEach {
             setTextForCurrentSummitAndCompareWithSummit(
                 it,
                 summitToView,
@@ -142,61 +107,111 @@ class SummitEntryDataFragment : Fragment() {
     private fun setCircleBeforeTextForAllTextFields(
         summitToView: Summit,
         extrema: ExtremaValuesSummits? = null,
-        textFieldGroup: TextFieldGroup = TextFieldGroup.Base
+        textFieldGroup: TextFieldGroupThirdPArty = TextFieldGroupThirdPArty.ThirdParty
     ) {
-        TextField.values().filter { it.group == textFieldGroup }.forEach {
+        TextFieldThirdParty.values().filter { it.group == textFieldGroup }.forEach {
             setCircleBeforeText(it, summitToView, extrema)
         }
     }
 
-    private fun setAdditionalSpeedData(
-        summitToView: Summit,
-        extrema: ExtremaValuesSummits?,
-        summitToCompare: Summit?
+
+    private fun setThirdPartyData(
+        summitToView: Summit
     ) {
-        TextField.values().filter { it.group == TextFieldGroup.AdditionalSpeedData }
-            .forEach {
-                setTextOnlyForCurrentSummit(it, summitToView, View.GONE)
-            }
-        if (summitToView.velocityData.hasAdditionalData()) {
-            binding.expandMoreSpeedData.visibility = View.VISIBLE
-            binding.expandMoreSpeedData.setOnClickListener {
-                if (binding.expandMoreSpeedData.text == getString(R.string.more_speed)) {
-                    binding.expandMoreSpeedData.text = getString(R.string.less_speed)
-                    binding.expandMoreSpeedData.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.ic_baseline_expand_less_24,
-                        0,
-                        0,
-                        0
-                    )
-                    setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
-                        summitToView,
-                        summitToCompare,
-                        textFieldGroup = TextFieldGroup.AdditionalSpeedData
-                    )
-                    setCircleBeforeTextForAllTextFields(
-                        summitToView,
-                        extrema,
-                        textFieldGroup = TextFieldGroup.AdditionalSpeedData
-                    )
-                } else {
-                    binding.expandMoreSpeedData.text = getString(R.string.more_speed)
-                    binding.expandMoreSpeedData.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.ic_baseline_expand_more_24,
-                        0,
-                        0,
-                        0
-                    )
-                    setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
-                        summitToView,
-                        summitToCompare,
-                        textFieldGroup = TextFieldGroup.AdditionalSpeedData,
-                        visibility = View.GONE
-                    )
+        val garminData = summitToView.garminData
+        if (garminData != null) {
+            binding.link.isClickable = true
+            binding.link.movementMethod = LinkMovementMethod.getInstance()
+            val text =
+                "<a href=\"${garminData.url}\">${requireContext().getString(R.string.sensor_data)}</a>"
+            binding.link.text = Html.fromHtml(text, 0)
+            binding.garminData.visibility = View.VISIBLE
+
+            TextFieldThirdParty.values().filter { it.group == TextFieldGroupThirdPArty.ThirdParty }
+                .forEach {
+                    setTextOnlyForCurrentSummit(it, summitToView)
                 }
+
+            TextFieldThirdParty.values()
+                .filter { it.group == TextFieldGroupThirdPArty.ThirdPartyAdditionalData }
+                .forEach {
+                    setTextOnlyForCurrentSummit(it, summitToView, View.GONE)
+                }
+            if (summitToView.garminData?.power?.oneSec != null &&
+                (summitToView.garminData?.power?.oneSec ?: 0) > 0
+            ) {
+                binding.expandMorePowerData.visibility = View.VISIBLE
+            } else {
+                binding.expandMorePowerData.visibility = View.GONE
             }
         } else {
-            binding.expandMoreSpeedData.visibility = View.GONE
+            binding.garminData.visibility = View.GONE
+            binding.expandMorePowerData.visibility = View.GONE
+        }
+    }
+
+    private fun setThirdPartyData(
+        summitToView: Summit,
+        summitToCompare: Summit? = null,
+        extrema: ExtremaValuesSummits? = null
+    ) {
+        val garminData = summitToView.garminData
+        if (garminData != null) {
+            if (summitToView.garminData?.power?.oneSec != null &&
+                (summitToView.garminData?.power?.oneSec ?: 0) > 0
+            ) {
+                setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                    summitToView,
+                    summitToCompare,
+                    textFieldGroup = TextFieldGroupThirdPArty.ThirdParty
+                )
+                setCircleBeforeTextForAllTextFields(
+                    summitToView,
+                    extrema,
+                    TextFieldGroupThirdPArty.ThirdParty
+                )
+                binding.expandMorePowerData.setOnClickListener {
+                    if (binding.expandMorePowerData.text == getString(R.string.more_power)) {
+                        binding.expandMorePowerData.text = getString(R.string.less_power)
+                        binding.expandMorePowerData.setCompoundDrawablesWithIntrinsicBounds(
+                            R.drawable.ic_baseline_expand_less_24,
+                            0,
+                            0,
+                            0
+                        )
+                        setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                            summitToView,
+                            summitToCompare,
+                            textFieldGroup = TextFieldGroupThirdPArty.ThirdPartyAdditionalData
+                        )
+                        setCircleBeforeTextForAllTextFields(
+                            summitToView,
+                            extrema,
+                            TextFieldGroupThirdPArty.ThirdPartyAdditionalData
+                        )
+                    } else {
+                        binding.expandMorePowerData.text = getString(R.string.more_power)
+                        binding.expandMorePowerData.setCompoundDrawablesWithIntrinsicBounds(
+                            R.drawable.ic_baseline_expand_more_24,
+                            0,
+                            0,
+                            0
+                        )
+                        binding.power1sec.visibility = View.GONE
+                        setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                            summitToView,
+                            summitToCompare,
+                            textFieldGroup = TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
+                            visibility = View.GONE
+                        )
+                    }
+                }
+            } else {
+                binding.expandMorePowerData.visibility = View.GONE
+            }
+        } else {
+            binding.garminData.visibility = View.GONE
+            binding.expandMorePowerData.visibility = View.GONE
         }
     }
 
@@ -252,19 +267,9 @@ class SummitEntryDataFragment : Fragment() {
         return suggestions as ArrayList
     }
 
-    private fun setText(text: String, info: TextView, textView: TextView) {
-        if (text == "") {
-            info.visibility = View.GONE
-            textView.visibility = View.GONE
-        } else {
-            info.visibility = View.VISIBLE
-            textView.visibility = View.VISIBLE
-            textView.text = text
-        }
-    }
 
     private fun setTextOnlyForCurrentSummit(
-        textField: TextField,
+        textField: TextFieldThirdParty,
         summit: Summit,
         visibility: Int = View.VISIBLE
     ) {
@@ -292,7 +297,7 @@ class SummitEntryDataFragment : Fragment() {
     }
 
     private fun setTextForCurrentSummitAndCompareWithSummit(
-        textField: TextField,
+        textField: TextFieldThirdParty,
         summit: Summit,
         compareSummit: Summit? = null,
         visibility: Int = View.VISIBLE
@@ -344,7 +349,7 @@ class SummitEntryDataFragment : Fragment() {
     }
 
     private fun setCircleBeforeText(
-        textField: TextField,
+        textField: TextFieldThirdParty,
         summit: Summit,
         extrema: ExtremaValuesSummits?
     ) {
@@ -388,106 +393,5 @@ class SummitEntryDataFragment : Fragment() {
             }
         }
         textView.setCompoundDrawablesWithIntrinsicBounds(drawable, 0, 0, 0)
-    }
-
-    private fun setChipsTextForSegments(id: Int, imageId: Int, summitEntry: Summit) {
-        pageViewModel?.segmentsList?.observe(viewLifecycleOwner) {
-            it.data.let { segments ->
-                segments?.let { segmentList -> summitEntry.updateSegmentInfo(segmentList) }
-                val chipGroup: ChipGroup = binding.root.findViewById(id)
-                chipGroup.removeAllViews()
-                if (summitEntry.segmentInfo.isEmpty()) {
-                    chipGroup.visibility = View.GONE
-                } else {
-                    for (entry in summitEntry.segmentInfo) {
-                        val chip = createChip(
-                            String.format(
-                                getString(R.string.rank_in_activity),
-                                entry.third,
-                                entry.second.getDisplayName()
-                            ), imageId
-                        )
-                        chip.setOnClickListener {
-                            binding.segmentDetails.visibility = View.VISIBLE
-                            binding.segmentName.text = String.format(
-                                getString(R.string.ranked),
-                                entry.third,
-                            )
-                            binding.durationSegment.text = String.format(
-                                resources.configuration.locales[0],
-                                "%.1f %s",
-                                entry.first.duration,
-                                getString(R.string.min)
-                            )
-                            binding.kilometersSegment.text = String.format(
-                                resources.configuration.locales[0],
-                                "%.1f %s",
-                                entry.first.kilometers,
-                                getString(R.string.km)
-                            )
-                            binding.averageHrSegment.text = String.format(
-                                resources.configuration.locales[0],
-                                "%s %s",
-                                entry.first.averageHeartRate,
-                                getString(R.string.bpm)
-                            )
-                            binding.averagePowerSegment.text = String.format(
-                                resources.configuration.locales[0],
-                                "%s %s",
-                                entry.first.averagePower,
-                                getString(R.string.watt)
-                            )
-                            binding.heightMeterSegment.text = String.format(
-                                resources.configuration.locales[0],
-                                "%s/%s %s",
-                                entry.first.heightMetersUp,
-                                entry.first.heightMetersDown,
-                                getString(R.string.hm)
-                            )
-                        }
-                        chipGroup.addView(chip)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun setChipsText(id: Int, list: List<String>, imageId: Int) {
-        val chipGroup: ChipGroup = binding.root.findViewById(id)
-        chipGroup.removeAllViews()
-        if (list.isEmpty() || list.first() == "") {
-            chipGroup.visibility = View.GONE
-        } else {
-            for (entry in list) {
-                chipGroup.addView(createChip(entry, imageId))
-            }
-        }
-    }
-
-    private fun createChip(
-        entry: String,
-        imageId: Int
-    ): Chip {
-        val chip = Chip(requireContext())
-        chip.text = entry
-        chip.isClickable = false
-        chip.chipIcon = ResourcesCompat.getDrawable(resources, imageId, null)
-        when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
-            Configuration.UI_MODE_NIGHT_YES -> {
-                chip.chipIconTint =
-                    ContextCompat.getColorStateList(requireContext(), R.color.white)
-            }
-
-            Configuration.UI_MODE_NIGHT_NO -> {
-                chip.chipIconTint =
-                    ContextCompat.getColorStateList(requireContext(), R.color.black)
-            }
-
-            Configuration.UI_MODE_NIGHT_UNDEFINED -> {
-                chip.chipIconTint =
-                    ContextCompat.getColorStateList(requireContext(), R.color.black)
-            }
-        }
-        return chip
     }
 }

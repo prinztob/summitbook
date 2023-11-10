@@ -142,7 +142,8 @@
         <item>Benutzerdefiniert</item>
     </string-array>
 
-    <string name="tab_text_1">Daten</string>
+    <string name="tab_text_0">Daten</string>
+    <string name="tab_text_1">Drittanbieter Daten</string>
     <string name="tab_text_2">Bilder</string>
     <string name="tab_text_3">Karte und Höhenprofil</string>
 
