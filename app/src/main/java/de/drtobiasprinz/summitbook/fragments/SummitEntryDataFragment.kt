@@ -19,6 +19,8 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryDataBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.models.TextField
+import de.drtobiasprinz.summitbook.models.TextFieldGroup
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import java.text.NumberFormat
@@ -50,6 +52,8 @@ class SummitEntryDataFragment : Fragment() {
         pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
             it.data.let { summitToView ->
                 if (summitToView != null) {
+                    setBaseData(summitToView)
+                    setThirdPartyData(summitToView)
                     pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
                         summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(
                             summitsListData,
@@ -70,13 +74,24 @@ class SummitEntryDataFragment : Fragment() {
                                             summitToCompare.data
                                         )
                                     }
-                                    setBaseData(
+                                    if (summitToCompare.data != null) {
+                                        setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                                            summitToView,
+                                            summitToCompare.data
+                                        )
+                                    }
+                                    setCircleBeforeTextForAllTextFields(summitToView, extrema)
+                                    setAdditionalSpeedData(
                                         summitToView,
-                                        summitToCompare.data,
-                                        summits,
-                                        extrema
+                                        extrema,
+                                        summitToCompare.data
                                     )
                                     setThirdPartyData(summitToView, summitToCompare.data, extrema)
+                                    setChipsText(
+                                        R.id.places,
+                                        summitToView.getPlacesWithConnectedEntryString(requireContext(), summits),
+                                        R.drawable.baseline_place_black_24dp
+                                    )
                                 }
                             }
                         }
@@ -89,9 +104,6 @@ class SummitEntryDataFragment : Fragment() {
 
     private fun setBaseData(
         summitToView: Summit,
-        summitToCompare: Summit?,
-        summits: List<Summit>,
-        extrema: ExtremaValuesSummits?
     ) {
         binding.tourDate.text = summitToView.getDateAsString()
         binding.summitName.text = summitToView.name
@@ -100,66 +112,48 @@ class SummitEntryDataFragment : Fragment() {
         } else {
             binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
         }
+        setText(summitToView.comments, binding.comments, binding.comments)
 
-        setText(
-            binding.heightMeterText, binding.heightMeter, getString(R.string.hm), summitToView,
-            extrema?.heightMetersMinMax?.first, extrema?.heightMetersMinMax?.second, summitToCompare
-        ) { entry -> entry.elevationData.elevationGain }
-        setText(
-            binding.kilometersText, binding.kilometers, getString(R.string.km), summitToView,
-            extrema?.kilometersMinMax?.first, extrema?.kilometersMinMax?.second, summitToCompare
-        ) { entry -> entry.kilometers }
-        setText(
-            binding.topElevationText, binding.topElevation, getString(R.string.hm), summitToView,
-            extrema?.topElevationMinMax?.first, extrema?.topElevationMinMax?.second, summitToCompare
-        ) { entry -> entry.elevationData.maxElevation }
-        setText(
-            binding.topVerticalVelocity1MinText,
-            binding.topVerticalVelocity1Min,
-            getString(R.string.m),
-            summitToView,
-            extrema?.topVerticalVelocity1MinMinMax?.first,
-            extrema?.topVerticalVelocity1MinMinMax?.second,
-            summitToCompare,
-            factor = 60,
-            digits = 0
-        ) { entry -> entry.elevationData.maxVerticalVelocity1Min }
-        setText(
-            binding.topVerticalVelocity10MinText,
-            binding.topVerticalVelocity10Min,
-            getString(R.string.m),
-            summitToView,
-            extrema?.topVerticalVelocity10MinMinMax?.first,
-            extrema?.topVerticalVelocity10MinMinMax?.second,
-            summitToCompare,
-            factor = 600,
-            digits = 0
-        ) { entry -> entry.elevationData.maxVerticalVelocity10Min }
-        setText(
-            binding.topVerticalVelocity1hText,
-            binding.topVerticalVelocity1h,
-            getString(R.string.m),
-            summitToView,
-            extrema?.topVerticalVelocity1hMinMax?.first,
-            extrema?.topVerticalVelocity1hMinMax?.second,
-            summitToCompare,
-            factor = 3600,
-            digits = 0
-        ) { entry -> entry.elevationData.maxVerticalVelocity1h }
-        setText(
-            binding.topSlopeText, binding.topSlope, "%", summitToView,
-            extrema?.topSlopeMinMax?.first, extrema?.topSlopeMinMax?.second, summitToCompare
-        ) { entry -> entry.elevationData.maxSlope }
-        setText(
-            binding.paceText, binding.pace, getString(R.string.kmh), summitToView,
-            extrema?.averageSpeedMinMax?.first, extrema?.averageSpeedMinMax?.second, summitToCompare
-        ) { entry -> entry.velocityData.avgVelocity }
-        setText(
-            binding.topSpeedText, binding.topSpeed, getString(R.string.kmh), summitToView,
-            extrema?.topSpeedMinMax?.first, extrema?.topSpeedMinMax?.second, summitToCompare
-        ) { entry -> entry.velocityData.maxVelocity }
+        TextField.values().filter { it.group == TextFieldGroup.Base }.forEach {
+            setTextOnlyForCurrentSummit(it, summitToView)
+        }
 
-        setAdditionalSpeedData(summitToView, summitToCompare, extrema)
+        setChipsText(R.id.countries, summitToView.countries, R.drawable.ic_baseline_flag_24)
+        setChipsText(R.id.participants, summitToView.participants, R.drawable.ic_baseline_people_24)
+        setChipsText(R.id.equipments, summitToView.equipments, R.drawable.ic_baseline_handyman_24)
+        setChipsTextForSegments(R.id.segments, R.drawable.ic_baseline_route_24, summitToView)
+    }
+
+    private fun setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+        summitToView: Summit,
+        summitToCompare: Summit?,
+        textFieldGroup: TextFieldGroup = TextFieldGroup.Base,
+        visibility: Int = View.VISIBLE
+    ) {
+        TextField.values().filter { it.group == textFieldGroup }.forEach {
+            setTextForCurrentSummitAndCompareWithSummit(it, summitToView, summitToCompare, visibility)
+        }
+    }
+
+    private fun setCircleBeforeTextForAllTextFields(
+        summitToView: Summit,
+        extrema: ExtremaValuesSummits? = null,
+        textFieldGroup: TextFieldGroup = TextFieldGroup.Base
+    ) {
+        TextField.values().filter { it.group == textFieldGroup }.forEach {
+            setCircleBeforeText(it, summitToView, extrema)
+        }
+    }
+
+    private fun setAdditionalSpeedData(
+        summitToView: Summit,
+        extrema: ExtremaValuesSummits?,
+        summitToCompare: Summit?
+    ) {
+        TextField.values().filter { it.group == TextFieldGroup.AdditionalSpeedData }
+            .forEach {
+                setTextOnlyForCurrentSummit(it, summitToView, View.GONE)
+            }
         if (summitToView.velocityData.hasAdditionalData()) {
             binding.expandMoreSpeedData.visibility = View.VISIBLE
             binding.expandMoreSpeedData.setOnClickListener {
@@ -171,7 +165,16 @@ class SummitEntryDataFragment : Fragment() {
                         0,
                         0
                     )
-                    setAdditionalSpeedData(summitToView, summitToCompare, extrema, View.VISIBLE)
+                    setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                        summitToView,
+                        summitToCompare,
+                        textFieldGroup = TextFieldGroup.AdditionalSpeedData
+                    )
+                    setCircleBeforeTextForAllTextFields(
+                        summitToView,
+                        extrema,
+                        textFieldGroup = TextFieldGroup.AdditionalSpeedData
+                    )
                 } else {
                     binding.expandMoreSpeedData.text = getString(R.string.more_speed)
                     binding.expandMoreSpeedData.setCompoundDrawablesWithIntrinsicBounds(
@@ -181,39 +184,21 @@ class SummitEntryDataFragment : Fragment() {
                         0
                     )
                     binding.power1sec.visibility = View.GONE
-                    setAdditionalSpeedData(summitToView, summitToCompare, extrema)
+                    setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                        summitToView,
+                        summitToCompare,
+                        textFieldGroup = TextFieldGroup.AdditionalSpeedData,
+                        visibility = View.GONE
+                    )
                 }
             }
         } else {
             binding.expandMoreSpeedData.visibility = View.GONE
         }
-
-        setText(
-            binding.durationText,
-            binding.duration,
-            "h",
-            summitToView,
-            extrema?.durationMinMax?.first,
-            extrema?.durationMinMax?.second,
-            summitToCompare,
-            toHHms = true
-        ) { entry -> entry.duration }
-        setText(summitToView.comments, binding.comments, binding.comments)
-        setChipsText(
-            R.id.places,
-            summitToView.getPlacesWithConnectedEntryString(requireContext(), summits),
-            R.drawable.baseline_place_black_24dp
-        )
-        setChipsText(R.id.countries, summitToView.countries, R.drawable.ic_baseline_flag_24)
-        setChipsText(R.id.participants, summitToView.participants, R.drawable.ic_baseline_people_24)
-        setChipsText(R.id.equipments, summitToView.equipments, R.drawable.ic_baseline_handyman_24)
-        setChipsTextForSegments(R.id.segments, R.drawable.ic_baseline_route_24, summitToView)
     }
 
     private fun setThirdPartyData(
-        summitToView: Summit,
-        summitToCompare: Summit?,
-        extrema: ExtremaValuesSummits?
+        summitToView: Summit
     ) {
         val garminData = summitToView.garminData
         if (garminData != null) {
@@ -223,74 +208,39 @@ class SummitEntryDataFragment : Fragment() {
                 "<a href=\"${garminData.url}\">${requireContext().getString(R.string.sensor_data)}</a>"
             binding.link.text = Html.fromHtml(text, 0)
             binding.garminData.visibility = View.VISIBLE
-            setText(
-                binding.averageHrText,
-                binding.averageHr,
-                getString(R.string.bpm),
-                summitToView,
-                extrema?.averageHRMinMax?.first,
-                extrema?.averageHRMinMax?.second,
-                summitToCompare,
-                digits = 0,
-                reverse = true
-            ) { entry -> entry.garminData?.averageHR }
-            setText(
-                binding.maxHrText,
-                binding.maxHr,
-                getString(R.string.bpm),
-                summitToView,
-                extrema?.maxHRMinMax?.first,
-                extrema?.maxHRMinMax?.second,
-                summitToCompare,
-                digits = 0,
-                reverse = true
-            ) { entry -> entry.garminData?.maxHR }
-            setText(
-                binding.caloriesText,
-                binding.calories,
-                getString(R.string.kcal),
-                summitToView,
-                extrema?.caloriesMinMax?.first,
-                extrema?.caloriesMinMax?.second,
-                summitToCompare,
-                digits = 0
-            ) { entry -> entry.garminData?.calories }
-            setText(
-                binding.maxPowerText,
-                binding.maxPower,
-                getString(R.string.watt),
-                summitToView,
-                extrema?.maxPowerMinMax?.first,
-                extrema?.maxPowerMinMax?.second,
-                summitToCompare,
-                digits = 0
-            ) { entry -> entry.garminData?.power?.maxPower }
-            setText(
-                binding.averagePowerText,
-                binding.averagePower,
-                getString(R.string.watt),
-                summitToView,
-                extrema?.averagePowerMinMax?.first,
-                extrema?.averagePowerMinMax?.second,
-                summitToCompare,
-                digits = 0
-            ) { entry -> entry.garminData?.power?.avgPower }
-            setText(
-                binding.normPowerText,
-                binding.normPower,
-                getString(R.string.watt),
-                summitToView,
-                extrema?.normPowerMinMax?.first,
-                extrema?.normPowerMinMax?.second,
-                summitToCompare,
-                digits = 0
-            ) { entry -> entry.garminData?.power?.normPower }
 
-            setAdditionalPowerData(summitToView, summitToCompare, extrema)
-            if (summitToView.garminData?.power?.oneSec != null && (summitToView.garminData?.power?.oneSec
-                    ?: 0) > 0
+            TextField.values().filter { it.group == TextFieldGroup.ThirdParty }.forEach {
+                setTextOnlyForCurrentSummit(it, summitToView)
+            }
+
+            TextField.values().filter { it.group == TextFieldGroup.ThirdPartyAdditionalData }
+                .forEach {
+                    setTextOnlyForCurrentSummit(it, summitToView, View.GONE)
+                }
+            if (summitToView.garminData?.power?.oneSec != null &&
+                (summitToView.garminData?.power?.oneSec ?: 0) > 0
             ) {
                 binding.expandMorePowerData.visibility = View.VISIBLE
+            } else {
+                binding.expandMorePowerData.visibility = View.GONE
+            }
+        } else {
+            binding.garminData.visibility = View.GONE
+            binding.expandMorePowerData.visibility = View.GONE
+        }
+    }
+
+    private fun setThirdPartyData(
+        summitToView: Summit,
+        summitToCompare: Summit? = null,
+        extrema: ExtremaValuesSummits? = null
+    ) {
+        val garminData = summitToView.garminData
+        if (garminData != null) {
+            if (summitToView.garminData?.power?.oneSec != null &&
+                (summitToView.garminData?.power?.oneSec ?: 0) > 0
+            ) {
+                setCircleBeforeTextForAllTextFields(summitToView, extrema, TextFieldGroup.ThirdParty)
                 binding.expandMorePowerData.setOnClickListener {
                     if (binding.expandMorePowerData.text == getString(R.string.more_power)) {
                         binding.expandMorePowerData.text = getString(R.string.less_power)
@@ -300,7 +250,12 @@ class SummitEntryDataFragment : Fragment() {
                             0,
                             0
                         )
-                        setAdditionalPowerData(summitToView, summitToCompare, extrema, View.VISIBLE)
+                        setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                            summitToView,
+                            summitToCompare,
+                            textFieldGroup = TextFieldGroup.ThirdPartyAdditionalData
+                        )
+                        setCircleBeforeTextForAllTextFields(summitToView, extrema, TextFieldGroup.ThirdPartyAdditionalData)
                     } else {
                         binding.expandMorePowerData.text = getString(R.string.more_power)
                         binding.expandMorePowerData.setCompoundDrawablesWithIntrinsicBounds(
@@ -310,68 +265,21 @@ class SummitEntryDataFragment : Fragment() {
                             0
                         )
                         binding.power1sec.visibility = View.GONE
-                        setAdditionalPowerData(summitToView, summitToCompare, extrema)
+                        setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                            summitToView,
+                            summitToCompare,
+                            textFieldGroup = TextFieldGroup.ThirdPartyAdditionalData,
+                            visibility = View.GONE
+                        )
                     }
                 }
             } else {
                 binding.expandMorePowerData.visibility = View.GONE
             }
-            setText(
-                binding.aerobicTrainingEffectText,
-                binding.aerobicTrainingEffect,
-                "",
-                summitToView,
-                extrema?.aerobicTrainingEffectMinMax?.first,
-                extrema?.aerobicTrainingEffectMinMax?.second,
-                summitToCompare
-            ) { entry -> entry.garminData?.aerobicTrainingEffect }
-            setText(
-                binding.anaerobicTrainingEffectText,
-                binding.anaerobicTrainingEffect,
-                "",
-                summitToView,
-                extrema?.anaerobicTrainingEffectMinMax?.first,
-                extrema?.anaerobicTrainingEffectMinMax?.second,
-                summitToCompare
-            ) { entry -> entry.garminData?.anaerobicTrainingEffect }
-            setText(
-                binding.gritText, binding.grit, "", summitToView,
-                extrema?.gritMinMax?.first, extrema?.gritMinMax?.second, summitToCompare
-            ) { entry -> entry.garminData?.grit }
-            setText(
-                binding.flowText, binding.flow, "", summitToView,
-                extrema?.flowMinMax?.first, extrema?.flowMinMax?.second, summitToCompare
-            ) { entry -> entry.garminData?.flow }
-            setText(
-                binding.trainingLoadText,
-                binding.trainingLoad,
-                "",
-                summitToView,
-                extrema?.trainingsLoadMinMax?.first,
-                extrema?.trainingsLoadMinMax?.second,
-                summitToCompare,
-                digits = 0
-            ) { entry -> entry.garminData?.trainingLoad }
-            setText(
-                binding.vo2MaxText,
-                binding.vo2Max,
-                "",
-                summitToView,
-                extrema?.vo2maxMinMax?.first,
-                extrema?.vo2maxMinMax?.second,
-                summitToCompare,
-                digits = 2
-            ) { entry -> entry.garminData?.vo2max }
-            setText(
-                binding.FTPText, binding.FTP, "", summitToView,
-                extrema?.ftpMinMax?.first, extrema?.ftpMinMax?.second, summitToCompare
-            ) { entry -> entry.garminData?.ftp }
         } else {
             binding.garminData.visibility = View.GONE
             binding.expandMorePowerData.visibility = View.GONE
         }
-
-
     }
 
     private fun prepareCompareAutoComplete(summitToView: Summit, summitToCompare: Summit?) {
@@ -426,289 +334,6 @@ class SummitEntryDataFragment : Fragment() {
         return suggestions as ArrayList
     }
 
-    private fun setAdditionalSpeedData(
-        localSummit: Summit,
-        summitToCompare: Summit?,
-        extrema: ExtremaValuesSummits?,
-        visibility: Int = View.GONE
-    ) {
-        setText(
-            binding.oneKMTopSpeedText,
-            binding.oneKMTopSpeed,
-            getString(R.string.kmh),
-            localSummit,
-            extrema?.oneKmMinMax?.first,
-            extrema?.oneKmMinMax?.second,
-            summitToCompare,
-            visibility = visibility
-        ) { entry -> entry.velocityData.oneKilometer }
-        setText(
-            binding.fiveKMTopSpeedText,
-            binding.fiveKMTopSpeed,
-            getString(R.string.kmh),
-            localSummit,
-            extrema?.fiveKmMinMax?.first,
-            extrema?.fiveKmMinMax?.second,
-            summitToCompare,
-            visibility = visibility
-        ) { entry -> entry.velocityData.fiveKilometer }
-        setText(
-            binding.tenKMTopSpeedText,
-            binding.tenKMTopSpeed,
-            getString(R.string.kmh),
-            localSummit,
-            extrema?.tenKmMinMax?.first,
-            extrema?.tenKmMinMax?.second,
-            summitToCompare,
-            visibility = visibility
-        ) { entry -> entry.velocityData.tenKilometers }
-        setText(
-            binding.fifteenKMTopSpeedText,
-            binding.fifteenKMTopSpeed,
-            getString(R.string.kmh),
-            localSummit,
-            extrema?.fifteenKmMinMax?.first,
-            extrema?.fifteenKmMinMax?.second,
-            summitToCompare,
-            visibility = visibility
-        ) { entry -> entry.velocityData.fifteenKilometers }
-        setText(
-            binding.twentyKMTopSpeedText,
-            binding.twentyKMTopSpeed,
-            getString(R.string.kmh),
-            localSummit,
-            extrema?.twentyKmMinMax?.first,
-            extrema?.twentyKmMinMax?.second,
-            summitToCompare,
-            visibility = visibility
-        ) { entry -> entry.velocityData.twentyKilometers }
-        setText(
-            binding.thirtyKMTopSpeedText,
-            binding.thirtyKMTopSpeed,
-            getString(R.string.kmh),
-            localSummit,
-            extrema?.thirtyKmMinMax?.first,
-            extrema?.thirtyKmMinMax?.second,
-            summitToCompare,
-            visibility = visibility
-        ) { entry -> entry.velocityData.thirtyKilometers }
-        setText(
-            binding.fourtyKMTopSpeedText,
-            binding.fourtyKMTopSpeed,
-            getString(R.string.kmh),
-            localSummit,
-            extrema?.fortyKmMinMax?.first,
-            extrema?.fortyKmMinMax?.second,
-            summitToCompare,
-            visibility = visibility
-        ) { entry -> entry.velocityData.fortyKilometers }
-        setText(
-            binding.fiftyKMTopSpeedText,
-            binding.fiftyKMTopSpeed,
-            getString(R.string.kmh),
-            localSummit,
-            extrema?.fiftyKmMinMax?.first,
-            extrema?.fiftyKmMinMax?.second,
-            summitToCompare,
-            visibility = visibility
-        ) { entry -> entry.velocityData.fiftyKilometers }
-        setText(
-            binding.seventyfiveKMTopSpeedText,
-            binding.seventyfiveKMTopSpeed,
-            getString(R.string.kmh),
-            localSummit,
-            extrema?.seventyFiveKmMinMax?.first,
-            extrema?.seventyFiveKmMinMax?.second,
-            summitToCompare,
-            visibility = visibility
-        ) { entry -> entry.velocityData.seventyFiveKilometers }
-        setText(
-            binding.hundretKMTopSpeedText,
-            binding.hundretKMTopSpeed,
-            getString(R.string.kmh),
-            localSummit,
-            extrema?.hundredKmMinMax?.first,
-            extrema?.hundredKmMinMax?.second,
-            summitToCompare,
-            visibility = visibility
-        ) { entry -> entry.velocityData.hundredKilometers }
-    }
-
-    private fun setAdditionalPowerData(
-        summit: Summit,
-        summitToCompare: Summit?,
-        extrema: ExtremaValuesSummits?,
-        visibility: Int = View.GONE
-    ) {
-        setText(
-            binding.power1secText,
-            binding.power1sec,
-            getString(R.string.watt),
-            summit,
-            extrema?.power1sMinMax?.first,
-            extrema?.power1sMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.oneSec }
-        setText(
-            binding.power2secText,
-            binding.power2sec,
-            getString(R.string.watt),
-            summit,
-            extrema?.power2sMinMax?.first,
-            extrema?.power2sMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.twoSec }
-        setText(
-            binding.power5secText,
-            binding.power5sec,
-            getString(R.string.watt),
-            summit,
-            extrema?.power5sMinMax?.first,
-            extrema?.power5sMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.fiveSec }
-        setText(
-            binding.power10secText,
-            binding.power10sec,
-            getString(R.string.watt),
-            summit,
-            extrema?.power10sMinMax?.first,
-            extrema?.power10sMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.tenSec }
-        setText(
-            binding.power20secText,
-            binding.power20sec,
-            getString(R.string.watt),
-            summit,
-            extrema?.power20sMinMax?.first,
-            extrema?.power20sMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.twentySec }
-        setText(
-            binding.power30secText,
-            binding.power30sec,
-            getString(R.string.watt),
-            summit,
-            extrema?.power30sMinMax?.first,
-            extrema?.power30sMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.thirtySec }
-
-        setText(
-            binding.power1minText,
-            binding.power1min,
-            getString(R.string.watt),
-            summit,
-            extrema?.power1minMinMax?.first,
-            extrema?.power1minMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.oneMin }
-        setText(
-            binding.power2minText,
-            binding.power2min,
-            getString(R.string.watt),
-            summit,
-            extrema?.power2minMinMax?.first,
-            extrema?.power2minMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.twoMin }
-        setText(
-            binding.power5minText,
-            binding.power5min,
-            getString(R.string.watt),
-            summit,
-            extrema?.power5minMinMax?.first,
-            extrema?.power5minMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.fiveMin }
-        setText(
-            binding.power10minText,
-            binding.power10min,
-            getString(R.string.watt),
-            summit,
-            extrema?.power10minMinMax?.first,
-            extrema?.power10minMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.tenMin }
-        setText(
-            binding.power20minText,
-            binding.power20min,
-            getString(R.string.watt),
-            summit,
-            extrema?.power20minMinMax?.first,
-            extrema?.power20minMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.twentyMin }
-        setText(
-            binding.power30minText,
-            binding.power30min,
-            getString(R.string.watt),
-            summit,
-            extrema?.power30minMinMax?.first,
-            extrema?.power30minMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.thirtyMin }
-
-        setText(
-            binding.power1hText,
-            binding.power1h,
-            getString(R.string.watt),
-            summit,
-            extrema?.power1hMinMax?.first,
-            extrema?.power1hMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.oneHour }
-        setText(
-            binding.power2hText,
-            binding.power2h,
-            getString(R.string.watt),
-            summit,
-            extrema?.power2hMinMax?.first,
-            extrema?.power2hMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.twoHours }
-        setText(
-            binding.power5hText,
-            binding.power5h,
-            getString(R.string.watt),
-            summit,
-            extrema?.power5hMinMax?.first,
-            extrema?.power5hMinMax?.second,
-            summitToCompare,
-            visibility = visibility,
-            digits = 0
-        ) { entry -> entry.garminData?.power?.fiveHours }
-    }
-
     private fun setText(text: String, info: TextView, textView: TextView) {
         if (text == "") {
             info.visibility = View.GONE
@@ -720,27 +345,59 @@ class SummitEntryDataFragment : Fragment() {
         }
     }
 
-    private fun setText(
-        descriptionTextView: TextView, valueTextView: TextView, unit: String, summit: Summit,
-        minSummit: Summit? = null, maxSummit: Summit? = null, compareSummit: Summit? = null,
-        reverse: Boolean = false, visibility: Int = View.VISIBLE, toHHms: Boolean = false,
-        digits: Int = 1, factor: Int = 1, f: (Summit) -> Number?
+    private fun setTextOnlyForCurrentSummit(
+        textField: TextField,
+        summit: Summit,
+        visibility: Int = View.VISIBLE
     ) {
-        val value = f(summit) ?: (if (f(summit) is Int) 0 else 0.0)
-        val valueToCompare =
-            if (compareSummit != null) f(compareSummit) else (if (f(summit) is Int) 0 else 0.0)
-        if (abs(value.toDouble() * factor) < 0.01) {
-            descriptionTextView.visibility = View.GONE
-            valueTextView.visibility = View.GONE
+        val value =
+            textField.getValue(summit) ?: (if (textField.getValue(summit) is Int) 0 else 0.0)
+        if (abs(value.toDouble() * textField.factor) < 0.01) {
+            textField.descriptionTextView(binding).visibility = View.GONE
+            textField.valueTextView(binding).visibility = View.GONE
         } else {
-            descriptionTextView.visibility = visibility
-            valueTextView.visibility = visibility
-            if (toHHms) {
+            textField.descriptionTextView(binding).visibility = visibility
+            textField.valueTextView(binding).visibility = visibility
+            if (textField.toHHms) {
+                val valueInMs = (value.toDouble() * 3600000.0).toLong()
+                textField.valueTextView(binding).text = String.format(
+                    "%02dh %02dm", TimeUnit.MILLISECONDS.toHours(valueInMs),
+                    TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1)
+                )
+            } else {
+                numberFormat.maximumFractionDigits = textField.digits
+                textField.valueTextView(binding).text =
+                    "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unit}"
+
+            }
+        }
+    }
+
+    private fun setTextForCurrentSummitAndCompareWithSummit(
+        textField: TextField,
+        summit: Summit,
+        compareSummit: Summit? = null,
+        visibility: Int = View.VISIBLE
+    ) {
+        val value =
+            textField.getValue(summit) ?: (if (textField.getValue(summit) is Int) 0 else 0.0)
+        val valueToCompare =
+            if (compareSummit != null) textField.getValue(compareSummit) else (if (textField.getValue(
+                    summit
+                ) is Int
+            ) 0 else 0.0)
+        if (abs(value.toDouble() * textField.factor) < 0.01) {
+            textField.descriptionTextView(binding).visibility = View.GONE
+            textField.valueTextView(binding).visibility = View.GONE
+        } else {
+            textField.descriptionTextView(binding).visibility = visibility
+            textField.valueTextView(binding).visibility = visibility
+            if (textField.toHHms) {
                 val valueInMs = (value.toDouble() * 3600000.0).toLong()
                 val valueInMsCompareSummit = ((valueToCompare?.toDouble()
                     ?: 0.0) * 3600000.0).toLong()
                 if (valueInMsCompareSummit > 0) {
-                    valueTextView.text = String.format(
+                    textField.valueTextView(binding).text = String.format(
                         "%02dh %02dm (%02dh %02dm)", TimeUnit.MILLISECONDS.toHours(valueInMs),
                         TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
                         TimeUnit.MILLISECONDS.toHours(valueInMsCompareSummit),
@@ -749,26 +406,46 @@ class SummitEntryDataFragment : Fragment() {
                         )
                     )
                 } else {
-                    valueTextView.text = String.format(
+                    textField.valueTextView(binding).text = String.format(
                         "%02dh %02dm", TimeUnit.MILLISECONDS.toHours(valueInMs),
                         TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1)
                     )
                 }
             } else {
-                numberFormat.maximumFractionDigits = digits
-                valueTextView.text =
+                numberFormat.maximumFractionDigits = textField.digits
+                textField.valueTextView(binding).text =
                     if (valueToCompare != null && valueToCompare.toInt() != 0) {
-                        "${numberFormat.format(value.toDouble() * factor)} " +
-                                "(${numberFormat.format(valueToCompare.toDouble() * factor)}) " +
-                                unit
+                        "${numberFormat.format(value.toDouble() * textField.factor)} " +
+                                "(${numberFormat.format(valueToCompare.toDouble() * textField.factor)}) " +
+                                textField.unit
                     } else {
-                        "${numberFormat.format(value.toDouble() * factor)} $unit"
+                        "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unit}"
                     }
             }
-            drawCircleWithIndication(valueTextView, minSummit?.let { f(it)?.toDouble() }
-                ?: 0.0, maxSummit?.let { f(it)?.toDouble() }, value.toDouble(), reverse)
         }
     }
+
+    private fun setCircleBeforeText(
+        textField: TextField,
+        summit: Summit,
+        extrema: ExtremaValuesSummits?
+    ) {
+        val minSummit = textField.getMinMaxSummit(extrema)?.first
+        val maxSummit = textField.getMinMaxSummit(extrema)?.second
+        val value =
+            textField.getValue(summit) ?: (if (textField.getValue(summit) is Int) 0 else 0.0)
+        if (abs(value.toDouble() * textField.factor) > 0.01) {
+            drawCircleWithIndication(
+                textField.valueTextView(binding),
+                minSummit?.let { textField.getValue(it)?.toDouble() }
+                    ?: 0.0,
+                maxSummit?.let { textField.getValue(it)?.toDouble() },
+                value.toDouble(),
+                textField.reverse
+            )
+        }
+    }
+
 
     private fun drawCircleWithIndication(
         textView: TextView,

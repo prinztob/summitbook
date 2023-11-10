@@ -6,7 +6,6 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
@@ -15,9 +14,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.TabsPagerAdapter
 import de.drtobiasprinz.summitbook.db.entities.SportGroup
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.utils.DataStatus
+import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 
 @AndroidEntryPoint
 class SummitEntryDetailsActivity : AppCompatActivity() {
@@ -25,14 +24,11 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
 
     private lateinit var summitEntry: Summit
     private lateinit var viewPager: ViewPager2
-    private var summitsToCompare: List<Summit> = emptyList()
-    private lateinit var allSummits: LiveData<DataStatus<List<Summit>>>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pageViewModel = ViewModelProvider(this)[PageViewModel::class.java]
         setContentView(R.layout.activity_summit_entry_details)
-        allSummits = pageViewModel?.summitsList!!
         setActionBar()
         OpenStreetMapUtils.setOsmConfForTiles()
         val bundle = intent.extras
@@ -51,10 +47,6 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
                         TabLayoutMediator(tabs, viewPager) { tab, position ->
                             tab.text = getPageTitle(position)
                         }.attach()
-
-                        pageViewModel?.summitsList?.observe(this) { itData ->
-                            summitsToCompare = getSummitsToCompare(itData, summitEntry)
-                        }
                     }
                 }
             }
