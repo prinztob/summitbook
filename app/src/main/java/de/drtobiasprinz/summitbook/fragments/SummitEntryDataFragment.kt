@@ -43,13 +43,17 @@ class SummitEntryDataFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentSummitEntryDataBinding.inflate(layoutInflater, container, false)
-        binding.table.visibility = View.GONE
+        binding.constraintLayout.visibility = View.GONE
+        binding.constraintLayoutMoreSpeedData.visibility = View.GONE
+        binding.constraintLayoutChips.visibility = View.GONE
         binding.loadingPanel.visibility = View.VISIBLE
-
         numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
         pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
             it.data.let { summitToView ->
                 if (summitToView != null) {
+                    binding.constraintLayout.visibility = View.VISIBLE
+                    binding.constraintLayoutMoreSpeedData.visibility = View.VISIBLE
+                    binding.constraintLayoutChips.visibility = View.VISIBLE
                     setBaseData(summitToView)
                     pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
                         summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(
@@ -59,9 +63,7 @@ class SummitEntryDataFragment : Fragment() {
                         summitsListData.data.let { summits ->
                             if (summits != null) {
                                 pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { summitToCompare ->
-                                    binding.table.visibility = View.VISIBLE
                                     binding.loadingPanel.visibility = View.GONE
-
                                     val extrema = ExtremaValuesSummits(summits)
                                     if (summitToView.isBookmark) {
                                         binding.summitNameToCompare.visibility = View.GONE

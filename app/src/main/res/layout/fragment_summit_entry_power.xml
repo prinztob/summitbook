@@ -1,68 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".SummitEntryDetailsActivity">
 
-    <LinearLayout
+    <ProgressBar
+        android:id="@+id/loadingPanel"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:gravity="center"
+        android:indeterminate="true"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/sport_type_image"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_margin="5dp"
+        android:contentDescription="@string/sport_type_image"
+        android:paddingTop="5dp"
+        android:tag="image_tag"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/summit_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:layout_toEndOf="@id/sport_type_image"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        app:layout_constraintStart_toEndOf="@+id/sport_type_image"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.chivorn.smartmaterialspinner.SmartMaterialSpinner
+        android:id="@+id/summit_name_to_compare"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <ImageView
-                android:id="@+id/sport_type_image"
-                android:layout_width="50dp"
-                android:layout_height="40dp"
-                android:layout_margin="5dp"
-                android:contentDescription="@string/sport_type_image"
-                android:paddingTop="5dp"
-                android:tag="image_tag" />
-            <TextView
-                android:id="@+id/summit_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="10dp"
-                android:layout_toEndOf="@id/sport_type_image"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
-
-            <Spinner
-                android:id="@+id/spinner_time_range"
-                android:background="?android:colorBackground"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/sport_type_image"
-                android:paddingTop="35dp" />
-
-            <com.chivorn.smartmaterialspinner.SmartMaterialSpinner
-                android:id="@+id/summit_name_to_compare"
-                android:layout_below="@+id/spinner_time_range"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/summit_name_compare_hint"
-                android:background="?android:colorBackground"
-                app:smsp_searchHeaderText="@string/select_item"
-                app:smsp_searchHint="@string/summit_name_compare_hint"
-                app:smsp_hint="@string/summit_name_compare_hint"
-                app:smsp_itemColor="#512DA8"
-                app:smsp_itemListColor="#7C4DFF"
-                app:smsp_itemListHintBackgroundColor="#808080"
-                app:smsp_isSearchable="true"
-                app:smsp_enableErrorLabel="false"
-                app:smsp_enableFloatingLabel="false"
-                app:smsp_selectedItemListColor="#FF5252" />
-        </RelativeLayout>
+        android:hint="@string/summit_name_compare_hint"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/sport_type_image"
+        app:smsp_enableErrorLabel="false"
+        app:smsp_enableFloatingLabel="false"
+        app:smsp_hint="@string/summit_name_compare_hint"
+        app:smsp_isSearchable="true"
+        app:smsp_itemColor="#512DA8"
+        app:smsp_itemListColor="#7C4DFF"
+        app:smsp_itemListHintBackgroundColor="#808080"
+        app:smsp_searchHeaderText="@string/select_item"
+        app:smsp_searchHint="@string/summit_name_compare_hint"
+        app:smsp_selectedItemListColor="#FF5252" />
 
 
-        <com.github.mikephil.charting.charts.LineChart
-            android:id="@+id/lineChart"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </LinearLayout>
-</LinearLayout>
+    <Spinner
+        android:id="@+id/spinner_time_range"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="?android:colorBackground"
+        android:paddingTop="35dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/summit_name_to_compare" />
+
+
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/lineChart"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spinner_time_range" />
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -223,7 +223,7 @@ class GarminPythonExecutor(
             val sportType = parseSportType(jsonObject["activityType"].asJsonObject)
             val duration: Double =
                 if (jsonObject["movingDuration"] != JsonNull.INSTANCE && sportType in SportGroup.Bike.sportTypes) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
-            val averageSpeed = convertMphToKmh(jsonObject["distance"].asDouble / duration)
+            val averageSpeed = if (jsonObject["distance"] != JsonNull.INSTANCE && duration != 0.0) convertMphToKmh(jsonObject["distance"].asDouble / duration) else 0.0
             val activityIds: MutableList<String> = mutableListOf(jsonObject["activityId"].asString)
             if (jsonObject.has("childIds")) {
                 activityIds.addAll(jsonObject["childIds"].asJsonArray.map { it.asString })

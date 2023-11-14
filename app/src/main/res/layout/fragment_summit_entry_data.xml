@@ -1,61 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="0dp"
-    android:layout_weight="2">
+    android:layout_height="match_parent"
+    tools:context=".SummitEntryDetailsActivity">
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2"
+        android:fadeScrollbars="false"
+        android:scrollbarFadeDuration="50000"
+        android:scrollbarSize="10dp"
+        android:scrollbarThumbVertical="@color/colorPrimaryDark"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <RelativeLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
-
-        <ProgressBar
-            android:id="@+id/loadingPanel"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="150dp"
-            android:gravity="center"
-            android:indeterminate="true" />
+            android:layout_height="wrap_content">
 
-        <TableLayout
-            android:id="@+id/table"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:shrinkColumns="*"
-            android:stretchColumns="*">
-
-
-            <RelativeLayout
+            <ProgressBar
+                android:id="@+id/loadingPanel"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="150dp"
+                android:gravity="center"
+                android:indeterminate="true"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-                <ImageView
-                    android:id="@+id/sport_type_image"
-                    android:layout_width="50dp"
-                    android:layout_height="40dp"
-                    android:layout_margin="5dp"
-                    android:contentDescription="@string/sport_type_image"
-                    android:paddingTop="5dp"
-                    android:tag="image_tag" />
+            <ImageView
+                android:id="@+id/sport_type_image"
+                android:layout_width="50dp"
+                android:layout_height="40dp"
+                android:layout_margin="5dp"
+                android:contentDescription="@string/sport_type_image"
+                android:paddingTop="5dp"
+                android:tag="image_tag"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-                <TextView
-                    android:id="@+id/summit_name"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="10dp"
-                    android:layout_toEndOf="@id/sport_type_image"
-                    android:textAppearance="?android:attr/textAppearanceLarge" />
-
-            </RelativeLayout>
+            <TextView
+                android:id="@+id/summit_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="10dp"
+                android:layout_toEndOf="@id/sport_type_image"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                app:layout_constraintStart_toEndOf="@+id/sport_type_image"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <com.chivorn.smartmaterialspinner.SmartMaterialSpinner
                 android:id="@+id/summit_name_to_compare"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="?android:colorBackground"
                 android:hint="@string/summit_name_compare_hint"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/sport_type_image"
                 app:smsp_enableErrorLabel="false"
                 app:smsp_enableFloatingLabel="false"
                 app:smsp_hint="@string/summit_name_compare_hint"
@@ -67,18 +70,18 @@
                 app:smsp_searchHint="@string/summit_name_compare_hint"
                 app:smsp_selectedItemListColor="#FF5252" />
 
-            <GridLayout
-                android:id="@+id/generalData"
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/constraintLayout"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:columnCount="2"
-                android:rowCount="6">
-
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/summit_name_to_compare"
+                tools:layout_constraintStart_creator="1">
 
                 <TextView
+                    android:id="@+id/tour_date_text"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -86,22 +89,14 @@
                     android:text="@string/tour_date"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_today_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/tour_date"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <TextView
                     android:id="@+id/height_meterText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -109,156 +104,105 @@
                     android:text="@string/height_meter_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_trending_up_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/height_meter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/tour_date_text" />
 
                 <TextView
                     android:id="@+id/kilometersText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
+
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
                     android:padding="1dp"
                     android:text="@string/kilometers_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/icons8_map_pinpoint_20"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/kilometers"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
+                    app:drawableStartCompat="@drawable/baseline_place_black_24dp"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/height_meterText" />
 
                 <TextView
                     android:id="@+id/top_elevationText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
                     android:padding="1dp"
                     android:text="@string/top_elevation_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/icons8_mountain_20"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/top_elevation"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
+                    app:drawableStartCompat="@drawable/baseline_terrain_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/kilometersText" />
 
                 <TextView
                     android:id="@+id/top_slopeText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
                     android:padding="1dp"
                     android:text="@string/max_slope"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/icons8_mountain_20"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/top_slope"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
+                    app:drawableStartCompat="@drawable/baseline_terrain_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_elevationText" />
 
                 <TextView
                     android:id="@+id/top_verticalVelocity1MinText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
                     android:padding="1dp"
                     android:text="@string/max_verticalVelocity_1Min"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/icons8_mountain_20"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/top_verticalVelocity1Min"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
+                    app:drawableStartCompat="@drawable/baseline_terrain_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_slopeText" />
 
                 <TextView
                     android:id="@+id/top_verticalVelocity10MinText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
                     android:padding="1dp"
                     android:text="@string/max_verticalVelocity_10Min"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/icons8_mountain_20"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/top_verticalVelocity10Min"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
+                    app:drawableStartCompat="@drawable/baseline_terrain_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocity1MinText" />
 
                 <TextView
                     android:id="@+id/top_verticalVelocity1hText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
                     android:padding="1dp"
                     android:text="@string/max_verticalVelocity_1h"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/icons8_mountain_20"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/top_verticalVelocity1h"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
+                    app:drawableStartCompat="@drawable/baseline_terrain_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocity10MinText" />
 
                 <TextView
                     android:id="@+id/paceText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -266,22 +210,14 @@
                     android:text="@string/pace_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/pace"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocity1hText" />
 
                 <TextView
                     android:id="@+id/durationText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -289,21 +225,14 @@
                     android:text="@string/duration"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/ic_baseline_timer_24"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/duration"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/paceText" />
 
                 <TextView
                     android:id="@+id/top_speedText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -311,43 +240,181 @@
                     android:text="@string/top_speed_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/durationText" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="@+id/constraintLayout"
+                app:layout_constraintStart_toEndOf="@+id/constraintLayout"
+                app:layout_constraintTop_toTopOf="@+id/constraintLayout"
+                tools:layout_constraintEnd_creator="1">
+
+                <TextView
+                    android:id="@+id/tour_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/height_meter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/tour_date" />
+
+                <TextView
+                    android:id="@+id/kilometers"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/height_meter" />
+
+                <TextView
+                    android:id="@+id/top_elevation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/kilometers" />
+
+                <TextView
+                    android:id="@+id/top_slope"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_elevation" />
+
+                <TextView
+                    android:id="@+id/top_verticalVelocity1Min"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_slope" />
+
+                <TextView
+                    android:id="@+id/top_verticalVelocity10Min"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocity1Min" />
+
+                <TextView
+                    android:id="@+id/top_verticalVelocity1h"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocity10Min" />
+
+                <TextView
+                    android:id="@+id/pace"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocity1h" />
+
+                <TextView
+                    android:id="@+id/duration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/pace" />
 
                 <TextView
                     android:id="@+id/top_speed"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
-                <TextView
-                    android:id="@+id/expand_more_speed_data"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:clickable="true"
-                    android:padding="1dp"
-                    android:text="@string/more_speed"
-                    android:visibility="gone"
-                    app:drawableStartCompat="@drawable/ic_baseline_expand_more_24"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:visibility="gone" />
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/duration" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <TextView
+                android:id="@+id/expand_more_speed_data"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="20dp"
+                android:clickable="true"
+                android:padding="1dp"
+                android:text="@string/more_speed"
+                android:visibility="gone"
+                app:drawableStartCompat="@drawable/ic_baseline_expand_more_24"
+                app:drawableTint="?android:attr/colorControlNormal"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/constraintLayout" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/constraintLayoutMoreSpeedData"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/expand_more_speed_data"
+                tools:layout_constraintStart_creator="1">
 
                 <TextView
                     android:id="@+id/oneKM_top_speedText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -355,22 +422,14 @@
                     android:text="@string/top_speed_1km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/oneKM_top_speed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <TextView
                     android:id="@+id/fiveKM_top_speedText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -378,22 +437,14 @@
                     android:text="@string/top_speed_5km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/fiveKM_top_speed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/oneKM_top_speedText" />
 
                 <TextView
                     android:id="@+id/tenKM_top_speedText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -401,22 +452,14 @@
                     android:text="@string/top_speed_10km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/tenKM_top_speed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/fiveKM_top_speedText" />
 
                 <TextView
                     android:id="@+id/fifteenKM_top_speedText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -424,22 +467,14 @@
                     android:text="@string/top_speed_15km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/fifteenKM_top_speed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/tenKM_top_speedText" />
 
                 <TextView
                     android:id="@+id/twentyKM_top_speedText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -447,21 +482,14 @@
                     android:text="@string/top_speed_20km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/twentyKM_top_speed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/fifteenKM_top_speedText" />
 
                 <TextView
                     android:id="@+id/thirtyKM_top_speedText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -469,22 +497,14 @@
                     android:text="@string/top_speed_30km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/thirtyKM_top_speed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/twentyKM_top_speedText" />
 
                 <TextView
                     android:id="@+id/fourtyKM_top_speedText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -492,22 +512,14 @@
                     android:text="@string/top_speed_40km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/fourtyKM_top_speed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/thirtyKM_top_speedText" />
 
                 <TextView
                     android:id="@+id/fiftyKM_top_speedText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -515,22 +527,14 @@
                     android:text="@string/top_speed_50km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/fiftyKM_top_speed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/fourtyKM_top_speedText" />
 
                 <TextView
                     android:id="@+id/seventyfiveKM_top_speedText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -538,21 +542,14 @@
                     android:text="@string/top_speed_75km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-
-                <TextView
-                    android:id="@+id/seventyfiveKM_top_speed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/fiftyKM_top_speedText" />
 
                 <TextView
                     android:id="@+id/hundretKM_top_speedText"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
@@ -560,27 +557,158 @@
                     android:text="@string/top_speed_100km_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/seventyfiveKM_top_speedText" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="@+id/constraintLayoutMoreSpeedData"
+                app:layout_constraintStart_toEndOf="@+id/constraintLayoutMoreSpeedData"
+                app:layout_constraintTop_toTopOf="@+id/constraintLayoutMoreSpeedData"
+                tools:layout_constraintEnd_creator="1">
+
+                <TextView
+                    android:id="@+id/oneKM_top_speed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/fiveKM_top_speed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/oneKM_top_speed" />
+
+                <TextView
+                    android:id="@+id/tenKM_top_speed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/fiveKM_top_speed" />
+
+                <TextView
+                    android:id="@+id/fifteenKM_top_speed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/tenKM_top_speed" />
+
+                <TextView
+                    android:id="@+id/twentyKM_top_speed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/fifteenKM_top_speed" />
+
+                <TextView
+                    android:id="@+id/thirtyKM_top_speed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/twentyKM_top_speed" />
+
+                <TextView
+                    android:id="@+id/fourtyKM_top_speed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/thirtyKM_top_speed" />
+
+                <TextView
+                    android:id="@+id/fiftyKM_top_speed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/fourtyKM_top_speed" />
+
+                <TextView
+                    android:id="@+id/seventyfiveKM_top_speed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/fiftyKM_top_speed" />
+
 
                 <TextView
                     android:id="@+id/hundretKM_top_speed"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="27dp"
                     android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:paddingTop="5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-            </GridLayout>
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/seventyfiveKM_top_speed" />
 
-            <TableRow
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical">
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/constraintLayoutChips"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/constraintLayoutMoreSpeedData"
+                tools:layout_constraintEnd_creator="1">
 
                 <HorizontalScrollView
+                    android:id="@+id/placesHorizontalScrollView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:scrollbars="none">
+                    android:scrollbars="none"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
 
                     <com.google.android.material.chip.ChipGroup
                         android:id="@+id/places"
@@ -596,17 +724,13 @@
                         app:singleLine="true" />
                 </HorizontalScrollView>
 
-            </TableRow>
-
-            <TableRow
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical">
-
                 <HorizontalScrollView
+                    android:id="@+id/countriesHorizontalScrollView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:scrollbars="none">
+                    android:scrollbars="none"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/placesHorizontalScrollView">
 
                     <com.google.android.material.chip.ChipGroup
                         android:id="@+id/countries"
@@ -623,17 +747,13 @@
                         app:singleLine="true" />
                 </HorizontalScrollView>
 
-            </TableRow>
-
-            <TableRow
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical">
-
                 <HorizontalScrollView
+                    android:id="@+id/participantsHorizontalScrollView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:scrollbars="none">
+                    android:scrollbars="none"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/countriesHorizontalScrollView">
 
                     <com.google.android.material.chip.ChipGroup
                         android:id="@+id/participants"
@@ -650,17 +770,13 @@
                         app:singleLine="true" />
                 </HorizontalScrollView>
 
-            </TableRow>
-
-            <TableRow
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical">
-
                 <HorizontalScrollView
+                    android:id="@+id/segmentsHorizontalScrollView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:scrollbars="none">
+                    android:scrollbars="none"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/participantsHorizontalScrollView">
 
                     <com.google.android.material.chip.ChipGroup
                         android:id="@+id/segments"
@@ -675,27 +791,19 @@
                         app:layout_constraintHorizontal_bias="0.0"
                         app:singleLine="true" />
                 </HorizontalScrollView>
-            </TableRow>
-
-            <TableRow
-                android:id="@+id/segmentDetails"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical"
-                android:visibility="gone">
 
                 <GridLayout
-                    android:id="@+id/gridLayout"
+                    android:id="@+id/segmentDetails"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="5dp"
                     android:columnCount="2"
                     android:rowCount="3"
-
+                    android:visibility="gone"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
+                    app:layout_constraintTop_toBottomOf="@+id/segmentsHorizontalScrollView">
 
                     <TextView
                         android:id="@+id/segmentName"
@@ -727,7 +835,7 @@
                         android:layout_marginStart="20dp"
                         android:drawablePadding="5dp"
                         android:padding="1dp"
-                        app:drawableStartCompat="@drawable/icons8_map_pinpoint_20"
+                        app:drawableStartCompat="@drawable/baseline_add_location_black_24dp"
                         app:drawableTint="?android:attr/colorControlNormal" />
 
 
@@ -765,17 +873,14 @@
                         app:drawableTint="?android:attr/colorControlNormal" />
 
                 </GridLayout>
-            </TableRow>
-
-            <TableRow
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical">
 
                 <HorizontalScrollView
+                    android:id="@+id/equipmentsHorizontalScrollView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:scrollbars="none">
+                    android:scrollbars="none"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/segmentDetails">
 
                     <com.google.android.material.chip.ChipGroup
                         android:id="@+id/equipments"
@@ -792,14 +897,6 @@
                         app:singleLine="true" />
                 </HorizontalScrollView>
 
-            </TableRow>
-
-
-            <TableRow
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical">
-
                 <TextView
                     android:id="@+id/comments"
                     android:layout_width="wrap_content"
@@ -810,10 +907,11 @@
                     android:padding="1dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_speaker_notes_black_24dp"
-                    app:drawableTint="?android:attr/colorControlNormal" />
-            </TableRow>
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/equipmentsHorizontalScrollView" />
 
-        </TableLayout>
-
-    </RelativeLayout>
-</ScrollView>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

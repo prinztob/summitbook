@@ -72,6 +72,7 @@ class SummitEntryPowerFragment : Fragment() {
     private fun setContent() {
         pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
             it.data.let { summitToView ->
+                binding.loadingPanel.visibility = View.GONE
                 if (summitToView != null) {
                     pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
                         summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(

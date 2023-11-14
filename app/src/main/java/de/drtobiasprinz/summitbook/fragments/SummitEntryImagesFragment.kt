@@ -51,11 +51,11 @@ class SummitEntryImagesFragment : Fragment() {
     }
 
     private fun setImages(summitToView: Summit) {
+        binding.carousel.visibility = View.VISIBLE
         val params = binding.carousel.layoutParams
         params.height = (Resources.getSystem().displayMetrics.heightPixels * 0.7).toInt()
         binding.carousel.layoutParams = params
         binding.carousel.invalidate()
-//        carousel.clearFindViewByIdCache()
         val list = mutableListOf<CarouselItem>()
         for (imageId in summitToView.imageIds) {
             val item = CarouselItem(imageUrl = "file://" + summitToView.getImagePath(imageId))

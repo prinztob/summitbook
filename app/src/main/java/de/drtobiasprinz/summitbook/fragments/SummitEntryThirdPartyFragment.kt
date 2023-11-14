@@ -41,7 +41,8 @@ class SummitEntryThirdPartyFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentSummitEntryThirdPartyBinding.inflate(layoutInflater, container, false)
-        binding.table.visibility = View.GONE
+        binding.constraintLayout.visibility = View.GONE
+        binding.constraintLayoutMorePowerData.visibility = View.GONE
         binding.loadingPanel.visibility = View.VISIBLE
 
         numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
@@ -63,7 +64,8 @@ class SummitEntryThirdPartyFragment : Fragment() {
                         summitsListData.data.let { summits ->
                             if (summits != null) {
                                 pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { summitToCompare ->
-                                    binding.table.visibility = View.VISIBLE
+                                    binding.constraintLayout.visibility = View.VISIBLE
+                                    binding.constraintLayoutMorePowerData.visibility = View.VISIBLE
                                     binding.loadingPanel.visibility = View.GONE
 
                                     val extrema = ExtremaValuesSummits(summits)
@@ -125,7 +127,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
             val text =
                 "<a href=\"${garminData.url}\">${requireContext().getString(R.string.sensor_data)}</a>"
             binding.link.text = Html.fromHtml(text, 0)
-            binding.garminData.visibility = View.VISIBLE
+            binding.constraintLayout.visibility = View.VISIBLE
 
             TextFieldThirdParty.values().filter { it.group == TextFieldGroupThirdPArty.ThirdParty }
                 .forEach {
@@ -145,7 +147,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
                 binding.expandMorePowerData.visibility = View.GONE
             }
         } else {
-            binding.garminData.visibility = View.GONE
+            binding.constraintLayout.visibility = View.GONE
             binding.expandMorePowerData.visibility = View.GONE
         }
     }
@@ -210,7 +212,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
                 binding.expandMorePowerData.visibility = View.GONE
             }
         } else {
-            binding.garminData.visibility = View.GONE
+            binding.constraintLayout.visibility = View.GONE
             binding.expandMorePowerData.visibility = View.GONE
         }
     }
