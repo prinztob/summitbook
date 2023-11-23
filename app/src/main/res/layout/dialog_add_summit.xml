@@ -1,22 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:tools="http://schemas.android.com/tools"
     android:background="@drawable/rounded_win"
     android:padding="15dp"
     tools:context="de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:padding="20dp">
 
         <RelativeLayout
+            android:id="@+id/details"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
             <EditText
                 android:id="@+id/tour_date"
@@ -49,7 +51,9 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:visibility="gone">
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/details">
 
             <ProgressBar
                 android:layout_width="wrap_content"
@@ -65,13 +69,17 @@
             android:drawablePadding="10dp"
             android:hint="@string/summit_name_hint"
             android:importantForAutofill="no"
-            android:inputType="text" />
+            android:inputType="text"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/loadingPanel" />
 
         <Spinner
             android:id="@+id/activities"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="40dp" />
+            android:layout_marginTop="40dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/summit_name" />
 
         <ImageButton
             android:id="@+id/add_gps_track"
@@ -84,20 +92,25 @@
             android:contentDescription="@string/addGpsTrack"
             android:paddingStart="5dp"
             android:paddingEnd="5dp"
-            android:src="@drawable/ic_baseline_upload_file_24" />
+            android:src="@drawable/ic_baseline_upload_file_24"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/activities" />
 
         <RelativeLayout
+            android:id="@+id/kilometersLayout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/add_gps_track">
 
             <EditText
                 android:id="@+id/kilometers"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_toStartOf="@id/kilometers_text"
                 android:drawableStart="@drawable/icons8_map_pinpoint_20"
                 android:drawablePadding="10dp"
                 android:hint="@string/kilometers_hint"
-                android:layout_toStartOf="@id/kilometers_text"
                 android:importantForAutofill="no"
                 android:inputType="numberDecimal" />
 
@@ -111,17 +124,20 @@
         </RelativeLayout>
 
         <RelativeLayout
+            android:id="@+id/heightMeterLayout"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/kilometersLayout">
 
             <EditText
                 android:id="@+id/height_meter"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_toStartOf="@id/height_meter_text"
                 android:drawableStart="@drawable/baseline_trending_up_black_24dp"
                 android:drawablePadding="10dp"
                 android:hint="@string/height_meter_hint"
-                android:layout_toStartOf="@id/height_meter_text"
                 android:importantForAutofill="no"
                 android:inputType="number" />
 
@@ -140,15 +156,19 @@
             android:layout_height="wrap_content"
             android:drawablePadding="10dp"
             android:text="@string/more"
+            app:drawableStartCompat="@drawable/ic_baseline_expand_more_24"
             app:drawableTint="?android:attr/colorControlNormal"
-            app:drawableStartCompat="@drawable/ic_baseline_expand_more_24" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/heightMeterLayout" />
 
         <LinearLayout
             android:id="@+id/additional_data_fields_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/expand_more">
 
             <RelativeLayout
                 android:layout_width="fill_parent"
@@ -158,10 +178,10 @@
                     android:id="@+id/top_elevation"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_toStartOf="@id/top_elevation_text"
                     android:drawableStart="@drawable/icons8_mountain_20"
                     android:drawablePadding="10dp"
                     android:hint="@string/top_elevation_hint"
-                    android:layout_toStartOf="@id/top_elevation_text"
                     android:importantForAutofill="no"
                     android:inputType="number" />
 
@@ -183,10 +203,10 @@
                     android:id="@+id/pace"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_toStartOf="@id/pace_text"
                     android:drawableStart="@drawable/baseline_speed_black_24dp"
                     android:drawablePadding="10dp"
                     android:hint="@string/pace_hint"
-                    android:layout_toStartOf="@id/pace_text"
                     android:importantForAutofill="no"
                     android:inputType="numberDecimal" />
 
@@ -207,10 +227,10 @@
                     android:id="@+id/top_speed"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_toStartOf="@id/top_speed_text"
                     android:drawableStart="@drawable/baseline_speed_black_24dp"
                     android:drawablePadding="10dp"
                     android:hint="@string/top_speed_hint"
-                    android:layout_toStartOf="@id/top_speed_text"
                     android:importantForAutofill="no"
                     android:inputType="numberDecimal"
                     android:maxLength="4" />
@@ -241,9 +261,9 @@
                     android:id="@+id/autoCompleteTextViewParticipants"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/participants"
+                    android:layout_toEndOf="@+id/imageParticipants"
                     android:completionThreshold="1"
-                    android:layout_toEndOf="@+id/imageParticipants"/>
+                    android:hint="@string/participants" />
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupParticipants"
@@ -271,9 +291,9 @@
                     android:id="@+id/autoCompleteTextViewPlaces"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/place_hint"
+                    android:layout_toEndOf="@+id/imagePlaces"
                     android:completionThreshold="1"
-                    android:layout_toEndOf="@+id/imagePlaces" />
+                    android:hint="@string/place_hint" />
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupPlaces"
@@ -301,9 +321,9 @@
                     android:id="@+id/autoCompleteTextViewCountries"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/country_hint"
+                    android:layout_toEndOf="@+id/imageCountries"
                     android:completionThreshold="1"
-                    android:layout_toEndOf="@+id/imageCountries"/>
+                    android:hint="@string/country_hint" />
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupCountries"
@@ -331,9 +351,9 @@
                     android:id="@+id/autoCompleteTextViewEquipments"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/equipments"
+                    android:layout_toEndOf="@+id/imageEquipments"
                     android:completionThreshold="1"
-                    android:layout_toEndOf="@+id/imageEquipments"/>
+                    android:hint="@string/equipments" />
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupEquipments"
@@ -360,18 +380,22 @@
         </LinearLayout>
 
         <TextView
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/additional_data_fields_view"
             android:id="@+id/expand_more_performance"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:drawablePadding="10dp"
             android:text="@string/more_performance"
-            app:drawableTint="?android:attr/colorControlNormal"
-            app:drawableStartCompat="@drawable/ic_baseline_expand_more_24" />
+            app:drawableStartCompat="@drawable/ic_baseline_expand_more_24"
+            app:drawableTint="?android:attr/colorControlNormal" />
 
         <LinearLayout
             android:id="@+id/performance_data_fields_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/expand_more_performance"
             android:orientation="vertical"
             android:visibility="gone">
 
@@ -413,8 +437,8 @@
                     android:id="@+id/averageHr"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/averageHr_text"
                     android:layout_toStartOf="@+id/averageHr_unit"
+                    android:layout_toEndOf="@+id/averageHr_text"
                     android:hint="@string/average_hr"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -444,8 +468,8 @@
                     android:id="@+id/maxHr"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/maxHr_text"
                     android:layout_toStartOf="@+id/maxHr_unit"
+                    android:layout_toEndOf="@+id/maxHr_text"
                     android:hint="@string/max_hr"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -475,8 +499,8 @@
                     android:id="@+id/ftp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/ftp_text"
                     android:layout_toStartOf="@+id/ftp_unit"
+                    android:layout_toEndOf="@+id/ftp_text"
                     android:hint="@string/ftp"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -528,8 +552,8 @@
                     android:id="@+id/normPower"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/normPower_text"
                     android:layout_toStartOf="@+id/normPower_unit"
+                    android:layout_toEndOf="@+id/normPower_text"
                     android:hint="@string/normalized_power"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -559,8 +583,8 @@
                     android:id="@+id/avgPower"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/avgPower_text"
                     android:layout_toStartOf="@+id/avgPower_unit"
+                    android:layout_toEndOf="@+id/avgPower_text"
                     android:hint="@string/average_power"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -590,8 +614,8 @@
                     android:id="@+id/power1s"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_1s_text"
                     android:layout_toStartOf="@+id/power_1s_unit"
+                    android:layout_toEndOf="@+id/power_1s_text"
                     android:hint="@string/power_1sec"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -621,8 +645,8 @@
                     android:id="@+id/power2s"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_2s_text"
                     android:layout_toStartOf="@+id/power_2s_unit"
+                    android:layout_toEndOf="@+id/power_2s_text"
                     android:hint="@string/power_2sec"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -652,8 +676,8 @@
                     android:id="@+id/power5s"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_5s_text"
                     android:layout_toStartOf="@+id/power_5s_unit"
+                    android:layout_toEndOf="@+id/power_5s_text"
                     android:hint="@string/power_5sec"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -683,8 +707,8 @@
                     android:id="@+id/power10s"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_10s_text"
                     android:layout_toStartOf="@+id/power_10s_unit"
+                    android:layout_toEndOf="@+id/power_10s_text"
                     android:hint="@string/power_10sec"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -714,8 +738,8 @@
                     android:id="@+id/power20s"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_20s_text"
                     android:layout_toStartOf="@+id/power_20s_unit"
+                    android:layout_toEndOf="@+id/power_20s_text"
                     android:hint="@string/power_20sec"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -745,8 +769,8 @@
                     android:id="@+id/power30s"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_30s_text"
                     android:layout_toStartOf="@+id/power_30s_unit"
+                    android:layout_toEndOf="@+id/power_30s_text"
                     android:hint="@string/power_30sec"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -776,8 +800,8 @@
                     android:id="@+id/power1min"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_1min_text"
                     android:layout_toStartOf="@+id/power_1min_unit"
+                    android:layout_toEndOf="@+id/power_1min_text"
                     android:hint="@string/power_1min"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -807,8 +831,8 @@
                     android:id="@+id/power2min"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_2min_text"
                     android:layout_toStartOf="@+id/power_2min_unit"
+                    android:layout_toEndOf="@+id/power_2min_text"
                     android:hint="@string/power_2min"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -838,8 +862,8 @@
                     android:id="@+id/power5min"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_5min_text"
                     android:layout_toStartOf="@+id/power_5min_unit"
+                    android:layout_toEndOf="@+id/power_5min_text"
                     android:hint="@string/power_5min"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -869,8 +893,8 @@
                     android:id="@+id/power10min"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_10min_text"
                     android:layout_toStartOf="@+id/power_10min_unit"
+                    android:layout_toEndOf="@+id/power_10min_text"
                     android:hint="@string/power_10min"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -900,8 +924,8 @@
                     android:id="@+id/power20min"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_20min_text"
                     android:layout_toStartOf="@+id/power_20min_unit"
+                    android:layout_toEndOf="@+id/power_20min_text"
                     android:hint="@string/power_20min"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -931,8 +955,8 @@
                     android:id="@+id/power30min"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_30min_text"
                     android:layout_toStartOf="@+id/power_30min_unit"
+                    android:layout_toEndOf="@+id/power_30min_text"
                     android:hint="@string/power_30min"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -962,8 +986,8 @@
                     android:id="@+id/power1h"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_1h_text"
                     android:layout_toStartOf="@+id/power_1h_unit"
+                    android:layout_toEndOf="@+id/power_1h_text"
                     android:hint="@string/power_1h"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -993,8 +1017,8 @@
                     android:id="@+id/power2h"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_2h_text"
                     android:layout_toStartOf="@+id/power_2h_unit"
+                    android:layout_toEndOf="@+id/power_2h_text"
                     android:hint="@string/power_2h"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -1024,8 +1048,8 @@
                     android:id="@+id/power5h"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@+id/power_5h_text"
                     android:layout_toStartOf="@+id/power_5h_unit"
+                    android:layout_toEndOf="@+id/power_5h_text"
                     android:hint="@string/power_5h"
                     android:importantForAutofill="no"
                     android:inputType="number" />
@@ -1041,6 +1065,8 @@
         </LinearLayout>
 
         <RelativeLayout
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/performance_data_fields_view"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="35dp"
@@ -1064,5 +1090,5 @@
                 android:text="@string/cancelButtonText" />
         </RelativeLayout>
 
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.dialog
 
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Color
 import android.os.Bundle
 import android.text.Html
@@ -9,7 +10,12 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.CheckBox
+import android.widget.ProgressBar
+import android.widget.TableLayout
+import android.widget.TableRow
+import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -40,8 +46,6 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
     private var entriesWithoutIgnored: MutableList<Summit> = mutableListOf()
 
     private var showAllButtonEnabled = false
-    private lateinit var backButton: ImageButton
-    private lateinit var tableLayout: TableLayout
     private var activitiesIdIgnored: List<String> = emptyList()
     private var ignoredActivities: List<IgnoredActivity> = emptyList()
     var save: (List<Summit>, Boolean) -> Unit = { _, _ -> }
@@ -89,11 +93,16 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                                 binding.showAll.alpha = 1f
                             }
                             showAllButtonEnabled = !showAllButtonEnabled
-                            summits?.let { summitsNotNull -> updateEntriesWithoutIgnored(summitsNotNull, showAllButtonEnabled) }
+                            summits?.let { summitsNotNull ->
+                                updateEntriesWithoutIgnored(
+                                    summitsNotNull,
+                                    showAllButtonEnabled
+                                )
+                            }
                             drawTable(view)
                         }
-                        binding.updateData.isEnabled = false
-                        binding.updateData.setOnClickListener {
+                        binding.save.isEnabled = false
+                        binding.save.setOnClickListener {
                             if (areEntriesChecked()) {
                                 save(
                                     entriesWithoutIgnored.filter { summit -> summit.isSelected },
@@ -129,12 +138,10 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                             }
                             drawTable(view)
                         }
-                        backButton = view.findViewById(R.id.back)
-                        backButton.setOnClickListener {
+                        binding.back.setOnClickListener {
                             dialog?.cancel()
                         }
 
-                        tableLayout = view.findViewById(R.id.tableSummits) as TableLayout
                         drawTable(view)
                     }
                 }
@@ -197,11 +204,19 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
     }
 
     private fun drawTable(view: View) {
-        tableLayout.removeAllViews()
-        addHeader(view, tableLayout)
+        binding.tableSummits.removeAllViews()
+        val width = Resources.getSystem().displayMetrics.widthPixels
+        binding.root.minWidth = (width * 0.97).toInt()
+        binding.save.width = (width * 0.3).toInt()
+        binding.back.width = (width * 0.3).toInt()
+        binding.addSummitMerge.width = (width * 0.3).toInt()
+        binding.showAll.width = (width * 0.3).toInt()
+        binding.ignore.width = (width * 0.3).toInt()
+        binding.updateNewSummits.width = (width * 0.3).toInt()
+        addHeader(view, binding.tableSummits)
         for ((i, entry) in entriesWithoutIgnored.sortedBy { it.getDateAsString() }.reversed()
             .withIndex()) {
-            addSummitToTable(entry, view, i, tableLayout)
+            addSummitToTable(entry, view, i, binding.tableSummits)
         }
     }
 
@@ -238,7 +253,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         box.setOnCheckedChangeListener { _, arg1 ->
             entry.isSelected = arg1
             binding.addSummitMerge.isEnabled = canSelectedSummitsBeMerged()
-            binding.updateData.isEnabled = areEntriesChecked()
+            binding.save.isEnabled = areEntriesChecked()
             binding.ignore.isEnabled = areEntriesChecked()
         }
 

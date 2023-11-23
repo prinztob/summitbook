@@ -15,6 +15,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.github.mikephil.charting.charts.CombinedChart.DrawOrder
 import com.github.mikephil.charting.components.LimitLine
@@ -36,6 +37,9 @@ import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.utils.BarChartCustomRenderer
 import de.drtobiasprinz.summitbook.ui.utils.IntervalHelper
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.DateFormatSymbols
 import java.text.ParseException
 import java.util.*
@@ -141,7 +145,7 @@ class BarChartFragment : Fragment() {
         binding.barChart.setTouchEnabled(true)
         binding.barChart.marker =
             CustomMarkerView(requireContext(), R.layout.marker_graph_bar_chart)
-        binding.barChart.setVisibleXRangeMinimum(12f)
+        binding.barChart.setVisibleXRangeMinimum(if (barChartEntries.size < 12) (barChartEntries.size + 1).toFloat() else 12f)
         if (selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart != -1f) {
             binding.barChart.setVisibleXRangeMaximum(selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart)
             if (!selectedXAxisSpinnerEntry.isAQuality) {
@@ -211,20 +215,24 @@ class BarChartFragment : Fragment() {
     }
 
     fun update(summits: List<Summit>) {
-        val filteredSummits = sortFilterValues.apply(summits, sharedPreferences)
-        minDate = filteredSummits.minBy { it.date }.date
-        intervalHelper = IntervalHelper(filteredSummits)
-        val barChartCustomRenderer = BarChartCustomRenderer(
-            binding.barChart,
-            binding.barChart.animator,
-            binding.barChart.viewPortHandler
-        )
-        binding.barChart.renderer = barChartCustomRenderer
-        binding.barChart.setDrawValueAboveBar(false)
-        resizeChart()
-        listenOnDataSpinner(filteredSummits)
-        selectedDataSpinner(filteredSummits)
-        drawChart()
+        lifecycleScope.launch {
+            val filteredSummits = withContext(Dispatchers.IO) {
+                sortFilterValues.apply(summits, sharedPreferences)
+            }
+            minDate = filteredSummits.minBy { it.date }.date
+            intervalHelper = IntervalHelper(filteredSummits)
+            val barChartCustomRenderer = BarChartCustomRenderer(
+                binding.barChart,
+                binding.barChart.animator,
+                binding.barChart.viewPortHandler
+            )
+            binding.barChart.renderer = barChartCustomRenderer
+            binding.barChart.setDrawValueAboveBar(false)
+            resizeChart()
+            listenOnDataSpinner(filteredSummits)
+            selectedDataSpinner(filteredSummits)
+            drawChart()
+        }
     }
 
     private fun setGraphViewBarChart(dataSet: BarDataSet) {
@@ -262,17 +270,21 @@ class BarChartFragment : Fragment() {
                 BarChartXAxisSelector.DateByWeek -> {
                     annualTarget /= 52f
                 }
+
                 BarChartXAxisSelector.DateByYear -> {
                     if (selectedXAxisSpinnerMonth != 0) {
                         annualTarget /= 12f
                     }
                 }
+
                 BarChartXAxisSelector.DateByMonth -> {
                     annualTarget /= 12f
                 }
+
                 BarChartXAxisSelector.DateByQuarter -> {
                     annualTarget /= 4f
                 }
+
                 else -> {
                     // DO NOTHING
                 }
@@ -332,7 +344,8 @@ class BarChartFragment : Fragment() {
                     yValuesForecast = ranges.filterIsInstance<ClosedRange<Date>>().map { range ->
                         forecasts.sumOf { forecast ->
                             val date = forecast.getDate()
-                            val shouldAddThisMonth = selectedXAxisSpinnerEntry != BarChartXAxisSelector.DateByYear || selectedXAxisSpinnerMonth == 0 || selectedXAxisSpinnerMonth == forecast.month
+                            val shouldAddThisMonth =
+                                selectedXAxisSpinnerEntry != BarChartXAxisSelector.DateByYear || selectedXAxisSpinnerMonth == 0 || selectedXAxisSpinnerMonth == forecast.month
                             if (date != null && date in range && shouldAddThisMonth) {
                                 selectedYAxisSpinnerEntry.getForecastValue(forecast).toInt()
                             } else {

@@ -100,19 +100,25 @@ class OpenStreetMapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.apply {
-            viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
-                itData.data?.let { summits ->
-                    val filteredSummits = sortFilterValues.apply(summits, sharedPreferences)
-                        .filter { it.sportType != SportType.IndoorTrainer && it.lat != null && it.lat != 0.0 && it.lng != null && it.lng != 0.0 }
-                    setTileSource(selectedItem, binding.osmap)
-                    addOverlays(filteredSummits)
-                    val context: Context? = this@OpenStreetMapFragment.activity
-                    mLocationOverlay =
-                        MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
-                    mLocationOverlay.enableMyLocation()
-                    binding.osmap.overlays.add(mLocationOverlay)
-                    addDefaultSettings(requireContext(), binding.osmap, requireActivity())
+        binding.loadingPanel.visibility = View.VISIBLE
+        binding.osmap.visibility = View.GONE
+        setTileSource(selectedItem, binding.osmap)
+        val context: Context? = this@OpenStreetMapFragment.activity
+        mLocationOverlay =
+            MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
+        mLocationOverlay.enableMyLocation()
+        binding.osmap.overlays.add(mLocationOverlay)
+        addDefaultSettings(requireContext(), binding.osmap, requireActivity())
+        viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
+            itData.data?.let { summits ->
+                lifecycleScope.launch {
+                    val filteredSummits = withContext(Dispatchers.IO) {
+                        sortFilterValues.apply(summits, sharedPreferences)
+                            .filter { it.sportType != SportType.IndoorTrainer && it.lat != null && it.lat != 0.0 && it.lng != null && it.lng != 0.0 }
+                    }
+                    addAllMarkers(filteredSummits)
+                    binding.osmap.visibility = View.VISIBLE
+                    binding.loadingPanel.visibility = View.GONE
                 }
             }
         }
@@ -218,10 +224,6 @@ class OpenStreetMapFragment : Fragment() {
             }
         }
         binding.osmap.zoomController.activate()
-    }
-
-    private fun addOverlays(summits: List<Summit>) {
-        addAllMarkers(summits)
     }
 
     private fun addAllMarkers(summits: List<Summit>) {

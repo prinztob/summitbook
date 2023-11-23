@@ -1,34 +1,14 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ImageButton
-        android:id="@+id/back"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:contentDescription="@string/back"
-        android:src="?attr/homeAsUpIndicator"
-        android:background="?attr/selectableItemBackgroundBorderless" />
-
-    <TextView
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:id="@+id/overview"
-        android:text="@string/overview"
-        android:gravity="center"
-        android:visibility="gone"
-        android:layout_marginTop="5dp"
-        android:layout_marginStart="15dp"
-        android:layout_marginEnd="15dp"
-        android:textAppearance="?android:attr/textAppearanceSmall"
-        android:textColor="#999"/>
-
     <de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
         android:id="@+id/osmap"
-        android:layout_below="@id/back"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/add_to_summits"
@@ -36,15 +16,39 @@
         android:layout_height="wrap_content"
         android:layout_alignTop="@id/osmap"
         android:layout_alignEnd="@id/add_to_bookmarks"
+        android:layout_marginStart="15dp"
+        android:layout_marginEnd="15dp"
+        android:src="@drawable/baseline_add_black_24dp"
         android:text="@string/add_track_as_summit"
-        android:src="@drawable/baseline_add_black_24dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/osmap" />
 
     <Button
+
         android:id="@+id/add_to_bookmarks"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/add_to_summits"
+        android:layout_marginStart="15dp"
+        android:layout_marginEnd="15dp"
+        android:src="@drawable/baseline_add_black_24dp"
         android:text="@string/add_track_as_bookmark"
-        android:src="@drawable/baseline_add_black_24dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/add_to_summits" />
 
-</RelativeLayout>
+
+    <Button
+
+        android:id="@+id/back"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/add_to_summits"
+        android:layout_marginStart="15dp"
+        android:layout_marginEnd="15dp"
+        android:backgroundTint="@color/red"
+        android:src="@drawable/ic_baseline_arrow_back_24"
+        android:text="@string/cancelButtonText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/add_to_bookmarks" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

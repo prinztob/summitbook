@@ -1,38 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:orientation="vertical">
-    <RelativeLayout
-        android:id="@+id/loadingPanel"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:visibility="gone">
-
-        <ProgressBar
-            android:id="@+id/progress_bar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:indeterminate="true" />
-    </RelativeLayout>
-    <TextView
-        android:id="@+id/overview"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="15dp"
-        android:layout_marginTop="5dp"
-        android:layout_marginEnd="15dp"
-        android:gravity="center"
-        android:text="@string/overview"
-        android:textAppearance="?android:attr/textAppearanceSmall"
-        android:textColor="#999" />
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginBottom="10dp">
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <RelativeLayout
+            android:id="@+id/loadingPanel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true" />
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/overview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginEnd="15dp"
+            android:gravity="center"
+            android:text="@string/overview"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="#999"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/group_year"
@@ -44,7 +48,7 @@
             app:checkedButton="@id/button_current_year"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/overview"
             app:selectionRequired="true"
             app:singleSelection="true">
 
@@ -105,443 +109,467 @@
                 android:text="@string/activity_hint"
                 android:textSize="11sp" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
-    </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <ScrollView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
-        <RelativeLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/text_month1"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"
+            android:text="@string/january"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/group_forecast_property" />
 
-            <TextView
-                android:id="@+id/text_month1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="-5dp"
-                android:text="@string/january" />
-
-            <TextView
-                android:id="@+id/fulfilled_forecast_month1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="30dp"
-                android:layout_marginTop="-5dp"
-                android:layout_toEndOf="@+id/text_month1"
-                android:drawablePadding="5dp"
-                android:text=""
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
+        <TextView
+            android:id="@+id/fulfilled_forecast_month1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="30dp"
+            android:drawablePadding="5dp"
+            android:text=""
+            app:drawableStartCompat="@drawable/ic_baseline_edit_12"
+            app:drawableTint="?android:attr/colorControlNormal"
+            app:layout_constraintStart_toEndOf="@+id/text_month1"
+            app:layout_constraintTop_toBottomOf="@+id/group_forecast_property" />
 
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/range_slider_forecast_month1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/text_month1"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="-10dp"
-                app:thumbRadius="6dp" />
+        <com.google.android.material.slider.Slider
+            android:id="@+id/range_slider_forecast_month1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="-10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_month1"
+            app:thumbRadius="6dp" />
 
 
-            <TextView
-                android:id="@+id/text_month2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month1"
-                android:layout_alignParentStart="true"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="-5dp"
-                android:text="@string/february" />
+        <TextView
+            android:id="@+id/text_month2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="-5dp"
+            android:text="@string/february"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month1" />
 
-            <TextView
-                android:id="@+id/fulfilled_forecast_month2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month1"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="30dp"
-                android:layout_marginTop="-5dp"
-                android:layout_toEndOf="@+id/text_month2"
-                android:drawablePadding="5dp"
-                android:text=""
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
+        <TextView
+            android:id="@+id/fulfilled_forecast_month2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="-5dp"
+            android:drawablePadding="5dp"
+            android:text=""
+            app:drawableStartCompat="@drawable/ic_baseline_edit_12"
+            app:drawableTint="?android:attr/colorControlNormal"
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/range_slider_forecast_month2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/text_month2"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="-10dp"
-                app:thumbRadius="6dp" />
+            app:layout_constraintStart_toEndOf="@+id/text_month2"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month1" />
 
+        <com.google.android.material.slider.Slider
+            android:id="@+id/range_slider_forecast_month2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="-10dp"
+            app:layout_constraintTop_toBottomOf="@+id/text_month2"
 
-            <TextView
-                android:id="@+id/text_month3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month2"
-                android:layout_alignParentStart="true"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="-5dp"
-                android:text="@string/march" />
-
-            <TextView
-                android:id="@+id/fulfilled_forecast_month3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month2"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="30dp"
-                android:layout_marginTop="-5dp"
-                android:layout_toEndOf="@+id/text_month3"
-                android:drawablePadding="5dp"
-                android:text=""
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
-
-            <com.google.android.material.slider.Slider
-                android:id="@+id/range_slider_forecast_month3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/text_month3"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="-10dp"
-                app:thumbRadius="6dp" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:thumbRadius="6dp" />
 
 
-            <TextView
-                android:id="@+id/text_month4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month3"
-                android:layout_alignParentStart="true"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="-5dp"
-                android:text="@string/april" />
+        <TextView
+            android:id="@+id/text_month3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="-5dp"
+            android:text="@string/march"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month2" />
 
-            <TextView
-                android:id="@+id/fulfilled_forecast_month4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month3"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="30dp"
-                android:layout_marginTop="-5dp"
-                android:layout_toEndOf="@+id/text_month4"
-                android:drawablePadding="5dp"
-                android:text=""
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
+        <TextView
+            android:id="@+id/fulfilled_forecast_month3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="-5dp"
+            android:drawablePadding="5dp"
+            android:text=""
+            app:drawableStartCompat="@drawable/ic_baseline_edit_12"
+            app:drawableTint="?android:attr/colorControlNormal"
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/range_slider_forecast_month4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/text_month4"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="-10dp"
-                app:thumbRadius="6dp" />
+            app:layout_constraintStart_toEndOf="@+id/text_month3"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month2" />
 
+        <com.google.android.material.slider.Slider
+            android:id="@+id/range_slider_forecast_month3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@+id/text_month3"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="-10dp"
 
-            <TextView
-                android:id="@+id/text_month5"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month4"
-                android:layout_alignParentStart="true"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="-5dp"
-                android:text="@string/may" />
-
-            <TextView
-                android:id="@+id/fulfilled_forecast_month5"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month4"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="30dp"
-                android:layout_marginTop="-5dp"
-                android:layout_toEndOf="@+id/text_month5"
-                android:drawablePadding="5dp"
-                android:text=""
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
-
-            <com.google.android.material.slider.Slider
-                android:id="@+id/range_slider_forecast_month5"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/text_month5"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="-10dp"
-                app:thumbRadius="6dp" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:thumbRadius="6dp" />
 
 
-            <TextView
-                android:id="@+id/text_month6"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month5"
-                android:layout_alignParentStart="true"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="-5dp"
-                android:text="@string/june" />
+        <TextView
+            android:id="@+id/text_month4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="-5dp"
+            android:text="@string/april"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month3" />
 
-            <TextView
-                android:id="@+id/fulfilled_forecast_month6"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month5"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="30dp"
-                android:layout_marginTop="-5dp"
-                android:layout_toEndOf="@+id/text_month6"
-                android:drawablePadding="5dp"
-                android:text=""
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
+        <TextView
+            android:id="@+id/fulfilled_forecast_month4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="-5dp"
+            android:drawablePadding="5dp"
+            android:text=""
+            app:drawableStartCompat="@drawable/ic_baseline_edit_12"
+            app:drawableTint="?android:attr/colorControlNormal"
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/range_slider_forecast_month6"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/text_month6"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="-10dp"
-                app:thumbRadius="6dp" />
+            app:layout_constraintStart_toEndOf="@+id/text_month4"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month3" />
 
-
-            <TextView
-                android:id="@+id/text_month7"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month6"
-                android:layout_alignParentStart="true"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="-5dp"
-                android:text="@string/july" />
-
-            <TextView
-                android:id="@+id/fulfilled_forecast_month7"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month6"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="30dp"
-                android:layout_marginTop="-5dp"
-                android:layout_toEndOf="@+id/text_month7"
-                android:drawablePadding="5dp"
-                android:text=""
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
-
-            <com.google.android.material.slider.Slider
-                android:id="@+id/range_slider_forecast_month7"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/text_month7"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="-10dp"
-                app:thumbRadius="6dp" />
+        <com.google.android.material.slider.Slider
+            android:id="@+id/range_slider_forecast_month4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@+id/text_month4"
+            android:layout_alignParentStart="true"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="-10dp"
+            app:thumbRadius="6dp" />
 
 
-            <TextView
-                android:id="@+id/text_month8"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month7"
-                android:layout_alignParentStart="true"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="-5dp"
-                android:text="@string/august" />
+        <TextView
+            android:id="@+id/text_month5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="-5dp"
+            android:text="@string/may"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month4" />
 
-            <TextView
-                android:id="@+id/fulfilled_forecast_month8"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month7"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="30dp"
-                android:layout_marginTop="-5dp"
-                android:layout_toEndOf="@+id/text_month8"
-                android:drawablePadding="5dp"
-                android:text=""
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
+        <TextView
+            android:id="@+id/fulfilled_forecast_month5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="-5dp"
+            android:drawablePadding="5dp"
+            android:text=""
+            app:drawableStartCompat="@drawable/ic_baseline_edit_12"
+            app:drawableTint="?android:attr/colorControlNormal"
+            app:layout_constraintStart_toEndOf="@+id/text_month5"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month4" />
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/range_slider_forecast_month8"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/text_month8"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="-10dp"
-                app:thumbRadius="6dp" />
-
-
-            <TextView
-                android:id="@+id/text_month9"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month8"
-                android:layout_alignParentStart="true"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="-5dp"
-                android:text="@string/september" />
-
-            <TextView
-                android:id="@+id/fulfilled_forecast_month9"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month8"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="30dp"
-                android:layout_marginTop="-5dp"
-                android:layout_toEndOf="@+id/text_month9"
-                android:drawablePadding="5dp"
-                android:text=""
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
-
-            <com.google.android.material.slider.Slider
-                android:id="@+id/range_slider_forecast_month9"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/text_month9"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="-10dp"
-                app:thumbRadius="6dp" />
+        <com.google.android.material.slider.Slider
+            android:id="@+id/range_slider_forecast_month5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@+id/text_month5"
+            android:layout_alignParentStart="true"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="-10dp"
+            app:thumbRadius="6dp" />
 
 
-            <TextView
-                android:id="@+id/text_month10"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month9"
-                android:layout_alignParentStart="true"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="-5dp"
-                android:text="@string/october" />
+        <TextView
+            android:id="@+id/text_month6"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="-5dp"
+            android:text="@string/june"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month5" />
 
-            <TextView
-                android:id="@+id/fulfilled_forecast_month10"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month9"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="30dp"
-                android:layout_marginTop="-5dp"
-                android:layout_toEndOf="@+id/text_month10"
-                android:drawablePadding="5dp"
-                android:text=""
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
+        <TextView
+            android:id="@+id/fulfilled_forecast_month6"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="-5dp"
+            android:drawablePadding="5dp"
+            android:text=""
+            app:drawableStartCompat="@drawable/ic_baseline_edit_12"
+            app:drawableTint="?android:attr/colorControlNormal"
+            app:layout_constraintStart_toEndOf="@+id/text_month6"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month5" />
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/range_slider_forecast_month10"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/text_month10"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="-10dp"
-                app:thumbRadius="6dp" />
-
-
-            <TextView
-                android:id="@+id/text_month11"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month10"
-                android:layout_alignParentStart="true"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="-5dp"
-                android:text="@string/november" />
-
-            <TextView
-                android:id="@+id/fulfilled_forecast_month11"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month10"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="30dp"
-                android:layout_marginTop="-5dp"
-                android:layout_toEndOf="@+id/text_month11"
-                android:drawablePadding="5dp"
-                android:text=""
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
-
-            <com.google.android.material.slider.Slider
-                android:id="@+id/range_slider_forecast_month11"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/text_month11"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="-10dp"
-                app:thumbRadius="6dp" />
+        <com.google.android.material.slider.Slider
+            android:id="@+id/range_slider_forecast_month6"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@+id/text_month6"
+            android:layout_alignParentStart="true"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="-10dp"
+            app:thumbRadius="6dp" />
 
 
-            <TextView
-                android:id="@+id/text_month12"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month11"
-                android:layout_alignParentStart="true"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="-5dp"
-                android:text="@string/december" />
+        <TextView
+            android:id="@+id/text_month7"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="-5dp"
+            android:text="@string/july"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month6" />
 
-            <TextView
-                android:id="@+id/fulfilled_forecast_month12"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/range_slider_forecast_month11"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="30dp"
-                android:layout_marginTop="-5dp"
-                android:layout_toEndOf="@+id/text_month12"
-                android:drawablePadding="5dp"
-                android:text=""
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:drawableStartCompat="@drawable/ic_baseline_edit_12" />
+        <TextView
+            android:id="@+id/fulfilled_forecast_month7"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="-5dp"
+            android:drawablePadding="5dp"
+            android:text=""
+            app:drawableStartCompat="@drawable/ic_baseline_edit_12"
+            app:drawableTint="?android:attr/colorControlNormal"
+            app:layout_constraintStart_toEndOf="@+id/text_month7"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month6" />
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/range_slider_forecast_month12"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/text_month12"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="-10dp"
-                app:thumbRadius="6dp" />
+        <com.google.android.material.slider.Slider
+            android:id="@+id/range_slider_forecast_month7"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@+id/text_month7"
+            android:layout_alignParentStart="true"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="-10dp"
+            app:thumbRadius="6dp" />
 
-            <Button
-                android:id="@+id/save"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/range_slider_forecast_month12"
-                android:layout_marginStart="10dp"
-                android:layout_marginEnd="5dp"
-                android:layout_toStartOf="@id/back"
-                android:backgroundTint="@color/green_500"
-                android:text="@string/saveButtonText" />
 
-            <Button
-                android:id="@+id/back"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/range_slider_forecast_month12"
-                android:layout_alignParentEnd="true"
-                android:layout_marginEnd="5dp"
-                android:backgroundTint="@color/grey_500"
-                android:text="@string/back" />
-        </RelativeLayout>
-    </ScrollView>
-</LinearLayout>
+        <TextView
+            android:id="@+id/text_month8"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="-5dp"
+            android:text="@string/august"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month7" />
+
+        <TextView
+            android:id="@+id/fulfilled_forecast_month8"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="-5dp"
+            android:drawablePadding="5dp"
+            android:text=""
+            app:drawableStartCompat="@drawable/ic_baseline_edit_12"
+            app:drawableTint="?android:attr/colorControlNormal"
+            app:layout_constraintStart_toEndOf="@+id/text_month8"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month7" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/range_slider_forecast_month8"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@+id/text_month8"
+            android:layout_alignParentStart="true"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="-10dp"
+            app:thumbRadius="6dp" />
+
+
+        <TextView
+            android:id="@+id/text_month9"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="-5dp"
+            android:text="@string/september"
+
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month8" />
+
+        <TextView
+            android:id="@+id/fulfilled_forecast_month9"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="-5dp"
+            android:drawablePadding="5dp"
+            android:text=""
+            app:drawableStartCompat="@drawable/ic_baseline_edit_12"
+            app:drawableTint="?android:attr/colorControlNormal"
+            app:layout_constraintStart_toEndOf="@+id/text_month9"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month8" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/range_slider_forecast_month9"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@+id/text_month9"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="-10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:thumbRadius="6dp" />
+
+
+        <TextView
+            android:id="@+id/text_month10"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="-5dp"
+            android:text="@string/october"
+            app:layout_constraintStart_toStartOf="parent"
+
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month9" />
+
+        <TextView
+            android:id="@+id/fulfilled_forecast_month10"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="-5dp"
+            android:drawablePadding="5dp"
+            android:text=""
+            app:drawableStartCompat="@drawable/ic_baseline_edit_12"
+            app:drawableTint="?android:attr/colorControlNormal"
+            app:layout_constraintStart_toEndOf="@+id/text_month10"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month9" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/range_slider_forecast_month10"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@+id/text_month10"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="-10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:thumbRadius="6dp" />
+
+
+        <TextView
+            android:id="@+id/text_month11"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="-5dp"
+            android:text="@string/november"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month10" />
+
+        <TextView
+            android:id="@+id/fulfilled_forecast_month11"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="-5dp"
+            android:drawablePadding="5dp"
+            android:text=""
+            app:drawableStartCompat="@drawable/ic_baseline_edit_12"
+            app:drawableTint="?android:attr/colorControlNormal"
+            app:layout_constraintStart_toEndOf="@+id/text_month11"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month10" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/range_slider_forecast_month11"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@+id/text_month11"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="-10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:thumbRadius="6dp" />
+
+
+        <TextView
+            android:id="@+id/text_month12"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="-5dp"
+            android:text="@string/december"
+            app:layout_constraintStart_toStartOf="parent"
+
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month11" />
+
+        <TextView
+            android:id="@+id/fulfilled_forecast_month12"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="-5dp"
+            android:drawablePadding="5dp"
+            android:text=""
+            app:drawableStartCompat="@drawable/ic_baseline_edit_12"
+            app:drawableTint="?android:attr/colorControlNormal"
+            app:layout_constraintStart_toEndOf="@+id/text_month12"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month11" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/range_slider_forecast_month12"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@+id/text_month12"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="-10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:thumbRadius="6dp" />
+
+
+        <Button
+            android:id="@+id/save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="5dp"
+            android:layout_toStartOf="@id/back"
+            android:backgroundTint="@color/green_500"
+            android:text="@string/saveButtonText"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month12" />
+
+        <Button
+            android:id="@+id/back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="5dp"
+            android:backgroundTint="@color/grey_500"
+            android:text="@string/back"
+            app:layout_constraintStart_toEndOf="@+id/save"
+            app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month12" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

@@ -13,6 +13,7 @@ import android.widget.ArrayAdapter
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.LegendEntry
@@ -33,6 +34,9 @@ import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerView
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import javax.inject.Inject
 
@@ -59,13 +63,17 @@ class LineChartFragment : Fragment() {
         binding.apply {
             viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
                 itData.data?.let { summits ->
-                    val filteredSummits = sortFilterValues.apply(
-                        summits,
-                        PreferenceManager.getDefaultSharedPreferences(requireContext())
-                    )
-                    resizeChart()
-                    listenOnDataSpinner(filteredSummits)
-                    drawLineChart(filteredSummits)
+                    lifecycleScope.launch {
+                        val filteredSummits = withContext(Dispatchers.IO) {
+                            sortFilterValues.apply(
+                                summits,
+                                PreferenceManager.getDefaultSharedPreferences(requireContext())
+                            )
+                        }
+                        resizeChart()
+                        listenOnDataSpinner(filteredSummits)
+                        drawLineChart(filteredSummits)
+                    }
                 }
             }
         }

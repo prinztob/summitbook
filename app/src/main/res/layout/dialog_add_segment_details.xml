@@ -1,70 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:padding="20dp">
 
-    <LinearLayout
+    <RelativeLayout
+        android:id="@+id/loadingPanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true" />
+    </RelativeLayout>
+
+    <EditText
+        android:id="@+id/segment_start_point_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:drawableStart="@drawable/ic_baseline_route_24"
+        android:drawablePadding="10dp"
+        android:hint="@string/segment_start_point"
+        android:importantForAutofill="no"
+        android:inputType="text"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <RelativeLayout
-            android:id="@+id/loadingPanel"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:visibility="gone">
+    <EditText
+        android:id="@+id/segment_end_point_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/ic_baseline_route_24"
+        android:drawablePadding="10dp"
+        android:hint="@string/segment_end_point"
+        android:importantForAutofill="no"
+        android:inputType="text"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/segment_start_point_name" />
 
-            <ProgressBar
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:indeterminate="true" />
-        </RelativeLayout>
+    <Button
+        android:id="@+id/add_segment_save"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="20dp"
+        android:layout_toStartOf="@id/add_segment_cancel"
+        android:backgroundTint="@color/green_500"
+        android:text="@string/saveButtonText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/segment_end_point_name" />
 
-        <EditText
-            android:id="@+id/segment_start_point_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:drawableStart="@drawable/ic_baseline_route_24"
-            android:drawablePadding="10dp"
-            android:hint="@string/segment_start_point"
-            android:importantForAutofill="no"
-            android:inputType="text" />
-
-        <EditText
-            android:id="@+id/segment_end_point_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:drawableStart="@drawable/ic_baseline_route_24"
-            android:drawablePadding="10dp"
-            android:hint="@string/segment_end_point"
-            android:importantForAutofill="no"
-            android:inputType="text" />
-
-        <RelativeLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="35dp"
-            android:orientation="vertical">
-
-            <Button
-                android:id="@+id/add_segment_save"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="20dp"
-                android:layout_toStartOf="@id/add_segment_cancel"
-                android:backgroundTint="@color/green_500"
-                android:text="@string/saveButtonText" />
-
-            <Button
-                android:id="@+id/add_segment_cancel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:backgroundTint="@color/red_500"
-                android:text="@string/cancelButtonText" />
-        </RelativeLayout>
-
-    </LinearLayout>
-</ScrollView>
+    <Button
+        android:id="@+id/add_segment_cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:backgroundTint="@color/red_500"
+        android:text="@string/cancelButtonText"
+        app:layout_constraintStart_toEndOf="@+id/add_segment_save"
+        app:layout_constraintTop_toBottomOf="@+id/segment_end_point_name" />
+</androidx.constraintlayout.widget.ConstraintLayout>
