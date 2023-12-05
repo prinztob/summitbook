@@ -82,6 +82,8 @@ class BarChartFragment : Fragment() {
         fillDateSpinner()
         binding.apply {
             viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
+                binding.loading.visibility = View.VISIBLE
+                binding.barChart.visibility = View.GONE
                 itData.data?.let { summits ->
                     if (summits.isNotEmpty()) {
                         update(summits)
@@ -149,7 +151,10 @@ class BarChartFragment : Fragment() {
         if (selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart != -1f) {
             binding.barChart.setVisibleXRangeMaximum(selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart)
             if (!selectedXAxisSpinnerEntry.isAQuality) {
-                binding.barChart.moveViewToX(barChartEntries.size.toFloat() - selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart)
+                binding.barChart.moveViewToX(
+                    barChartEntries.maxOf { it?.x ?: 0f } -
+                            selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart + 1
+                )
             }
         }
         binding.barChart.invalidate()
@@ -219,6 +224,8 @@ class BarChartFragment : Fragment() {
             val filteredSummits = withContext(Dispatchers.IO) {
                 sortFilterValues.apply(summits, sharedPreferences)
             }
+            binding.loading.visibility = View.GONE
+            binding.barChart.visibility = View.VISIBLE
             minDate = filteredSummits.minBy { it.date }.date
             intervalHelper = IntervalHelper(filteredSummits)
             val barChartCustomRenderer = BarChartCustomRenderer(

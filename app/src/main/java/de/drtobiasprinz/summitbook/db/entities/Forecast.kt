@@ -55,6 +55,10 @@ data class Forecast(
         return "$year;$month;$forecastHeightMeter;$forecastDistance;$forecastNumberActivities\n"
     }
 
+    fun alreadyExists(forecasts: List<Forecast>): Boolean {
+        return forecasts.any { it.year == this.year && it.month == this.month }
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -228,7 +232,7 @@ data class Forecast(
                 splitLine[3].toInt(),
                 splitLine[4].toInt()
             )
-            return if (forecasts.contains(forecast)) {
+            return if (forecast.alreadyExists(forecasts)) {
                 false
             } else {
                 saveForecast(forecast)

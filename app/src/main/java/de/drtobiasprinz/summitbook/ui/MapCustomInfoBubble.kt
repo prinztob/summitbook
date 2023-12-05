@@ -15,7 +15,6 @@ class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Con
         InfoWindow(R.layout.bonuspack_bubble, mapView) {
 
     override fun onClose() {
-        updateGpxTrack(forceRemove = !alwaysShowTrack)
     }
 
     fun updateGpxTrack(forceShow: Boolean = false, forceRemove: Boolean = false) {

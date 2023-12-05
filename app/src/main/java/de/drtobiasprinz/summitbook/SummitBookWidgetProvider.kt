@@ -20,7 +20,7 @@ import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import java.text.NumberFormat
-import java.util.*
+import java.util.Calendar
 import javax.inject.Inject
 import kotlin.math.roundToInt
 
@@ -152,13 +152,18 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
         }
         remoteViews.setViewVisibility(R.id.header_monthly, View.VISIBLE)
         remoteViews.setViewVisibility(R.id.header_image_monthly, View.VISIBLE)
+        val distanceForecastForCurrentMonth = (forecastForCurrentMonth?.forecastNumberActivities
+            ?: 0) * dayOfMonthPercentage
+        val heightMeterForecastForCurrentMonth = (forecastForCurrentMonth?.forecastHeightMeter
+            ?: 0) * dayOfMonthPercentage
+        val kilometerForecastForCurrentMonth = (forecastForCurrentMonth?.forecastDistance
+            ?: 0) * dayOfMonthPercentage
         setTextView(
             remoteViews,
             context,
             R.id.activityMonthly,
             summitsForCurrentMonth.count(),
-            ((forecastForCurrentMonth?.forecastNumberActivities
-                ?: 0) * dayOfMonthPercentage).roundToInt(),
+            distanceForecastForCurrentMonth.roundToInt(),
             null,
             R.id.activity_image_monthly,
             R.drawable.ic_baseline_directions_run_24_green,
@@ -170,8 +175,7 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
             R.id.activityYearly,
             summitsForCurrentYear.count(),
             (forecastForCurrentYear.sumOf { it.forecastNumberActivities } +
-                    (forecastForCurrentMonth?.forecastNumberActivities
-                        ?: 0) * dayOfMonthPercentage).roundToInt(),
+                    distanceForecastForCurrentMonth).roundToInt(),
             null,
             R.id.activity_image,
             R.drawable.ic_baseline_directions_run_24_green,
@@ -188,8 +192,7 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
                     it.elevationData.elevationGain
                 }
             },
-            ((forecastForCurrentMonth?.forecastHeightMeter
-                ?: 0) * dayOfMonthPercentage).roundToInt(),
+            heightMeterForecastForCurrentMonth.roundToInt(),
             R.string.hm,
             R.id.height_meter_image_monthly,
             R.drawable.ic_baseline_trending_up_24_green,
@@ -207,8 +210,7 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
                 }
             },
             (forecastForCurrentYear.sumOf { it.forecastHeightMeter } +
-                    (forecastForCurrentMonth?.forecastHeightMeter ?: 0) * dayOfMonthPercentage)
-                .roundToInt(),
+                    heightMeterForecastForCurrentMonth).roundToInt(),
             R.string.hm,
             R.id.height_meter_image,
             R.drawable.ic_baseline_trending_up_24_green,
@@ -219,7 +221,7 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
             context,
             R.id.kilometersMonthly,
             (summitsForCurrentMonth.sumOf { it.kilometers }).roundToInt(),
-            ((forecastForCurrentMonth?.forecastDistance ?: 0) * dayOfMonthPercentage).roundToInt(),
+            kilometerForecastForCurrentMonth.roundToInt(),
             R.string.km,
             R.id.kilometers_image_monthly,
             R.drawable.ic_baseline_compare_arrows_24_green,
@@ -231,8 +233,7 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
             R.id.kilometersYearly,
             (summitsForCurrentYear.sumOf { it.kilometers }).roundToInt(),
             (forecastForCurrentYear.sumOf { it.forecastDistance } +
-                    (forecastForCurrentMonth?.forecastDistance ?: 0) * dayOfMonthPercentage)
-                .roundToInt(),
+                    kilometerForecastForCurrentMonth).roundToInt(),
             R.string.km,
             R.id.kilometers_image,
             R.drawable.ic_baseline_compare_arrows_24_green,

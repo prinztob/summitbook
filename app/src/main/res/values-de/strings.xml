@@ -355,7 +355,7 @@
     <string name="no_email_program_installed">E-Mail program not installed</string>
     <string name="add_new_summit">Füge neuen Gipfel hinzu</string>
     <string name="add_new_bookmark">Füge neues Lesezeichen hinzu</string>
-    <string name="color_code_selection">Wähle aus was für das Einfärben des Tracks verwendet werden soll</string>
+    <string name="color_code_selection">Farbauswahl für Track</string>
     <string name="entry">Eintrag</string>
     <string name="update">Update</string>
     <string name="update_3rd_part">Update Daten von Drittanbietern</string>

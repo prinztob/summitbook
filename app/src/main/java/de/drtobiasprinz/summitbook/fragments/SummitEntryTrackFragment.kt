@@ -272,7 +272,9 @@ class SummitEntryTrackFragment : Fragment() {
                     position: Int,
                     id: Long
                 ) {
-                    if (view != null && selectedPosition != position) {
+                    if (items[position] == getString(R.string.none)) {
+                        pageViewModel?.setSummitToCompareToNull()
+                    } else if (view != null && selectedPosition != position) {
                         selectedPosition = position
                         val text = items[position]
                         if (text != "") {
@@ -330,7 +332,7 @@ class SummitEntryTrackFragment : Fragment() {
                 val lineChart = binding.lineChart
                 setXAxis(lineChart)
                 val params = lineChart.layoutParams
-                params.height = (Resources.getSystem().displayMetrics.heightPixels * 0.3).toInt()
+                params.height = (Resources.getSystem().displayMetrics.heightPixels * 0.2).toInt()
                 lineChart.layoutParams = params
                 val dataSets: MutableList<ILineDataSet> = ArrayList()
                 val trackColor =
@@ -458,7 +460,8 @@ class SummitEntryTrackFragment : Fragment() {
         summitToView: Summit,
         summitToCompare: Summit?,
         summits: List<Summit>?,
-        calculateBondingBox: Boolean = true
+        calculateBondingBox: Boolean = true,
+        doCleanUp: Boolean = true
     ) {
         val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || summitToView.latLng != null
         OpenStreetMapUtils.setTileSource(OpenStreetMapUtils.selectedItem, binding.osmap)
@@ -469,11 +472,14 @@ class SummitEntryTrackFragment : Fragment() {
             )
         }
         OpenStreetMapUtils.addDefaultSettings(requireContext(), binding.osmap, requireActivity())
-        val height = if (hasPoints) 0.7 else 0.0
+        val height = if (hasPoints) 0.55 else 0.0
         val params = binding.osmap.layoutParams
         params?.height = (Resources.getSystem().displayMetrics.heightPixels * height).toInt()
         binding.osmap.layoutParams = params
         if (hasPoints) {
+            if (doCleanUp) {
+                binding.osmap.overlays.clear()
+            }
             if (summitToCompare != null) {
                 OpenStreetMapUtils.drawTrack(
                     summitToCompare,
@@ -501,7 +507,7 @@ class SummitEntryTrackFragment : Fragment() {
                 calculateBondingBox = calculateBondingBox
             )
             binding.customizeTrack.setOnClickListener {
-                customizeTrackDialog(summitToView, summitToCompare, summits)
+                customizeColorOfTrackDialog(summitToView, summitToCompare, summits)
             }
         } else {
             binding.osmap.visibility = View.GONE
@@ -515,13 +521,12 @@ class SummitEntryTrackFragment : Fragment() {
 
     }
 
-    private fun customizeTrackDialog(
+    private fun customizeColorOfTrackDialog(
         summitToView: Summit,
         summitToCompare: Summit?,
         summits: List<Summit>?
     ) {
         val fDialogTitle = getString(R.string.color_code_selection)
-        setUsedItemsForColorCode()
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle(fDialogTitle)
         builder.setSingleChoiceItems(
@@ -606,12 +611,20 @@ class SummitEntryTrackFragment : Fragment() {
         var summitsShown = 0
         summitsWithSameBoundingBox.forEach { entry ->
             if (entry.hasGpsTrack() && pointsShown < maxPointsToShow) {
-                if (entry.gpsTrack == null) {
-                    entry.setGpsTrack()
+                lifecycleScope.launch {
+                    withContext(Dispatchers.IO) {
+                        if (entry.gpsTrack == null) {
+                            entry.setGpsTrack()
+                        }
+                    }
+                    entry.gpsTrack?.addGpsTrack(binding.osmap, TrackColor.None, summit = entry)
+                    summitsShown += 1
+                    pointsShown += entry.gpsTrack?.trackPoints?.size ?: 0
+                    binding.osmap.zoomController.activate()
+                    if (summitsWithSameBoundingBox.last() == entry) {
+                        setOpenStreetMap(summitToView, summitToCompare, summits, calculateBondingBox = false, doCleanUp = false)
+                    }
                 }
-                entry.gpsTrack?.addGpsTrack(binding.osmap, TrackColor.None, summit = entry)
-                summitsShown += 1
-                pointsShown += entry.gpsTrack?.trackPoints?.size ?: 0
             }
         }
         if (pointsShown > maxPointsToShow) {
@@ -629,8 +642,7 @@ class SummitEntryTrackFragment : Fragment() {
                 ).show()
             }
         }
-        setOpenStreetMap(summitToView, summitToCompare, summits, false)
-        binding.osmap.zoomController.activate()
+
     }
 
 }

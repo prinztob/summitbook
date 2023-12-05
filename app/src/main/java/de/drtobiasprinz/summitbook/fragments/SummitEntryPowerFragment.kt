@@ -162,7 +162,9 @@ class SummitEntryPowerFragment : Fragment() {
                     position: Int,
                     id: Long
                 ) {
-                    if (view != null && selectedPosition != position) {
+                    if (items[position] == getString(R.string.none)) {
+                        pageViewModel?.setSummitToCompareToNull()
+                    } else if (view != null && selectedPosition != position) {
                         selectedPosition = position
                         val text = items[position]
                         if (text != "") {

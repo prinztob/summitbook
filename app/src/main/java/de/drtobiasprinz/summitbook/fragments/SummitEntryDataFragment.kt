@@ -73,12 +73,10 @@ class SummitEntryDataFragment : Fragment() {
                                             summitToCompare.data
                                         )
                                     }
-                                    if (summitToCompare.data != null) {
-                                        setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
-                                            summitToView,
-                                            summitToCompare.data
-                                        )
-                                    }
+                                    setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                                        summitToView,
+                                        summitToCompare.data
+                                    )
                                     setCircleBeforeTextForAllTextFields(summitToView, extrema)
                                     setAdditionalSpeedData(
                                         summitToView,
@@ -205,7 +203,7 @@ class SummitEntryDataFragment : Fragment() {
     private fun prepareCompareAutoComplete(summitToView: Summit, summitToCompare: Summit?) {
         val items = getSummitsSuggestions(summitToView)
         binding.summitNameToCompare.item = items
-        var selectedPosition = -1
+        var selectedPosition = 0
         if (summitToCompare != null) {
             selectedPosition =
                 items.indexOfFirst { "${summitToCompare.getDateAsString()} ${summitToCompare.name}" == it }
@@ -221,7 +219,9 @@ class SummitEntryDataFragment : Fragment() {
                     position: Int,
                     id: Long
                 ) {
-                    if (view != null && selectedPosition != position) {
+                    if (items[position] == getString(R.string.none)) {
+                        pageViewModel?.setSummitToCompareToNull()
+                    } else if (view != null && selectedPosition != position) {
                         selectedPosition = position
                         val text = items[position]
                         if (text != "") {
