@@ -36,6 +36,7 @@
         <activity android:name=".AddImagesActivity" />
         <activity android:name=".SummitEntryDetailsActivity" />
         <activity android:name=".SelectOnOsMapActivity" />
+        <activity android:name=".PythonActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -209,6 +209,8 @@
     <string name="export_calculated_data">Export calculated data to csv which were determined from track.</string>
     <string name="tcx_switch">Turn this option to download tcx instead of gpx files</string>
     <string name="tcx_switch_title">Download tcx instead of gpx</string>
+    <string name="garmin_mfa_switch">Turn this option if you have activated multifactor authentication in Garmin Connect</string>
+    <string name="garmin_mfa_switch_title">Garmin MFA</string>
     <string name="current_year_summary">Turn this option to change the default behaviour at startup</string>
     <string name="current_year_title">Show entries of current year</string>
     <string name="startup_auto_update_summary">Turn this option to update third party data at startup</string>
@@ -416,5 +418,7 @@
     <string name="description">Description</string>
     <string name="summits_for_segments_not_found">No activity for segment found</string>
     <string name="center_on_current_location">Center on current location</string>
+    <string name="pythonConsoleText">This is the first time login to Garmin Connect if you have activate MFA.
+        We will try to login and you may have to enter your MFA token.</string>
 
 </resources>

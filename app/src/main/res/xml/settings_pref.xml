@@ -29,6 +29,11 @@
         android:key="download_tcx"
         android:summary="@string/tcx_switch"
         android:title="@string/tcx_switch_title" />
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="garmin_mfa"
+        android:summary="@string/garmin_mfa_switch"
+        android:title="@string/garmin_mfa_switch_title" />
     <EditTextPreference
         android:key="garmin_username"
         android:title="@string/garmin_user_title"

@@ -47,6 +47,11 @@ class SortFilterValues(
                 if (minDate != 1970 && maxDate != 1970) {
                     years = (minDate..maxDate).map { it.toString() }.sortedDescending()
                 }
+                val calendar = Calendar.getInstance()
+                val currentYear = ((calendar)[Calendar.YEAR]).toString()
+                if (!years.contains(currentYear)) {
+                    years = (years + currentYear).sortedDescending()
+                }
             }
             val showOnlyCurrentYear = sharedPreferences.getBoolean("current_year_switch", false)
             updateCurrentYearSwitch(showOnlyCurrentYear)

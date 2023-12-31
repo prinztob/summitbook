@@ -213,6 +213,8 @@
     <string name="export_calculated_data">Exportiere vom GPS Track berechnete Daten in die CSV Datei.</string>
     <string name="tcx_switch">Aktiviere diese Option um tcx Datein anstatt gpx herunterzuladen</string>
     <string name="tcx_switch_title">Lade tcx anstatt gpx herunter</string>
+    <string name="garmin_mfa_switch">Aktiviere diese Option wenn du multifactor authentication in Garmin Connect aktiviert hast</string>
+    <string name="garmin_mfa_switch_title">Garmin MFA</string>
     <string name="current_year_summary">Aktiviere diese Option um das Standardverhalten nach dem Starten zu verändern</string>
     <string name="current_year_title">Zeige nur Gipfel des aktuellen Jahres</string>
     <string name="startup_auto_update_summary">Aktiviere diese Option um Drittanbieter Daten beim Starten der App zu aktualisieren</string>
@@ -418,5 +420,7 @@
     <string name="description">Description</string>
     <string name="summits_for_segments_not_found">Es wurde keine Aktivität für Segment gefunden.</string>
     <string name="center_on_current_location">Zentriere auf aktuelle Position</string>
+    <string name="pythonConsoleText">Das ist der erste Login in Garmin Connect mit aktivierten MFA.
+        Wir versuchen jetzt dich einzuloggen und du musst dein MFA Token eingeben.</string>
 
 </resources>

@@ -30,6 +30,7 @@ import com.chaquo.python.android.AndroidPlatform
 import com.google.android.material.navigation.NavigationView
 import com.stfalcon.imageviewer.StfalconImageViewer
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.PythonActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SettingsActivity
 import de.drtobiasprinz.summitbook.databinding.ActivityMainBinding
@@ -82,7 +83,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var overlayView: PosterOverlayView? = null
     private var viewer: StfalconImageViewer<Poster>? = null
     private var isDialogShown = false
-    private lateinit var sharedPreferences: SharedPreferences
 
     private var useFilteredSummits: Boolean = false
 
@@ -90,6 +90,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        cache = applicationContext.cacheDir
+        storage = applicationContext.filesDir
         if (!Python.isStarted()) {
             Python.start(AndroidPlatform(this))
         }
@@ -97,8 +99,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)
         updatePythonExecutor()
         pythonInstance = Python.getInstance()
-        cache = applicationContext.cacheDir
-        storage = applicationContext.filesDir
         activitiesDir = File(storage, "activities")
         val viewedFragment: Fragment? = supportFragmentManager.findFragmentById(R.id.content_frame)
         setSupportActionBar(binding.toolbarInclude.toolbar)
@@ -442,10 +442,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun updatePythonExecutor() {
         if (pythonExecutor == null || pythonExecutor?.username == "" || pythonExecutor?.password == "") {
-            val username = sharedPreferences.getString("garmin_username", null) ?: ""
-            val password = sharedPreferences.getString("garmin_password", null) ?: ""
-            if (username != "" && password != "") {
+            val username = sharedPreferences.getString("garmin_username", "") ?: ""
+            val password = sharedPreferences.getString("garmin_password", "") ?: ""
+            val garminMfaSwitch = sharedPreferences.getBoolean("garmin_mfa", false)
+            val oauthPath = File(storage?.absolutePath, ".garminconnect")
+            if (oauthPath.exists()) {
                 pythonExecutor = GarminPythonExecutor(username, password)
+            } else if (username != "" && password != "" && garminMfaSwitch) {
+                val intent = Intent(this, PythonActivity::class.java)
+                startActivity(intent)
             }
         }
     }
@@ -465,6 +470,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var activitiesDir: File? = null
         var pythonInstance: Python? = null
         var pythonExecutor: GarminPythonExecutor? = null
+        lateinit var sharedPreferences: SharedPreferences
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {

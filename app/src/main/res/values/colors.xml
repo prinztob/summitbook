@@ -33,4 +33,7 @@
     <color name="Blue">#0000FF</color>
     <color name="translucent">#80000000</color>
     <color name="translucent70">#70000000</color>
+
+    <color name="console_error">#b53f3f</color>
+    <color name="console_meta">#304ffe</color>
 </resources>
