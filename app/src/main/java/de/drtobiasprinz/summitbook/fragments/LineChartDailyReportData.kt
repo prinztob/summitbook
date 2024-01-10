@@ -43,7 +43,6 @@ class LineChartDailyReportData : Fragment() {
     private var intervalHelper: IntervalHelper? = null
 
     private var lineChartEntriesBatteryGain: MutableList<Entry?> = mutableListOf()
-    private var lineChartEntriesSolarExposure: MutableList<Entry?> = mutableListOf()
     private var lineChartEntriesActivities: MutableList<Entry?> = mutableListOf()
     private var lineChartEntriesActiveDuration: MutableList<Entry?> = mutableListOf()
     private var lineChartEntriesModerateIntensityMinutes: MutableList<Entry?> = mutableListOf()
@@ -57,7 +56,7 @@ class LineChartDailyReportData : Fragment() {
     private var lineChartXAxisSpinner: XAxisSelectorLineChartDailyReportXAxisSelector =
         XAxisSelectorLineChartDailyReportXAxisSelector.Days7
     private var lineChartYAxisSpinner: LineChartDailyReportYAxisSelector =
-        LineChartDailyReportYAxisSelector.SolarIntensity
+        LineChartDailyReportYAxisSelector.ActivityMinutes
     private var lineChartColors: List<Int>? = mutableListOf()
 
     override fun onCreateView(
@@ -128,41 +127,6 @@ class LineChartDailyReportData : Fragment() {
         setLineChartEntries(dailyReportData)
         val dataSets: MutableList<ILineDataSet?> = ArrayList()
         val legends = mutableListOf<LegendEntry>()
-        if (lineChartYAxisSpinner == LineChartDailyReportYAxisSelector.SolarIntensity) {
-            legends.add(
-                addData(
-                    lineChartEntriesBatteryGain,
-                    dataSets,
-                    Color.RED,
-                    getString(R.string.solar_50000_lux_condition)
-                )
-            )
-            legends.add(
-                addData(
-                    lineChartEntriesSolarExposure,
-                    dataSets,
-                    Color.YELLOW,
-                    getString(R.string.solar_exposure)
-                )
-            )
-
-            val dataSetActivities = LineDataSet(
-                lineChartEntriesActivities,
-                resources.getString(lineChartXAxisSpinner.nameId)
-            )
-            setGraphViewActivities(dataSetActivities)
-            dataSets.add(dataSetActivities)
-            legends.add(
-                LegendEntry(
-                    getString(R.string.activity_hint),
-                    Legend.LegendForm.CIRCLE,
-                    9f,
-                    5f,
-                    null,
-                    Color.DKGRAY
-                )
-            )
-        }
         if (lineChartYAxisSpinner == LineChartDailyReportYAxisSelector.ActivityMinutes) {
             legends.add(
                 addData(
@@ -298,12 +262,6 @@ class LineChartDailyReportData : Fragment() {
     private fun setLineChartEntries(dailyReportData: List<DailyReportData>) {
         val data = intervalHelper?.let { lineChartXAxisSpinner.filterData(it, dailyReportData) }
         if (data != null) {
-            lineChartEntriesBatteryGain = data.mapIndexed { index, entry ->
-                Entry(index.toFloat(), (entry.solarUtilizationInHours).toFloat(), entry)
-            }.toMutableList()
-            lineChartEntriesSolarExposure = data.mapIndexed { index, entry ->
-                Entry(index.toFloat(), (entry.solarExposureInHours).toFloat(), entry)
-            }.toMutableList()
             lineChartEntriesActivities = data.mapIndexed { index, entry ->
                 Entry(index.toFloat() - 0.5F, entry.activitiesOnDay.toFloat(), entry)
             }.toMutableList()
@@ -400,16 +358,6 @@ class LineChartDailyReportData : Fragment() {
                 )
             }
         }
-    }
-
-    private fun setGraphViewActivities(dataSet: LineDataSet) {
-        dataSet.setDrawCircles(false)
-        dataSet.valueTextSize = 18f
-        dataSet.setDrawValues(false)
-        dataSet.isHighlightEnabled = false
-        dataSet.color = Color.DKGRAY
-        dataSet.lineWidth = 2f
-        dataSet.mode = LineDataSet.Mode.STEPPED
     }
 
     private fun setGraphView(dataSet: LineDataSet, color: Int) {
@@ -550,8 +498,6 @@ class LineChartDailyReportData : Fragment() {
             return DailyReportData(
                 0,
                 range.start,
-                relevantData.sumOf { it.solarUtilizationInHours },
-                relevantData.sumOf { it.solarExposureInHours },
                 relevantData.sumOf { it.steps },
                 relevantData.sumOf { it.floorsClimbed },
                 relevantData.flatMap { it.events },

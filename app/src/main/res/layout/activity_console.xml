@@ -6,17 +6,6 @@
     android:layout_height="match_parent"
     tools:context="de.drtobiasprinz.summitbook.utils.ConsoleActivity">
 
-    <TextView
-        android:id="@+id/pythonConsoleText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_centerInParent="true"
-        android:text="@string/pythonConsoleText"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
     <EditText
         android:id="@+id/etInput"
         style="@style/Code"
@@ -27,16 +16,17 @@
         android:layout_marginEnd="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginBottom="7dp"
+        android:autofillHints="@string/garmin_mfa_switch_title"
+        android:hint="@string/garmin_mfa_switch_title"
         android:ems="10"
         android:imeOptions="actionDone|flagNoFullscreen"
-        android:importantForAutofill="no"
         android:singleLine="true"
         android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/pythonConsoleText"
-        app:layout_constraintTop_toTopOf="parent">
+        android:inputType="text">
 
         <requestFocus />
     </EditText>
@@ -60,7 +50,8 @@
             android:id="@+id/tvOutput"
             style="@style/ConsoleOutput"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:text="@string/pythonConsoleText" />
     </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

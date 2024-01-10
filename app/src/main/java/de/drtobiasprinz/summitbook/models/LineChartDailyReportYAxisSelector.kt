@@ -9,18 +9,6 @@ enum class LineChartDailyReportYAxisSelector(
     val unit: String,
     val getStringForCustomMarker: (DailyReportData, Context) -> String
 ) {
-    SolarIntensity(R.string.solar_intensity, "h", { entry, context ->
-        String.format(
-            "%s\n%s: %.2f %s\n%s: %.2f %s",
-            entry.markerText,
-            context.getString(R.string.solar_50000_lux_condition),
-            entry.solarUtilizationInHours,
-            "h",
-            context.getString(R.string.solar_exposure),
-            entry.solarExposureInHours,
-            "h"
-        )
-    }),
     ActivityMinutes(R.string.active_duration, "h", { entry, context ->
         String.format(
             "%s\n%s: %s %s\n%s: %s %s\n%s: %s %s",

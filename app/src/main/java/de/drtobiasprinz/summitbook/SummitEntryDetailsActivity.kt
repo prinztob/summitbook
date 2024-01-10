@@ -2,21 +2,31 @@ package de.drtobiasprinz.summitbook
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
+import com.chaquo.python.Python
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.TabsPagerAdapter
 import de.drtobiasprinz.summitbook.db.entities.SportGroup
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
+import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class SummitEntryDetailsActivity : AppCompatActivity() {
@@ -37,8 +47,9 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
             if (summitEntryId != null) {
                 pageViewModel?.getSummitToView(summitEntryId)
                 pageViewModel?.summitToView?.observe(this) { itData ->
-                    itData.data?.let {
-                        summitEntry = it
+                    itData.data?.let { entry ->
+                        summitEntry = entry
+                        pythonInstance?.let { simplifyTrack(it, entry) }
                         val tabsPagerAdapter = TabsPagerAdapter(this, summitEntry)
                         viewPager = findViewById(R.id.pager)
                         viewPager.adapter = tabsPagerAdapter
@@ -47,6 +58,42 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
                         TabLayoutMediator(tabs, viewPager) { tab, position ->
                             tab.text = getPageTitle(position)
                         }.attach()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun simplifyTrack(
+        pythonInstance: Python,
+        summit: Summit
+    ) {
+        val useSimplifiedTracks =
+            MainActivity.sharedPreferences.getBoolean("use_simplified_tracks", true)
+        if (
+            useSimplifiedTracks &&
+            summit.hasGpsTrack() &&
+            !summit.hasGpsTrack(simplified = true) &&
+            summit.sportType != SportType.IndoorTrainer
+        ) {
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    try {
+                        GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
+                            summit.getGpsTrackPath(
+                                simplified = false
+                            )
+                        )
+                        Log.i(
+                            "AsyncSimplifyGpsTracks",
+                            "Simplified track for ${summit.getDateAsString()}_${summit.name}."
+                        )
+                    } catch (ex: RuntimeException) {
+                        Log.e(
+                            "AsyncSimplifyGpsTracks",
+                            "Error in simplify track for ${summit.getDateAsString()}_${summit.name}: ${ex.message}"
+                        )
+                        MainActivity.entriesToExcludeForSimplifyGpxTrack.add(summit)
                     }
                 }
             }

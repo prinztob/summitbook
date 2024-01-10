@@ -14,32 +14,6 @@ import org.junit.Test
 import java.io.File
 
 class DailyReportDataTest {
-    @Test
-    fun testSolarIntensityHalfDay() {
-        val resource = this.javaClass.classLoader?.getResource("solar_half_day.json")
-        if (resource != null) {
-            val actual = DailyReportData()
-            val gson =
-                JsonParser.parseString(JsonUtils.getJsonData(File(resource.path))) as JsonObject
-            DailyReportData.parseSolarIntensity(actual, gson)
-            assertEquals(actual.solarUtilizationInHours, 2.76, 0.01)
-            assertEquals(actual.solarExposureInHours, 4.82, 0.01)
-            assertFalse(actual.isForWholeDay)
-        }
-    }
-
-    @Test
-    fun testSolarIntensityWholeDay() {
-        val resource = this.javaClass.classLoader?.getResource("solar_whole_day.json")
-        if (resource != null) {
-            val actual = DailyReportData()
-            val gson =
-                JsonParser.parseString(JsonUtils.getJsonData(File(resource.path))) as JsonObject
-            DailyReportData.parseSolarIntensity(actual, gson)
-            assertEquals(actual.solarUtilizationInHours, 0.45, 0.01)
-            assertEquals(actual.solarExposureInHours, 1.93, 0.01)
-        }
-    }
 
     @Test
     fun testHeartRateVariability() {

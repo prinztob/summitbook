@@ -279,9 +279,6 @@
     <string name="power_1h">Leistung 1h</string>
     <string name="power_2h">Leistung 2h</string>
     <string name="power_5h">Leistung 5h</string>
-    <string name="solar_50000_lux_condition">50000 Lux Konditionen</string>
-    <string name="solar_exposure">Sonneaufenthalt</string>
-    <string name="solar_intensity">Sonnenintensität</string>
     <string name="active_duration">Aktivitätsminuten</string>
     <string name="moderate_intensity_minutes">Mäßige Intensitätsminuten</string>
     <string name="vigorous_intensity_minutes">Hohe Intensitätsminuten</string>

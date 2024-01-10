@@ -19,7 +19,7 @@ enum class BarChartYAxisSelector(
     }, { forecast -> forecast.forecastNumberActivities.toFloat() }),
     Kilometers(R.string.kilometers_hint, R.string.km, "annual_target_km", 1200, { stream, _ ->
         stream
-            ?.mapToInt { o: Summit? -> o?.kilometers?.toInt() ?: 0 }
+            ?.mapToDouble { o: Summit? -> o?.kilometers ?: 0.0 }
             ?.sum()?.toFloat() ?: 0.0f
     }, { forecast -> forecast.forecastDistance.toFloat() }),
     ElevationGain(

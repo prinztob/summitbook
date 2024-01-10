@@ -36,6 +36,7 @@ import de.drtobiasprinz.summitbook.SettingsActivity
 import de.drtobiasprinz.summitbook.databinding.ActivityMainBinding
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.fragments.BarChartFragment
 import de.drtobiasprinz.summitbook.fragments.LineChartDailyReportData
@@ -234,12 +235,22 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             val summits = summitViewFragment.summitsAdapter.differ.currentList
             val executor = pythonExecutor
             if (summits.isNotEmpty()) {
-                updateBoundingBox(summits)
-                updateSimplifiedTracks(summits)
+                val entriesWithoutBoundingBox = summits.filter {
+                    it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingBoxCalculation
+                }
+                if (entriesWithoutBoundingBox.isNotEmpty()) {
+                    updateBoundingBox(entriesWithoutBoundingBox)
+                } else {
+                    Log.i(
+                        "Scheduler",
+                        "No more bounding boxes to update. Starting to simplify GPX tracks"
+                    )
+                    updateSimplifiedTracks(summits)
+                }
                 updateDailyReportData(executor, summits)
             }
 
-        }, 1, 1, TimeUnit.MINUTES)
+        }, 1, 5, TimeUnit.MINUTES)
     }
 
     private fun updateDailyReportData(
@@ -277,9 +288,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             sharedPreferences.getBoolean("use_simplified_tracks", true)
         if (useSimplifiedTracks) {
             val entriesWithoutSimplifiedGpxTrack = summits.filter {
-                it !in entriesToExcludeForSimplifyGpxTrack && it.hasGpsTrack() && !it.hasGpsTrack(
-                    simplified = true
-                )
+                it !in entriesToExcludeForSimplifyGpxTrack &&
+                        it.hasGpsTrack() &&
+                        !it.hasGpsTrack(simplified = true) &&
+                        it.sportType != SportType.IndoorTrainer
             }.sortedByDescending { it.date }
             if (entriesWithoutSimplifiedGpxTrack.isEmpty()) {
                 Log.i(
@@ -315,38 +327,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
-    private fun updateBoundingBox(summits: List<Summit>) {
-        val entriesWithoutBoundingBox = summits.filter {
-            it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingBoxCalculation
-        } as MutableList<Summit>?
-        if (!entriesWithoutBoundingBox.isNullOrEmpty()) {
-            val entriesToCheck = entriesWithoutBoundingBox.take(25)
-            entriesToCheck.forEach { entryToCheck ->
-                entriesWithoutBoundingBox.remove(entryToCheck)
-                lifecycleScope.launch {
-                    withContext(Dispatchers.IO) {
-                        entryToCheck.setBoundingBoxFromTrack()
-                    }
-                    if (entryToCheck.trackBoundingBox != null) {
-                        viewModel.saveSummit(true, entryToCheck)
-                        Log.i(
-                            "Scheduler",
-                            "Updated bounding box for ${entryToCheck.name}, ${entriesWithoutBoundingBox.size} remaining."
-                        )
-                    } else {
-                        Log.i(
-                            "Scheduler",
-                            "Updated bounding box for ${entryToCheck.name} failed, remove it from update list."
-                        )
-                        entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
-                    }
+    private fun updateBoundingBox(entriesWithoutBoundingBox: List<Summit>) {
+        val entriesToCheck = entriesWithoutBoundingBox.take(50)
+        entriesToCheck.forEachIndexed { index, entryToCheck ->
+            lifecycleScope.launch {
+                withContext(Dispatchers.Default) {
+                    entryToCheck.setBoundingBoxFromTrack()
                 }
-            }
-            if (entriesToCheck.isEmpty()) {
-                Log.i(
-                    "Scheduler",
-                    "No more bounding boxes to update."
-                )
+                if (entryToCheck.trackBoundingBox != null) {
+                    viewModel.saveSummit(true, entryToCheck)
+                    Log.i(
+                        "Scheduler",
+                        "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name}, " +
+                                "${entriesWithoutBoundingBox.size - index} remaining."
+                    )
+                } else {
+                    Log.i(
+                        "Scheduler",
+                        "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name} failed, remove it from update list."
+                    )
+                    entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
+                }
             }
         }
     }
@@ -369,7 +370,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                             numberSimplifiedGpxTracks += 1
                             Log.i(
                                 "AsyncSimplifyGpsTracks",
-                                "Simplify track for ${it.getDateAsString()}_${it.name}."
+                                "Simplified track for ${it.getDateAsString()}_${it.name}."
                             )
                         } catch (ex: RuntimeException) {
                             Log.e(
@@ -832,7 +833,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             )
             viewModel.refresh()
         }
-        if (key == "garmin_username" || key == "garmin_password") {
+        if (key == "garmin_username" || key == "garmin_password" || key == "garmin_mfa") {
             updatePythonExecutor()
         }
     }

@@ -79,32 +79,22 @@ class GarminDataUpdater(
         val filterEntriesOldThan = calendar.time
         val df = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
         if (startDate != "") {
-            var deviceId: String? = null
             val datesBetween = getDatesBetween(startDate)
             dailyReportData?.filter { !it.isForWholeDay && it.date.after(filterEntriesOldThan) }
                 ?.forEach {
                     try {
-                        var deviceIdLocal = deviceId
-                        if (deviceIdLocal == null) {
-                            deviceIdLocal =
-                                pythonExecutor.getDeviceIdForSolarOutput()
-                            deviceId = deviceIdLocal
-                        }
-                        val solarIntensityJson = pythonExecutor
-                            .getSolarIntensityForDate(df.format(it.date), deviceIdLocal)
                         val dailyEventsJsonArray =
                             pythonExecutor.getDailyEventsForDate(df.format(it.date))
                         val summaryData =
                             pythonExecutor.getSummaryData(df.format(it.date))
-                        val hrvdData =
+                        val hrvData =
                             pythonExecutor.getHearRateVariabilityData(df.format(it.date))
                         val reportData =
                             DailyReportData.parseFromJson(
                                 it.date,
-                                solarIntensityJson,
                                 dailyEventsJsonArray,
                                 summaryData,
-                                hrvdData
+                                hrvData
                             )
                         reportData.entryId = it.entryId
                         databaseViewModel?.saveDailyReportData(true, reportData)
@@ -115,18 +105,9 @@ class GarminDataUpdater(
             for (dateToCheck in datesBetween) {
                 try {
                     if (dateToCheck != null && dailyReportData?.none { it.date == dateToCheck } == true) {
-                        var deviceIdForLoop = deviceId
-                        if (deviceIdForLoop == null) {
-                            deviceIdForLoop = pythonExecutor.getDeviceIdForSolarOutput()
-                            deviceId = deviceIdForLoop
-                        }
                         Log.i(
                             "Scheduler",
                             "Check daily report data for date ${df.format(dateToCheck)}."
-                        )
-                        val solarIntensityJson = pythonExecutor.getSolarIntensityForDate(
-                            df.format(dateToCheck),
-                            deviceIdForLoop
                         )
                         val dailyEventsJsonArray =
                             pythonExecutor.getDailyEventsForDate(df.format(dateToCheck))
@@ -137,7 +118,6 @@ class GarminDataUpdater(
                         val reportData =
                             DailyReportData.parseFromJson(
                                 dateToCheck,
-                                solarIntensityJson,
                                 dailyEventsJsonArray,
                                 stepsData,
                                 floorsClimbedData

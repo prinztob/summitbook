@@ -27,8 +27,6 @@ class DailyEvent(
 data class DailyReportData(
     @PrimaryKey(autoGenerate = true) var entryId: Long = 0,
     var date: Date = Date(),
-    var solarUtilizationInHours: Double = 0.0,
-    var solarExposureInHours: Double = 0.0,
     @ColumnInfo(defaultValue = "0") var steps: Int = 0,
     @ColumnInfo(defaultValue = "0") var floorsClimbed: Int = 0,
     var events: List<DailyEvent> = emptyList(),
@@ -54,7 +52,6 @@ data class DailyReportData(
     companion object {
         fun parseFromJson(
             date: Date,
-            jsonObjectSolarIntensity: JsonObject,
             dailyEvents: JsonArray,
             summary: JsonObject,
             heartRateVariability: JsonObject
@@ -64,12 +61,6 @@ data class DailyReportData(
                 dailyEvents
             )
             dailyReportData.heartRateVariability = getHrv(heartRateVariability)
-            if (jsonObjectSolarIntensity.has("deviceSolarInput") && jsonObjectSolarIntensity["deviceSolarInput"].asJsonObject.has(
-                    "solarDailyDataDTOs"
-                )
-            ) {
-                parseSolarIntensity(dailyReportData, jsonObjectSolarIntensity)
-            }
             return dailyReportData
         }
 
@@ -117,26 +108,6 @@ data class DailyReportData(
                 jsonObject.get("hrvSummary").asJsonObject.get("lastNightAvg").asInt
             } else {
                 0
-            }
-        }
-        fun parseSolarIntensity(
-            dailyReportData: DailyReportData,
-            jsonObjectSolarIntensity: JsonObject
-        ) {
-            val deviceSolarInputs =
-                jsonObjectSolarIntensity["deviceSolarInput"].asJsonObject.get("solarDailyDataDTOs").asJsonArray
-            for (deviceSolarInput in deviceSolarInputs) {
-                if (deviceSolarInput.asJsonObject.has("solarInputReadings")) {
-                    val array =
-                        deviceSolarInput.asJsonObject.get("solarInputReadings").asJsonArray
-                    val solarUtilization = array.map {
-                        it.asJsonObject.get("solarUtilization").asDouble
-                    }
-                    dailyReportData.solarExposureInHours =
-                        solarUtilization.filter { it > 5 }.size / 60.0
-                    val multiplicand = 1.0 / (60 * 100)
-                    dailyReportData.solarUtilizationInHours = solarUtilization.sum() * multiplicand
-                }
             }
         }
     }

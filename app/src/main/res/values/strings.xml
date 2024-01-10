@@ -278,9 +278,6 @@
     <string name="power_1h">Power 1h</string>
     <string name="power_2h">Power 2h</string>
     <string name="power_5h">Power 5h</string>
-    <string name="solar_50000_lux_condition">50000 Lux condition</string>
-    <string name="solar_exposure">Solar Exposure</string>
-    <string name="solar_intensity">Solar Intensity</string>
     <string name="active_duration">Active Minutes</string>
     <string name="moderate_intensity_minutes">moderate intensity minutes</string>
     <string name="vigorous_intensity_minutes">vigorous intensity minutes</string>

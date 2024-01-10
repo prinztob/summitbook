@@ -79,25 +79,6 @@ class GarminPythonExecutor(
         checkOutput(result)
     }
 
-
-    fun getDeviceIdForSolarOutput(): String {
-        if (client == null) {
-            login()
-        }
-        val result = pythonModule?.callAttr("get_device_id", client)
-        checkOutput(result)
-        return result.toString()
-    }
-
-    fun getSolarIntensityForDate(date: String, deviceId: String): JsonObject {
-        if (client == null) {
-            login()
-        }
-        val result = pythonModule?.callAttr("get_solar_intensity_for_date", client, date, deviceId)
-        checkOutput(result)
-        return JsonParser.parseString(result.toString()) as JsonObject
-    }
-
     fun getDailyEventsForDate(date: String): JsonArray {
         if (client == null) {
             login()

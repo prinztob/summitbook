@@ -110,10 +110,10 @@ class ZipFileReader(
                             allSummits.add(entry)
                             newSummits.add(entry)
                             successful++
-                            Log.d("Line %s was added in db.", lineLocal)
+                            Log.d("ZipFileReader", "Line '$lineLocal' was added in db.")
                         } else {
                             duplicate++
-                            Log.d("Line %s is already db.", lineLocal)
+                            Log.d("ZipFileReader", "Line '$lineLocal' is already db.")
                         }
                     }
                 } catch (e: Exception) {

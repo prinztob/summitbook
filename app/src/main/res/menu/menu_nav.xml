@@ -49,7 +49,7 @@
             android:title="@string/nav_import" />
         <item
             android:id="@+id/nav_daily_data"
-            android:icon="@drawable/ic_baseline_solar_power_24"
+            android:icon="@drawable/baseline_calendar_today_24"
             android:title="@string/daily_report_data" />
     </group>
     <group  android:checkableBehavior="single">
