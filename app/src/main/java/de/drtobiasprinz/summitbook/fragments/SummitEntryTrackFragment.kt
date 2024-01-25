@@ -86,71 +86,64 @@ class SummitEntryTrackFragment : Fragment() {
     }
 
     private fun setContent() {
-        pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
-            it.data.let { summitToView ->
-
-                pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { itData ->
-                    itData.data.let { summitToCompare ->
-
-                        pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
-                            summitsListData.data.let { allSummits ->
-                                if (summitToView != null) {
-                                    summitsToCompare =
-                                        SummitEntryDetailsActivity.getSummitsToCompare(
-                                            summitsListData,
-                                            summitToView,
-                                            onlyWithPowerData = true
-                                        )
-                                    if (summitToView.isBookmark) {
-                                        binding.summitNameToCompare.visibility = View.GONE
-                                    } else {
-                                        prepareCompareAutoComplete(summitToView, summitToCompare)
-                                    }
-                                    binding.summitName.text = summitToView.name
-                                    binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
-                                    binding.osmap.overlays.clear()
-                                    lifecycleScope.launch {
-                                        withContext(Dispatchers.IO) {
-                                            setGpsTrack(summitToView, useSimplifiedTrack = true)
-                                        }
-                                        binding.loadingPanel.visibility = View.GONE
-                                        binding.lineChart.visibility = View.VISIBLE
-                                        drawChart(summitToView)
-                                        updateMap(summitToView, summitToCompare, allSummits)
-                                        lifecycleScope.launch {
-                                            withContext(Dispatchers.IO) {
-                                                setGpsTrack(summitToView, forceUpdate = true)
-                                            }
-                                            drawChart(summitToView)
-                                            updateMap(summitToView, summitToCompare, allSummits)
-                                            setButtons(summitToView)
-                                        }
-                                    }
-                                    val numberOfPointsToShow =
-                                        PreferenceManager.getDefaultSharedPreferences(
-                                            requireContext()
-                                        )
-                                            .getString("max_number_points", "10000")?.toInt()
-                                            ?: 10000
-                                    binding.showAllTracks.setOnClickListener { _: View? ->
-                                        summitsListData.data?.let { summits ->
-                                            showAllTracksOfSummitInBoundingBox(
-                                                summitToView,
-                                                summitToCompare,
-                                                summits,
-                                                numberOfPointsToShow
-                                            )
-                                        }
-                                    }
-
-                                    binding.centerOnLocation.setOnClickListener {
-                                        if (mLocationOverlay.isMyLocationEnabled) {
-                                            val mapController = binding.osmap.controller
-                                            mapController.setZoom(15.0)
-                                            mapController.setCenter(mLocationOverlay.myLocation)
-                                        }
-                                    }
+        val summitToView = (requireActivity() as SummitEntryDetailsActivity).summitEntry
+        pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { itData ->
+            itData.data.let { summitToCompare ->
+                pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
+                    summitsListData.data.let { allSummits ->
+                        summitsToCompare =
+                            SummitEntryDetailsActivity.getSummitsToCompare(
+                                summitsListData,
+                                summitToView,
+                                onlyWithPowerData = true
+                            )
+                        if (summitToView.isBookmark) {
+                            binding.summitNameToCompare.visibility = View.GONE
+                        } else {
+                            prepareCompareAutoComplete(summitToView, summitToCompare)
+                        }
+                        binding.summitName.text = summitToView.name
+                        binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
+                        binding.osmap.overlays.clear()
+                        lifecycleScope.launch {
+                            withContext(Dispatchers.IO) {
+                                setGpsTrack(summitToView, useSimplifiedTrack = true)
+                            }
+                            binding.loadingPanel.visibility = View.GONE
+                            binding.lineChart.visibility = View.VISIBLE
+                            drawChart(summitToView)
+                            updateMap(summitToView, summitToCompare, allSummits)
+                            lifecycleScope.launch {
+                                withContext(Dispatchers.IO) {
+                                    setGpsTrack(summitToView, forceUpdate = true)
                                 }
+                                drawChart(summitToView)
+                                updateMap(summitToView, summitToCompare, allSummits)
+                                setButtons(summitToView)
+                            }
+                        }
+                        val numberOfPointsToShow =
+                            PreferenceManager.getDefaultSharedPreferences(
+                                requireContext()
+                            )
+                                .getString("max_number_points", "10000")?.toInt()
+                                ?: 10000
+                        binding.showAllTracks.setOnClickListener { _: View? ->
+                            summitsListData.data?.let { summits ->
+                                showAllTracksOfSummitInBoundingBox(
+                                    summitToView,
+                                    summitToCompare,
+                                    summits,
+                                    numberOfPointsToShow
+                                )
+                            }
+                        }
+
+                        binding.centerOnLocation.setOnClickListener {
+                            if (mLocationOverlay.isMyLocationEnabled) {
+                                val mapController = binding.osmap.controller
+                                mapController.setZoom(15.0)
+                                mapController.setCenter(mLocationOverlay.myLocation)
                             }
                         }
                     }
@@ -307,7 +300,11 @@ class SummitEntryTrackFragment : Fragment() {
         return suggestions
     }
 
-    private fun setGpsTrack(localSummit: Summit, useSimplifiedTrack: Boolean = false, forceUpdate: Boolean = false) {
+    private fun setGpsTrack(
+        localSummit: Summit,
+        useSimplifiedTrack: Boolean = false,
+        forceUpdate: Boolean = false
+    ) {
         if (localSummit.hasGpsTrack(useSimplifiedTrack)) {
             localSummit.setGpsTrack(useSimplifiedTrack = useSimplifiedTrack)
             gpsTrack = localSummit.gpsTrack
@@ -471,7 +468,6 @@ class SummitEntryTrackFragment : Fragment() {
                 requireContext(), binding.osmap
             )
         }
-        OpenStreetMapUtils.addDefaultSettings(requireContext(), binding.osmap, requireActivity())
         val height = if (hasPoints) 0.55 else 0.0
         val params = binding.osmap.layoutParams
         params?.height = (Resources.getSystem().displayMetrics.heightPixels * height).toInt()
@@ -480,6 +476,11 @@ class SummitEntryTrackFragment : Fragment() {
             if (doCleanUp) {
                 binding.osmap.overlays.clear()
             }
+            OpenStreetMapUtils.addDefaultSettings(
+                requireContext(),
+                binding.osmap,
+                requireActivity()
+            )
             if (summitToCompare != null) {
                 OpenStreetMapUtils.drawTrack(
                     summitToCompare,
@@ -622,7 +623,13 @@ class SummitEntryTrackFragment : Fragment() {
                     pointsShown += entry.gpsTrack?.trackPoints?.size ?: 0
                     binding.osmap.zoomController.activate()
                     if (summitsWithSameBoundingBox.last() == entry) {
-                        setOpenStreetMap(summitToView, summitToCompare, summits, calculateBondingBox = false, doCleanUp = false)
+                        setOpenStreetMap(
+                            summitToView,
+                            summitToCompare,
+                            summits,
+                            calculateBondingBox = false,
+                            doCleanUp = false
+                        )
                     }
                 }
             }

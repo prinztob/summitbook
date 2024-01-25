@@ -32,6 +32,8 @@ import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -221,8 +223,12 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
     }
 
     private fun addSummitToTable(entry: Summit, view: View, i: Int, tl: TableLayout) {
-        val date =
-            "<a href=\"${entry.garminData?.url ?: "unknown"}\">${entry.getDateAsString()}</a>"
+        val dateFormat: DateFormat = SimpleDateFormat(
+            "yyyy-MMM-dd", resources.configuration.locales[0],
+        )
+        val date = dateFormat.format(entry.date).replace("-", "<br />")
+        val dateString =
+            "<a href=\"${entry.garminData?.url ?: "unknown"}\">${date}</a>"
         val name: String = entry.name.chunked(10).joinToString("\n")
         val kilometers: Double = entry.kilometers
         val heightMeters: Int = entry.elevationData.elevationGain
@@ -237,7 +243,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         tr.layoutParams = TableLayout.LayoutParams(
             TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT
         )
-        addLabel(view, tr, 200 + i, date, padding = 2, isHtml = true)
+        addLabel(view, tr, 200 + i, dateString, padding = 2, isHtml = true)
         addLabel(view, tr, 200 + i, name, padding = 2)
         addLabel(
             view, tr, 200 + i, String.format(

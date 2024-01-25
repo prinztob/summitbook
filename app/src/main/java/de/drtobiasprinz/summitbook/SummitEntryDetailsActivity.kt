@@ -32,7 +32,7 @@ import kotlinx.coroutines.withContext
 class SummitEntryDetailsActivity : AppCompatActivity() {
     var pageViewModel: PageViewModel? = null
 
-    private lateinit var summitEntry: Summit
+    lateinit var summitEntry: Summit
     private lateinit var viewPager: ViewPager2
 
     override fun onCreate(savedInstanceState: Bundle?) {
