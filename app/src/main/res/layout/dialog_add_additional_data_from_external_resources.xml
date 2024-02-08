@@ -6,22 +6,6 @@
     android:layout_height="match_parent"
     tools:context=".ui.MainActivity">
 
-    <ScrollView
-        android:id="@+id/ScrollView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <TableLayout
-            android:id="@+id/tableSummits"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="0dp"
-            android:stretchColumns="*" />
-    </ScrollView>
-
     <Button
         android:id="@+id/update_data"
         android:layout_width="wrap_content"
@@ -31,7 +15,7 @@
         android:backgroundTint="@color/green_500"
         android:text="@string/ok"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ScrollView" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/delete_data"
@@ -42,7 +26,7 @@
         android:backgroundTint="@color/green_500"
         android:text="@string/delete"
         app:layout_constraintStart_toEndOf="@+id/update_data"
-        app:layout_constraintTop_toBottomOf="@+id/ScrollView" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/back"
@@ -53,5 +37,34 @@
         android:backgroundTint="@color/grey_500"
         android:text="@string/back"
         app:layout_constraintStart_toEndOf="@+id/delete_data"
-        app:layout_constraintTop_toBottomOf="@+id/ScrollView" />
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ScrollView
+
+        android:id="@+id/ScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/update_data">
+
+        <HorizontalScrollView
+
+            android:id="@+id/ScrollViewHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TableLayout
+                android:id="@+id/tableSummits"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="0dp"
+                android:stretchColumns="*" />
+        </HorizontalScrollView>
+    </ScrollView>
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

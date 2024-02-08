@@ -1064,31 +1064,24 @@
             </RelativeLayout>
         </LinearLayout>
 
-        <RelativeLayout
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/performance_data_fields_view"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="35dp"
-            android:orientation="vertical">
-
             <Button
                 android:id="@+id/btnSave"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/performance_data_fields_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="20dp"
-                android:layout_toStartOf="@id/btnCancel"
+                android:layout_marginEnd="2dp"
                 android:backgroundTint="@color/green_500"
                 android:text="@string/saveButtonText" />
 
             <Button
                 android:id="@+id/btnCancel"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btnSave"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
                 android:backgroundTint="@color/red_500"
                 android:text="@string/cancelButtonText" />
-        </RelativeLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

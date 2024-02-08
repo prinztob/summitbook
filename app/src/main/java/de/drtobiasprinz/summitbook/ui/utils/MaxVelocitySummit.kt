@@ -1,20 +1,27 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import java.io.File
 
 class MaxVelocitySummit {
 
-    fun parseFomGarmin(inputJson: JsonObject): List<VelocityEntry> {
-        val velocityEntries = mutableListOf<VelocityEntry>()
+    val velocityEntries = mutableListOf<VelocityEntry>()
+
+    fun parseVelocityEntriesFomGarmin(inputJson: JsonObject) {
         val laps = inputJson.getAsJsonArray("lapDTOs")
         for (i in 0 until laps.size()) {
             val row = laps[i] as JsonObject
-            velocityEntries.add(VelocityEntry(row.getAsJsonPrimitive("distance").asDouble, row.getAsJsonPrimitive("movingDuration").asDouble))
+            velocityEntries.add(
+                VelocityEntry(
+                    row.getAsJsonPrimitive("distance").asDouble,
+                    row.getAsJsonPrimitive("movingDuration").asDouble
+                )
+            )
         }
-        return velocityEntries
     }
 
-    fun getAverageVelocityForKilometers(kilometer: Double, velocityEntries: List<VelocityEntry>): Double {
+    fun getAverageVelocityForKilometers(kilometer: Double): Double {
         val velocitiesInKilometerInterval = mutableListOf<Double>()
         for (i in velocityEntries.indices) {
             var sumKilometers = 0.0
@@ -31,9 +38,21 @@ class MaxVelocitySummit {
         }
         return velocitiesInKilometerInterval.maxOrNull() ?: 0.0
     }
+
+    companion object {
+        fun getMaxVelocitySummitFromSpliFiles(splitsFile: List<File>): MaxVelocitySummit {
+            val maxVelocitySummit = MaxVelocitySummit()
+            splitsFile.filter { it.exists() }.forEach { file ->
+                val json = JsonParser.parseString(JsonUtils.getJsonData(file)) as JsonObject
+                maxVelocitySummit.parseVelocityEntriesFomGarmin(json)
+            }
+            return maxVelocitySummit
+        }
+    }
 }
 
 class VelocityEntry(val meter: Double, val seconds: Double) {
+    val velocity = meter/seconds * 3.6
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

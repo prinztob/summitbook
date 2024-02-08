@@ -7,7 +7,11 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.CheckBox
+import android.widget.TableLayout
+import android.widget.TableRow
+import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -125,8 +129,8 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         }
         if (summit.garminData != null && summit.garminData?.activityId != null) {
             val splitsFile =
-                File("${activitiesDir?.absolutePath}/activity_${summit.garminData?.activityId}_splits.json")
-            if (splitsFile.exists()) {
+                summit.garminData?.activityIds?.map { File("${activitiesDir?.absolutePath}/activity_${it}_splits.json") }
+            if (splitsFile?.first()?.exists() == true) {
                 setSpeedDataFromSplitsJson(splitsFile, summit)
             } else if (pythonExecutor != null) {
                 try {
@@ -305,19 +309,19 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
     }
 
     private fun setSpeedDataFromSplitsJson(
-        splitsFile: File,
+        splitsFile: List<File>,
         summit: Summit
     ) {
-        val json =
-            JsonParser.parseString(JsonUtils.getJsonData(splitsFile)) as JsonObject
-        val maxVelocitySummit = MaxVelocitySummit()
-        val velocityEntries = maxVelocitySummit.parseFomGarmin(json)
+        val maxVelocitySummit = MaxVelocitySummit.getMaxVelocitySummitFromSpliFiles(splitsFile.sorted())
         tableEntries.add(
             TableEntry(getString(R.string.top_speed_1km_hint),
-                if (summit.velocityData.oneKilometer > 0.0) summit.velocityData.oneKilometer else maxVelocitySummit.getAverageVelocityForKilometers(
-                    1.0,
-                    velocityEntries
-                ),
+                if (summit.velocityData.oneKilometer > 0.0) {
+                    summit.velocityData.oneKilometer
+                } else {
+                    maxVelocitySummit.getAverageVelocityForKilometers(
+                        1.0
+                    )
+                },
                 getString(R.string.kmh),
                 summit.velocityData.oneKilometer > 0.0,
                 { e -> summit.velocityData.oneKilometer = e })
@@ -326,8 +330,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(getString(R.string.top_speed_5km_hint),
                     if (summit.velocityData.fiveKilometer > 0.0) summit.velocityData.fiveKilometer else maxVelocitySummit.getAverageVelocityForKilometers(
-                        5.0,
-                        velocityEntries
+                        5.0
                     ),
                     getString(R.string.kmh),
                     summit.velocityData.fiveKilometer > 0.0,
@@ -340,8 +343,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(getString(R.string.top_speed_10km_hint),
                     if (summit.velocityData.tenKilometers > 0.0) summit.velocityData.tenKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        10.0,
-                        velocityEntries
+                        10.0
                     ),
                     getString(R.string.kmh),
                     summit.velocityData.tenKilometers > 0.0,
@@ -353,10 +355,11 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         if (tableEntries.last().value > 0) {
             tableEntries.add(
                 TableEntry(getString(R.string.top_speed_15km_hint),
-                    if (summit.velocityData.fifteenKilometers > 0.0) summit.velocityData.fifteenKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        15.0,
-                        velocityEntries
-                    ),
+                    if (summit.velocityData.fifteenKilometers > 0.0) {
+                        summit.velocityData.fifteenKilometers
+                    } else {
+                        maxVelocitySummit.getAverageVelocityForKilometers(15.0)
+                    },
                     getString(R.string.kmh),
                     summit.velocityData.fifteenKilometers > 0.0,
                     { e ->
@@ -368,8 +371,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(getString(R.string.top_speed_20km_hint),
                     if (summit.velocityData.twentyKilometers > 0.0) summit.velocityData.twentyKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        20.0,
-                        velocityEntries
+                        20.0
                     ),
                     getString(R.string.kmh),
                     summit.velocityData.twentyKilometers > 0.0,
@@ -382,8 +384,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(getString(R.string.top_speed_30km_hint),
                     if (summit.velocityData.thirtyKilometers > 0.0) summit.velocityData.thirtyKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        30.0,
-                        velocityEntries
+                        30.0
                     ),
                     getString(R.string.kmh),
                     summit.velocityData.thirtyKilometers > 0.0,
@@ -396,8 +397,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(getString(R.string.top_speed_40km_hint),
                     if (summit.velocityData.fortyKilometers > 0.0) summit.velocityData.fortyKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        40.0,
-                        velocityEntries
+                        40.0
                     ),
                     getString(R.string.kmh),
                     summit.velocityData.fortyKilometers > 0.0,
@@ -410,8 +410,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(getString(R.string.top_speed_50km_hint),
                     if (summit.velocityData.fiftyKilometers > 0.0) summit.velocityData.fiftyKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        50.0,
-                        velocityEntries
+                        50.0
                     ),
                     getString(R.string.kmh),
                     summit.velocityData.fiftyKilometers > 0.0,
@@ -424,8 +423,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(getString(R.string.top_speed_75km_hint),
                     if (summit.velocityData.seventyFiveKilometers > 0.0) summit.velocityData.seventyFiveKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        75.0,
-                        velocityEntries
+                        75.0
                     ),
                     getString(R.string.kmh),
                     summit.velocityData.seventyFiveKilometers > 0.0,
@@ -439,8 +437,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             tableEntries.add(
                 TableEntry(getString(R.string.top_speed_100km_hint),
                     if (summit.velocityData.hundredKilometers > 0.0) summit.velocityData.hundredKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        100.0,
-                        velocityEntries
+                        100.0
                     ),
                     getString(R.string.kmh),
                     summit.velocityData.hundredKilometers > 0.0,
@@ -456,27 +453,27 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         summit: Summit
     ) {
         val maxVelocitySummit = MaxVelocitySummit()
-        val velocityEntries = maxVelocitySummit.parseFomGarmin(jsonLocal)
+        maxVelocitySummit.parseVelocityEntriesFomGarmin(jsonLocal)
         summit.velocityData.oneKilometer =
-            maxVelocitySummit.getAverageVelocityForKilometers(1.0, velocityEntries)
+            maxVelocitySummit.getAverageVelocityForKilometers(1.0)
         if (summit.velocityData.oneKilometer > 0) summit.velocityData.fiveKilometer =
-            maxVelocitySummit.getAverageVelocityForKilometers(5.0, velocityEntries)
+            maxVelocitySummit.getAverageVelocityForKilometers(5.0)
         if (summit.velocityData.fiveKilometer > 0) summit.velocityData.tenKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(10.0, velocityEntries)
+            maxVelocitySummit.getAverageVelocityForKilometers(10.0)
         if (summit.velocityData.tenKilometers > 0) summit.velocityData.fifteenKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(15.0, velocityEntries)
+            maxVelocitySummit.getAverageVelocityForKilometers(15.0)
         if (summit.velocityData.fifteenKilometers > 0) summit.velocityData.twentyKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(20.0, velocityEntries)
+            maxVelocitySummit.getAverageVelocityForKilometers(20.0)
         if (summit.velocityData.twentyKilometers > 0) summit.velocityData.thirtyKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(30.0, velocityEntries)
+            maxVelocitySummit.getAverageVelocityForKilometers(30.0)
         if (summit.velocityData.thirtyKilometers > 0) summit.velocityData.fortyKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(40.0, velocityEntries)
+            maxVelocitySummit.getAverageVelocityForKilometers(40.0)
         if (summit.velocityData.fortyKilometers > 0) summit.velocityData.fiftyKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(50.0, velocityEntries)
+            maxVelocitySummit.getAverageVelocityForKilometers(50.0)
         if (summit.velocityData.fiftyKilometers > 0) summit.velocityData.seventyFiveKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(75.0, velocityEntries)
+            maxVelocitySummit.getAverageVelocityForKilometers(75.0)
         if (summit.velocityData.seventyFiveKilometers > 0) summit.velocityData.hundredKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(100.0, velocityEntries)
+            maxVelocitySummit.getAverageVelocityForKilometers(100.0)
         viewModel.saveSummit(true, summit)
     }
 
@@ -493,7 +490,17 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
     }
 
     private fun addSummitToTable(entry: TableEntry, view: View, i: Int, tl: TableLayout) {
-        val name: String = entry.name.chunked(20).joinToString("\n")
+        var name = ""
+        val splitName = entry.name.split(" ")
+        splitName.forEachIndexed { index, element ->
+            name += if (index == splitName.size - 1) {
+                element
+            } else if (index % 2 == 0 && splitName.size > 2) {
+                "$element "
+            } else {
+                "$element \n"
+            }
+        }
         val tr = TableRow(view.context)
         tr.setBackgroundColor(Color.GRAY)
         tr.id = 100 + i

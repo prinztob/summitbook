@@ -291,8 +291,8 @@
     <string name="less_power">Weniger Leistunsgdaten</string>
     <string name="more_speed">Mehr Geschw.daten</string>
     <string name="less_speed">Weniger Geschw.daten</string>
-    <string name="more_performance">Update Leistunsgdaten</string>
-    <string name="less_performance">Close Leistunsgdaten</string>
+    <string name="more_performance">Leistunsgdaten öffnen</string>
+    <string name="less_performance">Leistunsgdaten schließen</string>
     <string name="watt">W</string>
     <string name="value_with_watt">%1$s W</string>
     <string name="bpm">bpm</string>
