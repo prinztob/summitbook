@@ -4,6 +4,9 @@ import android.app.Activity
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.res.Configuration
+import android.content.res.Resources
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -27,6 +30,12 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+import com.github.mikephil.charting.components.YAxis
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.formatter.ValueFormatter
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.google.android.material.navigation.NavigationView
 import com.stfalcon.imageviewer.StfalconImageViewer
 import dagger.hilt.android.AndroidEntryPoint
@@ -51,8 +60,11 @@ import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
+import de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
 import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
+import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
+import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
 import de.drtobiasprinz.summitbook.ui.utils.PosterOverlayView
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileWriter
@@ -61,8 +73,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.text.DateFormatSymbols
 import java.text.NumberFormat
 import java.time.LocalDate
+import java.util.Calendar
 import java.util.Date
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -75,7 +89,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     lateinit var binding: ActivityMainBinding
     private lateinit var summitViewFragment: SummitViewFragment
+    private lateinit var numberFormat: NumberFormat
 
+    private lateinit var performanceGraphProvider: PerformanceGraphProvider
     private val viewModel: DatabaseViewModel by viewModels()
 
     @Inject
@@ -84,11 +100,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var overlayView: PosterOverlayView? = null
     private var viewer: StfalconImageViewer<Poster>? = null
     private var isDialogShown = false
+    private var selectedGraphType = GraphType.ElevationGain
 
+    private var graphIsVisible: Boolean = false
     private var useFilteredSummits: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         cache = applicationContext.cacheDir
@@ -200,11 +219,71 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             viewModel.summitsList.observe(this@MainActivity) { itData ->
                 itData.data?.let { summits ->
-                    setOverviewText(sortFilterValues.apply(summits, sharedPreferences))
+                    setOverviewText(
+                        sortFilterValues.apply(summits, sharedPreferences)
+                    )
+                    viewModel.forecastList.observe(this@MainActivity) { itDataForeCasts ->
+                        itDataForeCasts.data?.let { forecasts ->
+                            performanceGraphProvider = PerformanceGraphProvider(summits, forecasts)
+                            drawPerformanceGraph(selectedGraphType)
+                            binding.overviewLayout.setOnClickListener {
+                                if (!graphIsVisible) {
+                                    binding.chartLayout.visibility = View.VISIBLE
+                                    binding.groupProperty.addOnButtonCheckedListener { _, checkedId, isChecked ->
+                                        binding.lineChartMonth.clear()
+                                        binding.lineChartYear.clear()
+                                        if (isChecked) {
+                                            selectedGraphType = when (checkedId) {
+                                                binding.buttonKilometers.id -> {
+                                                    GraphType.Kilometer
+                                                }
+
+                                                binding.buttonActivity.id -> {
+                                                    GraphType.Count
+                                                }
+
+                                                else -> {
+                                                    GraphType.ElevationGain
+                                                }
+                                            }
+                                            drawPerformanceGraph(
+                                                selectedGraphType
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    binding.chartLayout.visibility = View.GONE
+                                }
+                                graphIsVisible = !graphIsVisible
+                            }
+                        }
+                    }
                 }
             }
         }
         addMissingBoundingBox()
+    }
+
+    private fun drawPerformanceGraph(
+        graphType: GraphType
+    ) {
+        val currentYear = Calendar.getInstance()[Calendar.YEAR].toString()
+        val currentMonth = Calendar.getInstance()[Calendar.MONTH] + 1
+        val selectedYear =
+            if (sortFilterValues.getSelectedYear() != "") sortFilterValues.getSelectedYear() else currentYear
+        binding.textYear.text = selectedYear
+        binding.textMonth.text = DateFormatSymbols().months[currentMonth-1]
+        drawChart(binding.lineChartYear, graphType, selectedYear)
+        if (currentYear == selectedYear) {
+            drawChart(
+                binding.lineChartMonth,
+                graphType,
+                selectedYear,
+                if (currentMonth < 10) "0${currentMonth}" else currentMonth.toString()
+            )
+        } else {
+            binding.lineChartMonth.visibility = View.GONE
+        }
     }
 
     private fun executeDownload(summits: List<Summit>) {
@@ -387,6 +466,112 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
+    private fun drawChart(
+        lineChart: CustomLineChartWithMarker,
+        graphType: GraphType,
+        year: String,
+        month: String? = null
+    ) {
+        var chartEntries: List<Entry>
+        var chartEntriesForecast: List<Entry>
+        var minMax: Pair<List<Entry>, List<Entry>>
+        lifecycleScope.launch {
+            withContext(Dispatchers.Default) {
+                chartEntries =
+                    performanceGraphProvider.getActualGraphForSummits(graphType, year, month)
+                chartEntriesForecast =
+                    performanceGraphProvider.getForecastGraphForSummits(graphType, year, month)
+                minMax =
+                    performanceGraphProvider.getActualGraphMinMaxForSummits(graphType, year, month)
+            }
+            lineChart.invalidate()
+            lineChart.axisRight.setDrawLabels(false)
+            setYAxis(lineChart.axisLeft, graphType)
+            lineChart.axisLeft.axisMinimum = 0f
+            lineChart.axisRight.axisMinimum = 0f
+
+            val params = lineChart.layoutParams
+            params.height = (Resources.getSystem().displayMetrics.heightPixels * 0.22).toInt()
+            lineChart.layoutParams = params
+
+            val dataSets: MutableList<ILineDataSet?> = ArrayList()
+            val dataSet = LineDataSet(chartEntries, getString(R.string.actually))
+            setGraphView(dataSet, false, color = Color.rgb(0, 128, 0))
+            val dataSetForecast = LineDataSet(chartEntriesForecast, getString(R.string.forecast))
+            setGraphView(dataSetForecast, false, color = Color.rgb(255, 0, 0))
+
+            if (minMax.first.isNotEmpty() && minMax.second.isNotEmpty()) {
+                lineChart.axisLeft.axisMaximum = minMax.second.maxOf { it.y }
+                lineChart.axisRight.axisMaximum = minMax.second.maxOf { it.y }
+
+                val dataSetMinimalValues =
+                    LineDataSet(
+                        minMax.first,
+                        getString(R.string.min_5_yrs)
+                    )
+                val dataSetMaximalValues =
+                    LineDataSet(
+                        minMax.second,
+                        getString(R.string.max_5_yrs)
+                    )
+                dataSetMaximalValues.fillFormatter = MyFillFormatter(dataSetMinimalValues)
+                lineChart.renderer = MyLineLegendRenderer(
+                    lineChart,
+                    lineChart.animator,
+                    lineChart.viewPortHandler
+                )
+
+                setGraphView(dataSetMinimalValues)
+                dataSets.add(dataSetMinimalValues)
+                setGraphView(dataSetMaximalValues)
+                dataSets.add(dataSetMaximalValues)
+            }
+            dataSets.add(dataSetForecast)
+            dataSets.add(dataSet)
+
+            when (resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+                Configuration.UI_MODE_NIGHT_YES -> {
+                    lineChart.xAxis.textColor = Color.BLACK
+                    lineChart.axisRight.textColor = Color.WHITE
+                    lineChart.axisLeft.textColor = Color.WHITE
+                    lineChart.legend?.textColor = Color.WHITE
+                }
+
+                Configuration.UI_MODE_NIGHT_NO -> {
+                    lineChart.xAxis.textColor = Color.BLACK
+                    lineChart.axisRight.textColor = Color.BLACK
+                    lineChart.axisLeft.textColor = Color.BLACK
+                    lineChart.legend?.textColor = Color.BLACK
+                }
+
+                Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                    lineChart.xAxis.textColor = Color.BLACK
+                    lineChart.axisRight.textColor = Color.WHITE
+                    lineChart.axisLeft.textColor = Color.WHITE
+                    lineChart.legend?.textColor = Color.WHITE
+                }
+            }
+
+            lineChart.setTouchEnabled(true)
+            lineChart.data = LineData(dataSets)
+        }
+    }
+
+    private fun setYAxis(yAxis: YAxis?, graphType: GraphType) {
+        yAxis?.valueFormatter = object : ValueFormatter() {
+            override fun getFormattedValue(value: Float): String {
+                val format = "${numberFormat.format(value.toDouble())} ${graphType.unit}"
+                return String.format(
+                    resources.configuration.locales[0],
+                    format,
+                    value,
+                    graphType.unit
+                )
+            }
+        }
+    }
+
+
     private fun setOverviewText(summits: List<Summit>) {
         val numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
         numberFormat.maximumFractionDigits = 0
@@ -406,6 +591,26 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             numberFormat.format(peaks.sumOf { it.kilometers }),
             numberFormat.format(peaks.sumOf { it.elevationData.elevationGain })
         )
+    }
+
+    private fun setGraphView(set1: LineDataSet?, filled: Boolean = true, color: Int = Color.BLUE) {
+        set1?.mode = LineDataSet.Mode.LINEAR
+        set1?.setDrawValues(false)
+        set1?.setDrawCircles(false)
+        if (filled) {
+            set1?.cubicIntensity = 20f
+            set1?.color = color
+            set1?.highLightColor = Color.rgb(244, 117, 117)
+            set1?.setDrawFilled(true)
+            set1?.fillColor = color
+            set1?.fillAlpha = 100
+        } else {
+            set1?.lineWidth = 2f
+            set1?.setCircleColor(Color.BLACK)
+            set1?.color = color
+            set1?.setDrawFilled(false)
+        }
+        set1?.setDrawHorizontalHighlightIndicator(true)
     }
 
     private fun filter() {
