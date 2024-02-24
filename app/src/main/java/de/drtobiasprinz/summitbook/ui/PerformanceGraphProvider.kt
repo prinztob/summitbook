@@ -1,11 +1,11 @@
 package de.drtobiasprinz.summitbook.ui
 
+import android.util.Log
 import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import java.text.DateFormat
 import java.text.SimpleDateFormat
-import java.time.ZoneId
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -17,23 +17,34 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
         graphType: GraphType,
         year: String,
         month: String? = null,
-        currentDate: Date = Date()
+        currentDate: Date? = null
     ): List<Entry> {
-        val dateRange = getDateRange(year, month, currentDate)
-        val dateFormat: DateFormat = SimpleDateFormat(Summit.DATE_FORMAT, Locale.ENGLISH)
-        val filteredSummits = getRelevantSummits(dateRange)
+        var (dateRange, maximum) = getDateRange(year, month)
+        val filteredSummits = getRelevantSummitsSorted(dateRange)
         if (filteredSummits.isNotEmpty()) {
+            val cal: Calendar = Calendar.getInstance(TimeZone.getDefault())
             var lastY = 0f
-            return getDatesBetween(dateRange.start, dateRange.endInclusive).mapIndexed { n, date ->
-                val summitsForDate =
-                    filteredSummits.filter {
-                        it.getDateAsString() == dateFormat.format(
-                            date ?: Date()
-                        )
-                    }
-                val y = summitsForDate.sumOf { graphType.getSummitValue(it) }.toFloat() + lastY
-                lastY = y
-                Entry((n + 1).toFloat(), y)
+            val basicGraph: MutableMap<Int, Float> = mutableMapOf()
+            filteredSummits.forEach {
+                cal.time = it.date
+                val x =
+                    (cal.get(if (month != null) Calendar.DAY_OF_MONTH else Calendar.DAY_OF_YEAR))
+                basicGraph[x] = graphType.getSummitValue(it).toFloat() + lastY
+                lastY = basicGraph[x]!!
+            }
+
+            if (currentDate != null) {
+                cal.time = currentDate
+                val dayNumber = cal.get(if (month != null) Calendar.DAY_OF_MONTH else Calendar.DAY_OF_YEAR)
+                if (dayNumber < maximum) {
+                    maximum = dayNumber
+                }
+            }
+
+            lastY = 0f
+            return (0 until maximum).map {
+                lastY = basicGraph[it + 1] ?: lastY
+                Entry((it + 1).toFloat(), lastY)
             }
         } else {
             return emptyList()
@@ -80,22 +91,21 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
     fun getActualGraphMinMaxForSummits(
         graphType: GraphType,
         year: String,
-        month: String? = null,
-        currentDate: Date = Date()
+        month: String? = null
     ): Pair<List<Entry>, List<Entry>> {
+        val start = System.currentTimeMillis()
         val graphs = (year.toInt() - 5 until year.toInt()).map {
             getActualGraphForSummits(
                 graphType,
                 it.toString(),
-                month,
-                currentDate
+                month
             )
         }
         val size = graphs.minOfOrNull { it.size }
         if (size == null || size == 0) {
             return Pair(emptyList(), emptyList())
         }
-        val minGraph = graphs[0].subList(0, size).map { Entry(it.x, 10000f) }
+        val minGraph = graphs[0].subList(0, size).map { Entry(it.x, Float.MAX_VALUE) }
         val maxGraph = graphs[0].subList(0, size).map { Entry(it.x, 0f) }
         graphs.forEach {
             it.forEachIndexed { index, entry ->
@@ -109,52 +119,36 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
                 }
             }
         }
+        Log.i("PerformanceGrapgProvider.getActualGraphMinMaxForSummits", "took ${(System.currentTimeMillis() - start)}")
         return Pair(minGraph, maxGraph)
     }
 
-    fun getRelevantSummits(range: ClosedRange<Date>): List<Summit> {
+    fun getRelevantSummitsSorted(range: ClosedRange<Date>): List<Summit> {
         return summits.filter {
             it.date.after(range.start) && it.date.before(range.endInclusive)
-        }
+        }.sortedBy { it.date }
     }
 
     fun getDateRange(
         year: String,
-        month: String? = null,
-        currentDate: Date = Date()
-    ): ClosedRange<Date> {
+        month: String? = null
+    ): Pair<ClosedRange<Date>, Int> {
         val startDate = parseDate(String.format("${year}-${month ?: "01"}-01 00:00:00"))
         val cal: Calendar = Calendar.getInstance(TimeZone.getDefault())
         cal.time = startDate
+        val maximum: Int
         if (month == null) {
-            cal.set(Calendar.DAY_OF_YEAR, cal.getActualMaximum(Calendar.DAY_OF_YEAR))
+            maximum = cal.getActualMaximum(Calendar.DAY_OF_YEAR)
+            cal.set(Calendar.DAY_OF_YEAR, maximum)
         } else {
-            cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH))
+            maximum = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+            cal.set(Calendar.DAY_OF_MONTH, maximum)
         }
         cal.set(Calendar.HOUR_OF_DAY, 23)
         cal.set(Calendar.MINUTE, 59)
         cal.set(Calendar.SECOND, 59)
         cal.set(Calendar.MILLISECOND, 0)
-        var endDate = cal.time
-        if (endDate.after(currentDate)) {
-            endDate = currentDate
-        }
-        return startDate..endDate
-    }
-
-    private fun getDatesBetween(startDate: Date, endDate: Date): List<Date?> {
-        var start = startDate.toInstant()
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
-        val end = endDate.toInstant()
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
-        val totalDates: MutableList<Date> = ArrayList()
-        while (!start.isAfter(end)) {
-            totalDates.add(Date.from(start.atStartOfDay(ZoneId.systemDefault()).toInstant()))
-            start = start.plusDays(1)
-        }
-        return totalDates
+        return Pair(startDate..cal.time, maximum)
     }
 
     companion object {

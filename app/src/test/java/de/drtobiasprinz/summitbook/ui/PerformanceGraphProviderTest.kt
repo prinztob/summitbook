@@ -4,6 +4,7 @@ import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.summitbook.TestSummitsPreparation
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import org.junit.Test
+import kotlin.system.measureTimeMillis
 
 class PerformanceGraphProviderTest {
     @Test
@@ -14,120 +15,120 @@ class PerformanceGraphProviderTest {
                 emptyList()
             )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2023",
                     "01"
-                )
+                ).first
             ).size == 3
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2023",
                     "02"
-                )
+                ).first
             ).size == 1
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2023",
                     "03"
-                )
+                ).first
             ).size == 1
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2023",
                     "04"
-                )
+                ).first
             ).size == 1
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2023",
                     "05"
-                )
+                ).first
             ).size == 1
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2023",
                     "06"
-                )
+                ).first
             ).size == 1
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2023",
                     "07"
-                )
+                ).first
             ).size == 1
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2023",
                     "08"
-                )
+                ).first
             ).size == 1
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2023",
                     "09"
-                )
+                ).first
             ).size == 1
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2023",
                     "10"
-                )
+                ).first
             ).size == 1
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2023",
                     "11"
-                )
+                ).first
             ).size == 1
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2023",
                     "12"
-                )
+                ).first
             ).size == 1
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2024",
                     "01"
-                )
+                ).first
             ).size == 7
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
-                performanceGraphProvider.getDateRange("2024")
+            performanceGraphProvider.getRelevantSummitsSorted(
+                performanceGraphProvider.getDateRange("2024").first
             ).size == 7
         )
         assert(
-            performanceGraphProvider.getRelevantSummits(
+            performanceGraphProvider.getRelevantSummitsSorted(
                 performanceGraphProvider.getDateRange(
                     "2024",
                     "02"
-                )
+                ).first
             ).isEmpty()
         )
     }
@@ -181,6 +182,11 @@ class PerformanceGraphProviderTest {
                 it.y == (expected[n]["yCount"] ?: 0f)
             ) { "Count mismatch for Y on day ${n}: ${it.y}" }
         }
+
+
+        val countGraphUntilJanuary28th =
+            performanceGraphProvider.getActualGraphForSummits(GraphType.Count, "2024", "01", Summit.parseDate("2024-01-28"))
+        assert(countGraphUntilJanuary28th.size == 28) { "Limiting the graph to 28th has a size of ${countGraphUntilJanuary28th.size}"}
 
         val kilometersGraphJanuary =
             performanceGraphProvider.getActualGraphForSummits(GraphType.Kilometer, "2024", "01")
@@ -240,30 +246,37 @@ class PerformanceGraphProviderTest {
             mapOf("x" to 30f, "yCountMin" to 1f, "yCountMax" to 3f),
             mapOf("x" to 31f, "yCountMin" to 1f, "yCountMax" to 3f),
         )
-
-        val performanceGraphProvider =
-            PerformanceGraphProvider(
-                TestSummitsPreparation.getSummitsForLastFiveYears(),
-                emptyList()
-            )
-        val countGraphMinMaxJanuary =
-            performanceGraphProvider.getActualGraphMinMaxForSummits(GraphType.Count, "2024", "01", Summit.parseDate("2025-01-01"))
-        countGraphMinMaxJanuary.first.mapIndexed { n, it ->
-            assert(
-                it.x == (expected[n]["x"] ?: 0f)
-            ) { "Count min mismatch for X on day ${n}: ${it.x}" }
-            assert(
-                it.y == (expected[n]["yCountMin"] ?: 0f)
-            ) { "Count min mismatch for Y on day ${n}: ${it.y}" }
+        val time = measureTimeMillis {
+            val performanceGraphProvider =
+                PerformanceGraphProvider(
+                    TestSummitsPreparation.getSummitsForLastFiveYears(),
+                    emptyList()
+                )
+            val countGraphMinMaxJanuary =
+                performanceGraphProvider.getActualGraphMinMaxForSummits(
+                    GraphType.Count,
+                    "2024",
+                    "01"
+                )
+            countGraphMinMaxJanuary.first.mapIndexed { n, it ->
+                assert(
+                    it.x == (expected[n]["x"] ?: 0f)
+                ) { "Count min mismatch for X on day ${n}: ${it.x}" }
+                assert(
+                    it.y == (expected[n]["yCountMin"] ?: 0f)
+                ) { "Count min mismatch for Y on day ${n}: ${it.y}" }
+            }
+            countGraphMinMaxJanuary.second.mapIndexed { n, it ->
+                assert(
+                    it.x == (expected[n]["x"] ?: 0f)
+                ) { "Count min mismatch for X on day ${n}: ${it.x}" }
+                assert(
+                    it.y == (expected[n]["yCountMax"] ?: 0f)
+                ) { "Count min mismatch for Y on day ${n}: ${it.y}" }
+            }
         }
-        countGraphMinMaxJanuary.second.mapIndexed { n, it ->
-            assert(
-                it.x == (expected[n]["x"] ?: 0f)
-            ) { "Count min mismatch for X on day ${n}: ${it.x}" }
-            assert(
-                it.y == (expected[n]["yCountMax"] ?: 0f)
-            ) { "Count min mismatch for Y on day ${n}: ${it.y}" }
-        }
+        println("Time $time")
+        assert(time < 50)
 
     }
 
