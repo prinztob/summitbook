@@ -466,9 +466,7 @@ class Summit(
         if (duration != other.duration) return false
         if (gpsTrack != other.gpsTrack) return false
         if (isSelected != other.isSelected) return false
-        if (updated != other.updated) return false
-
-        return true
+        return updated == other.updated
     }
 
     companion object {

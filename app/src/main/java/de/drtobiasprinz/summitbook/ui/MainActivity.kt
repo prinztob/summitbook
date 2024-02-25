@@ -30,6 +30,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
@@ -75,6 +76,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.DateFormatSymbols
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Calendar
 import java.util.Date
@@ -242,6 +244,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                                     GraphType.Count
                                                 }
 
+                                                binding.buttonVo2max.id -> {
+                                                    GraphType.Vo2Max
+                                                }
+
+                                                binding.buttonPower.id -> {
+                                                    GraphType.Power
+                                                }
+
                                                 else -> {
                                                     GraphType.ElevationGain
                                                 }
@@ -272,9 +282,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val selectedYear =
             if (sortFilterValues.getSelectedYear() != "") sortFilterValues.getSelectedYear() else currentYear
         binding.textYear.text = selectedYear
-        binding.textMonth.text = DateFormatSymbols().months[currentMonth-1]
+        binding.textMonth.text = DateFormatSymbols().months[currentMonth - 1]
         drawChart(binding.lineChartYear, graphType, selectedYear)
         if (currentYear == selectedYear) {
+            binding.lineChartMonth.visibility = View.VISIBLE
+            binding.textMonth.visibility = View.VISIBLE
             drawChart(
                 binding.lineChartMonth,
                 graphType,
@@ -283,6 +295,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             )
         } else {
             binding.lineChartMonth.visibility = View.GONE
+            binding.textMonth.visibility = View.GONE
         }
     }
 
@@ -487,51 +500,63 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             lineChart.invalidate()
             lineChart.axisRight.setDrawLabels(false)
             setYAxis(lineChart.axisLeft, graphType)
-            lineChart.axisLeft.axisMinimum = 0f
-            lineChart.axisRight.axisMinimum = 0f
+            setXAxis(lineChart.xAxis, year, month)
+            if (graphType.cumulative) {
+                lineChart.axisLeft.axisMinimum = 0f
+                lineChart.axisRight.axisMinimum = 0f
+            } else {
+                lineChart.axisLeft.axisMinimum = (minMax.second + chartEntries).filter { it.y > 0 }.minOf { it.y }
+                lineChart.axisRight.axisMinimum = (minMax.second + chartEntries).filter { it.y > 0 }.minOf { it.y }
+            }
 
             val params = lineChart.layoutParams
             params.height = (Resources.getSystem().displayMetrics.heightPixels * 0.22).toInt()
             lineChart.layoutParams = params
 
             val dataSets: MutableList<ILineDataSet?> = ArrayList()
-            val dataSet = LineDataSet(chartEntries, getString(R.string.actually))
+            val dataSet = LineDataSet(
+                if (graphType.filterZeroValues) chartEntries.filter { it.y > 0f } else chartEntries,
+                getString(R.string.actually)
+            )
             setGraphView(dataSet, false, color = Color.rgb(0, 128, 0))
-            val dataSetForecast = LineDataSet(chartEntriesForecast, getString(R.string.forecast))
-            setGraphView(dataSetForecast, false, color = Color.rgb(255, 0, 0))
 
             if (minMax.first.isNotEmpty() && minMax.second.isNotEmpty()) {
-                lineChart.axisLeft.axisMaximum = minMax.second.maxOf { it.y }
-                lineChart.axisRight.axisMaximum = minMax.second.maxOf { it.y }
-
-                val dataSetMinimalValues =
-                    LineDataSet(
-                        minMax.first,
-                        getString(R.string.min_5_yrs)
-                    )
+                lineChart.axisLeft.axisMaximum = (minMax.second + chartEntries).maxOf { it.y }
+                lineChart.axisRight.axisMaximum = (minMax.second + chartEntries).maxOf { it.y }
                 val dataSetMaximalValues =
                     LineDataSet(
-                        minMax.second,
+                        if (graphType.filterZeroValues) minMax.second.filter { it.y > 0f } else minMax.second,
                         getString(R.string.max_5_yrs)
                     )
-                dataSetMaximalValues.fillFormatter = MyFillFormatter(dataSetMinimalValues)
-                lineChart.renderer = MyLineLegendRenderer(
-                    lineChart,
-                    lineChart.animator,
-                    lineChart.viewPortHandler
-                )
-
-                setGraphView(dataSetMinimalValues)
-                dataSets.add(dataSetMinimalValues)
+                if (graphType.cumulative) {
+                    val dataSetMinimalValues =
+                        LineDataSet(
+                            minMax.first,
+                            getString(R.string.min_5_yrs)
+                        )
+                    setGraphView(dataSetMinimalValues)
+                    dataSets.add(dataSetMinimalValues)
+                    dataSetMaximalValues.fillFormatter = MyFillFormatter(dataSetMinimalValues)
+                    lineChart.renderer = MyLineLegendRenderer(
+                        lineChart,
+                        lineChart.animator,
+                        lineChart.viewPortHandler
+                    )
+                }
                 setGraphView(dataSetMaximalValues)
                 dataSets.add(dataSetMaximalValues)
             }
-            dataSets.add(dataSetForecast)
+            if (graphType.hasForecast) {
+                val dataSetForecast =
+                    LineDataSet(chartEntriesForecast, getString(R.string.forecast))
+                setGraphView(dataSetForecast, false, color = Color.rgb(255, 0, 0))
+                dataSets.add(dataSetForecast)
+            }
             dataSets.add(dataSet)
 
             when (resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
                 Configuration.UI_MODE_NIGHT_YES -> {
-                    lineChart.xAxis.textColor = Color.BLACK
+                    lineChart.xAxis.textColor = Color.WHITE
                     lineChart.axisRight.textColor = Color.WHITE
                     lineChart.axisLeft.textColor = Color.WHITE
                     lineChart.legend?.textColor = Color.WHITE
@@ -545,7 +570,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
 
                 Configuration.UI_MODE_NIGHT_UNDEFINED -> {
-                    lineChart.xAxis.textColor = Color.BLACK
+                    lineChart.xAxis.textColor = Color.WHITE
                     lineChart.axisRight.textColor = Color.WHITE
                     lineChart.axisLeft.textColor = Color.WHITE
                     lineChart.legend?.textColor = Color.WHITE
@@ -567,6 +592,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     value,
                     graphType.unit
                 )
+            }
+        }
+    }
+
+    private fun setXAxis(xAxis: XAxis, year: String? = null, month: String? = null) {
+        xAxis.position = XAxis.XAxisPosition.BOTTOM
+        xAxis.valueFormatter = object : ValueFormatter() {
+            override fun getFormattedValue(value: Float): String? {
+                val cal = Calendar.getInstance()
+                cal.time =
+                    PerformanceGraphProvider.parseDate(String.format("${year}-${month ?: "01"}-01 00:00:00"))
+                if (month == null) {
+                    cal.set(Calendar.DAY_OF_YEAR, value.toInt())
+                } else {
+                    cal.set(Calendar.DAY_OF_MONTH, value.toInt())
+                }
+                return SimpleDateFormat(
+                    "dd MMM",
+                    resources.configuration.locales[0]
+                )
+                    .format(cal.time)
             }
         }
     }

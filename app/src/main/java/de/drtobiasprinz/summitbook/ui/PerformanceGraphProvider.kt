@@ -20,7 +20,7 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
         currentDate: Date? = null
     ): List<Entry> {
         var (dateRange, maximum) = getDateRange(year, month)
-        val filteredSummits = getRelevantSummitsSorted(dateRange)
+        val filteredSummits = getRelevantSummitsSorted(dateRange, graphType)
         if (filteredSummits.isNotEmpty()) {
             val cal: Calendar = Calendar.getInstance(TimeZone.getDefault())
             var lastY = 0f
@@ -29,13 +29,18 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
                 cal.time = it.date
                 val x =
                     (cal.get(if (month != null) Calendar.DAY_OF_MONTH else Calendar.DAY_OF_YEAR))
-                basicGraph[x] = graphType.getSummitValue(it).toFloat() + lastY
-                lastY = basicGraph[x]!!
+                val newValue = graphType.getSummitValue(it).toFloat()
+                val checkValue = if (graphType.filterZeroValues) newValue > 0 else newValue >= 0
+                if (checkValue) {
+                    basicGraph[x] = newValue + (if (graphType.cumulative) lastY else 0f)
+                    lastY = basicGraph[x]!!
+                }
             }
 
             if (currentDate != null) {
                 cal.time = currentDate
-                val dayNumber = cal.get(if (month != null) Calendar.DAY_OF_MONTH else Calendar.DAY_OF_YEAR)
+                val dayNumber =
+                    cal.get(if (month != null) Calendar.DAY_OF_MONTH else Calendar.DAY_OF_YEAR)
                 if (dayNumber < maximum) {
                     maximum = dayNumber
                 }
@@ -119,13 +124,21 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
                 }
             }
         }
-        Log.i("PerformanceGrapgProvider.getActualGraphMinMaxForSummits", "took ${(System.currentTimeMillis() - start)}")
+        Log.i(
+            "PerformanceGraphProvider.getActualGraphMinMaxForSummits",
+            "took ${(System.currentTimeMillis() - start)}"
+        )
         return Pair(minGraph, maxGraph)
     }
 
-    fun getRelevantSummitsSorted(range: ClosedRange<Date>): List<Summit> {
+    fun getRelevantSummitsSorted(
+        range: ClosedRange<Date>,
+        graphType: GraphType = GraphType.ElevationGain
+    ): List<Summit> {
         return summits.filter {
-            it.date.after(range.start) && it.date.before(range.endInclusive)
+            it.date.after(range.start)
+                    && it.date.before(range.endInclusive)
+                    && graphType.getSummitValue(it) >= 0
         }.sortedBy { it.date }
     }
 
@@ -164,10 +177,14 @@ enum class GraphType(
     val unit: String,
     val getSummitValue: (Summit) -> Double,
     val getForecastValue: (Forecast) -> Int,
+    val cumulative: Boolean = true,
+    val hasForecast: Boolean = true,
+    val filterZeroValues: Boolean = false,
 ) {
+
     Count(
         "",
-        { _ -> 1.0 },
+        { 1.0 },
         { f -> f.forecastNumberActivities },
     ),
     ElevationGain(
@@ -180,4 +197,16 @@ enum class GraphType(
         { e -> e.kilometers },
         { f -> f.forecastDistance },
     ),
+    Power(
+        "W",
+        { e -> e.garminData?.power?.twentyMin?.toDouble() ?: -1.0 },
+        { 0 },
+        false, false, true
+    ),
+    Vo2Max(
+        "",
+        { e -> e.garminData?.vo2max?.toDouble() ?: -1.0 },
+        { 0 },
+        false, false, true
+    ), ;
 }
