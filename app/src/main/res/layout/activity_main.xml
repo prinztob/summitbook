@@ -56,6 +56,14 @@
                 android:textColor="#999"
                 app:drawableStartCompat="@drawable/icons8_mountain_24"
                 app:drawableTint="?android:attr/colorControlNormal" />
+
+
+            <ImageView
+                android:id="@+id/dopDown"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/choose_data_source"
+                android:src="@drawable/baseline_arrow_drop_down_24" />
         </LinearLayout>
 
 
@@ -143,6 +151,8 @@
                 android:layout_alignParentEnd="true"
                 android:layout_centerInParent="true"
                 android:text="@string/monthly"
+                app:drawableEndCompat="@drawable/ic_chevron_right"
+                app:drawableStartCompat="@drawable/ic_chevron_left"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/lineChartMonth" />
@@ -163,6 +173,8 @@
                 android:layout_alignParentEnd="true"
                 android:layout_centerInParent="true"
                 android:text="@string/yearly"
+                app:drawableEndCompat="@drawable/ic_chevron_right"
+                app:drawableStartCompat="@drawable/ic_chevron_left"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/lineChartYear" />

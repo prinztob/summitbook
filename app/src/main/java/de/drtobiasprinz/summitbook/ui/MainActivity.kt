@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.ui
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.DialogInterface
 import android.content.Intent
@@ -12,7 +13,9 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.view.MotionEvent
 import android.view.View
+import android.view.View.OnTouchListener
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -114,6 +117,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setContentView(binding.root)
         cache = applicationContext.cacheDir
         storage = applicationContext.filesDir
+        setDropDown()
         if (!Python.isStarted()) {
             Python.start(AndroidPlatform(this))
         }
@@ -230,6 +234,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                             drawPerformanceGraph(selectedGraphType)
                             binding.overviewLayout.setOnClickListener {
                                 if (!graphIsVisible) {
+                                    when (resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+                                        Configuration.UI_MODE_NIGHT_YES -> binding.dopDown.setImageResource(
+                                            R.drawable.baseline_arrow_drop_up_white_24dp
+                                        )
+
+                                        Configuration.UI_MODE_NIGHT_NO -> binding.dopDown.setImageResource(
+                                            R.drawable.baseline_arrow_drop_up_black_24dp
+                                        )
+
+                                        else -> binding.dopDown.setImageResource(R.drawable.baseline_arrow_drop_up_white_24dp)
+                                    }
                                     binding.chartLayout.visibility = View.VISIBLE
                                     binding.groupProperty.addOnButtonCheckedListener { _, checkedId, isChecked ->
                                         binding.lineChartMonth.clear()
@@ -263,6 +278,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                     }
                                 } else {
                                     binding.chartLayout.visibility = View.GONE
+                                    setDropDown()
                                 }
                                 graphIsVisible = !graphIsVisible
                             }
@@ -274,29 +290,90 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         addMissingBoundingBox()
     }
 
+    private fun setDropDown() {
+        when (resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+            Configuration.UI_MODE_NIGHT_YES -> binding.dopDown.setImageResource(
+                R.drawable.baseline_arrow_drop_down_white_24dp
+            )
+
+            Configuration.UI_MODE_NIGHT_NO -> binding.dopDown.setImageResource(
+                R.drawable.baseline_arrow_drop_down_24
+            )
+
+            else -> binding.dopDown.setImageResource(R.drawable.baseline_arrow_drop_down_white_24dp)
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
     private fun drawPerformanceGraph(
         graphType: GraphType
     ) {
-        val currentYear = Calendar.getInstance()[Calendar.YEAR].toString()
-        val currentMonth = Calendar.getInstance()[Calendar.MONTH] + 1
-        val selectedYear =
-            if (sortFilterValues.getSelectedYear() != "") sortFilterValues.getSelectedYear() else currentYear
-        binding.textYear.text = selectedYear
-        binding.textMonth.text = DateFormatSymbols().months[currentMonth - 1]
-        drawChart(binding.lineChartYear, graphType, selectedYear)
+        val currentYear = Calendar.getInstance()[Calendar.YEAR]
+        var currentMonth = Calendar.getInstance()[Calendar.MONTH] + 1
+        var selectedYear =
+            if (sortFilterValues.getSelectedYear() != "") sortFilterValues.getSelectedYear()
+                .toInt() else currentYear
+        binding.textYear.text = selectedYear.toString()
+        drawChart(binding.lineChartYear, graphType, selectedYear.toString())
+        binding.textYear.setOnTouchListener(OnTouchListener { v, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                val compounds = binding.textYear.compoundDrawables
+                if (event.rawX >= binding.textYear.right - compounds[2].bounds.width() && selectedYear < sortFilterValues.years.map { it.toInt() }
+                        .max()) {
+                    selectedYear += 1
+                    binding.textYear.text = selectedYear.toString()
+                    drawChart(binding.lineChartYear, graphType, selectedYear.toString())
+                    return@OnTouchListener true
+                }
+                if (event.rawX <= binding.textYear.left + compounds[0].bounds.width() && (selectedYear > sortFilterValues.years.map { it.toInt() }
+                        .min())) {
+                    selectedYear -= 1
+                    binding.textYear.text = selectedYear.toString()
+                    drawChart(binding.lineChartYear, graphType, selectedYear.toString())
+                    return@OnTouchListener true
+                }
+            }
+            true
+        })
         if (currentYear == selectedYear) {
-            binding.lineChartMonth.visibility = View.VISIBLE
-            binding.textMonth.visibility = View.VISIBLE
-            drawChart(
-                binding.lineChartMonth,
-                graphType,
-                selectedYear,
-                if (currentMonth < 10) "0${currentMonth}" else currentMonth.toString()
-            )
+            drawMonthChart(currentMonth, graphType, selectedYear)
+            binding.textMonth.setOnTouchListener(OnTouchListener { v, event ->
+                if (event.action == MotionEvent.ACTION_UP) {
+                    val compounds = binding.textMonth.compoundDrawables
+                    if (event.rawX >= binding.textMonth.right - compounds[2].bounds.width() && currentMonth < 12) {
+                        currentMonth += 1
+                        drawMonthChart(currentMonth, graphType, selectedYear)
+                        return@OnTouchListener true
+                    }
+                    if (event.rawX <= binding.textMonth.left + compounds[0].bounds.width() && currentMonth > 1) {
+                        currentMonth -= 1
+                        drawMonthChart(currentMonth, graphType, selectedYear)
+                        return@OnTouchListener true
+                    }
+                }
+                true
+            })
         } else {
             binding.lineChartMonth.visibility = View.GONE
             binding.textMonth.visibility = View.GONE
         }
+    }
+
+    private fun drawMonthChart(
+        currentMonth: Int,
+        graphType: GraphType,
+        selectedYear: Int
+    ) {
+        binding.lineChartMonth.visibility = View.VISIBLE
+        binding.textMonth.visibility = View.VISIBLE
+        val textMonth = "${DateFormatSymbols().months[currentMonth - 1]} $selectedYear"
+        binding.textMonth.text = textMonth
+        drawChart(
+            binding.lineChartMonth,
+            graphType,
+            selectedYear.toString(),
+            if (currentMonth < 10) "0${currentMonth}" else currentMonth.toString()
+        )
     }
 
     private fun executeDownload(summits: List<Summit>) {
@@ -505,8 +582,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 lineChart.axisLeft.axisMinimum = 0f
                 lineChart.axisRight.axisMinimum = 0f
             } else {
-                lineChart.axisLeft.axisMinimum = (minMax.second + chartEntries).filter { it.y > 0 }.minOf { it.y }
-                lineChart.axisRight.axisMinimum = (minMax.second + chartEntries).filter { it.y > 0 }.minOf { it.y }
+                lineChart.axisLeft.axisMinimum =
+                    (minMax.second + chartEntries).filter { it.y > 0 }.minOf { it.y }
+                lineChart.axisRight.axisMinimum =
+                    (minMax.second + chartEntries).filter { it.y > 0 }.minOf { it.y }
             }
 
             val params = lineChart.layoutParams

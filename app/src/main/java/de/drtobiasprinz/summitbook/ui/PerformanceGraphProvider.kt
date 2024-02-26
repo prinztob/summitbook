@@ -105,7 +105,7 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
                 it.toString(),
                 month
             )
-        }
+        }.filter { it.isNotEmpty() }
         val size = graphs.minOfOrNull { it.size }
         if (size == null || size == 0) {
             return Pair(emptyList(), emptyList())
