@@ -63,7 +63,10 @@ class SummitsAdapter :
             binding.apply {
                 summitName.text = entity.name
                 heightMeter.text = String.format(
-                    "%s %s", entity.elevationData.elevationGain, "hm"
+                    "%s %s", entity.elevationData.elevationGain, context.getString(R.string.hm)
+                )
+                distance.text = String.format(
+                    "%.1f %s", entity.kilometers, context.getString(R.string.km)
                 )
                 addImage(entity)
                 setAddVelocityData(entity)

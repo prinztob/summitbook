@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.ui
 import android.content.Context
 import android.content.Intent
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -48,7 +49,7 @@ class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Con
                     if (gpsTrack.hasNoTrackPoints()) {
                         gpsTrack.parseTrack()
                     }
-                    gpsTrack.addGpsTrack(mMapView, TrackColor.None, summit = entry)
+                    gpsTrack.addGpsTrack(mMapView, TrackColor.None, summit = entry, color = ContextCompat.getColor(mapView.context, entry.sportType.color))
                     gpsTrack.isShownOnMap = true
                 }
             }

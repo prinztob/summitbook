@@ -25,6 +25,7 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
             val cal: Calendar = Calendar.getInstance(TimeZone.getDefault())
             var lastY = 0f
             val basicGraph: MutableMap<Int, Float> = mutableMapOf()
+            basicGraph[0] = 0f
             filteredSummits.forEach {
                 cal.time = it.date
                 val x =
@@ -180,6 +181,7 @@ enum class GraphType(
     val cumulative: Boolean = true,
     val hasForecast: Boolean = true,
     val filterZeroValues: Boolean = false,
+    val delta: Float = 1f
 ) {
 
     Count(
@@ -191,6 +193,7 @@ enum class GraphType(
         "hm",
         { e -> e.elevationData.elevationGain.toDouble() },
         { f -> f.forecastHeightMeter },
+        delta = 10f
     ),
     Kilometer(
         "km",

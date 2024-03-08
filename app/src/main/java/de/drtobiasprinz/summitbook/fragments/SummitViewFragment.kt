@@ -4,12 +4,14 @@ import android.content.SharedPreferences
 import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -28,6 +30,10 @@ import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.isVisible
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -114,8 +120,9 @@ class SummitViewFragment : Fragment() {
                     }
                 }
             } else {
-                viewModel?.summitsList?.observe(viewLifecycleOwner) { summitsStatus ->
-                    viewModel?.segmentsList?.observe(viewLifecycleOwner) { segmentsStatus ->
+                viewModel?.segmentsList?.observe(viewLifecycleOwner) { segmentsStatus ->
+                    viewModel?.summitsList?.observe(viewLifecycleOwner) { summitsStatus ->
+                        Log.i("Performance", "${LocalDateTime.now()} observe")
                         when (summitsStatus.status) {
                             DataStatus.Status.LOADING -> {
                                 loading.isVisible(true, recyclerView)
@@ -129,27 +136,34 @@ class SummitViewFragment : Fragment() {
                                     summitsStatus.data ?: emptyList(),
                                     sharedPreferences
                                 )
-                                segmentsStatus.data.let { segments ->
-                                    if (segments != null) {
-                                        data.forEach { summit ->
-                                            summit.updateSegmentInfo(segments)
+                                lifecycleScope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        segmentsStatus.data.let { segments ->
+                                            if (!segments.isNullOrEmpty()) {
+                                                data.forEach { summit ->
+                                                    summit.updateSegmentInfo(segments)
+                                                }
+                                            }
+                                        }
+                                        val maxSummits = TimeIntervalPower.values().map {
+                                            it.getMaxSummit(
+                                                ExtremaValuesSummits(
+                                                    data,
+                                                    excludeZeroValueFromMin = true
+                                                )
+                                            )
+                                        }
+                                        data.forEach { summits ->
+                                            summits.hasPowerRecord = summits in maxSummits
+                                            if (summits.segmentInfo.isNotEmpty()) {
+                                                summits.bestPositionInSegment =
+                                                    summits.segmentInfo.minOf { it.third }
+                                            }
                                         }
                                     }
                                 }
-                                val maxSummits = TimeIntervalPower.values().map {
-                                    it.getMaxSummit(
-                                        ExtremaValuesSummits(
-                                            data,
-                                            excludeZeroValueFromMin = true
-                                        )
-                                    )
-                                }
-                                data.forEach { summits ->
-                                    summits.hasPowerRecord = summits in maxSummits
-                                    if (summits.segmentInfo.isNotEmpty()) {
-                                        summits.bestPositionInSegment = summits.segmentInfo.minOf { it.third }
-                                    }
-                                }
+                                Log.i("Performance", "${LocalDateTime.now()} done")
+                                Log.i("Performance", "--------------------------")
                                 summitsAdapter.differ.submitList(data)
                             }
 
@@ -240,10 +254,10 @@ class SummitViewFragment : Fragment() {
         binding.apply {
             if (isShown) {
                 emptyBody.visibility = View.VISIBLE
-                listBody.visibility = View.GONE
+                recyclerView.visibility = View.GONE
             } else {
                 emptyBody.visibility = View.GONE
-                listBody.visibility = View.VISIBLE
+                recyclerView.visibility = View.VISIBLE
             }
         }
     }

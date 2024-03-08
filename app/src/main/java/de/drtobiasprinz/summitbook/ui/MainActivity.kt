@@ -33,6 +33,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.Entry
@@ -83,8 +84,6 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Calendar
 import java.util.Date
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 
@@ -179,8 +178,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                                     updater.update()
                                                 }
                                                 updater.onFinish(
-                                                    binding.loading,
-                                                    this@MainActivity
+                                                    binding.loading, this@MainActivity
                                                 )
                                             }
                                         }
@@ -190,7 +188,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         } else {
                             Toast.makeText(
                                 this@MainActivity,
-                                getString(R.string.set_user_pwd), Toast.LENGTH_LONG
+                                getString(R.string.set_user_pwd),
+                                Toast.LENGTH_LONG
                             ).show()
                         }
                         return@setOnMenuItemClickListener true
@@ -212,8 +211,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                             }
                         }
                         dialog.show(
-                            supportFragmentManager,
-                            "Show new summits from Garmin"
+                            supportFragmentManager, "Show new summits from Garmin"
                         )
                         return@setOnMenuItemClickListener true
                     }
@@ -225,6 +223,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             viewModel.summitsList.observe(this@MainActivity) { itData ->
                 itData.data?.let { summits ->
+                    updateTracksAndBoundingBox(summits)
                     setOverviewText(
                         sortFilterValues.apply(summits, sharedPreferences)
                     )
@@ -232,6 +231,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         itDataForeCasts.data?.let { forecasts ->
                             performanceGraphProvider = PerformanceGraphProvider(summits, forecasts)
                             drawPerformanceGraph(selectedGraphType)
+                            var showMonths = true
+                            var showYears = true
+                            binding.showMonthButton.setOnClickListener {
+                                showMonths = !showMonths
+                                updateLayoutOfCharts(showMonths, showYears)
+                            }
+                            binding.showYearButton.setOnClickListener {
+                                showYears = !showYears
+                                updateLayoutOfCharts(showMonths, showYears)
+                            }
                             binding.overviewLayout.setOnClickListener {
                                 if (!graphIsVisible) {
                                     when (resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
@@ -287,7 +296,32 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
             }
         }
-        addMissingBoundingBox()
+    }
+
+    private fun updateLayoutOfCharts(showMonths: Boolean, showYears: Boolean) {
+        if (showMonths && showYears) {
+            binding.lineChartMonth.visibility = View.VISIBLE
+            binding.lineChartYear.visibility = View.VISIBLE
+            setHeight(0.22, binding.lineChartMonth)
+            setHeight(0.22, binding.lineChartYear)
+        } else if (!showMonths && showYears) {
+            binding.lineChartMonth.visibility = View.GONE
+            binding.lineChartYear.visibility = View.VISIBLE
+            setHeight(0.44, binding.lineChartYear)
+        } else if (showMonths && !showYears) {
+            binding.lineChartMonth.visibility = View.VISIBLE
+            binding.lineChartYear.visibility = View.GONE
+            setHeight(0.44, binding.lineChartMonth)
+        } else {
+            binding.lineChartMonth.visibility = View.GONE
+            binding.lineChartYear.visibility = View.GONE
+        }
+    }
+
+    private fun setHeight(height: Double, chart: LineChart) {
+        val params = chart.layoutParams
+        params.height = (Resources.getSystem().displayMetrics.heightPixels * height).toInt()
+        chart.layoutParams = params
     }
 
     private fun setDropDown() {
@@ -315,18 +349,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 .toInt() else currentYear
         binding.textYear.text = selectedYear.toString()
         drawChart(binding.lineChartYear, graphType, selectedYear.toString())
-        binding.textYear.setOnTouchListener(OnTouchListener { v, event ->
+        binding.textYear.setOnTouchListener(OnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
                 val compounds = binding.textYear.compoundDrawables
-                if (event.rawX >= binding.textYear.right - compounds[2].bounds.width() && selectedYear < sortFilterValues.years.map { it.toInt() }
-                        .max()) {
+                if (event.rawX >= binding.textYear.right - compounds[2].bounds.width() && selectedYear < (sortFilterValues.years.maxOfOrNull { it.toInt() }
+                        ?: 0)) {
                     selectedYear += 1
                     binding.textYear.text = selectedYear.toString()
                     drawChart(binding.lineChartYear, graphType, selectedYear.toString())
                     return@OnTouchListener true
                 }
-                if (event.rawX <= binding.textYear.left + compounds[0].bounds.width() && (selectedYear > sortFilterValues.years.map { it.toInt() }
-                        .min())) {
+                if (event.rawX <= binding.textYear.left + compounds[0].bounds.width() && selectedYear > (sortFilterValues.years.minOfOrNull { it.toInt() }
+                        ?: 0)) {
                     selectedYear -= 1
                     binding.textYear.text = selectedYear.toString()
                     drawChart(binding.lineChartYear, graphType, selectedYear.toString())
@@ -337,7 +371,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         })
         if (currentYear == selectedYear) {
             drawMonthChart(currentMonth, graphType, selectedYear)
-            binding.textMonth.setOnTouchListener(OnTouchListener { v, event ->
+            binding.textMonth.setOnTouchListener(OnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_UP) {
                     val compounds = binding.textMonth.compoundDrawables
                     if (event.rawX >= binding.textMonth.right - compounds[2].bounds.width() && currentMonth < 12) {
@@ -360,9 +394,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun drawMonthChart(
-        currentMonth: Int,
-        graphType: GraphType,
-        selectedYear: Int
+        currentMonth: Int, graphType: GraphType, selectedYear: Int
     ) {
         binding.lineChartMonth.visibility = View.VISIBLE
         binding.textMonth.visibility = View.VISIBLE
@@ -378,68 +410,62 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun executeDownload(summits: List<Summit>) {
         val downloader = GarminTrackAndDataDownloader(
-            summits,
-            pythonExecutor,
-            sharedPreferences.getBoolean("download_tcx", false)
+            summits, pythonExecutor, sharedPreferences.getBoolean("download_tcx", false)
         )
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
-                downloader.downloadTracks()
-                downloader.extractFinalSummit()
-                downloader.composeFinalTrack()
+                try {
+                    downloader.extractFinalSummit()
+                    if (downloader.finalEntry?.sportType != SportType.IndoorTrainer) {
+                        downloader.downloadTracks()
+                        downloader.composeFinalTrack()
+                    }
+                } catch (e: RuntimeException) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Connecting to third party provider failed. Please try again later. Error: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
             downloader.updateFinalEntry(viewModel)
             binding.loading.visibility = View.GONE
             binding.loading.tooltipText = ""
             Toast.makeText(
-                this@MainActivity, getString(R.string.add_new_summit_successful),
-                Toast.LENGTH_LONG
+                this@MainActivity, getString(R.string.add_new_summit_successful), Toast.LENGTH_LONG
             ).show()
         }
     }
 
-    private fun addMissingBoundingBox() {
-        val scheduler = Executors.newScheduledThreadPool(5)
-        scheduler.scheduleWithFixedDelay({
-            val summits = summitViewFragment.summitsAdapter.differ.currentList
-            val executor = pythonExecutor
-            if (summits.isNotEmpty()) {
-                val entriesWithoutBoundingBox = summits.filter {
-                    it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingBoxCalculation
-                }
-                if (entriesWithoutBoundingBox.isNotEmpty()) {
-                    updateBoundingBox(entriesWithoutBoundingBox)
-                } else {
-                    Log.i(
-                        "Scheduler",
-                        "No more bounding boxes to update. Starting to simplify GPX tracks"
-                    )
-                    updateSimplifiedTracks(summits)
-                }
-                updateDailyReportData(executor, summits)
+    private fun updateTracksAndBoundingBox(summits: List<Summit>) {
+        val executor = pythonExecutor
+        if (summits.isNotEmpty()) {
+            val entriesWithoutBoundingBox = summits.filter {
+                it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingBoxCalculation
             }
-
-        }, 1, 5, TimeUnit.MINUTES)
+            if (entriesWithoutBoundingBox.isNotEmpty()) {
+                updateBoundingBox(entriesWithoutBoundingBox)
+            }
+            Log.i(
+                "Scheduler", "No more bounding boxes to update."
+            )
+            updateSimplifiedTracks(summits)
+            updateDailyReportData(executor, summits)
+        }
     }
 
     private fun updateDailyReportData(
-        executor: GarminPythonExecutor?,
-        summits: List<Summit>?
+        executor: GarminPythonExecutor?, summits: List<Summit>?
     ) {
         if (sharedPreferences.getBoolean(
-                "startup_auto_update_switch",
-                false
+                "startup_auto_update_switch", false
             ) && executor != null
         ) {
             binding.loading.visibility = View.VISIBLE
             viewModel.dailyReportDataList.observeOnce(this) { dailyReportDataStatus ->
                 dailyReportDataStatus.data.let { dailyReportData ->
                     val updater = GarminDataUpdater(
-                        sharedPreferences,
-                        executor,
-                        summits,
-                        dailyReportData,
-                        viewModel
+                        sharedPreferences, executor, summits, dailyReportData, viewModel
                     )
                     lifecycleScope.launch {
                         withContext(Dispatchers.IO) {
@@ -453,26 +479,22 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun updateSimplifiedTracks(summits: List<Summit>) {
-        val useSimplifiedTracks =
-            sharedPreferences.getBoolean("use_simplified_tracks", true)
+        val useSimplifiedTracks = sharedPreferences.getBoolean("use_simplified_tracks", true)
         if (useSimplifiedTracks) {
             val entriesWithoutSimplifiedGpxTrack = summits.filter {
-                it !in entriesToExcludeForSimplifyGpxTrack &&
-                        it.hasGpsTrack() &&
-                        !it.hasGpsTrack(simplified = true) &&
-                        it.sportType != SportType.IndoorTrainer
+                it !in entriesToExcludeForSimplifyGpxTrack && it.hasGpsTrack() && !it.hasGpsTrack(
+                    simplified = true
+                ) && it.sportType != SportType.IndoorTrainer
             }.sortedByDescending { it.date }
             if (entriesWithoutSimplifiedGpxTrack.isEmpty()) {
                 Log.i(
-                    "Scheduler",
-                    "No more tracks to simplify."
+                    "Scheduler", "No more tracks to simplify."
                 )
             }
             pythonInstance.let {
                 if (it != null) {
                     asyncSimplifyGpsTracks(
-                        entriesWithoutSimplifiedGpxTrack.take(5),
-                        it
+                        entriesWithoutSimplifiedGpxTrack, it
                     )
                 }
             }
@@ -507,8 +529,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     viewModel.saveSummit(true, entryToCheck)
                     Log.i(
                         "Scheduler",
-                        "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name}, " +
-                                "${entriesWithoutBoundingBox.size - index} remaining."
+                        "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name}, " + "${entriesWithoutBoundingBox.size - index} remaining."
                     )
                 } else {
                     Log.i(
@@ -522,31 +543,34 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun asyncSimplifyGpsTracks(
-        summitsWithoutSimplifiedTracks: List<Summit>,
-        pythonInstance: Python
+        summitsWithoutSimplifiedTracks: List<Summit>, pythonInstance: Python
     ) {
         var numberSimplifiedGpxTracks = 0
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 if (summitsWithoutSimplifiedTracks.isNotEmpty()) {
-                    summitsWithoutSimplifiedTracks.forEach {
+                    summitsWithoutSimplifiedTracks.forEachIndexed { i, e ->
                         try {
+                            Log.i(
+                                "AsyncSimplifyGpsTracks",
+                                "Simplifying track $i of ${summitsWithoutSimplifiedTracks.size} for ${e.getDateAsString()}_${e.name}."
+                            )
                             GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
-                                it.getGpsTrackPath(
+                                e.getGpsTrackPath(
                                     simplified = false
                                 )
                             )
                             numberSimplifiedGpxTracks += 1
                             Log.i(
                                 "AsyncSimplifyGpsTracks",
-                                "Simplified track for ${it.getDateAsString()}_${it.name}."
+                                "Simplified track for ${e.getDateAsString()}_${e.name}."
                             )
                         } catch (ex: RuntimeException) {
                             Log.e(
                                 "AsyncSimplifyGpsTracks",
-                                "Error in simplify track for ${it.getDateAsString()}_${it.name}: ${ex.message}"
+                                "Error in simplify track for ${e.getDateAsString()}_${e.name}: ${ex.message}"
                             )
-                            entriesToExcludeForSimplifyGpxTrack.add(it)
+                            entriesToExcludeForSimplifyGpxTrack.add(e)
                         }
                     }
                 } else {
@@ -567,8 +591,19 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var minMax: Pair<List<Entry>, List<Entry>>
         lifecycleScope.launch {
             withContext(Dispatchers.Default) {
-                chartEntries =
-                    performanceGraphProvider.getActualGraphForSummits(graphType, year, month)
+                chartEntries = performanceGraphProvider.getActualGraphForSummits(
+                    graphType,
+                    year,
+                    month,
+                    if (
+                        year == (Calendar.getInstance())[Calendar.YEAR].toString()
+                        && (month == null || (month.toInt() == (Calendar.getInstance())[Calendar.MONTH] + 1))
+                    ) {
+                        Date()
+                    } else {
+                        null
+                    }
+                )
                 chartEntriesForecast =
                     performanceGraphProvider.getForecastGraphForSummits(graphType, year, month)
                 minMax =
@@ -593,33 +628,31 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             lineChart.layoutParams = params
 
             val dataSets: MutableList<ILineDataSet?> = ArrayList()
-            val dataSet = LineDataSet(
-                if (graphType.filterZeroValues) chartEntries.filter { it.y > 0f } else chartEntries,
-                getString(R.string.actually)
-            )
-            setGraphView(dataSet, false, color = Color.rgb(0, 128, 0))
+            if (chartEntries.isNotEmpty() && chartEntries[0].x != 0f) {
+                chartEntries = listOf(Entry(0f, 0f)) + chartEntries
+            }
+            val dataSet =
+                LineDataSet(if (graphType.filterZeroValues) chartEntries.filter { it.y > 0f } else chartEntries,
+                    getString(R.string.actually))
+            setGraphView(dataSet, false, color = Color.rgb(0, 128, 0), lineWidth = 5f)
 
             if (minMax.first.isNotEmpty() && minMax.second.isNotEmpty()) {
-                lineChart.axisLeft.axisMaximum = (minMax.second + chartEntries).maxOf { it.y }
-                lineChart.axisRight.axisMaximum = (minMax.second + chartEntries).maxOf { it.y }
+                lineChart.axisLeft.axisMaximum =
+                    (minMax.second + chartEntries).maxOf { it.y } + graphType.delta
+                lineChart.axisRight.axisMaximum =
+                    (minMax.second + chartEntries).maxOf { it.y } + graphType.delta
                 val dataSetMaximalValues =
-                    LineDataSet(
-                        if (graphType.filterZeroValues) minMax.second.filter { it.y > 0f } else minMax.second,
-                        getString(R.string.max_5_yrs)
-                    )
+                    LineDataSet(if (graphType.filterZeroValues) minMax.second.filter { it.y > 0f } else minMax.second,
+                        getString(R.string.max_5_yrs))
                 if (graphType.cumulative) {
-                    val dataSetMinimalValues =
-                        LineDataSet(
-                            minMax.first,
-                            getString(R.string.min_5_yrs)
-                        )
+                    val dataSetMinimalValues = LineDataSet(
+                        minMax.first, getString(R.string.min_5_yrs)
+                    )
                     setGraphView(dataSetMinimalValues)
                     dataSets.add(dataSetMinimalValues)
                     dataSetMaximalValues.fillFormatter = MyFillFormatter(dataSetMinimalValues)
                     lineChart.renderer = MyLineLegendRenderer(
-                        lineChart,
-                        lineChart.animator,
-                        lineChart.viewPortHandler
+                        lineChart, lineChart.animator, lineChart.viewPortHandler
                     )
                 }
                 setGraphView(dataSetMaximalValues)
@@ -666,10 +699,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             override fun getFormattedValue(value: Float): String {
                 val format = "${numberFormat.format(value.toDouble())} ${graphType.unit}"
                 return String.format(
-                    resources.configuration.locales[0],
-                    format,
-                    value,
-                    graphType.unit
+                    resources.configuration.locales[0], format, value, graphType.unit
                 )
             }
         }
@@ -688,10 +718,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     cal.set(Calendar.DAY_OF_MONTH, value.toInt())
                 }
                 return SimpleDateFormat(
-                    "dd MMM",
-                    resources.configuration.locales[0]
-                )
-                    .format(cal.time)
+                    "dd MMM", resources.configuration.locales[0]
+                ).format(cal.time)
             }
         }
     }
@@ -718,7 +746,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         )
     }
 
-    private fun setGraphView(set1: LineDataSet?, filled: Boolean = true, color: Int = Color.BLUE) {
+    private fun setGraphView(
+        set1: LineDataSet?, filled: Boolean = true, color: Int = Color.BLUE, lineWidth: Float = 2f
+    ) {
         set1?.mode = LineDataSet.Mode.LINEAR
         set1?.setDrawValues(false)
         set1?.setDrawCircles(false)
@@ -730,7 +760,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             set1?.fillColor = color
             set1?.fillAlpha = 100
         } else {
-            set1?.lineWidth = 2f
+            set1?.lineWidth = lineWidth
             set1?.setCircleColor(Color.BLACK)
             set1?.color = color
             set1?.setDrawFilled(false)
@@ -876,39 +906,31 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun showExportCsvDialog() {
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.export_csv_dialog))
+        AlertDialog.Builder(this).setTitle(getString(R.string.export_csv_dialog))
             .setMessage(getString(R.string.export_csv_dialog_text))
             .setPositiveButton(R.string.export_csv_dialog_positive) { _: DialogInterface?, _: Int ->
                 useFilteredSummits = false
                 startFileSelectorAndExportSummits(
                     String.format(
-                        "%s_summit-book_backup_ALL.zip",
-                        LocalDate.now()
+                        "%s_summit-book_backup_ALL.zip", LocalDate.now()
                     )
                 )
-            }
-            .setNeutralButton(
+            }.setNeutralButton(
                 R.string.export_csv_dialog_neutral
             ) { _: DialogInterface?, _: Int ->
                 useFilteredSummits = true
                 startFileSelectorAndExportSummits(
                     String.format(
-                        "%s_summit-book_backup_FILTERED.zip",
-                        LocalDate.now()
+                        "%s_summit-book_backup_FILTERED.zip", LocalDate.now()
                     )
                 )
-            }
-            .setNegativeButton(
+            }.setNegativeButton(
                 android.R.string.cancel
             ) { _: DialogInterface?, _: Int ->
                 Toast.makeText(
-                    this, getString(R.string.export_csv_dialog_negative_text),
-                    Toast.LENGTH_SHORT
+                    this, getString(R.string.export_csv_dialog_negative_text), Toast.LENGTH_SHORT
                 ).show()
-            }
-            .setIcon(android.R.drawable.ic_dialog_alert)
-            .show()
+            }.setIcon(android.R.drawable.ic_dialog_alert).show()
     }
 
     private fun commitFragment(fragment: Fragment) {
@@ -1016,8 +1038,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                             )
                                         )
                                         .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
-                                        .setIcon(android.R.drawable.ic_dialog_info)
-                                        .show()
+                                        .setIcon(android.R.drawable.ic_dialog_info).show()
                                     binding.loading.visibility = View.GONE
                                 }
                             }
@@ -1029,8 +1050,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun asyncExportZipFile(
-        entries: List<Summit>, resultData: Intent?,
-        segments: List<Segment>?, forecasts: List<Forecast>?,
+        entries: List<Summit>,
+        resultData: Intent?,
+        segments: List<Segment>?,
+        forecasts: List<Forecast>?,
         exportThirdPartyData: Boolean = true,
         exportCalculatedData: Boolean = true
     ) {
@@ -1047,28 +1070,24 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             )
             withContext(Dispatchers.IO) {
                 resultData?.data?.also { resultDataUri ->
-                    contentResolver.openOutputStream(resultDataUri)
-                        ?.let {
-                            writer.writeToZipFile(it)
-                            it.close()
-                        }
+                    contentResolver.openOutputStream(resultDataUri)?.let {
+                        writer.writeToZipFile(it)
+                        it.close()
+                    }
 
                 }
             }
             binding.loading.visibility = View.GONE
             AlertDialog.Builder(this@MainActivity)
-                .setTitle(getString(R.string.export_csv_summary_title))
-                .setMessage(
+                .setTitle(getString(R.string.export_csv_summary_title)).setMessage(
                     getString(
                         R.string.export_csv_summary_text,
                         entries.size.toString(),
                         writer.withGpsFile.toString(),
                         writer.withImages.toString()
                     )
-                )
-                .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
-                .setIcon(android.R.drawable.ic_dialog_info)
-                .show()
+                ).setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
+                .setIcon(android.R.drawable.ic_dialog_info).show()
 
         }
     }
@@ -1077,8 +1096,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         return summits?.map { entry ->
             entry.imageIds.mapIndexed { i, imageId ->
                 Poster(
-                    entry.getImageUrl(imageId),
-                    entry.getImageDescription(resources, i)
+                    entry.getImageUrl(imageId), entry.getImageDescription(resources, i)
                 )
             }
         }?.flatten() as MutableList<Poster>
@@ -1100,39 +1118,29 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         update(allImages[currentPosition])
                     }
                     viewer = StfalconImageViewer.Builder(
-                        this@MainActivity,
-                        allImages
+                        this@MainActivity, allImages
                     ) { view, poster ->
-                        Glide.with(this@MainActivity)
-                            .load(poster.url)
-                            .fitCenter()
-                            .diskCacheStrategy(DiskCacheStrategy.NONE)
-                            .skipMemoryCache(true)
+                        Glide.with(this@MainActivity).load(poster.url).fitCenter()
+                            .diskCacheStrategy(DiskCacheStrategy.NONE).skipMemoryCache(true)
                             .into(view)
-                    }
-                        .withStartPosition(currentPosition)
-                        .withImageChangeListener { position ->
-                            currentPosition = position
-                            val sizeBefore = allImages.size
-                            allImages = getAllImages(sortFilterSummits)
-                            val sizeAfter = allImages.size
-                            if (sizeAfter != sizeBefore) {
-                                viewer?.updateImages(allImages)
-                                if (usePositionAfterTransition >= 0) {
-                                    viewer?.setCurrentPosition(usePositionAfterTransition)
-                                }
+                    }.withStartPosition(currentPosition).withImageChangeListener { position ->
+                        currentPosition = position
+                        val sizeBefore = allImages.size
+                        allImages = getAllImages(sortFilterSummits)
+                        val sizeAfter = allImages.size
+                        if (sizeAfter != sizeBefore) {
+                            viewer?.updateImages(allImages)
+                            if (usePositionAfterTransition >= 0) {
+                                viewer?.setCurrentPosition(usePositionAfterTransition)
                             }
-                            overlayView?.update(allImages[position])
                         }
-                        .withOverlayView(overlayView)
-                        .withDismissListener { isDialogShown = false }
+                        overlayView?.update(allImages[position])
+                    }.withOverlayView(overlayView).withDismissListener { isDialogShown = false }
                         .show(!isDialogShown)
                     isDialogShown = true
                 } else {
                     Toast.makeText(
-                        this@MainActivity,
-                        getString(R.string.no_image_selected),
-                        Toast.LENGTH_SHORT
+                        this@MainActivity, getString(R.string.no_image_selected), Toast.LENGTH_SHORT
                     ).show()
                 }
             }
@@ -1170,8 +1178,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 }
 
 fun <T> LiveData<T>.observeOnce(
-    lifecycleOwner: LifecycleOwner,
-    observer: androidx.lifecycle.Observer<T>
+    lifecycleOwner: LifecycleOwner, observer: androidx.lifecycle.Observer<T>
 ) {
     observe(lifecycleOwner, object : androidx.lifecycle.Observer<T> {
         override fun onChanged(value: T) {

@@ -72,9 +72,8 @@
             android:layout_width="381dp"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:columnCount="2"
-            android:rowCount="3">
-
+            android:columnCount="3"
+            android:rowCount="1">
 
             <TextView
                 android:id="@+id/tour_date"
@@ -89,6 +88,17 @@
 
             <TextView
                 android:id="@+id/height_meter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="20dp"
+                android:drawablePadding="5dp"
+                android:padding="1dp"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                card_view:drawableStartCompat="@drawable/ic_trending_up_black_24dp" />
+
+            <TextView
+                android:id="@+id/distance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"

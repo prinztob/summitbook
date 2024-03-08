@@ -179,9 +179,14 @@ def download_gpx(api, activity_id, output_file):
                 f"{err}")
 
 
-def get_multi_sport_data(api, activity_id):
+def get_exercise_set(api, activity_id, folder):
     try:
-        return get_exercise_sets(api, activity_id)
+        sets = get_exercise_sets(api, activity_id)
+        output_file = f"{folder}/activity_{str(activity_id)}_exercise_set.json"
+        if not os.path.exists(output_file):
+            with open(output_file, "w+") as fb:
+                json.dump(sets, fb)
+        return sets
     except (
             GarminConnectConnectionError,
             GarminConnectAuthenticationError,
@@ -255,6 +260,7 @@ def download_activities_by_date(api, folder, start_date, end_date=date.today()):
                     json.dump(activity, fb)
                     write_index += 1
             download_splits(api, activity_id, folder)
+            get_exercise_set(api, activity_id, folder)
         return "return code: 0\nDownloaded {} activities, wrote {} to file".format(len(activities),
                                                                                    write_index)
     except (

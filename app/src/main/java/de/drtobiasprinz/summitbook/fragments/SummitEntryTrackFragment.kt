@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -618,7 +619,7 @@ class SummitEntryTrackFragment : Fragment() {
                             entry.setGpsTrack()
                         }
                     }
-                    entry.gpsTrack?.addGpsTrack(binding.osmap, TrackColor.None, summit = entry)
+                    entry.gpsTrack?.addGpsTrack(binding.osmap, TrackColor.None, summit = entry, color = ContextCompat.getColor(requireContext(), entry.sportType.color))
                     summitsShown += 1
                     pointsShown += entry.gpsTrack?.trackPoints?.size ?: 0
                     binding.osmap.zoomController.activate()

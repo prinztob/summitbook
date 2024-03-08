@@ -32,7 +32,8 @@ class GarminPythonExecutor(
                 pythonModule = pythonInstance?.getModule("entry_point")
                 Log.i("GarminPythonExecutor", "do login")
                 if (storage != null) {
-                    val result = pythonModule?.callAttr("init_api", username, password, storage.absolutePath)
+                    val result =
+                        pythonModule?.callAttr("init_api", username, password, storage.absolutePath)
                     checkOutput(result)
                     client = result
                 }
@@ -99,11 +100,11 @@ class GarminPythonExecutor(
         return JsonParser.parseString(result.toString()) as JsonObject
     }
 
-    fun getMultiSportData(activityId: String): JsonObject {
+    fun getExerciseSet(activityId: String): JsonObject {
         if (client == null) {
             login()
         }
-        val result = pythonModule?.callAttr("get_multi_sport_data", client, activityId)
+        val result = pythonModule?.callAttr("get_exercise_set", client, activityId)
         checkOutput(result)
         return JsonParser.parseString(result.toString()) as JsonObject
     }
@@ -170,7 +171,11 @@ class GarminPythonExecutor(
                 if (files?.isNotEmpty() == true) {
                     files.sortByDescending { it.absolutePath }
                     files.forEach {
-                        if (it.name.startsWith("activity_") && !it.name.endsWith("_splits.json")) {
+                        if (
+                            it.name.startsWith("activity_") &&
+                            !it.name.endsWith("_splits.json") &&
+                            !it.name.endsWith("_exercise_set.json")
+                        ) {
                             try {
                                 val gson = JsonParser.parseString(it.readText()) as JsonObject
                                 entries.add(parseJsonObject(gson))
@@ -191,6 +196,7 @@ class GarminPythonExecutor(
         private fun roundToTwoDigits(value: Float): Float {
             return (value * 100f).roundToInt() / 100f
         }
+
         private fun roundToTwoDigits(value: Double): Double {
             return (value * 100.0).roundToInt() / 100.0
         }
@@ -204,7 +210,10 @@ class GarminPythonExecutor(
             val sportType = parseSportType(jsonObject["activityType"].asJsonObject)
             val duration: Double =
                 if (jsonObject["movingDuration"] != JsonNull.INSTANCE && sportType in SportGroup.Bike.sportTypes) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
-            val averageSpeed = if (jsonObject["distance"] != JsonNull.INSTANCE && duration != 0.0) convertMphToKmh(jsonObject["distance"].asDouble / duration) else 0.0
+            val averageSpeed =
+                if (jsonObject["distance"] != JsonNull.INSTANCE && duration != 0.0) convertMphToKmh(
+                    jsonObject["distance"].asDouble / duration
+                ) else 0.0
             val activityIds: MutableList<String> = mutableListOf(jsonObject["activityId"].asString)
             if (jsonObject.has("childIds")) {
                 activityIds.addAll(jsonObject["childIds"].asJsonArray.map { it.asString })
@@ -214,14 +223,13 @@ class GarminPythonExecutor(
             } else {
                 roundToTwoDigits(getJsonObjectEntryNotNull(jsonObject, "vO2MaxValue"))
             }
-
             val garminData = GarminData(
                 activityIds,
                 getJsonObjectEntryNotNull(jsonObject, "calories"),
                 getJsonObjectEntryNotNull(jsonObject, "averageHR"),
                 getJsonObjectEntryNotNull(jsonObject, "maxHR"),
                 getPower(jsonObject),
-                getJsonObjectEntryNotNull(jsonObject, "maxFtp").toInt(),
+                getFtp(activityIds),
                 vo2max,
                 getJsonObjectEntryNotNull(jsonObject, "aerobicTrainingEffect"),
                 getJsonObjectEntryNotNull(jsonObject, "anaerobicTrainingEffect"),
@@ -229,6 +237,7 @@ class GarminPythonExecutor(
                 getJsonObjectEntryNotNull(jsonObject, "avgFlow"),
                 getJsonObjectEntryNotNull(jsonObject, "activityTrainingLoad")
             )
+
             return Summit(
                 date,
                 jsonObject["activityName"].asString,
@@ -265,6 +274,25 @@ class GarminPythonExecutor(
                 garminData = garminData,
                 trackBoundingBox = null
             )
+        }
+
+        private fun getFtp(activityIds: MutableList<String>): Int {
+            var ftp = 0
+            val exerciseSet =
+                File(activitiesDir, "activity_${activityIds[0]}_exercise_set.json")
+            if (exerciseSet.exists()) {
+                val gsonExerciseSet =
+                    JsonParser.parseString(exerciseSet.readText()) as JsonObject
+                if (gsonExerciseSet.has("summaryDTO")) {
+                    val summaryDTO =
+                        gsonExerciseSet.getAsJsonObject("summaryDTO")
+                    if (summaryDTO.has("functionalThresholdPower")) {
+                        ftp = summaryDTO.getAsJsonPrimitive("functionalThresholdPower").asDouble.toInt()
+                    }
+                }
+                Log.i("PythonExecutor", "FTP: ${ftp}")
+            }
+            return ftp
         }
 
 

@@ -100,8 +100,6 @@ class OpenStreetMapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.loadingPanel.visibility = View.VISIBLE
-        binding.osmap.visibility = View.GONE
         setTileSource(selectedItem, binding.osmap)
         val context: Context? = this@OpenStreetMapFragment.activity
         mLocationOverlay =
@@ -110,15 +108,25 @@ class OpenStreetMapFragment : Fragment() {
         binding.osmap.overlays.add(mLocationOverlay)
         addDefaultSettings(requireContext(), binding.osmap, requireActivity())
         viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
+            binding.loadingPanel.visibility = View.VISIBLE
+            binding.osmap.visibility = View.GONE
             itData.data?.let { summits ->
                 lifecycleScope.launch {
-                    val filteredSummits = withContext(Dispatchers.IO) {
-                        sortFilterValues.apply(summits, sharedPreferences)
-                            .filter { it.sportType != SportType.IndoorTrainer && it.lat != null && it.lat != 0.0 && it.lng != null && it.lng != 0.0 }
+                    var filteredSummits: List<Pair<Summit, GeoPoint>> = listOf()
+                    withContext(Dispatchers.IO) {
+                        val relevantSummits = sortFilterValues.apply(summits, sharedPreferences)
+                            .filter {
+                                it.sportType != SportType.IndoorTrainer
+                                        && it.lat != null
+                                        && it.lat != 0.0
+                                        && it.lng != null
+                                        && it.lng != 0.0
+                            }
+                        filteredSummits =
+                            relevantSummits.map { Pair(it, GeoPoint(it.lat!!, it.lng!!)) }
                     }
                     addAllMarkers(filteredSummits)
                     binding.osmap.visibility = View.VISIBLE
-                    binding.loadingPanel.visibility = View.GONE
                 }
             }
         }
@@ -226,48 +234,49 @@ class OpenStreetMapFragment : Fragment() {
         binding.osmap.zoomController.activate()
     }
 
-    private fun addAllMarkers(summits: List<Summit>) {
+    private fun addAllMarkers(summits: List<Pair<Summit, GeoPoint>>) {
         val context = requireContext()
-        binding.osmap.overlays?.clear()
+        var mReceive: MapEventsReceiver
         val markers = RadiusMarkerClusterer(context)
-        val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(
-            context,
-            org.osmdroid.bonuspack.R.drawable.marker_cluster
-        )
-        markers.setIcon(clusterIcon)
-        markers.setMaxClusteringZoomLevel(10)
-        binding.osmap.overlays.add(markers)
-        mGeoPoints = ArrayList()
-        mMarkers = ArrayList()
-        for (entry in summits) {
-            val latLng = entry.latLng
-            if (latLng != null) {
-                val point = GeoPoint(latLng.lat, latLng.lon)
-                mGeoPoints.add(point)
-                val marker = getMarker(binding.osmap, entry, point, context)
-                markers.add(marker)
-                mMarkers.add(marker)
-            }
-        }
-        val mReceive: MapEventsReceiver = object : MapEventsReceiver {
-            override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
-                return false
-            }
+        binding.osmap.overlays?.clear()
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(
+                    context,
+                    org.osmdroid.bonuspack.R.drawable.marker_cluster
+                )
+                markers.setIcon(clusterIcon)
+                markers.setMaxClusteringZoomLevel(10)
+                mGeoPoints = ArrayList()
+                mMarkers = ArrayList()
+                summits.forEach { pair ->
+                    mGeoPoints.add(pair.second)
+                    val marker = getMarker(binding.osmap, pair.first, pair.second, context)
+                    markers.add(marker)
+                    mMarkers.add(marker)
+                }
+                mReceive = object : MapEventsReceiver {
+                    override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+                        return false
+                    }
 
-            override fun longPressHelper(arg0: GeoPoint): Boolean {
-                Log.d("debug", "LongPressHelper")
-                mMarkers.forEach {
-                    if (it?.isInfoWindowShown == true) {
-                        it.infoWindow.close()
+                    override fun longPressHelper(arg0: GeoPoint): Boolean {
+                        mMarkers.forEach {
+                            if (it?.isInfoWindowShown == true) {
+                                it.infoWindow.close()
+                            }
+                        }
+                        return false
                     }
                 }
-                return false
-            }
-        }
 
-        val eventsOverlay = MapEventsOverlay(mReceive)
-        binding.osmap.overlays?.add(eventsOverlay)
-        binding.osmap.post { calculateBoundingBox(binding.osmap, mGeoPoints) }
+            }
+            val eventsOverlay = MapEventsOverlay(mReceive)
+            binding.osmap.overlays.add(markers)
+            binding.osmap.overlays?.add(eventsOverlay)
+            binding.osmap.post { calculateBoundingBox(binding.osmap, mGeoPoints) }
+            binding.loadingPanel.visibility = View.GONE
+        }
     }
 
     private fun getMarker(

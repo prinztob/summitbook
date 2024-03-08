@@ -78,6 +78,7 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.text.ParseException
 import java.text.SimpleDateFormat
+import java.time.LocalDateTime
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -185,6 +186,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             }
 
             btnSave.setOnClickListener {
+                binding.loadingPanel.visibility = View.VISIBLE
                 val sportType = SportType.values()[activities.selectedItemPosition]
                 parseSummit(sportType)
 
@@ -197,15 +199,26 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 if (isBookmark) {
                     entity.isBookmark = true
                 }
+
+                Log.i("Performance", "${LocalDateTime.now()} update")
                 viewModel.saveSummit(isEdit, entity).invokeOnCompletion {
+                    Log.i("Performance", "${LocalDateTime.now()} save done")
                     val garminDataLocal = entity.garminData
                     val gpsTrackPath = entity.getGpsTrackPath().toFile()
                     val temporaryGpxFileLocal = temporaryGpxFile
-                    if (garminDataLocal != null && temporaryGpxFileLocal != null && temporaryGpxFileLocal.exists() && gpsTrackPath != null) {
+                    if (
+                        garminDataLocal != null
+                        && temporaryGpxFileLocal != null
+                        && temporaryGpxFileLocal.exists()
+                        && gpsTrackPath != null
+                        && entity.sportType != SportType.IndoorTrainer
+                    ) {
                         temporaryGpxFileLocal.copyTo(gpsTrackPath, overwrite = true)
                     }
+                    binding.loadingPanel.visibility = View.GONE
+                    dismiss()
+                    Log.i("Performance", "${LocalDateTime.now()} dismiss")
                 }
-                dismiss()
             }
             addGpsTrack.setOnClickListener {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -891,7 +904,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     entry.garminData?.activityIds = ids
                 }
             } else {
-                val gson = pythonExecutor.getMultiSportData(activityId)
+                val gson = pythonExecutor.getExerciseSet(activityId)
                 val ids = gson.get("metadataDTO").asJsonObject.get("childIds").asJsonArray
                 entry.garminData?.activityIds?.addAll(ids.map { it.asString })
             }

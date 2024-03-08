@@ -144,18 +144,28 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/group_property" />
 
+            <Button
+                android:id="@+id/showMonthButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/monthly"
+                android:textSize="11sp"
+                app:layout_constraintEnd_toStartOf="@+id/textMonth"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/lineChartMonth" />
+
+
             <TextView
                 android:id="@+id/textMonth"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerInParent="true"
                 android:text="@string/monthly"
                 app:drawableEndCompat="@drawable/ic_chevron_right"
                 app:drawableStartCompat="@drawable/ic_chevron_left"
+                app:layout_constraintBottom_toBottomOf="@+id/showMonthButton"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/lineChartMonth" />
+                app:layout_constraintStart_toEndOf="@+id/showMonthButton"
+                app:layout_constraintTop_toTopOf="@+id/showMonthButton" />
 
 
             <de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
@@ -166,6 +176,16 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/textMonth" />
 
+            <Button
+                android:id="@+id/showYearButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/yearly"
+                android:textSize="11sp"
+                app:layout_constraintEnd_toStartOf="@+id/textYear"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/lineChartYear" />
+
             <TextView
                 android:id="@+id/textYear"
                 android:layout_width="wrap_content"
@@ -175,9 +195,11 @@
                 android:text="@string/yearly"
                 app:drawableEndCompat="@drawable/ic_chevron_right"
                 app:drawableStartCompat="@drawable/ic_chevron_left"
+                app:layout_constraintBottom_toBottomOf="@+id/showYearButton"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/lineChartYear" />
+                app:layout_constraintStart_toEndOf="@+id/showYearButton"
+                app:layout_constraintTop_toTopOf="@+id/showYearButton" />
+
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <FrameLayout

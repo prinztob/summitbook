@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
@@ -68,12 +67,13 @@ class SegmentsViewAdapter(var segments: List<Segment>) :
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         if (holder.binding is CardAddSegmentDetailsBinding) {
             holder.binding.addSegmentDetail.setOnClickListener {
-                (context as AppCompatActivity).supportFragmentManager.let {
-                    AddSegmentDetailsDialog.getInstance(
-                        null,
-                        this
-                    ).show(it, "Add Segment Details")
-                }
+                AddSegmentDetailsDialog.getInstance(
+                    null,
+                    this
+                ).show(
+                    (FragmentComponentManager.findActivity(context) as FragmentActivity).supportFragmentManager.beginTransaction(),
+                    "Add Segment Details"
+                )
             }
         } else {
             val entry = segments[position]

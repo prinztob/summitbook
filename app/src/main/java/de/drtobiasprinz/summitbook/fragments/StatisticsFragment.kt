@@ -573,7 +573,9 @@ class StatisticsFragment : Fragment() {
                 getString(R.string.value_only),
                 getValueOrNull(extremaValuesSummits?.vo2maxMinMax?.second) { e ->
                     e.garminData?.vo2max?.toDouble() ?: 0.0
-                })
+                },
+                1
+            )
         }
     }
 
