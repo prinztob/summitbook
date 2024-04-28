@@ -130,7 +130,7 @@ def get_activity_json_for_date(client, selected_date):
     try:
         activities = get_activities_by_date(client, selected_date, selected_date, None)
         for activity in activities:
-            update_vo2max(activity, client, selected_date)
+            activity["vo2MaxPreciseValue"] = get_precise_vo2max(client, selected_date)
         return json.dumps(activities)
     except (
             GarminConnectConnectionError,
@@ -192,22 +192,16 @@ def get_exercise_set(api, activity_id, folder):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client get multi sport data: %s" % err
+        return f"return code: 1Error occurred during Garmin Connect Client get multi sport data: {err}"
     except Exception as err:
-        return "return code: 1Unknown error occurred during Garmin Connect Client get multi sport data %s" % err
+        return f"return code: 1Unknown error occurred during Garmin Connect Client get multi sport data {err}"
 
 
 def get_split_data(api, activity_id, folder):
     try:
         return download_splits(api, activity_id, folder)
-    except (
-            GarminConnectConnectionError,
-            GarminConnectAuthenticationError,
-            GarminConnectTooManyRequestsError,
-    ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client get split data: %s" % err
     except Exception as err:
-        return "return code: 1Unknown error occurred during Garmin Connect Client get split data %s" % err
+        return f"return code: 1Unknown error occurred during Garmin Connect Client get split data {err}"
 
 
 def get_power_data(api, selected_date):
@@ -223,9 +217,9 @@ def get_power_data(api, selected_date):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client get power data: %s" % err
+        return f"return code: 1Error occurred during Garmin Connect Client get power data: {err}"
     except Exception as err:  # pylint: disable=broad-except
-        return "return code: 1Unknown error occurred during Garmin Connect Client get power data %s" % err
+        return f"return code: 1Unknown error occurred during Garmin Connect Client get power data {err}"
 
 
 def download_activities_by_date(api, folder, start_date, end_date=date.today()):
@@ -253,12 +247,11 @@ def download_activities_by_date(api, folder, start_date, end_date=date.today()):
                 activity["childIds"] = []
             start_time_local = activity["startTimeLocal"].split(" ")
             if start_time_local and len(start_time_local) == 2:
-                update_vo2max(activity, api, start_time_local[0])
+                activity["vo2MaxPreciseValue"] = get_precise_vo2max(api, start_time_local[0])
             output_file = f"{folder}/activity_{str(activity_id)}.json"
-            if not os.path.exists(output_file):
-                with open(output_file, "w+") as fb:
-                    json.dump(activity, fb)
-                    write_index += 1
+            with open(output_file, "w+") as fb:
+                json.dump(activity, fb)
+                write_index += 1
             download_splits(api, activity_id, folder)
             get_exercise_set(api, activity_id, folder)
         return "return code: 0\nDownloaded {} activities, wrote {} to file".format(len(activities),
@@ -268,18 +261,23 @@ def download_activities_by_date(api, folder, start_date, end_date=date.today()):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return "return code: 1Error occurred during Garmin Connect Client download activities by date: %s" % err
+        return f"return code: 1Error occurred during Garmin Connect Client download activities by date: {err}"
     except Exception as err:  # pylint: disable=broad-except
-        return "return code: 1Unknown error occurred during Garmin Connect Client download activities by date %s" % err
+        return f"return code: 1Unknown error occurred during Garmin Connect Client download activities by date {err}"
 
 
-def update_vo2max(activity, api, selected_date):
+def get_precise_vo2max(api, selected_date):
     data = api.get_max_metrics(selected_date)
     if len(data) > 0:
         if data[0]["generic"] and "vo2MaxPreciseValue" in data[0]["generic"]:
-            activity["vo2MaxPreciseValue"] = data[0]["generic"]['vo2MaxPreciseValue']
+            vo2MaxPreciseValue = data[0]["generic"]['vo2MaxPreciseValue']
+            print(f"Found vo2MaxPreciseValue {vo2MaxPreciseValue}.")
+            return vo2MaxPreciseValue
         elif data[0]["cycling"] and "vo2MaxPreciseValue" in data[0]["cycling"]:
-            activity["vo2MaxPreciseValue"] = data[0]["cycling"]['vo2MaxPreciseValue']
+            vo2MaxPreciseValue = data[0]["cycling"]['vo2MaxPreciseValue']
+            print(f"Found vo2MaxPreciseValue {vo2MaxPreciseValue}.")
+            return vo2MaxPreciseValue
+    return -1.0
 
 
 def download_splits(api, activity_id, folder):
@@ -319,7 +317,7 @@ def analyze_gpx_track(path):
         analyzer.write_file()
         return "return code: 0"
     except Exception as err:  # pylint: disable=broad-except
-        return "return code: 1Unknown error occurred %s" % err
+        return f"return code: 1Unknown error occurred {err}"
 
 
 def get_device_id(api):

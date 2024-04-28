@@ -54,7 +54,7 @@ class TrackAnalyzer(object):
         print(f"Took {self.duration}")
 
     def get_maximal_values(self):
-        self.slope_100 = max(self.slopes)
+        self.slope_100 = max(self.slopes) if len(self.slopes) > 0 else 0
         self.vertical_velocities_60s = max(self.vertical_velocities["60"]) if len(
             self.vertical_velocities["60"]) > 0 else 0
         self.vertical_velocities_600s = max(self.vertical_velocities["600"]) if len(

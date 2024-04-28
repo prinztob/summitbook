@@ -101,7 +101,8 @@ enum class TextField(
         { b -> b.duration },
         "h",
         { e -> e.duration },
-        { e -> e?.durationMinMax }
+        { e -> e?.durationMinMax },
+        toHHms=true
     ),
 
     TopSpeedOneKm(TextFieldGroup.AdditionalSpeedData,

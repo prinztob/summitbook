@@ -118,6 +118,14 @@ class GarminPythonExecutor(
         return JsonParser.parseString(result.toString()) as JsonObject
     }
 
+    fun getPreciseVo2Max(dateAsString: String): Float {
+        if (client == null) {
+            login()
+        }
+        val result = pythonModule?.callAttr("get_precise_vo2max", client, dateAsString)
+        return result?.toFloat() ?: 0f
+    }
+
     private fun checkOutput(result: PyObject?) {
         if (result == null || result.toString() == "") {
             throw RuntimeException("Execution failed")
