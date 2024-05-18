@@ -1,6 +1,7 @@
 import datetime
 import json
 import math
+import re
 
 import geopy.distance
 import gpxpy.gpx
@@ -15,6 +16,9 @@ class TrackAnalyzer(object):
 
     def __init__(self, file, update_track_with_calculated_values=False):
         self.file = file
+        search_result = re.search(r'<\?xml(.|\n)*?(\<\/gpx\>)', open(file, 'r').read())
+        if search_result:
+            self.gpx_file = search_result.group(0)
         self.data = {}
         self.all_points = []
         self.points_with_time = []
@@ -46,7 +50,7 @@ class TrackAnalyzer(object):
     def analyze(self):
         start_time = datetime.datetime.now()
         self.set_all_points_with_distance()
-        self.set_vertical_velocity(60, update_points=True)
+        self.set_vertical_velocity(60, True)
         self.set_vertical_velocity(600)
         self.set_vertical_velocity(3600)
         self.set_slope(100)
@@ -64,8 +68,8 @@ class TrackAnalyzer(object):
 
     def set_all_points_with_distance(self):
         print(f"Read and add distance to track file {self.file}")
-        with open(self.file, 'r') as gpx_file:
-            self.gpx = gpxpy.parse(gpx_file)
+        if self.gpx_file:
+            self.gpx = gpxpy.parse(self.gpx_file)
             distance = 0.0
             for track in self.gpx.tracks:
                 for segment in track.segments:
@@ -121,8 +125,8 @@ class TrackAnalyzer(object):
             else:
                 slope = 0
             self.set_tag_in_extensions(slope * 100, self.all_points[i], "slope")
-            if not self.all_points[i].distance is None and self.all_points[i].distance >= 0.0 and self.all_points[
-                i].elevation:
+            if (not self.all_points[i].distance is None and self.all_points[i].distance >= 0.0
+                    and self.all_points[i].elevation):
                 track_points_for_interval.append(self.all_points[i])
                 sum_meters = track_points_for_interval[-1].distance - track_points_for_interval[0].distance
                 if sum_meters > max_meter_interval / 2 and not middle_entry:
@@ -170,18 +174,18 @@ class TrackAnalyzer(object):
         uphill_downhill = self.gpx.get_uphill_downhill()
         self.data = {
             "duration": self.gpx.get_duration(),
-            "min_elevation": round(extremes.minimum, 1),
-            "max_elevation": round(extremes.maximum, 1),
+            "min_elevation": round(extremes.minimum, 1) if extremes else 0,
+            "max_elevation": round(extremes.maximum, 1) if extremes else 0,
             "number_points": self.gpx.get_points_no(),
-            "elevation_gain": round(uphill_downhill.uphill, 1),
-            "elevation_loss": round(uphill_downhill.downhill, 1),
+            "elevation_gain": round(uphill_downhill.uphill, 1) if uphill_downhill else 0,
+            "elevation_loss": round(uphill_downhill.downhill, 1) if uphill_downhill else 0,
             "moving_time": moving_data.moving_time,
-            "moving_distance": round(moving_data.moving_distance, 2),
-            "max_speed": round(moving_data.max_speed, 2),
-            "slope_100": round(self.slope_100, 3),
-            "vertical_velocities_60s": round(self.vertical_velocities_60s, 3),
-            "vertical_velocities_600s": round(self.vertical_velocities_600s, 3),
-            "vertical_velocities_3600s": round(self.vertical_velocities_3600s, 3)
+            "moving_distance": round(moving_data.moving_distance, 2) if moving_data else 0,
+            "max_speed": round(moving_data.max_speed, 2) if moving_data else 0,
+            "slope_100": round(self.slope_100, 3) if self.slope_100 else 0,
+            "vertical_velocities_60s": round(self.vertical_velocities_60s, 3) if self.vertical_velocities_60s else 0,
+            "vertical_velocities_600s": round(self.vertical_velocities_600s, 3) if self.vertical_velocities_60s else 0,
+            "vertical_velocities_3600s": round(self.vertical_velocities_3600s, 3) if self.vertical_velocities_60s else 0
         }
 
 
@@ -207,8 +211,8 @@ def reduce_track_to_relevant_elevation_points(points):
         if j == 0 or j == len(points_with_doubles) - 1:
             reduced_points.append(point)
         elif current_elevation != last_elevation and current_elevation != next_elevation:
-            if math.copysign(1, current_elevation - last_elevation) != math.copysign(1,
-                                                                                     next_elevation - current_elevation):
+            if (math.copysign(1, current_elevation - last_elevation) !=
+                    math.copysign(1, next_elevation - current_elevation)):
                 reduced_points.append(point)
         j += 1
     return reduced_points

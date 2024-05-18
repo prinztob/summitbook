@@ -33,8 +33,8 @@ android {
                 install "garminconnect==0.2.8"
                 install "requests==2.31.0"
                 install "cloudscraper==1.2.71"
-                install "gpxpy==1.5.0"
-                install "geopy==2.3.0"
+                install "gpxpy==1.6.2"
+                install "geopy==2.4.1"
                 install "lxml==4.6.3"
 
             }
