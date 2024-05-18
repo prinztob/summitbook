@@ -28,6 +28,16 @@ class Converters {
     }
 
     @TypeConverter
+    fun fromStringMutableList(list: MutableList<String>?): String? {
+        return list?.joinToString(",")
+    }
+
+    @TypeConverter
+    fun stringToStringMutableList(listAsString: String?): MutableList<String>? {
+        return listAsString?.split(",") as MutableList<String>?
+    }
+
+    @TypeConverter
     fun fromIntArrayList(list: MutableList<Int>?): String? {
         return list?.joinToString(",")
     }

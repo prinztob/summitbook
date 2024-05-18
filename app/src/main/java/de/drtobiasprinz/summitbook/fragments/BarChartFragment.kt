@@ -107,21 +107,18 @@ class BarChartFragment : Fragment() {
         when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
             Configuration.UI_MODE_NIGHT_YES -> {
                 binding.barChart.xAxis.textColor = Color.BLACK
-                binding.barChart.axisRight.textColor = Color.WHITE
                 binding.barChart.axisLeft.textColor = Color.WHITE
                 binding.barChart.legend?.textColor = Color.WHITE
             }
 
             Configuration.UI_MODE_NIGHT_NO -> {
                 binding.barChart.xAxis.textColor = Color.BLACK
-                binding.barChart.axisRight.textColor = Color.BLACK
                 binding.barChart.axisLeft.textColor = Color.BLACK
                 binding.barChart.legend?.textColor = Color.BLACK
             }
 
             Configuration.UI_MODE_NIGHT_UNDEFINED -> {
                 binding.barChart.xAxis.textColor = Color.BLACK
-                binding.barChart.axisRight.textColor = Color.WHITE
                 binding.barChart.axisLeft.textColor = Color.WHITE
                 binding.barChart.legend?.textColor = Color.WHITE
             }
@@ -139,10 +136,8 @@ class BarChartFragment : Fragment() {
         }
 
         setXAxis()
-        val yAxisLeft = binding.barChart.axisLeft
-        setYAxis(yAxisLeft)
-        val yAxisRight = binding.barChart.axisRight
-        setYAxis(yAxisRight)
+        setYAxis(binding.barChart.axisLeft)
+        binding.barChart.axisRight.isEnabled = false
         binding.barChart.data = combinedData
         binding.barChart.setTouchEnabled(true)
         binding.barChart.marker =
@@ -246,9 +241,9 @@ class BarChartFragment : Fragment() {
         dataSet.setDrawValues(false)
         dataSet.highLightColor = Color.RED
         dataSet.colors =
-            SportType.values().map { ContextCompat.getColor(requireContext(), it.color) }
+            SportType.entries.map { ContextCompat.getColor(requireContext(), it.color) }
         dataSet.stackLabels =
-            SportType.values().map { getString(it.sportNameStringId) }.toTypedArray()
+            SportType.entries.map { getString(it.sportNameStringId) }.toTypedArray()
     }
 
     private fun setGraphViewLineChart(dataSet: LineDataSet) {
@@ -372,7 +367,7 @@ class BarChartFragment : Fragment() {
 
     private fun getValueForEntry(entriesSupplier: Supplier<Stream<Summit?>?>): FloatArray {
         val list: MutableList<Float> = mutableListOf()
-        SportType.values().forEach { sportType ->
+        SportType.entries.forEach { sportType ->
             list.add(
                 selectedYAxisSpinnerEntry.f(
                     entriesSupplier.get()?.filter { it?.sportType == sportType },
@@ -392,7 +387,7 @@ class BarChartFragment : Fragment() {
                 i: Int,
                 l: Long
             ) {
-                selectedYAxisSpinnerEntry = BarChartYAxisSelector.values()[i]
+                selectedYAxisSpinnerEntry = BarChartYAxisSelector.entries.toTypedArray()[i]
                 selectedDataSpinner(summits)
                 drawChart()
             }
@@ -406,7 +401,7 @@ class BarChartFragment : Fragment() {
                 i: Int,
                 l: Long
             ) {
-                selectedXAxisSpinnerEntry = BarChartXAxisSelector.values()[i]
+                selectedXAxisSpinnerEntry = BarChartXAxisSelector.entries.toTypedArray()[i]
                 if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByYear) {
                     binding.barChartSpinnerMonth.visibility = View.VISIBLE
                     binding.calender.visibility = View.VISIBLE
@@ -440,14 +435,14 @@ class BarChartFragment : Fragment() {
         val dateAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            BarChartYAxisSelector.values().map { resources.getString(it.nameId) }.toTypedArray()
+            BarChartYAxisSelector.entries.map { resources.getString(it.nameId) }.toTypedArray()
         )
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.barChartSpinnerData.adapter = dateAdapter
         val xAxisAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            BarChartXAxisSelector.values().map { resources.getString(it.nameId) }.toTypedArray()
+            BarChartXAxisSelector.entries.map { resources.getString(it.nameId) }.toTypedArray()
         )
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.barChartSpinnerXAxis.adapter = xAxisAdapter
@@ -528,7 +523,7 @@ class BarChartFragment : Fragment() {
                             e.getY().toInt(),
                             unitString,
                             value,
-                            getString(SportType.values()[highlight.stackIndex].sportNameStringId)
+                            getString(SportType.entries[highlight.stackIndex].sportNameStringId)
                         )
                     }
                 }

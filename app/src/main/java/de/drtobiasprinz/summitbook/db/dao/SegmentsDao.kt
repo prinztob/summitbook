@@ -18,19 +18,19 @@ interface SegmentsDao {
     fun getAllSegments(): Flow<MutableList<Segment>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun addSegmentDetails(segmentDetails: SegmentDetails?): Long
+    suspend fun addSegmentDetails(segmentDetails: SegmentDetails): Long
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun addSegmentEntry(segmentEntry: SegmentEntry?): Long
+    suspend fun addSegmentEntry(segmentEntry: SegmentEntry): Long
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun updateSegmentDetails(segmentDetails: SegmentDetails?)
+    suspend fun updateSegmentDetails(segmentDetails: SegmentDetails)
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun updateSegmentEntry(segmentEntry: SegmentEntry?)
+    suspend fun updateSegmentEntry(segmentEntry: SegmentEntry)
 
     @Delete
-    fun deleteSegmentDetails(segmentDetails: SegmentDetails?)
+    fun deleteSegmentDetails(segmentDetails: SegmentDetails)
     @Delete
-    suspend fun deleteSegmentEntry(segmentEntry: SegmentEntry?)
+    suspend fun deleteSegmentEntry(segmentEntry: SegmentEntry)
 
     suspend fun deleteSegment(segment: Segment) {
         for (entry in segment.segmentEntries) {

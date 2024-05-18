@@ -33,7 +33,7 @@ interface SummitsDao {
     fun searchSummit(name: String): Flow<MutableList<Summit>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun addSummit(summit: Summit?): Long
+    fun addSummit(summit: Summit): Long
 
     @get:Query("select * from $SUMMITS_TABLE where isBookmark = 0")
     val allSummit: List<Summit>?

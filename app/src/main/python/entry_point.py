@@ -277,7 +277,7 @@ def get_precise_vo2max(api, selected_date):
             vo2MaxPreciseValue = data[0]["cycling"]['vo2MaxPreciseValue']
             print(f"Found vo2MaxPreciseValue {vo2MaxPreciseValue}.")
             return vo2MaxPreciseValue
-    return -1.0
+    return 0.0
 
 
 def download_splits(api, activity_id, folder):

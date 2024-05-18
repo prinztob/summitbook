@@ -12,11 +12,11 @@ interface DailyReportDataDao {
     fun getAllDailyReportData(): Flow<MutableList<DailyReportData>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun add(dailyReportData: DailyReportData?): Long
+    suspend fun add(dailyReportData: DailyReportData): Long
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(dailyReportData: DailyReportData?)
+    suspend fun update(dailyReportData: DailyReportData)
 
     @Delete
-    suspend fun delete(dailyReportData: DailyReportData?)
+    suspend fun delete(dailyReportData: DailyReportData)
 }

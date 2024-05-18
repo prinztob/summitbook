@@ -318,7 +318,7 @@ class SummitEntryDataFragment : Fragment() {
                     ?: 0.0) * 3600000.0).toLong()
                 if (valueInMsCompareSummit > 0) {
                     textField.valueTextView(binding).text = String.format(
-                        "%02d:%02d (%02d:%02dk)", TimeUnit.MILLISECONDS.toHours(valueInMs),
+                        "%02d:%02d (%02d:%02d)", TimeUnit.MILLISECONDS.toHours(valueInMs),
                         TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
                         TimeUnit.MILLISECONDS.toHours(valueInMsCompareSummit),
                         TimeUnit.MILLISECONDS.toMinutes(valueInMsCompareSummit) % TimeUnit.HOURS.toMinutes(
