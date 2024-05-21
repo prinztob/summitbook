@@ -104,7 +104,7 @@ class GarminPythonExecutor(
         if (client == null) {
             login()
         }
-        val result = pythonModule?.callAttr("get_exercise_set", client, activityId)
+        val result = pythonModule?.callAttr("get_exercise_set", client, activityId, activitiesDir?.absolutePath)
         checkOutput(result)
         return JsonParser.parseString(result.toString()) as JsonObject
     }

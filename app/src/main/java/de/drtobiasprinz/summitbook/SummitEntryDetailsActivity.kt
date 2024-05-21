@@ -71,6 +71,7 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
         val useSimplifiedTracks =
             MainActivity.sharedPreferences.getBoolean("use_simplified_tracks", true)
         if (
+            !summit.ignoreSimplifyingTrack &&
             useSimplifiedTracks &&
             summit.hasGpsTrack() &&
             !summit.hasGpsTrack(simplified = true) &&
@@ -93,7 +94,6 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
                             "AsyncSimplifyGpsTracks",
                             "Error in simplify track for ${summit.getDateAsString()}_${summit.name}: ${ex.message}"
                         )
-                        MainActivity.entriesToExcludeForSimplifyGpxTrack.add(summit)
                     }
                 }
             }
@@ -142,7 +142,7 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
         ): List<Summit> {
             itData.data.let { summits ->
                 val sportGroup =
-                    SportGroup.values()
+                    SportGroup.entries
                         .filter { summitEntry.sportType in it.sportTypes }
                 return if (sportGroup.size == 1) {
                     summits?.filter {

@@ -481,10 +481,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun updateSimplifiedTracks(summits: List<Summit>) {
         val useSimplifiedTracks = sharedPreferences.getBoolean("use_simplified_tracks", true)
         if (useSimplifiedTracks) {
+            summits.forEach {
+                if (it.ignoreSimplifyingTrack) {
+                    Log.w(
+                        "updateSimplifiedTracks",
+                        "Track ${it.getDateAsString()} ${it.name} (${it.getGpsTrackPath()}) " +
+                                "will not be simplified, because it failed before"
+                    )
+                }
+            }
             val entriesWithoutSimplifiedGpxTrack = summits.filter {
-                it !in entriesToExcludeForSimplifyGpxTrack && it.hasGpsTrack() && !it.hasGpsTrack(
-                    simplified = true
-                ) && it.sportType != SportType.IndoorTrainer
+                !it.ignoreSimplifyingTrack &&
+                        it.hasGpsTrack() &&
+                        !it.hasGpsTrack(simplified = true) &&
+                        it.sportType != SportType.IndoorTrainer
             }.sortedByDescending { it.date }
             if (entriesWithoutSimplifiedGpxTrack.isEmpty()) {
                 Log.i(
@@ -570,7 +580,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                 "AsyncSimplifyGpsTracks",
                                 "Error in simplify track for ${e.getDateAsString()}_${e.name}: ${ex.message}"
                             )
-                            entriesToExcludeForSimplifyGpxTrack.add(e)
+                            e.ignoreSimplifyingTrack = true
+                            viewModel.saveSummit(true, e)
                         }
                     }
                 } else {
@@ -825,7 +836,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var CSV_FILE_NAME_FORECASTS: String = "de-prinz-summitbook-export-forecasts.csv"
 
         var entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
-        var entriesToExcludeForSimplifyGpxTrack: MutableList<Summit> = mutableListOf()
         var storage: File? = null
         var cache: File? = null
         var activitiesDir: File? = null
@@ -984,7 +994,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private val resultLauncherForImportZip =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                result?.data?.data.also { uri ->
+                result.data?.data.also { uri ->
                     if (uri != null) {
                         asyncImportZipFile(uri)
                     }

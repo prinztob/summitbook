@@ -46,6 +46,7 @@ class Summit(
     var activityId: Long = System.currentTimeMillis(),
     @ColumnInfo(defaultValue = "false") var isBookmark: Boolean = false,
     @ColumnInfo(defaultValue = "false") var hasTrack: Boolean = false,
+    @ColumnInfo(defaultValue = "false") var ignoreSimplifyingTrack: Boolean = false,
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0
