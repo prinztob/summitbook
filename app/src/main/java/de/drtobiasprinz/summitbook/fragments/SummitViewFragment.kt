@@ -11,7 +11,6 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -24,15 +23,11 @@ import de.drtobiasprinz.summitbook.databinding.FragmentSummitViewBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
-import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.isVisible
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import javax.inject.Inject
 
@@ -120,58 +115,30 @@ class SummitViewFragment : Fragment() {
                     }
                 }
             } else {
-                viewModel?.segmentsList?.observe(viewLifecycleOwner) { segmentsStatus ->
-                    viewModel?.summitsList?.observe(viewLifecycleOwner) { summitsStatus ->
-                        Log.i("Performance", "${LocalDateTime.now()} observe")
-                        when (summitsStatus.status) {
-                            DataStatus.Status.LOADING -> {
-                                loading.isVisible(true, recyclerView)
-                                emptyBody.isVisible(false, recyclerView)
-                            }
+                viewModel?.summitsList?.observe(viewLifecycleOwner) { summitsStatus ->
+                    Log.i("Performance", "${LocalDateTime.now()} observe")
+                    when (summitsStatus.status) {
+                        DataStatus.Status.LOADING -> {
+                            loading.isVisible(true, recyclerView)
+                            emptyBody.isVisible(false, recyclerView)
+                        }
 
-                            DataStatus.Status.SUCCESS -> {
-                                summitsStatus.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
-                                loading.isVisible(false, recyclerView)
-                                val data = sortFilterValues.apply(
-                                    summitsStatus.data ?: emptyList(),
-                                    sharedPreferences
-                                )
-                                lifecycleScope.launch {
-                                    withContext(Dispatchers.IO) {
-                                        segmentsStatus.data.let { segments ->
-                                            if (!segments.isNullOrEmpty()) {
-                                                data.forEach { summit ->
-                                                    summit.updateSegmentInfo(segments)
-                                                }
-                                            }
-                                        }
-                                        val maxSummits = TimeIntervalPower.values().map {
-                                            it.getMaxSummit(
-                                                ExtremaValuesSummits(
-                                                    data,
-                                                    excludeZeroValueFromMin = true
-                                                )
-                                            )
-                                        }
-                                        data.forEach { summits ->
-                                            summits.hasPowerRecord = summits in maxSummits
-                                            if (summits.segmentInfo.isNotEmpty()) {
-                                                summits.bestPositionInSegment =
-                                                    summits.segmentInfo.minOf { it.third }
-                                            }
-                                        }
-                                    }
-                                }
-                                Log.i("Performance", "${LocalDateTime.now()} done")
-                                Log.i("Performance", "--------------------------")
-                                summitsAdapter.differ.submitList(data)
-                            }
+                        DataStatus.Status.SUCCESS -> {
+                            summitsStatus.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
+                            loading.isVisible(false, recyclerView)
+                            val data = sortFilterValues.apply(
+                                summitsStatus.data ?: emptyList(),
+                                sharedPreferences
+                            )
+                            Log.i("Performance", "${LocalDateTime.now()} done")
+                            Log.i("Performance", "--------------------------")
+                            summitsAdapter.differ.submitList(data)
+                        }
 
-                            DataStatus.Status.ERROR -> {
-                                loading.isVisible(false, recyclerView)
-                                Toast.makeText(context, summitsStatus.message, Toast.LENGTH_SHORT)
-                                    .show()
-                            }
+                        DataStatus.Status.ERROR -> {
+                            loading.isVisible(false, recyclerView)
+                            Toast.makeText(context, summitsStatus.message, Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
                 }

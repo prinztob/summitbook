@@ -176,6 +176,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                             lifecycleScope.launch {
                                                 withContext(Dispatchers.IO) {
                                                     updater.update()
+                                                    if (summits != null) {
+                                                        updateTracksAndBoundingBox(summits)
+                                                    }
                                                 }
                                                 updater.onFinish(
                                                     binding.loading, this@MainActivity
@@ -223,78 +226,84 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             viewModel.summitsList.observe(this@MainActivity) { itData ->
                 itData.data?.let { summits ->
-                    updateTracksAndBoundingBox(summits)
                     setOverviewText(
                         sortFilterValues.apply(summits, sharedPreferences)
                     )
                     viewModel.forecastList.observe(this@MainActivity) { itDataForeCasts ->
                         itDataForeCasts.data?.let { forecasts ->
-                            performanceGraphProvider = PerformanceGraphProvider(summits, forecasts)
-                            drawPerformanceGraph(selectedGraphType)
-                            var showMonths = true
-                            var showYears = true
-                            binding.showMonthButton.setOnClickListener {
-                                showMonths = !showMonths
-                                updateLayoutOfCharts(showMonths, showYears)
-                            }
-                            binding.showYearButton.setOnClickListener {
-                                showYears = !showYears
-                                updateLayoutOfCharts(showMonths, showYears)
-                            }
-                            binding.overviewLayout.setOnClickListener {
-                                if (!graphIsVisible) {
-                                    when (resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
-                                        Configuration.UI_MODE_NIGHT_YES -> binding.dopDown.setImageResource(
-                                            R.drawable.baseline_arrow_drop_up_white_24dp
-                                        )
-
-                                        Configuration.UI_MODE_NIGHT_NO -> binding.dopDown.setImageResource(
-                                            R.drawable.baseline_arrow_drop_up_black_24dp
-                                        )
-
-                                        else -> binding.dopDown.setImageResource(R.drawable.baseline_arrow_drop_up_white_24dp)
-                                    }
-                                    binding.chartLayout.visibility = View.VISIBLE
-                                    binding.groupProperty.addOnButtonCheckedListener { _, checkedId, isChecked ->
-                                        binding.lineChartMonth.clear()
-                                        binding.lineChartYear.clear()
-                                        if (isChecked) {
-                                            selectedGraphType = when (checkedId) {
-                                                binding.buttonKilometers.id -> {
-                                                    GraphType.Kilometer
-                                                }
-
-                                                binding.buttonActivity.id -> {
-                                                    GraphType.Count
-                                                }
-
-                                                binding.buttonVo2max.id -> {
-                                                    GraphType.Vo2Max
-                                                }
-
-                                                binding.buttonPower.id -> {
-                                                    GraphType.Power
-                                                }
-
-                                                else -> {
-                                                    GraphType.ElevationGain
-                                                }
-                                            }
-                                            drawPerformanceGraph(
-                                                selectedGraphType
-                                            )
-                                        }
-                                    }
-                                } else {
-                                    binding.chartLayout.visibility = View.GONE
-                                    setDropDown()
-                                }
-                                graphIsVisible = !graphIsVisible
-                            }
+                            setOverviewChart(summits, forecasts)
                         }
                     }
                 }
             }
+        }
+    }
+
+    private fun setOverviewChart(
+        summits: List<Summit>,
+        forecasts: List<Forecast>
+    ) {
+        performanceGraphProvider = PerformanceGraphProvider(summits, forecasts)
+        drawPerformanceGraph(selectedGraphType)
+        var showMonths = true
+        var showYears = true
+        binding.showMonthButton.setOnClickListener {
+            showMonths = !showMonths
+            updateLayoutOfCharts(showMonths, showYears)
+        }
+        binding.showYearButton.setOnClickListener {
+            showYears = !showYears
+            updateLayoutOfCharts(showMonths, showYears)
+        }
+        binding.overviewLayout.setOnClickListener {
+            if (!graphIsVisible) {
+                when (resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+                    Configuration.UI_MODE_NIGHT_YES -> binding.dopDown.setImageResource(
+                        R.drawable.baseline_arrow_drop_up_white_24dp
+                    )
+
+                    Configuration.UI_MODE_NIGHT_NO -> binding.dopDown.setImageResource(
+                        R.drawable.baseline_arrow_drop_up_black_24dp
+                    )
+
+                    else -> binding.dopDown.setImageResource(R.drawable.baseline_arrow_drop_up_white_24dp)
+                }
+                binding.chartLayout.visibility = View.VISIBLE
+                binding.groupProperty.addOnButtonCheckedListener { _, checkedId, isChecked ->
+                    binding.lineChartMonth.clear()
+                    binding.lineChartYear.clear()
+                    if (isChecked) {
+                        selectedGraphType = when (checkedId) {
+                            binding.buttonKilometers.id -> {
+                                GraphType.Kilometer
+                            }
+
+                            binding.buttonActivity.id -> {
+                                GraphType.Count
+                            }
+
+                            binding.buttonVo2max.id -> {
+                                GraphType.Vo2Max
+                            }
+
+                            binding.buttonPower.id -> {
+                                GraphType.Power
+                            }
+
+                            else -> {
+                                GraphType.ElevationGain
+                            }
+                        }
+                        drawPerformanceGraph(
+                            selectedGraphType
+                        )
+                    }
+                }
+            } else {
+                binding.chartLayout.visibility = View.GONE
+                setDropDown()
+            }
+            graphIsVisible = !graphIsVisible
         }
     }
 
@@ -308,7 +317,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             binding.lineChartMonth.visibility = View.GONE
             binding.lineChartYear.visibility = View.VISIBLE
             setHeight(0.44, binding.lineChartYear)
-        } else if (showMonths && !showYears) {
+        } else if (showMonths) {
             binding.lineChartMonth.visibility = View.VISIBLE
             binding.lineChartYear.visibility = View.GONE
             setHeight(0.44, binding.lineChartMonth)

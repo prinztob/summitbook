@@ -45,7 +45,6 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.DialogAddSummitBinding
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.db.entities.GarminData
-import de.drtobiasprinz.summitbook.db.entities.PowerData
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.CONNECTED_ACTIVITY_PREFIX
@@ -187,12 +186,13 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
 
             btnSave.setOnClickListener {
                 binding.loadingPanel.visibility = View.VISIBLE
-                val sportType = SportType.values()[activities.selectedItemPosition]
+                val sportType = SportType.entries[activities.selectedItemPosition]
                 parseSummit(sportType)
 
                 val latlngHighestPointLocal = latlngHighestPoint
                 if (entity.latLng == null && latlngHighestPointLocal != null &&
-                    latlngHighestPointLocal.lat != 0.0 && latlngHighestPointLocal.lon != 0.0) {
+                    latlngHighestPointLocal.lat != 0.0 && latlngHighestPointLocal.lon != 0.0
+                ) {
                     entity.latLng = latlngHighestPointLocal
                 }
                 entity.hasTrack = true
@@ -364,7 +364,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         activities.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            SportType.values().map { resources.getString(it.sportNameStringId) }
+            SportType.entries.map { resources.getString(it.sportNameStringId) }
                 .toTypedArray()
         )
         setImageColor()
@@ -427,7 +427,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             mDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled =
                 listItemsGpsDownloadSuccessful?.contains(false) == false
             if (isChecked) {
-                downloadGpxForSummit(pythonExecutor, entry, which, useTcx, powerData)
+                downloadGpxForSummit(entry, which, useTcx, powerData)
             }
         }.setPositiveButton(R.string.saveButtonText) { _: DialogInterface?, _: Int ->
             val selectedEntries: MutableList<Summit> = mutableListOf()
@@ -477,28 +477,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         mDialog?.show()
     }
 
-    private fun updatePower(powerData: JsonObject, power: PowerData) {
-        powerData["entries"].asJsonArray.forEach {
-            val element = it.asJsonObject
-            when (element["duration"].asString) {
-                "1" -> power.oneSec = getJsonObjectEntryNotNone(element).toInt()
-                "2" -> power.twoSec = getJsonObjectEntryNotNone(element).toInt()
-                "5" -> power.fiveSec = getJsonObjectEntryNotNone(element).toInt()
-                "10" -> power.tenSec = getJsonObjectEntryNotNone(element).toInt()
-                "20" -> power.twentySec = getJsonObjectEntryNotNone(element).toInt()
-                "30" -> power.thirtySec = getJsonObjectEntryNotNone(element).toInt()
-                "60" -> power.oneMin = getJsonObjectEntryNotNone(element).toInt()
-                "120" -> power.twoMin = getJsonObjectEntryNotNone(element).toInt()
-                "300" -> power.fiveMin = getJsonObjectEntryNotNone(element).toInt()
-                "600" -> power.tenMin = getJsonObjectEntryNotNone(element).toInt()
-                "1200" -> power.twentyMin = getJsonObjectEntryNotNone(element).toInt()
-                "1800" -> power.thirtyMin = getJsonObjectEntryNotNone(element).toInt()
-                "3600" -> power.oneHour = getJsonObjectEntryNotNone(element).toInt()
-                "7200" -> power.twoHours = getJsonObjectEntryNotNone(element).toInt()
-                "18000" -> power.fiveHours = getJsonObjectEntryNotNone(element).toInt()
-            }
-        }
-    }
 
     private fun addParticipants(view: View) {
         CustomAutoCompleteChips(view).addChips(
@@ -648,7 +626,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
 
     private fun updateDialogFields(updateSpinner: Boolean) {
         if (updateSpinner) {
-            binding.activities.setSelection(SportType.values().indexOf(entity.sportType))
+            binding.activities.setSelection(SportType.entries.indexOf(entity.sportType))
         }
         entity.getDateAsString()?.let { setTextIfNotAlreadySet(binding.tourDate, it) }
         setTextIfNotAlreadySet(binding.summitName, entity.name)
@@ -714,7 +692,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     private var resultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { resultData ->
             if (resultData.resultCode == Activity.RESULT_OK) {
-                resultData?.data?.data.also { uri ->
+                resultData.data?.data.also { uri ->
                     addAndAnalyzeTrack(uri)
                 }
             }
@@ -847,26 +825,19 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
     private fun downloadGpxForSummit(
-        pythonExecutor: GarminPythonExecutor,
         entry: Summit,
         index: Int,
         useTcx: Boolean,
         powerData: JsonObject? = null
     ) {
         try {
-            if (entry.sportType == SportType.BikeAndHike) {
-                val power = entry.garminData?.power
-                if (powerData != null && power != null) {
-                    updatePower(powerData, power)
-                }
-                updateMultiSpotActivityIds(pythonExecutor, entry)
-            }
             val downloader = GarminTrackAndDataDownloader(
                 listOf(entry),
-                MainActivity.pythonExecutor, useTcx
+                pythonExecutor, useTcx
             )
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
+                    downloader.setAdditionalActivityIds(entry, powerData)
                     downloader.downloadTracks()
                     val activityId = downloader.finalEntry?.garminData?.activityId
                     if (activityId != null) {
@@ -892,24 +863,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         }
     }
 
-    private fun updateMultiSpotActivityIds(pythonExecutor: GarminPythonExecutor, entry: Summit) {
-        val activityId = entry.garminData?.activityId
-        if (activityId != null) {
-            val activityJsonFile = File(activitiesDir, "activity_${activityId}.json")
-            if (activityJsonFile.exists()) {
-                val gson = JsonParser.parseString(activityJsonFile.readText()) as JsonObject
-                val parsedEntry = GarminPythonExecutor.parseJsonObject(gson)
-                val ids = parsedEntry.garminData?.activityIds
-                if (ids != null) {
-                    entry.garminData?.activityIds = ids
-                }
-            } else {
-                val gson = pythonExecutor.getExerciseSet(activityId)
-                val ids = gson.get("metadataDTO").asJsonObject.get("childIds").asJsonArray
-                entry.garminData?.activityIds?.addAll(ids.map { it.asString })
-            }
-        }
-    }
 
     private fun getTempGpsFilePath(date: Date): Path {
         val tag = SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(date)
@@ -1042,7 +995,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             }
         }
 
-        private fun getJsonObjectEntryNotNone(jsonObject: JsonObject): Float {
+        fun getJsonObjectEntryNotNone(jsonObject: JsonObject): Float {
             return if (jsonObject["power"].toString().lowercase(Locale.ROOT)
                     .contains("none")
             ) 0.0f else jsonObject["power"].asFloat

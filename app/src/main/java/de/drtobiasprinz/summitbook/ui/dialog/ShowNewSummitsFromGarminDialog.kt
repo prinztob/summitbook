@@ -79,8 +79,9 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                                 val current = LocalDateTime.now()
                                 val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
                                 val endDate = current.format(formatter)
+                                val startDateForSync = (current.minusDays(1)).format(formatter)
                                 binding.loadingPanel.visibility = View.VISIBLE
-                                asyncDownloadActivities(summits, pythonExecutor, startDate, endDate)
+                                asyncDownloadActivities(summits, pythonExecutor, startDate, endDate, startDateForSync)
                             } else {
                                 Toast.makeText(
                                     context,
@@ -155,7 +156,8 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         summits: List<Summit>?,
         pythonExecutor: GarminPythonExecutor?,
         startDate: String,
-        endDate: String
+        endDate: String,
+        startDateForSync: String
     ) {
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
@@ -176,7 +178,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                     val edit =
                         PreferenceManager.getDefaultSharedPreferences(requireContext())
                             .edit()
-                    edit.putString("garmin_start_date", endDate)
+                    edit.putString("garmin_start_date", startDateForSync)
                     edit.apply()
                 }
             }

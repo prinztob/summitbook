@@ -29,6 +29,7 @@ class GarminDataUpdater(
     private val databaseViewModel: DatabaseViewModel?
 ) {
     private var endDate: String = ""
+    private var startDateForSync: String = ""
     private var startDate: String = ""
 
     fun update() {
@@ -49,6 +50,7 @@ class GarminDataUpdater(
             val current = LocalDateTime.now()
             val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
             endDate = current.format(formatter)
+            startDateForSync = (current.minusDays(1)).format(formatter)
             asyncDownloadActivities(
                 pythonExecutor,
                 startDate,
@@ -141,7 +143,7 @@ class GarminDataUpdater(
     fun onFinish(progressBar: ProgressBar, context: Context) {
         progressBar.visibility = View.GONE
         val edit = sharedPreferences.edit()
-        edit.putString("garmin_start_date", endDate)
+        edit.putString("garmin_start_date", startDateForSync)
         edit.apply()
         Log.i("AsyncUpdateGarminData", "Done.")
         Toast.makeText(

@@ -118,14 +118,6 @@ class GarminPythonExecutor(
         return JsonParser.parseString(result.toString()) as JsonObject
     }
 
-    fun getPreciseVo2Max(dateAsString: String): Float {
-        if (client == null) {
-            login()
-        }
-        val result = pythonModule?.callAttr("get_precise_vo2max", client, dateAsString)
-        return result?.toFloat() ?: 0f
-    }
-
     private fun checkOutput(result: PyObject?) {
         if (result == null || result.toString() == "") {
             throw RuntimeException("Execution failed")
@@ -326,7 +318,11 @@ class GarminPythonExecutor(
         )
 
         private fun getJsonObjectEntryNotNull(jsonObject: JsonObject, key: String): Float {
-            return if (jsonObject[key].isJsonNull) 0.0f else jsonObject[key].asFloat
+            return if (jsonObject.has(key)) {
+                if (jsonObject[key].isJsonNull) 0.0f else jsonObject[key].asFloat
+            } else {
+                0f
+            }
         }
 
         private fun convertMphToKmh(mph: Double): Double {
