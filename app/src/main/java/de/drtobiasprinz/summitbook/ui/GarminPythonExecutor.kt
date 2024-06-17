@@ -59,11 +59,21 @@ class GarminPythonExecutor(
         checkOutput(result)
     }
 
-    fun downloadTcxFile(garminActivityId: String, downloadPath: String) {
+    fun downloadTcxFile(
+        garminActivityId: String,
+        downloadPathTcx: String,
+        downloadPathGpx: String
+    ) {
         if (client == null) {
             login()
         }
-        val result = pythonModule?.callAttr("download_tcx", client, garminActivityId, downloadPath)
+        val result = pythonModule?.callAttr(
+            "download_tcx",
+            client,
+            garminActivityId,
+            downloadPathTcx,
+            downloadPathGpx
+        )
         checkOutput(result)
     }
 
@@ -104,7 +114,12 @@ class GarminPythonExecutor(
         if (client == null) {
             login()
         }
-        val result = pythonModule?.callAttr("get_exercise_set", client, activityId, activitiesDir?.absolutePath)
+        val result = pythonModule?.callAttr(
+            "get_exercise_set",
+            client,
+            activityId,
+            activitiesDir?.absolutePath
+        )
         checkOutput(result)
         return JsonParser.parseString(result.toString()) as JsonObject
     }
@@ -287,10 +302,11 @@ class GarminPythonExecutor(
                     val summaryDTO =
                         gsonExerciseSet.getAsJsonObject("summaryDTO")
                     if (summaryDTO.has("functionalThresholdPower")) {
-                        ftp = summaryDTO.getAsJsonPrimitive("functionalThresholdPower").asDouble.toInt()
+                        ftp =
+                            summaryDTO.getAsJsonPrimitive("functionalThresholdPower").asDouble.toInt()
                     }
                 }
-                Log.i("PythonExecutor", "FTP: ${ftp}")
+                Log.d("PythonExecutor", "FTP: ${ftp}")
             }
             return ftp
         }

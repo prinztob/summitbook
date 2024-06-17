@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import date, datetime
+from tcx_to_gpx import convert_tcx_to_gpx
 
 import requests
 from garminconnect import (
@@ -145,11 +146,12 @@ def get_activity_json_for_date(client, selected_date):
                 f"{err}")
 
 
-def download_tcx(api, activity_id, output_file):
+def download_tcx(api, activity_id, output_file_tcx, output_file_gpx):
     try:
         gpx_data = api.download_activity(activity_id, dl_fmt=Garmin.ActivityDownloadFormat.TCX)
-        with open(output_file, "wb") as fb:
+        with open(output_file_tcx, "wb") as fb:
             fb.write(gpx_data)
+        convert_tcx_to_gpx(output_file_tcx, output_file_gpx)
         return "return code: 0"
     except (
             GarminConnectConnectionError,

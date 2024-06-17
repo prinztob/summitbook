@@ -25,34 +25,6 @@ class GpsUtils {
 
         }
 
-        fun composeTcxFile(files: ArrayList<File>): List<Track> {
-            val tcxToGPXParser = TCXToGPXParser()
-            files.sortBy { it.name }
-            val composedTrack: MutableList<Track> = ArrayList()
-            var i = 0
-            for (file in files) {
-                var parsedTcx: Gpx? = null
-                try {
-                    val inputStream: InputStream = FileInputStream(file)
-                    parsedTcx = tcxToGPXParser.parse(inputStream)
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                } catch (e: XmlPullParserException) {
-                    e.printStackTrace()
-                }
-                if (parsedTcx != null) {
-                    val tracks = parsedTcx.tracks
-                    if (i > 0) {
-                        updatePointsWithDistanceOfLastTrack(tracks, getLastPoints(composedTrack)?.extension?.distance
-                                ?: 0.0)
-                    }
-                    composedTrack.addAll(tracks.toList().blockingGet())
-                }
-                i += 1
-            }
-            return composedTrack
-        }
-
         private fun getLastPoints(tracks: MutableList<Track>): TrackPoint? {
             val trackPoints = mutableListOf<TrackPoint>()
             for (track in tracks) {

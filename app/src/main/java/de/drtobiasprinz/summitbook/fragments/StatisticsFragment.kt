@@ -30,6 +30,7 @@ import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Collections
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -225,7 +226,7 @@ class StatisticsFragment : Fragment() {
                 binding.textLongestDurationInfo,
                 getString(R.string.value_with_h),
                 getValueOrNull(extremaValuesSummits?.durationMinMax?.second) { e -> e.duration },
-                1
+                1, toHHms = true
             )
 
             setTextViewData(
@@ -585,7 +586,7 @@ class StatisticsFragment : Fragment() {
 
     private fun setTextViewData(
         entry: Summit?, layout: LinearLayout, data: TextView, info: TextView,
-        unit: String, value: Double, digits: Int = 0, factor: Int = 1,
+        unit: String, value: Double, digits: Int = 0, factor: Int = 1, toHHms: Boolean = false
     ) {
         if (entry != null) {
             layout.setOnClickListener { v: View ->
@@ -597,7 +598,16 @@ class StatisticsFragment : Fragment() {
             layout.visibility = View.VISIBLE
 
             numberFormat.maximumFractionDigits = digits
-            data.text = String.format(unit, numberFormat.format(value * factor))
+            if (toHHms) {
+                val valueInMs = (value * 3600000.0).toLong()
+                data.text = String.format(
+                    "%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
+                    TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
+                    TimeUnit.MILLISECONDS.toSeconds(valueInMs) % TimeUnit.MINUTES.toSeconds(1),
+                )
+            } else {
+                data.text = String.format(unit, numberFormat.format(value * factor))
+            }
             info.text = String.format(
                 requireContext().resources.configuration.locales[0],
                 "%s: %s\n%s: %s",

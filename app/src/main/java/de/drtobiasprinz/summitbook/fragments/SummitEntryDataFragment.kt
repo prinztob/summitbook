@@ -281,14 +281,14 @@ class SummitEntryDataFragment : Fragment() {
             if (textField.toHHms) {
                 val valueInMs = (value.toDouble() * 3600000.0).toLong()
                 textField.valueTextView(binding).text = String.format(
-                    "%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
-                    TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1)
+                    "%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
+                    TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
+                    TimeUnit.MILLISECONDS.toSeconds(valueInMs) % TimeUnit.MINUTES.toSeconds(1),
                 )
             } else {
                 numberFormat.maximumFractionDigits = textField.digits
                 textField.valueTextView(binding).text =
                     "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unit}"
-
             }
         }
     }
@@ -327,8 +327,9 @@ class SummitEntryDataFragment : Fragment() {
                     )
                 } else {
                     textField.valueTextView(binding).text = String.format(
-                        "%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
-                        TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1)
+                        "%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
+                        TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
+                        TimeUnit.MILLISECONDS.toSeconds(valueInMs) % TimeUnit.MINUTES.toSeconds(1),
                     )
                 }
             } else {

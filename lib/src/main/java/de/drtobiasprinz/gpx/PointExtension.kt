@@ -25,7 +25,7 @@ data class PointExtension(
                         optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_POWER}", power?.toString()),
                         optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_SPEED}", speed?.toString()),
                         optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_SLOPE}", slope?.toString()),
-                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_VERT_VELOCITY}", slope?.toString())
+                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_VERT_VELOCITY}", verticalVelocity?.toString())
                 )
         )
 
@@ -48,7 +48,7 @@ data class PointExtension(
         const val TAG_EXTENSIONS = "extensions"
         const val TAG_TRACK_POINT_EXTENSIONS = "TrackPointExtension"
         const val TAG_EXTENSION_PREFIX = "ns3"
-        const val TAG_CADENCE = "cad"
+        const val TAG_CADENCE = "cadence"
         const val TAG_DISTANCE = "distance"
         const val TAG_HR = "hr"
         const val TAG_ATEMP = "atemp"

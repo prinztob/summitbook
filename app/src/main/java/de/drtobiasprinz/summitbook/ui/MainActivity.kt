@@ -422,20 +422,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             summits, pythonExecutor, sharedPreferences.getBoolean("download_tcx", false)
         )
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                try {
+            try {
+                withContext(Dispatchers.IO) {
                     downloader.extractFinalSummit()
                     if (downloader.finalEntry?.sportType != SportType.IndoorTrainer) {
                         downloader.downloadTracks()
                         downloader.composeFinalTrack()
                     }
-                } catch (e: RuntimeException) {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Connecting to third party provider failed. Please try again later. Error: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
                 }
+            } catch (e: RuntimeException) {
+                Toast.makeText(
+                    this@MainActivity,
+                    "Connecting to third party provider failed. Please try again later. Error: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
             downloader.updateFinalEntry(viewModel)
             binding.loading.visibility = View.GONE
@@ -1189,6 +1189,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 sharedPreferences.getBoolean("current_year_switch", false)
             )
             viewModel.refresh()
+        }
+        if (key == "garmin_mfa" && !sharedPreferences.getBoolean("garmin_mfa", false) && File(storage?.absolutePath, ".garminconnect").exists()) {
+            File(storage?.absolutePath, ".garminconnect").delete()
         }
         if (key == "garmin_username" || key == "garmin_password" || key == "garmin_mfa") {
             updatePythonExecutor()
