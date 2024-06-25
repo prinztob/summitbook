@@ -26,7 +26,8 @@ android {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.23"
-
+    implementation 'com.github.ticofab:android-gpx-parser:2.3.1'
+    api 'net.danlew:android.joda:2.12.7'
     api 'io.reactivex.rxjava2:rxjava:2.2.21'
 
     testImplementation 'junit:junit:4.13.2'

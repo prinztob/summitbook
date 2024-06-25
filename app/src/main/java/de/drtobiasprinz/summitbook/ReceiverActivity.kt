@@ -84,7 +84,7 @@ class ReceiverActivity : AppCompatActivity() {
                 gpsTrack?.addGpsTrack(binding.osmap, TrackColor.None)
                 val highestTrackPoint = gpsTrack?.getHighestElevation()
                 if (highestTrackPoint != null) {
-                    val highestGeoPoint = GeoPoint(highestTrackPoint.lat, highestTrackPoint.lon)
+                    val highestGeoPoint = GeoPoint(highestTrackPoint.latitude, highestTrackPoint.longitude)
                     val marker = Marker(binding.osmap)
                     marker.position = highestGeoPoint
                     marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)

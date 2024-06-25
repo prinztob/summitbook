@@ -1,25 +1,21 @@
 package de.drtobiasprinz.gpx
 
-import de.drtobiasprinz.gpx.xml.XmlWritable
-import de.drtobiasprinz.gpx.xml.XmlWrite
-import io.reactivex.Observable
+import java.util.Collections
 
-data class TrackSegment(
-        val points: Observable<TrackPoint>
-) : XmlWritable {
-
-    override val writeOperations: Observable<XmlWrite>
-        get() = newTag(TAG_SEGMENT, points.concatMap { it.writeOperations })
+class TrackSegment private constructor(builder: Builder) {
+    val trackPoints: List<TrackPoint> =
+        builder.mTrackPoints ?: emptyList()
 
     class Builder {
-        var trackPoints: List<TrackPoint>? = null
+        var mTrackPoints: List<TrackPoint>? = null
+
+        fun setTrackPoints(trackPoints: List<TrackPoint>?): Builder {
+            mTrackPoints = trackPoints
+            return this
+        }
 
         fun build(): TrackSegment {
-            return TrackSegment(points = Observable.fromIterable(trackPoints))
+            return TrackSegment(this)
         }
-    }
-
-    companion object {
-        const val TAG_SEGMENT = "trkseg"
     }
 }

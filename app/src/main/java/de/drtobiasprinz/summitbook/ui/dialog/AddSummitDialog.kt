@@ -191,7 +191,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
 
                 val latlngHighestPointLocal = latlngHighestPoint
                 if (entity.latLng == null && latlngHighestPointLocal != null &&
-                    latlngHighestPointLocal.lat != 0.0 && latlngHighestPointLocal.lon != 0.0
+                    latlngHighestPointLocal.latitude != 0.0 && latlngHighestPointLocal.longitude != 0.0
                 ) {
                     entity.latLng = latlngHighestPointLocal
                 }
@@ -455,7 +455,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 }
                 val entry = downloader.finalEntry
                 if (entry != null) {
-                    latlngHighestPoint = entry.latLng
+                    latlngHighestPoint = entry.latLng as TrackPoint
                     updateDialogFields(!isEdit)
                     Toast.makeText(
                         context,
@@ -913,14 +913,14 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             }
             Log.i("asyncAnalyzeGpaTracks", "Gpx tracks simplified.")
             binding.loadingPanel.visibility = View.GONE
-            entry.lat = highestElevation?.lat
-            entry.lng = highestElevation?.lon
+            entry.lat = highestElevation?.latitude
+            entry.lng = highestElevation?.longitude
             entry.latLng = highestElevation
             viewModel.saveSummit(true, entry)
             val gpsTrack = entry.gpsTrack
             if (gpsTrack != null) {
                 val nameFromTrack = gpsTrack.gpxTrack?.metadata?.name
-                    ?: gpsTrack.gpxTrack?.tracks?.toList()?.blockingGet()?.first()?.name
+                    ?: gpsTrack.gpxTrack?.tracks?.first()?.trackName
                 binding.summitName.setText(nameFromTrack)
                 if (gpsTrack.hasNoTrackPoints()) {
                     gpsTrack.parseTrack(useSimplifiedIfExists = false)
@@ -957,7 +957,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     0.0
                 }
                 if (distance == 0.0 && gpsTrack != null) {
-                    distance = (gpsTrack.trackPoints.lastOrNull()?.extension?.distance
+                    distance = (gpsTrack.trackPoints.lastOrNull()?.pointExtension?.distance
                         ?: 0.0) / 1000
                 }
                 entry.kilometers = distance

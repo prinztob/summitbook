@@ -52,7 +52,7 @@ class Summit(
     var id: Long = 0
 
     @Ignore
-    var latLng = lat?.let { lng?.let { it1 -> TrackPoint(it, it1) } }
+    var latLng = lat?.let { lng?.let { it1 -> TrackPoint.Builder().setLatitude(it).setLongitude(it1).build() } }
 
     @Ignore
     var duration = getWellDefinedDuration()
@@ -275,8 +275,8 @@ class Summit(
         exportThirdPartyData: Boolean = true,
         exportCalculatedData: Boolean = true
     ): String {
-        val lat = latLng?.lat?.toString() ?: ""
-        val lng = latLng?.lon?.toString() ?: ""
+        val lat = latLng?.latitude?.toString() ?: ""
+        val lng = latLng?.longitude?.toString() ?: ""
         var entryToString = getDateAsString() + ';' +
                 name + ';' +
                 sportType + ';' +
@@ -392,8 +392,8 @@ class Summit(
         return if (latLngLocal != null && hasGpsTrack()) {
             boundingBox.contains(
                 GeoPoint(
-                    latLngLocal.lat,
-                    latLngLocal.lon
+                    latLngLocal.latitude,
+                    latLngLocal.longitude
                 )
             ) || trackBoundingBox?.intersects(boundingBox) == true
         } else {
@@ -509,10 +509,13 @@ class Summit(
                 if (splitLine[14].trim { it <= ' ' } != "") splitLine[14].toLong() else System.currentTimeMillis()
             val garminData = getGarminData(splitLine)
             val latLng =
-                if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") TrackPoint(
-                    splitLine[11].toDouble(),
-                    splitLine[12].toDouble()
-                ) else null
+                if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") {
+                    TrackPoint
+                        .Builder()
+                        .setLatitude(splitLine[11].toDouble())
+                        .setLongitude(splitLine[12].toDouble())
+                        .build()
+                } else null
             val isFavoriteAndOrPeak =
                 (if (splitLine.size == NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY) {
                     splitLine[27]
@@ -534,7 +537,7 @@ class Summit(
                 elevationData,
                 km,
                 VelocityData.parse(splitLine[8].split(","), topSpeed),
-                latLng?.lat, latLng?.lon,
+                latLng?.latitude, latLng?.longitude,
                 participantsAndEquipments.filter { !it.contains(EQUIPMENT_SUFFIX) },
                 participantsAndEquipments.filter { it.contains(EQUIPMENT_SUFFIX) }.map {
                     it.replace(

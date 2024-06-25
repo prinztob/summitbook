@@ -1,60 +1,60 @@
 package de.drtobiasprinz.gpx
 
-import de.drtobiasprinz.gpx.xml.XmlWritable
-import de.drtobiasprinz.gpx.xml.XmlWrite
-import io.reactivex.Observable
-
-data class PointExtension(
-        val cadence: Int? = null,
-        var distance: Double? = null,
-        val heartRate: Int? = null,
-        val power: Int? = null,
-        val speed: Double? = null,
-        val atemp: Double? = null,
-        var slope: Double? = null,
-        var verticalVelocity: Double? = null
-) : XmlWritable {
-
-    override val writeOperations: Observable<XmlWrite>
-        get() = newTag(TAG_EXTENSIONS,
-                newTag("${TAG_EXTENSION_PREFIX}:${TAG_TRACK_POINT_EXTENSIONS}",
-                        optionalTagWithText("$TAG_EXTENSION_PREFIX:${TAG_ATEMP}", atemp?.toString()),
-                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_CADENCE}", cadence?.toString()),
-                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_DISTANCE}", distance?.toString()),
-                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_HR}", heartRate?.toString()),
-                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_POWER}", power?.toString()),
-                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_SPEED}", speed?.toString()),
-                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_SLOPE}", slope?.toString()),
-                        optionalTagWithText("${TAG_EXTENSION_PREFIX}:${TAG_VERT_VELOCITY}", verticalVelocity?.toString())
-                )
-        )
+class PointExtension private constructor(builder: Builder) {
+    val speed: Double? = builder.mSpeed
+    var distance: Double? = builder.mDistance
+    val cadence: Int? = builder.mCadence
+    val power: Int? = builder.mPower
+    val heartRate: Int? = builder.mHeartRate
+    val slope: Double? = builder.mSlope
+    val verticalVelocity: Double? = builder.mVerticalVelocity
 
     class Builder {
-        var distanceMeters: Double? = null
-        var speed: Double? = null
-        var heartRate: Int? = null
-        var power: Int? = null
-        var cadence: Int? = null
-        var temp: Double? = null
-        var slope: Double? = null
-        var verticalVelocity: Double? = null
+        var mSpeed: Double? = null
+        var mDistance: Double? = null
+        var mCadence: Int? = null
+        var mPower: Int? = null
+        var mHeartRate: Int? = null
+        var mSlope: Double? = null
+        var mVerticalVelocity: Double? = null
+
+        fun setSpeed(speed: Double?): Builder {
+            mSpeed = speed
+            return this
+        }
+
+        fun setDistance(distance: Double?): Builder {
+            mDistance = distance
+            return this
+        }
+
+        fun setCadence(cadence: Int?): Builder {
+            mCadence = cadence
+            return this
+        }
+
+        fun setPower(power: Int?): Builder {
+            mPower = power
+            return this
+        }
+
+        fun setHeartRate(heartRate: Int?): Builder {
+            mHeartRate = heartRate
+            return this
+        }
+
+        fun setSlope(slope: Double?): Builder {
+            mSlope = slope
+            return this
+        }
+
+        fun setVerticalVelocity(verticalVelocity: Double?): Builder {
+            mVerticalVelocity = verticalVelocity
+            return this
+        }
 
         fun build(): PointExtension {
-            return PointExtension(heartRate = heartRate, atemp = temp, cadence = cadence, power = power, speed = speed, distance = distanceMeters, slope = slope, verticalVelocity = verticalVelocity)
+            return PointExtension(this)
         }
-    }
-
-    companion object {
-        const val TAG_EXTENSIONS = "extensions"
-        const val TAG_TRACK_POINT_EXTENSIONS = "TrackPointExtension"
-        const val TAG_EXTENSION_PREFIX = "ns3"
-        const val TAG_CADENCE = "cadence"
-        const val TAG_DISTANCE = "distance"
-        const val TAG_HR = "hr"
-        const val TAG_ATEMP = "atemp"
-        const val TAG_SPEED = "speed"
-        const val TAG_POWER = "power"
-        const val TAG_SLOPE = "slope"
-        const val TAG_VERT_VELOCITY = "vvelocity"
     }
 }

@@ -112,7 +112,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                         override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
                             if (entry != null) {
                                 updateSavePositionButton(true)
-                                latLngSelectedPosition = TrackPoint(p.latitude, p.longitude)
+                                latLngSelectedPosition = TrackPoint.Builder().setLatitude(p.latitude).setLongitude(p.longitude).build() as TrackPoint
                                 addMarker(binding.osmap, applicationContext, p, entry)
                                 binding.osmap.zoomController.activate()
                             }
@@ -134,8 +134,8 @@ class SelectOnOsMapActivity : FragmentActivity() {
                         val position = latLngSelectedPosition
                         if (entry != null) {
                             if (position != null) {
-                                entry.lat = position.lat
-                                entry.lng = position.lon
+                                entry.lat = position.latitude
+                                entry.lng = position.longitude
                                 entry.latLng = latLngSelectedPosition
                                 viewModel.saveSummit(true, entry)
                                 finish()
@@ -185,7 +185,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                                         gpsTrackPath.toFile()?.delete()
                                         entry.hasTrack = false
                                     }
-                                    entry.latLng = TrackPoint(0.0, 0.0)
+                                    entry.latLng = TrackPoint.Builder().setLatitude(0.0).setLatitude(0.0).build()
 
                                     viewModel.saveSummit(true, entry)
                                     finish()
@@ -286,7 +286,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
     private fun addSelectedPositionAndTrack(point: TrackPoint, gpsTrack: GpsTrack, osMap: MapView) {
         val entry = summitEntry
         if (entry != null) {
-            val geoPointSelectedPosition = GeoPoint(point.lat, point.lon)
+            val geoPointSelectedPosition = GeoPoint(point.latitude, point.longitude)
             addMarker(osMap, this, geoPointSelectedPosition, entry)
             gpsTrack.addGpsTrack(osMap, TrackColor.None)
             if (!wasBoundingBoxCalculated) {
@@ -309,7 +309,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val file = File(MainActivity.cache, "new_gpx_track.gpx")
-                result?.data?.data?.also { uri ->
+                result.data?.data?.also { uri ->
                     contentResolver.openInputStream(uri)?.use { inputStream ->
                         copyGpxFileToCache(inputStream, file)
                     }

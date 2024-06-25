@@ -118,4 +118,6 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'androidx.test.ext:junit:1.1.5'
     testImplementation "org.robolectric:robolectric:4.10.3"
+
+    implementation 'com.github.ticofab:android-gpx-parser:2.3.1'
 }

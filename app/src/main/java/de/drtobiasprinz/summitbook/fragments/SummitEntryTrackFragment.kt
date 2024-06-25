@@ -356,7 +356,7 @@ class SummitEntryTrackFragment : Fragment() {
                             marker = OpenStreetMapUtils.addMarker(
                                 binding.osmap,
                                 requireContext(),
-                                GeoPoint(trackPoint.lat, trackPoint.lon),
+                                GeoPoint(trackPoint.latitude, trackPoint.longitude),
                                 summitToView
                             )
                         }

@@ -136,22 +136,22 @@ class GarminTrackAndDataDownloader(
                 "${finalEntryLocal.getDateAsString()}_${finalEntryLocal.name.replace(" ", "_")}"
             val tracks = GpsUtils.composeGpxFile(downloadedTracks as ArrayList<File>)
             val gpxTrackFile = fileDestination ?: finalEntryLocal.getGpsTrackPath().toFile()
-            gpxTrackFile?.let { GpsUtils.write(fileDestination ?: it, tracks, name) }
-            if (finalEntryLocal.latLng == null || finalEntryLocal.latLng?.lat == 0.0) {
-                val points = tracks.map { it.segments.toList().blockingGet() }.flatten()
-                    .map { it.points.toList().blockingGet() }.flatten()
+            //TODO gpxTrackFile?.let { GpsUtils.write(fileDestination ?: it, tracks, name) }
+            if (finalEntryLocal.latLng == null || finalEntryLocal.latLng?.latitude == 0.0) {
+                val points = tracks.map { it.trackSegments }.flatten()
+                    .map { it.trackPoints }.flatten()
                 if (points.isNotEmpty()) {
-                    val notZeroLatLonPoints = points.filter { it.lat != 0.0 && it.lon != 0.0 }
+                    val notZeroLatLonPoints = points.filter { it.latitude != 0.0 && it.longitude != 0.0 }
                     if (notZeroLatLonPoints.isNotEmpty()) {
                         var highestTrackPoint = notZeroLatLonPoints.first()
                         for (point in notZeroLatLonPoints) {
-                            if ((point.ele ?: 0.0) > (highestTrackPoint.ele ?: 0.0)) {
+                            if ((point.elevation ?: 0.0) > (highestTrackPoint.elevation ?: 0.0)) {
                                 highestTrackPoint = point
                             }
                         }
                         finalEntryLocal.latLng = highestTrackPoint
-                        finalEntryLocal.lat = highestTrackPoint.lat
-                        finalEntryLocal.lng = highestTrackPoint.lon
+                        finalEntryLocal.lat = highestTrackPoint.latitude
+                        finalEntryLocal.lng = highestTrackPoint.longitude
                     }
                 }
             }

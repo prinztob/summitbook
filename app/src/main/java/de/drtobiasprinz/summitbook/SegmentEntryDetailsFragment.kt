@@ -208,11 +208,11 @@ class SegmentEntryDetailsFragment : Fragment() {
             binding.lineChart.data = LineData(dataSets)
             setLegend(binding.lineChart)
             if (segmentEntry.startPositionInTrack < gpxTrack.trackPoints.size) {
-                gpxTrack.trackPoints[segmentEntry.startPositionInTrack].extension?.distance?.toFloat()
+                gpxTrack.trackPoints[segmentEntry.startPositionInTrack].pointExtension?.distance?.toFloat()
                     ?.let { drawVerticalLine(it, Color.GREEN) }
             }
             if (segmentEntry.endPositionInTrack < gpxTrack.trackPoints.size) {
-                gpxTrack.trackPoints[segmentEntry.endPositionInTrack].extension?.distance?.toFloat()
+                gpxTrack.trackPoints[segmentEntry.endPositionInTrack].pointExtension?.distance?.toFloat()
                     ?.let { drawVerticalLine(it, Color.RED) }
             }
         } else {
@@ -293,19 +293,19 @@ class SegmentEntryDetailsFragment : Fragment() {
             )
 
             val averageHeartRate = selectedTrackPoints.sumOf {
-                it.extension?.heartRate ?: 0
+                it.pointExtension?.heartRate ?: 0
             } / selectedTrackPoints.size
             val averagePower = selectedTrackPoints.sumOf {
-                it.extension?.power ?: 0
+                it.pointExtension?.power ?: 0
             } / selectedTrackPoints.size
             val pointsOnlyWithMaximalValues = TrackUtils.keepOnlyMaximalValues(selectedTrackPoints)
             val heightMeterResult =
                 TrackUtils.removeDeltasSmallerAs(10, pointsOnlyWithMaximalValues)
 
             val duration =
-                ((endTrackPoint.time ?: 0L) - (startTrackPoint.time ?: 0L)).toDouble() / 60000.0
+                (endTrackPoint.time.millis - startTrackPoint.time.millis).toDouble() / 60000.0
             val distance =
-                ((endTrackPoint.extension?.distance ?: 0.0) - (startTrackPoint.extension?.distance
+                ((endTrackPoint.pointExtension?.distance ?: 0.0) - (startTrackPoint.pointExtension?.distance
                     ?: 0.0)) / 1000.0
 
             binding.duration.text = String.format(

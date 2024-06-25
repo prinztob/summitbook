@@ -1,58 +1,56 @@
 package de.drtobiasprinz.gpx
 
-import de.drtobiasprinz.gpx.xml.XmlWritable
-import de.drtobiasprinz.gpx.xml.XmlWrite
-import de.drtobiasprinz.gpx.xml.writeTo
-import io.reactivex.Observable
-import io.reactivex.Single
-import java.io.Writer
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
-
-data class Gpx(
-        val creator: String,
-        val metadata: Metadata = Metadata(),
-        val waypoints: Observable<Waypoint> = Observable.empty(),
-        val tracks: Observable<Track> = Observable.empty(),
-        val routes: Observable<Route> = Observable.empty()
-) : XmlWritable {
-
-    override val writeOperations: Observable<XmlWrite>
-        get() = newTag(TAG_GPX,
-                withAttribute("xmlns", "http://www.topografix.com/GPX/1/1"),
-                withAttribute("xmlns:ns3", "http://www.garmin.com/xmlschemas/TrackPointExtension/v1"),
-                withAttribute("version", "1.1"),
-                withAttribute(TAG_CREATOR, creator),
-                metadata.writeOperations,
-                waypoints.concatMap { it.writeOperations },
-                tracks.concatMap { it.writeOperations },
-                routes.concatMap { it.writeOperations }
-        )
-
-    fun writeTo(writer: Writer, charset: Charset = StandardCharsets.UTF_8): Single<Writer> =
-            writeOperations.writeTo(writer, charset)
+import io.ticofab.androidgpxparser.parser.domain.Metadata
 
 
-    class Builder(
-            var wayPoints: List<Waypoint>? = null,
-            var routes: List<Route>? = null,
-            var tracks: List<Track>? = null,
-            var creator: String? = null,
-            var metadata: Metadata? = null
-    ) {
-        fun build(): Gpx {
-            return Gpx(
-                    creator = creator ?: "unknown",
-                    metadata = metadata ?: Metadata(),
-                    waypoints = Observable.fromIterable(wayPoints),
-                    tracks = Observable.fromIterable(tracks),
-                    routes = Observable.fromIterable(routes)
-            )
+class Gpx private constructor(builder: Builder) {
+    val version: String? = builder.mVersion
+    val creator: String? = builder.mCreator
+    val metadata: Metadata? = builder.mMetadata
+    val wayPoints: List<WayPoint> = builder.mWayPoints ?: emptyList()
+    val routes: List<Route> = builder.mRoutes ?: emptyList()
+    val tracks: List<Track> = builder.mTracks ?: emptyList()
+
+    class Builder {
+        var mWayPoints: List<WayPoint>? = null
+        var mRoutes: List<Route>? = null
+        var mTracks: List<Track>? = null
+        var mVersion: String? = null
+        var mCreator: String? = null
+        var mMetadata: Metadata? = null
+
+        fun setTracks(tracks: List<Track>?): Builder {
+            mTracks = tracks
+            return this
         }
-    }
 
-    companion object {
-        const val TAG_GPX = "gpx"
-        const val TAG_CREATOR = "creator"
+        fun setWayPoints(wayPoints: List<WayPoint>?): Builder {
+            mWayPoints = wayPoints
+            return this
+        }
+
+        fun setRoutes(routes: List<Route>?): Builder {
+            this.mRoutes = routes
+            return this
+        }
+
+        fun setVersion(version: String?): Builder {
+            mVersion = version
+            return this
+        }
+
+        fun setCreator(creator: String?): Builder {
+            mCreator = creator
+            return this
+        }
+
+        fun setMetadata(mMetadata: Metadata?): Builder {
+            this.mMetadata = mMetadata
+            return this
+        }
+
+        fun build(): Gpx {
+            return Gpx(this)
+        }
     }
 }

@@ -199,19 +199,19 @@ class AddSegmentEntryFragment : Fragment() {
             val selectedTrackPoints = allTrackPoints.subList(startPointId, endPointId)
 
             val averageHeartRate = selectedTrackPoints.sumOf {
-                it.extension?.heartRate ?: 0
+                it.pointExtension?.heartRate ?: 0
             } / selectedTrackPoints.size
             val averagePower = selectedTrackPoints.sumOf {
-                it.extension?.power ?: 0
+                it.pointExtension?.power ?: 0
             } / selectedTrackPoints.size
             val pointsOnlyWithMaximalValues = TrackUtils.keepOnlyMaximalValues(selectedTrackPoints)
             val heightMeterResult =
                 TrackUtils.removeDeltasSmallerAs(10, pointsOnlyWithMaximalValues)
 
             val duration =
-                ((endTrackPoint.time ?: 0L) - (startTrackPoint.time ?: 0L)).toDouble() / 60000.0
+                (endTrackPoint.time.millis - startTrackPoint.time.millis).toDouble() / 60000.0
             val distance =
-                ((endTrackPoint.extension?.distance ?: 0.0) - (startTrackPoint.extension?.distance
+                ((endTrackPoint.pointExtension?.distance ?: 0.0) - (startTrackPoint.pointExtension?.distance
                     ?: 0.0)) / 1000.0
 
             binding.duration.text = String.format(
@@ -255,11 +255,11 @@ class AddSegmentEntryFragment : Fragment() {
                 summitToCompare.date,
                 summitToCompare.activityId,
                 startPointId,
-                startTrackPoint.lat,
-                startTrackPoint.lon,
+                startTrackPoint.latitude,
+                startTrackPoint.longitude,
                 endPointId,
-                endTrackPoint.lat,
-                endTrackPoint.lon,
+                endTrackPoint.latitude,
+                endTrackPoint.longitude,
                 duration,
                 distance,
                 heightMeterResult.second.roundToInt(),
@@ -367,7 +367,7 @@ class AddSegmentEntryFragment : Fragment() {
     }
 
     private fun drawVerticalLine(summit: Summit, index: Int, color: Int) {
-        val distance = summit.gpsTrack?.trackPoints?.get(index)?.extension?.distance?.toFloat()
+        val distance = summit.gpsTrack?.trackPoints?.get(index)?.pointExtension?.distance?.toFloat()
         if (distance != null) {
             val ll = LimitLine(distance)
             ll.lineColor = color

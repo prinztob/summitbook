@@ -13,20 +13,20 @@ class TrackUtils {
 
         fun keepOnlyMaximalValues(points: MutableList<TrackPoint>): MutableList<TrackPoint> {
             val reducedPoints = points.filterIndexed { index, trackPoint ->
-                val currentElevation = (trackPoint.ele ?: 0.0).roundToInt().toDouble()
+                val currentElevation = (trackPoint.elevation ?: 0.0).roundToInt().toDouble()
                 if (index == 0 || index == points.size - 1) {
                     true
                 } else {
-                    val lastElevation = (points[index - 1].ele ?: 0.0).roundToInt().toDouble()
+                    val lastElevation = (points[index - 1].elevation ?: 0.0).roundToInt().toDouble()
                     currentElevation != lastElevation
                 }
             }
             return reducedPoints.filterIndexed { index, trackPoint ->
-                val currentElevation = (trackPoint.ele ?: 0.0).roundToInt().toDouble()
-                val lastElevation = if (index != 0) (reducedPoints[index - 1].ele
+                val currentElevation = (trackPoint.elevation ?: 0.0).roundToInt().toDouble()
+                val lastElevation = if (index != 0) (reducedPoints[index - 1].elevation
                     ?: 0.0).roundToInt().toDouble() else currentElevation
                 val nextElevation =
-                    if (index != reducedPoints.size - 1) (reducedPoints[index + 1].ele
+                    if (index != reducedPoints.size - 1) (reducedPoints[index + 1].elevation
                         ?: 0.0).roundToInt().toDouble() else currentElevation
                 if (index == 0 || index == reducedPoints.size - 1) {
                     true
@@ -49,7 +49,7 @@ class TrackUtils {
                 if (index == 0) {
                     filteredPoints.add(point)
                 } else {
-                    val delta = (point.ele ?: 0.0) - (filteredPoints.last().ele ?: 0.0)
+                    val delta = (point.elevation ?: 0.0) - (filteredPoints.last().elevation ?: 0.0)
                     if (abs(delta) >= minimalDelta) {
                         filteredPoints.add(point)
                         if (delta > 0) {
@@ -65,9 +65,9 @@ class TrackUtils {
 
         fun getTrackPoints(gpxTrack: Gpx): MutableList<TrackPoint> {
             val trackPoints = mutableListOf<TrackPoint>()
-            for (track in gpxTrack.tracks.toList().blockingGet()) {
-                for (segment in track.segments.toList().blockingGet()) {
-                    val points = segment.points.toList().blockingGet()
+            for (track in gpxTrack.tracks) {
+                for (segment in track.trackSegments) {
+                    val points = segment.trackPoints
                     trackPoints.addAll(points)
                 }
             }

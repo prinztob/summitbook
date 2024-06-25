@@ -2,10 +2,16 @@ package de.drtobiasprinz.summitbook.ui.utils
 
 import android.annotation.SuppressLint
 import android.location.Location
-import de.drtobiasprinz.gpx.*
-import io.reactivex.Observable
+import de.drtobiasprinz.gpx.GPXParser
+import de.drtobiasprinz.gpx.PointExtension
+import de.drtobiasprinz.gpx.Gpx
+import de.drtobiasprinz.gpx.Track
+import de.drtobiasprinz.gpx.TrackPoint
 import org.xmlpull.v1.XmlPullParserException
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.IOException
+import java.io.InputStream
 import kotlin.math.abs
 
 
@@ -13,35 +19,24 @@ class GpsUtils {
 
     companion object {
 
-        fun write(file: File, tracks: List<Track>, name: String) {
-            val gpx = Gpx(
-                    creator = "SummitBook",
-                    metadata = Metadata(name = name),
-                    tracks = Observable.fromIterable(tracks)
-            )
-            val fileWriter = FileWriter(file)
-            val gpxWriter = gpx.writeTo(fileWriter)
-            gpxWriter.subscribe()
-
-        }
 
         private fun getLastPoints(tracks: MutableList<Track>): TrackPoint? {
             val trackPoints = mutableListOf<TrackPoint>()
             for (track in tracks) {
-                for (segment in track.segments.toList().blockingGet()) {
-                    val points = segment.points.toList().blockingGet()
-                    trackPoints.addAll(points.filter { it.lat != 0.0 && it.lon != 0.0 })
+                for (segment in track.trackSegments) {
+                    val points = segment.trackPoints
+                    trackPoints.addAll(points.filter { it.latitude != 0.0 && it.longitude != 0.0 })
                 }
             }
             return trackPoints.lastOrNull()
         }
 
         @SuppressLint("CheckResult")
-        private fun updatePointsWithDistanceOfLastTrack(tracks: Observable<Track>, distance: Double) {
+        private fun updatePointsWithDistanceOfLastTrack(tracks: List<Track>, distance: Double) {
             tracks.forEach { track ->
-                track.segments.forEach { trackSegment ->
-                    trackSegment.points.forEach {
-                        it.extension?.distance = it.extension?.distance?.plus(distance)
+                track.trackSegments.forEach { trackSegment ->
+                    trackSegment.trackPoints.forEach {
+                        it.pointExtension?.distance = it.pointExtension?.distance?.plus(distance)
                     }
                 }
             }
@@ -65,10 +60,12 @@ class GpsUtils {
                 if (parsedGpx != null) {
                     val tracks = parsedGpx.tracks
                     if (i > 0) {
-                        updatePointsWithDistanceOfLastTrack(tracks, getLastPoints(composedTrack)?.extension?.distance
-                                ?: 0.0)
+                        updatePointsWithDistanceOfLastTrack(
+                            tracks, getLastPoints(composedTrack)?.pointExtension?.distance
+                                ?: 0.0
+                        )
                     }
-                    composedTrack.addAll(tracks.toList().blockingGet())
+                    composedTrack.addAll(tracks)
 
                 }
                 i += 1
@@ -85,9 +82,12 @@ class GpsUtils {
                         setDistance(trackPoint)
                         lastTrackPoint = trackPoint
                     } else {
-                        val distance = lastTrackPoint.extension?.distance
+                        val distance = lastTrackPoint.pointExtension?.distance
                         if (distance != null) {
-                            setDistance(trackPoint, distance + abs(getDistance(trackPoint, lastTrackPoint)).toDouble())
+                            setDistance(
+                                trackPoint,
+                                distance + abs(getDistance(trackPoint, lastTrackPoint)).toDouble()
+                            )
                             lastTrackPoint = trackPoint
                         }
                     }
@@ -96,10 +96,10 @@ class GpsUtils {
         }
 
         private fun setDistance(trackPoint: TrackPoint, distance: Double = 0.0) {
-            if (trackPoint.extension == null) {
-                trackPoint.extension = PointExtension(distance = distance)
+            if (trackPoint.pointExtension == null) {
+                trackPoint.pointExtension = PointExtension.Builder().setDistance(distance).build()
             } else {
-                trackPoint.extension?.distance = distance
+                trackPoint.pointExtension?.distance = distance
             }
         }
 
@@ -111,9 +111,9 @@ class GpsUtils {
 
         private fun getLocationFromTrackPoint(trackPoint: TrackPoint): Location {
             val location = Location(trackPoint.name)
-            location.latitude = trackPoint.lat
-            location.longitude = trackPoint.lon
-            location.altitude = trackPoint.ele ?: 0.0
+            location.latitude = trackPoint.latitude
+            location.longitude = trackPoint.longitude
+            location.altitude = trackPoint.elevation ?: 0.0
             return location
         }
 

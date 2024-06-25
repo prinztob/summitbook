@@ -1,63 +1,70 @@
 package de.drtobiasprinz.gpx
 
-import de.drtobiasprinz.gpx.xml.XmlWritable
-import de.drtobiasprinz.gpx.xml.XmlWrite
-import io.reactivex.Observable
+import io.ticofab.androidgpxparser.parser.domain.Link
 
-data class Track(
-        val segments: Observable<TrackSegment>,
-        val name: String? = null,
-        val desc: String? = null,
-        val cmt: String? = null,
-        val src: String? = null,
-        val number: Int? = null,
-        val link: String? = null,
-        val type: String? = null
-) : XmlWritable {
-
-    override val writeOperations: Observable<XmlWrite>
-        get() = newTag(TAG_TRACK,
-                optionalTagWithText(TAG_NAME, name),
-                optionalTagWithText(TAG_NUMBER, number?.toString()),
-                optionalTagWithText(TAG_DESC, desc),
-                optionalTagWithText(TAG_CMT, cmt),
-                optionalTagWithText(TAG_SRC, src),
-                optionalTagWithText(TAG_TYPE, type),
-                segments.concatMap { it.writeOperations }
-        )
+class Track private constructor(builder: Builder) {
+    val trackName: String? = builder.mTrackName
+    val trackSegments: List<TrackSegment> =
+        builder.mTrackSegments ?: emptyList()
+    val trackDesc: String? = builder.mTrackDesc
+    val trackCmt: String? = builder.mTrackCmt
+    val trackSrc: String? = builder.mTrackSrc
+    val trackNumber: Int? = builder.mTrackNumber
+    val trackLink: Link? = builder.mTrackLink
+    val trackType: String? = builder.mTrackType
 
     class Builder {
-        var name: String? = null
-        var segments: List<TrackSegment>? = null
-        var desc: String? = null
-        var cmt: String? = null
-        var src: String? = null
-        var number: Int? = null
-        var link: String? = null
-        var type: String? = null
+        var mTrackName: String? = null
+        var mTrackSegments: List<TrackSegment>? = null
+        var mTrackDesc: String? = null
+        var mTrackCmt: String? = null
+        var mTrackSrc: String? = null
+        var mTrackNumber: Int? = null
+        var mTrackLink: Link? = null
+        var mTrackType: String? = null
 
+        fun setTrackName(trackName: String?): Builder {
+            mTrackName = trackName
+            return this
+        }
+
+        fun setTrackDesc(trackDesc: String?): Builder {
+            mTrackDesc = trackDesc
+            return this
+        }
+
+        fun setTrackSegments(trackSegments: List<TrackSegment>?): Builder {
+            mTrackSegments = trackSegments
+            return this
+        }
+
+        fun setTrackCmt(trackCmt: String?): Builder {
+            mTrackCmt = trackCmt
+            return this
+        }
+
+        fun setTrackSrc(trackSrc: String?): Builder {
+            mTrackSrc = trackSrc
+            return this
+        }
+
+        fun setTrackNumber(trackNumber: Int?): Builder {
+            mTrackNumber = trackNumber
+            return this
+        }
+
+        fun setTrackLink(link: Link?): Builder {
+            mTrackLink = link
+            return this
+        }
+
+        fun setTrackType(type: String?): Builder {
+            mTrackType = type
+            return this
+        }
 
         fun build(): Track {
-            return Track(
-                    name = name,
-                    desc = desc,
-                    cmt = cmt,
-                    src = src,
-                    number = number,
-                    link = link,
-                    type = type,
-                    segments = Observable.fromIterable(segments)
-            )
+            return Track(this)
         }
-    }
-
-    companion object {
-        const val TAG_TRACK = "trk"
-        const val TAG_NUMBER = "number"
-        const val TAG_NAME = "name"
-        const val TAG_CMT = "cmt"
-        const val TAG_SRC = "src"
-        const val TAG_TYPE = "type"
-        const val TAG_DESC = "desc"
     }
 }
