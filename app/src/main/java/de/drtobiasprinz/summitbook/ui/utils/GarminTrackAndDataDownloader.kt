@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
+import android.util.Log
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
@@ -8,8 +9,11 @@ import de.drtobiasprinz.summitbook.db.entities.PowerData
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
+import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
+import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.io.File
@@ -132,31 +136,44 @@ class GarminTrackAndDataDownloader(
     fun composeFinalTrack(fileDestination: File? = null) {
         val finalEntryLocal = finalEntry
         if (finalEntryLocal != null) {
-            val name =
-                "${finalEntryLocal.getDateAsString()}_${finalEntryLocal.name.replace(" ", "_")}"
-            val tracks = GpsUtils.composeGpxFile(downloadedTracks as ArrayList<File>)
-            val gpxTrackFile = fileDestination ?: finalEntryLocal.getGpsTrackPath().toFile()
-            //TODO gpxTrackFile?.let { GpsUtils.write(fileDestination ?: it, tracks, name) }
-            if (finalEntryLocal.latLng == null || finalEntryLocal.latLng?.latitude == 0.0) {
-                val points = tracks.map { it.trackSegments }.flatten()
-                    .map { it.trackPoints }.flatten()
-                if (points.isNotEmpty()) {
-                    val notZeroLatLonPoints = points.filter { it.latitude != 0.0 && it.longitude != 0.0 }
-                    if (notZeroLatLonPoints.isNotEmpty()) {
-                        var highestTrackPoint = notZeroLatLonPoints.first()
-                        for (point in notZeroLatLonPoints) {
-                            if ((point.elevation ?: 0.0) > (highestTrackPoint.elevation ?: 0.0)) {
-                                highestTrackPoint = point
+            try {
+                val name =
+                    "${finalEntryLocal.getDateAsString()}_${finalEntryLocal.name.replace(" ", "_")}"
+                val gpxTrackFile = fileDestination ?: finalEntryLocal.getGpsTrackPath().toFile()
+                pythonInstance?.let {
+                    GpxPyExecutor(it).mergeGpxTracks(
+                        downloadedTracks,
+                        gpxTrackFile,
+                        name
+                    )
+                }
+                val gpsTrack = GpsTrack(gpxTrackFile.toPath())
+                gpsTrack.parseTrack()
+                if (finalEntryLocal.latLng == null || finalEntryLocal.latLng?.latitude == 0.0) {
+                    if (gpsTrack.trackPoints.isNotEmpty()) {
+                        val notZeroLatLonPoints =
+                            gpsTrack.trackPoints.filter { it.latitude != 0.0 && it.longitude != 0.0 }
+                        if (notZeroLatLonPoints.isNotEmpty()) {
+                            var highestTrackPoint = notZeroLatLonPoints.first()
+                            for (point in notZeroLatLonPoints) {
+                                if ((point.elevation ?: 0.0) > (highestTrackPoint.elevation
+                                        ?: 0.0)
+                                ) {
+                                    highestTrackPoint = point
+                                }
                             }
+                            finalEntryLocal.latLng = highestTrackPoint
+                            finalEntryLocal.lat = highestTrackPoint.latitude
+                            finalEntryLocal.lng = highestTrackPoint.longitude
                         }
-                        finalEntryLocal.latLng = highestTrackPoint
-                        finalEntryLocal.lat = highestTrackPoint.latitude
-                        finalEntryLocal.lng = highestTrackPoint.longitude
                     }
                 }
+                finalEntryLocal.hasGpsTrack()
+                finalEntryLocal.setBoundingBoxFromTrack()
+
+            } catch (e: RuntimeException) {
+                Log.e("GarminTrackAndDataDownloader", "Download failed: ${e.message}")
             }
-            finalEntryLocal.hasGpsTrack()
-            finalEntryLocal.setBoundingBoxFromTrack()
         }
     }
 

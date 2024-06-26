@@ -374,3 +374,37 @@ def get_battery_charged_in_percent(solar):
                 seconds = (end_date - start_date).seconds
                 multiplicand = 0.2 / (60 * 100)  # 0.2 % per 60 minutes 100% solar intensity (Fenix 6)
                 return sum(solar_utilization) * multiplicand, len(solar_exposition) / 60, 86400 - seconds < 999
+
+def merge_tracks(gpx_track_files_to_merge, output_file, name):
+    try:
+        print(f"Trying to merge the following tracks: {gpx_track_files_to_merge}")
+        files = list(gpx_track_files_to_merge)
+        analyzer_for_all_tracks = None
+        for file in files:
+            analyzer_for_single_track = TrackAnalyzer(file, True)
+            analyzer_for_single_track.parse_track()
+            if analyzer_for_all_tracks is None:
+                analyzer_for_all_tracks = analyzer_for_single_track
+            else:
+                time1 = get_time(analyzer_for_all_tracks.gpx)
+                time2 = get_time(analyzer_for_single_track.gpx)
+                if  time1 is None or time2 is None or time1 < time2:
+                    analyzer_for_all_tracks.gpx.tracks.extend(analyzer_for_single_track.gpx.tracks)
+                else:
+                    analyzer_for_single_track.gpx.tracks.extend(analyzer_for_all_tracks.gpx.tracks)
+                    analyzer_for_all_tracks = analyzer_for_single_track
+        analyzer_for_all_tracks.set_all_points_with_distance()
+        analyzer_for_all_tracks.gpx.name = name
+        with open(output_file, "w") as f:
+            f.write(analyzer_for_all_tracks.gpx.to_xml())
+        print(f"Wrote file {output_file}")
+        return "return code: 0Merging of tracks successful"
+    except Exception as err:
+        return "return code: 1Unknown error occurred during merging of tracks: %s" % err
+
+
+def get_time(gpx):
+    if gpx.time:
+        return gpx.time
+    if gpx and len(gpx.tracks) > 0 and len(gpx.tracks[0].segments) > 0 and len(gpx.tracks[0].segments[0].points) > 0:
+        return gpx.tracks[0].segments[0].points[0].time

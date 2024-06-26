@@ -455,8 +455,11 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 }
                 val entry = downloader.finalEntry
                 if (entry != null) {
-                    latlngHighestPoint = entry.latLng as TrackPoint
-                    updateDialogFields(!isEdit)
+                    val point = entry.latLng
+                    if (point != null) {
+                        latlngHighestPoint = point as TrackPoint
+                        updateDialogFields(!isEdit)
+                    }
                     Toast.makeText(
                         context,
                         context?.getString(R.string.garmin_add_successful, entry.name),
