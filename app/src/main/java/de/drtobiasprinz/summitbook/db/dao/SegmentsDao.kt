@@ -28,7 +28,7 @@ interface SegmentsDao {
     suspend fun updateSegmentEntry(segmentEntry: SegmentEntry)
 
     @Delete
-    fun deleteSegmentDetails(segmentDetails: SegmentDetails)
+    suspend fun deleteSegmentDetails(segmentDetails: SegmentDetails)
     @Delete
     suspend fun deleteSegmentEntry(segmentEntry: SegmentEntry)
 

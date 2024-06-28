@@ -103,8 +103,19 @@ class SegmentEntryDetailsFragment : Fragment() {
                         summitShown =
                             relevantSummits?.firstOrNull { it.activityId == segmentEntryToShow?.activityId }
                         if (relevantSummits != null && summitShown != null) {
+                            binding.osMap.visibility = View.VISIBLE
+                            binding.lineChart.visibility = View.VISIBLE
+                            binding.tableSegments.visibility = View.VISIBLE
+                            binding.gridLayout.visibility = View.VISIBLE
+                            binding.changeMapType.visibility = View.VISIBLE
                             prepareMap()
                             update(summitShown, segmentEntryToShow, segmentToUse, relevantSummits)
+                        } else {
+                            binding.osMap.visibility = View.GONE
+                            binding.lineChart.visibility = View.GONE
+                            binding.tableSegments.visibility = View.GONE
+                            binding.gridLayout.visibility = View.GONE
+                            binding.changeMapType.visibility = View.GONE
                         }
                     }
                 }
