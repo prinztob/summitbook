@@ -165,7 +165,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         }
     }
 
-    private fun drawRectangle(color: Int): Bitmap? {
+    private fun drawRectangle(color: Int): Bitmap {
         val radius = 25f
         val bitmap = Bitmap.createBitmap(
             (radius * 2).toInt(),
@@ -296,13 +296,6 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         }
         trackPoints = getTrackPoints(gpxTrack)
         Log.e("GpxTrack", "Took $time")
-//        Log.e("GpxTrack", "2nd Took ${
-//            measureTimeMillis {
-//                val mParser = GPXParser2()
-//                val inputStream: InputStream = FileInputStream(fileToUse)
-//                mParser.parse(inputStream)
-//            }
-//        }")
         trackGeoPoints = getGeoPoints(trackPoints)
         if (trackPoints.size > 0 && trackPoints.first().pointExtension?.distance == null) {
             setDistance()

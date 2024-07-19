@@ -1,9 +1,7 @@
 import json
 import os
-from datetime import date, datetime
-from tcx_to_gpx import convert_tcx_to_gpx
-
 import requests
+from datetime import date, datetime
 from garminconnect import (
     Garmin,
     GarminConnectConnectionError,
@@ -13,6 +11,7 @@ from garminconnect import (
 from garth.exc import GarthHTTPError
 
 from gpx_track_analyzer import TrackAnalyzer
+from tcx_to_gpx import convert_tcx_to_gpx
 
 BASE_URL = 'https://connect.garmin.com'
 
@@ -38,7 +37,8 @@ def init_api(user_name, password, output_file):
             garmin.login()
             garmin.garth.dump(token_store)
             return garmin
-        except (FileNotFoundError, GarthHTTPError, GarminConnectAuthenticationError, requests.exceptions.HTTPError) \
+        except (FileNotFoundError, GarthHTTPError, GarminConnectAuthenticationError,
+                requests.exceptions.HTTPError) \
                 as err:
             return "return code: 1Error occurred during Garmin Connect Client init: %s" % err
     except Exception as err:
@@ -89,11 +89,13 @@ def get_daily_events(api, selected_date):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return (f"return code: 1: Error occurred during Garmin Connect Client get daily events for date "
-                f"{selected_date}: {err}")
+        return (
+            f"return code: 1: Error occurred during Garmin Connect Client get daily events for date "
+            f"{selected_date}: {err}")
     except Exception as err:
-        return (f"return code: 1Unknown error occurred during Garmin Connect Client get daily events for date "
-                f"{selected_date}: {err}")
+        return (
+            f"return code: 1Unknown error occurred during Garmin Connect Client get daily events for date "
+            f"{selected_date}: {err}")
 
 
 def get_user_summary(api, selected_date):
@@ -104,11 +106,13 @@ def get_user_summary(api, selected_date):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return (f"return code: 1: Error occurred during Garmin Connect Client get user summary for date "
-                f"{selected_date}: {err}")
+        return (
+            f"return code: 1: Error occurred during Garmin Connect Client get user summary for date "
+            f"{selected_date}: {err}")
     except Exception as err:
-        return (f"return code: 1Unknown error occurred during Garmin Connect Client get user summary for date "
-                f"{selected_date}: {err}")
+        return (
+            f"return code: 1Unknown error occurred during Garmin Connect Client get user summary for date "
+            f"{selected_date}: {err}")
 
 
 def get_hrv(api, selected_date):
@@ -120,11 +124,13 @@ def get_hrv(api, selected_date):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return (f"return code: 1: Error occurred during Garmin Connect Client get daily hrv for for "
-                f"{selected_date}: {err}")
+        return (
+            f"return code: 1: Error occurred during Garmin Connect Client get daily hrv for for "
+            f"{selected_date}: {err}")
     except Exception as err:
-        return (f"return code: 1Unknown error occurred during Garmin Connect Client get daily hrv for date "
-                f"{selected_date}: {err}")
+        return (
+            f"return code: 1Unknown error occurred during Garmin Connect Client get daily hrv for date "
+            f"{selected_date}: {err}")
 
 
 def get_activity_json_for_date(client, selected_date):
@@ -138,12 +144,14 @@ def get_activity_json_for_date(client, selected_date):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return (f"return code: 1Error occurred during Garmin Connect Client get activity json for date "
-                f"{selected_date}: {err}")
+        return (
+            f"return code: 1Error occurred during Garmin Connect Client get activity json for date "
+            f"{selected_date}: {err}")
     except Exception as err:
-        return (f"return code: 1Unknown error occurred during Garmin Connect Client get activity json for date "
-                f"{selected_date}: "
-                f"{err}")
+        return (
+            f"return code: 1Unknown error occurred during Garmin Connect Client get activity json for date "
+            f"{selected_date}: "
+            f"{err}")
 
 
 def download_tcx(api, activity_id, output_file_tcx, output_file_gpx):
@@ -160,8 +168,9 @@ def download_tcx(api, activity_id, output_file_tcx, output_file_gpx):
     ) as err:
         return f"return code: 1Error occurred during Garmin Connect Client download tcx for id {activity_id}: {err}"
     except Exception as err:
-        return (f"return code: 1Unknown error occurred during Garmin Connect Client download tcx for id {activity_id}: "
-                f"{err}")
+        return (
+            f"return code: 1Unknown error occurred during Garmin Connect Client download tcx for id {activity_id}: "
+            f"{err}")
 
 
 def download_gpx(api, activity_id, output_file):
@@ -177,8 +186,9 @@ def download_gpx(api, activity_id, output_file):
     ) as err:
         return f"return code: 1Error occurred during Garmin Connect Client download gpx for id {activity_id}: {err}"
     except Exception as err:
-        return (f"return code: 1Unknown error occurred during Garmin Connect Client download gpx for id {activity_id}: "
-                f"{err}")
+        return (
+            f"return code: 1Unknown error occurred during Garmin Connect Client download gpx for id {activity_id}: "
+            f"{err}")
 
 
 def get_exercise_set(api, activity_id, folder):
@@ -349,11 +359,13 @@ def get_solar_intensity_for_date(api, selected_date, device_id):
             GarminConnectAuthenticationError,
             GarminConnectTooManyRequestsError,
     ) as err:
-        return (f"return code: 1Error occurred during Garmin Connect Client get solar intensity for date "
-                f"{selected_date}: {err}")
+        return (
+            f"return code: 1Error occurred during Garmin Connect Client get solar intensity for date "
+            f"{selected_date}: {err}")
     except Exception as err:  # pylint: disable=broad-except
-        return (f"return code: 1Unknown error occurred during Garmin Connect Client get solar intensity for date "
-                f"{selected_date}: {err}")
+        return (
+            f"return code: 1Unknown error occurred during Garmin Connect Client get solar intensity for date "
+            f"{selected_date}: {err}")
 
 
 def get_battery_charged_in_percent(solar):
@@ -362,18 +374,23 @@ def get_battery_charged_in_percent(solar):
         for data in data_for_dates:
             if "solarInputReadings" in data:
                 solar_reading_for_date = data["solarInputReadings"]
-                solar_utilization = [intensity["solarUtilization"] for intensity in solar_reading_for_date if
+                solar_utilization = [intensity["solarUtilization"] for intensity in
+                                     solar_reading_for_date if
                                      intensity["solarUtilization"] > 0]
 
-                solar_exposition = [intensity["solarUtilization"] for intensity in solar_reading_for_date if
+                solar_exposition = [intensity["solarUtilization"] for intensity in
+                                    solar_reading_for_date if
                                     intensity["solarUtilization"] > 5]
                 start_date = datetime.strptime(solar_reading_for_date[0]["readingTimestampLocal"],
                                                '%Y-%m-%dT%H:%M:%S.%f')
                 end_date = datetime.strptime(solar_reading_for_date[-1]["readingTimestampLocal"],
                                              '%Y-%m-%dT%H:%M:%S.%f')
                 seconds = (end_date - start_date).seconds
-                multiplicand = 0.2 / (60 * 100)  # 0.2 % per 60 minutes 100% solar intensity (Fenix 6)
-                return sum(solar_utilization) * multiplicand, len(solar_exposition) / 60, 86400 - seconds < 999
+                multiplicand = 0.2 / (
+                            60 * 100)  # 0.2 % per 60 minutes 100% solar intensity (Fenix 6)
+                return sum(solar_utilization) * multiplicand, len(
+                    solar_exposition) / 60, 86400 - seconds < 999
+
 
 def merge_tracks(gpx_track_files_to_merge, output_file, name):
     try:
@@ -388,7 +405,7 @@ def merge_tracks(gpx_track_files_to_merge, output_file, name):
             else:
                 time1 = get_time(analyzer_for_all_tracks.gpx)
                 time2 = get_time(analyzer_for_single_track.gpx)
-                if  time1 is None or time2 is None or time1 < time2:
+                if time1 is None or time2 is None or time1 < time2:
                     analyzer_for_all_tracks.gpx.tracks.extend(analyzer_for_single_track.gpx.tracks)
                 else:
                     analyzer_for_single_track.gpx.tracks.extend(analyzer_for_all_tracks.gpx.tracks)
@@ -406,5 +423,6 @@ def merge_tracks(gpx_track_files_to_merge, output_file, name):
 def get_time(gpx):
     if gpx.time:
         return gpx.time
-    if gpx and len(gpx.tracks) > 0 and len(gpx.tracks[0].segments) > 0 and len(gpx.tracks[0].segments[0].points) > 0:
+    if gpx and len(gpx.tracks) > 0 and len(gpx.tracks[0].segments) > 0 and len(
+            gpx.tracks[0].segments[0].points) > 0:
         return gpx.tracks[0].segments[0].points[0].time

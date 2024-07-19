@@ -1,60 +1,42 @@
-from datetime import datetime
 from xml.etree import ElementTree
 
-import dateutil
-from dateutil.parser import ParserError
 from gpxpy import gpx
-from tcxparser import TCXParser
+from tcxreader.tcxreader import TCXReader
 
 
-def convert_tcx_to_gpx(in_file_path, out_file_path=None):
-    tcx = TCXParser(str(in_file_path))
-    number_track_points = len(tcx.position_values())
-    has_power = len(tcx.power_values()) >= number_track_points
-    has_cadence = len(tcx.cadence_values()) >= number_track_points
-    has_hr = len(tcx.hr_values()) >= number_track_points
-    has_distance = len(tcx.distance_values()) >= number_track_points
-    track_points = zip(tcx.position_values(), tcx.altitude_points(), tcx.time_values(),
-                       tcx.hr_values() if has_hr else [-1] * number_track_points,
-                       tcx.cadence_values() if has_cadence else [-1] * number_track_points,
-                       tcx.power_values() if has_power else [-1] * number_track_points,
-                       tcx.distance_values() if has_distance else [-1] * number_track_points
-                       )
+def convert_tcx_to_gpx(in_file_path, out_file_path=None, name=""):
+    tcx_reader = TCXReader()
+    data = tcx_reader.read(in_file_path)
+    has_hr = data.hr_avg > 0
+    has_cadence = data.cadence_avg > 0
     print(f"Extracting track points from tcx file {in_file_path}")
     gpx_from_tcx = gpx.GPX()
     gpx_from_tcx.nsmap["gpxtpx"] = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
-    try:
-        gpx_from_tcx.name = dateutil.parser.parse(tcx.started_at).isoformat()
-    except ParserError as pe:
-        raise ParserError(f"The start date/time in TCX file {in_file_path} is not in ISO format.") from pe
+    gpx_from_tcx.name = name
     gpx_from_tcx.description = ""
     gpx_track = gpx.GPXTrack(
-        name=dateutil.parser.parse(tcx.started_at).isoformat(),
+        name=name,
         description="",
     )
-    gpx_track.type = tcx.activity_type
+    gpx_track.type = data.activity_type
     gpx_from_tcx.tracks.append(gpx_track)
     gpx_segment = gpx.GPXTrackSegment()
     gpx_track.segments.append(gpx_segment)
-    for point in track_points:
-        try:
-            time = datetime.fromisoformat(point[2])
-        except ValueError:
-            time = datetime.strptime(point[2], "%Y-%m-%dT%H:%M:%S.%fZ")
+    for point in data.trackpoints:
         gpx_track_point = gpx.GPXTrackPoint(
-            latitude=point[0][0],
-            longitude=point[0][1],
-            elevation=point[1],
-            time=time,
+            latitude=point.latitude,
+            longitude=point.longitude,
+            elevation=point.elevation,
+            time=point.time,
         )
 
-        if has_hr or has_cadence or has_power:
+        if has_hr or has_cadence:
             gpx_track_point.extensions.append(
                 ElementTree.fromstring(f"""<gpxtpx:TrackPointExtension xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">
-                    {f"<gpxtpx:hr>{point[3]}</gpxtpx:hr>" if has_hr else ""}
-                    {f"<gpxtpx:cadence>{point[4]}</gpxtpx:cadence>" if has_cadence else ""}
-                    {f"<gpxtpx:power>{point[5]}</gpxtpx:power>" if has_power else ""}
-                    {f"<gpxtpx:distance>{point[6]}</gpxtpx:distance>" if has_distance else ""}
+                    {f"<gpxtpx:hr>{point.hr_value}</gpxtpx:hr>" if has_hr else ""}
+                    {f"<gpxtpx:cadence>{point.cadence}</gpxtpx:cadence>" if has_cadence else ""}
+                    {f"<gpxtpx:power>{point.tpx_ext['Watts']}</gpxtpx:power>" if 'Watts' in point.tpx_ext else ""}
+                    {f"<gpxtpx:distance>{point.distance}</gpxtpx:distance>"}
                     </gpxtpx:TrackPointExtension>
                 """)
             )

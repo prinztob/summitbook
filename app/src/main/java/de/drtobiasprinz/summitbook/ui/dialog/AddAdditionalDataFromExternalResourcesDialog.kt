@@ -24,6 +24,7 @@ import de.drtobiasprinz.summitbook.databinding.DialogAddAdditionalDataFromExtern
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
+import de.drtobiasprinz.summitbook.models.AdditionalDataTableEntry
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
@@ -91,6 +92,33 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             }
             dialog?.cancel()
         }
+        binding.recalculate.setOnClickListener {
+            binding.loading.visibility = View.VISIBLE
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    try {
+                        Log.i(
+                            "AsyncSimplifyGpsTracks",
+                            "Simplifying track ${summit.getDateAsString()}_${summit.name}."
+                        )
+                        pythonInstance?.let { it1 ->
+                            GpxPyExecutor(it1).createSimplifiedGpxTrack(
+                                summit.getGpsTrackPath(
+                                    simplified = false
+                                )
+                            )
+                        }
+                    } catch (ex: RuntimeException) {
+                        Log.e(
+                            "AsyncSimplifyGpsTracks",
+                            "Error in simplify track for ${summit.getDateAsString()}_${summit.name}: ${ex.message}"
+                        )
+                    }
+                }
+                binding.loading.visibility = View.GONE
+                extractDataFromFilesAndPutIntoView(summit)
+            }
+        }
         binding.deleteData.setOnClickListener {
             summit.velocityData = VelocityData(
                 summit.velocityData.avgVelocity,
@@ -127,6 +155,11 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             viewModel.saveSummit(true, summit)
             dialog?.cancel()
         }
+        extractDataFromFilesAndPutIntoView(summit)
+    }
+
+    private fun extractDataFromFilesAndPutIntoView(summit: Summit) {
+        tableEntries.clear()
         if (summit.garminData != null && summit.garminData?.activityId != null) {
             val splitsFile =
                 summit.garminData?.activityIds?.map { File("${activitiesDir?.absolutePath}/activity_${it}_splits.json") }
@@ -154,6 +187,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         if (gpxPyJsonFile.exists()) {
             extractGpxPyJson(gpxPyJsonFile, summit)
         }
+        binding.tableSummits.removeAllViews()
         drawTable(binding.root)
     }
 
@@ -164,287 +198,40 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         val gpxPyJson =
             JsonParser.parseString(JsonUtils.getJsonData(gpxPyJsonFile)) as JsonObject
 
-        val elevationGain =
-            gpxPyJson.getAsJsonPrimitive("elevation_gain").asDouble.roundToInt()
-        if (elevationGain > 0) {
-            tableEntries.add(
-                TableEntry(
-                    getString(R.string.height_meter_hint),
-                    elevationGain.toDouble(),
-                    getString(R.string.hm),
-                    summit.elevationData.elevationGain == elevationGain,
-                    { e ->
-                        summit.elevationData.elevationGain = e.toInt()
-                    },
-                    summit.elevationData.elevationGain.toDouble(), isInt = true
-                )
-            )
+        AdditionalDataTableEntry.entries.filter { it.jsonKey != "" }.forEach {
+            if (gpxPyJson.has(it.jsonKey)) {
+                val value =
+                    gpxPyJson.getAsJsonPrimitive(it.jsonKey).asDouble * it.scaleFactorForJson(
+                        gpxPyJson
+                    )
+                if (value > 0) {
+                    tableEntries.add(TableEntry(value, summit, it))
+                }
+            }
         }
-
-        val maxElevation =
-            gpxPyJson.getAsJsonPrimitive("max_elevation").asDouble.roundToInt()
-        if (maxElevation > 0) {
-            tableEntries.add(
-                TableEntry(
-                    getString(R.string.top_elevation_hint),
-                    maxElevation.toDouble(),
-                    getString(R.string.hm),
-                    summit.elevationData.maxElevation == maxElevation,
-                    { e ->
-                        summit.elevationData.maxElevation = e.toInt()
-                    },
-                    summit.elevationData.maxElevation.toDouble(), isInt = true
-                )
-            )
-        }
-
-        val distance =
-            gpxPyJson.getAsJsonPrimitive("moving_distance").asDouble / 1000
-        if (distance > 0) {
-            tableEntries.add(
-                TableEntry(
-                    getString(R.string.kilometers_hint),
-                    distance,
-                    getString(R.string.km), abs(summit.kilometers - distance) < 0.05,
-                    { e -> summit.kilometers = e },
-                    summit.kilometers
-                )
-            )
-        }
-
-        val movingDuration =
-            gpxPyJson.getAsJsonPrimitive("moving_time").asDouble
-        if (movingDuration > 0) {
-            val pace = distance / movingDuration * 3600
-            tableEntries.add(
-                TableEntry(
-                    getString(R.string.pace_hint),
-                    pace,
-                    getString(R.string.kmh),
-                    abs(summit.velocityData.avgVelocity - pace) < 0.05,
-                    { e -> summit.velocityData.avgVelocity = e },
-                    summit.velocityData.avgVelocity
-                )
-            )
-        }
-
-        val maxVelocity =
-            gpxPyJson.getAsJsonPrimitive("max_speed").asDouble * 3.6
-        if (maxVelocity > 0) {
-            tableEntries.add(
-                TableEntry(
-                    getString(R.string.top_speed),
-                    maxVelocity, getString(R.string.kmh),
-                    abs(summit.velocityData.maxVelocity - maxVelocity) < 0.05,
-                    { e -> summit.velocityData.maxVelocity = e },
-                    summit.velocityData.maxVelocity
-                )
-            )
-        }
-        if (gpxPyJson.has("slope_100")) {
-            val value = gpxPyJson.getAsJsonPrimitive("slope_100").asDouble
-            tableEntries.add(
-                TableEntry(
-                    getString(R.string.max_slope),
-                    value, getString(R.string.per_cent),
-                    abs(summit.elevationData.maxSlope - value) < 0.05,
-                    { e -> summit.elevationData.maxSlope = e },
-                    0.0
-                )
-            )
-        }
-        if (gpxPyJson.has("vertical_velocities_60s")) {
-            val value =
-                gpxPyJson.getAsJsonPrimitive("vertical_velocities_60s").asDouble
-            tableEntries.add(
-                TableEntry(
-                    getString(R.string.max_verticalVelocity_1Min),
-                    value, getString(R.string.m),
-                    summit.elevationData.maxVerticalVelocity1Min != 0.0 && abs(
-                        summit.elevationData.maxVerticalVelocity1Min - value
-                    ) * 60 < 0.05,
-                    { e ->
-                        summit.elevationData.maxVerticalVelocity1Min =
-                            e
-                    },
-                    0.0, scaleFactor = 60
-                )
-            )
-        }
-        if (gpxPyJson.has("vertical_velocities_600s")) {
-            val value =
-                gpxPyJson.getAsJsonPrimitive("vertical_velocities_600s").asDouble
-            tableEntries.add(
-                TableEntry(
-                    getString(R.string.max_verticalVelocity_10Min),
-                    value, getString(R.string.m),
-                    summit.elevationData.maxVerticalVelocity10Min != 0.0 && abs(
-                        summit.elevationData.maxVerticalVelocity10Min - value
-                    ) * 600 < 0.05,
-                    { e ->
-                        summit.elevationData.maxVerticalVelocity10Min =
-                            e
-                    },
-                    0.0, scaleFactor = 600
-                )
-            )
-        }
-        if (gpxPyJson.has("vertical_velocities_3600s")) {
-            val value =
-                gpxPyJson.getAsJsonPrimitive("vertical_velocities_3600s").asDouble
-            tableEntries.add(
-                TableEntry(
-                    getString(R.string.max_verticalVelocity_1h),
-                    value, getString(R.string.m),
-                    summit.elevationData.maxVerticalVelocity1h != 0.0 && abs(
-                        summit.elevationData.maxVerticalVelocity1h - value
-                    ) * 3600 < 0.05,
-                    { e ->
-                        summit.elevationData.maxVerticalVelocity1h = e
-                    },
-                    0.0, scaleFactor = 3600
-                )
-            )
-        }
+//
+//
     }
 
     private fun setSpeedDataFromSplitsJson(
         splitsFile: List<File>,
         summit: Summit
     ) {
-        val maxVelocitySummit = MaxVelocitySummit.getMaxVelocitySummitFromSpliFiles(splitsFile.sorted())
-        tableEntries.add(
-            TableEntry(getString(R.string.top_speed_1km_hint),
-                if (summit.velocityData.oneKilometer > 0.0) {
-                    summit.velocityData.oneKilometer
+        val maxVelocitySummit =
+            MaxVelocitySummit.getMaxVelocitySummitFromSpliFiles(splitsFile.sorted())
+        var lastValue = 1.0
+        AdditionalDataTableEntry.entries.filter { it.jsonKey == "" }.forEach {
+            if (lastValue > 0.0) {
+                val value = if (it.getValue(summit) > 0.0) {
+                    it.getValue(summit)
                 } else {
-                    maxVelocitySummit.getAverageVelocityForKilometers(
-                        1.0
-                    )
-                },
-                getString(R.string.kmh),
-                summit.velocityData.oneKilometer > 0.0,
-                { e -> summit.velocityData.oneKilometer = e })
-        )
-        if (tableEntries.last().value > 0) {
-            tableEntries.add(
-                TableEntry(getString(R.string.top_speed_5km_hint),
-                    if (summit.velocityData.fiveKilometer > 0.0) summit.velocityData.fiveKilometer else maxVelocitySummit.getAverageVelocityForKilometers(
-                        5.0
-                    ),
-                    getString(R.string.kmh),
-                    summit.velocityData.fiveKilometer > 0.0,
-                    { e ->
-                        summit.velocityData.fiveKilometer = e
-                    })
-            )
-        }
-        if (tableEntries.last().value > 0) {
-            tableEntries.add(
-                TableEntry(getString(R.string.top_speed_10km_hint),
-                    if (summit.velocityData.tenKilometers > 0.0) summit.velocityData.tenKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        10.0
-                    ),
-                    getString(R.string.kmh),
-                    summit.velocityData.tenKilometers > 0.0,
-                    { e ->
-                        summit.velocityData.tenKilometers = e
-                    })
-            )
-        }
-        if (tableEntries.last().value > 0) {
-            tableEntries.add(
-                TableEntry(getString(R.string.top_speed_15km_hint),
-                    if (summit.velocityData.fifteenKilometers > 0.0) {
-                        summit.velocityData.fifteenKilometers
-                    } else {
-                        maxVelocitySummit.getAverageVelocityForKilometers(15.0)
-                    },
-                    getString(R.string.kmh),
-                    summit.velocityData.fifteenKilometers > 0.0,
-                    { e ->
-                        summit.velocityData.fifteenKilometers = e
-                    })
-            )
-        }
-        if (tableEntries.last().value > 0) {
-            tableEntries.add(
-                TableEntry(getString(R.string.top_speed_20km_hint),
-                    if (summit.velocityData.twentyKilometers > 0.0) summit.velocityData.twentyKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        20.0
-                    ),
-                    getString(R.string.kmh),
-                    summit.velocityData.twentyKilometers > 0.0,
-                    { e ->
-                        summit.velocityData.twentyKilometers = e
-                    })
-            )
-        }
-        if (tableEntries.last().value > 0) {
-            tableEntries.add(
-                TableEntry(getString(R.string.top_speed_30km_hint),
-                    if (summit.velocityData.thirtyKilometers > 0.0) summit.velocityData.thirtyKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        30.0
-                    ),
-                    getString(R.string.kmh),
-                    summit.velocityData.thirtyKilometers > 0.0,
-                    { e ->
-                        summit.velocityData.thirtyKilometers = e
-                    })
-            )
-        }
-        if (tableEntries.last().value > 0) {
-            tableEntries.add(
-                TableEntry(getString(R.string.top_speed_40km_hint),
-                    if (summit.velocityData.fortyKilometers > 0.0) summit.velocityData.fortyKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        40.0
-                    ),
-                    getString(R.string.kmh),
-                    summit.velocityData.fortyKilometers > 0.0,
-                    { e ->
-                        summit.velocityData.fortyKilometers = e
-                    })
-            )
-        }
-        if (tableEntries.last().value > 0) {
-            tableEntries.add(
-                TableEntry(getString(R.string.top_speed_50km_hint),
-                    if (summit.velocityData.fiftyKilometers > 0.0) summit.velocityData.fiftyKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        50.0
-                    ),
-                    getString(R.string.kmh),
-                    summit.velocityData.fiftyKilometers > 0.0,
-                    { e ->
-                        summit.velocityData.fiftyKilometers = e
-                    })
-            )
-        }
-        if (tableEntries.last().value > 0) {
-            tableEntries.add(
-                TableEntry(getString(R.string.top_speed_75km_hint),
-                    if (summit.velocityData.seventyFiveKilometers > 0.0) summit.velocityData.seventyFiveKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        75.0
-                    ),
-                    getString(R.string.kmh),
-                    summit.velocityData.seventyFiveKilometers > 0.0,
-                    { e ->
-                        summit.velocityData.seventyFiveKilometers =
-                            e
-                    })
-            )
-        }
-        if (tableEntries.last().value > 0) {
-            tableEntries.add(
-                TableEntry(getString(R.string.top_speed_100km_hint),
-                    if (summit.velocityData.hundredKilometers > 0.0) summit.velocityData.hundredKilometers else maxVelocitySummit.getAverageVelocityForKilometers(
-                        100.0
-                    ),
-                    getString(R.string.kmh),
-                    summit.velocityData.hundredKilometers > 0.0,
-                    { e ->
-                        summit.velocityData.hundredKilometers = e
-                    })
-            )
+                    it.getValueFromMaxVelocitySummit(maxVelocitySummit)
+                }
+                if (value != null) {
+                    tableEntries.add(TableEntry(value, summit, it))
+                    lastValue = value
+                }
+            }
         }
     }
 
@@ -491,69 +278,78 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
 
     private fun addSummitToTable(entry: TableEntry, view: View, i: Int, tl: TableLayout) {
         var name = ""
-        val splitName = entry.name.split(" ")
-        splitName.forEachIndexed { index, element ->
-            name += if (index == splitName.size - 1) {
-                element
-            } else if (index % 2 == 0 && splitName.size > 2) {
-                "$element "
-            } else {
-                "$element \n"
-            }
-        }
-        val tr = TableRow(view.context)
-        tr.setBackgroundColor(Color.GRAY)
-        tr.id = 100 + i
-        tr.layoutParams = TableLayout.LayoutParams(
-            TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT
-        )
-        addLabel(view, tr, 200 + i, name, padding = 2)
-        addLabel(
-            view,
-            tr,
-            201 + i,
-            String.format(
-                requireContext().resources.configuration.locales[0],
-                if (entry.isInt) "%.0f" else "%.1f",
-                entry.value * entry.scaleFactor
-            ),
-            padding = 2,
-            alignment = View.TEXT_ALIGNMENT_TEXT_END
-        )
-        val defaultValueAsString =
-            if (abs(entry.defaultValue) < 0.05 || abs(entry.value - entry.defaultValue) < 0.05) "-" else String.format(
-                requireContext().resources.configuration.locales[0],
-                if (entry.isInt) "%.0f" else "%.1f",
-                entry.defaultValue * entry.scaleFactor
-            )
-        addLabel(
-            view,
-            tr,
-            202 + i,
-            defaultValueAsString,
-            padding = 2,
-            alignment = View.TEXT_ALIGNMENT_TEXT_END
-        )
-        addLabel(
-            view,
-            tr,
-            203 + i,
-            entry.unit,
-            padding = 2,
-            alignment = View.TEXT_ALIGNMENT_TEXT_END
-        )
-        val box = CheckBox(view.context)
-        box.isChecked = entry.isChecked
-        box.setOnCheckedChangeListener { _, arg1 ->
-            entry.isChecked = arg1
-        }
+        val localSummit = summitEntry
+        if (localSummit != null) {
 
-        tr.addView(box)
-        tl.addView(
-            tr, TableLayout.LayoutParams(
-                TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT
+            val splitName = getString(entry.tableEntry.nameId).split(" ")
+            splitName.forEachIndexed { index, element ->
+                name += if (index == splitName.size - 1) {
+                    element
+                } else if (index % 2 == 0 && splitName.size > 2) {
+                    "$element "
+                } else {
+                    "$element \n"
+                }
+            }
+            val tr = TableRow(view.context)
+            tr.setBackgroundColor(Color.GRAY)
+            tr.id = 100 + i
+            tr.layoutParams = TableLayout.LayoutParams(
+                TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT
             )
-        )
+            addLabel(view, tr, 200 + i, name, padding = 2)
+            addLabel(
+                view,
+                tr,
+                201 + i,
+                String.format(
+                    requireContext().resources.configuration.locales[0],
+                    if (entry.tableEntry.isInt) "%.0f" else "%.1f",
+                    entry.value * entry.tableEntry.scaleFactorView
+                ),
+                padding = 2,
+                alignment = View.TEXT_ALIGNMENT_TEXT_END
+            )
+            val currentValue = entry.tableEntry.getValue(localSummit)
+            val defaultValueAsString =
+                if (abs(currentValue) < 0.05 || abs(entry.value - currentValue) < (if (entry.tableEntry.isInt) 0.51 else 0.05)) {
+                    "-"
+                } else {
+                    String.format(
+                        requireContext().resources.configuration.locales[0],
+                        if (entry.tableEntry.isInt) "%.0f" else "%.1f",
+                        currentValue * entry.tableEntry.scaleFactorView
+                    )
+                }
+            addLabel(
+                view,
+                tr,
+                202 + i,
+                defaultValueAsString,
+                padding = 2,
+                alignment = View.TEXT_ALIGNMENT_TEXT_END
+            )
+            addLabel(
+                view,
+                tr,
+                203 + i,
+                getString(entry.tableEntry.unitId),
+                padding = 2,
+                alignment = View.TEXT_ALIGNMENT_TEXT_END
+            )
+            val box = CheckBox(view.context)
+            box.isChecked = entry.isChecked
+            box.setOnCheckedChangeListener { _, arg1 ->
+                entry.isChecked = arg1
+            }
+
+            tr.addView(box)
+            tl.addView(
+                tr, TableLayout.LayoutParams(
+                    TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT
+                )
+            )
+        }
     }
 
     private fun addHeader(view: View, tl: TableLayout) {
@@ -604,23 +400,22 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
     }
 
     class TableEntry(
-        var name: String,
         var value: Double,
-        var unit: String,
-        var isChecked: Boolean,
-        var f: (Double) -> Unit,
-        var defaultValue: Double = 0.0,
-        var scaleFactor: Int = 1,
-        var isInt: Boolean = false
+        var summit: Summit,
+        var tableEntry: AdditionalDataTableEntry,
     ) {
         var isSet: Boolean = true
+        var isChecked: Boolean = if (tableEntry.isInt) {
+            tableEntry.getValue(summit)
+                .roundToInt() == (value).roundToInt()
+        } else {
+            abs(tableEntry.getValue(summit) - value) * tableEntry.scaleFactorView < 0.05
+        }
+
         fun update() {
             if (isSet) {
-                if (isChecked) {
-                    f(value)
-                } else {
-                    f(defaultValue)
-                }
+                val valueToSet = if (isChecked) value else tableEntry.getValue(summit)
+                tableEntry.setValue(summit, valueToSet)
             }
         }
     }
