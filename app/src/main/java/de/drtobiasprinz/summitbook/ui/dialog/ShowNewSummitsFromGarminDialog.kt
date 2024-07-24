@@ -201,9 +201,9 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
             summits.filter { !it.garminData?.activityIds.isNullOrEmpty() }
                 .map { it.garminData?.activityIds as List<String> }.flatten()
         entriesWithoutIgnored = if (showAll) {
-            getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
+            getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activityIdsInSummitBook }.take(25) as MutableList
         } else {
-            getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook } as MutableList
+            getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook }.take(25) as MutableList
         }
     }
 

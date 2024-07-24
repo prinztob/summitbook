@@ -71,6 +71,8 @@ import org.xmlpull.v1.XmlPullParserException
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -773,7 +775,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
 
     private fun getTextWithDefaultDouble(editText: EditText): Double {
         return try {
-            editText.text.toString().toDouble()
+            BigDecimal(editText.text.toString().toDouble()).setScale(2, RoundingMode.HALF_UP).toDouble()
         } catch (e: Exception) {
             0.0
         }

@@ -12,6 +12,8 @@ import de.drtobiasprinz.summitbook.db.entities.SportType.Companion.getSportTypeF
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import java.io.File
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -342,7 +344,7 @@ class GarminPythonExecutor(
         }
 
         private fun convertMphToKmh(mph: Double): Double {
-            return mph * 3.6
+            return BigDecimal(mph * 3.6).setScale(2, RoundingMode.HALF_UP).toDouble()
         }
 
         private fun convertMeterToKm(meter: Double): Double {
