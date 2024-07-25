@@ -81,7 +81,13 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                                 val endDate = current.format(formatter)
                                 val startDateForSync = (current.minusDays(1)).format(formatter)
                                 binding.loadingPanel.visibility = View.VISIBLE
-                                asyncDownloadActivities(summits, pythonExecutor, startDate, endDate, startDateForSync)
+                                asyncDownloadActivities(
+                                    summits,
+                                    pythonExecutor,
+                                    startDate,
+                                    endDate,
+                                    startDateForSync
+                                )
                             } else {
                                 Toast.makeText(
                                     context,
@@ -189,8 +195,15 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         }
     }
 
-    private fun getAllActivitiesFromThirdParty(): MutableList<Summit> {
-        return GarminPythonExecutor.getAllDownloadedSummitsFromGarmin(activitiesDir)
+    private fun getAllActivitiesFromThirdParty(
+        activityIdsInSummitBook: List<String>,
+        activitiesIdIgnored: List<String> = emptyList()
+    ): MutableList<Summit> {
+        return GarminPythonExecutor.getAllDownloadedSummitsFromGarmin(
+            activitiesDir,
+            activityIdsInSummitBook,
+            activitiesIdIgnored
+        )
     }
 
     private fun updateEntriesWithoutIgnored(summits: List<Summit>, showAll: Boolean = false) {
@@ -201,9 +214,12 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
             summits.filter { !it.garminData?.activityIds.isNullOrEmpty() }
                 .map { it.garminData?.activityIds as List<String> }.flatten()
         entriesWithoutIgnored = if (showAll) {
-            getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activityIdsInSummitBook }.take(25) as MutableList
+            getAllActivitiesFromThirdParty(activityIdsInSummitBook)
         } else {
-            getAllActivitiesFromThirdParty().filter { it.garminData?.activityId !in activitiesIdIgnored && it.garminData?.activityId !in activityIdsInSummitBook }.take(25) as MutableList
+            getAllActivitiesFromThirdParty(
+                activityIdsInSummitBook,
+                activitiesIdIgnored
+            )
         }
     }
 

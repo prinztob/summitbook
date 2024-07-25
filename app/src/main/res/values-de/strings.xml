@@ -353,6 +353,7 @@
     <string name="add_position_to_summit_successful">Hinzufügen einer neuen position zu Gipfel %1$s war erfolgreich.</string>
     <string name="no_email_program_installed">E-Mail program not installed</string>
     <string name="add_new_summit">Füge neuen Gipfel hinzu</string>
+    <string name="new_summits">Neue Gipfel</string>
     <string name="add_new_bookmark">Füge neues Lesezeichen hinzu</string>
     <string name="color_code_selection">Farbauswahl für Track</string>
     <string name="entry">Eintrag</string>
@@ -406,7 +407,8 @@
     <string name="daily_report_data">Täglicher Report</string>
     <string name="part_day">Nicht vollständig</string>
     <string name="whole_day">Ganzer Tag</string>
-    <string name="update_done">Update von Drittanbieterdaten durchgeführt</string>
+    <string name="update_done">Update durchgeführt, aber KEINE neuen Gipfel gefunden.</string>
+    <string name="update_done_new_summits">Update durchgeführt und neue Gipfel gefunden.</string>
     <string name="no_summit">Es gibt keinen Gipfel für diese Kriterien</string>
     <string name="floors_climbed">Hochgestiegene Stockwerke\n</string>
     <string name="steps">Schritte</string>

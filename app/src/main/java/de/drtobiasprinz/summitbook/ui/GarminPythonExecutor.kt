@@ -181,7 +181,11 @@ class GarminPythonExecutor(
             return entries
         }
 
-        fun getAllDownloadedSummitsFromGarmin(directory: File?): MutableList<Summit> {
+        fun getAllDownloadedSummitsFromGarmin(
+            directory: File?,
+            activityIdsInSummitBook: List<String> = emptyList(),
+            activitiesIdIgnored: List<String> = emptyList()
+        ): MutableList<Summit> {
             val entries = mutableListOf<Summit>()
             if (directory != null && directory.exists() && directory.isDirectory) {
                 val files = directory.listFiles()
@@ -195,7 +199,13 @@ class GarminPythonExecutor(
                         ) {
                             try {
                                 val gson = JsonParser.parseString(it.readText()) as JsonObject
-                                entries.add(parseJsonObject(gson))
+                                val entry = parseJsonObject(gson)
+                                if (entry.garminData?.activityId !in activityIdsInSummitBook && entry.garminData?.activityId !in activitiesIdIgnored) {
+                                    entries.add(entry)
+                                    if (entries.size > 20) {
+                                        return entries
+                                    }
+                                }
                             } catch (ex: IllegalArgumentException) {
                                 Log.i(
                                     "GarminPythonExecutor",
@@ -308,7 +318,7 @@ class GarminPythonExecutor(
                             summaryDTO.getAsJsonPrimitive("functionalThresholdPower").asDouble.toInt()
                     }
                 }
-                Log.d("PythonExecutor", "FTP: ${ftp}")
+                Log.d("PythonExecutor", "FTP: $ftp")
             }
             return ftp
         }

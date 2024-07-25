@@ -8,7 +8,6 @@ import android.widget.ProgressBar
 import android.widget.Toast
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.DailyReportData
-import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
@@ -24,16 +23,18 @@ import java.util.Locale
 class GarminDataUpdater(
     val sharedPreferences: SharedPreferences,
     private val pythonExecutor: GarminPythonExecutor,
-    val entries: List<Summit>?,
     private val dailyReportData: List<DailyReportData>?,
     private val databaseViewModel: DatabaseViewModel?
 ) {
     private var endDate: String = ""
     private var startDateForSync: String = ""
     private var startDate: String = ""
+    private var activitiesAtBeginning: Int = 0
+    private var activitiesAfterUpdate: Int = 0
 
     fun update() {
         startDate = sharedPreferences.getString("garmin_start_date", null) ?: ""
+        activitiesAtBeginning = MainActivity.activitiesDir?.listFiles()?.size ?: 0
         try {
             updateDailyReportData()
             updateActivities()
@@ -140,17 +141,33 @@ class GarminDataUpdater(
         }
     }
 
-    fun onFinish(progressBar: ProgressBar, context: Context) {
+    fun onFinish(progressBar: ProgressBar, context: Context, applyOnUpdates: () -> Unit = { }) {
         progressBar.visibility = View.GONE
         val edit = sharedPreferences.edit()
         edit.putString("garmin_start_date", startDateForSync)
         edit.apply()
         Log.i("AsyncUpdateGarminData", "Done.")
-        Toast.makeText(
-            context,
-            context.getString(R.string.update_done),
-            Toast.LENGTH_SHORT
-        ).show()
+        activitiesAfterUpdate = MainActivity.activitiesDir?.listFiles()?.size ?: 0
+        if (hasUpdates()) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.update_done_new_summits),
+                Toast.LENGTH_LONG
+            ).show()
+            applyOnUpdates()
+        } else {
+            Toast.makeText(
+                context,
+                context.getString(R.string.update_done),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+
+
+    }
+
+    private fun hasUpdates(): Boolean {
+        return activitiesAfterUpdate > activitiesAtBeginning
     }
 
     private fun getDatesBetween(startDate: String, endDate: String? = null): List<Date?> {

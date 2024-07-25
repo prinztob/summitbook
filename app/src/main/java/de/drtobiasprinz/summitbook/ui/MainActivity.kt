@@ -168,7 +168,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                             val updater = GarminDataUpdater(
                                                 sharedPreferences,
                                                 executor,
-                                                summits,
                                                 dailyReportData,
                                                 viewModel
                                             )
@@ -182,7 +181,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                                 }
                                                 updater.onFinish(
                                                     binding.loading, this@MainActivity
-                                                )
+                                                ) { showNewSummitsDialog() }
                                             }
                                         }
                                     }
@@ -195,27 +194,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                 Toast.LENGTH_LONG
                             ).show()
                         }
-                        return@setOnMenuItemClickListener true
-                    }
-
-                    (R.id.action_show_new_summits) -> {
-                        val dialog = ShowNewSummitsFromGarminDialog()
-                        dialog.save = { summits, isMerge ->
-                            binding.loading.visibility = View.VISIBLE
-                            binding.loading.tooltipText =
-                                getString(R.string.tool_tip_progress_new_garmin_activities,
-                                    summits.joinToString(", ") { it.name })
-                            if (isMerge) {
-                                executeDownload(summits)
-                            } else {
-                                summits.forEach {
-                                    executeDownload(listOf(it))
-                                }
-                            }
-                        }
-                        dialog.show(
-                            supportFragmentManager, "Show new summits from Garmin"
-                        )
                         return@setOnMenuItemClickListener true
                     }
 
@@ -459,12 +437,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 "Scheduler", "No more bounding boxes to update."
             )
             updateSimplifiedTracks(summits)
-            updateDailyReportData(executor, summits)
+            updateDailyReportData(executor)
         }
     }
 
     private fun updateDailyReportData(
-        executor: GarminPythonExecutor?, summits: List<Summit>?
+        executor: GarminPythonExecutor?
     ) {
         if (sharedPreferences.getBoolean(
                 "startup_auto_update_switch", false
@@ -474,7 +452,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             viewModel.dailyReportDataList.observeOnce(this) { dailyReportDataStatus ->
                 dailyReportDataStatus.data.let { dailyReportData ->
                     val updater = GarminDataUpdater(
-                        sharedPreferences, executor, summits, dailyReportData, viewModel
+                        sharedPreferences, executor, dailyReportData, viewModel
                     )
                     lifecycleScope.launch {
                         withContext(Dispatchers.IO) {
@@ -892,6 +870,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 ForecastDialog().show(this.supportFragmentManager, "ForecastDialog")
             }
 
+            R.id.nav_new_summits -> {
+                showNewSummitsDialog()
+            }
+
             R.id.nav_diashow -> {
                 openViewer()
             }
@@ -922,6 +904,26 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)
+    }
+
+    private fun showNewSummitsDialog() {
+        val dialog = ShowNewSummitsFromGarminDialog()
+        dialog.save = { summits, isMerge ->
+            binding.loading.visibility = View.VISIBLE
+            binding.loading.tooltipText =
+                getString(R.string.tool_tip_progress_new_garmin_activities,
+                    summits.joinToString(", ") { it.name })
+            if (isMerge) {
+                executeDownload(summits)
+            } else {
+                summits.forEach {
+                    executeDownload(listOf(it))
+                }
+            }
+        }
+        dialog.show(
+            supportFragmentManager, "Show new summits from Garmin"
+        )
     }
 
     private fun showExportCsvDialog() {
@@ -1190,7 +1192,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             )
             viewModel.refresh()
         }
-        if (key == "garmin_mfa" && !sharedPreferences.getBoolean("garmin_mfa", false) && File(storage?.absolutePath, ".garminconnect").exists()) {
+        if (key == "garmin_mfa" && !sharedPreferences.getBoolean("garmin_mfa", false) && File(
+                storage?.absolutePath,
+                ".garminconnect"
+            ).exists()
+        ) {
             File(storage?.absolutePath, ".garminconnect").delete()
         }
         if (key == "garmin_username" || key == "garmin_password" || key == "garmin_mfa") {

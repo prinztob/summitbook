@@ -352,6 +352,7 @@
     <string name="add_position_to_summit_successful">Adding a new position to summit %1$s was successful.</string>
     <string name="no_email_program_installed">E-Mail program not installed</string>
     <string name="add_new_summit">Add new summit</string>
+    <string name="new_summits">New summits</string>
     <string name="add_new_bookmark">Add new bookmark</string>
     <string name="color_code_selection">Select value used for color code</string>
     <string name="entry">Entry</string>
@@ -404,7 +405,8 @@
     <string name="daily_report_data">Daily Report Data</string>
     <string name="part_day">Part of day</string>
     <string name="whole_day">Complete day</string>
-    <string name="update_done">Update of third party data done</string>
+    <string name="update_done">Update done and NO new summits found.</string>
+    <string name="update_done_new_summits">Update done and new summits found.</string>
     <string name="no_summit">There is no summit for this criteria</string>
     <string name="floors_climbed">Climbed Floors\n</string>
     <string name="steps">Steps</string>
