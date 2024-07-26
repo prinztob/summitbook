@@ -98,12 +98,13 @@ class TrackAnalyzer(object):
                                 self.points_with_time.append(point)
                             all_power_entries = [el.text for el in point.extensions[0] if 'power' in el.tag]
                             if len(all_power_entries) > 0:
-                                if last_point is not None and abs((point.time - last_point.time).seconds) > 5:
-                                    for seconds in range(1, abs((point.time - last_point.time).seconds)):
-                                        self.time_entries.append(last_point.time + datetime.timedelta(0, seconds))
+                                if last_time is not None and abs((point.time - last_time).seconds) > 5:
+                                    for seconds in range(1, abs((point.time - last_time).seconds)):
+                                        self.time_entries.append(last_time + datetime.timedelta(seconds=seconds))
                                         self.power_entries.append(0)
                                 self.time_entries.append(point.time)
                                 self.power_entries.append(all_power_entries[0])
+                                last_time = point.time
                             last_point = point
                     segment.points = points
 

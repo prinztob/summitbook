@@ -863,7 +863,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 binding.loadingPanel.visibility = View.GONE
                 binding.loadingPanel.tooltipText = ""
             }
-        } catch (e: java.lang.RuntimeException) {
+        } catch (e: RuntimeException) {
             Log.e("AsyncDownloadActivities", e.message ?: "")
         }
     }

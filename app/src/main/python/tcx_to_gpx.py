@@ -7,8 +7,8 @@ from tcxreader.tcxreader import TCXReader
 def convert_tcx_to_gpx(in_file_path, out_file_path=None, name=""):
     tcx_reader = TCXReader()
     data = tcx_reader.read(in_file_path)
-    has_hr = data.hr_avg > 0
-    has_cadence = data.cadence_avg > 0
+    has_hr = data.hr_avg is not None and data.hr_avg > 0
+    has_cadence = data.cadence_avg is not None and data.cadence_avg > 0
     print(f"Extracting track points from tcx file {in_file_path}")
     gpx_from_tcx = gpx.GPX()
     gpx_from_tcx.nsmap["gpxtpx"] = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1"

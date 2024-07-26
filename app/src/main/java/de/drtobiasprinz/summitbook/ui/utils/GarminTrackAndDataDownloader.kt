@@ -34,24 +34,29 @@ class GarminTrackAndDataDownloader(
 
     fun downloadTracks(isAlreadyDownloaded: Boolean = false) {
         for (entry in entries) {
-            val garminData = entry.garminData
-            if (garminData != null) {
-                val idsWithoutParentId = getIds(garminData)
-                for (activityId in idsWithoutParentId) {
-                    val file = getTempGpsFilePath(activityId).toFile()
-                    if (!(isAlreadyDownloaded || file.exists())) {
-                        if (useTcx) {
-                            garminPythonExecutor?.downloadTcxFile(
-                                activityId,
-                                getTempGpsFilePath(activityId, true).absolutePathString(),
-                                file.absolutePath,
-                            )
-                        } else {
-                            garminPythonExecutor?.downloadGpxFile(activityId, file.absolutePath)
+            try {
+
+                val garminData = entry.garminData
+                if (garminData != null) {
+                    val idsWithoutParentId = getIds(garminData)
+                    for (activityId in idsWithoutParentId) {
+                        val file = getTempGpsFilePath(activityId).toFile()
+                        if (!(isAlreadyDownloaded || file.exists())) {
+                            if (useTcx) {
+                                garminPythonExecutor?.downloadTcxFile(
+                                    activityId,
+                                    getTempGpsFilePath(activityId, true).absolutePathString(),
+                                    file.absolutePath,
+                                )
+                            } else {
+                                garminPythonExecutor?.downloadGpxFile(activityId, file.absolutePath)
+                            }
                         }
+                        downloadedTracks.add(file)
                     }
-                    downloadedTracks.add(file)
                 }
+            } catch (e: RuntimeException) {
+                Log.e("AsyncDownloadActivities", e.message ?: "")
             }
         }
     }
