@@ -23,6 +23,8 @@ import de.drtobiasprinz.summitbook.databinding.FragmentSummitViewBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
+import de.drtobiasprinz.summitbook.ui.observeOnce
+import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.isVisible
@@ -33,6 +35,8 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class SummitViewFragment : Fragment() {
+    private var hasRecordsBeenAdded: Boolean = false
+
     @Inject
     lateinit var summitsAdapter: SummitsAdapter
     private lateinit var binding: FragmentSummitViewBinding
@@ -124,6 +128,9 @@ class SummitViewFragment : Fragment() {
                         }
 
                         DataStatus.Status.SUCCESS -> {
+                            if (!hasRecordsBeenAdded) {
+                                setRecordsOnce(summitsStatus.data ?: emptyList())
+                            }
                             summitsStatus.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
                             loading.isVisible(false, recyclerView)
                             val data = sortFilterValues.apply(
@@ -200,6 +207,35 @@ class SummitViewFragment : Fragment() {
             val itemTouchHelper = ItemTouchHelper(swipeCallback)
             itemTouchHelper.attachToRecyclerView(recyclerView)
 
+        }
+    }
+
+    private fun setRecordsOnce(summits: List<Summit>) {
+        hasRecordsBeenAdded = true
+        val maxSummits = TimeIntervalPower.entries.map {
+            it.getMaxSummit(
+                ExtremaValuesSummits(
+                    summits,
+                    excludeZeroValueFromMin = true
+                )
+            )
+        }
+
+        viewModel?.segmentsList?.observeOnce(viewLifecycleOwner) { itDataSegments ->
+            itDataSegments.data.let { segments ->
+                if (!segments.isNullOrEmpty()) {
+                    summits.forEach { summit ->
+                        summit.updateSegmentInfo(segments)
+                    }
+                    summits.forEach { summit ->
+                        summit.hasPowerRecord = summit in maxSummits
+                        if (summit.segmentInfo.isNotEmpty()) {
+                            summit.bestPositionInSegment =
+                                summit.segmentInfo.minOf { it.third }
+                        }
+                    }
+                }
+            }
         }
     }
 
