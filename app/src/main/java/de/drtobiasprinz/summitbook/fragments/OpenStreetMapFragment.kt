@@ -191,44 +191,55 @@ class OpenStreetMapFragment : Fragment() {
                 mapCustomInfoBubble.entry.isInBoundingBox(it1)
             }
             if (shouldBeShown == false && it in mMarkersShown) {
+                Log.e(
+                    "trackPoints",
+                    "trackPoints --: ${mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0}"
+                )
                 pointsShown -= mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0
                 mapCustomInfoBubble.updateGpxTrack(forceRemove = true)
                 mMarkersShown.remove(it)
             }
             shouldBeShown == true
         }
+        var boxAlreadyShown = false
         markersInBoundingBox.forEach {
             if (it != null) {
                 val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
                 if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
-                    if (pointsShown < maxPointsToShow) {
-                        if (infoWindow.entry.hasGpsTrack()) {
-                            lifecycleScope.launch {
-                                withContext(Dispatchers.Default) {
+                    if (infoWindow.entry.hasGpsTrack()) {
+                        lifecycleScope.launch {
+                            var show = false
+                            withContext(Dispatchers.Default) {
+                                if (pointsShown < maxPointsToShow) {
+                                    show = true
                                     infoWindow.entry.setGpsTrack()
+                                    pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0
                                 }
-                                infoWindow.updateGpxTrack(forceShow = true)
                             }
-                            pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0
-                            mMarkersShown.add(it)
+                            if (show) {
+                                infoWindow.updateGpxTrack(forceShow = true)
+                                Log.e(
+                                    "trackPoints",
+                                    "trackPoints ${pointsShown}++: ${infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0}"
+                                )
+                                mMarkersShown.add(it)
+                            } else if (!boxAlreadyShown) {
+                                Toast.makeText(
+                                    context,
+                                    String.format(
+                                        requireContext().resources.getString(
+                                            R.string.summits_shown,
+                                            mMarkersShown.size.toString(),
+                                            markersInBoundingBox.size.toString()
+                                        )
+                                    ),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                boxAlreadyShown = true
+                            }
                         }
                     }
                 }
-            }
-        }
-        if (pointsShown > maxPointsToShow) {
-            if (context != null) {
-                Toast.makeText(
-                    context,
-                    String.format(
-                        requireContext().resources.getString(
-                            R.string.summits_shown,
-                            mMarkersShown.size.toString(),
-                            markersInBoundingBox.size.toString()
-                        )
-                    ),
-                    Toast.LENGTH_LONG
-                ).show()
             }
         }
         binding.osmap.zoomController.activate()

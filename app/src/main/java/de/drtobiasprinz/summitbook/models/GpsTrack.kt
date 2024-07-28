@@ -294,15 +294,39 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         val time = measureTimeMillis {
             gpxTrack = getTrack(fileToUse, gpsTrackPath.toFile())
         }
-        trackPoints = getTrackPoints(gpxTrack)
-        Log.e("GpxTrack", "Took $time")
-        trackGeoPoints = getGeoPoints(trackPoints)
+        trackPoints = calculateTrackPoints()
+        Log.i("GpxTrack", "Parsing took $time")
+        trackGeoPoints = calculateGeoPoints()
         if (trackPoints.size > 0 && trackPoints.first().pointExtension?.distance == null) {
             setDistance()
         }
         if (trackPoints.isEmpty() && deleteEmptyTrack) {
             fileToUse.delete()
         }
+    }
+
+    private fun calculateTrackPoints(): MutableList<TrackPoint> {
+        val trackPoints = mutableListOf<TrackPoint>()
+        val tracks = gpxTrack?.tracks
+        if (tracks != null) {
+            for (track in tracks) {
+                for (segment in track.trackSegments) {
+                    val points = segment.trackPoints
+                    trackPoints.addAll(points.filter { it.latitude != 0.0 && it.longitude != 0.0 })
+                }
+            }
+        }
+        return trackPoints
+    }
+
+    private fun calculateGeoPoints(): MutableList<GeoPoint> {
+        return trackPoints.map {
+            GeoPoint(
+                it.latitude,
+                it.longitude,
+                it.elevation ?: 0.0
+            )
+        } as MutableList<GeoPoint>
     }
 
 
@@ -364,31 +388,6 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         const val LINE_WIDTH_BIG = 12f
         private const val TEXT_SIZE = 20f
         private const val TAG = "GpsTrack"
-
-
-        private fun getTrackPoints(gpxTrackLocal: Gpx?): MutableList<TrackPoint> {
-            val trackPoints = mutableListOf<TrackPoint>()
-            if (gpxTrackLocal != null) {
-                val tracks = gpxTrackLocal.tracks
-                for (track in tracks) {
-                    for (segment in track.trackSegments) {
-                        val points = segment.trackPoints
-                        trackPoints.addAll(points.filter { it.latitude != 0.0 && it.longitude != 0.0 })
-                    }
-                }
-            }
-            return trackPoints
-        }
-
-        private fun getGeoPoints(trackPoints: List<TrackPoint>): MutableList<GeoPoint> {
-            return trackPoints.map {
-                GeoPoint(
-                    it.latitude,
-                    it.longitude,
-                    it.elevation ?: 0.0
-                )
-            } as MutableList<GeoPoint>
-        }
 
         private fun getTrack(fileToUse: File, fileInCaseOfException: File? = null): Gpx? {
             val mParser = GPXParser()

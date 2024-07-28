@@ -250,11 +250,9 @@ class SummitEntryPowerFragment : Fragment() {
                 ExtremaValuesSummits(filteredSummits, excludeZeroValueFromMin = true)
             val extremalChartEntries = getLineChartEntriesMax(extremaValuesAllSummits)
             val minimalChartEntries = getLineChartEntriesMin(extremaValuesAllSummits)
-
-            binding.lineChart.axisLeft.axisMaximum =
-                extremalChartEntries.maxOf { it?.y ?: 0f }
-            binding.lineChart.axisRight.axisMaximum =
-                extremalChartEntries.maxOf { it?.y ?: 0f }
+            val maxWatts = (extremalChartEntries + chartEntries).maxOf { it?.y ?: 0f }
+            binding.lineChart.axisLeft.axisMaximum = maxWatts
+            binding.lineChart.axisRight.axisMaximum = maxWatts
 
             val dataSetMaximalValues =
                 LineDataSet(
@@ -327,7 +325,7 @@ class SummitEntryPowerFragment : Fragment() {
     }
 
     private fun getLineChartEntriesMin(extremaValuesSummits: ExtremaValuesSummits?): MutableList<Entry?> {
-        return TimeIntervalPower.values().map {
+        return TimeIntervalPower.entries.map {
             Entry(
                 scaleCbr(it.seconds.toDouble()),
                 it.minPower(extremaValuesSummits),
@@ -337,7 +335,7 @@ class SummitEntryPowerFragment : Fragment() {
     }
 
     private fun getLineChartEntriesMax(extremaValuesSummits: ExtremaValuesSummits?): MutableList<Entry?> {
-        return TimeIntervalPower.values().map {
+        return TimeIntervalPower.entries.map {
             Entry(
                 scaleCbr(it.seconds.toDouble()),
                 it.maxPower(extremaValuesSummits),
@@ -455,7 +453,7 @@ class SummitEntryPowerFragment : Fragment() {
 
         override fun refreshContent(e: Entry, highlight: Highlight?) {
             val timeIntervalPower =
-                TimeIntervalPower.values().minByOrNull { abs(10f.pow(e.x) - it.seconds) }
+                TimeIntervalPower.entries.toTypedArray().minByOrNull { abs(10f.pow(e.x) - it.seconds) }
             var text = "${e.y.roundToInt()} W "
             if (extremaValuesAllSummits != null && timeIntervalPower != null && (timeIntervalPower.maxPower(
                     extremaValuesAllSummits

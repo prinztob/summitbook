@@ -349,6 +349,8 @@ class GPXParser {
             ISODateTimeFormat.dateTimeParser().parseDateTime(date)
         } catch (e: IllegalFieldValueException) {
             DateTime.now()
+        } catch (e: IllegalArgumentException) {
+            DateTime.now()
         }
         parser.require(XmlPullParser.END_TAG, namespace, TAG_TIME)
         return time
