@@ -280,7 +280,9 @@ class SummitEntryTrackFragment : Fragment() {
                 }
 
                 override fun onNothingSelected(adapterView: AdapterView<*>?) {
-                    pageViewModel?.setSummitToCompareToNull()
+                    if (summitToCompare != null) {
+                        pageViewModel?.setSummitToCompareToNull()
+                    }
                 }
             }
     }

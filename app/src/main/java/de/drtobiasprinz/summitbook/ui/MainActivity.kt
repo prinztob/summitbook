@@ -824,6 +824,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var CSV_FILE_NAME_SEGMENTS: String = "de-prinz-summitbook-export-segments.csv"
         var CSV_FILE_NAME_FORECASTS: String = "de-prinz-summitbook-export-forecasts.csv"
 
+        var hasRecordsBeenAdded: Boolean = false
         var entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
         var storage: File? = null
         var cache: File? = null

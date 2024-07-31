@@ -22,6 +22,7 @@ import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitViewBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.hasRecordsBeenAdded
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.observeOnce
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
@@ -30,12 +31,10 @@ import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.isVisible
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
-import java.time.LocalDateTime
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class SummitViewFragment : Fragment() {
-    private var hasRecordsBeenAdded: Boolean = false
 
     @Inject
     lateinit var summitsAdapter: SummitsAdapter
@@ -120,7 +119,6 @@ class SummitViewFragment : Fragment() {
                 }
             } else {
                 viewModel?.summitsList?.observe(viewLifecycleOwner) { summitsStatus ->
-                    Log.i("Performance", "${LocalDateTime.now()} observe")
                     when (summitsStatus.status) {
                         DataStatus.Status.LOADING -> {
                             loading.isVisible(true, recyclerView)
@@ -137,8 +135,6 @@ class SummitViewFragment : Fragment() {
                                 summitsStatus.data ?: emptyList(),
                                 sharedPreferences
                             )
-                            Log.i("Performance", "${LocalDateTime.now()} done")
-                            Log.i("Performance", "--------------------------")
                             summitsAdapter.differ.submitList(data)
                         }
 
@@ -211,11 +207,18 @@ class SummitViewFragment : Fragment() {
     }
 
     private fun setRecordsOnce(summits: List<Summit>) {
+        val filteredSummits = summits.filter {
+            !it.isBookmark && sortFilterValues.filterDate(it)
+        }
+        Log.i(
+            "SummitViewFragment",
+            "records will be added for ${filteredSummits.size} summits."
+        )
         hasRecordsBeenAdded = true
         val maxSummits = TimeIntervalPower.entries.map {
             it.getMaxSummit(
                 ExtremaValuesSummits(
-                    summits,
+                    filteredSummits,
                     excludeZeroValueFromMin = true
                 )
             )

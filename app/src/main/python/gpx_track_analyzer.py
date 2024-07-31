@@ -82,6 +82,7 @@ class TrackAnalyzer(object):
                 self.parse_track()
             distance = 0.0
             last_point = None
+            last_time = None
             for track in self.gpx.tracks:
                 for segment in track.segments:
                     points = []

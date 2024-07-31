@@ -63,6 +63,7 @@ class AddSegmentDetailsDialog : DialogFragment() {
                 viewModel.saveSegmentDetails(isUpdate, segmentDetails)
                 dialog?.cancel()
             }
+
         }
         val closeDialogButton = view.findViewById<Button>(R.id.add_segment_cancel)
         closeDialogButton.setOnClickListener { v: View ->

@@ -228,10 +228,10 @@ class OpenStreetMapFragment : Fragment() {
                                     context,
                                     String.format(
                                         requireContext().resources.getString(
-                                            R.string.summits_shown,
-                                            mMarkersShown.size.toString(),
-                                            markersInBoundingBox.size.toString()
-                                        )
+                                            R.string.summits_shown
+                                        ),
+                                        mMarkersShown.size.toString(),
+                                        markersInBoundingBox.size.toString()
                                     ),
                                     Toast.LENGTH_LONG
                                 ).show()

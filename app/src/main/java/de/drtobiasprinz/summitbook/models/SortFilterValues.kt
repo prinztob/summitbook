@@ -5,6 +5,7 @@ import android.util.Log
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.hasRecordsBeenAdded
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -139,7 +140,7 @@ class SortFilterValues(
         return segments
     }
 
-    private fun filterDate(summit: Summit): Boolean {
+    fun filterDate(summit: Summit): Boolean {
         val date1 = startDate
         val date2 = endDate
         return if (date1 != null && date2 != null) {
@@ -154,6 +155,9 @@ class SortFilterValues(
     }
 
     fun setToDefault() {
+        if (selectedDateSpinner != selectedDateSpinnerDefault) {
+            hasRecordsBeenAdded = false
+        }
         selectedDateSpinner = selectedDateSpinnerDefault
         setDates()
         sportType = null
@@ -178,7 +182,9 @@ class SortFilterValues(
         }
 
         private fun setSelectedDateSpinnerAndItsDefault(
-            sortFilterValues: SortFilterValues, selectedDateSpinner: Int, selectedDateSpinnerDefault: Int
+            sortFilterValues: SortFilterValues,
+            selectedDateSpinner: Int,
+            selectedDateSpinnerDefault: Int
         ) {
             sortFilterValues.selectedDateSpinner = selectedDateSpinner
             sortFilterValues.selectedDateSpinnerDefault = selectedDateSpinnerDefault
