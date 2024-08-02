@@ -14,7 +14,11 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.*
+import com.github.mikephil.charting.components.Legend
+import com.github.mikephil.charting.components.LegendEntry
+import com.github.mikephil.charting.components.LimitLine
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
@@ -35,6 +39,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.TrackColor.Elevation
 import de.drtobiasprinz.summitbook.models.TrackColor.None
+import de.drtobiasprinz.summitbook.ui.utils.GpsUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
@@ -52,6 +57,7 @@ import org.osmdroid.views.overlay.simplefastpoint.LabelledGeoPoint
 import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlay
 import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlayOptions
 import org.osmdroid.views.overlay.simplefastpoint.SimplePointTheme
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
@@ -70,6 +76,8 @@ class AddSegmentEntryFragment : Fragment() {
     private var selectedCustomizeTrackItem = None
     private var startSelected = true
     private var startPointId: Int = 0
+    private var firstStartPoint: GeoPoint? = null
+    private var firstEndPoint: GeoPoint? = null
     private var endPointId: Int = 0
     private var segmentId: Long = 0
     private var segmentEntryId: Long? = null
@@ -115,7 +123,8 @@ class AddSegmentEntryFragment : Fragment() {
                         }
                     }
                     prepareCompareAutoComplete(summits, segment)
-                    if (summitToCompare != null) {
+                    val localSummitToCompare = summitToCompare
+                    if (localSummitToCompare != null) {
                         setGpsTrack()
                         val localSegmentEntry = segmentEntry
                         if (localSegmentEntry != null) {
@@ -125,7 +134,7 @@ class AddSegmentEntryFragment : Fragment() {
                             setEndMarker(endPointId)
                         }
                         if (segment != null) {
-                            setOpenStreetMap(segment, summitToCompare)
+                            setOpenStreetMap(segment, localSummitToCompare)
                         }
                     }
                 }
@@ -181,6 +190,7 @@ class AddSegmentEntryFragment : Fragment() {
                                 setOpenStreetMap(segment, newlySelectedSummit)
                                 drawChart(newlySelectedSummit)
                                 setTextView(newlySelectedSummit)
+                                guessStartAndEndPoint(newlySelectedSummit)
                             }
                         }
                     }
@@ -211,7 +221,8 @@ class AddSegmentEntryFragment : Fragment() {
             val duration =
                 (endTrackPoint.time.millis - startTrackPoint.time.millis).toDouble() / 60000.0
             val distance =
-                ((endTrackPoint.pointExtension?.distance ?: 0.0) - (startTrackPoint.pointExtension?.distance
+                ((endTrackPoint.pointExtension?.distance
+                    ?: 0.0) - (startTrackPoint.pointExtension?.distance
                     ?: 0.0)) / 1000.0
 
             binding.duration.text = String.format(
@@ -310,6 +321,24 @@ class AddSegmentEntryFragment : Fragment() {
                     } == true) {
                     selectedCustomizeTrackItem = Elevation
                 }
+            }
+        }
+    }
+
+    private fun guessStartAndEndPoint(summit: Summit) {
+        val firstStartPointLocal = firstStartPoint
+        val firstEndPointLocal = firstEndPoint
+        if (firstStartPointLocal != null && firstEndPointLocal != null) {
+            val startPoint = summit.gpsTrack?.trackGeoPoints?.firstOrNull {
+                abs(GpsUtils.getDistance(it, firstStartPointLocal)) < 10
+            }
+            val endPoint = summit.gpsTrack?.trackGeoPoints?.lastOrNull {
+                abs(GpsUtils.getDistance(it, firstEndPointLocal)) < 10
+            }
+            if (startPoint != null && endPoint != null) {
+                startPointId = summit.gpsTrack?.trackGeoPoints?.indexOf(startPoint) ?: startPointId
+                endPointId = summit.gpsTrack?.trackGeoPoints?.indexOf(endPoint) ?: endPointId
+                updateMapAndChart(summit)
             }
         }
     }
@@ -465,10 +494,10 @@ class AddSegmentEntryFragment : Fragment() {
             }
             val entries = segment.segmentEntries
             if (entries.isNotEmpty()) {
-                val firstStartPoint = GeoPoint(
+                firstStartPoint = GeoPoint(
                     entries.first().startPositionLatitude, entries.first().startPositionLongitude
                 )
-                val firstEndPoint =
+                firstEndPoint =
                     GeoPoint(
                         entries.first().endPositionLatitude,
                         entries.first().endPositionLongitude
