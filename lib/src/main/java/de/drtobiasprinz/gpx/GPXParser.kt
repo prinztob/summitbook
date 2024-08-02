@@ -198,7 +198,7 @@ class GPXParser {
                 TAG_ELEVATION -> builder.setElevation(readElevation(parser))
                 TAG_TIME -> builder.setTime(readTime(parser))
                 TAG_TYPE -> builder.setType(readType(parser))
-                TAG_EXTENSIONS -> builder.setExtensions(readExtensions(parser))
+                TAG_EXTENSIONS -> builder.setExtensions(readExtension(parser))
                 TAG_SYM -> builder.setSym(readSym(parser))
                 TAG_CMT -> builder.setCmt(readCmt(parser))
                 else -> skip(parser)
@@ -424,17 +424,42 @@ class GPXParser {
         return year
     }
 
-    @Throws(IOException::class, XmlPullParserException::class)
-    private fun readExtensions(parser: XmlPullParser): PointExtension {
-        val pointExtensionBuilder = PointExtension.Builder()
-
+    @Throws(XmlPullParserException::class, IOException::class)
+    private fun readExtension(parser: XmlPullParser): PointExtension {
+        val extensionBuilder: PointExtension.Builder = PointExtension.Builder()
         parser.require(XmlPullParser.START_TAG, namespace, TAG_EXTENSIONS)
         while (loopMustContinue(parser.next())) {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            val name = parser.name
-            when (name) {
+            when (parser.name) {
+                TAG_TRACK_POINT_EXTENSIONS -> readTrackPointExtensions(
+                    parser,
+                    extensionBuilder,
+                    parser.prefix
+                )
+
+                else -> skip(parser)
+            }
+        }
+        parser.require(XmlPullParser.END_TAG, namespace, TAG_EXTENSIONS)
+        return extensionBuilder.build()
+    }
+
+    private fun readTrackPointExtensions(
+        parser: XmlPullParser,
+        pointExtensionBuilder: PointExtension.Builder,
+        extensionNamespace: String
+    ) {
+        parser.require(XmlPullParser.START_TAG, namespace, TAG_TRACK_POINT_EXTENSIONS)
+        while (loopMustContinue(parser.next())) {
+            if (parser.eventType != XmlPullParser.START_TAG) {
+                continue
+            }
+            if (parser.prefix != extensionNamespace) {
+                continue
+            }
+            when (parser.name) {
                 TAG_SPEED -> pointExtensionBuilder.setSpeed(readDouble(parser, TAG_SPEED))
                 TAG_CADENCE -> pointExtensionBuilder.setCadence(readInteger(parser, TAG_CADENCE))
                 TAG_DISTANCE -> pointExtensionBuilder.setDistance(readDouble(parser, TAG_DISTANCE))
@@ -451,8 +476,7 @@ class GPXParser {
                 else -> skip(parser)
             }
         }
-        parser.require(XmlPullParser.END_TAG, namespace, TAG_EXTENSIONS)
-        return pointExtensionBuilder.build()
+        parser.require(XmlPullParser.END_TAG, namespace, TAG_TRACK_POINT_EXTENSIONS)
     }
 
     @Throws(XmlPullParserException::class, IOException::class)
@@ -513,6 +537,7 @@ class GPXParser {
         // extensions-related tags
         private const val TAG_EXTENSIONS = "extensions"
         private const val TAG_SPEED = "speed"
+        private const val TAG_TRACK_POINT_EXTENSIONS = "TrackPointExtension"
         private const val TAG_CADENCE = "cadence"
         private const val TAG_DISTANCE = "distance"
         private const val TAG_HR = "hr"
