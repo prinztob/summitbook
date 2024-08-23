@@ -7,8 +7,14 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.db.entities.ElevationData
+import de.drtobiasprinz.summitbook.db.entities.GarminData
+import de.drtobiasprinz.summitbook.db.entities.PowerData
+import de.drtobiasprinz.summitbook.db.entities.SportGroup
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.SportType.Companion.getSportTypeFromGarminId
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import java.io.File
@@ -16,7 +22,8 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -176,6 +183,8 @@ class GarminPythonExecutor(
                     entries.add(parseJsonObject(row))
                 } catch (e: ParseException) {
                     e.printStackTrace()
+                } catch (e: NullPointerException) {
+                    e.printStackTrace()
                 }
             }
             return entries
@@ -212,6 +221,12 @@ class GarminPythonExecutor(
                                     "Could not parse file ${it.absolutePath}"
                                 )
                                 it.delete()
+                            } catch (ex: NullPointerException) {
+                                Log.i(
+                                    "GarminPythonExecutor",
+                                    "Could not parse file ${it.absolutePath}"
+                                )
+                                it.delete()
                             }
                         }
                     }
@@ -228,7 +243,6 @@ class GarminPythonExecutor(
             return (value * 100.0).roundToInt() / 100.0
         }
 
-        @Throws(ParseException::class)
         fun parseJsonObject(jsonObject: JsonObject): Summit {
             val date = SimpleDateFormat(
                 Summit.DATETIME_FORMAT,
@@ -264,7 +278,25 @@ class GarminPythonExecutor(
                 getJsonObjectEntryNotNull(jsonObject, "avgFlow"),
                 getJsonObjectEntryNotNull(jsonObject, "activityTrainingLoad")
             )
-
+            val elevationData = try {
+                ElevationData.parse(
+                    getJsonObjectEntryNotNull(jsonObject, "maxElevation").toInt(),
+                    getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt()
+                )
+            } catch (_: NullPointerException) {
+                ElevationData(0, 0)
+            }
+            val velocityData = try {
+                VelocityData.parse(
+                    round(averageSpeed), if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(
+                        convertMphToKmh(
+                            getJsonObjectEntryNotNull(jsonObject, "maxSpeed").toDouble()
+                        )
+                    ) else 0.0
+                )
+            } catch (_: NullPointerException) {
+                VelocityData(0.0, 0.0)
+            }
             return Summit(
                 date,
                 jsonObject["activityName"].asString,
@@ -272,11 +304,7 @@ class GarminPythonExecutor(
                 emptyList(),
                 emptyList(),
                 "",
-                ElevationData.parse(
-                    if (jsonObject["maxElevation"] != JsonNull.INSTANCE) round(
-                        jsonObject["maxElevation"].asDouble
-                    ).toInt() else 0, getJsonObjectEntryNotNull(jsonObject, "elevationGain").toInt()
-                ),
+                elevationData,
                 roundToTwoDigits(
                     convertMeterToKm(
                         getJsonObjectEntryNotNull(
@@ -284,13 +312,7 @@ class GarminPythonExecutor(
                         ).toDouble()
                     )
                 ),
-                VelocityData.parse(
-                    round(averageSpeed), if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(
-                        convertMphToKmh(
-                            jsonObject["maxSpeed"].asDouble
-                        )
-                    ) else 0.0
-                ),
+                velocityData,
                 null,
                 null,
                 emptyList(),
