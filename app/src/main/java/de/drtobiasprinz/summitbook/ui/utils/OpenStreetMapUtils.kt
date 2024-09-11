@@ -3,9 +3,12 @@ package de.drtobiasprinz.summitbook.ui.utils
 import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
+import android.util.Log
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
+import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.FragmentActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -14,6 +17,9 @@ import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
+import de.drtobiasprinz.summitbook.utils.FileHelper
+import de.drtobiasprinz.summitbook.utils.MapHelper
+import de.drtobiasprinz.summitbook.utils.PreferencesHelper
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.ITileSource
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -29,7 +35,17 @@ import java.io.File
 
 object OpenStreetMapUtils {
 
-    private val MAP_TYPE_ITEMS = arrayOf<CharSequence>("OpenTopo", "MAPNIK")
+    private val MAP_TYPE_ITEMS_ONLINE = arrayOf<CharSequence>(
+        "OpenTopo",
+        "MAPNIK"
+    )
+
+    private val MAP_TYPE_ITEMS_OFFLINE = arrayOf<CharSequence>(
+        "Hiking",
+        "City",
+        "Cycling",
+        "MTB"
+    )
 
     @JvmStatic
     var selectedItem = 0
@@ -237,10 +253,17 @@ object OpenStreetMapUtils {
         val builder = AlertDialog.Builder(context)
         builder.setTitle(fDialogTitle)
         builder.setSingleChoiceItems(
-            MAP_TYPE_ITEMS,
+            if (
+                PreferencesHelper.loadOnDeviceMaps() &&
+                FileHelper.getOnDeviceMapFiles(context).isNotEmpty()
+            ) {
+                MAP_TYPE_ITEMS_OFFLINE
+            } else {
+                MAP_TYPE_ITEMS_ONLINE
+            },
             selectedItem
         ) { dialog: DialogInterface, item: Int ->
-            setTileSource(item, mapView)
+            setTileSource(item, mapView, context)
             selectedItem = item
             dialog.dismiss()
         }
@@ -251,13 +274,26 @@ object OpenStreetMapUtils {
     }
 
     @JvmStatic
-    fun setTileSource(item: Int, mapView: MapView) {
-        val tileSource: ITileSource? = when (item) {
-            0 -> TileSourceFactory.OpenTopo
-            1 -> TileSourceFactory.MAPNIK
-            2 -> TileSourceFactory.USGS_TOPO
-            else -> TileSourceFactory.HIKEBIKEMAP
+    fun setTileSource(item: Int, mapView: MapView, context: Context) {
+        val mapFiles: List<DocumentFile> = FileHelper.getOnDeviceMapFiles(context)
+        if (item > 1 && mapFiles.isEmpty()) {
+            Toast.makeText(
+                context,
+                R.string.toast_message_no_map_files_available,
+                Toast.LENGTH_LONG
+            ).show()
         }
-        mapView.setTileSource(tileSource)
+        if (PreferencesHelper.loadOnDeviceMaps() && mapFiles.isNotEmpty()) {
+            Log.w("setTileSource", "item $item offline")
+            mapView.setTileProvider(MapHelper.getOfflineMapProvider(context, mapFiles, item))
+        } else {
+            Log.w("setTileSource", "item $item online")
+            val tileSource: ITileSource = when (item) {
+                0 -> TileSourceFactory.OpenTopo
+                else -> TileSourceFactory.MAPNIK
+            }
+            mapView.tileProvider = MapHelper.getOnlineMapProvider(tileSource, context)
+            mapView.setTileSource(tileSource)
+        }
     }
 }

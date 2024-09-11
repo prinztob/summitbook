@@ -90,7 +90,7 @@ class AddSegmentEntryFragment : Fragment() {
     ): View {
         binding = FragmentAddSegmentEntryBinding.inflate(layoutInflater, container, false)
         OpenStreetMapUtils.setOsmConfForTiles()
-        setTileSource(selectedItem, binding.osmap)
+        setTileSource(selectedItem, binding.osmap, requireContext())
         viewModel.segmentsList.observe(viewLifecycleOwner, object :
             Observer<DataStatus<List<Segment>>> {
             override fun onChanged(value: DataStatus<List<Segment>>) {

@@ -8,7 +8,7 @@ import android.widget.EditText
 import androidx.preference.EditTextPreference
 import androidx.preference.EditTextPreference.OnBindEditTextListener
 
-internal class PasswordPreference : EditTextPreference, OnBindEditTextListener {
+class PasswordPreference : EditTextPreference, OnBindEditTextListener {
 
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(context, attrs, defStyleAttr, defStyleRes) {
         setOnBindEditTextListener(this)

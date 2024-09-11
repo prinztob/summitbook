@@ -41,6 +41,7 @@ import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -464,7 +465,7 @@ class SummitEntryTrackFragment : Fragment() {
         doCleanUp: Boolean = true
     ) {
         val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || summitToView.latLng != null
-        OpenStreetMapUtils.setTileSource(OpenStreetMapUtils.selectedItem, binding.osmap)
+        OpenStreetMapUtils.setTileSource(selectedItem, binding.osmap, requireContext())
         binding.changeMapType.setImageResource(R.drawable.baseline_more_vert_black_24dp)
         binding.changeMapType.setOnClickListener {
             OpenStreetMapUtils.showMapTypeSelectorDialog(
@@ -549,7 +550,7 @@ class SummitEntryTrackFragment : Fragment() {
     }
 
     private fun setUsedItemsForColorCode(setDefault: Boolean = false) {
-        usedItemsForColorCode = TrackColor.values().filter { trackColorEntry: TrackColor ->
+        usedItemsForColorCode = TrackColor.entries.filter { trackColorEntry: TrackColor ->
             gpsTrack?.trackPoints?.any {
                 val value = trackColorEntry.f(it)
                 value != null && value != 0.0
@@ -621,7 +622,12 @@ class SummitEntryTrackFragment : Fragment() {
                             entry.setGpsTrack()
                         }
                     }
-                    entry.gpsTrack?.addGpsTrack(binding.osmap, TrackColor.None, summit = entry, color = ContextCompat.getColor(requireContext(), entry.sportType.color))
+                    entry.gpsTrack?.addGpsTrack(
+                        binding.osmap,
+                        TrackColor.None,
+                        summit = entry,
+                        color = ContextCompat.getColor(requireContext(), entry.sportType.color)
+                    )
                     summitsShown += 1
                     pointsShown += entry.gpsTrack?.trackPoints?.size ?: 0
                     binding.osmap.zoomController.activate()

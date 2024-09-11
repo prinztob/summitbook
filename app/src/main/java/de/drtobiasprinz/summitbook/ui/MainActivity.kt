@@ -77,6 +77,7 @@ import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.osmdroid.mapsforge.MapsForgeTileSource
 import java.io.File
 import java.text.DateFormatSymbols
 import java.text.NumberFormat
@@ -149,6 +150,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             ft.add(R.id.content_frame, summitViewFragment)
             ft.commit()
         }
+
+        // configure some of the MapsForge settings first (used for on-device maps)
+        MapsForgeTileSource.createInstance(this.application)
+
         binding.apply {
             toolbarInclude.toolbar.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
@@ -423,7 +428,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun updateTracksAndBoundingBox(summits: List<Summit>) {
-        val executor = pythonExecutor
         if (summits.isNotEmpty()) {
             val entriesWithoutBoundingBox = summits.filter {
                 it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingBoxCalculation
@@ -435,31 +439,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 "Scheduler", "No more bounding boxes to update."
             )
             updateSimplifiedTracks(summits)
-            updateDailyReportData(executor)
-        }
-    }
-
-    private fun updateDailyReportData(
-        executor: GarminPythonExecutor?
-    ) {
-        if (sharedPreferences.getBoolean(
-                "startup_auto_update_switch", false
-            ) && executor != null
-        ) {
-            binding.loading.visibility = View.VISIBLE
-            viewModel.dailyReportDataList.observeOnce(this) { dailyReportDataStatus ->
-                dailyReportDataStatus.data.let { dailyReportData ->
-                    val updater = GarminDataUpdater(
-                        sharedPreferences, executor, dailyReportData, viewModel
-                    )
-                    lifecycleScope.launch {
-                        withContext(Dispatchers.IO) {
-                            updater.update()
-                        }
-                        updater.onFinish(binding.loading, this@MainActivity)
-                    }
-                }
-            }
         }
     }
 
@@ -1191,14 +1170,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             )
             viewModel.refresh()
         }
-        if (key == "garmin_mfa" && !sharedPreferences.getBoolean("garmin_mfa", false) && File(
-                storage?.absolutePath,
-                ".garminconnect"
-            ).exists()
-        ) {
-            File(storage?.absolutePath, ".garminconnect").delete()
-        }
-        if (key == "garmin_username" || key == "garmin_password" || key == "garmin_mfa") {
+            if (key == "garmin_username" || key == "garmin_password" || key == "garmin_mfa") {
             updatePythonExecutor()
         }
     }

@@ -100,7 +100,7 @@ class OpenStreetMapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setTileSource(selectedItem, binding.osmap)
+        setTileSource(selectedItem, binding.osmap, requireContext())
         val context: Context? = this@OpenStreetMapFragment.activity
         mLocationOverlay =
             MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)

@@ -107,7 +107,7 @@ dependencies {
     //RecyclerView Decorator
     implementation 'com.github.xabaras:RecyclerViewSwipeDecorator:1.4'
 
-    implementation 'org.osmdroid:osmdroid-android:6.1.18'
+    implementation 'org.osmdroid:osmdroid-android:6.1.20'
     implementation 'com.github.MKergall:osmbonuspack:6.9.0'
 
     implementation 'androidx.preference:preference-ktx:1.2.1'
@@ -119,4 +119,10 @@ dependencies {
     testImplementation "org.robolectric:robolectric:4.13"
 
     implementation 'com.github.ticofab:android-gpx-parser:2.3.1'
+
+    // MapsForge (for offline maps)
+    implementation 'org.osmdroid:osmdroid-mapsforge:6.1.20'
+    implementation 'org.mapsforge:mapsforge-map-android:0.21.0'
+    implementation 'org.mapsforge:mapsforge-map:0.21.0'
+    implementation 'org.mapsforge:mapsforge-themes:0.21.0'
 }
