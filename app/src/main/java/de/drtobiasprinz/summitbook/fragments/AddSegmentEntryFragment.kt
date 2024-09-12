@@ -40,6 +40,7 @@ import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.TrackColor.Elevation
 import de.drtobiasprinz.summitbook.models.TrackColor.None
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils
+import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
@@ -47,6 +48,8 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
 import de.drtobiasprinz.summitbook.utils.DataStatus
+import de.drtobiasprinz.summitbook.utils.FileHelper
+import de.drtobiasprinz.summitbook.utils.PreferencesHelper
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import org.osmdroid.api.IGeoPoint
 import org.osmdroid.config.Configuration
@@ -90,7 +93,12 @@ class AddSegmentEntryFragment : Fragment() {
     ): View {
         binding = FragmentAddSegmentEntryBinding.inflate(layoutInflater, container, false)
         OpenStreetMapUtils.setOsmConfForTiles()
-        setTileSource(selectedItem, binding.osmap, requireContext())
+        if (PreferencesHelper.loadOnDeviceMaps() &&
+            FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
+        ) {
+            selectedItem = MapProvider.HIKING
+        }
+        setTileSource(binding.osmap, requireContext())
         viewModel.segmentsList.observe(viewLifecycleOwner, object :
             Observer<DataStatus<List<Segment>>> {
             override fun onChanged(value: DataStatus<List<Segment>>) {

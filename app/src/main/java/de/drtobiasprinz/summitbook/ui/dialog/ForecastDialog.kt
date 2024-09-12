@@ -15,6 +15,10 @@ import androidx.lifecycle.Observer
 import androidx.preference.PreferenceManager
 import com.google.android.material.slider.Slider
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.Keys
+import de.drtobiasprinz.summitbook.Keys.PREF_ANNUAL_TARGET
+import de.drtobiasprinz.summitbook.Keys.PREF_ANNUAL_TARGET_ACTIVITIES
+import de.drtobiasprinz.summitbook.Keys.PREF_ANNUAL_TARGET_KM
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.DialogForecastBinding
 import de.drtobiasprinz.summitbook.db.entities.Forecast
@@ -55,11 +59,11 @@ class ForecastDialog : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        indoorHeightMeterPercent = sharedPreferences.getInt("indoor_height_meter_per_cent", 0)
-        averageOfLastXYears = sharedPreferences.getInt("forecast_average_of_last_x_years", 3)
-        annualTargetActivity = sharedPreferences.getString("annual_target_activities", "52") ?: "52"
-        annualTargetKm = sharedPreferences.getString("annual_target_km", "1200") ?: "1200"
-        annualTargetHm = sharedPreferences.getString("annual_target", "50000") ?: "50000"
+        indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
+        averageOfLastXYears = sharedPreferences.getInt(Keys.PREF_FORECAST_AVERAGE, 3)
+        annualTargetActivity = sharedPreferences.getString(PREF_ANNUAL_TARGET_ACTIVITIES, "52") ?: "52"
+        annualTargetKm = sharedPreferences.getString(PREF_ANNUAL_TARGET_KM, "1200") ?: "1200"
+        annualTargetHm = sharedPreferences.getString(PREF_ANNUAL_TARGET, "50000") ?: "50000"
         val range: Date = Summit.parseDate("${currentYear}-01-01")
         viewModel.summitsList.observe(viewLifecycleOwner,
             object : Observer<DataStatus<List<Summit>>> {

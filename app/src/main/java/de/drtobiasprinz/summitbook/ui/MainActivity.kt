@@ -44,6 +44,7 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.google.android.material.navigation.NavigationView
 import com.stfalcon.imageviewer.StfalconImageViewer
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.PythonActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SettingsActivity
@@ -400,7 +401,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun executeDownload(summits: List<Summit>) {
         val downloader = GarminTrackAndDataDownloader(
-            summits, pythonExecutor, sharedPreferences.getBoolean("download_tcx", false)
+            summits, pythonExecutor, sharedPreferences.getBoolean(Keys.PREF_DOWNLOAD_TCX, false)
         )
         lifecycleScope.launch {
             try {
@@ -443,7 +444,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun updateSimplifiedTracks(summits: List<Summit>) {
-        val useSimplifiedTracks = sharedPreferences.getBoolean("use_simplified_tracks", true)
+        val useSimplifiedTracks = sharedPreferences.getBoolean(Keys.PREF_USE_SIMPLIFIED_TRACKS, true)
         if (useSimplifiedTracks) {
             summits.forEach {
                 if (it.ignoreSimplifyingTrack) {
@@ -703,7 +704,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun setOverviewText(summits: List<Summit>) {
         val numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
         numberFormat.maximumFractionDigits = 0
-        val indoorHeightMeterPercent = sharedPreferences.getInt("indoor_height_meter_per_cent", 0)
+        val indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
         val statisticEntry = StatisticEntry(summits, indoorHeightMeterPercent)
         statisticEntry.calculate()
         val peaks = summits.filter { it.isPeak }
@@ -778,9 +779,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun updatePythonExecutor() {
         if (pythonExecutor == null || pythonExecutor?.username == "" || pythonExecutor?.password == "") {
-            val username = sharedPreferences.getString("garmin_username", "") ?: ""
-            val password = sharedPreferences.getString("garmin_password", "") ?: ""
-            val garminMfaSwitch = sharedPreferences.getBoolean("garmin_mfa", false)
+            val username = sharedPreferences.getString(Keys.PREF_GARMIN_USERNAME, "") ?: ""
+            val password = sharedPreferences.getString(Keys.PREF_GARMIN_PASSWORD, "") ?: ""
+            val garminMfaSwitch = sharedPreferences.getBoolean(Keys.PREF_GARMIN_MFA, false)
             val oauthPath = File(storage?.absolutePath, ".garminconnect")
             if (oauthPath.exists()) {
                 pythonExecutor = GarminPythonExecutor(username, password)
@@ -951,9 +952,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val exportThirdPartyData =
-                    sharedPreferences.getBoolean("export_third_party_data", true)
+                    sharedPreferences.getBoolean(Keys.PREF_EXPORT_THIRD_PARTY_DATA, true)
                 val exportCalculatedData =
-                    sharedPreferences.getBoolean("export_calculated_data", true)
+                    sharedPreferences.getBoolean(Keys.PREF_EXPORT_CALCULATED_DATA, true)
                 viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
                     summitsListDataStatus.data.let { summits ->
                         viewModel.forecastList.observeOnce(this@MainActivity) { forecastsListDataStatus ->
@@ -1164,13 +1165,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     override fun onSharedPreferenceChanged(preferences: SharedPreferences?, key: String?) {
-        if (key == "current_year_switch") {
+        if (key == Keys.PREF_CURRENT_YEAR_SWITCH) {
             sortFilterValues.updateCurrentYearSwitch(
-                sharedPreferences.getBoolean("current_year_switch", false)
+                sharedPreferences.getBoolean(Keys.PREF_CURRENT_YEAR_SWITCH, false)
             )
             viewModel.refresh()
         }
-            if (key == "garmin_username" || key == "garmin_password" || key == "garmin_mfa") {
+            if (key == Keys.PREF_GARMIN_USERNAME || key == Keys.PREF_GARMIN_PASSWORD || key == Keys.PREF_GARMIN_MFA) {
             updatePythonExecutor()
         }
     }

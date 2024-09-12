@@ -21,6 +21,8 @@ import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.storage
 import de.drtobiasprinz.summitbook.ui.utils.DatePreference
+import de.drtobiasprinz.summitbook.ui.utils.MapProvider
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.PasswordPreference
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
@@ -128,13 +130,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceGarminSyncStartDate.key = Keys.PREF_THIRD_PARTY_START_DATE
         preferenceGarminSyncStartDate.setDefaultValue("2024-01-01")
 
-        preferenceMinDeltaHeightMeter = EditTextPreference(requireContext())
-        preferenceMinDeltaHeightMeter.title =
-            getString(R.string.minimal_delta_for_elevation_gain_title)
-        preferenceMinDeltaHeightMeter.key = Keys.PREF_MIN_DELTA_HEIGHT_METER
-        preferenceMinDeltaHeightMeter.summary = getString(R.string.minimal_delta_for_elevation_gain)
-        preferenceMinDeltaHeightMeter.setDefaultValue(5)
-
         preferenceUseSimplifiedTracks = SwitchPreferenceCompat(requireContext())
         preferenceUseSimplifiedTracks.title = getString(R.string.use_simplified_tracks_title)
         preferenceUseSimplifiedTracks.key = Keys.PREF_USE_SIMPLIFIED_TRACKS
@@ -186,8 +181,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
             if (preferenceMapProvider.isChecked && onDeviceMapFiles.isEmpty()) {
                 openOnDeviceMapsFolderDialog()
             } else {
-                // toggle the visibility of preferenceOnDeviceMapsFolder
                 preferenceOnDeviceMapsFolder.isVisible = preferenceMapProvider.isChecked
+                if (preferenceMapProvider.isChecked) {
+                    selectedItem = MapProvider.HIKING
+                } else {
+                    selectedItem = MapProvider.OPENTOPO
+                }
             }
             return@setOnPreferenceClickListener true
         }
@@ -197,7 +196,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceOnDeviceMapsFolder.title = getString(R.string.map_folder)
         preferenceOnDeviceMapsFolder.key = Keys.PREF_ON_DEVICE_MAPS_FOLDER
         preferenceOnDeviceMapsFolder.setIcon(R.drawable.ic_baseline_expand_more_24)
-        preferenceOnDeviceMapsFolder.summary = getString(R.string.map_folder_summary)
+        preferenceOnDeviceMapsFolder.summary =
+            String.format(getString(R.string.map_folder_summary), onDeviceMapsFolderName)
         preferenceOnDeviceMapsFolder.setOnPreferenceClickListener {
             openOnDeviceMapsFolderDialog()
             return@setOnPreferenceClickListener true
@@ -268,18 +268,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     /* Toggle the visibility of the "On-device Maps Folder" preference and reset the "Map Provider" switch */
     private fun updateOnDeviceMapsPreferencesState() {
-        // get the current on device map files and the name of their folder
         onDeviceMapFiles = FileHelper.getOnDeviceMapFiles(preferenceManager.context)
         onDeviceMapsFolderName = FileHelper.getOnDeviceMapsFolderName(preferenceManager.context)
-        // show/hide the "On-device Maps Folder" preference
         preferenceOnDeviceMapsFolder.isVisible =
             preferenceMapProvider.isChecked && onDeviceMapFiles.isNotEmpty()
-        // toggle the "Map Provider" switch
         preferenceMapProvider.isChecked = preferenceOnDeviceMapsFolder.isVisible
-        // update the summary
         if (preferenceMapProvider.isChecked) {
             preferenceOnDeviceMapsFolder.summary =
-                "Currently using the .map files from this folder:\n/${onDeviceMapsFolderName}/ (tap to change folder)"
+                String.format(getString(R.string.map_folder_summary), onDeviceMapsFolderName)
         }
     }
 
@@ -295,7 +291,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun openOnDeviceMapsFolderDialog() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
         }
-        // folder gets saved in the ActivityResult
         try {
             requestOnDeviceMapsFolderLauncher.launch(intent)
         } catch (exception: Exception) {

@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.utils
 import android.content.Context
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
+import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import org.mapsforge.map.android.rendertheme.AssetsRenderTheme
 import org.mapsforge.map.rendertheme.XmlRenderTheme
 import org.mapsforge.map.rendertheme.XmlRenderThemeMenuCallback
@@ -21,7 +22,6 @@ import java.io.FileInputStream
 
 object MapHelper {
 
-    /* Get a tile provider for online maps */
     fun getOnlineMapProvider(tileSource: ITileSource, context: Context): MapTileProviderArray {
         val tileWriter = TileWriter()
         val registerReceiver = SimpleRegisterReceiver(context)
@@ -40,11 +40,10 @@ object MapHelper {
         )
     }
 
-    /* Get a tile provider for offline maps */
     fun getOfflineMapProvider(
         context: Context,
         mapFiles: List<DocumentFile>,
-        item: Int = 0
+        item: MapProvider
     ): MapsForgeTileProvider {
         var theme: XmlRenderTheme? = null
         try {
@@ -53,23 +52,14 @@ object MapHelper {
                 "rendertheme/",
                 "Elevate.xml",
                 XmlRenderThemeMenuCallback { style ->
-                    val styleId: String = when (item) {
-                        1 -> "elv-city"
-                        2 -> "elv-cycling"
-                        3 -> "elv-mtb"
-                        else -> style.defaultValue
-                    }
-                    val renderThemeStyleLayer = style.getLayer(styleId)
+                    val renderThemeStyleLayer = style.getLayer(item.offlineStyle)
                     if (renderThemeStyleLayer == null) {
                         Log.w("AssetsRenderTheme", "Invalid style")
                         return@XmlRenderThemeMenuCallback null
                     }
 
-                    // First get the selected layer's categories that are enabled together
                     val categories: MutableSet<String> = renderThemeStyleLayer.categories
 
-                    // Then add the selected layer's overlays that are enabled individually
-                    // Here we use the style menu, but users can use their own preferences
                     for (overlay in renderThemeStyleLayer.getOverlays()) {
                         if (overlay.isEnabled) categories.addAll(overlay.categories)
                     }

@@ -15,6 +15,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentStatisticsBinding
@@ -51,9 +52,9 @@ class StatisticsFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        annualTargetActivity = sharedPreferences.getString("annual_target_activities", "52") ?: "52"
-        annualTargetKm = sharedPreferences.getString("annual_target_km", "1200") ?: "1200"
-        annualTargetHm = sharedPreferences.getString("annual_target", "50000") ?: "50000"
+        annualTargetActivity = sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_ACTIVITIES, "52") ?: "52"
+        annualTargetKm = sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_KM, "1200") ?: "1200"
+        annualTargetHm = sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET, "50000") ?: "50000"
     }
 
     override fun onCreateView(
@@ -79,16 +80,16 @@ class StatisticsFragment : Fragment() {
                                 val sharedPreferences =
                                     PreferenceManager.getDefaultSharedPreferences(requireContext())
                                 val annualTargetActivity =
-                                    sharedPreferences.getString("annual_target_activities", "52")
+                                    sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_ACTIVITIES, "52")
                                         ?.toInt() ?: 52
                                 val annualTargetKm =
-                                    sharedPreferences.getString("annual_target_km", "1200")?.toInt()
+                                    sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_KM, "1200")?.toInt()
                                         ?: 1200
                                 val annualTargetHm =
-                                    sharedPreferences.getString("annual_target", "50000")?.toInt()
+                                    sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET, "50000")?.toInt()
                                         ?: 50000
                                 indoorHeightMeterPercent =
-                                    sharedPreferences?.getInt("indoor_height_meter_per_cent", 0)
+                                    sharedPreferences?.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
                                         ?: 0
                                 statisticEntry = StatisticEntry(
                                     filteredSummits,

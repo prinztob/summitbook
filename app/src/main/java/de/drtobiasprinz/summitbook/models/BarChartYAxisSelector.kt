@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.models
 
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.SportType
@@ -14,10 +15,10 @@ enum class BarChartYAxisSelector(
     val f: (Stream<Summit?>?, Int) -> Float,
     val getForecastValue: (Forecast) -> Float
 ) {
-    Count(R.string.count, R.string.empty, "annual_target_activities", 52, { stream, _ ->
+    Count(R.string.count, R.string.empty, Keys.PREF_ANNUAL_TARGET_ACTIVITIES, 52, { stream, _ ->
         stream?.count()?.toFloat() ?: 0f
     }, { forecast -> forecast.forecastNumberActivities.toFloat() }),
-    Kilometers(R.string.kilometers_hint, R.string.km, "annual_target_km", 1200, { stream, _ ->
+    Kilometers(R.string.kilometers_hint, R.string.km, Keys.PREF_ANNUAL_TARGET_KM, 1200, { stream, _ ->
         stream
             ?.mapToDouble { o: Summit? -> o?.kilometers ?: 0.0 }
             ?.sum()?.toFloat() ?: 0.0f
@@ -25,7 +26,7 @@ enum class BarChartYAxisSelector(
     ElevationGain(
         R.string.height_meter_hint,
         R.string.hm,
-        "annual_target",
+        Keys.PREF_ANNUAL_TARGET,
         50000,
         { stream, indoorHeightMeterPercent ->
             stream

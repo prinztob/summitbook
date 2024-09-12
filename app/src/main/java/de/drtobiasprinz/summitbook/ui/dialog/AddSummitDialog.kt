@@ -41,6 +41,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.TrackPoint
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.DialogAddSummitBinding
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
@@ -408,7 +409,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         powerData: JsonObject? = null
     ) {
         val sharedPreferences = context?.let { PreferenceManager.getDefaultSharedPreferences(it) }
-        val useTcx = sharedPreferences?.getBoolean("download_tcx", false) ?: false
+        val useTcx = sharedPreferences?.getBoolean(Keys.PREF_DOWNLOAD_TCX, false) ?: false
 
         val mBuilder = AlertDialog.Builder(requireContext())
         mBuilder.setTitle(requireContext().getString(R.string.choose_item))

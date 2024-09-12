@@ -3,14 +3,13 @@ package de.drtobiasprinz.summitbook.ui.utils
 import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
-import android.util.Log
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.FragmentActivity
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
 import de.drtobiasprinz.summitbook.models.GpsTrack
@@ -21,7 +20,7 @@ import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.MapHelper
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
 import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.ITileSource
+import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
@@ -35,20 +34,8 @@ import java.io.File
 
 object OpenStreetMapUtils {
 
-    private val MAP_TYPE_ITEMS_ONLINE = arrayOf<CharSequence>(
-        "OpenTopo",
-        "MAPNIK"
-    )
-
-    private val MAP_TYPE_ITEMS_OFFLINE = arrayOf<CharSequence>(
-        "Hiking",
-        "City",
-        "Cycling",
-        "MTB"
-    )
-
     @JvmStatic
-    var selectedItem = 0
+    var selectedItem = MapProvider.OPENTOPO
 
     @JvmStatic
     fun addTrackAndMarker(
@@ -251,20 +238,17 @@ object OpenStreetMapUtils {
     fun showMapTypeSelectorDialog(context: Context, mapView: MapView) {
         val fDialogTitle = context.getString(R.string.select_map_type)
         val builder = AlertDialog.Builder(context)
+        val mapProviders = getMapProviders(
+            PreferencesHelper.loadOnDeviceMaps() &&
+                    FileHelper.getOnDeviceMapFiles(context).isNotEmpty()
+        )
         builder.setTitle(fDialogTitle)
         builder.setSingleChoiceItems(
-            if (
-                PreferencesHelper.loadOnDeviceMaps() &&
-                FileHelper.getOnDeviceMapFiles(context).isNotEmpty()
-            ) {
-                MAP_TYPE_ITEMS_OFFLINE
-            } else {
-                MAP_TYPE_ITEMS_ONLINE
-            },
-            selectedItem
+            mapProviders.map { context.getString(it.textId) }.toTypedArray(),
+            mapProviders.indexOf(selectedItem)
         ) { dialog: DialogInterface, item: Int ->
-            setTileSource(item, mapView, context)
-            selectedItem = item
+            selectedItem = mapProviders[item]
+            setTileSource(mapView, context)
             dialog.dismiss()
         }
 
@@ -274,26 +258,84 @@ object OpenStreetMapUtils {
     }
 
     @JvmStatic
-    fun setTileSource(item: Int, mapView: MapView, context: Context) {
+    fun setTileSource(mapView: MapView, context: Context) {
         val mapFiles: List<DocumentFile> = FileHelper.getOnDeviceMapFiles(context)
-        if (item > 1 && mapFiles.isEmpty()) {
-            Toast.makeText(
-                context,
-                R.string.toast_message_no_map_files_available,
-                Toast.LENGTH_LONG
-            ).show()
-        }
-        if (PreferencesHelper.loadOnDeviceMaps() && mapFiles.isNotEmpty()) {
-            Log.w("setTileSource", "item $item offline")
-            mapView.setTileProvider(MapHelper.getOfflineMapProvider(context, mapFiles, item))
+        if (selectedItem.isOffline) {
+            mapView.setTileProvider(MapHelper.getOfflineMapProvider(context, mapFiles, selectedItem))
         } else {
-            Log.w("setTileSource", "item $item online")
-            val tileSource: ITileSource = when (item) {
-                0 -> TileSourceFactory.OpenTopo
-                else -> TileSourceFactory.MAPNIK
+            val tileSourceBase = selectedItem.onlineTileSourceBase
+            if (tileSourceBase != null) {
+                mapView.tileProvider = MapHelper.getOnlineMapProvider(tileSourceBase, context)
+                mapView.setTileSource(tileSourceBase)
             }
-            mapView.tileProvider = MapHelper.getOnlineMapProvider(tileSource, context)
-            mapView.setTileSource(tileSource)
         }
     }
+
+    fun getMapProviders(isOfflineEnabled: Boolean): List<MapProvider> {
+        return if (isOfflineEnabled) MapProvider.entries else MapProvider.entries.filter { !it.isOffline }
+    }
+
+    fun getSportTypeForMapProviders(sportType: SportType, context: Context): MapProvider {
+        return MapProvider.entries.find {
+            it.relevantSportTypes.contains(sportType)
+        } ?: if (PreferencesHelper.loadOnDeviceMaps() &&
+            FileHelper.getOnDeviceMapFiles(context).isNotEmpty()
+        ) {
+            MapProvider.HIKING
+        } else {
+            MapProvider.OPENTOPO
+        }
+    }
+}
+
+enum class MapProvider(
+    var textId: Int,
+    var onlineTileSourceBase: OnlineTileSourceBase?,
+    var offlineStyle: String?,
+    var isOffline: Boolean = false,
+    var relevantSportTypes: List<SportType> = listOf()
+) {
+    OPENTOPO(
+        R.string.open_topo_map_type,
+        TileSourceFactory.OpenTopo,
+        null
+    ),
+    MAPNIK(
+        R.string.mapnik_map_type,
+        TileSourceFactory.MAPNIK,
+        null
+    ),
+    HIKING(
+        R.string.hiking_map_type,
+        null,
+        "elv-hiking",
+        true,
+        relevantSportTypes = listOf(
+            SportType.Hike,
+            SportType.Climb,
+            SportType.BikeAndHike,
+            SportType.Skitour
+        )
+    ),
+    CITY(
+        R.string.city_map_type,
+        null,
+        "elv-city",
+        true,
+        relevantSportTypes = listOf(SportType.Other, SportType.IndoorTrainer, SportType.Running)
+    ),
+    CYCLING(
+        R.string.cycling_map_type,
+        null,
+        "elv-cycling",
+        true,
+        relevantSportTypes = listOf(SportType.Bicycle, SportType.Racer)
+    ),
+    MTB(
+        R.string.mtb_map_type,
+        null,
+        "elv-mtb",
+        true,
+        relevantSportTypes = listOf(SportType.Mountainbike)
+    )
 }

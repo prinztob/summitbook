@@ -27,6 +27,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentBarChartBinding
 import de.drtobiasprinz.summitbook.db.entities.SportType
@@ -78,7 +79,7 @@ class BarChartFragment : Fragment() {
     ): View {
         binding = FragmentBarChartBinding.inflate(layoutInflater, container, false)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        indoorHeightMeterPercent = sharedPreferences.getInt("indoor_height_meter_per_cent", 0)
+        indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
         fillDateSpinner()
         binding.apply {
             viewModel.summitsList.observe(viewLifecycleOwner) { itData ->

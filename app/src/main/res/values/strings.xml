@@ -428,12 +428,19 @@
     <string name="online_maps">Online maps (default) are currently used</string>
 
     <string name="map_folder">On-device Maps Folder</string>
-    <string name="map_folder_summary">Currently using the .map files from an on-divice folder (tap to change folder)</string>
+    <string name="map_folder_summary">"Currently using the .map files from this folder: %1$s (tap to change folder)"</string>
     <string name="pref_general_title">General</string>
     <string name="pref_map_title">Map</string>
     <string name="pref_third_party_title">Third Party</string>
     <string name="pref_export_title">Export</string>
     <string name="toast_message_install_file_helper">Please install a file manager.</string>
     <string name="toast_message_no_map_files_available">No map files found. Using online maps.</string>
+
+    <string name="open_topo_map_type">Online map (OpenTopo)</string>
+    <string name="mapnik_map_type">Online map (MAPNIK)</string>
+    <string name="city_map_type">Offline map (City)</string>
+    <string name="mtb_map_type">Offline map (MTB)</string>
+    <string name="hiking_map_type">Offline map (hiking)</string>
+    <string name="cycling_map_type">Offline map (cycling)</string>
 
 </resources>

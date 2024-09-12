@@ -13,6 +13,7 @@ import android.view.View
 import android.widget.RemoteViews
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -135,7 +136,7 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
         }
         val indoorHeightMeterPercent =
             PreferenceManager.getDefaultSharedPreferences(context)
-                ?.getInt("indoor_height_meter_per_cent", 0) ?: 0
+                ?.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0) ?: 0
         val summitsForCurrentMonth = summits.filter {
             val calForSummit = Calendar.getInstance()
             calForSummit.time = it.date
@@ -248,12 +249,12 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
     ) {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         val annualTargetActivity =
-            sharedPreferences.getString("annual_target_activities", "52")?.toInt() ?: 52
+            sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_ACTIVITIES, "52")?.toInt() ?: 52
         val annualTargetKm =
-            sharedPreferences.getString("annual_target_km", "1200")?.toInt() ?: 1200
-        val annualTargetHm = sharedPreferences.getString("annual_target", "50000")?.toInt() ?: 50000
+            sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_KM, "1200")?.toInt() ?: 1200
+        val annualTargetHm = sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET, "50000")?.toInt() ?: 50000
         val indoorHeightMeterPercent =
-            sharedPreferences?.getInt("indoor_height_meter_per_cent", 0) ?: 0
+            sharedPreferences?.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0) ?: 0
 
         val statisticEntry = StatisticEntry(
             filterByDate(entries),

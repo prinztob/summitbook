@@ -69,7 +69,7 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
         summit: Summit
     ) {
         val useSimplifiedTracks =
-            MainActivity.sharedPreferences.getBoolean("use_simplified_tracks", true)
+            MainActivity.sharedPreferences.getBoolean(Keys.PREF_USE_SIMPLIFIED_TRACKS, true)
         if (
             !summit.ignoreSimplifyingTrack &&
             useSimplifiedTracks &&

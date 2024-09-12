@@ -21,6 +21,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.DialogShowNewSummitFromGarminBinding
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
@@ -75,7 +76,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                         binding.updateNewSummits.setOnClickListener {
                             if (pythonExecutor != null) {
                                 val startDate =
-                                    sharedPreferences?.getString("garmin_start_date", null) ?: ""
+                                    sharedPreferences?.getString(Keys.PREF_THIRD_PARTY_START_DATE, null) ?: ""
                                 val current = LocalDateTime.now()
                                 val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
                                 val endDate = current.format(formatter)
@@ -184,7 +185,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                     val edit =
                         PreferenceManager.getDefaultSharedPreferences(requireContext())
                             .edit()
-                    edit.putString("garmin_start_date", startDateForSync)
+                    edit.putString(Keys.PREF_THIRD_PARTY_START_DATE, startDateForSync)
                     edit.apply()
                 }
             }

@@ -33,6 +33,7 @@ import com.github.mikephil.charting.utils.ColorTemplate
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.BuildConfig
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryTrackBinding
@@ -41,7 +42,10 @@ import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.getSportTypeForMapProviders
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
+import de.drtobiasprinz.summitbook.utils.FileHelper
+import de.drtobiasprinz.summitbook.utils.PreferencesHelper
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -89,6 +93,11 @@ class SummitEntryTrackFragment : Fragment() {
 
     private fun setContent() {
         val summitToView = (requireActivity() as SummitEntryDetailsActivity).summitEntry
+        if (PreferencesHelper.loadOnDeviceMaps() &&
+            FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
+        ) {
+            selectedItem = getSportTypeForMapProviders(summitToView.sportType, requireContext())
+        }
         pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { itData ->
             itData.data.let { summitToCompare ->
                 pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
@@ -125,10 +134,8 @@ class SummitEntryTrackFragment : Fragment() {
                             }
                         }
                         val numberOfPointsToShow =
-                            PreferenceManager.getDefaultSharedPreferences(
-                                requireContext()
-                            )
-                                .getString("max_number_points", "10000")?.toInt()
+                            PreferenceManager.getDefaultSharedPreferences(requireContext())
+                                .getString(Keys.PREF_MAX_NUMBER_POINT, "10000")?.toInt()
                                 ?: 10000
                         binding.showAllTracks.setOnClickListener { _: View? ->
                             summitsListData.data?.let { summits ->
@@ -167,7 +174,7 @@ class SummitEntryTrackFragment : Fragment() {
         binding.osmap.overlays?.clear()
         binding.osmap.overlayManager?.clear()
         binding.osmap.overlays.add(mLocationOverlay)
-        setUsedItemsForColorCode(true)
+        setUsedItemsForColorCode()
         setOpenStreetMap(summitToView, summitToCompare, summits)
         OpenStreetMapUtils.setOsmConfForTiles()
     }
@@ -465,7 +472,7 @@ class SummitEntryTrackFragment : Fragment() {
         doCleanUp: Boolean = true
     ) {
         val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || summitToView.latLng != null
-        OpenStreetMapUtils.setTileSource(selectedItem, binding.osmap, requireContext())
+        OpenStreetMapUtils.setTileSource(binding.osmap, requireContext())
         binding.changeMapType.setImageResource(R.drawable.baseline_more_vert_black_24dp)
         binding.changeMapType.setOnClickListener {
             OpenStreetMapUtils.showMapTypeSelectorDialog(
@@ -549,7 +556,7 @@ class SummitEntryTrackFragment : Fragment() {
         fMapTypeDialog.show()
     }
 
-    private fun setUsedItemsForColorCode(setDefault: Boolean = false) {
+    private fun setUsedItemsForColorCode() {
         usedItemsForColorCode = TrackColor.entries.filter { trackColorEntry: TrackColor ->
             gpsTrack?.trackPoints?.any {
                 val value = trackColorEntry.f(it)
@@ -559,7 +566,7 @@ class SummitEntryTrackFragment : Fragment() {
             entry.spinnerId = i
             entry
         }
-        if (setDefault && TrackColor.Elevation !in usedItemsForColorCode) {
+        if (TrackColor.Elevation !in usedItemsForColorCode) {
             selectedCustomizeTrackItem = TrackColor.None
         } else if (TrackColor.Elevation in usedItemsForColorCode) {
             selectedCustomizeTrackItem = TrackColor.Elevation
@@ -649,10 +656,10 @@ class SummitEntryTrackFragment : Fragment() {
                     context,
                     String.format(
                         requireContext().resources.getString(
-                            R.string.summits_shown,
-                            summitsShown.toString(),
-                            summitsWithSameBoundingBox.size.toString()
-                        )
+                            R.string.summits_shown
+                        ),
+                        summitsShown.toString(),
+                        summitsWithSameBoundingBox.size.toString()
                     ),
                     Toast.LENGTH_LONG
                 ).show()

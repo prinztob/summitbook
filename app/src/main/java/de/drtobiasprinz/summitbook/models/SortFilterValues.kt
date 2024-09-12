@@ -2,6 +2,7 @@ package de.drtobiasprinz.summitbook.models
 
 import android.content.SharedPreferences
 import android.util.Log
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -54,7 +55,7 @@ class SortFilterValues(
                     years = (years + currentYear).sortedDescending()
                 }
             }
-            val showOnlyCurrentYear = sharedPreferences.getBoolean("current_year_switch", false)
+            val showOnlyCurrentYear = sharedPreferences.getBoolean(Keys.PREF_CURRENT_YEAR_SWITCH, false)
             updateCurrentYearSwitch(showOnlyCurrentYear)
         }
     }

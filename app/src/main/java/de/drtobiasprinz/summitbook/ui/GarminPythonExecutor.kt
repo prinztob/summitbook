@@ -7,6 +7,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.db.entities.GarminData
 import de.drtobiasprinz.summitbook.db.entities.PowerData
@@ -77,7 +78,7 @@ class GarminPythonExecutor(
             login()
         }
         val result = pythonModule?.callAttr(
-            "download_tcx",
+            Keys.PREF_DOWNLOAD_TCX,
             client,
             garminActivityId,
             downloadPathTcx,

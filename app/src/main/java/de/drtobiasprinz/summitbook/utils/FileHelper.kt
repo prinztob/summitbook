@@ -10,7 +10,6 @@ import java.io.FileInputStream
 
 object FileHelper {
 
-    /* Get the FileInputStreams for all .map files stored in a selected folder on device */
     fun getOnDeviceMapFileInputStreams(
         context: Context,
         documentFiles: List<DocumentFile>
@@ -20,7 +19,6 @@ object FileHelper {
         }.toTypedArray()
     }
 
-    /* make a content uri persistent / claims the uri */
     fun makeUriPersistent(context: Context, uri: Uri) {
         val contentResolver = context.contentResolver
         val takeFlags: Int =
@@ -28,8 +26,6 @@ object FileHelper {
         return contentResolver.takePersistableUriPermission(uri, takeFlags)
     }
 
-
-    /* Get a list of .map files stored on device */
     fun getOnDeviceMapFiles(context: Context): List<DocumentFile> {
         val fileList: MutableList<DocumentFile> = mutableListOf()
         val onDeviceMapsFolder: String = PreferencesHelper.loadOnDeviceMapsFolder()
@@ -49,8 +45,6 @@ object FileHelper {
         return fileList
     }
 
-
-    /* Get the name of the on-device maps folder */
     fun getOnDeviceMapsFolderName(context: Context): String {
         val onDeviceMapsFolder: String = PreferencesHelper.loadOnDeviceMapsFolder()
         if (onDeviceMapsFolder.isNotEmpty()) {
@@ -59,6 +53,5 @@ object FileHelper {
             return String()
         }
     }
-
 
 }

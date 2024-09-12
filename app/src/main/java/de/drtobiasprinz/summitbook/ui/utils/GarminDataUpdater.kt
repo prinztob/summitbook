@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.Toast
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.DailyReportData
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
@@ -33,7 +34,7 @@ class GarminDataUpdater(
     private var activitiesAfterUpdate: Int = 0
 
     fun update() {
-        startDate = sharedPreferences.getString("garmin_start_date", null) ?: ""
+        startDate = sharedPreferences.getString(Keys.PREF_THIRD_PARTY_START_DATE, null) ?: ""
         activitiesAtBeginning = MainActivity.activitiesDir?.listFiles()?.size ?: 0
         try {
             updateDailyReportData()
@@ -144,7 +145,7 @@ class GarminDataUpdater(
     fun onFinish(progressBar: ProgressBar, context: Context, applyOnUpdates: () -> Unit = { }) {
         progressBar.visibility = View.GONE
         val edit = sharedPreferences.edit()
-        edit.putString("garmin_start_date", startDateForSync)
+        edit.putString(Keys.PREF_THIRD_PARTY_START_DATE, startDateForSync)
         edit.apply()
         Log.i("AsyncUpdateGarminData", "Done.")
         activitiesAfterUpdate = MainActivity.activitiesDir?.listFiles()?.size ?: 0

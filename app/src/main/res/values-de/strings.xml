@@ -384,18 +384,18 @@
     <string name="add_track_as_summit">neuer Gipfel</string>
     <string name="add_track_as_bookmark">neues Lesezeichen</string>
 
-    <string name="segments">Abschnitte</string>
-    <string name="add_new_segment_details">Füge neue Abschnitt Details hnzu</string>
-    <string name="segment_end_point">Abschnittendpunkt</string>
-    <string name="segment_start_point">Abschnittanfangpunkt</string>
+    <string name="segments">Segmente</string>
+    <string name="add_new_segment_details">Füge neue Segmentdetails hinzu</string>
+    <string name="segment_end_point">Segmentendpunkt</string>
+    <string name="segment_start_point">Segmentanfangpunkt</string>
 
-    <string name="update_segment_cancel">"Aktualisierung des Abschnitts wurde abgebrochen."</string>
-    <string name="add_new_segment_cancel">"Das Hinzufügen eines neuen Abschnitts wurde abgebrochen."</string>
-    <string name="add_segment">Add segment</string>
+    <string name="update_segment_cancel">"Aktualisierung des Segments wurde abgebrochen."</string>
+    <string name="add_new_segment_cancel">"Das Hinzufügen eines neuen Segments wurde abgebrochen."</string>
+    <string name="add_segment">Füge Segment hinzu</string>
     <string name="extract_summit">Wähle einen Gipfel aus</string>
     <string name="start_after_stop">Ausgewälter Startpunkt ist nach Endpunkt</string>
     <string name="stop_before_start">Ausgewälter Endpunkt ist vor Startpunkt</string>
-    <string name="chart">Chart </string>
+    <string name="chart">Chart</string>
     <string name="map">Karte</string>
 
     <string name="days">Tage</string>
@@ -424,16 +424,24 @@
     <string name="min_5_yrs">Min. letzte 5 Jahre</string>
     <string name="max_5_yrs">Max. letzte 5 Jahre</string>
     <string name="actually">Tatsächlich</string>
+
     <string name="map_provider">Karten Provider</string>
-    <string name="on_device_maps">On-device maps (configure source folder below) are currently used</string>
-    <string name="online_maps">Online maps (default) are currently used</string>
-    <string name="map_folder">On-device Maps Folder</string>
-    <string name="map_folder_summary">Currently using the .map files from an on-divice folder (tap to change folder)</string>
+    <string name="on_device_maps">On-device Karten werden benützt</string>
+    <string name="online_maps">Online Karten (default) werden benützt</string>
+    <string name="map_folder">On-device Kartenordner</string>
+    <string name="map_folder_summary">"Verwende .map Datein von diesen Ordner: %1$s (tippe um den Ordner zu ändern)"</string>
     <string name="pref_general_title">Generel</string>
     <string name="pref_map_title">Karte</string>
-    <string name="pref_third_party_title">Third Party</string>
+    <string name="pref_third_party_title">Drittanbieter</string>
     <string name="pref_export_title">Export</string>
     <string name="toast_message_install_file_helper">Bitte einen Dateimanager installieren.</string>
-    <string name="toast_message_no_map_files_available">No map files found. Using online maps.</string>
+    <string name="toast_message_no_map_files_available">Keine Kartendateien gefunden. Verwende Online Karten.</string>
+
+    <string name="open_topo_map_type">Online Karte (OpenTopo)</string>
+    <string name="mapnik_map_type">Online Karte (MAPNIK)</string>
+    <string name="city_map_type">Offline Karte (Stadt)</string>
+    <string name="mtb_map_type">Offline Karte (MTB)</string>
+    <string name="hiking_map_type">Offline Karte (Wandern)</string>
+    <string name="cycling_map_type">Offline Karte (Rad)</string>
 
 </resources>

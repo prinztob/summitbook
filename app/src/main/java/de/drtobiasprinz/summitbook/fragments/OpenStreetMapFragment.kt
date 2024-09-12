@@ -18,18 +18,22 @@ import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.BuildConfig
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentOpenStreetMapBinding
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
+import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
+import de.drtobiasprinz.summitbook.utils.FileHelper
+import de.drtobiasprinz.summitbook.utils.PreferencesHelper
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -70,7 +74,7 @@ class OpenStreetMapFragment : Fragment() {
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         val context = requireContext()
         maxPointsToShow =
-            (sharedPreferences.getString("max_number_points", maxPointsToShow.toString())
+            (sharedPreferences.getString(Keys.PREF_MAX_NUMBER_POINT, maxPointsToShow.toString())
                 ?: maxPointsToShow.toString()).toInt()
         Configuration.getInstance()
             .load(context, PreferenceManager.getDefaultSharedPreferences(context))
@@ -100,7 +104,12 @@ class OpenStreetMapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setTileSource(selectedItem, binding.osmap, requireContext())
+        if (PreferencesHelper.loadOnDeviceMaps() &&
+            FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
+        ) {
+            selectedItem = MapProvider.HIKING
+        }
+        setTileSource(binding.osmap, requireContext())
         val context: Context? = this@OpenStreetMapFragment.activity
         mLocationOverlay =
             MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)

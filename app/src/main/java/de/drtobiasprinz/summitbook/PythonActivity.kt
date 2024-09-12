@@ -15,8 +15,8 @@ class PythonActivity : PythonConsoleActivity() {
     class Task(app: Application?) : PythonConsoleActivity.Task(app) {
         override fun run() {
             val sharedPreferences = MainActivity.sharedPreferences
-            val username = sharedPreferences.getString("garmin_username", "")
-            val password = sharedPreferences.getString("garmin_password", "")
+            val username = sharedPreferences.getString(Keys.PREF_GARMIN_USERNAME, "")
+            val password = sharedPreferences.getString(Keys.PREF_GARMIN_PASSWORD, "")
             py.getModule("entry_point")
                 .callAttr("init_api", username, password, storage?.absolutePath)
         }
