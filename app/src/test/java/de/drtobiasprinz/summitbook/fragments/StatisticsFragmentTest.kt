@@ -24,18 +24,10 @@ class StatisticsFragmentTest {
                     listOf("place1"),
                     listOf("country1"),
                     "comment1",
-                    ElevationData.Companion.parse(1, 11),
+                    ElevationData(1, 11),
                     1.1,
-                    VelocityData.Companion.parse(1.2, 1.3),
-                    0.0,
-                    0.0,
-                    mutableListOf("participant1"),
-                    mutableListOf(),
-                    isFavorite = false,
-                    isPeak = false,
-                    imageIds = mutableListOf(),
-                    garminData = null,
-                    trackBoundingBox = null
+                    VelocityData( 1.3),
+                    participants = mutableListOf("participant1"),
                 )
                 entry2 = Summit(
                     Summit.parseDate("2018-11-18"),
@@ -44,18 +36,12 @@ class StatisticsFragmentTest {
                     listOf("place2"),
                     listOf("country2"),
                     "comment2",
-                    ElevationData.Companion.parse(2, 22),
+                    ElevationData(2, 22),
                     2.1,
-                    VelocityData.Companion.parse(2.2, 2.3),
+                    VelocityData(2.3),
                     0.0,
                     0.0,
                     mutableListOf("participant1"),
-                    mutableListOf(),
-                    isFavorite = false,
-                    isPeak = false,
-                    imageIds = mutableListOf(),
-                    garminData = null,
-                    trackBoundingBox = null
                 )
                 entry3 = Summit(
                     Summit.parseDate("2019-10-18"),
@@ -64,18 +50,10 @@ class StatisticsFragmentTest {
                     listOf("place3"),
                     listOf("country3"),
                     "comment3",
-                    ElevationData.Companion.parse(3, 33),
+                    ElevationData(3, 33),
                     3.1,
-                    VelocityData.Companion.parse(3.2, 3.3),
-                    0.0,
-                    0.0,
-                    mutableListOf("participant1"),
-                    mutableListOf(),
-                    isFavorite = false,
-                    isPeak = false,
-                    imageIds = mutableListOf(),
-                    garminData = null,
-                    trackBoundingBox = null
+                    VelocityData( 3.3),
+                    participants = mutableListOf("participant1"),
                 )
                 summitEntries.add(entry1)
                 summitEntries.add(entry2)

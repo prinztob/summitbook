@@ -4,8 +4,8 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 
 class ExtremaValuesSummits(val entries: List<Summit>, val shouldIndoorActivityBeExcluded: Boolean = false, private val excludeZeroValueFromMin: Boolean = false) {
-    var averageSpeedMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.velocityData.avgVelocity }
-    var durationMinMax = getMinMax { e -> if (e.duration < 24.0) e.duration else 0.0 }
+    var averageSpeedMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.getAverageVelocity() }
+    var durationMinMax = getMinMax { e -> if (e.duration < 24 * 3600.0) e.duration else 0.0 }
     var topSpeedMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.velocityData.maxVelocity }
     var oneKmMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.velocityData.oneKilometer }
     var fiveKmMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.velocityData.fiveKilometer }

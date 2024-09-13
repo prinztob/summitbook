@@ -86,7 +86,7 @@ enum class TextField(
         { b -> b.paceText },
         { b -> b.pace },
         "km/h",
-        { e -> e.velocityData.avgVelocity },
+        { e -> e.getAverageVelocity() },
         { e -> e?.averageSpeedMinMax }
     ),
     TopSpeed(TextFieldGroup.Base,

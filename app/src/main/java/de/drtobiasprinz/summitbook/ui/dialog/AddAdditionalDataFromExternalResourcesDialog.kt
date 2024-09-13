@@ -123,7 +123,6 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         }
         binding.deleteData.setOnClickListener {
             summit.velocityData = VelocityData(
-                summit.velocityData.avgVelocity,
                 summit.velocityData.maxVelocity
             )
             summit.elevationData = ElevationData(
@@ -246,35 +245,6 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                 }
             }
         }
-    }
-
-    private fun setVelocityData(
-        jsonLocal: JsonObject,
-        summit: Summit
-    ) {
-        val maxVelocitySummit = MaxVelocitySummit()
-        maxVelocitySummit.parseVelocityEntriesFomGarmin(jsonLocal)
-        summit.velocityData.oneKilometer =
-            maxVelocitySummit.getAverageVelocityForKilometers(1.0)
-        if (summit.velocityData.oneKilometer > 0) summit.velocityData.fiveKilometer =
-            maxVelocitySummit.getAverageVelocityForKilometers(5.0)
-        if (summit.velocityData.fiveKilometer > 0) summit.velocityData.tenKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(10.0)
-        if (summit.velocityData.tenKilometers > 0) summit.velocityData.fifteenKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(15.0)
-        if (summit.velocityData.fifteenKilometers > 0) summit.velocityData.twentyKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(20.0)
-        if (summit.velocityData.twentyKilometers > 0) summit.velocityData.thirtyKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(30.0)
-        if (summit.velocityData.thirtyKilometers > 0) summit.velocityData.fortyKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(40.0)
-        if (summit.velocityData.fortyKilometers > 0) summit.velocityData.fiftyKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(50.0)
-        if (summit.velocityData.fiftyKilometers > 0) summit.velocityData.seventyFiveKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(75.0)
-        if (summit.velocityData.seventyFiveKilometers > 0) summit.velocityData.hundredKilometers =
-            maxVelocitySummit.getAverageVelocityForKilometers(100.0)
-        viewModel.saveSummit(true, summit)
     }
 
 

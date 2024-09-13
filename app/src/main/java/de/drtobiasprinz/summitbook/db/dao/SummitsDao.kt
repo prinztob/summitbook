@@ -35,6 +35,9 @@ interface SummitsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addSummit(summit: Summit): Long
 
+    @Update
+    fun updateSummitDeprecated(entity: Summit)
+
     @get:Query("select * from $SUMMITS_TABLE where isBookmark = 0")
     val allSummit: List<Summit>?
 

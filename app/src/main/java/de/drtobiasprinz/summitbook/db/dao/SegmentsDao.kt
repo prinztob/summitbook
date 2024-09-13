@@ -20,6 +20,8 @@ interface SegmentsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addSegmentDetails(segmentDetails: SegmentDetails): Long
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun addSegmentDetailsDeprecated(segmentDetails: SegmentDetails): Long
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addSegmentEntry(segmentEntry: SegmentEntry): Long
 
     @Update(onConflict = OnConflictStrategy.REPLACE)

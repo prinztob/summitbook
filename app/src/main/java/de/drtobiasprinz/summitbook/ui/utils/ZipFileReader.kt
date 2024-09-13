@@ -2,9 +2,12 @@ package de.drtobiasprinz.summitbook.ui.utils
 
 import android.util.Log
 import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_CALCULATED_DATA
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_FORECASTS
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SEGMENTS
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SUMMITS
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_THIRD_PARTY_DATA
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_VERSION
 import kotlinx.coroutines.Job
 import java.io.*
 import java.nio.file.Files
@@ -18,6 +21,7 @@ class ZipFileReader(
     private val allForecasts: MutableList<Forecast> = mutableListOf(),
     private val allSegments: MutableList<Segment> = mutableListOf(),
 ) {
+    var version = ""
     var successful = 0
     var unsuccessful = 0
     var duplicate = 0
@@ -75,15 +79,27 @@ class ZipFileReader(
 
     private fun readFromCache() {
         val inputCsvFile = File(baseDirectory, CSV_FILE_NAME_SUMMITS)
+        val inputCsvVersionFile = File(baseDirectory, CSV_FILE_NAME_VERSION)
         val inputCsvFileSegments = File(baseDirectory, CSV_FILE_NAME_SEGMENTS)
         val inputCsvFileForecasts = File(baseDirectory, CSV_FILE_NAME_FORECASTS)
+        val inputCsvFileThirdPartyData = File(baseDirectory, CSV_FILE_NAME_THIRD_PARTY_DATA)
+        val inputCsvFileCalculatedData = File(baseDirectory, CSV_FILE_NAME_CALCULATED_DATA)
         try {
+            if (inputCsvVersionFile.exists()) {
+                version = inputCsvVersionFile.readText().trim()
+            }
             readSummits(inputCsvFile)
             if (inputCsvFileSegments.exists()) {
                 readSegments(inputCsvFileSegments)
             }
             if (inputCsvFileForecasts.exists()) {
                 readForecasts(inputCsvFileForecasts)
+            }
+            if (inputCsvFileThirdPartyData.exists()) {
+                readThirdPartyData(inputCsvFileThirdPartyData)
+            }
+            if (inputCsvFileCalculatedData.exists()) {
+                readCalculatedData(inputCsvFileCalculatedData)
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -105,7 +121,7 @@ class ZipFileReader(
                             "required"
                         )
                     ) {
-                        entry = Summit.parseFromCsvFileLine(lineLocal)
+                        entry = Summit.parseFromCsvFileLine(lineLocal, version)
                         if (!entry.isDuplicate(allSummits)) {
                             allSummits.add(entry)
                             newSummits.add(entry)
@@ -190,7 +206,10 @@ class ZipFileReader(
             while (br.readLine().also { line = it } != null) {
                 val lineLocal = line
                 try {
-                    if (lineLocal != null && !lineLocal.startsWith("Start") && !lineLocal.startsWith("Year")) {
+                    if (lineLocal != null && !lineLocal.startsWith("Start") && !lineLocal.startsWith(
+                            "Year"
+                        )
+                    ) {
                         val added =
                             Forecast.parseFromCsvFileLine(lineLocal, allForecasts, saveForecast)
                         if (added) {
@@ -207,6 +226,60 @@ class ZipFileReader(
         }
     }
 
+    private fun readThirdPartyData(inputCsvFile: File) {
+        val iStream: InputStream = FileInputStream(inputCsvFile)
+        BufferedReader(InputStreamReader(iStream)).use { br ->
+            var line: String?
+            while (br.readLine().also { line = it } != null) {
+                val lineLocal = line
+                try {
+                    if (lineLocal != null && !lineLocal.startsWith("activityId") && !lineLocal.startsWith(
+                            "required"
+                        )
+                    ) {
+                        val added =
+                            GarminData.parseFromCsvFileLineAndSave(lineLocal, allSummits, saveSummit)
+                        if (added) {
+                            Log.d("Line %s was added in db.", lineLocal)
+                        } else {
+                            Log.d("Line %s is already db.", lineLocal)
+                        }
+                    }
+                } catch (e: Exception) {
+                    unsuccessful++
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+
+    private fun readCalculatedData(inputCsvFile: File) {
+        val iStream: InputStream = FileInputStream(inputCsvFile)
+        BufferedReader(InputStreamReader(iStream)).use { br ->
+            var line: String?
+            while (br.readLine().also { line = it } != null) {
+                val lineLocal = line
+                try {
+                    if (lineLocal != null && !lineLocal.startsWith("activityId") && !lineLocal.startsWith(
+                            "required"
+                        )
+                    ) {
+                        val added =
+                            Summit.parseCalculatedDataFromCsvFileLineAndSave(lineLocal, allSummits, saveSummit)
+                        if (added) {
+                            Log.d("Line %s was added in db.", lineLocal)
+                        } else {
+                            Log.d("Line %s is already db.", lineLocal)
+                        }
+                    }
+                } catch (e: Exception) {
+                    unsuccessful++
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
 
     @Throws(IOException::class)
     fun readGpxFile(entry: Summit) {

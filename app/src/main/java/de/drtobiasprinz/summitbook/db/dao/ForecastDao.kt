@@ -14,6 +14,9 @@ interface ForecastDao {
     @get:Query("select * from forecast")
     val allForecastsDeprecated: List<Forecast>?
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun addForecastDeprecated(forecast: Forecast): Long
+
     @Transaction
     @Query("select * from forecast")
     fun getAllForecasts(): Flow<MutableList<Forecast>>

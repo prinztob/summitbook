@@ -210,14 +210,13 @@ class StatisticsFragment : Fragment() {
                 "%s",
                 statisticEntry.getVisitedCountries()
             )
-
             setTextViewData(
-                extremaValuesSummits?.averageSpeedMinMax?.second,
+               extremaValuesSummits?.averageSpeedMinMax?.second,
                 binding.layoutHighestAverageSpeed,
                 binding.textHeighestAverageSpeed,
                 binding.textHeighestAverageSpeedInfo,
                 getString(R.string.value_with_kmh),
-                getValueOrNull(extremaValuesSummits?.averageSpeedMinMax?.second) { e -> e.velocityData.avgVelocity },
+                getValueOrNull(extremaValuesSummits?.averageSpeedMinMax?.second) { e -> e.getAverageVelocity() },
                 1
             )
             setTextViewData(
@@ -226,7 +225,7 @@ class StatisticsFragment : Fragment() {
                 binding.textLongestDuration,
                 binding.textLongestDurationInfo,
                 getString(R.string.value_with_h),
-                getValueOrNull(extremaValuesSummits?.durationMinMax?.second) { e -> e.duration },
+                getValueOrNull(extremaValuesSummits?.durationMinMax?.second) { e -> e.duration/3600.0 },
                 1, toHHms = true
             )
 

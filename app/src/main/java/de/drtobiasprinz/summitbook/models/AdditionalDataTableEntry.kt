@@ -41,19 +41,12 @@ enum class AdditionalDataTableEntry(
         jsonKey = "moving_distance",
         scaleFactorForJson = { _ -> 0.001 }
     ),
-    AvgVelocity(
-        R.string.pace_hint,
-        R.string.kmh,
-        { e -> e.velocityData.avgVelocity },
-        { e, d -> e.velocityData.avgVelocity = d },
+    Duration(
+        R.string.duration,
+        R.string.sec,
+        { e -> e.duration.toDouble() },
+        { e, d -> e.duration = d.roundToInt() },
         jsonKey = "moving_time",
-        scaleFactorForJson = { json ->
-            val distance =
-                if (json.has("moving_distance")) json.getAsJsonPrimitive("moving_distance").asDouble else 0.0
-            val movingDuration =
-                if (json.has("moving_time")) json.getAsJsonPrimitive("moving_time").asDouble else 1.0
-            distance * 3.6 / (movingDuration * movingDuration)
-        }
     ),
     MaxVelocity(
         R.string.top_speed,

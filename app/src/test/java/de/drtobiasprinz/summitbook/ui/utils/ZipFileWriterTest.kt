@@ -12,15 +12,20 @@ import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.joda.time.DateTimeZone
 import org.joda.time.tz.UTCProvider
 import org.junit.After
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.io.File
 import kotlin.io.path.createTempDirectory
 
 @RunWith(RobolectricTestRunner::class)
@@ -88,16 +93,13 @@ class ZipFileWriterTest {
             listOf("place1"),
             listOf("country1"),
             "comment1",
-            ElevationData.Companion.parse(11, 1),
+            ElevationData(11, 1),
             1.1,
-            VelocityData.Companion.parse(1.2, 1.3),
+            VelocityData(1.3),
             participants = mutableListOf("participant1"),
             equipments = mutableListOf("equipment1"),
-            isFavorite = false,
-            isPeak = false,
-            imageIds = mutableListOf(),
-            garminData = null,
-            trackBoundingBox = null
+            activityId = 1L,
+            duration = 3300
         )
         private var entry2 = Summit(
             Summit.parseDate("2018-11-18"),
@@ -106,15 +108,12 @@ class ZipFileWriterTest {
             listOf("place2"),
             listOf("country2"),
             "comment2",
-            ElevationData.Companion.parse(22, 2),
+            ElevationData(22, 2),
             2.1,
-            VelocityData.Companion.parse(2.2, 2.3),
+            VelocityData(2.3, 30.1, 29.8, 25.1),
             participants = mutableListOf("participant1"),
-            isFavorite = false,
-            isPeak = false,
-            imageIds = mutableListOf(),
-            garminData = null,
-            trackBoundingBox = null
+            activityId = 2L,
+            duration = 3436
         )
         private var entry3 = Summit(
             Summit.parseDate("2019-10-18"),
@@ -123,16 +122,13 @@ class ZipFileWriterTest {
             listOf("placeNewFormat"),
             listOf("countryNewFormat"),
             "commentNewFormat",
-            ElevationData.Companion.parse(569, 62),
+            ElevationData(569, 62, 0.3, 0.2, 0.1, 15.5),
             11.73,
-            VelocityData.Companion.parse(12.6, 24.3),
+            VelocityData(24.3),
             48.05205764248967,
             11.60579879768192,
-            isFavorite = false,
-            isPeak = false,
-            imageIds = mutableListOf(),
-            garminData = null,
-            trackBoundingBox = null
+            activityId = 3L,
+            duration = 3351
         )
         private var entry4 = Summit(
             Summit.parseDate("2019-10-18"),
@@ -141,31 +137,29 @@ class ZipFileWriterTest {
             listOf("place3"),
             listOf("country3"),
             "comment3",
-            ElevationData.Companion.parse(33, 3),
+            ElevationData(33, 3),
             3.1,
-            VelocityData.Companion.parse(3.2, 3.3),
+            VelocityData(3.3),
             participants = mutableListOf("participant1"),
-            isFavorite = false,
-            isPeak = false,
-            imageIds = mutableListOf(),
             garminData = GarminData(
                 mutableListOf("123456789"),
                 100f, 120f, 160f,
                 PowerData(100f, 300f, 200f),
                 255, 50f, 2f, 3f, 4f, 3f, 111f
             ),
-            trackBoundingBox = null
+            activityId = 4L,
+            duration = 3488
         )
 
     }
 
     @Test
-    fun testExportAndImportFromZipFile() = runTest(testBody = {
+    fun testExportAndImportFromZipFile() = runTest {
         // given
-        db.summitsDao().addSummit(entry1)
-        db.summitsDao().addSummit(entry2)
-        db.summitsDao().addSummit(entry3)
-        db.summitsDao().addSummit(entry4)
+        val entries = listOf(entry1, entry2, entry3, entry4)
+        entries.forEach {
+            db.summitsDao().addSummit(it)
+        }
         val id = db.segmentsDao().addSegmentDetails(segmentDetail1)
         segmentEntry1.segmentId = id
         segmentEntry2.segmentId = id
@@ -174,7 +168,6 @@ class ZipFileWriterTest {
         val summits = db.summitsDao().allSummit ?: emptyList()
         val segments = db.segmentsDao().getAllSegmentsDeprecated() ?: emptyList()
         val file = kotlin.io.path.createTempFile(suffix = ".zip").toFile()
-
 
         val writer = ZipFileWriter(
             summits,
@@ -186,16 +179,61 @@ class ZipFileWriterTest {
         )
         writer.dir = createTempDirectory().toFile()
         writer.writeToZipFile(file.outputStream())
+        db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries()
+            .build()
 
+        launch {
+            withContext(Dispatchers.IO) {
+                val reader = ZipFileReader(
+                    createTempDirectory().toFile()
+                )
+                reader.saveSummit = { isEdit, summit ->
+                    if (isEdit) {
+                        db.summitsDao().updateSummitDeprecated(summit)
+                    } else {
+                        db.summitsDao().addSummit(summit)
+                    }
+                }
+                reader.saveForecast = { forecast ->
+                    db.forecastDao().addForecastDeprecated(forecast)
+                }
+                reader.extractAndImport(file.inputStream())
+                Assert.assertEquals(4, reader.successful)
+                Assert.assertEquals(0, reader.unsuccessful)
+            }
+            Assert.assertEquals(summits, db.summitsDao().allSummit)
+        }
 
-        val reader = ZipFileReader(
-            createTempDirectory().toFile()
-        )
-        reader.extractAndImport(file.inputStream())
+    }
 
-        assert(summits == db.summitsDao().allSummit)
-        assert(segments == db.segmentsDao().getAllSegmentsDeprecated())
-
-    })
+    @Test
+    fun testImportFromZipFileOldFormat() = runTest {
+        launch {
+            withContext(Dispatchers.IO) {
+                val reader = ZipFileReader(
+                    createTempDirectory().toFile()
+                )
+                reader.saveSummit = { isEdit, summit ->
+                    if (isEdit) {
+                        db.summitsDao().updateSummitDeprecated(summit)
+                    } else {
+                        db.summitsDao().addSummit(summit)
+                    }
+                }
+                reader.saveForecast = { forecast ->
+                    db.forecastDao().addForecastDeprecated(forecast)
+                }
+                val zipFile = this.javaClass.classLoader?.getResource("backup_old_format.zip")
+                if (zipFile != null) {
+                    reader.extractAndImport(File(zipFile.path).inputStream())
+                    Assert.assertEquals(4, reader.successful)
+                    Assert.assertEquals(0, reader.unsuccessful)
+                }
+            }
+            Assert.assertEquals(
+                listOf(entry1, entry2, entry3, entry4), db.summitsDao().allSummit
+            )
+        }
+    }
 
 }

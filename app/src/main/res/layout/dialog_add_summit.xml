@@ -92,7 +92,7 @@
             android:contentDescription="@string/addGpsTrack"
             android:paddingStart="5dp"
             android:paddingEnd="5dp"
-            android:src="@drawable/ic_baseline_upload_file_24"
+            android:src="@drawable/baseline_attach_file_24"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/activities" />
 
@@ -200,23 +200,23 @@
                 android:layout_height="wrap_content">
 
                 <EditText
-                    android:id="@+id/pace"
+                    android:id="@+id/duration"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toStartOf="@id/pace_text"
-                    android:drawableStart="@drawable/baseline_speed_black_24dp"
+                    android:layout_toStartOf="@id/duration_text"
+                    android:drawableStart="@drawable/baseline_av_timer_24_black"
                     android:drawablePadding="10dp"
-                    android:hint="@string/pace_hint"
+                    android:hint="@string/duration"
                     android:importantForAutofill="no"
                     android:inputType="numberDecimal" />
 
                 <TextView
-                    android:id="@+id/pace_text"
+                    android:id="@+id/duration_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_centerInParent="true"
-                    android:text="@string/kmh" />
+                    android:text="@string/sec" />
             </RelativeLayout>
 
             <RelativeLayout

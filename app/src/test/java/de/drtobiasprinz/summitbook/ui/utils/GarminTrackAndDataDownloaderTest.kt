@@ -7,6 +7,7 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
+import org.junit.Assert
 import org.junit.Test
 
 class GarminTrackAndDataDownloaderTest {
@@ -15,22 +16,22 @@ class GarminTrackAndDataDownloaderTest {
         val entry1 = Summit(
             Summit.parseDate("2019-11-13"), "summit1", SportType.Bicycle,
             listOf("place1"), listOf("country1"), "comment1",
-            ElevationData.Companion.parse(11, 1), 1.0,
-            VelocityData.Companion.parse(1.0, 11.3),
+            ElevationData(11, 1), 1.0,
+            VelocityData(11.3),
             participants = mutableListOf("participant1"), activityId = 123L
         )
         val entry2 = Summit(
             Summit.parseDate("2019-11-13"), "summit2", SportType.Bicycle,
             listOf("place2"), listOf("country2"), "comment2",
-            ElevationData.Companion.parse(110, 10), 10.0,
-            VelocityData.Companion.parse(5.0, 12.3),
+            ElevationData(110, 10), 10.0,
+            VelocityData(12.3),
             participants = mutableListOf("participant2")
         )
         val entry3 = Summit(
             Summit.parseDate("2019-11-13"), "summit3", SportType.Bicycle,
             listOf("place3"), listOf("country3"), "comment3",
-            ElevationData.Companion.parse(1100, 100), 70.0,
-            VelocityData.Companion.parse(10.0, 10.3),
+            ElevationData(1100, 100), 70.0,
+            VelocityData(10.3),
             participants = mutableListOf("participant4")
         )
         val finalEntryExpected = Summit(
@@ -40,9 +41,9 @@ class GarminTrackAndDataDownloaderTest {
             listOf("place1", "place2", "place3"),
             listOf("country1", "country2", "country3"),
             "merge of summit1, summit2, summit3",
-            ElevationData.Companion.parse(1100, 111),
+            ElevationData(1100, 111),
             81.0,
-            VelocityData.Companion.parse(8.1, 12.3),
+            VelocityData(12.3),
             participants = mutableListOf("participant1", "participant2", "participant4"),
             activityId = entry1.activityId
         )
@@ -68,10 +69,11 @@ class GarminTrackAndDataDownloaderTest {
             listOf("place1"),
             listOf("country1"),
             "comment1",
-            ElevationData.Companion.parse(11, 1),
+            ElevationData(11, 1),
             1.0,
-            VelocityData.Companion.parse(1.0, 11.3),
+            VelocityData( 11.3),
             participants = mutableListOf("participant1"),
+            duration = 3600
         )
         val entry2 = Summit(
             Summit.parseDate("2019-11-13"),
@@ -80,10 +82,11 @@ class GarminTrackAndDataDownloaderTest {
             listOf("place2"),
             listOf("country2"),
             "comment2",
-            ElevationData.Companion.parse(110, 11),
+            ElevationData(110, 11),
             10.0,
-            VelocityData.Companion.parse(5.0, 12.3),
+            VelocityData(12.3),
             participants = mutableListOf("participant2"),
+            duration = 7200
         )
         val entry3 = Summit(
             Summit.parseDate("2019-11-13"),
@@ -92,10 +95,11 @@ class GarminTrackAndDataDownloaderTest {
             listOf("place3"),
             listOf("country3"),
             "comment3",
-            ElevationData.Companion.parse(1100, 110),
+            ElevationData(1100, 110),
             70.0,
-            VelocityData.Companion.parse(10.0, 10.3),
+            VelocityData( 10.3),
             participants = mutableListOf("participant4"),
+            duration = 25200
         )
         entry3.garminData = garminData
         val downloader = GarminTrackAndDataDownloader(
@@ -103,7 +107,7 @@ class GarminTrackAndDataDownloaderTest {
             GarminPythonExecutor("aaa", "bbbb")
         )
         downloader.extractFinalSummit()
-        assert(downloader.finalEntry?.garminData?.toString() == garminData.toString())
+        Assert.assertEquals(garminData.toString(), downloader.finalEntry?.garminData?.toString())
     }
 
     @Test
@@ -139,10 +143,11 @@ class GarminTrackAndDataDownloaderTest {
             listOf("place1"),
             listOf("country1"),
             "comment1",
-            ElevationData.Companion.parse(1, 11),
+            ElevationData(1, 11),
             1.0,
-            VelocityData.Companion.parse(1.0, 11.3),
+            VelocityData(11.3),
             participants = mutableListOf("participant1"),
+            duration = 3600
         )
         entry1.garminData = GarminData(
             mutableListOf("1"), 1f, 1f, 33f,
@@ -156,10 +161,11 @@ class GarminTrackAndDataDownloaderTest {
             listOf("place2"),
             listOf("country2"),
             "comment2",
-            ElevationData.Companion.parse(10, 110),
+            ElevationData(10, 110),
             10.0,
-            VelocityData.Companion.parse(5.0, 12.3),
+            VelocityData(12.3),
             participants = mutableListOf("participant2"),
+            duration = 7200
         )
         entry2.garminData = GarminData(
             mutableListOf("2"), 11f, 10f, 133f,
@@ -173,10 +179,11 @@ class GarminTrackAndDataDownloaderTest {
             listOf("place3"),
             listOf("country3"),
             "comment3",
-            ElevationData.Companion.parse(100, 1100),
+            ElevationData(100, 1100),
             70.0,
-            VelocityData.Companion.parse(10.0, 10.3),
+            VelocityData(10.3),
             participants = mutableListOf("participant4"),
+            duration = 25200
         )
         entry3.garminData = GarminData(
             mutableListOf("3"), 111f, 70f, 103f,
@@ -188,6 +195,6 @@ class GarminTrackAndDataDownloaderTest {
             GarminPythonExecutor("aaa", "bbbb")
         )
         downloader.extractFinalSummit()
-        assert(downloader.finalEntry?.garminData?.toString() == garminDataExpected.toString())
+        Assert.assertEquals(garminDataExpected.toString(), downloader.finalEntry?.garminData.toString())
     }
 }

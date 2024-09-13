@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
-import android.util.Log
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.File
@@ -43,7 +42,6 @@ class MaxVelocitySummit {
     companion object {
         fun getMaxVelocitySummitFromSplitFiles(splitsFile: List<File>): MaxVelocitySummit {
             val maxVelocitySummit = MaxVelocitySummit()
-            Log.i("getMaxVelocitySummitFromSplitFiles", "Analysing following files: $splitsFile")
             splitsFile.filter { it.exists() }.forEach { file ->
                 val json = JsonParser.parseString(JsonUtils.getJsonData(file)) as JsonObject
                 maxVelocitySummit.parseVelocityEntriesFomGarmin(json)
@@ -54,7 +52,6 @@ class MaxVelocitySummit {
 }
 
 class VelocityEntry(val meter: Double, val seconds: Double) {
-    val velocity = meter/seconds * 3.6
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

@@ -255,10 +255,6 @@ class GarminPythonExecutor(
             val sportType = parseSportType(jsonObject["activityType"].asJsonObject)
             val duration: Double =
                 if (jsonObject["movingDuration"] != JsonNull.INSTANCE && sportType in SportGroup.Bike.sportTypes) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
-            val averageSpeed =
-                if (jsonObject["distance"] != JsonNull.INSTANCE && duration != 0.0) convertMphToKmh(
-                    jsonObject["distance"].asDouble / duration
-                ) else 0.0
             val activityIds: MutableList<String> = mutableListOf(jsonObject["activityId"].asString)
             if (jsonObject.has("childIds")) {
                 activityIds.addAll(jsonObject["childIds"].asJsonArray.map { it.asString })
@@ -280,7 +276,7 @@ class GarminPythonExecutor(
                 getJsonObjectEntryNotNull(jsonObject, "anaerobicTrainingEffect"),
                 getJsonObjectEntryNotNull(jsonObject, "grit"),
                 getJsonObjectEntryNotNull(jsonObject, "avgFlow"),
-                getJsonObjectEntryNotNull(jsonObject, "activityTrainingLoad")
+                getJsonObjectEntryNotNull(jsonObject, "activityTrainingLoad"),
             )
             val elevationData = try {
                 ElevationData.parse(
@@ -291,8 +287,7 @@ class GarminPythonExecutor(
                 ElevationData(0, 0)
             }
             val velocityData = try {
-                VelocityData.parse(
-                    round(averageSpeed), if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(
+                VelocityData.parse(if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(
                         convertMphToKmh(
                             getJsonObjectEntryNotNull(jsonObject, "maxSpeed").toDouble()
                         )
@@ -325,7 +320,8 @@ class GarminPythonExecutor(
                 isPeak = false,
                 imageIds = mutableListOf(),
                 garminData = garminData,
-                trackBoundingBox = null
+                trackBoundingBox = null,
+                duration = duration.toInt()
             )
         }
 

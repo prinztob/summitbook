@@ -35,7 +35,7 @@ enum class OrderBySpinnerEntry(
     AverageSpeed(
         R.string.pace_hint,
         R.string.kmh,
-        f = { e -> e.velocityData.avgVelocity.toFloat() }),
+        f = { e -> e.getAverageVelocity().toFloat() }),
     TopSpeed(R.string.top_speed, R.string.kmh, f = { e -> e.velocityData.maxVelocity.toFloat() }),
     Vo2Max(R.string.vo2Max, includeIndoorActivities = true, f = { e -> e.garminData?.vo2max }),
     Grit(R.string.grit, includeIndoorActivities = true, f = { e -> e.garminData?.grit }),
@@ -88,10 +88,10 @@ enum class OrderBySpinnerEntry(
 
     companion object {
         fun getSpinnerEntriesWithoutAccumulated(): List<OrderBySpinnerEntry> {
-            return OrderBySpinnerEntry.values().filter { !it.accumulate }
+            return entries.filter { !it.accumulate }
         }
         fun getSpinnerEntriesWithoutExcludedFromLineChart(): List<OrderBySpinnerEntry> {
-            return OrderBySpinnerEntry.values().filter { !it.excludeFromLineChart }
+            return entries.filter { !it.excludeFromLineChart }
         }
     }
 

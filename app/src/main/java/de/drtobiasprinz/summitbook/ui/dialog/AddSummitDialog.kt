@@ -575,7 +575,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             entity.comments = binding.comments.text.toString()
             entity.elevationData.elevationGain = binding.heightMeter.text.toString().toInt()
             entity.kilometers = getTextWithDefaultDouble(binding.kilometers)
-            entity.velocityData.avgVelocity = getTextWithDefaultDouble(binding.pace)
+            entity.duration = getTextWithDefaultInt(binding.duration)
             entity.velocityData.maxVelocity = getTextWithDefaultDouble(binding.topSpeed)
             entity.elevationData.maxElevation = getTextWithDefaultInt(binding.topElevation)
             entity.participants =
@@ -641,7 +641,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             binding.heightMeter, entity.elevationData.elevationGain.toString()
         )
         setTextIfNotAlreadySet(binding.kilometers, entity.kilometers.toString())
-        setTextIfNotAlreadySet(binding.pace, entity.velocityData.avgVelocity.toString())
+        setTextIfNotAlreadySet(binding.duration, entity.duration.toString())
         setTextIfNotAlreadySet(binding.topSpeed, entity.velocityData.maxVelocity.toString())
         setTextIfNotAlreadySet(
             binding.topElevation, entity.elevationData.maxElevation.toString()
@@ -739,7 +739,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             binding.comments.text.toString(),
             ElevationData.parse(0, getTextWithDefaultInt(binding.heightMeter)),
             getTextWithDefaultDouble(binding.kilometers),
-            VelocityData.parse(0.0, 0.0),
+            VelocityData(0.0),
             0.0,
             0.0,
             emptyList(),
@@ -983,10 +983,9 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     0.0
                 }
                 if (movingDuration > 0) {
-                    val pace = distance / movingDuration * 3600
-                    entry.velocityData.avgVelocity = pace
+                    entry.duration = movingDuration.toInt()
                     if (!isBookmark) {
-                        binding.pace.setText(pace.toString())
+                        binding.duration.setText(movingDuration.toString())
                     }
                 }
             }

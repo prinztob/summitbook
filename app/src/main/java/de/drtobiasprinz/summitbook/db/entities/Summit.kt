@@ -8,6 +8,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_VERSION
 import de.drtobiasprinz.summitbook.utils.Constants
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
@@ -21,6 +22,7 @@ import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.roundToInt
 
 
 @Entity(tableName = Constants.SUMMITS_TABLE)
@@ -44,6 +46,7 @@ class Summit(
     @Embedded var garminData: GarminData? = null,
     @Embedded var trackBoundingBox: TrackBoundingBox? = null,
     var activityId: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "0") var duration: Int = 0,
     @ColumnInfo(defaultValue = "false") var isBookmark: Boolean = false,
     @ColumnInfo(defaultValue = "false") var hasTrack: Boolean = false,
     @ColumnInfo(defaultValue = "false") var ignoreSimplifyingTrack: Boolean = false,
@@ -53,9 +56,6 @@ class Summit(
 
     @Ignore
     var latLng = lat?.let { lng?.let { it1 -> GeoPoint(it, it1) } }
-
-    @Ignore
-    var duration = getWellDefinedDuration()
 
     @Ignore
     var gpsTrack: GpsTrack? = null
@@ -74,15 +74,6 @@ class Summit(
 
     @Ignore
     var bestPositionInSegment: Int = -1
-
-    private fun getWellDefinedDuration(): Double {
-        val dur = if (velocityData.avgVelocity > 0) kilometers / velocityData.avgVelocity else 0.0
-        return if (dur < 24) {
-            dur
-        } else {
-            0.0
-        }
-    }
 
     fun getImagePath(imageId: Int): Path {
         return Paths.get(
@@ -271,35 +262,25 @@ class Summit(
         return getStringRepresentation()
     }
 
-    fun getStringRepresentation(
-        exportThirdPartyData: Boolean = true,
-        exportCalculatedData: Boolean = true
-    ): String {
-        val lat = latLng?.latitude?.toString() ?: ""
-        val lng = latLng?.longitude?.toString() ?: ""
-        var entryToString = getDateAsString() + ';' +
+    fun getStringRepresentation(): String {
+        return getDateAsString() + ';' +
                 name + ';' +
                 sportType + ';' +
-                places.joinToString(",") + ';' +
-                countries.joinToString(",") + ';' +
-                comments.replace(";", ",").replace("\n", ",") + ';' +
-                (if (exportCalculatedData) elevationData.toString() else elevationData.elevationGain) + ';' +
+                activityId + ';' +
                 kilometers + ';' +
-                (if (exportCalculatedData) velocityData.toString() else velocityData.avgVelocity) + ';' +
-                velocityData.maxVelocity + ';' +
+                duration + ';' +
+                elevationData.elevationGain + ';' +
                 elevationData.maxElevation + ';' +
-                lat + ';' +
-                lng + ';' +
-                participants.joinToString(",") + ',' + equipments.joinToString(",") { "${it}$EQUIPMENT_SUFFIX" } + ';' +
-                activityId + ';'
-        entryToString += if (exportThirdPartyData && garminData != null) {
-            garminData.toString()
-        } else {
-            GarminData.emptyLine(exportThirdPartyData)
-        }
-        entryToString += if (exportThirdPartyData) ";" else ""
-        entryToString += "${if (isFavorite) "1" else "0"},${if (isPeak) "1" else "0"}\n"
-        return entryToString
+                velocityData.maxVelocity + ';' +
+                (if (lat != null && lat != 0.0) lat else "") + ';' +
+                (if (lng != null && lng != 0.0) lng else "") + ';' +
+                (if (isFavorite) "1" else "0") + ';' +
+                (if (isPeak) "1" else "0") + ';' +
+                comments.replace(";", ",").replace("\n", ",") + ';' +
+                participants.joinToString(",") + ';' +
+                equipments.joinToString(",") + ';' +
+                places.joinToString(",") + ';' +
+                countries.joinToString(",") + '\n'
     }
 
     fun toReadableString(context: Context): String {
@@ -387,6 +368,14 @@ class Summit(
         }
     }
 
+    fun getAverageVelocity(): Double {
+        return if (duration > 0) {
+            kilometers / (duration / 3600)
+        } else {
+            0.0
+        }
+    }
+
     fun isInBoundingBox(boundingBox: BoundingBox): Boolean {
         val latLngLocal = latLng
         return if (latLngLocal != null && hasGpsTrack()) {
@@ -447,22 +436,21 @@ class Summit(
         if (date != other.date) return false
         if (name != other.name) return false
         if (sportType != other.sportType) return false
-        if (places != other.places) return false
-        if (countries != other.countries) return false
+        if (places != listOf("") && other.places != listOf("")  && places != other.places) return false
+        if (countries != listOf("") && other.countries != listOf("")  && countries != other.countries) return false
         if (comments != other.comments) return false
         if (elevationData != other.elevationData) return false
         if (kilometers != other.kilometers) return false
         if (velocityData != other.velocityData) return false
         if (lat != other.lat) return false
         if (lng != other.lng) return false
-        if (participants != other.participants) return false
-        if (equipments != other.equipments) return false
+        if (participants != listOf("") && other.participants != listOf("") && participants != other.participants) return false
+        if (equipments != listOf("") && other.equipments != listOf("") && equipments != other.equipments) return false
         if (imageIds != other.imageIds) return false
         if (garminData != other.garminData) return false
         if (activityId != other.activityId) return false
         if (isBookmark != other.isBookmark) return false
         if (hasTrack != other.hasTrack) return false
-        if (id != other.id) return false
         if (latLng != other.latLng) return false
         if (duration != other.duration) return false
         if (gpsTrack != other.gpsTrack) return false
@@ -472,7 +460,7 @@ class Summit(
 
     companion object {
         const val DATE_FORMAT: String = "yyyy-MM-dd"
-        const val EQUIPMENT_SUFFIX: String = ":eq"
+        private const val EQUIPMENT_SUFFIX: String = ":eq"
         const val DATETIME_FORMAT: String = "yyyy-MM-dd HH:mm:ss"
         const val CONNECTED_ACTIVITY_PREFIX: String = "ac_id:"
         const val SUMMIT_ID_EXTRA_IDENTIFIER = "SUMMIT_ID"
@@ -483,6 +471,51 @@ class Summit(
         var subDirForGpsTracks: String = "summitbook_tracks"
         var subDirForGpsTracksBookmark: String = "summitbook_tracks_bookmark"
         var subDirForImages: String = "summitbook_images"
+
+        fun parseFromCsvFileLine(line: String, version: String): Summit {
+            if (version == CSV_FILE_VERSION) {
+                val regex =
+                    """(?<date>(\d{4}-\d{2}-\d{2}));(?<name>(\w+));(?<sportType>(\w+));(?<activityId>(\d+));(?<kilometers>([\d.]+));(?<duration>([\d.]*));(?<elevationGain>([\d.]+));(?<maxElevation>([\d.]+));(?<maxVelocity>([\d.]+));(?<lat>([\d.]*));(?<long>([\d.]*));(?<isFavorite>([01]));(?<isPeak>([01]));(?<comments>(.*));(?<participants>([\w\s,]*));(?<equipments>([\w\s,]*));(?<places>([\w\s,]*));(?<countries>([\w\s,]*))""".toRegex()
+                val matchResult = regex.find(line.replace("\n", ""))
+                return if (matchResult != null) {
+                    Summit(
+                        parseDate(matchResult.groups["date"]!!.value),
+                        matchResult.groups["name"]!!.value,
+                        SportType.valueOf(matchResult.groups["sportType"]!!.value),
+                        if (matchResult.groups["places"]!!.value != "") matchResult.groups["places"]!!.value.split(
+                            ","
+                        ) else emptyList(),
+                        if (matchResult.groups["countries"]!!.value != "") matchResult.groups["countries"]!!.value.split(
+                            ","
+                        ) else emptyList(),
+                        matchResult.groups["comments"]!!.value,
+                        ElevationData(
+                            maxElevation = matchResult.groups["maxElevation"]!!.value.toInt(),
+                            elevationGain = matchResult.groups["elevationGain"]!!.value.toInt()
+                        ),
+                        matchResult.groups["kilometers"]!!.value.toDouble(),
+                        VelocityData(matchResult.groups["maxVelocity"]!!.value.toDouble()),
+                        if (matchResult.groups["lat"]!!.value != "") matchResult.groups["lat"]!!.value.toDouble() else null,
+                        if (matchResult.groups["long"]!!.value != "") matchResult.groups["long"]!!.value.toDouble() else null,
+                        if (matchResult.groups["participants"]!!.value != "") matchResult.groups["participants"]!!.value.split(
+                            ","
+                        ) else emptyList(),
+                        if (matchResult.groups["equipments"]!!.value != "") matchResult.groups["equipments"]!!.value.split(
+                            ","
+                        ) else emptyList(),
+                        matchResult.groups["isFavorite"]!!.value == "1",
+                        matchResult.groups["isPeak"]!!.value == "1",
+                        activityId = if (matchResult.groups["activityId"]!!.value != "") matchResult.groups["activityId"]!!.value.toLong() else System.currentTimeMillis(),
+                        duration = matchResult.groups["duration"]!!.value.toInt()
+                    )
+                } else {
+                    parseFromCsvFileLine(line)
+                }
+            } else {
+                return parseFromCsvFileLine(line)
+            }
+
+        }
 
         @Throws(Exception::class)
         fun parseFromCsvFileLine(line: String): Summit {
@@ -504,7 +537,7 @@ class Summit(
                 (if (splitLine[9].trim { it <= ' ' } != "") splitLine[9].toDouble() else 0.0)
             val countries = splitLine[3].split(",")
             val places = splitLine[4].split(",")
-            val participantsAndEquipments = if (splitLine[13] == "") emptyList() else splitLine[13].split(",")
+            val participantsAndEquipments = splitLine[13].split(",")
             val activityId =
                 if (splitLine[14].trim { it <= ' ' } != "") splitLine[14].toLong() else System.currentTimeMillis()
             val garminData = getGarminData(splitLine)
@@ -527,7 +560,10 @@ class Summit(
             val isFavorite =
                 if (isFavoriteAndOrPeak.isEmpty()) false else isFavoriteAndOrPeak[0] == "1"
             val isPeak = if (isFavoriteAndOrPeak.size < 2) false else isFavoriteAndOrPeak[1] == "1"
-            return Summit(
+            val velocityDataSplit = splitLine[8].split(",")
+            val avgVelocity = velocityDataSplit[0].toDouble()
+            val duration = if (avgVelocity == 0.0) 0 else ((km / avgVelocity) * 3600.0).roundToInt()
+            val summit = Summit(
                 date,
                 splitLine[1],
                 sportType,
@@ -538,19 +574,25 @@ class Summit(
                 km,
                 VelocityData.parse(splitLine[8].split(","), topSpeed),
                 latLng?.latitude, latLng?.longitude,
-                participantsAndEquipments.filter { !it.contains(EQUIPMENT_SUFFIX) },
-                participantsAndEquipments.filter { it.contains(EQUIPMENT_SUFFIX) }.map {
-                    it.replace(
-                        EQUIPMENT_SUFFIX, ""
-                    )
-                },
-                isFavorite,
-                isPeak,
-                mutableListOf(),
-                garminData,
-                null,
-                activityId
+                isFavorite =                 isFavorite,
+                isPeak = isPeak,
+                garminData = garminData,
+                activityId = activityId,
+                duration = duration
             )
+            val participants = participantsAndEquipments.filter { !it.contains(EQUIPMENT_SUFFIX) }
+            val equipments = participantsAndEquipments.filter { it.contains(EQUIPMENT_SUFFIX) }.map {
+                it.replace(
+                    EQUIPMENT_SUFFIX, ""
+                )
+            }
+            if (participants.isNotEmpty() && participants[0] != "") {
+                summit.participants = participants
+            }
+            if (equipments.isNotEmpty() && equipments[0] != "") {
+                summit.equipments = equipments
+            }
+            return summit
         }
 
         private fun getGarminData(splitLine: Array<String>): GarminData? {
@@ -651,7 +693,7 @@ class Summit(
             return Date((dateAsFloat * 1e8 + REFERENCE_VALUE_DATE).toLong())
         }
 
-        fun getCsvHeadline(resources: Resources, withThirdPartyData: Boolean = true): String {
+        fun getCsvHeadline(resources: Resources): String {
             return ("${resources.getString(R.string.tour_date)}; " +
                     "${resources.getString(R.string.name)}; " +
                     "${resources.getString(R.string.sport_type)}; " +
@@ -660,18 +702,17 @@ class Summit(
                     "${resources.getString(R.string.comment_hint)}; " +
                     "${resources.getString(R.string.elevationGain)}; " +
                     "${resources.getString(R.string.kilometers_hint)} (${resources.getString(R.string.km)}); " +
-                    "${resources.getString(R.string.pace_hint)} (${resources.getString(R.string.kmh)}); " +
+                    "${resources.getString(R.string.duration)} (${resources.getString(R.string.sec)}); " +
                     "${resources.getString(R.string.top_speed)} (${resources.getString(R.string.kmh)}); " +
                     "${resources.getString(R.string.top_elevation_hint)} (${resources.getString(R.string.hm)}); " +
                     "${resources.getString(R.string.latitude)}; " +
                     "${resources.getString(R.string.longitude)}; " +
                     "${resources.getString(R.string.participants)}; " +
                     "activityId; " +
-                    (if (withThirdPartyData) GarminData.getCsvHeadline(resources) else "") +
                     "isFavorite").trimIndent() + "\n"
         }
 
-        fun getCsvDescription(resources: Resources, withThirdPartyData: Boolean = true): String {
+        fun getCsvDescription(resources: Resources): String {
             return ("${resources.getString(R.string.required)}; " +
                     "${resources.getString(R.string.required)}; " +
                     "${resources.getString(R.string.required)}; " +
@@ -687,8 +728,29 @@ class Summit(
                     "${resources.getString(R.string.optional)}; " +
                     "${resources.getString(R.string.optional)}; " +
                     "${resources.getString(R.string.optional)}; " +
-                    (if (withThirdPartyData) GarminData.getCsvDescription(resources) else "") +
                     "${resources.getString(R.string.required)}; ").trimIndent() + "\n"
+        }
+
+        fun parseCalculatedDataFromCsvFileLineAndSave(
+            line: String,
+            summits: MutableList<Summit>,
+            saveSummit: (Boolean, Summit) -> Unit
+        ): Boolean {
+            val activityId = line.split(";").first().toLong()
+            val summit = summits.find { it.activityId == activityId }
+            if (summit != null) {
+                val updatedVelocityData = summit.velocityData.parseCalculatedData(
+                    line.split(";")[2].split(","),
+                )
+                val updatedElevationData = summit.elevationData.parseCalculatedData(
+                    line.split(";")[1].split(",")
+                )
+                if (updatedVelocityData || updatedElevationData) {
+                    saveSummit(true, summit)
+                    return true
+                }
+            }
+            return false
         }
 
     }

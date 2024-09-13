@@ -113,7 +113,7 @@ class SummitEntryDataFragment : Fragment() {
         }
         setText(summitToView.comments, binding.comments, binding.comments)
 
-        TextField.values().filter { it.group == TextFieldGroup.Base }.forEach {
+        TextField.entries.filter { it.group == TextFieldGroup.Base }.forEach {
             setTextOnlyForCurrentSummit(it, summitToView)
         }
 
@@ -129,7 +129,7 @@ class SummitEntryDataFragment : Fragment() {
         textFieldGroup: TextFieldGroup = TextFieldGroup.Base,
         visibility: Int = View.VISIBLE
     ) {
-        TextField.values().filter { it.group == textFieldGroup }.forEach {
+        TextField.entries.filter { it.group == textFieldGroup }.forEach {
             setTextForCurrentSummitAndCompareWithSummit(
                 it,
                 summitToView,
@@ -144,7 +144,7 @@ class SummitEntryDataFragment : Fragment() {
         extrema: ExtremaValuesSummits? = null,
         textFieldGroup: TextFieldGroup = TextFieldGroup.Base
     ) {
-        TextField.values().filter { it.group == textFieldGroup }.forEach {
+        TextField.entries.filter { it.group == textFieldGroup }.forEach {
             setCircleBeforeText(it, summitToView, extrema)
         }
     }
@@ -154,7 +154,7 @@ class SummitEntryDataFragment : Fragment() {
         extrema: ExtremaValuesSummits?,
         summitToCompare: Summit?
     ) {
-        TextField.values().filter { it.group == TextFieldGroup.AdditionalSpeedData }
+        TextField.entries.filter { it.group == TextFieldGroup.AdditionalSpeedData }
             .forEach {
                 setTextOnlyForCurrentSummit(it, summitToView, View.GONE)
             }
@@ -279,7 +279,7 @@ class SummitEntryDataFragment : Fragment() {
             textField.descriptionTextView(binding).visibility = visibility
             textField.valueTextView(binding).visibility = visibility
             if (textField.toHHms) {
-                val valueInMs = (value.toDouble() * 3600000.0).toLong()
+                val valueInMs = (value.toDouble() * 1000.0).toLong()
                 textField.valueTextView(binding).text = String.format(
                     "%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
                     TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
@@ -313,9 +313,9 @@ class SummitEntryDataFragment : Fragment() {
             textField.descriptionTextView(binding).visibility = visibility
             textField.valueTextView(binding).visibility = visibility
             if (textField.toHHms) {
-                val valueInMs = (value.toDouble() * 3600000.0).toLong()
+                val valueInMs = (value.toDouble() * 1000.0).toLong()
                 val valueInMsCompareSummit = ((valueToCompare?.toDouble()
-                    ?: 0.0) * 3600000.0).toLong()
+                    ?: 0.0) * 1000.0).toLong()
                 if (valueInMsCompareSummit > 0) {
                     textField.valueTextView(binding).text = String.format(
                         "%02d:%02d (%02d:%02d)", TimeUnit.MILLISECONDS.toHours(valueInMs),

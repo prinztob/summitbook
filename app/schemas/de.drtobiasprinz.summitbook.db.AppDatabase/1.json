@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "fb933ceb51eb5c5b22653aa279376c67",
+    "identityHash": "a373ca6c034d5f46c9248f78ceb35b26",
     "entities": [
       {
         "tableName": "summits_table",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` INTEGER NOT NULL, `name` TEXT NOT NULL, `sportType` TEXT NOT NULL, `places` TEXT NOT NULL, `countries` TEXT NOT NULL, `comments` TEXT NOT NULL, `kilometers` REAL NOT NULL, `lat` REAL, `lng` REAL, `participants` TEXT NOT NULL, `equipments` TEXT NOT NULL DEFAULT '', `isFavorite` INTEGER NOT NULL, `isPeak` INTEGER NOT NULL DEFAULT false, `imageIds` TEXT NOT NULL, `activityId` INTEGER NOT NULL, `isBookmark` INTEGER NOT NULL DEFAULT false, `hasTrack` INTEGER NOT NULL DEFAULT false, `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `maxElevation` INTEGER NOT NULL, `elevationGain` INTEGER NOT NULL, `maxVerticalVelocity1Min` REAL NOT NULL, `maxVerticalVelocity10Min` REAL NOT NULL, `maxVerticalVelocity1h` REAL NOT NULL, `maxSlope` REAL NOT NULL, `avgVelocity` REAL NOT NULL, `maxVelocity` REAL NOT NULL, `oneKilometer` REAL NOT NULL, `fiveKilometer` REAL NOT NULL, `tenKilometers` REAL NOT NULL, `fifteenKilometers` REAL NOT NULL, `twentyKilometers` REAL NOT NULL, `thirtyKilometers` REAL NOT NULL, `fortyKilometers` REAL NOT NULL, `fiftyKilometers` REAL NOT NULL, `seventyFiveKilometers` REAL NOT NULL, `hundredKilometers` REAL NOT NULL, `activityIds` TEXT, `calories` REAL, `averageHR` REAL, `maxHR` REAL, `ftp` INTEGER, `vo2max` REAL, `aerobicTrainingEffect` REAL, `anaerobicTrainingEffect` REAL, `grit` REAL, `flow` REAL, `trainingLoad` REAL, `avgPower` REAL, `maxPower` REAL, `normPower` REAL, `oneSec` INTEGER, `twoSec` INTEGER, `fiveSec` INTEGER, `tenSec` INTEGER, `twentySec` INTEGER, `thirtySec` INTEGER, `oneMin` INTEGER, `twoMin` INTEGER, `fiveMin` INTEGER, `tenMin` INTEGER, `twentyMin` INTEGER, `thirtyMin` INTEGER, `oneHour` INTEGER, `twoHours` INTEGER, `fiveHours` INTEGER, `latNorth` REAL, `latSouth` REAL, `lonWest` REAL, `lonEast` REAL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` INTEGER NOT NULL, `name` TEXT NOT NULL, `sportType` TEXT NOT NULL, `places` TEXT NOT NULL, `countries` TEXT NOT NULL, `comments` TEXT NOT NULL, `kilometers` REAL NOT NULL, `lat` REAL, `lng` REAL, `participants` TEXT NOT NULL, `equipments` TEXT NOT NULL DEFAULT '', `isFavorite` INTEGER NOT NULL, `isPeak` INTEGER NOT NULL DEFAULT false, `imageIds` TEXT NOT NULL, `activityId` INTEGER NOT NULL, `duration` INTEGER NOT NULL DEFAULT 0, `isBookmark` INTEGER NOT NULL DEFAULT false, `hasTrack` INTEGER NOT NULL DEFAULT false, `ignoreSimplifyingTrack` INTEGER NOT NULL DEFAULT false, `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `maxElevation` INTEGER NOT NULL, `elevationGain` INTEGER NOT NULL, `maxVerticalVelocity1Min` REAL NOT NULL, `maxVerticalVelocity10Min` REAL NOT NULL, `maxVerticalVelocity1h` REAL NOT NULL, `maxSlope` REAL NOT NULL, `avgVelocity` REAL NOT NULL, `maxVelocity` REAL NOT NULL, `oneKilometer` REAL NOT NULL, `fiveKilometer` REAL NOT NULL, `tenKilometers` REAL NOT NULL, `fifteenKilometers` REAL NOT NULL, `twentyKilometers` REAL NOT NULL, `thirtyKilometers` REAL NOT NULL, `fortyKilometers` REAL NOT NULL, `fiftyKilometers` REAL NOT NULL, `seventyFiveKilometers` REAL NOT NULL, `hundredKilometers` REAL NOT NULL, `activityIds` TEXT, `calories` REAL, `averageHR` REAL, `maxHR` REAL, `ftp` INTEGER, `vo2max` REAL, `aerobicTrainingEffect` REAL, `anaerobicTrainingEffect` REAL, `grit` REAL, `flow` REAL, `trainingLoad` REAL, `avgPower` REAL, `maxPower` REAL, `normPower` REAL, `oneSec` INTEGER, `twoSec` INTEGER, `fiveSec` INTEGER, `tenSec` INTEGER, `twentySec` INTEGER, `thirtySec` INTEGER, `oneMin` INTEGER, `twoMin` INTEGER, `fiveMin` INTEGER, `tenMin` INTEGER, `twentyMin` INTEGER, `thirtyMin` INTEGER, `oneHour` INTEGER, `twoHours` INTEGER, `fiveHours` INTEGER, `latNorth` REAL, `latSouth` REAL, `lonWest` REAL, `lonEast` REAL)",
         "fields": [
           {
             "fieldPath": "date",
@@ -101,6 +101,13 @@
             "notNull": true
           },
           {
+            "fieldPath": "duration",
+            "columnName": "duration",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
             "fieldPath": "isBookmark",
             "columnName": "isBookmark",
             "affinity": "INTEGER",
@@ -110,6 +117,13 @@
           {
             "fieldPath": "hasTrack",
             "columnName": "hasTrack",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "false"
+          },
+          {
+            "fieldPath": "ignoreSimplifyingTrack",
+            "columnName": "ignoreSimplifyingTrack",
             "affinity": "INTEGER",
             "notNull": true,
             "defaultValue": "false"
@@ -157,7 +171,7 @@
             "notNull": true
           },
           {
-            "fieldPath": "velocityData.avgVelocity",
+            "fieldPath": "elevationData.avgVelocity",
             "columnName": "avgVelocity",
             "affinity": "REAL",
             "notNull": true
@@ -752,7 +766,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fb933ceb51eb5c5b22653aa279376c67')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a373ca6c034d5f46c9248f78ceb35b26')"
     ]
   }
 }
