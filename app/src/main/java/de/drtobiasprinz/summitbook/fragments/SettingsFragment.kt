@@ -37,7 +37,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private lateinit var preferenceAnnualTargetKilometer: EditTextPreference
     private lateinit var preferenceIndoorHeightMeterPerCent: SeekBarPreference
     private lateinit var preferenceForecastAverageOfLastXYears: SeekBarPreference
-    private lateinit var preferenceMinDeltaHeightMeter: EditTextPreference
 
     private lateinit var preferenceMapProvider: SwitchPreferenceCompat
     private lateinit var preferenceOnDeviceMapsFolder: EditTextPreference
@@ -68,44 +67,51 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceAnnualTargetActivities = EditTextPreference(requireContext())
         preferenceAnnualTargetActivities.title = getString(R.string.annual_target_activities_title)
         preferenceAnnualTargetActivities.key = Keys.PREF_ANNUAL_TARGET_ACTIVITIES
+        preferenceAnnualTargetActivities.setIcon(R.drawable.baseline_directions_walk_black_24dp)
         preferenceAnnualTargetActivities.summary =
             getString(R.string.annual_target_activities_summary)
-        preferenceAnnualTargetActivities.setDefaultValue(52)
+        preferenceAnnualTargetActivities.setDefaultValue("52")
 
         preferenceAnnualTargetHeightMeter = EditTextPreference(requireContext())
         preferenceAnnualTargetHeightMeter.title =
             getString(R.string.annual_target_height_meter_title)
         preferenceAnnualTargetHeightMeter.key = Keys.PREF_ANNUAL_TARGET
+        preferenceAnnualTargetHeightMeter.setIcon(R.drawable.baseline_trending_up_black_24dp)
         preferenceAnnualTargetHeightMeter.summary =
             getString(R.string.annual_target_height_meter_summary)
-        preferenceAnnualTargetHeightMeter.setDefaultValue(50000)
+        preferenceAnnualTargetHeightMeter.setDefaultValue("50000")
 
         preferenceAnnualTargetKilometer = EditTextPreference(requireContext())
         preferenceAnnualTargetKilometer.title = getString(R.string.annual_target_kilometer_title)
         preferenceAnnualTargetKilometer.key = Keys.PREF_ANNUAL_TARGET_KM
+        preferenceAnnualTargetKilometer.setIcon(R.drawable.baseline_multiple_stop_24)
         preferenceAnnualTargetKilometer.summary =
             getString(R.string.annual_target_kilometer_summary)
-        preferenceAnnualTargetKilometer.setDefaultValue(1200)
+        preferenceAnnualTargetKilometer.setDefaultValue("1200")
 
         preferenceGarminUserName = EditTextPreference(requireContext())
         preferenceGarminUserName.title = getString(R.string.garmin_user_title)
         preferenceGarminUserName.key = Keys.PREF_GARMIN_USERNAME
+        preferenceGarminUserName.setIcon(R.drawable.baseline_account_circle_24)
         preferenceGarminUserName.summary = getString(R.string.garmin_user_summary)
 
         preferenceGarminPassword = PasswordPreference(requireContext())
         preferenceGarminPassword.title = getString(R.string.garmin_pwd_title)
         preferenceGarminPassword.key = Keys.PREF_GARMIN_PASSWORD
+        preferenceGarminPassword.setIcon(R.drawable.baseline_password_24)
         preferenceGarminPassword.summary = getString(R.string.garmin_pwd_summary)
 
         preferenceDownloadTCXSwitch = SwitchPreferenceCompat(requireContext())
         preferenceDownloadTCXSwitch.title = getString(R.string.tcx_switch_title)
         preferenceDownloadTCXSwitch.key = Keys.PREF_DOWNLOAD_TCX
+        preferenceDownloadTCXSwitch.setIcon(R.drawable.baseline_download_black_24dp)
         preferenceDownloadTCXSwitch.summary = getString(R.string.tcx_switch)
         preferenceDownloadTCXSwitch.setDefaultValue(false)
 
         preferenceGarminMFASwitch = SwitchPreferenceCompat(requireContext())
         preferenceGarminMFASwitch.title = getString(R.string.garmin_mfa_switch_title)
         preferenceGarminMFASwitch.key = Keys.PREF_GARMIN_MFA
+        preferenceGarminMFASwitch.setIcon(R.drawable.baseline_account_circle_24)
         preferenceGarminMFASwitch.summary = getString(R.string.garmin_mfa_switch)
         preferenceGarminMFASwitch.setDefaultValue(false)
         preferenceGarminMFASwitch.setOnPreferenceClickListener {
@@ -122,12 +128,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceCurrentYearSwitch = SwitchPreferenceCompat(requireContext())
         preferenceCurrentYearSwitch.title = getString(R.string.current_year_title)
         preferenceCurrentYearSwitch.key = Keys.PREF_CURRENT_YEAR_SWITCH
+        preferenceCurrentYearSwitch.setIcon(R.drawable.baseline_calendar_today_24)
         preferenceCurrentYearSwitch.summary = getString(R.string.current_year_summary)
         preferenceCurrentYearSwitch.setDefaultValue(false)
 
         preferenceGarminSyncStartDate = DatePreference(requireContext(), null)
         preferenceGarminSyncStartDate.title = getString(R.string.start_date_sync_garmin)
         preferenceGarminSyncStartDate.key = Keys.PREF_THIRD_PARTY_START_DATE
+        preferenceGarminSyncStartDate.setIcon(R.drawable.baseline_calendar_today_24)
         preferenceGarminSyncStartDate.setDefaultValue("2024-01-01")
 
         preferenceUseSimplifiedTracks = SwitchPreferenceCompat(requireContext())
@@ -139,30 +147,35 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceExportThirdPartyData = SwitchPreferenceCompat(requireContext())
         preferenceExportThirdPartyData.title = getString(R.string.export_third_party_data_title)
         preferenceExportThirdPartyData.key = Keys.PREF_EXPORT_THIRD_PARTY_DATA
+        preferenceExportThirdPartyData.setIcon(R.drawable.baseline_import_export_24)
         preferenceExportThirdPartyData.summary = getString(R.string.export_third_party_data)
         preferenceExportThirdPartyData.setDefaultValue(true)
 
         preferenceExportCalculatedData = SwitchPreferenceCompat(requireContext())
         preferenceExportCalculatedData.title = getString(R.string.export_calculated_data_title)
         preferenceExportCalculatedData.key = Keys.PREF_EXPORT_CALCULATED_DATA
+        preferenceExportCalculatedData.setIcon(R.drawable.baseline_import_export_24)
         preferenceExportCalculatedData.summary = getString(R.string.export_calculated_data)
         preferenceExportCalculatedData.setDefaultValue(true)
 
         preferenceMaxPointsOnTrack = EditTextPreference(requireContext())
         preferenceMaxPointsOnTrack.title = getString(R.string.max_number_points_title)
         preferenceMaxPointsOnTrack.key = Keys.PREF_MAX_NUMBER_POINT
+        preferenceMaxPointsOnTrack.setIcon(R.drawable.baseline_map_black_24dp)
         preferenceMaxPointsOnTrack.summary = getString(R.string.max_number_points)
-        preferenceMinDeltaHeightMeter.setDefaultValue(10000)
+        preferenceMaxPointsOnTrack.setDefaultValue("10000")
 
         preferenceIndoorHeightMeterPerCent = SeekBarPreference(requireContext())
         preferenceIndoorHeightMeterPerCent.title = getString(R.string.indoor_hm_percent)
         preferenceIndoorHeightMeterPerCent.key = Keys.PREF_INDOOR_HEIGHT_METER
+        preferenceIndoorHeightMeterPerCent.setIcon(R.drawable.baseline_other_houses_24)
         preferenceIndoorHeightMeterPerCent.showSeekBarValue = true
         preferenceIndoorHeightMeterPerCent.setDefaultValue(0)
 
         preferenceForecastAverageOfLastXYears = SeekBarPreference(requireContext())
         preferenceForecastAverageOfLastXYears.title = getString(R.string.forecast_average_title)
         preferenceForecastAverageOfLastXYears.key = Keys.PREF_FORECAST_AVERAGE
+        preferenceForecastAverageOfLastXYears.setIcon(R.drawable.baseline_trending_flat_24)
         preferenceForecastAverageOfLastXYears.summary = getString(R.string.forecast_average_summary)
         preferenceForecastAverageOfLastXYears.setDefaultValue(3)
         preferenceForecastAverageOfLastXYears.min = 0
@@ -195,7 +208,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceOnDeviceMapsFolder = EditTextPreference(requireContext())
         preferenceOnDeviceMapsFolder.title = getString(R.string.map_folder)
         preferenceOnDeviceMapsFolder.key = Keys.PREF_ON_DEVICE_MAPS_FOLDER
-        preferenceOnDeviceMapsFolder.setIcon(R.drawable.ic_baseline_expand_more_24)
+        preferenceOnDeviceMapsFolder.setIcon(R.drawable.baseline_map_black_24dp)
         preferenceOnDeviceMapsFolder.summary =
             String.format(getString(R.string.map_folder_summary), onDeviceMapsFolderName)
         preferenceOnDeviceMapsFolder.setOnPreferenceClickListener {
@@ -212,7 +225,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceCategoryGeneral.contains(preferenceAnnualTargetKilometer)
         preferenceCategoryGeneral.contains(preferenceIndoorHeightMeterPerCent)
         preferenceCategoryGeneral.contains(preferenceForecastAverageOfLastXYears)
-        preferenceCategoryGeneral.contains(preferenceMinDeltaHeightMeter)
 
         val preferenceCategoryMap = PreferenceCategory(requireContext())
         preferenceCategoryMap.title = getString(R.string.pref_map_title)
@@ -242,7 +254,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         screen.addPreference(preferenceAnnualTargetKilometer)
         screen.addPreference(preferenceIndoorHeightMeterPerCent)
         screen.addPreference(preferenceForecastAverageOfLastXYears)
-        screen.addPreference(preferenceMinDeltaHeightMeter)
 
         screen.addPreference(preferenceCategoryMap)
         screen.addPreference(preferenceMapProvider)

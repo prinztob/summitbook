@@ -444,7 +444,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun updateSimplifiedTracks(summits: List<Summit>) {
-        val useSimplifiedTracks = sharedPreferences.getBoolean(Keys.PREF_USE_SIMPLIFIED_TRACKS, true)
+        val useSimplifiedTracks =
+            sharedPreferences.getBoolean(Keys.PREF_USE_SIMPLIFIED_TRACKS, true)
         if (useSimplifiedTracks) {
             summits.forEach {
                 if (it.ignoreSimplifyingTrack) {
@@ -1171,7 +1172,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             )
             viewModel.refresh()
         }
-            if (key == Keys.PREF_GARMIN_USERNAME || key == Keys.PREF_GARMIN_PASSWORD || key == Keys.PREF_GARMIN_MFA) {
+        if (key == Keys.PREF_GARMIN_USERNAME || key == Keys.PREF_GARMIN_PASSWORD || key == Keys.PREF_GARMIN_MFA) {
             updatePythonExecutor()
         }
     }

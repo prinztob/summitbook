@@ -31,6 +31,6 @@ dependencies {
     api 'io.reactivex.rxjava2:rxjava:2.2.21'
 
     testImplementation 'junit:junit:4.13.2'
-    testImplementation "org.robolectric:robolectric:4.10.3"
+    testImplementation "org.robolectric:robolectric:4.13"
     testImplementation 'org.xmlunit:xmlunit-core:2.9.1'
 }
