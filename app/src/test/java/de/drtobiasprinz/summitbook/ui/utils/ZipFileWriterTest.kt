@@ -5,6 +5,8 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
+import de.drtobiasprinz.summitbook.db.entities.GarminData
+import de.drtobiasprinz.summitbook.db.entities.PowerData
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.SportType
@@ -146,7 +148,12 @@ class ZipFileWriterTest {
             isFavorite = false,
             isPeak = false,
             imageIds = mutableListOf(),
-            garminData = null,
+            garminData = GarminData(
+                mutableListOf("123456789"),
+                100f, 120f, 160f,
+                PowerData(100f, 300f, 200f),
+                255, 50f, 2f, 3f, 4f, 3f, 111f
+            ),
             trackBoundingBox = null
         )
 
@@ -182,10 +189,7 @@ class ZipFileWriterTest {
 
 
         val reader = ZipFileReader(
-            createTempDirectory().toFile(),
-            mutableListOf(),
-            mutableListOf(),
-            mutableListOf()
+            createTempDirectory().toFile()
         )
         reader.extractAndImport(file.inputStream())
 

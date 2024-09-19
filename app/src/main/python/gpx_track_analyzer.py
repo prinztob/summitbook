@@ -326,6 +326,7 @@ def estimate_coefficients(x_array, y_array):
 def prefix_filename(fn: str) -> str:
     return fn.replace(".gpx", TrackAnalyzer.SUFFIX + ".gpx")
 
+
 class PowerPerTime(object):
     def __init__(self, time_interval: int, window: str, max_period: int):
         self.time_interval = time_interval

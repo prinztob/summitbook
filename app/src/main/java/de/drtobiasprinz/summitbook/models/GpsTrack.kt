@@ -297,7 +297,14 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         trackPoints = calculateTrackPoints()
         Log.i("GpxTrack", "Parsing took $time")
         trackGeoPoints = calculateGeoPoints()
-        if (trackPoints.size > 0 && trackPoints.first().pointExtension?.distance == null) {
+        val isDistancesIncorrect = trackPoints.size == 0 || trackPoints.mapIndexed { i, e ->
+            if (i == 0) {
+                false
+            } else {
+                (trackPoints[i -1].pointExtension?.distance?:0.0) - (e.pointExtension?.distance?: 0.0) > 0
+            }
+        }.contains(true)
+        if (trackPoints.size > 0 && (trackPoints.first().pointExtension?.distance == null || isDistancesIncorrect)) {
             setDistance()
         }
         if (trackPoints.isEmpty() && deleteEmptyTrack) {

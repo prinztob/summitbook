@@ -79,7 +79,7 @@ class MaxVelocitySummitTest {
         val resource2 = this.javaClass.classLoader?.getResource("activity_splits_5.json")
         if (resource1 != null && resource2 != null) {
             val splits = mutableListOf(File(resource1.path), File(resource2.path))
-            val maxVelocitySummit = MaxVelocitySummit.getMaxVelocitySummitFromSpliFiles(splits)
+            val maxVelocitySummit = MaxVelocitySummit.getMaxVelocitySummitFromSplitFiles(splits)
             Assert.assertEquals(25.1, maxVelocitySummit.getAverageVelocityForKilometers(5.0), 0.1)
             Assert.assertEquals(22.3, maxVelocitySummit.getAverageVelocityForKilometers(10.0), 0.1)
             Assert.assertEquals(20.6, maxVelocitySummit.getAverageVelocityForKilometers(15.0), 0.1)
@@ -89,5 +89,4 @@ class MaxVelocitySummitTest {
             Assert.assertEquals(17.7, maxVelocitySummit.getAverageVelocityForKilometers(50.0), 0.1)
         }
     }
-
 }

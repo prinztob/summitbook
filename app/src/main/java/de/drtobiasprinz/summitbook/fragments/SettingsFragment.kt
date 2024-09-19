@@ -10,7 +10,9 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.documentfile.provider.DocumentFile
+import androidx.fragment.app.DialogFragment
 import androidx.preference.EditTextPreference
+import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SeekBarPreference
@@ -132,7 +134,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceCurrentYearSwitch.summary = getString(R.string.current_year_summary)
         preferenceCurrentYearSwitch.setDefaultValue(false)
 
-        preferenceGarminSyncStartDate = DatePreference(requireContext(), null)
+        preferenceGarminSyncStartDate = DatePreference(requireContext())
         preferenceGarminSyncStartDate.title = getString(R.string.start_date_sync_garmin)
         preferenceGarminSyncStartDate.key = Keys.PREF_THIRD_PARTY_START_DATE
         preferenceGarminSyncStartDate.setIcon(R.drawable.baseline_calendar_today_24)
@@ -237,6 +239,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceCategoryThirdParty.title = getString(R.string.pref_third_party_title)
         preferenceCategoryThirdParty.contains(preferenceGarminUserName)
         preferenceCategoryThirdParty.contains(preferenceGarminPassword)
+        preferenceCategoryThirdParty.contains(preferenceGarminMFASwitch)
         preferenceCategoryThirdParty.contains(preferenceDownloadTCXSwitch)
         preferenceCategoryThirdParty.contains(preferenceGarminSyncStartDate)
 
@@ -264,6 +267,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         screen.addPreference(preferenceCategoryThirdParty)
         screen.addPreference(preferenceGarminUserName)
         screen.addPreference(preferenceGarminPassword)
+        screen.addPreference(preferenceGarminMFASwitch)
         screen.addPreference(preferenceDownloadTCXSwitch)
         screen.addPreference(preferenceGarminSyncStartDate)
 
@@ -276,6 +280,15 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceScreen = screen
     }
 
+    override fun onDisplayPreferenceDialog(preference: Preference) {
+        if (preference is DatePreference) {
+            val f: DialogFragment = DatePreferenceDialogFragment.newInstance(preference.getKey())
+            f.setTargetFragment(this, 0)
+            f.show(fragmentManager!!, null)
+        } else {
+            super.onDisplayPreferenceDialog(preference)
+        }
+    }
 
     /* Toggle the visibility of the "On-device Maps Folder" preference and reset the "Map Provider" switch */
     private fun updateOnDeviceMapsPreferencesState() {

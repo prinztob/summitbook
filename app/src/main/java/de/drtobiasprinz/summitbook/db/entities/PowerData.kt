@@ -1,10 +1,24 @@
 package de.drtobiasprinz.summitbook.db.entities
 
-class PowerData constructor(
-        var avgPower: Float, var maxPower: Float, var normPower: Float,
-        var oneSec: Int, var twoSec: Int, var fiveSec: Int, var tenSec: Int, var twentySec: Int, var thirtySec: Int,
-        var oneMin: Int, var twoMin: Int, var fiveMin: Int, var tenMin: Int, var twentyMin: Int, var thirtyMin: Int,
-        var oneHour: Int, var twoHours: Int, var fiveHours: Int
+class PowerData(
+    var avgPower: Float,
+    var maxPower: Float,
+    var normPower: Float,
+    var oneSec: Int = 0,
+    var twoSec: Int = 0,
+    var fiveSec: Int = 0,
+    var tenSec: Int = 0,
+    var twentySec: Int = 0,
+    var thirtySec: Int = 0,
+    var oneMin: Int = 0,
+    var twoMin: Int = 0,
+    var fiveMin: Int = 0,
+    var tenMin: Int = 0,
+    var twentyMin: Int = 0,
+    var thirtyMin: Int = 0,
+    var oneHour: Int = 0,
+    var twoHours: Int = 0,
+    var fiveHours: Int = 0
 ) {
 
     override fun toString(): String {
@@ -20,13 +34,15 @@ class PowerData constructor(
 
         fun parse(data: List<String>): PowerData {
             return if (data.size == 18) {
-                PowerData(data[0].toFloat(), data[1].toFloat(), data[2].toFloat(),
-                        data[3].toInt(), data[4].toInt(), data[5].toInt(), data[6].toInt(),
-                        data[7].toInt(), data[8].toInt(), data[9].toInt(), data[10].toInt(),
-                        data[11].toInt(), data[12].toInt(), data[13].toInt(), data[14].toInt(),
-                        data[15].toInt(), data[16].toInt(), data[17].toInt())
+                PowerData(
+                    data[0].toFloat(), data[1].toFloat(), data[2].toFloat(),
+                    data[3].toInt(), data[4].toInt(), data[5].toInt(), data[6].toInt(),
+                    data[7].toInt(), data[8].toInt(), data[9].toInt(), data[10].toInt(),
+                    data[11].toInt(), data[12].toInt(), data[13].toInt(), data[14].toInt(),
+                    data[15].toInt(), data[16].toInt(), data[17].toInt()
+                )
             } else {
-                PowerData(0f,0f,0f,0, 0, 0, 0,0,0,0,0,0,0,0,0,0,0,0)
+                PowerData(0f, 0f, 0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
             }
         }
     }

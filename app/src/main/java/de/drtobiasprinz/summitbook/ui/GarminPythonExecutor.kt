@@ -113,6 +113,9 @@ class GarminPythonExecutor(
         if (client == null) {
             login()
         }
+        if (activitiesDir?.exists() == false) {
+            activitiesDir?.mkdirs()
+        }
         val result = pythonModule?.callAttr(
             "get_split_data", client, activityId, activitiesDir?.absolutePath
         )

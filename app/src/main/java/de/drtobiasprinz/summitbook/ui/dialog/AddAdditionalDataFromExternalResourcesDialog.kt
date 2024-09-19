@@ -22,6 +22,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.DialogAddAdditionalDataFromExternalResourcesBinding
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.models.AdditionalDataTableEntry
@@ -101,13 +102,14 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                             "AsyncSimplifyGpsTracks",
                             "Simplifying track ${summit.getDateAsString()}_${summit.name}."
                         )
-                        pythonInstance?.let { it1 ->
-                            GpxPyExecutor(it1).createSimplifiedGpxTrack(
-                                summit.getGpsTrackPath(
-                                    simplified = false
-                                )
-                            )
-                        }
+                        //pythonInstance?.let { it1 ->
+                        //    GpxPyExecutor(it1).createSimplifiedGpxTrack(
+                        //        summit.getGpsTrackPath(
+                        //            simplified = false
+                        //        )
+                        //    )
+                        //}
+
                     } catch (ex: RuntimeException) {
                         Log.e(
                             "AsyncSimplifyGpsTracks",
@@ -161,17 +163,25 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
     private fun extractDataFromFilesAndPutIntoView(summit: Summit) {
         tableEntries.clear()
         if (summit.garminData != null && summit.garminData?.activityId != null) {
-            val splitsFile =
-                summit.garminData?.activityIds?.map { File("${activitiesDir?.absolutePath}/activity_${it}_splits.json") }
-            if (splitsFile?.first()?.exists() == true) {
-                setSpeedDataFromSplitsJson(splitsFile, summit)
+            Log.i("extractDataFromFilesAndPutIntoView", "ids: ${summit.garminData?.activityIds}")
+            val splitsFiles =
+                if (summit.sportType != SportType.BikeAndHike || summit.garminData?.activityIds?.size == 1) {
+                    summit.garminData?.activityIds?.map { getSplitFileName(it) }
+                } else {
+                    summit.garminData?.activityIds?.subList(
+                        1,
+                        (summit.garminData?.activityIds?.size ?: 1)
+                    )?.map { getSplitFileName(it) }
+                }
+            if (splitsFiles?.all { it.exists() } == true) {
+                setSpeedDataFromSplitsJson(splitsFiles, summit)
             } else if (pythonExecutor != null) {
                 try {
-                    summit.garminData?.activityId?.let {
-                        val json = pythonExecutor?.downloadSpeedDataForActivity(it)
-                        if (json != null) {
-                            setVelocityData(json, summit)
-                        }
+                    summit.garminData?.activityIds?.forEach {
+                        pythonExecutor?.downloadSpeedDataForActivity(it)
+                    }
+                    if (splitsFiles?.all { it.exists() } == true) {
+                        setSpeedDataFromSplitsJson(splitsFiles, summit)
                     }
                 } catch (e: RuntimeException) {
                     Log.e("Download speed data for activity", e.message ?: "")
@@ -190,6 +200,9 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         binding.tableSummits.removeAllViews()
         drawTable(binding.root)
     }
+
+    private fun getSplitFileName(id: String) =
+        File("${activitiesDir?.absolutePath}/activity_${id}_splits.json")
 
     private fun extractGpxPyJson(
         gpxPyJsonFile: File,
@@ -218,7 +231,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         summit: Summit
     ) {
         val maxVelocitySummit =
-            MaxVelocitySummit.getMaxVelocitySummitFromSpliFiles(splitsFile.sorted())
+            MaxVelocitySummit.getMaxVelocitySummitFromSplitFiles(splitsFile.sorted())
         var lastValue = 1.0
         AdditionalDataTableEntry.entries.filter { it.jsonKey == "" }.forEach {
             if (lastValue > 0.0) {

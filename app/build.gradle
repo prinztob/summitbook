@@ -62,7 +62,13 @@ android {
         schemaDirectory "$projectDir/schemas"
     }
 }
-
+android {
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+}
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation project(path: ':lib')

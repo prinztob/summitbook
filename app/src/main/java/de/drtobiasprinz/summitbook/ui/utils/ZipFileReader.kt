@@ -14,9 +14,9 @@ import java.util.zip.ZipInputStream
 
 class ZipFileReader(
     private val baseDirectory: File,
-    private val allSummits: MutableList<Summit>,
-    private val allForecasts: MutableList<Forecast>,
-    private val allSegments: MutableList<Segment>,
+    private val allSummits: MutableList<Summit> = mutableListOf(),
+    private val allForecasts: MutableList<Forecast> = mutableListOf(),
+    private val allSegments: MutableList<Segment> = mutableListOf(),
 ) {
     var successful = 0
     var unsuccessful = 0
