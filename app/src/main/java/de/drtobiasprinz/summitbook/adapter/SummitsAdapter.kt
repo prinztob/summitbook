@@ -235,7 +235,7 @@ class SummitsAdapter :
                 )
                 .setMessage(context.resources.getString(R.string.delete_entry_text))
                 .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                    deleteEntry(entry, v)
+                    deleteEntry(entry)
                 }
                 .setNegativeButton(
                     android.R.string.cancel
@@ -249,7 +249,7 @@ class SummitsAdapter :
                 .show()
         }
 
-        private fun deleteEntry(entry: Summit, v: View) {
+        private fun deleteEntry(entry: Summit) {
             onClickDelete(entry)
             if (entry.hasGpsTrack()) {
                 entry.getGpsTrackPath().toFile()?.delete()
@@ -259,11 +259,6 @@ class SummitsAdapter :
                     entry.getImagePath(it).toFile().delete()
                 }
             }
-            Toast.makeText(
-                v.context,
-                v.context.getString(R.string.delete_entry, entry.name),
-                Toast.LENGTH_SHORT
-            ).show()
         }
 
     }

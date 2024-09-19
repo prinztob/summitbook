@@ -190,7 +190,7 @@ class ZipFileReader(
             while (br.readLine().also { line = it } != null) {
                 val lineLocal = line
                 try {
-                    if (lineLocal != null && !lineLocal.startsWith("Start")) {
+                    if (lineLocal != null && !lineLocal.startsWith("Start") && !lineLocal.startsWith("Year")) {
                         val added =
                             Forecast.parseFromCsvFileLine(lineLocal, allForecasts, saveForecast)
                         if (added) {

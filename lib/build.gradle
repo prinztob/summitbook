@@ -30,6 +30,8 @@ dependencies {
     api 'net.danlew:android.joda:2.12.7'
     api 'io.reactivex.rxjava2:rxjava:2.2.21'
 
+    testImplementation 'androidx.test.ext:junit:1.2.1'
+    testImplementation 'androidx.test:rules:1.6.1'
     testImplementation 'junit:junit:4.13.2'
     testImplementation "org.robolectric:robolectric:4.13"
     testImplementation 'org.xmlunit:xmlunit-core:2.9.1'

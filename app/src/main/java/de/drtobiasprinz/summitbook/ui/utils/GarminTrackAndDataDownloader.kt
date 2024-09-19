@@ -16,6 +16,7 @@ import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import org.osmdroid.util.GeoPoint
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -167,7 +168,8 @@ class GarminTrackAndDataDownloader(
                                     highestTrackPoint = point
                                 }
                             }
-                            finalEntryLocal.latLng = highestTrackPoint
+                            finalEntryLocal.latLng =
+                                GeoPoint(highestTrackPoint.latitude, highestTrackPoint.longitude)
                             finalEntryLocal.lat = highestTrackPoint.latitude
                             finalEntryLocal.lng = highestTrackPoint.longitude
                         }
@@ -206,7 +208,8 @@ class GarminTrackAndDataDownloader(
             isPeak = false,
             imageIds = mutableListOf(),
             garminData = getGarminData(),
-            trackBoundingBox = null
+            trackBoundingBox = null,
+            activityId = entries.first().activityId
         )
     }
 

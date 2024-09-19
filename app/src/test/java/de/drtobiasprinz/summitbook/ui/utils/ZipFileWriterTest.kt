@@ -4,15 +4,21 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.db.entities.*
-import de.drtobiasprinz.summitbook.models.*
+import de.drtobiasprinz.summitbook.db.entities.ElevationData
+import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
+import de.drtobiasprinz.summitbook.db.entities.SportType
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.VelocityData
+import kotlinx.coroutines.test.runTest
+import org.joda.time.DateTimeZone
+import org.joda.time.tz.UTCProvider
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.createTempDirectory
 
 @RunWith(RobolectricTestRunner::class)
@@ -27,6 +33,7 @@ class ZipFileWriterTest {
         context = ApplicationProvider.getApplicationContext()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries()
             .build()
+        DateTimeZone.setProvider(UTCProvider())
     }
 
     @After
@@ -82,10 +89,8 @@ class ZipFileWriterTest {
             ElevationData.Companion.parse(11, 1),
             1.1,
             VelocityData.Companion.parse(1.2, 1.3),
-            0.0,
-            0.0,
-            mutableListOf("participant1"),
-            mutableListOf("equipment1"),
+            participants = mutableListOf("participant1"),
+            equipments = mutableListOf("equipment1"),
             isFavorite = false,
             isPeak = false,
             imageIds = mutableListOf(),
@@ -102,10 +107,7 @@ class ZipFileWriterTest {
             ElevationData.Companion.parse(22, 2),
             2.1,
             VelocityData.Companion.parse(2.2, 2.3),
-            0.0,
-            0.0,
-            mutableListOf("participant1"),
-            mutableListOf(),
+            participants = mutableListOf("participant1"),
             isFavorite = false,
             isPeak = false,
             imageIds = mutableListOf(),
@@ -124,8 +126,6 @@ class ZipFileWriterTest {
             VelocityData.Companion.parse(12.6, 24.3),
             48.05205764248967,
             11.60579879768192,
-            mutableListOf(),
-            mutableListOf(),
             isFavorite = false,
             isPeak = false,
             imageIds = mutableListOf(),
@@ -142,10 +142,7 @@ class ZipFileWriterTest {
             ElevationData.Companion.parse(33, 3),
             3.1,
             VelocityData.Companion.parse(3.2, 3.3),
-            0.0,
-            0.0,
-            mutableListOf("participant1"),
-            mutableListOf(),
+            participants = mutableListOf("participant1"),
             isFavorite = false,
             isPeak = false,
             imageIds = mutableListOf(),
@@ -155,10 +152,8 @@ class ZipFileWriterTest {
 
     }
 
-    @ExperimentalPathApi
     @Test
-    @Throws(Exception::class)
-    suspend fun exportAndImportFromZipFile() {
+    fun testExportAndImportFromZipFile() = runTest(testBody = {
         // given
         db.summitsDao().addSummit(entry1)
         db.summitsDao().addSummit(entry2)
@@ -173,8 +168,6 @@ class ZipFileWriterTest {
         val segments = db.segmentsDao().getAllSegmentsDeprecated() ?: emptyList()
         val file = kotlin.io.path.createTempFile(suffix = ".zip").toFile()
 
-        db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries()
-            .build()
 
         val writer = ZipFileWriter(
             summits,
@@ -199,6 +192,6 @@ class ZipFileWriterTest {
         assert(summits == db.summitsDao().allSummit)
         assert(segments == db.segmentsDao().getAllSegmentsDeprecated())
 
-    }
+    })
 
 }

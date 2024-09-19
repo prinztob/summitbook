@@ -17,7 +17,6 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.GPXParser
-import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.ActivitySelectOnOsmapBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -60,7 +59,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
     @Inject
     lateinit var summitsAdapter: SummitsAdapter
     private val viewModel: DatabaseViewModel by viewModels()
-    private var latLngSelectedPosition: TrackPoint? = null
+    private var latLngSelectedPosition: GeoPoint? = null
     private var summitEntry: Summit? = null
     private var selectedGpsPath: Path? = null
     private var summitEntryId = 0L
@@ -112,7 +111,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                         override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
                             if (entry != null) {
                                 updateSavePositionButton(true)
-                                latLngSelectedPosition = TrackPoint.Builder().setLatitude(p.latitude).setLongitude(p.longitude).build() as TrackPoint
+                                latLngSelectedPosition = GeoPoint(p.latitude, p.longitude)
                                 addMarker(binding.osmap, applicationContext, p, entry)
                                 binding.osmap.zoomController.activate()
                             }
@@ -185,7 +184,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                                         gpsTrackPath.toFile()?.delete()
                                         entry.hasTrack = false
                                     }
-                                    entry.latLng = TrackPoint.Builder().setLatitude(0.0).setLatitude(0.0).build()
+                                    entry.latLng = GeoPoint(0.0, 0.0)
 
                                     viewModel.saveSummit(true, entry)
                                     finish()
@@ -283,10 +282,13 @@ class SelectOnOsMapActivity : FragmentActivity() {
         }
     }
 
-    private fun addSelectedPositionAndTrack(point: TrackPoint, gpsTrack: GpsTrack, osMap: MapView) {
+    private fun addSelectedPositionAndTrack(
+        geoPointSelectedPosition: GeoPoint,
+        gpsTrack: GpsTrack,
+        osMap: MapView
+    ) {
         val entry = summitEntry
         if (entry != null) {
-            val geoPointSelectedPosition = GeoPoint(point.latitude, point.longitude)
             addMarker(osMap, this, geoPointSelectedPosition, entry)
             gpsTrack.addGpsTrack(osMap, TrackColor.None)
             if (!wasBoundingBoxCalculated) {

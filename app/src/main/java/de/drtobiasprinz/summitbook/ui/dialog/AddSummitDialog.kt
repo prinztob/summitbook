@@ -40,7 +40,6 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.DialogAddSummitBinding
@@ -68,6 +67,7 @@ import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.osmdroid.util.GeoPoint
 import org.xmlpull.v1.XmlPullParserException
 import java.io.File
 import java.io.IOException
@@ -103,7 +103,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     private var mDialog: AlertDialog? = null
     private var temporaryGpxFile: File? = null
     var gpxTrackUri: Uri? = null
-    private var latlngHighestPoint: TrackPoint? = null
+    private var latlngHighestPoint: GeoPoint? = null
     private lateinit var currentContext: Context
     private var connectedSummits: MutableList<Summit> = mutableListOf()
     private var garminDataFromGarminConnect: GarminData? = null
@@ -460,7 +460,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 if (entry != null) {
                     val point = entry.latLng
                     if (point != null) {
-                        latlngHighestPoint = point as TrackPoint
+                        latlngHighestPoint = point
                         updateDialogFields(!isEdit)
                     }
                     Toast.makeText(
@@ -776,7 +776,8 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
 
     private fun getTextWithDefaultDouble(editText: EditText): Double {
         return try {
-            BigDecimal(editText.text.toString().toDouble()).setScale(2, RoundingMode.HALF_UP).toDouble()
+            BigDecimal(editText.text.toString().toDouble()).setScale(2, RoundingMode.HALF_UP)
+                .toDouble()
         } catch (e: Exception) {
             0.0
         }
@@ -892,7 +893,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
     private fun asyncAnalyzeGpsTracks(entry: Summit, python: Python) {
-        var highestElevation: TrackPoint? = null
+        var highestElevation: GeoPoint? = null
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 try {

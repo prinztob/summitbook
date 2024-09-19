@@ -68,7 +68,7 @@ class SummitViewFragment : Fragment() {
 
     private fun adapterOnClickDelete(summit: Summit) {
         viewModel?.deleteSummit(summit)
-        Snackbar.make(binding.root, getString(R.string.delete_entry_done), Snackbar.LENGTH_LONG)
+        Snackbar.make(binding.root, String.format(getString(R.string.delete_entry_done), summit.name), Snackbar.LENGTH_LONG)
             .apply {
                 setAction(getString(R.string.delete_undo)) {
                     viewModel?.saveSummit(false, summit)

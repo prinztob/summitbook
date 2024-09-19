@@ -1,7 +1,11 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
-import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.db.entities.ElevationData
+import de.drtobiasprinz.summitbook.db.entities.GarminData
+import de.drtobiasprinz.summitbook.db.entities.PowerData
 import de.drtobiasprinz.summitbook.db.entities.SportType
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import org.junit.Test
 
@@ -12,46 +16,35 @@ class GarminTrackAndDataDownloaderTest {
             Summit.parseDate("2019-11-13"), "summit1", SportType.Bicycle,
             listOf("place1"), listOf("country1"), "comment1",
             ElevationData.Companion.parse(11, 1), 1.0,
-            VelocityData.Companion.parse(1.0, 11.3), 0.0, 0.0,
-            mutableListOf("participant1"), mutableListOf(), isFavorite = false, isPeak = false,
-            imageIds = mutableListOf(), garminData = null, trackBoundingBox = null
+            VelocityData.Companion.parse(1.0, 11.3),
+            participants = mutableListOf("participant1"), activityId = 123L
         )
         val entry2 = Summit(
             Summit.parseDate("2019-11-13"), "summit2", SportType.Bicycle,
             listOf("place2"), listOf("country2"), "comment2",
             ElevationData.Companion.parse(110, 10), 10.0,
-            VelocityData.Companion.parse(5.0, 12.3), 0.0, 0.0,
-            mutableListOf("participant2"), mutableListOf(), isFavorite = false, isPeak = false,
-            imageIds = mutableListOf(), garminData = null, trackBoundingBox = null
+            VelocityData.Companion.parse(5.0, 12.3),
+            participants = mutableListOf("participant2")
         )
         val entry3 = Summit(
             Summit.parseDate("2019-11-13"), "summit3", SportType.Bicycle,
             listOf("place3"), listOf("country3"), "comment3",
             ElevationData.Companion.parse(1100, 100), 70.0,
-            VelocityData.Companion.parse(10.0, 10.3), 0.0, 0.0,
-            mutableListOf("participant4"), mutableListOf(), isFavorite = false, isPeak = false,
-            imageIds = mutableListOf(), garminData = null, trackBoundingBox = null
+            VelocityData.Companion.parse(10.0, 10.3),
+            participants = mutableListOf("participant4")
         )
         val finalEntryExpected = Summit(
             Summit.parseDate("2019-11-13"),
             "summit1",
             SportType.Bicycle,
-            listOf("place1"),
-            listOf("country1"),
+            listOf("place1", "place2", "place3"),
+            listOf("country1", "country2", "country3"),
             "merge of summit1, summit2, summit3",
             ElevationData.Companion.parse(1100, 111),
             81.0,
             VelocityData.Companion.parse(8.1, 12.3),
-            0.0,
-            0.0,
-            mutableListOf("participant1"),
-            mutableListOf(),
-            false,
-            false,
-            mutableListOf(),
-            null,
-            null,
-            entry1.activityId
+            participants = mutableListOf("participant1", "participant2", "participant4"),
+            activityId = entry1.activityId
         )
         val downloader = GarminTrackAndDataDownloader(
             listOf(entry1, entry2, entry3),
@@ -78,15 +71,7 @@ class GarminTrackAndDataDownloaderTest {
             ElevationData.Companion.parse(11, 1),
             1.0,
             VelocityData.Companion.parse(1.0, 11.3),
-            0.0,
-            0.0,
-            mutableListOf("participant1"),
-            mutableListOf(),
-            isFavorite = false,
-            isPeak = false,
-            imageIds = mutableListOf(),
-            garminData = null,
-            trackBoundingBox = null
+            participants = mutableListOf("participant1"),
         )
         val entry2 = Summit(
             Summit.parseDate("2019-11-13"),
@@ -98,15 +83,7 @@ class GarminTrackAndDataDownloaderTest {
             ElevationData.Companion.parse(110, 11),
             10.0,
             VelocityData.Companion.parse(5.0, 12.3),
-            0.0,
-            0.0,
-            mutableListOf("participant2"),
-            mutableListOf(),
-            isFavorite = false,
-            isPeak = false,
-            imageIds = mutableListOf(),
-            garminData = null,
-            trackBoundingBox = null
+            participants = mutableListOf("participant2"),
         )
         val entry3 = Summit(
             Summit.parseDate("2019-11-13"),
@@ -118,15 +95,7 @@ class GarminTrackAndDataDownloaderTest {
             ElevationData.Companion.parse(1100, 110),
             70.0,
             VelocityData.Companion.parse(10.0, 10.3),
-            0.0,
-            0.0,
-            mutableListOf("participant4"),
-            mutableListOf(),
-            isFavorite = false,
-            isPeak = false,
-            imageIds = mutableListOf(),
-            garminData = null,
-            trackBoundingBox = null
+            participants = mutableListOf("participant4"),
         )
         entry3.garminData = garminData
         val downloader = GarminTrackAndDataDownloader(
@@ -173,15 +142,7 @@ class GarminTrackAndDataDownloaderTest {
             ElevationData.Companion.parse(1, 11),
             1.0,
             VelocityData.Companion.parse(1.0, 11.3),
-            0.0,
-            0.0,
-            mutableListOf("participant1"),
-            mutableListOf(),
-            isFavorite = false,
-            isPeak = false,
-            imageIds = mutableListOf(),
-            garminData = null,
-            trackBoundingBox = null
+            participants = mutableListOf("participant1"),
         )
         entry1.garminData = GarminData(
             mutableListOf("1"), 1f, 1f, 33f,
@@ -198,15 +159,7 @@ class GarminTrackAndDataDownloaderTest {
             ElevationData.Companion.parse(10, 110),
             10.0,
             VelocityData.Companion.parse(5.0, 12.3),
-            0.0,
-            0.0,
-            mutableListOf("participant2"),
-            mutableListOf(),
-            isFavorite = false,
-            isPeak = false,
-            imageIds = mutableListOf(),
-            garminData = null,
-            trackBoundingBox = null
+            participants = mutableListOf("participant2"),
         )
         entry2.garminData = GarminData(
             mutableListOf("2"), 11f, 10f, 133f,
@@ -223,15 +176,7 @@ class GarminTrackAndDataDownloaderTest {
             ElevationData.Companion.parse(100, 1100),
             70.0,
             VelocityData.Companion.parse(10.0, 10.3),
-            0.0,
-            0.0,
-            mutableListOf("participant4"),
-            mutableListOf(),
-            isFavorite = false,
-            isPeak = false,
-            imageIds = mutableListOf(),
-            garminData = null,
-            trackBoundingBox = null
+            participants = mutableListOf("participant4"),
         )
         entry3.garminData = GarminData(
             mutableListOf("3"), 111f, 70f, 103f,

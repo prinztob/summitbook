@@ -96,6 +96,6 @@ internal class IntervalHelperTest {
         )
         val participants =
             helper.getRangeAndAnnotationForSummitChipValues { summit -> summit.participants }
-        Assert.assertEquals(4, participants.second.size)
+        Assert.assertEquals(3, participants.second.size)
     }
 }

@@ -52,7 +52,7 @@ class Summit(
     var id: Long = 0
 
     @Ignore
-    var latLng = lat?.let { lng?.let { it1 -> TrackPoint.Builder().setLatitude(it).setLongitude(it1).build() } }
+    var latLng = lat?.let { lng?.let { it1 -> GeoPoint(it, it1) } }
 
     @Ignore
     var duration = getWellDefinedDuration()
@@ -504,7 +504,7 @@ class Summit(
                 (if (splitLine[9].trim { it <= ' ' } != "") splitLine[9].toDouble() else 0.0)
             val countries = splitLine[3].split(",")
             val places = splitLine[4].split(",")
-            val participantsAndEquipments = splitLine[13].split(",")
+            val participantsAndEquipments = if (splitLine[13] == "") emptyList() else splitLine[13].split(",")
             val activityId =
                 if (splitLine[14].trim { it <= ' ' } != "") splitLine[14].toLong() else System.currentTimeMillis()
             val garminData = getGarminData(splitLine)

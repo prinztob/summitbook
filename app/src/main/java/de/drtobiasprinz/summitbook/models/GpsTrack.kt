@@ -367,8 +367,13 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         return mutableListOf()
     }
 
-    fun getHighestElevation(): TrackPoint? {
-        return trackPoints.maxByOrNull { it.elevation ?: 0.0 }
+    fun getHighestElevation(): GeoPoint? {
+        val trackPoint =  trackPoints.maxByOrNull { it.elevation ?: 0.0 }
+        return if (trackPoint != null) {
+            GeoPoint(trackPoint.latitude, trackPoint.longitude)
+        } else {
+            null
+        }
     }
 
     fun hasNoTrackPoints(): Boolean {

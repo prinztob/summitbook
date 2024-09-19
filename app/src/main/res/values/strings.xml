@@ -170,9 +170,9 @@
     <string name="delete_gps">"Coordinates and GPS track of summit entry %1$s has been deleted."</string>
     <string name="delete_cancel">"Deletion was canceled."</string>
     <string name="not_found">"Could not find %1$s."</string>
-    <string name="delete_entry">"Going to delete entry %1$s."</string>
+    <string name="delete_entry">"Going to delete entry '%1$s'."</string>
     <string name="delete_entry_text">"Are you sure you want to proceed?"</string>
-    <string name="delete_entry_done">"Deleted summit %1$s"</string>
+    <string name="delete_entry_done">"Deleted summit '%1$s'"</string>
     <string name="delete_undo">"Undo deletion"</string>
     <string name="add_gpx_failed">"Adding a new gps track to summit %1$s failed."</string>
     <string name="garmin_add_cancel">"Adding Garmin connect activities was canceled."</string>

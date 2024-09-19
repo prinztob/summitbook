@@ -9,6 +9,10 @@ import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -54,32 +58,42 @@ class SegmentTest {
 
     @Test
     @Throws(Exception::class)
-    fun parseNewSegmentFromCsvFileLine() {
+    fun parseNewSegmentFromCsvFileLine() = runTest {
+        val segmentsAdded = mutableListOf<Segment>()
         val newFormatLineToParse =
             "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
-        Segment.parseFromCsvFileLine(newFormatLineToParse, mutableListOf())
-        val segments = dao?.getAllSegmentsDeprecated()
-        assert(segments?.size == 1)
-        assert(segments?.firstOrNull()?.segmentEntries?.size == 1)
-        assert(segments?.firstOrNull() == Segment(segmentDetail1, mutableListOf(segmentEntry1)))
+        Segment.parseFromCsvFileLine(newFormatLineToParse, segmentsAdded)
+        launch {
+            withContext(Dispatchers.IO) {
+                val id = dao?.addSegmentDetails(segmentsAdded[0].segmentDetails)
+                if (id != null) {
+                    segmentsAdded[0].segmentEntries.forEach {
+                        it.segmentId = id
+                        dao?.addSegmentEntry(it)
+                    }
+                }
+            }
+            val segments = dao?.getAllSegmentsDeprecated()
+            assert(segments?.size == 1)
+            assert(segments?.firstOrNull()?.segmentEntries?.size == 1)
+            assert(segments?.firstOrNull() == Segment(segmentDetail1, mutableListOf(segmentEntry1)))
+        }
     }
 
     @Test
     @Throws(Exception::class)
     fun parseSegmentFromCsvFileLineWithKnownSegmentDetail() {
-        val segmentsBefore = dao?.getAllSegmentsDeprecated()
+        val segments = dao?.getAllSegmentsDeprecated()
         val line1ToParse =
             "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
-        Segment.parseFromCsvFileLine(line1ToParse, segmentsBefore)
+        Segment.parseFromCsvFileLine(line1ToParse, segments)
         val line2ToParse =
             "start1;end1;2019-11-14;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
-        Segment.parseFromCsvFileLine(line2ToParse, segmentsBefore)
-        val segmentsAfter = dao?.getAllSegmentsDeprecated()
-        assert(segmentsAfter?.size == 1)
-        assert(segmentsAfter == segmentsBefore)
-        assert(segmentsAfter?.firstOrNull()?.segmentEntries?.size == 2)
+        Segment.parseFromCsvFileLine(line2ToParse, segments)
+        assert(segments?.size == 1)
+        assert(segments?.firstOrNull()?.segmentEntries?.size == 2)
         assert(
-            segmentsAfter?.firstOrNull() == Segment(
+            segments?.firstOrNull() == Segment(
                 segmentDetail1,
                 mutableListOf(segmentEntry1, segmentEntry2)
             )
@@ -89,19 +103,17 @@ class SegmentTest {
     @Test
     @Throws(Exception::class)
     fun parseSegmentFromCsvFileLineDuplication() {
-        val segmentsBefore = dao?.getAllSegmentsDeprecated()
+        val segments = dao?.getAllSegmentsDeprecated()
         val line1ToParse =
             "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
-        Segment.parseFromCsvFileLine(line1ToParse, segmentsBefore)
+        Segment.parseFromCsvFileLine(line1ToParse, segments)
         val line2ToParse =
             "start1;end1;2019-11-13;1;1;44.44;33.33;10;44.94;33.94;18.1;2.9;220;0;157;1"
-        Segment.parseFromCsvFileLine(line2ToParse, segmentsBefore)
-        val segmentsAfter = dao?.getAllSegmentsDeprecated()
-        assert(segmentsAfter?.size == 1)
-        assert(segmentsAfter == segmentsBefore)
-        assert(segmentsAfter?.firstOrNull()?.segmentEntries?.size == 1)
+        Segment.parseFromCsvFileLine(line2ToParse, segments)
+        assert(segments?.size == 1)
+        assert(segments?.firstOrNull()?.segmentEntries?.size == 1)
         assert(
-            segmentsAfter?.firstOrNull() == Segment(
+            segments?.firstOrNull() == Segment(
                 segmentDetail1,
                 mutableListOf(segmentEntry1)
             )

@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui
 
-import android.util.Log
 import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -99,7 +98,6 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
         year: String,
         month: String? = null
     ): Pair<List<Entry>, List<Entry>> {
-        val start = System.currentTimeMillis()
         val graphs = (year.toInt() - 5 until year.toInt()).map {
             getActualGraphForSummits(
                 graphType,
@@ -125,10 +123,6 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
                 }
             }
         }
-        Log.i(
-            "PerformanceGraphProvider.getActualGraphMinMaxForSummits",
-            "took ${(System.currentTimeMillis() - start)}"
-        )
         return Pair(minGraph, maxGraph)
     }
 

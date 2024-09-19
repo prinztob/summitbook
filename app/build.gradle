@@ -117,6 +117,7 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'androidx.test.ext:junit:1.2.1'
     testImplementation "org.robolectric:robolectric:4.13"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1"
 
     implementation 'com.github.ticofab:android-gpx-parser:2.3.1'
 

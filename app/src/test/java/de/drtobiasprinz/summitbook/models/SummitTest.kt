@@ -19,15 +19,14 @@ class SummitTest {
             ElevationData.Companion.parse(11, 1),
             1.1,
             VelocityData.Companion.parse(1.2, 1.3),
-            0.0,
-            0.0,
-            mutableListOf("participant1"),
-            mutableListOf("equipment1"),
+            participants = mutableListOf("participant1"),
+            equipments = mutableListOf("equipment1"),
             isFavorite = false,
             isPeak = false,
             imageIds = mutableListOf(),
             garminData = null,
-            trackBoundingBox = null
+            trackBoundingBox = null,
+            activityId = 1
         )
         private var entry2 = Summit(
             Summit.parseDate("2018-11-18"),
@@ -39,15 +38,13 @@ class SummitTest {
             ElevationData.parse(22, 2),
             2.1,
             VelocityData.Companion.parse(2.2, 2.3),
-            0.0,
-            0.0,
-            mutableListOf("participant1"),
-            mutableListOf(),
+            participants = mutableListOf("participant1"),
             isFavorite = false,
             isPeak = false,
             imageIds = mutableListOf(),
             garminData = null,
-            trackBoundingBox = null
+            trackBoundingBox = null,
+            activityId = 1
         )
         private var entryNewFormat = Summit(
             Summit.parseDate("2019-10-18"),
@@ -61,13 +58,12 @@ class SummitTest {
             VelocityData.Companion.parse(12.6, 24.3),
             48.05205764248967,
             11.60579879768192,
-            mutableListOf(),
-            mutableListOf(),
             isFavorite = false,
             isPeak = false,
             imageIds = mutableListOf(),
             garminData = null,
-            trackBoundingBox = null
+            trackBoundingBox = null,
+            activityId = 1
         )
         private var entryNotInList = Summit(
             Summit.parseDate("2019-10-18"),
@@ -79,15 +75,13 @@ class SummitTest {
             ElevationData.Companion.parse(33, 3),
             3.1,
             VelocityData.Companion.parse(3.2, 3.3),
-            0.0,
-            0.0,
-            mutableListOf("participant1"),
-            mutableListOf(),
+            participants = mutableListOf("participant1"),
             isFavorite = false,
             isPeak = false,
             imageIds = mutableListOf(),
             garminData = null,
-            trackBoundingBox = null
+            trackBoundingBox = null,
+            activityId = 1
         )
         private var summitEntries: ArrayList<Summit>? = ArrayList()
 
@@ -105,10 +99,10 @@ class SummitTest {
     @Throws(Exception::class)
     fun parseFromCsvFileLine() {
         val newFormatLineToParse =
-            "2019-10-18;summitNewFormat;IndoorTrainer;placeNewFormat;countryNewFormat;commentNewFormat;62;11.73;12.6;24.3;569;48.05205764248967;11.60579879768192;;;0"
+            "2019-10-18;summitNewFormat;IndoorTrainer;placeNewFormat;countryNewFormat;commentNewFormat;62;11.73;12.6;24.3;569;48.05205764248967;11.60579879768192;;1;0"
         Assert.assertEquals(Summit.parseFromCsvFileLine(newFormatLineToParse), entryNewFormat)
         val lineToParse =
-            "2019-11-13;summit1;Bicycle;place1;country1;comment1;1;1.1;1.2;1.3;11;;;participant1,equipment1:eq;;;;;;;;;;;;;;;;0\n"
+            "2019-11-13;summit1;Bicycle;place1;country1;comment1;1;1.1;1.2;1.3;11;;;participant1,equipment1:eq;1;;;;;;;;;;;;;;;0\n"
         Assert.assertEquals(Summit.parseFromCsvFileLine(lineToParse), entry1)
         Assert.assertEquals(
             Summit.parseFromCsvFileLine(lineToParse).equipments,
@@ -116,7 +110,7 @@ class SummitTest {
         )
         Assert.assertNotEquals(Summit.parseFromCsvFileLine(lineToParse), entry2)
         val lineToParse2 =
-            "2019-10-13;Taubensee;Hike;Reit im Winkel;D/AUT;;420;6.9;2.9;-1;1000;;;participants1;;;;;;;;;;;;;;;;0\n"
+            "2019-10-13;Taubensee;Hike;Reit im Winkel;D/AUT;;420;6.9;2.9;-1;1000;;;participants1;1;;;;;;;;;;;;;;;0\n"
         Assert.assertNotEquals(Summit.parseFromCsvFileLine(lineToParse2), entry1)
     }
 
