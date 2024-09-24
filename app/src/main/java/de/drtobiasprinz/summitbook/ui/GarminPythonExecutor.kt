@@ -100,15 +100,6 @@ class GarminPythonExecutor(
         checkOutput(result)
     }
 
-    fun getDailyEventsForDate(date: String): JsonArray {
-        if (client == null) {
-            login()
-        }
-        val result = pythonModule?.callAttr("get_daily_events", client, date)
-        checkOutput(result)
-        return JsonParser.parseString(result.toString()) as JsonArray
-    }
-
     fun downloadSpeedDataForActivity(activityId: String): JsonObject {
         if (client == null) {
             login()

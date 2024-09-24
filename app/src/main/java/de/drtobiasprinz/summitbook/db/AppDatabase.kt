@@ -10,7 +10,7 @@ import de.drtobiasprinz.summitbook.db.entities.*
 
 @Database(
     entities = [Summit::class, Forecast::class, IgnoredActivity::class,
-        SegmentDetails::class, SegmentEntry::class, DailyReportData::class],
+        SegmentDetails::class, SegmentEntry::class],
     version = 1,
     exportSchema = true
 )
@@ -20,6 +20,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun summitsDao(): SummitsDao
     abstract fun forecastDao(): ForecastDao
     abstract fun segmentsDao(): SegmentsDao
-    abstract fun dailyReportDataDao(): DailyReportDataDao
     abstract fun ignoredActivityDao(): IgnoredActivityDao
 }

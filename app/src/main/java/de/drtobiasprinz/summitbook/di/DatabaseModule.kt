@@ -39,10 +39,6 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDailyReportDataDao(db: AppDatabase) = db.dailyReportDataDao()
-
-    @Provides
-    @Singleton
     fun provideIgnoredActivityDao(db: AppDatabase) = db.ignoredActivityDao()
 
     @Provides

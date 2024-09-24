@@ -8,7 +8,6 @@ class DatabaseRepository @Inject constructor(
     private val summitsDao: SummitsDao,
     private val segmentsDao: SegmentsDao,
     private val forecastDao: ForecastDao,
-    private val dailyReportDataDao: DailyReportDataDao,
     private val ignoredActivityDao: IgnoredActivityDao
 ) {
 
@@ -19,7 +18,6 @@ class DatabaseRepository @Inject constructor(
     fun getAllSummits() = summitsDao.getAllSummits()
     fun getAllSummitsLiveData() = summitsDao.getAllSummitsLiveData()
     fun getAllBookmarks() = summitsDao.getAllBookmarks()
-    fun searchSummit(name: String) = summitsDao.searchSummit(name)
 
     fun getAllSegments() = segmentsDao.getAllSegments()
     suspend fun deleteSegmentEntry(entity: SegmentEntry) = segmentsDao.deleteSegmentEntry(entity)
@@ -31,16 +29,10 @@ class DatabaseRepository @Inject constructor(
     suspend fun saveSegmentEntry(entity: SegmentEntry) = segmentsDao.addSegmentEntry(entity)
     suspend fun updateSegmentEntry(entity: SegmentEntry) = segmentsDao.updateSegmentEntry(entity)
 
-
     fun getAllForecasts() = forecastDao.getAllForecasts()
     fun getAllForecastsLiveData() = forecastDao.getAllForecastsLiveData()
     suspend fun saveForecast(entity: Forecast) = forecastDao.addForecast(entity)
     suspend fun updateForecast(entity: Forecast) = forecastDao.updateForecast(entity)
-
-
-    fun getAllDailyReportData() = dailyReportDataDao.getAllDailyReportData()
-    suspend fun saveDailyReport(entity: DailyReportData) = dailyReportDataDao.add(entity)
-    suspend fun updateDailyReportData(entity: DailyReportData) = dailyReportDataDao.update(entity)
 
     fun getIgnoredActivities() = ignoredActivityDao.getAllIgnoredActivities()
     suspend fun saveIgnoredActivity(entity: IgnoredActivity) = ignoredActivityDao.add(entity)

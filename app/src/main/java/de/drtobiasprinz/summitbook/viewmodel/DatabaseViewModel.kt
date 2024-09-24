@@ -5,7 +5,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import de.drtobiasprinz.summitbook.db.entities.DailyReportData
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
 import de.drtobiasprinz.summitbook.db.entities.Segment
@@ -39,10 +38,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val forecastList: LiveData<DataStatus<List<Forecast>>>
         get() = _forecastsList
 
-    private val _dailyReportDataList = MutableLiveData<DataStatus<List<DailyReportData>>>()
-    val dailyReportDataList: LiveData<DataStatus<List<DailyReportData>>>
-        get() = _dailyReportDataList
-
     private val _ignoredActivityList = MutableLiveData<DataStatus<List<IgnoredActivity>>>()
     val ignoredActivityList: LiveData<DataStatus<List<IgnoredActivity>>>
         get() = _ignoredActivityList
@@ -55,7 +50,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         getAllSummits()
         getAllSegments()
         getAllForecasts()
-        getAllDailyReportData()
         getAllIgnoredActivities()
     }
 
@@ -149,21 +143,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
             } else {
                 repository.saveForecast(entity)
             }
-        }
-    }
-
-
-    private fun getAllDailyReportData() = viewModelScope.launch {
-        repository.getAllDailyReportData().collect {
-            _dailyReportDataList.postValue(DataStatus.success(it, false))
-        }
-    }
-
-    fun saveDailyReportData(isEdite: Boolean, entity: DailyReportData) = viewModelScope.launch {
-        if (isEdite) {
-            repository.updateDailyReportData(entity)
-        } else {
-            repository.saveDailyReport(entity)
         }
     }
 

@@ -54,7 +54,6 @@ import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.fragments.BarChartFragment
-import de.drtobiasprinz.summitbook.fragments.LineChartDailyReportData
 import de.drtobiasprinz.summitbook.fragments.LineChartFragment
 import de.drtobiasprinz.summitbook.fragments.OpenStreetMapFragment
 import de.drtobiasprinz.summitbook.fragments.SegmentsViewFragment
@@ -138,12 +137,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         )
         binding.drawerLayout.addDrawerListener(actionBarDrawerToggle)
         actionBarDrawerToggle.syncState()
-        viewModel.dailyReportDataList.observe(this) { dailyReportDataStatus ->
-            dailyReportDataStatus.data.let { dailyReportData ->
-                binding.navView.menu.findItem(R.id.nav_daily_data).isVisible =
-                    !dailyReportData.isNullOrEmpty()
-            }
-        }
+
         binding.navView.setNavigationItemSelectedListener(this)
         summitViewFragment = SummitViewFragment()
         if (viewedFragment == null) {
@@ -169,25 +163,21 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                             binding.loading.visibility = View.VISIBLE
                             viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
                                 summitsListDataStatus.data.let { summits ->
-                                    viewModel.dailyReportDataList.observeOnce(this@MainActivity) { dailyReportDataStatus ->
-                                        val updater = GarminDataUpdater(
-                                            sharedPreferences,
-                                            executor,
-                                            dailyReportDataStatus.data,
-                                            viewModel
-                                        )
+                                    val updater = GarminDataUpdater(
+                                        sharedPreferences,
+                                        executor,
+                                    )
 
-                                        lifecycleScope.launch {
-                                            withContext(Dispatchers.IO) {
-                                                updater.update()
-                                                if (summits != null) {
-                                                    updateTracksAndBoundingBox(summits)
-                                                }
+                                    lifecycleScope.launch {
+                                        withContext(Dispatchers.IO) {
+                                            updater.update()
+                                            if (summits != null) {
+                                                updateTracksAndBoundingBox(summits)
                                             }
-                                            updater.onFinish(
-                                                binding.loading, this@MainActivity
-                                            ) { showNewSummitsDialog() }
                                         }
+                                        updater.onFinish(
+                                            binding.loading, this@MainActivity
+                                        ) { showNewSummitsDialog() }
                                     }
                                 }
                             }
@@ -800,7 +790,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var CSV_FILE_NAME_VERSION: String = "de-prinz-summitbook-export.version"
         var CSV_FILE_VERSION: String = "v0"
         var CSV_FILE_NAME_SUMMITS: String = "de-prinz-summitbook-export.csv"
-        var CSV_FILE_NAME_THIRD_PARTY_DATA: String = "de-prinz-summitbook-export-third-party-data.csv"
+        var CSV_FILE_NAME_THIRD_PARTY_DATA: String =
+            "de-prinz-summitbook-export-third-party-data.csv"
         var CSV_FILE_NAME_CALCULATED_DATA: String = "de-prinz-summitbook-export-calculated-data.csv"
         var CSV_FILE_NAME_SEGMENTS: String = "de-prinz-summitbook-export-segments.csv"
         var CSV_FILE_NAME_FORECASTS: String = "de-prinz-summitbook-export-forecasts.csv"
@@ -872,10 +863,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
             R.id.export_csv -> {
                 showExportCsvDialog()
-            }
-
-            R.id.nav_daily_data -> {
-                commitFragment(LineChartDailyReportData())
             }
 
             R.id.action_settings -> {
