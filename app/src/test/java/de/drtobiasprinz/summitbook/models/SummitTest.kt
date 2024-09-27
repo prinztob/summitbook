@@ -111,6 +111,16 @@ class SummitTest {
     @Test
     @Throws(Exception::class)
     fun parseFromCsvFileLineUsingRegex() {
+        val linesToParse = listOf(
+            "2024-02-12;Hahnenkamm;Mountainbike;1707769318078;55.72;11322;1000;444;55.8;50.07818299345672;9.109598798677325;0;0;;;Peter's Bike;;Deutschland",
+            "2024-03-03;Große Reibn Tag 2;Skitour;1709566527019;28.46;35452;2340;2368;40.7;47.4718857742846;12.973065488040447;0;1;;Hanno Kaupp,Florian Seilmeier;K2-Ski;ac_id:1709566524164,Schneidstein,Windschattenkopf;Deutschland,Österreich",
+            "2024-02-02;Münster;Mountainbike;1706890376241;22.8;4067;485;629;50.7;47.95985151082277;11.83500093407929;0;0;;;Canyon-MTB;;Deutschland",
+            "2024-01-27;Gerstinger Joch ;Skitour;1706379248278;21.05;23534;1490;2035;35.4;47.348364014178514;12.260999428108335;0;1;;Hanno Kaupp,Florian Seilmeier,Christian Kellner;K2-Ski;Aschau;Österreich"
+        )
+        linesToParse.forEach {
+            Assert.assertNotNull(parseFromCsvFileLine(it, CSV_FILE_VERSION))
+        }
+
         Assert.assertEquals(entry1, parseFromCsvFileLine(entry1.toString(), CSV_FILE_VERSION))
         Assert.assertEquals(entry2, parseFromCsvFileLine(entry2.toString(), CSV_FILE_VERSION))
         Assert.assertEquals(

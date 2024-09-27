@@ -1,12 +1,13 @@
 import datetime
 import json
+import logging
 import math
 import re
 
 import geopy.distance
 import gpxpy.gpx
 import lxml.etree as mod_etree
-from pandas import DataFrame
+from pandas import DataFrame, to_datetime
 
 
 class TrackAnalyzer(object):
@@ -26,6 +27,8 @@ class TrackAnalyzer(object):
         self.gpx = None
         self.slopes = []
         self.time_entries = []
+        self.distance_entries = []
+        self.distance_entries_time = []
         self.power_entries = []
         self.vertical_velocities = {}
         self.slope_100 = 0
@@ -93,6 +96,11 @@ class TrackAnalyzer(object):
                                                                     (point.latitude, point.longitude)).km
                             self.set_tag_in_extensions(distance * 1000, point, "distance")
                             point.distance = distance * 1000
+                            self.distance_entries.append(int(point.distance))
+                            if last_point:
+                                self.distance_entries_time.append((point.time - last_point.time).total_seconds())
+                            else:
+                                self.distance_entries_time.append(0)
                             self.all_points.append(point)
                             points.append(point)
                             if point.time:
@@ -208,6 +216,7 @@ class TrackAnalyzer(object):
             "vertical_velocities_3600s": round(self.vertical_velocities_3600s, 3) if self.vertical_velocities_60s else 0
         }
         self.set_power_data()
+        self.set_max_average_velocity_data()
 
     def set_power_data(self):
         max_period = len(self.time_entries) - 1
@@ -242,6 +251,29 @@ class TrackAnalyzer(object):
                     if len(values) > 0:
                         self.data[entry.json_key_interval] = int(max(values))
 
+    def set_max_average_velocity_data(self):
+        entries = [
+            AverageVelocityPerDistance(1),
+            AverageVelocityPerDistance(5),
+            AverageVelocityPerDistance(10),
+            AverageVelocityPerDistance(15),
+            AverageVelocityPerDistance(20),
+            AverageVelocityPerDistance(30),
+            AverageVelocityPerDistance(40),
+            AverageVelocityPerDistance(50),
+            AverageVelocityPerDistance(75),
+            AverageVelocityPerDistance(100),
+        ]
+        if len(self.distance_entries_time) == len(self.distance_entries):
+            df = DataFrame({'time': self.distance_entries_time})
+            df.index = to_datetime(self.distance_entries, unit="s")
+
+            for entry in entries:
+                if max(self.distance_entries) > entry.window_in_m:
+                    sums = df.rolling(f"{entry.window_in_m}s").sum().dropna()
+                    times = sums.loc[(df.index >= to_datetime(entry.window_in_m, unit="s"))].values
+                    if len(times > 0):
+                        self.data[entry.json_key_interval] = entry.window_in_km * 3600 / times.min()
 
 def reduce_track_to_relevant_elevation_points(points):
     reduced_points = []
@@ -333,3 +365,9 @@ class PowerPerTime(object):
         self.json_key_interval = f"power_{window}"
         self.window = window
         self.min_period = max_period if max_period < time_interval else time_interval
+
+class AverageVelocityPerDistance(object):
+    def __init__(self, window_in_km: int):
+        self.json_key_interval = f"avg_velocity_{window_in_km}km"
+        self.window_in_km = window_in_km
+        self.window_in_m = window_in_km * 1000

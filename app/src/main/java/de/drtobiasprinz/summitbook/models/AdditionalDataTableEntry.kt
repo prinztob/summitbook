@@ -3,7 +3,6 @@ package de.drtobiasprinz.summitbook.models
 import com.google.gson.JsonObject
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.utils.MaxVelocitySummit
 import kotlin.math.roundToInt
 
 enum class AdditionalDataTableEntry(
@@ -12,7 +11,6 @@ enum class AdditionalDataTableEntry(
     var getValue: (Summit) -> Double,
     var setValue: (Summit, Double) -> Unit,
     var jsonKey: String = "",
-    var getValueFromMaxVelocitySummit: (MaxVelocitySummit) -> Double? = { _ -> null },
     var isInt: Boolean = false,
     var scaleFactorView: Int = 1,
     var scaleFactorForJson: (JsonObject) -> Double = { _ -> 1.0 },
@@ -55,6 +53,77 @@ enum class AdditionalDataTableEntry(
         { e, d -> e.velocityData.maxVelocity = d },
         scaleFactorForJson = { _ -> 3.6 },
         jsonKey = "max_speed"
+    ),
+
+    OneKilometer(
+        R.string.top_speed_1km_hint,
+        R.string.kmh,
+        { e -> e.velocityData.oneKilometer },
+        { e, d -> e.velocityData.oneKilometer = d },
+        jsonKey = "avg_velocity_1km"
+    ),
+    FiveKilometer(
+        R.string.top_speed_5km_hint,
+        R.string.kmh,
+        { e -> e.velocityData.fiveKilometer },
+        { e, d -> e.velocityData.fiveKilometer = d },
+        jsonKey = "avg_velocity_5km"
+    ),
+    TenKilometers(
+        R.string.top_speed_10km_hint,
+        R.string.kmh,
+        { e -> e.velocityData.tenKilometers },
+        { e, d -> e.velocityData.tenKilometers = d },
+        jsonKey = "avg_velocity_10km"
+    ),
+    FifteenKilometers(
+        R.string.top_speed_15km_hint,
+        R.string.kmh,
+        { e -> e.velocityData.fifteenKilometers },
+        { e, d -> e.velocityData.fifteenKilometers = d },
+        jsonKey = "avg_velocity_15km"
+    ),
+    TwentyKilometers(
+        R.string.top_speed_20km_hint,
+        R.string.kmh,
+        { e -> e.velocityData.twentyKilometers },
+        { e, d -> e.velocityData.twentyKilometers = d },
+        jsonKey = "avg_velocity_20km"
+    ),
+    ThirtyKilometers(
+        R.string.top_speed_30km_hint,
+        R.string.kmh,
+        { e -> e.velocityData.thirtyKilometers },
+        { e, d -> e.velocityData.thirtyKilometers = d },
+        jsonKey = "avg_velocity_30km"
+    ),
+    FortyKilometers(
+        R.string.top_speed_40km_hint,
+        R.string.kmh,
+        { e -> e.velocityData.fortyKilometers },
+        { e, d -> e.velocityData.fortyKilometers = d },
+        jsonKey = "avg_velocity_40km"
+    ),
+    FiftyKilometers(
+        R.string.top_speed_50km_hint,
+        R.string.kmh,
+        { e -> e.velocityData.fiftyKilometers },
+        { e, d -> e.velocityData.fiftyKilometers = d },
+        jsonKey = "avg_velocity_50km"
+    ),
+    SeventyFiveKilometers(
+        R.string.top_speed_75km_hint,
+        R.string.kmh,
+        { e -> e.velocityData.seventyFiveKilometers },
+        { e, d -> e.velocityData.seventyFiveKilometers = d },
+        jsonKey = "avg_velocity_75km"
+    ),
+    HundredKilometers(
+        R.string.top_speed_100km_hint,
+        R.string.kmh,
+        { e -> e.velocityData.hundredKilometers },
+        { e, d -> e.velocityData.hundredKilometers = d },
+        jsonKey = "avg_velocity_100km"
     ),
     Slope100Meters(
         R.string.max_slope,
@@ -174,115 +243,5 @@ enum class AdditionalDataTableEntry(
         { e, d -> e.garminData?.power?.fiveHours = d.roundToInt() },
         jsonKey = "power_5h",
         isInt = true
-    ),
-    OneKilometer(
-        R.string.top_speed_1km_hint,
-        R.string.kmh,
-        { e -> e.velocityData.oneKilometer },
-        { e, d -> e.velocityData.oneKilometer = d },
-        getValueFromMaxVelocitySummit = { maxVelocitySummit ->
-            maxVelocitySummit.getAverageVelocityForKilometers(
-                1.0
-            )
-        }
-    ),
-    FiveKilometer(
-        R.string.top_speed_5km_hint,
-        R.string.kmh,
-        { e -> e.velocityData.fiveKilometer },
-        { e, d -> e.velocityData.fiveKilometer = d },
-        getValueFromMaxVelocitySummit = { maxVelocitySummit ->
-            maxVelocitySummit.getAverageVelocityForKilometers(
-                5.0
-            )
-        }
-    ),
-    TenKilometers(
-        R.string.top_speed_10km_hint,
-        R.string.kmh,
-        { e -> e.velocityData.tenKilometers },
-        { e, d -> e.velocityData.tenKilometers = d },
-        getValueFromMaxVelocitySummit = { maxVelocitySummit ->
-            maxVelocitySummit.getAverageVelocityForKilometers(
-                10.0
-            )
-        }
-    ),
-    FifteenKilometers(
-        R.string.top_speed_15km_hint,
-        R.string.kmh,
-        { e -> e.velocityData.fifteenKilometers },
-        { e, d -> e.velocityData.fifteenKilometers = d },
-        getValueFromMaxVelocitySummit = { maxVelocitySummit ->
-            maxVelocitySummit.getAverageVelocityForKilometers(
-                15.0
-            )
-        }
-    ),
-    TwentyKilometers(
-        R.string.top_speed_20km_hint,
-        R.string.kmh,
-        { e -> e.velocityData.twentyKilometers },
-        { e, d -> e.velocityData.twentyKilometers = d },
-        getValueFromMaxVelocitySummit = { maxVelocitySummit ->
-            maxVelocitySummit.getAverageVelocityForKilometers(
-                20.0
-            )
-        }
-    ),
-    ThirtyKilometers(
-        R.string.top_speed_30km_hint,
-        R.string.kmh,
-        { e -> e.velocityData.thirtyKilometers },
-        { e, d -> e.velocityData.thirtyKilometers = d },
-        getValueFromMaxVelocitySummit = { maxVelocitySummit ->
-            maxVelocitySummit.getAverageVelocityForKilometers(
-                30.0
-            )
-        }
-    ),
-    FortyKilometers(
-        R.string.top_speed_40km_hint,
-        R.string.kmh,
-        { e -> e.velocityData.fortyKilometers },
-        { e, d -> e.velocityData.fortyKilometers = d },
-        getValueFromMaxVelocitySummit = { maxVelocitySummit ->
-            maxVelocitySummit.getAverageVelocityForKilometers(
-                40.0
-            )
-        }
-    ),
-    FiftyKilometers(
-        R.string.top_speed_50km_hint,
-        R.string.kmh,
-        { e -> e.velocityData.fiftyKilometers },
-        { e, d -> e.velocityData.fiftyKilometers = d },
-        getValueFromMaxVelocitySummit = { maxVelocitySummit ->
-            maxVelocitySummit.getAverageVelocityForKilometers(
-                50.0
-            )
-        }
-    ),
-    SeventyFiveKilometers(
-        R.string.top_speed_75km_hint,
-        R.string.kmh,
-        { e -> e.velocityData.seventyFiveKilometers },
-        { e, d -> e.velocityData.seventyFiveKilometers = d },
-        getValueFromMaxVelocitySummit = { maxVelocitySummit ->
-            maxVelocitySummit.getAverageVelocityForKilometers(
-                75.0
-            )
-        }
-    ),
-    HundredKilometers(
-        R.string.top_speed_100km_hint,
-        R.string.kmh,
-        { e -> e.velocityData.hundredKilometers },
-        { e, d -> e.velocityData.hundredKilometers = d },
-        getValueFromMaxVelocitySummit = { maxVelocitySummit ->
-            maxVelocitySummit.getAverageVelocityForKilometers(
-                100.0
-            )
-        }
     ),
 }

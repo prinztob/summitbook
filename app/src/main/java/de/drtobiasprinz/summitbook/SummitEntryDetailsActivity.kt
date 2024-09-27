@@ -80,7 +80,7 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
-                        GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
+                        GpxPyExecutor(pythonInstance).createSimplifiedGpxTrackAndGpxPyDataFile(
                             summit.getGpsTrackPath(
                                 simplified = false
                             )

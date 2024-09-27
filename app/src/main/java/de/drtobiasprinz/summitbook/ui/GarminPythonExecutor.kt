@@ -100,20 +100,6 @@ class GarminPythonExecutor(
         checkOutput(result)
     }
 
-    fun downloadSpeedDataForActivity(activityId: String): JsonObject {
-        if (client == null) {
-            login()
-        }
-        if (activitiesDir?.exists() == false) {
-            activitiesDir?.mkdirs()
-        }
-        val result = pythonModule?.callAttr(
-            "get_split_data", client, activityId, activitiesDir?.absolutePath
-        )
-        checkOutput(result)
-        return JsonParser.parseString(result.toString()) as JsonObject
-    }
-
     fun getExerciseSet(activityId: String): JsonObject {
         if (client == null) {
             login()
@@ -143,28 +129,6 @@ class GarminPythonExecutor(
         }
         if (result.toString().startsWith("return code: 1")) {
             throw RuntimeException(result.toString().replace("return code: 1", ""))
-        }
-    }
-
-    fun getSummaryData(startDate: String): JsonObject {
-        if (client == null) {
-            login()
-        }
-        val result = pythonModule?.callAttr("get_user_summary", client, startDate)
-        checkOutput(result)
-        return JsonParser.parseString(result.toString()) as JsonObject
-    }
-
-    fun getHearRateVariabilityData(startDate: String): JsonObject {
-        return try {
-            if (client == null) {
-                login()
-            }
-            val result = pythonModule?.callAttr("get_hrv", client, startDate)
-            checkOutput(result)
-            JsonParser.parseString(result.toString()) as JsonObject
-        } catch (_: RuntimeException) {
-            JsonObject()
         }
     }
 

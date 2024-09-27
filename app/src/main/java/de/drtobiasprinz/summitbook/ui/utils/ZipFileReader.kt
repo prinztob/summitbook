@@ -213,9 +213,9 @@ class ZipFileReader(
                         val added =
                             Forecast.parseFromCsvFileLine(lineLocal, allForecasts, saveForecast)
                         if (added) {
-                            Log.d("Line %s was added in db.", lineLocal)
+                            Log.d("ZipFileReader", "Forecasts line $lineLocal was added in db.")
                         } else {
-                            Log.d("Line %s is already db.", lineLocal)
+                            Log.d("ZipFileReader", "Forecasts line $lineLocal is already db.")
                         }
                     }
                 } catch (e: Exception) {
@@ -240,9 +240,9 @@ class ZipFileReader(
                         val added =
                             GarminData.parseFromCsvFileLineAndSave(lineLocal, allSummits, saveSummit)
                         if (added) {
-                            Log.d("Line %s was added in db.", lineLocal)
+                            Log.d("ZipFileReader", "ThirdPartyData line $lineLocal was added in db.")
                         } else {
-                            Log.d("Line %s is already db.", lineLocal)
+                            Log.d("ZipFileReader", "ThirdPartyData line $lineLocal is already db.")
                         }
                     }
                 } catch (e: Exception) {
@@ -268,9 +268,9 @@ class ZipFileReader(
                         val added =
                             Summit.parseCalculatedDataFromCsvFileLineAndSave(lineLocal, allSummits, saveSummit)
                         if (added) {
-                            Log.d("Line %s was added in db.", lineLocal)
+                            Log.d("ZipFileReader", "CalculatedData line $lineLocal was added in db.")
                         } else {
-                            Log.d("Line %s is already db.", lineLocal)
+                            Log.d("ZipFileReader", "CalculatedData line $lineLocal is already db.")
                         }
                     }
                 } catch (e: Exception) {

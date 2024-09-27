@@ -11,7 +11,6 @@ import android.widget.CheckBox
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -22,16 +21,12 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.DialogAddAdditionalDataFromExternalResourcesBinding
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
-import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.models.AdditionalDataTableEntry
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
-import de.drtobiasprinz.summitbook.ui.utils.MaxVelocitySummit
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -102,14 +97,13 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                             "AsyncSimplifyGpsTracks",
                             "Simplifying track ${summit.getDateAsString()}_${summit.name}."
                         )
-                        //pythonInstance?.let { it1 ->
-                        //    GpxPyExecutor(it1).createSimplifiedGpxTrack(
-                        //        summit.getGpsTrackPath(
-                        //            simplified = false
-                        //        )
-                        //    )
-                        //}
-
+                        pythonInstance?.let { it1 ->
+                            GpxPyExecutor(it1).createSimplifiedGpxTrackAndGpxPyDataFile(
+                                summit.getGpsTrackPath(
+                                    simplified = false
+                                )
+                            )
+                        }
                     } catch (ex: RuntimeException) {
                         Log.e(
                             "AsyncSimplifyGpsTracks",
@@ -145,7 +139,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                         "Entry ${summit.name} will be simplified again in order to obtain newest data"
                     )
                     withContext(Dispatchers.IO) {
-                        GpxPyExecutor(instance).createSimplifiedGpxTrack(
+                        GpxPyExecutor(instance).createSimplifiedGpxTrackAndGpxPyDataFile(
                             summit.getGpsTrackPath(
                                 simplified = false
                             )
@@ -161,37 +155,6 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
 
     private fun extractDataFromFilesAndPutIntoView(summit: Summit) {
         tableEntries.clear()
-        if (summit.garminData != null && summit.garminData?.activityId != null) {
-            Log.i("extractDataFromFilesAndPutIntoView", "ids: ${summit.garminData?.activityIds}")
-            val splitsFiles =
-                if (summit.sportType != SportType.BikeAndHike || summit.garminData?.activityIds?.size == 1) {
-                    summit.garminData?.activityIds?.map { getSplitFileName(it) }
-                } else {
-                    summit.garminData?.activityIds?.subList(
-                        1,
-                        (summit.garminData?.activityIds?.size ?: 1)
-                    )?.map { getSplitFileName(it) }
-                }
-            if (splitsFiles?.all { it.exists() } == true) {
-                setSpeedDataFromSplitsJson(splitsFiles, summit)
-            } else if (pythonExecutor != null) {
-                try {
-                    summit.garminData?.activityIds?.forEach {
-                        pythonExecutor?.downloadSpeedDataForActivity(it)
-                    }
-                    if (splitsFiles?.all { it.exists() } == true) {
-                        setSpeedDataFromSplitsJson(splitsFiles, summit)
-                    }
-                } catch (e: RuntimeException) {
-                    Log.e("Download speed data for activity", e.message ?: "")
-                }
-            } else {
-                Toast.makeText(
-                    context,
-                    getString(R.string.set_user_pwd), Toast.LENGTH_LONG
-                ).show()
-            }
-        }
         val gpxPyJsonFile = summit.getGpxPyPath().toFile()
         if (gpxPyJsonFile.exists()) {
             extractGpxPyJson(gpxPyJsonFile, summit)
@@ -199,9 +162,6 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         binding.tableSummits.removeAllViews()
         drawTable(binding.root)
     }
-
-    private fun getSplitFileName(id: String) =
-        File("${activitiesDir?.absolutePath}/activity_${id}_splits.json")
 
     private fun extractGpxPyJson(
         gpxPyJsonFile: File,
@@ -218,30 +178,6 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                     )
                 if (value > 0) {
                     tableEntries.add(TableEntry(value, summit, it))
-                }
-            }
-        }
-//
-//
-    }
-
-    private fun setSpeedDataFromSplitsJson(
-        splitsFile: List<File>,
-        summit: Summit
-    ) {
-        val maxVelocitySummit =
-            MaxVelocitySummit.getMaxVelocitySummitFromSplitFiles(splitsFile.sorted())
-        var lastValue = 1.0
-        AdditionalDataTableEntry.entries.filter { it.jsonKey == "" }.forEach {
-            if (lastValue > 0.0) {
-                val value = if (it.getValue(summit) > 0.0) {
-                    it.getValue(summit)
-                } else {
-                    it.getValueFromMaxVelocitySummit(maxVelocitySummit)
-                }
-                if (value != null) {
-                    tableEntries.add(TableEntry(value, summit, it))
-                    lastValue = value
                 }
             }
         }

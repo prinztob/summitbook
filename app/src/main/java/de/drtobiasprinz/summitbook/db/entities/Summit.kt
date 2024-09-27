@@ -370,7 +370,7 @@ class Summit(
 
     fun getAverageVelocity(): Double {
         return if (duration > 0) {
-            kilometers / (duration / 3600)
+            kilometers / (duration / 3600.0)
         } else {
             0.0
         }
@@ -424,7 +424,13 @@ class Summit(
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
         val that = other as Summit
-        return that.kilometers == kilometers && that.getDateAsString() == getDateAsString() && name == that.name && sportType == that.sportType && elevationData == that.elevationData
+        return that.kilometers == kilometers &&
+                that.getDateAsString() == getDateAsString() &&
+                name == that.name &&
+                sportType == that.sportType &&
+                velocityData.maxVelocity == that.velocityData.maxVelocity &&
+                elevationData.elevationGain == that.elevationData.elevationGain &&
+                elevationData.maxElevation == that.elevationData.maxElevation
     }
 
     override fun equals(other: Any?): Boolean {
@@ -436,8 +442,8 @@ class Summit(
         if (date != other.date) return false
         if (name != other.name) return false
         if (sportType != other.sportType) return false
-        if (places != listOf("") && other.places != listOf("")  && places != other.places) return false
-        if (countries != listOf("") && other.countries != listOf("")  && countries != other.countries) return false
+        if (places != listOf("") && other.places != listOf("") && places != other.places) return false
+        if (countries != listOf("") && other.countries != listOf("") && countries != other.countries) return false
         if (comments != other.comments) return false
         if (elevationData != other.elevationData) return false
         if (kilometers != other.kilometers) return false
@@ -458,6 +464,36 @@ class Summit(
         return updated == other.updated
     }
 
+    fun clone(): Summit {
+        val summit = Summit(
+            date,
+            name,
+            sportType,
+            places,
+            countries,
+            comments,
+            elevationData,
+            kilometers,
+            velocityData,
+            lat,
+            lng,
+            participants,
+            equipments,
+            isFavorite,
+            isPeak,
+            imageIds,
+            garminData,
+            trackBoundingBox,
+            activityId,
+            duration,
+            isBookmark,
+            hasTrack,
+            ignoreSimplifyingTrack
+        )
+        summit.id = id
+        return summit
+    }
+
     companion object {
         const val DATE_FORMAT: String = "yyyy-MM-dd"
         private const val EQUIPMENT_SUFFIX: String = ":eq"
@@ -474,8 +510,10 @@ class Summit(
 
         fun parseFromCsvFileLine(line: String, version: String): Summit {
             if (version == CSV_FILE_VERSION) {
+                val listPatternOnce = "[^;]+"
+                val listPatternNullOrOnce = "[^;]*"
                 val regex =
-                    """(?<date>(\d{4}-\d{2}-\d{2}));(?<name>(\w+));(?<sportType>(\w+));(?<activityId>(\d+));(?<kilometers>([\d.]+));(?<duration>([\d.]*));(?<elevationGain>([\d.]+));(?<maxElevation>([\d.]+));(?<maxVelocity>([\d.]+));(?<lat>([\d.]*));(?<long>([\d.]*));(?<isFavorite>([01]));(?<isPeak>([01]));(?<comments>(.*));(?<participants>([\w\s,]*));(?<equipments>([\w\s,]*));(?<places>([\w\s,]*));(?<countries>([\w\s,]*))""".toRegex()
+                    """(?<date>(\d{4}-\d{2}-\d{2}));(?<name>($listPatternOnce));(?<sportType>(\w+));(?<activityId>(\d+));(?<kilometers>([\d.]+));(?<duration>([\d.]*));(?<elevationGain>([\d.]+));(?<maxElevation>([\d.]+));(?<maxVelocity>([\d.]+));(?<lat>([\d.]*));(?<long>([\d.]*));(?<isFavorite>([01]));(?<isPeak>([01]));(?<comments>(.*));(?<participants>($listPatternNullOrOnce));(?<equipments>($listPatternNullOrOnce));(?<places>($listPatternNullOrOnce));(?<countries>($listPatternNullOrOnce))""".toRegex()
                 val matchResult = regex.find(line.replace("\n", ""))
                 return if (matchResult != null) {
                     Summit(
@@ -574,18 +612,19 @@ class Summit(
                 km,
                 VelocityData.parse(splitLine[8].split(","), topSpeed),
                 latLng?.latitude, latLng?.longitude,
-                isFavorite =                 isFavorite,
+                isFavorite = isFavorite,
                 isPeak = isPeak,
                 garminData = garminData,
                 activityId = activityId,
                 duration = duration
             )
             val participants = participantsAndEquipments.filter { !it.contains(EQUIPMENT_SUFFIX) }
-            val equipments = participantsAndEquipments.filter { it.contains(EQUIPMENT_SUFFIX) }.map {
-                it.replace(
-                    EQUIPMENT_SUFFIX, ""
-                )
-            }
+            val equipments =
+                participantsAndEquipments.filter { it.contains(EQUIPMENT_SUFFIX) }.map {
+                    it.replace(
+                        EQUIPMENT_SUFFIX, ""
+                    )
+                }
             if (participants.isNotEmpty() && participants[0] != "") {
                 summit.participants = participants
             }

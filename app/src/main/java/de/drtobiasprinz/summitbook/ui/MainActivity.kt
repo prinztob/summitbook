@@ -521,7 +521,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                 "AsyncSimplifyGpsTracks",
                                 "Simplifying track $i of ${summitsWithoutSimplifiedTracks.size} for ${e.getDateAsString()}_${e.name}."
                             )
-                            GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
+                            GpxPyExecutor(pythonInstance).createSimplifiedGpxTrackAndGpxPyDataFile(
                                 e.getGpsTrackPath(
                                     simplified = false
                                 )

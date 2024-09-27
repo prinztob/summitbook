@@ -8,7 +8,7 @@ import java.nio.file.Path
 class GpxPyExecutor(private var pythonInstance: Python) {
     private lateinit var pythonModule: PyObject
 
-    fun createSimplifiedGpxTrack(originalGpxTrackPath: Path) {
+    fun createSimplifiedGpxTrackAndGpxPyDataFile(originalGpxTrackPath: Path) {
         pythonModule = pythonInstance.getModule("entry_point")
         val result =
             pythonModule.callAttr("analyze_gpx_track", originalGpxTrackPath.toFile().absolutePath)

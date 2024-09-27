@@ -177,7 +177,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             if (type == EDIT) {
                 val summitToEdit = summits.firstOrNull { it.id == summitId }
                 if (summitToEdit != null) {
-                    entity = summitToEdit
+                    entity = summitToEdit.clone()
                     updateBaseBindings(view, summits)
                     updateDialogFields(true)
                     btnSave.text = getString(R.string.update)
@@ -902,7 +902,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                             "AddSummitDialog.asyncAnalyzeGpsTracks",
                             "Entry ${entry.name} will be simplified"
                         )
-                        GpxPyExecutor(python).createSimplifiedGpxTrack(entry.getGpsTrackPath())
+                        GpxPyExecutor(python).createSimplifiedGpxTrackAndGpxPyDataFile(entry.getGpsTrackPath())
                         entry.setGpsTrack()
                         highestElevation = entry.gpsTrack?.getHighestElevation()
                         entry.gpsTrack?.setDistance()

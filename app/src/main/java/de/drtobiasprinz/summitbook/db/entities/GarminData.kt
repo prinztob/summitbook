@@ -46,7 +46,7 @@ class GarminData(
                 anaerobicTrainingEffect + ';' +
                 grit + ';' +
                 flow + ';' +
-                trainingLoad
+                trainingLoad + "\n"
     }
 
     override fun equals(other: Any?): Boolean {
