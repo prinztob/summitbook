@@ -879,6 +879,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun showNewSummitsDialog() {
         val dialog = ShowNewSummitsFromGarminDialog()
+        dialog.summits = summitViewFragment.summitsAdapter.differ.currentList
         dialog.save = { summits, isMerge ->
             binding.loading.visibility = View.VISIBLE
             binding.loading.tooltipText =

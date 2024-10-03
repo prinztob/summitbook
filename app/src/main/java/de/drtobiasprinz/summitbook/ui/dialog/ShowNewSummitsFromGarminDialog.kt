@@ -52,6 +52,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
     private var activitiesIdIgnored: List<String> = emptyList()
     private var ignoredActivities: List<IgnoredActivity> = emptyList()
     var save: (List<Summit>, Boolean) -> Unit = { _, _ -> }
+    var summits: List<Summit> = emptyList()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -67,94 +68,86 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
 
         viewModel.ignoredActivityList.observe(viewLifecycleOwner) {
             it.data.let { entries ->
+                ignoredActivities = entries ?: emptyList()
+                updateEntriesWithoutIgnored(summits)
 
-                viewModel.summitsList.observe(viewLifecycleOwner) { summitListDataStatus ->
-                    summitListDataStatus.data.let { summits ->
-                        ignoredActivities = entries ?: emptyList()
-                        summits?.let { summitsNotNull -> updateEntriesWithoutIgnored(summitsNotNull) }
-
-                        binding.updateNewSummits.setOnClickListener {
-                            if (pythonExecutor != null) {
-                                val startDate =
-                                    sharedPreferences?.getString(Keys.PREF_THIRD_PARTY_START_DATE, null) ?: ""
-                                val current = LocalDateTime.now()
-                                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                                val endDate = current.format(formatter)
-                                val startDateForSync = (current.minusDays(1)).format(formatter)
-                                binding.loadingPanel.visibility = View.VISIBLE
-                                asyncDownloadActivities(
-                                    summits,
-                                    pythonExecutor,
-                                    startDate,
-                                    endDate,
-                                    startDateForSync
-                                )
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    getString(R.string.set_user_pwd), Toast.LENGTH_LONG
-                                ).show()
-                            }
-                        }
-                        binding.showAll.setOnClickListener {
-                            if (showAllButtonEnabled) {
-                                binding.showAll.alpha = .5f
-                            } else {
-                                binding.showAll.alpha = 1f
-                            }
-                            showAllButtonEnabled = !showAllButtonEnabled
-                            summits?.let { summitsNotNull ->
-                                updateEntriesWithoutIgnored(
-                                    summitsNotNull,
-                                    showAllButtonEnabled
-                                )
-                            }
-                            drawTable(view)
-                        }
-                        binding.save.isEnabled = false
-                        binding.save.setOnClickListener {
-                            if (areEntriesChecked()) {
-                                save(
-                                    entriesWithoutIgnored.filter { summit -> summit.isSelected },
-                                    false
-                                )
-                                dialog?.dismiss()
-                            }
-                        }
-                        binding.addSummitMerge.isEnabled = false
-                        binding.addSummitMerge.setOnClickListener {
-                            if (canSelectedSummitsBeMerged()) {
-                                save(
-                                    entriesWithoutIgnored.filter { summit -> summit.isSelected },
-                                    true
-                                )
-                                dialog?.dismiss()
-                            }
-                        }
-                        binding.ignore.isEnabled = false
-                        binding.ignore.setOnClickListener {
-                            if (areEntriesChecked()) {
-                                entriesWithoutIgnored.filter { summit -> summit.isSelected }
-                                    .forEach { summit ->
-                                        entriesWithoutIgnored.remove(summit)
-                                        summit.garminData?.activityId?.let { ignoredEntry ->
-                                            viewModel.saveIgnoredActivity(
-                                                IgnoredActivity(
-                                                    ignoredEntry
-                                                )
-                                            )
-                                        }
-                                    }
-                            }
-                            drawTable(view)
-                        }
-                        binding.back.setOnClickListener {
-                            dialog?.cancel()
-                        }
-
-                        drawTable(view)
+                binding.updateNewSummits.setOnClickListener {
+                    if (pythonExecutor != null) {
+                        val startDate =
+                            sharedPreferences?.getString(Keys.PREF_THIRD_PARTY_START_DATE, null)
+                                ?: ""
+                        val current = LocalDateTime.now()
+                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                        val endDate = current.format(formatter)
+                        val startDateForSync = (current.minusDays(1)).format(formatter)
+                        binding.loadingPanel.visibility = View.VISIBLE
+                        asyncDownloadActivities(
+                            summits,
+                            pythonExecutor,
+                            startDate,
+                            endDate,
+                            startDateForSync
+                        )
+                    } else {
+                        Toast.makeText(
+                            context,
+                            getString(R.string.set_user_pwd), Toast.LENGTH_LONG
+                        ).show()
                     }
                 }
+                binding.showAll.setOnClickListener {
+                    if (showAllButtonEnabled) {
+                        binding.showAll.alpha = .5f
+                    } else {
+                        binding.showAll.alpha = 1f
+                    }
+                    showAllButtonEnabled = !showAllButtonEnabled
+                    updateEntriesWithoutIgnored(
+                        summits,
+                        showAllButtonEnabled
+                    )
+                    drawTable(view)
+                }
+                binding.save.isEnabled = false
+                binding.save.setOnClickListener {
+                    if (areEntriesChecked()) {
+                        save(
+                            entriesWithoutIgnored.filter { summit -> summit.isSelected },
+                            false
+                        )
+                        dialog?.dismiss()
+                    }
+                }
+                binding.addSummitMerge.isEnabled = false
+                binding.addSummitMerge.setOnClickListener {
+                    if (canSelectedSummitsBeMerged()) {
+                        save(
+                            entriesWithoutIgnored.filter { summit -> summit.isSelected },
+                            true
+                        )
+                        dialog?.dismiss()
+                    }
+                }
+                binding.ignore.isEnabled = false
+                binding.ignore.setOnClickListener {
+                    if (areEntriesChecked()) {
+                        entriesWithoutIgnored.filter { summit -> summit.isSelected }
+                            .forEach { summit ->
+                                entriesWithoutIgnored.remove(summit)
+                                summit.garminData?.activityId?.let { ignoredEntry ->
+                                    viewModel.saveIgnoredActivity(
+                                        IgnoredActivity(
+                                            ignoredEntry
+                                        )
+                                    )
+                                }
+                            }
+                    }
+                }
+                binding.back.setOnClickListener {
+                    dialog?.cancel()
+                }
+                drawTable(view)
             }
         }
     }
@@ -222,6 +215,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                 activitiesIdIgnored
             )
         }
+        Log.i("ShowNewSummits", "showing ${entriesWithoutIgnored.size} entries")
     }
 
     private fun drawTable(view: View) {
