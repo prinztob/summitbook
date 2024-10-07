@@ -443,5 +443,7 @@
     <string name="mtb_map_type">Offline Karte (MTB)</string>
     <string name="hiking_map_type">Offline Karte (Wandern)</string>
     <string name="cycling_map_type">Offline Karte (Rad)</string>
+    <string name="recalculate">Erneute Berechnung</string>
+    <string name="not_recalculate_current_year">Erneute Berechnung nur möglich für nächstes Jahr</string>
 
 </resources>

@@ -5,10 +5,12 @@ import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
@@ -27,7 +29,8 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues.Companion.getYear
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
-import java.util.*
+import java.util.Calendar
+import java.util.Date
 import kotlin.math.round
 
 @AndroidEntryPoint
@@ -61,11 +64,13 @@ class ForecastDialog : DialogFragment() {
         super.onViewCreated(view, savedInstanceState)
         indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
         averageOfLastXYears = sharedPreferences.getInt(Keys.PREF_FORECAST_AVERAGE, 3)
-        annualTargetActivity = sharedPreferences.getString(PREF_ANNUAL_TARGET_ACTIVITIES, "52") ?: "52"
+        annualTargetActivity =
+            sharedPreferences.getString(PREF_ANNUAL_TARGET_ACTIVITIES, "52") ?: "52"
         annualTargetKm = sharedPreferences.getString(PREF_ANNUAL_TARGET_KM, "1200") ?: "1200"
         annualTargetHm = sharedPreferences.getString(PREF_ANNUAL_TARGET, "50000") ?: "50000"
         val range: Date = Summit.parseDate("${currentYear}-01-01")
-        viewModel.summitsList.observe(viewLifecycleOwner,
+        viewModel.summitsList.observe(
+            viewLifecycleOwner,
             object : Observer<DataStatus<List<Summit>>> {
                 override fun onChanged(value: DataStatus<List<Summit>>) {
                     value.data.let { summits ->
@@ -94,6 +99,31 @@ class ForecastDialog : DialogFragment() {
                                     )
                                 }
 
+                                binding.recalculateDataNextYear.setOnClickListener {
+                                    if (forecasts != null && summits != null && selectedSegmentedYear == 1) {
+                                        updateForecastsForYear(
+                                            forecasts,
+                                            yearsWithForecasts[selectedSegmentedYear],
+                                            summits,
+                                            true
+                                        )
+                                        setOverview(
+                                            forecasts,
+                                            yearsWithForecasts[selectedSegmentedYear]
+                                        )
+                                        setForecastsInDialog(
+                                            forecasts,
+                                            yearsWithForecasts[selectedSegmentedYear],
+                                            view
+                                        )
+                                    } else {
+                                        Toast.makeText(
+                                            requireContext(),
+                                            getString(R.string.not_recalculate_current_year),
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
                                 binding.back.setOnClickListener {
                                     dialog?.dismiss()
                                 }
@@ -158,11 +188,35 @@ class ForecastDialog : DialogFragment() {
         summits: List<Summit>
     ) {
         for (year in years) {
-            for (month in 1..12) {
-                if (forecasts?.firstOrNull { it.month == month && it.year == year } == null) {
-                    val forecast = Forecast.getNewForecastFrom(month, year, summits, averageOfLastXYears, annualTargetActivity, annualTargetKm, annualTargetHm)
-                    viewModel.saveForecast(false, forecast)
-                }
+            updateForecastsForYear(forecasts, year, summits)
+        }
+    }
+
+    private fun updateForecastsForYear(
+        forecasts: List<Forecast>?,
+        year: Int,
+        summits: List<Summit>,
+        updateIfEntryExists: Boolean = false
+    ) {
+        for (month in 1..12) {
+            val updatedForecast = Forecast.getNewForecastFrom(
+                month,
+                year,
+                summits,
+                averageOfLastXYears,
+                annualTargetActivity,
+                annualTargetKm,
+                annualTargetHm
+            )
+            val existingForecast = forecasts?.firstOrNull { it.month == month && it.year == year }
+            if (existingForecast == null) {
+                Log.d(TAG, "Add new Forecast for month $month and year $year: $updatedForecast")
+                viewModel.saveForecast(false, updatedForecast)
+            } else if (updateIfEntryExists) {
+                existingForecast.forecastDistance = updatedForecast.forecastDistance
+                existingForecast.forecastHeightMeter = updatedForecast.forecastHeightMeter
+                existingForecast.forecastNumberActivities = updatedForecast.forecastNumberActivities
+                Log.d(TAG, "Update Forecast for month $month and year $year: $existingForecast")
             }
         }
     }
@@ -396,5 +450,6 @@ class ForecastDialog : DialogFragment() {
         const val stepSizeActivity: Int = 1
         const val stepSizeKm: Int = 10
         const val stepSizeHm: Int = 250
+        const val TAG: String = "ForecastDialog"
     }
 }

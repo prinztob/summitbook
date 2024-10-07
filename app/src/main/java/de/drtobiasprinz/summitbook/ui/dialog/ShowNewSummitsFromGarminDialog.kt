@@ -243,8 +243,6 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         val dateString =
             "<a href=\"${entry.garminData?.url ?: "unknown"}\">${date}</a>"
         val name: String = entry.name.chunked(10).joinToString("\n")
-        val kilometers: Double = entry.kilometers
-        val heightMeters: Int = entry.elevationData.elevationGain
 
         val tr = TableRow(view.context)
         if (entry.garminData?.activityId in activitiesIdIgnored) {
@@ -258,15 +256,32 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         )
         addLabel(view, tr, 200 + i, dateString, padding = 2, isHtml = true)
         addLabel(view, tr, 200 + i, name, padding = 2)
-        addLabel(
-            view, tr, 200 + i, String.format(
-                requireContext().resources.configuration.locales[0], "%.1f km", kilometers
-            ), padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END
+        val kmString = String.format(
+            requireContext().resources.configuration.locales[0], "%.1f", entry.kilometers,
+            requireContext().getString(R.string.km)
+        )
+        val hmString = String.format(
+            requireContext().resources.configuration.locales[0],
+            "%s %s",
+            entry.elevationData.elevationGain,
+            requireContext().getString(R.string.hm)
+        )
+        val velocityString = String.format(
+            requireContext().resources.configuration.locales[0],
+            "%.1f %s",
+            entry.getAverageVelocity(),
+            requireContext().getString(R.string.kmh)
+        )
+        val vo2MaxString = String.format(
+            requireContext().resources.configuration.locales[0], "%.1f", entry.garminData?.vo2max
         )
         addLabel(
-            view, tr, 200 + i, String.format(
-                requireContext().resources.configuration.locales[0], "%s m", heightMeters
-            ), padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END
+            view,
+            tr,
+            200 + i,
+            "$kmString \u2022 $hmString \u2022\n$velocityString \u2022 $vo2MaxString",
+            padding = 2,
+            alignment = View.TEXT_ALIGNMENT_TEXT_END
         )
         val box = CheckBox(view.context)
         box.setOnCheckedChangeListener { _, arg1 ->
@@ -298,9 +313,19 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         )
         addLabel(view, tableRowHead, 20, "Date", Color.GRAY)
         addLabel(view, tableRowHead, 21, "Summit\nName", Color.GRAY)
-        addLabel(view, tableRowHead, 22, "km", Color.GRAY)
-        addLabel(view, tableRowHead, 23, "hm", Color.GRAY)
-        addLabel(view, tableRowHead, 24, "", Color.GRAY)
+        addLabel(
+            view, tableRowHead, 22,
+            "${
+                requireContext().getString(R.string.km)
+            } \u2022 ${
+                requireContext().getString(R.string.hm)
+            } \u2022\n${
+                requireContext().getString(R.string.kmh)
+            } \u2022 ${
+                requireContext().getString(R.string.vo2Max)
+            }", Color.GRAY
+        )
+        addLabel(view, tableRowHead, 23, "", Color.GRAY)
 
         tl.addView(
             tableRowHead, TableLayout.LayoutParams(
