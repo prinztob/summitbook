@@ -31,21 +31,6 @@ enum class AdditionalDataTableEntry(
         jsonKey = "max_elevation",
         isInt = true
     ),
-    Distance(
-        R.string.kilometers_hint,
-        R.string.km,
-        { e -> e.kilometers },
-        { e, d -> e.kilometers = d },
-        jsonKey = "moving_distance",
-        scaleFactorForJson = { _ -> 0.001 }
-    ),
-    Duration(
-        R.string.duration,
-        R.string.sec,
-        { e -> e.duration.toDouble() },
-        { e, d -> e.duration = d.roundToInt() },
-        jsonKey = "moving_time",
-    ),
     MaxVelocity(
         R.string.top_speed,
         R.string.kmh,

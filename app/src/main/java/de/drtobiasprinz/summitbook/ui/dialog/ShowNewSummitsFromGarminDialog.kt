@@ -2,27 +2,22 @@ package de.drtobiasprinz.summitbook.ui.dialog
 
 import android.content.Context
 import android.content.res.Resources
-import android.graphics.Color
 import android.os.Bundle
-import android.text.Html
-import android.text.method.LinkMovementMethod
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.CheckBox
 import android.widget.ProgressBar
-import android.widget.TableLayout
-import android.widget.TableRow
-import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.adapter.AddNewSummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.DialogShowNewSummitFromGarminBinding
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -33,8 +28,6 @@ import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.text.DateFormat
-import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -53,6 +46,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
     private var ignoredActivities: List<IgnoredActivity> = emptyList()
     var save: (List<Summit>, Boolean) -> Unit = { _, _ -> }
     var summits: List<Summit> = emptyList()
+    private lateinit var addNewSummitsAdapter: AddNewSummitsAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -70,8 +64,24 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
             it.data.let { entries ->
                 ignoredActivities = entries ?: emptyList()
                 updateEntriesWithoutIgnored(summits)
+                val width = Resources.getSystem().displayMetrics.widthPixels
+                addNewSummitsAdapter = AddNewSummitsAdapter()
+                addNewSummitsAdapter.differ.submitList(
+                    entriesWithoutIgnored.sortedBy { summit -> summit.getDateAsString() }.reversed()
+                )
+                addNewSummitsAdapter.ignoredActivities = ignoredActivities
+                addNewSummitsAdapter.updateButtons = {
+                    binding.addSummitMerge.isEnabled = canSelectedSummitsBeMerged()
+                    binding.save.isEnabled = areEntriesChecked()
+                    binding.ignore.isEnabled = areEntriesChecked()
+                }
+                binding.recyclerView.apply {
+                    layoutManager = LinearLayoutManager(requireContext())
+                    adapter = addNewSummitsAdapter
 
-                binding.updateNewSummits.setOnClickListener {
+                }
+                binding.recyclerView.minimumWidth = (width * 0.97).toInt()
+                binding.save.setOnClickListener {
                     if (pythonExecutor != null) {
                         val startDate =
                             sharedPreferences?.getString(Keys.PREF_THIRD_PARTY_START_DATE, null)
@@ -106,7 +116,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                         summits,
                         showAllButtonEnabled
                     )
-                    drawTable(view)
+                    addNewSummitsAdapter.differ.submitList(entriesWithoutIgnored)
                 }
                 binding.save.isEnabled = false
                 binding.save.setOnClickListener {
@@ -147,7 +157,6 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                 binding.back.setOnClickListener {
                     dialog?.cancel()
                 }
-                drawTable(view)
             }
         }
     }
@@ -183,9 +192,8 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                 }
             }
             summits?.let { updateEntriesWithoutIgnored(it) }
-            view?.let { drawTable(it) }
+            addNewSummitsAdapter.differ.submitList(entriesWithoutIgnored)
             binding.loadingPanel.visibility = View.GONE
-
         }
     }
 
@@ -218,147 +226,10 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         Log.i("ShowNewSummits", "showing ${entriesWithoutIgnored.size} entries")
     }
 
-    private fun drawTable(view: View) {
-        binding.tableSummits.removeAllViews()
-        val width = Resources.getSystem().displayMetrics.widthPixels
-        binding.root.minWidth = (width * 0.97).toInt()
-        binding.save.width = (width * 0.3).toInt()
-        binding.back.width = (width * 0.3).toInt()
-        binding.addSummitMerge.width = (width * 0.3).toInt()
-        binding.showAll.width = (width * 0.3).toInt()
-        binding.ignore.width = (width * 0.3).toInt()
-        binding.updateNewSummits.width = (width * 0.3).toInt()
-        addHeader(view, binding.tableSummits)
-        for ((i, entry) in entriesWithoutIgnored.sortedBy { it.getDateAsString() }.reversed()
-            .withIndex()) {
-            addSummitToTable(entry, view, i, binding.tableSummits)
-        }
-    }
-
-    private fun addSummitToTable(entry: Summit, view: View, i: Int, tl: TableLayout) {
-        val dateFormat: DateFormat = SimpleDateFormat(
-            "yyyy-MMM-dd", resources.configuration.locales[0],
-        )
-        val date = dateFormat.format(entry.date).replace("-", "<br />")
-        val dateString =
-            "<a href=\"${entry.garminData?.url ?: "unknown"}\">${date}</a>"
-        val name: String = entry.name.chunked(10).joinToString("\n")
-
-        val tr = TableRow(view.context)
-        if (entry.garminData?.activityId in activitiesIdIgnored) {
-            tr.setBackgroundColor(Color.LTGRAY)
-        } else {
-            tr.setBackgroundColor(Color.GRAY)
-        }
-        tr.id = 100 + i
-        tr.layoutParams = TableLayout.LayoutParams(
-            TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT
-        )
-        addLabel(view, tr, 200 + i, dateString, padding = 2, isHtml = true)
-        addLabel(view, tr, 200 + i, name, padding = 2)
-        val kmString = String.format(
-            requireContext().resources.configuration.locales[0], "%.1f", entry.kilometers,
-            requireContext().getString(R.string.km)
-        )
-        val hmString = String.format(
-            requireContext().resources.configuration.locales[0],
-            "%s %s",
-            entry.elevationData.elevationGain,
-            requireContext().getString(R.string.hm)
-        )
-        val velocityString = String.format(
-            requireContext().resources.configuration.locales[0],
-            "%.1f %s",
-            entry.getAverageVelocity(),
-            requireContext().getString(R.string.kmh)
-        )
-        val vo2MaxString = String.format(
-            requireContext().resources.configuration.locales[0], "%.1f", entry.garminData?.vo2max
-        )
-        addLabel(
-            view,
-            tr,
-            200 + i,
-            "$kmString \u2022 $hmString \u2022\n$velocityString \u2022 $vo2MaxString",
-            padding = 2,
-            alignment = View.TEXT_ALIGNMENT_TEXT_END
-        )
-        val box = CheckBox(view.context)
-        box.setOnCheckedChangeListener { _, arg1 ->
-            entry.isSelected = arg1
-            binding.addSummitMerge.isEnabled = canSelectedSummitsBeMerged()
-            binding.save.isEnabled = areEntriesChecked()
-            binding.ignore.isEnabled = areEntriesChecked()
-        }
-
-        tr.addView(box)
-        tl.addView(
-            tr, TableLayout.LayoutParams(
-                TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
-    }
-
     private fun canSelectedSummitsBeMerged() =
         entriesWithoutIgnored.filter { summitEntry -> summitEntry.isSelected }
             .map { it.getDateAsString() }
             .toSet().size == 1 && entriesWithoutIgnored.filter { summit -> summit.isSelected }.size > 1
-
-    private fun addHeader(view: View, tl: TableLayout) {
-        val tableRowHead = TableRow(view.context)
-        10.also { tableRowHead.id = it }
-        tableRowHead.setBackgroundColor(Color.WHITE)
-        tableRowHead.layoutParams = TableLayout.LayoutParams(
-            TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT
-        )
-        addLabel(view, tableRowHead, 20, "Date", Color.GRAY)
-        addLabel(view, tableRowHead, 21, "Summit\nName", Color.GRAY)
-        addLabel(
-            view, tableRowHead, 22,
-            "${
-                requireContext().getString(R.string.km)
-            } \u2022 ${
-                requireContext().getString(R.string.hm)
-            } \u2022\n${
-                requireContext().getString(R.string.kmh)
-            } \u2022 ${
-                requireContext().getString(R.string.vo2Max)
-            }", Color.GRAY
-        )
-        addLabel(view, tableRowHead, 23, "", Color.GRAY)
-
-        tl.addView(
-            tableRowHead, TableLayout.LayoutParams(
-                TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
-    }
-
-    private fun addLabel(
-        view: View,
-        tr: TableRow,
-        id: Int,
-        text: String,
-        color: Int = Color.WHITE,
-        padding: Int = 5,
-        alignment: Int = View.TEXT_ALIGNMENT_CENTER,
-        isHtml: Boolean = false
-    ) {
-        val label = TextView(view.context)
-        label.id = id
-        if (isHtml) {
-            label.setLinkTextColor(Color.WHITE)
-            label.isClickable = true
-            label.movementMethod = LinkMovementMethod.getInstance()
-            label.text = Html.fromHtml(text, Html.FROM_HTML_MODE_COMPACT)
-        } else {
-            label.text = text
-        }
-        label.gravity = alignment
-        label.setTextColor(color)
-        label.setPadding(padding, padding, padding, padding)
-        tr.addView(label)
-    }
 
     private fun areEntriesChecked(): Boolean {
         return entriesWithoutIgnored.map { it.isSelected }.contains(true)
