@@ -138,7 +138,11 @@ class SortFilterValues(
     }
 
     fun apply(segments: List<Segment>): List<Segment> {
-        return segments
+        return if (orderByAscDescButtonGroup == OrderByAscDescButtonGroup.Ascending) {
+            segments.sortedBy { orderByValueSpinner.segmentSorting(it) }
+        } else {
+            segments.sortedByDescending { orderByValueSpinner.segmentSorting(it) }
+        }
     }
 
     fun filterDate(summit: Summit): Boolean {
