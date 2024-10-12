@@ -73,8 +73,13 @@ class AddAdditionalDataAdapter(val summit: Summit) :
 
         }
         binding.oldValue.text = defaultValueAsString
-        if (!entry.isChecked) {
+        if (entry.isChecked) {
+            binding.newEntry.setBackgroundResource(R.color.green_500)
+            binding.oldValue.background = defaultBackground
+        }
+        else {
             binding.oldValue.setBackgroundResource(R.color.green_500)
+            binding.newEntry.background = defaultBackground
         }
         binding.oldValue.setOnClickListener {
             entry.isChecked = false

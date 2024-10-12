@@ -2,6 +2,8 @@ package de.drtobiasprinz.summitbook.db.entities
 
 import androidx.room.Embedded
 import androidx.room.Relation
+import de.drtobiasprinz.summitbook.ui.MainActivity
+import java.io.File
 
 
 data class Segment(
@@ -13,6 +15,9 @@ data class Segment(
     val segmentEntries: MutableList<SegmentEntry>
 
 ) {
+
+
+
     fun getStringRepresentation(): String {
         return segmentEntries.joinToString("\n") {
             "${segmentDetails.startPointName};${segmentDetails.endPointName};${it.getStringRepresentation()}"
@@ -43,6 +48,10 @@ data class Segment(
             return "Start Point; " +
                     "End Point; " +
                     SegmentEntry.getCsvHeadline() + "\n"
+        }
+
+        fun getMapScreenshotFile(segmentDetailsId: Long): File {
+            return File(MainActivity.segmentScreenshotDir, "id_${segmentDetailsId}.jpg")
         }
 
         fun parseFromCsvFileLine(

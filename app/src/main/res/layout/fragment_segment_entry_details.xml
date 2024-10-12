@@ -110,6 +110,16 @@
             app:layout_constraintEnd_toEndOf="@id/osMap"
             app:layout_constraintTop_toTopOf="@+id/osMap" />
 
+        <ImageButton
+            android:id="@+id/update_snapshot"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/update"
+            android:minHeight="48dp"
+            android:src="@drawable/baseline_refresh_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/change_map_type" />
+
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/lineChart"
             android:layout_width="match_parent"

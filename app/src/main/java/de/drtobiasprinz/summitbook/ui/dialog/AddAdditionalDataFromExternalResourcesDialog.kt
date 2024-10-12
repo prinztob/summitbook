@@ -155,6 +155,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         if (gpxPyJsonFile.exists()) {
             extractGpxPyJson(gpxPyJsonFile, summit)
         }
+
         val addAdditionalDataAdapter = AddAdditionalDataAdapter(summit)
         addAdditionalDataAdapter.differ.submitList(
             tableEntries

@@ -1,9 +1,14 @@
 package de.drtobiasprinz.summitbook
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +16,7 @@ import android.widget.ImageButton
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -30,29 +36,37 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.databinding.FragmentSegmentEntryDetailsBinding
 import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.Segment.Companion.getMapScreenshotFile
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.fragments.AddSegmentEntryFragment
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.getSportTypeForMapProviders
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.tileprovider.TileStates
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.advancedpolyline.PolychromaticPaintList
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.IOException
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
+
 
 @AndroidEntryPoint
 class SegmentEntryDetailsFragment : Fragment() {
@@ -124,6 +138,29 @@ class SegmentEntryDetailsFragment : Fragment() {
         return binding.root
     }
 
+    private fun takeScreenshot(view: View) {
+        try {
+            val bitmap = Bitmap.createBitmap(
+                view.width, view.height, Bitmap.Config.ARGB_8888
+            )
+            val canvas = Canvas(bitmap)
+            view.draw(canvas)
+            val outputStream = FileOutputStream(getMapScreenshotFile(segmentDetailsId))
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
+            outputStream.flush()
+            outputStream.close()
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.screenshot_taken),
+                Toast.LENGTH_SHORT
+            ).show()
+        } catch (io: FileNotFoundException) {
+            io.printStackTrace()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
     private fun update(
         summitToShow: Summit?,
         segmentEntryToShow: SegmentEntry?,
@@ -137,7 +174,27 @@ class SegmentEntryDetailsFragment : Fragment() {
             drawMarker(segmentToUse.segmentEntries)
             drawGpxTrackAndItsProfile(summitToShow, segmentEntryToShow)
             drawTable(binding.root, binding.tableSegments, segmentToUse, relevantSummits)
+            if (!getMapScreenshotFile(segmentDetailsId).exists()) {
+                takeScreenshotWhenTilesAreLoaded()
+            }
         }
+    }
+
+    private fun takeScreenshotWhenTilesAreLoaded(timeout: Long = TIMEOUT_TILES_LOADED) {
+        Handler(Looper.getMainLooper()).postDelayed({
+            val tileStates: TileStates =
+                binding.osMap.overlayManager.tilesOverlay.tileStates
+            if (timeout > 0 && tileStates.total != tileStates.upToDate) {
+                Log.d(
+                    TAG,
+                    "Tiles not loaded, waiting for $STEP_TILES_LOADED ms, time to timeout $timeout ms"
+                )
+                takeScreenshotWhenTilesAreLoaded(timeout - STEP_TILES_LOADED)
+            } else {
+                Log.d(TAG, "Will take screenshot of open street map view.")
+                takeScreenshot(binding.osMap)
+            }
+        }, STEP_TILES_LOADED)
     }
 
 
@@ -165,13 +222,17 @@ class SegmentEntryDetailsFragment : Fragment() {
     }
 
     private fun prepareMap() {
+        selectedItem = getSportTypeForMapProviders(SportType.Other, requireContext())
         binding.changeMapType.setImageResource(R.drawable.baseline_more_vert_black_24dp)
         binding.changeMapType.setOnClickListener {
             OpenStreetMapUtils.showMapTypeSelectorDialog(
                 requireContext(), binding.osMap
             )
         }
-        binding.osMap.setTileSource(TileSourceFactory.OpenTopo)
+        binding.updateSnapshot.setOnClickListener {
+            takeScreenshotWhenTilesAreLoaded()
+        }
+        OpenStreetMapUtils.setTileSource(binding.osMap, requireContext())
         OpenStreetMapUtils.addDefaultSettings(
             requireContext(), binding.osMap, requireActivity()
         )
@@ -316,7 +377,8 @@ class SegmentEntryDetailsFragment : Fragment() {
             val duration =
                 (endTrackPoint.time.millis - startTrackPoint.time.millis).toDouble() / 60000.0
             val distance =
-                ((endTrackPoint.pointExtension?.distance ?: 0.0) - (startTrackPoint.pointExtension?.distance
+                ((endTrackPoint.pointExtension?.distance
+                    ?: 0.0) - (startTrackPoint.pointExtension?.distance
                     ?: 0.0)) / 1000.0
 
             binding.duration.text = String.format(
@@ -668,6 +730,12 @@ class SegmentEntryDetailsFragment : Fragment() {
         super.onSaveInstanceState(outState)
         outState.putLong(SegmentDetails.SEGMENT_DETAILS_ID_EXTRA_IDENTIFIER, segmentDetailsId)
         outState.putLong(SegmentEntry.SEGMENT_ENTRY_ID_EXTRA_IDENTIFIER, segmentEntryId)
+    }
+
+    companion object {
+        const val TIMEOUT_TILES_LOADED = 15000L
+        const val STEP_TILES_LOADED = 500L
+        const val TAG = "SegmentEntryDetailsFragment"
     }
 
 }

@@ -126,6 +126,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         updatePythonExecutor()
         pythonInstance = Python.getInstance()
         activitiesDir = File(storage, "activities")
+        segmentScreenshotDir = File(storage, "segmentScreenshots")
+        segmentScreenshotDir?.mkdirs()
+
         val viewedFragment: Fragment? = supportFragmentManager.findFragmentById(R.id.content_frame)
         setSupportActionBar(binding.toolbarInclude.toolbar)
         val actionBarDrawerToggle = ActionBarDrawerToggle(
@@ -801,6 +804,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var storage: File? = null
         var cache: File? = null
         var activitiesDir: File? = null
+        var segmentScreenshotDir: File? = null
         var pythonInstance: Python? = null
         var pythonExecutor: GarminPythonExecutor? = null
         lateinit var sharedPreferences: SharedPreferences

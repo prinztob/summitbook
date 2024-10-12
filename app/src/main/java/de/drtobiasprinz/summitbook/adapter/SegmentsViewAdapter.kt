@@ -6,12 +6,14 @@ import android.content.DialogInterface
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewbinding.ViewBinding
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import dagger.hilt.android.internal.managers.FragmentComponentManager
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SegmentEntryDetailsFragment
@@ -104,6 +106,17 @@ class SegmentsViewAdapter(var segments: List<Segment>) :
                 averageElevationGainDown,
                 context.getString(R.string.hm)
             ) else ""
+
+        if (Segment.getMapScreenshotFile(segment.segmentDetails.segmentDetailsId).exists()) {
+            Glide.with(binding.root)
+                .load("file://" + Segment.getMapScreenshotFile(segment.segmentDetails.segmentDetailsId))
+                .centerInside()
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
+                .into(binding.cardViewImage)
+        } else {
+            binding.cardViewImage.visibility = View.GONE
+        }
 
         binding.entryDelete.setOnClickListener { v: View? ->
             v?.context?.let {

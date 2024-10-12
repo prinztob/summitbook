@@ -446,5 +446,6 @@
     <string name="recalculate">Erneute Berechnung</string>
     <string name="not_recalculate_current_year">Erneute Berechnung nur möglich für nächstes Jahr</string>
     <string name="ignored">ignoriert</string>
+    <string name="screenshot_taken">Screenshot erstellt</string>
 
 </resources>

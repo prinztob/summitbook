@@ -445,5 +445,6 @@
     <string name="recalculate">Recalculate</string>
     <string name="not_recalculate_current_year">Recalculate only possible for next year</string>
     <string name="ignored">ignored</string>
+    <string name="screenshot_taken">Screenshot was taken</string>
 
 </resources>
