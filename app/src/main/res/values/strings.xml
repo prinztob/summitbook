@@ -204,6 +204,7 @@
     <string name="use_simplified_tracks_title">Use simplified tracks</string>
     <string name="use_simplified_tracks">Use simplified tracks to reduce the loading time of gps tracks.</string>
     <string name="export_third_party_data_title">Export third party data.</string>
+    <string name="switch_sport_type_or_group">Use sport group instead of sport type.</string>
     <string name="export_third_party_data">Export data to csv from added third party data.</string>
     <string name="export_calculated_data_title">Export calculated data.</string>
     <string name="export_calculated_data">Export calculated data to csv which were determined from track.</string>
@@ -229,6 +230,8 @@
     <string name="export_csv_summary_title">"Export successful"</string>
     <string name="export_csv_summary_text">"Total summits exported to file: %1$s\nSummits with gps file: %2$s\nSummits wth images: %3$s"</string>
 
+    <string name="onBicycle">on a bicycle</string>
+    <string name="onFoot">on foot</string>
     <string name="bicycle">Bicycle</string>
     <string name="mountainbike">Mountainbike</string>
     <string name="bikeAndHike">Bike&amp;Hike</string>

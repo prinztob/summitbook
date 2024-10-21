@@ -73,6 +73,13 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         return binding.root
     }
 
+    @Override
+    override fun onStart() {
+        super.onStart()
+        val width = (resources.displayMetrics.widthPixels * 0.90).toInt()
+        dialog?.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+    }
+
     private fun setView(summit: Summit) {
         binding.save.setOnClickListener {
             val copyElevationData = summit.elevationData.clone()

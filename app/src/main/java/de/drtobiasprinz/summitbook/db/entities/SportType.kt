@@ -108,7 +108,7 @@ enum class SportType(
 
     companion object {
         fun getSportTypeFromGarminId(garminId: Int): SportType {
-            SportType.values().forEach {
+            entries.forEach {
                 if (garminId in it.garminTypeIds) {
                     return it
                 }
@@ -118,14 +118,29 @@ enum class SportType(
     }
 }
 
-enum class SportGroup(val sportTypes: List<SportType>) {
-    Bike(
+enum class SportGroup(
+    val sportTypes: List<SportType>,
+    val sportNameStringId: Int,
+    val color: Int
+) {
+    OnABicycle(
         listOf(
             SportType.Bicycle,
             SportType.Racer,
             SportType.IndoorTrainer,
             SportType.Mountainbike
-        )
+        ),
+        R.string.onBicycle,
+        R.color.green_500,
     ),
-    Foot(listOf(SportType.Climb, SportType.Hike, SportType.Skitour))
+    OnFoot(
+        listOf(SportType.Climb, SportType.Hike, SportType.Skitour, SportType.Running),
+        R.string.onFoot,
+        R.color.brown_700,
+    ),
+    Other(
+        listOf(SportType.BikeAndHike, SportType.Other),
+        R.string.other,
+        R.color.grey_500,
+    )
 }

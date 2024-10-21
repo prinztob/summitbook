@@ -209,7 +209,7 @@ class GarminPythonExecutor(
             ).parse(jsonObject.getAsJsonPrimitive("startTimeLocal").asString) ?: Date()
             val sportType = parseSportType(jsonObject["activityType"].asJsonObject)
             val duration: Double =
-                if (jsonObject["movingDuration"] != JsonNull.INSTANCE && sportType in SportGroup.Bike.sportTypes) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
+                if (jsonObject["movingDuration"] != JsonNull.INSTANCE && sportType in SportGroup.OnABicycle.sportTypes) jsonObject["movingDuration"].asDouble else jsonObject["duration"].asDouble
             val activityIds: MutableList<String> = mutableListOf(jsonObject["activityId"].asString)
             if (jsonObject.has("childIds")) {
                 activityIds.addAll(jsonObject["childIds"].asJsonArray.map { it.asString })

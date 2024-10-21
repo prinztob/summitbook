@@ -28,8 +28,10 @@ import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.Keys
+import de.drtobiasprinz.summitbook.Keys.PREF_USE_SPORT_GROUP_INSTEAD_OF_TYPE
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentBarChartBinding
+import de.drtobiasprinz.summitbook.db.entities.SportGroup
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.BarChartXAxisSelector
@@ -242,9 +244,18 @@ class BarChartFragment : Fragment() {
         dataSet.setDrawValues(false)
         dataSet.highLightColor = Color.RED
         dataSet.colors =
-            SportType.entries.map { ContextCompat.getColor(requireContext(), it.color) }
+            if (sharedPreferences.getBoolean(PREF_USE_SPORT_GROUP_INSTEAD_OF_TYPE, false)) {
+                SportGroup.entries.map { ContextCompat.getColor(requireContext(), it.color) }
+            } else {
+                SportType.entries.map { ContextCompat.getColor(requireContext(), it.color) }
+            }
         dataSet.stackLabels =
-            SportType.entries.map { getString(it.sportNameStringId) }.toTypedArray()
+            if (sharedPreferences.getBoolean(PREF_USE_SPORT_GROUP_INSTEAD_OF_TYPE, false)) {
+                SportGroup.entries.map { getString(it.sportNameStringId) }.toTypedArray()
+            } else {
+                SportType.entries.map { getString(it.sportNameStringId) }.toTypedArray()
+            }
+
     }
 
     private fun setGraphViewLineChart(dataSet: LineDataSet) {
@@ -368,13 +379,24 @@ class BarChartFragment : Fragment() {
 
     private fun getValueForEntry(entriesSupplier: Supplier<Stream<Summit?>?>): FloatArray {
         val list: MutableList<Float> = mutableListOf()
-        SportType.entries.forEach { sportType ->
-            list.add(
-                selectedYAxisSpinnerEntry.f(
-                    entriesSupplier.get()?.filter { it?.sportType == sportType },
-                    indoorHeightMeterPercent
+        if (sharedPreferences.getBoolean(PREF_USE_SPORT_GROUP_INSTEAD_OF_TYPE, false)) {
+            SportGroup.entries.forEach { sportGroup ->
+                list.add(
+                    selectedYAxisSpinnerEntry.f(
+                        entriesSupplier.get()?.filter { it?.sportType in sportGroup.sportTypes },
+                        indoorHeightMeterPercent
+                    )
                 )
-            )
+            }
+        } else {
+            SportType.entries.forEach { sportType ->
+                list.add(
+                    selectedYAxisSpinnerEntry.f(
+                        entriesSupplier.get()?.filter { it?.sportType == sportType },
+                        indoorHeightMeterPercent
+                    )
+                )
+            }
         }
         return list.toFloatArray()
     }
@@ -524,7 +546,17 @@ class BarChartFragment : Fragment() {
                             e.getY().toInt(),
                             unitString,
                             value,
-                            getString(SportType.entries[highlight.stackIndex].sportNameStringId)
+                            getString(
+                                if (sharedPreferences.getBoolean(
+                                        PREF_USE_SPORT_GROUP_INSTEAD_OF_TYPE,
+                                        false
+                                    )
+                                ) {
+                                    SportGroup.entries[highlight.stackIndex].sportNameStringId
+                                } else {
+                                    SportType.entries[highlight.stackIndex].sportNameStringId
+                                }
+                            )
                         )
                     }
                 }

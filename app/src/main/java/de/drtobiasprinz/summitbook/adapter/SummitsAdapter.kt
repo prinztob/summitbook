@@ -29,6 +29,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.utils.Constants
+import java.util.Locale
 import javax.inject.Singleton
 
 
@@ -63,9 +64,11 @@ class SummitsAdapter :
             binding.apply {
                 summitName.text = entity.name
                 heightMeter.text = String.format(
+                    Locale.getDefault(),
                     "%s %s", entity.elevationData.elevationGain, context.getString(R.string.hm)
                 )
                 distance.text = String.format(
+                    Locale.getDefault(),
                     "%.1f %s", entity.kilometers, context.getString(R.string.km)
                 )
                 addImage(entity)
@@ -73,6 +76,7 @@ class SummitsAdapter :
                 if (entity.isBookmark) {
                     entryAddImage.setImageResource(R.drawable.ic_baseline_bookmarks_24)
                     tourDate.text = String.format(
+                        Locale.getDefault(),
                         "%s %s", entity.kilometers, "km"
                     )
                     entryFavorite.visibility = View.INVISIBLE
@@ -134,10 +138,11 @@ class SummitsAdapter :
                 entryAddVelocityData.visibility = View.VISIBLE
             }
             entryAddVelocityData.setOnClickListener { v: View? ->
-                AddAdditionalDataFromExternalResourcesDialog.getInstance(entity).show(
-                    (FragmentComponentManager.findActivity(v?.context) as FragmentActivity).supportFragmentManager,
-                    "Show addition data"
-                )
+                AddAdditionalDataFromExternalResourcesDialog.getInstance(entity)
+                    .show(
+                        (FragmentComponentManager.findActivity(v?.context) as FragmentActivity).supportFragmentManager,
+                        "Show addition data"
+                    )
             }
         }
 

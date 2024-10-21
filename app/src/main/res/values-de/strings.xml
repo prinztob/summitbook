@@ -208,6 +208,7 @@
     <string name="use_simplified_tracks_title">Verwende vereinfachte Tracks</string>
     <string name="use_simplified_tracks">Verwende vereinfachte Tracks um die ladezeit von GPX tracks zu verkürzen.</string>
     <string name="export_third_party_data_title">Exportiere Third Party Daten.</string>
+    <string name="switch_sport_type_or_group">Verwende Sportgruppe anstatt Sporttyp.</string>
     <string name="export_third_party_data">Exportiere Daten von Third Party in die CSV Datei.</string>
     <string name="export_calculated_data_title">Exportiere berechnete Daten.</string>
     <string name="export_calculated_data">Exportiere vom GPS Track berechnete Daten in die CSV Datei.</string>
@@ -233,6 +234,8 @@
     <string name="export_csv_summary_title">"Export war erfolgreich"</string>
     <string name="export_csv_summary_text">"Anzahl an Gipfel exportiert in Datei: %1$s\nGipfel mit gps Datei: %2$s\nGipfel mit Bildern: %3$s"</string>
 
+    <string name="onBicycle">Auf dem Rad</string>
+    <string name="onFoot">Zufuß</string>
     <string name="bicycle">Fahrrad</string>
     <string name="mountainbike">Mountainbike</string>
     <string name="bikeAndHike">Bike&amp;Hike</string>
