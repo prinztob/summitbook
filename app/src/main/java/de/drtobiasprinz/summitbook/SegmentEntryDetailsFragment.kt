@@ -33,7 +33,6 @@ import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.databinding.FragmentSegmentEntryDetailsBinding
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.Segment.Companion.getMapScreenshotFile
@@ -42,6 +41,7 @@ import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.fragments.AddSegmentEntryFragment
+import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
@@ -49,6 +49,7 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.getSportTypeForMa
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -63,6 +64,7 @@ import org.osmdroid.views.overlay.advancedpolyline.PolychromaticPaintList
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.Locale
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -280,11 +282,11 @@ class SegmentEntryDetailsFragment : Fragment() {
             binding.lineChart.data = LineData(dataSets)
             setLegend(binding.lineChart)
             if (segmentEntry.startPositionInTrack < gpxTrack.trackPoints.size) {
-                gpxTrack.trackPoints[segmentEntry.startPositionInTrack].pointExtension?.distance?.toFloat()
+                gpxTrack.trackPoints[segmentEntry.startPositionInTrack].second.distance?.toFloat()
                     ?.let { drawVerticalLine(it, Color.GREEN) }
             }
             if (segmentEntry.endPositionInTrack < gpxTrack.trackPoints.size) {
-                gpxTrack.trackPoints[segmentEntry.endPositionInTrack].pointExtension?.distance?.toFloat()
+                gpxTrack.trackPoints[segmentEntry.endPositionInTrack].second.distance?.toFloat()
                     ?.let { drawVerticalLine(it, Color.RED) }
             }
         } else {
@@ -365,21 +367,20 @@ class SegmentEntryDetailsFragment : Fragment() {
             )
 
             val averageHeartRate = selectedTrackPoints.sumOf {
-                it.pointExtension?.heartRate ?: 0
+                it.second.hr ?: 0
             } / selectedTrackPoints.size
             val averagePower = selectedTrackPoints.sumOf {
-                it.pointExtension?.power ?: 0
+                it.second.power ?: 0
             } / selectedTrackPoints.size
             val pointsOnlyWithMaximalValues = TrackUtils.keepOnlyMaximalValues(selectedTrackPoints)
             val heightMeterResult =
                 TrackUtils.removeDeltasSmallerAs(10, pointsOnlyWithMaximalValues)
 
             val duration =
-                (endTrackPoint.time.millis - startTrackPoint.time.millis).toDouble() / 60000.0
-            val distance =
-                ((endTrackPoint.pointExtension?.distance
-                    ?: 0.0) - (startTrackPoint.pointExtension?.distance
-                    ?: 0.0)) / 1000.0
+                (endTrackPoint.first.time.millis - startTrackPoint.first.time.millis).toDouble() / 60000.0
+            val distance = ((endTrackPoint.second.distance
+                ?: 0.0) - (startTrackPoint.second.distance
+                ?: 0.0)) / 1000.0
 
             binding.duration.text = String.format(
                 resources.configuration.locales[0], "%.1f %s", duration, getString(R.string.min)
@@ -453,7 +454,7 @@ class SegmentEntryDetailsFragment : Fragment() {
 
     private fun addColorToTrack(
         osMapRoute: Polyline,
-        usedTrackPoints: List<TrackPoint>,
+        usedTrackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
         paintBorder: Paint,
         trackColor: TrackColor
     ) {
@@ -682,7 +683,7 @@ class SegmentEntryDetailsFragment : Fragment() {
             view,
             tr,
             202 + i,
-            String.format("%.1f", entry.kilometers * 60 / entry.duration),
+            String.format(Locale.getDefault(), "%.1f", entry.kilometers * 60 / entry.duration),
             padding = 2,
             alignment = View.TEXT_ALIGNMENT_TEXT_END
         )

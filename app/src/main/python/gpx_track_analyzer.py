@@ -1,13 +1,16 @@
 import datetime
 import json
-import logging
 import math
 import re
+from typing import List, Dict
 
 import geopy.distance
 import gpxpy.gpx
 import lxml.etree as mod_etree
+import yaml
 from pandas import DataFrame, to_datetime
+
+from Extension import Extension
 
 
 class TrackAnalyzer(object):
@@ -16,11 +19,13 @@ class TrackAnalyzer(object):
     TRACK_EXTENSIONS = 'TrackPointExtension'
     SUFFIX = "_simplified"
 
-    def __init__(self, file, update_track_with_calculated_values=False):
+    def __init__(self, file, yaml_file=None, remove_extensions=False):
         self.file = file
-        search_result = re.search(r'<\?xml(.|\n)*?(\<\/gpx\>)', open(file, 'r').read())
-        if search_result:
-            self.gpx_file = search_result.group(0)
+        self.yaml_file = yaml_file if yaml_file else file.replace(".gpx", "_extensions.yaml")
+        with open(file, 'r') as f:
+            search_result = re.search(r'<\?xml(.|\n)*?(\<\/gpx\>)', f.read())
+            if search_result:
+                self.gpx_file = search_result.group(0)
         self.data = {}
         self.all_points = []
         self.points_with_time = []
@@ -36,12 +41,19 @@ class TrackAnalyzer(object):
         self.vertical_velocities_600s = 0
         self.vertical_velocities_3600s = 0
         self.duration = 0
-        self.update_track_with_calculated_values = update_track_with_calculated_values
+        self.remove_extensions = remove_extensions
 
-    def write_file(self, file=None):
+    def write_file(self, file=None, to_yaml=False):
         if not file:
             file = self.file
-        if self.update_track_with_calculated_values:
+        extensions = []
+        for track in self.gpx.tracks:
+            for segment in track.segments:
+                for point in segment.points:
+                    extensions.append(Extension.parse(point.extensions))
+                    if self.remove_extensions:
+                        point.extensions = None
+        if self.remove_extensions:
             with open(file, "w") as f:
                 f.write(self.gpx.to_xml())
         gpx_file_simplified = prefix_filename(file)
@@ -51,9 +63,16 @@ class TrackAnalyzer(object):
             json.dump(self.data, fp, indent=4)
         print(f"Written data of track to {gpx_file_gpxpy}")
         self.gpx.simplify()
+        if self.yaml_file:
+            self.write_extensions_to_yaml(extensions)
         with open(gpx_file_simplified, 'w') as f:
             f.write(self.gpx.to_xml())
         print(f"Written simplified track to {gpx_file_simplified}")
+
+    def write_extensions_to_yaml(self, extensions: List["Extension"]):
+        with open(self.yaml_file, 'w', encoding='utf-8') as file:
+            yaml.dump({"extensions": [e.to_dict() for e in extensions]}, file, default_flow_style=False)
+        print(f"Written extensions to {self.yaml_file}")
 
     def analyze(self):
         start_time = datetime.datetime.now()
@@ -63,7 +82,6 @@ class TrackAnalyzer(object):
         self.set_vertical_velocity(3600)
         self.set_slope(100)
         self.duration = (datetime.datetime.now() - start_time).total_seconds()
-        print(f"Took {self.duration}")
 
     def get_maximal_values(self):
         self.slope_100 = max(self.slopes) if len(self.slopes) > 0 else 0
@@ -75,8 +93,12 @@ class TrackAnalyzer(object):
             self.vertical_velocities["3600"]) > 0 else 0
 
     def parse_track(self):
-        gpx_file = open(self.file, 'r')
-        self.gpx = gpxpy.parse(gpx_file)
+        with open(self.file, 'r') as f:
+            search_result = re.search(r'<\?xml(.|\n)*?(\<\/gpx\>)', f.read())
+            if search_result:
+                self.gpx = gpxpy.parse(search_result.group(0))
+            else:
+                self.gpx = gpxpy.parse(f)
 
     def set_all_points_with_distance(self):
         print(f"Read and add distance to track file {self.file}")
@@ -97,7 +119,7 @@ class TrackAnalyzer(object):
                             self.set_tag_in_extensions(distance * 1000, point, "distance")
                             point.distance = distance * 1000
                             self.distance_entries.append(int(point.distance))
-                            if last_point:
+                            if last_point and point.time and last_point.time:
                                 self.distance_entries_time.append((point.time - last_point.time).total_seconds())
                             else:
                                 self.distance_entries_time.append(0)
@@ -107,13 +129,16 @@ class TrackAnalyzer(object):
                                 self.points_with_time.append(point)
                             all_power_entries = [el.text for el in point.extensions[0] if 'power' in el.tag]
                             if len(all_power_entries) > 0:
-                                if last_time is not None and abs((point.time - last_time).seconds) > 5:
-                                    for seconds in range(1, abs((point.time - last_time).seconds)):
-                                        self.time_entries.append(last_time + datetime.timedelta(seconds=seconds))
-                                        self.power_entries.append(0)
-                                self.time_entries.append(point.time)
-                                self.power_entries.append(all_power_entries[0])
-                                last_time = point.time
+                                if last_time and point.time:
+                                    diff = abs((point.time - last_time).seconds)
+                                    if 5 < diff < 300:
+                                        for seconds in range(1, abs((point.time - last_time).seconds)):
+                                            self.time_entries.append(last_time + datetime.timedelta(seconds=seconds))
+                                            self.power_entries.append(0)
+                                    if diff < 300:
+                                        self.time_entries.append(point.time)
+                                        self.power_entries.append(all_power_entries[0])
+                                        last_time = point.time
                             last_point = point
                     segment.points = points
 
@@ -161,39 +186,40 @@ class TrackAnalyzer(object):
                     middle_entry = self.all_points[i]
             i += 1
 
-    def set_vertical_velocity(self, max_time_interval, update_points=False):
+    def set_vertical_velocity(self, max_time_interval, update_points=False, use_regression=False):
+        diff_times = 0.0
         self.vertical_velocities[str(max_time_interval)] = []
-        if len(self.points_with_time) > 0:
+        i = 0
+        track_points_for_interval = []
+        middle_entry = None
+        while i < len(self.all_points) - 1:
             vertical_velocity = 0
-            i = 0
-            while i < len(self.points_with_time):
-                j = i + 10
-                if j >= len(self.points_with_time) - 1:
-                    break
-                diff_times = 0.0
-                while diff_times < max_time_interval:
-                    if j >= len(self.points_with_time) - 1:
-                        break
-                    diff_times = (self.points_with_time[j].time - self.points_with_time[i].time).total_seconds()
-                    j += 1
-                track_points_for_interval = self.points_with_time[i:j]
+            if middle_entry is not None and diff_times >= max_time_interval and len(track_points_for_interval) > 2:
                 reduced_track_points_for_interval = reduce_track_to_relevant_elevation_points(track_points_for_interval)
                 relevant_track_points_for_interval, gain, loss = remove_elevation_differences_smaller_as(
                     reduced_track_points_for_interval, 10)
-                current_velocity = 0.0 if diff_times == 0.0 else (gain / diff_times)
-                if current_velocity > vertical_velocity:
-                    vertical_velocity = current_velocity
-                    index = [i]
-                    i += 1
-                else:
-                    index = [k for k in range(i, i + 25)]
-                    i += 25
-                if update_points and max(index) < len(self.all_points):
-                    for k in index:
-                        self.set_tag_in_extensions(vertical_velocity * max_time_interval, self.all_points[k],
-                                                   "vvelocity")
+                if len(relevant_track_points_for_interval) > 1:
+                    if use_regression:
+                        x_array = [(entry.time - self.all_points[0].time).total_seconds() for entry in
+                                   track_points_for_interval]
+                        y_array = [entry.elevation for entry in track_points_for_interval]
+                        if len(set(y_array)) > 1:
+                            linear_regression = estimate_coefficients(x_array, y_array)
+                            vertical_velocity = linear_regression[1] if linear_regression[2] > 0.9 else 0.0
+                    else:
+                        vertical_velocity = 0.0 if diff_times == 0.0 else (gain / diff_times)
 
-                self.vertical_velocities[str(max_time_interval)].append(vertical_velocity)
+                    self.vertical_velocities[str(max_time_interval)].append(vertical_velocity)
+                track_points_for_interval = track_points_for_interval[1: -1]
+                middle_entry = None
+            if update_points:
+                self.set_tag_in_extensions(vertical_velocity * max_time_interval, self.all_points[i], "vvelocity")
+            if not self.all_points[i].time is None and self.all_points[i].elevation:
+                track_points_for_interval.append(self.all_points[i])
+                diff_times = (track_points_for_interval[-1].time - track_points_for_interval[0].time).total_seconds()
+                if diff_times > max_time_interval / 2 and not middle_entry:
+                    middle_entry = self.all_points[i]
+            i += 1
 
     def set_gpx_data(self):
         extremes = self.gpx.get_elevation_extremes()
@@ -233,19 +259,12 @@ class TrackAnalyzer(object):
             PowerPerTime(18000, "5h", max_period)
         ]
         if len(self.power_entries) > 0 and len(self.power_entries) == len(self.time_entries):
+            duration = (self.time_entries[-1] - self.time_entries[0]).seconds
             df = DataFrame({'power': self.power_entries})
             df.index = self.time_entries
-            df.ffill()
-            duration = (self.time_entries[-1] - self.time_entries[0]).seconds
-            power_avg = df.rolling(f"{duration}s", min_periods=max_period).mean().dropna().values
-            if len(power_avg) > 0:
-                self.data["power_avg"] = int(max(power_avg))
+
+            self.data["power_avg"] = int(max(df.rolling(f"{duration}s", min_periods=max_period).mean().dropna().values))
             for entry in power_per_time_entries:
-                if duration - entry.time_interval < 10:
-                    while duration <= entry.time_interval:
-                        self.time_entries.append(self.time_entries[-1] + datetime.timedelta(seconds=1))
-                        self.power_entries.append(0)
-                        duration = (self.time_entries[-1] - self.time_entries[0]).seconds
                 if duration > entry.time_interval:
                     values = df.rolling(entry.window, min_periods=entry.min_period).mean().dropna().values
                     if len(values) > 0:
@@ -274,6 +293,7 @@ class TrackAnalyzer(object):
                     times = sums.loc[(df.index >= to_datetime(entry.window_in_m, unit="s"))].values
                     if len(times > 0):
                         self.data[entry.json_key_interval] = entry.window_in_km * 3600 / times.min()
+
 
 def reduce_track_to_relevant_elevation_points(points):
     reduced_points = []
@@ -356,7 +376,10 @@ def estimate_coefficients(x_array, y_array):
 
 
 def prefix_filename(fn: str) -> str:
-    return fn.replace(".gpx", TrackAnalyzer.SUFFIX + ".gpx")
+    if fn.endswith(".yaml"):
+        return fn.replace(".yaml", TrackAnalyzer.SUFFIX + ".yaml")
+    else:
+        return fn.replace(".gpx", TrackAnalyzer.SUFFIX + ".gpx")
 
 
 class PowerPerTime(object):
@@ -365,6 +388,7 @@ class PowerPerTime(object):
         self.json_key_interval = f"power_{window}"
         self.window = window
         self.min_period = max_period if max_period < time_interval else time_interval
+
 
 class AverageVelocityPerDistance(object):
     def __init__(self, window_in_km: int):

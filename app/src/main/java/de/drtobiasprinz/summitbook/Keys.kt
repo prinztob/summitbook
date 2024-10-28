@@ -19,5 +19,4 @@ object Keys {
     const val PREF_FORECAST_AVERAGE: String = "forecast_average_of_last_x_years"
     const val PREF_EXPORT_THIRD_PARTY_DATA: String = "export_third_party_data"
     const val PREF_EXPORT_CALCULATED_DATA: String = "export_calculated_data"
-    const val PREF_USE_SPORT_GROUP_INSTEAD_OF_TYPE: String = "switch_sport_type_group"
 }

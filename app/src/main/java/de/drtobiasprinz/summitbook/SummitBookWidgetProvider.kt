@@ -8,12 +8,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -52,7 +50,6 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
                     val remoteViews = RemoteViews(context.packageName, R.layout.widget_layout)
                     forecastsLiveData.observeForever { forecasts ->
                         if (forecasts != null && forecasts.any { it.year == (Calendar.getInstance())[Calendar.YEAR] }) {
-                            Log.i("Widget", "1")
                             setRemoteViewsFromForecast(
                                 forecasts,
                                 summits,
@@ -60,7 +57,6 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
                                 context
                             )
                         } else {
-                            Log.i("Widget", "2")
                             setTextFromStatisticEntry(summits, remoteViews, context)
                         }
                         val configIntent = Intent(context, MainActivity::class.java)
@@ -252,7 +248,8 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
             sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_ACTIVITIES, "52")?.toInt() ?: 52
         val annualTargetKm =
             sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_KM, "1200")?.toInt() ?: 1200
-        val annualTargetHm = sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET, "50000")?.toInt() ?: 50000
+        val annualTargetHm =
+            sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET, "50000")?.toInt() ?: 50000
         val indoorHeightMeterPercent =
             sharedPreferences?.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0) ?: 0
 

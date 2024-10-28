@@ -52,7 +52,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private lateinit var preferenceGarminSyncStartDate: DatePreference
 
     private lateinit var preferenceExportThirdPartyData: SwitchPreferenceCompat
-    private lateinit var preferenceSwitchSportTypeOrGroup: SwitchPreferenceCompat
     private lateinit var preferenceExportCalculatedData: SwitchPreferenceCompat
 
     private lateinit var onDeviceMapFiles: List<DocumentFile>
@@ -154,12 +153,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceExportThirdPartyData.summary = getString(R.string.export_third_party_data)
         preferenceExportThirdPartyData.setDefaultValue(true)
 
-        preferenceSwitchSportTypeOrGroup = SwitchPreferenceCompat(requireContext())
-        preferenceSwitchSportTypeOrGroup.title = getString(R.string.switch_sport_type_or_group)
-        preferenceSwitchSportTypeOrGroup.key = Keys.PREF_USE_SPORT_GROUP_INSTEAD_OF_TYPE
-        preferenceSwitchSportTypeOrGroup.setIcon(R.drawable.baseline_directions_walk_black_24dp)
-        preferenceSwitchSportTypeOrGroup.setDefaultValue(true)
-
         preferenceExportCalculatedData = SwitchPreferenceCompat(requireContext())
         preferenceExportCalculatedData.title = getString(R.string.export_calculated_data_title)
         preferenceExportCalculatedData.key = Keys.PREF_EXPORT_CALCULATED_DATA
@@ -204,10 +197,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 openOnDeviceMapsFolderDialog()
             } else {
                 preferenceOnDeviceMapsFolder.isVisible = preferenceMapProvider.isChecked
-                if (preferenceMapProvider.isChecked) {
-                    selectedItem = MapProvider.HIKING
+                selectedItem = if (preferenceMapProvider.isChecked) {
+                    MapProvider.HIKING
                 } else {
-                    selectedItem = MapProvider.OPENTOPO
+                    MapProvider.OPENTOPO
                 }
             }
             return@setOnPreferenceClickListener true
@@ -234,7 +227,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceCategoryGeneral.contains(preferenceAnnualTargetKilometer)
         preferenceCategoryGeneral.contains(preferenceIndoorHeightMeterPerCent)
         preferenceCategoryGeneral.contains(preferenceForecastAverageOfLastXYears)
-        preferenceCategoryGeneral.contains(preferenceSwitchSportTypeOrGroup)
 
         val preferenceCategoryMap = PreferenceCategory(requireContext())
         preferenceCategoryMap.title = getString(R.string.pref_map_title)
@@ -265,7 +257,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         screen.addPreference(preferenceAnnualTargetKilometer)
         screen.addPreference(preferenceIndoorHeightMeterPerCent)
         screen.addPreference(preferenceForecastAverageOfLastXYears)
-        screen.addPreference(preferenceSwitchSportTypeOrGroup)
 
         screen.addPreference(preferenceCategoryMap)
         screen.addPreference(preferenceMapProvider)

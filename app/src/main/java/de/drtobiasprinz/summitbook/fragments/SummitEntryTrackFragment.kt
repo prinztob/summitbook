@@ -31,7 +31,6 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.utils.ColorTemplate
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
@@ -47,6 +46,7 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
+import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -332,7 +332,6 @@ class SummitEntryTrackFragment : Fragment() {
         }
     }
 
-
     private fun drawChart(summitToView: Summit) {
         if (summitToView.hasGpsTrack()) {
             val localGpsTrack = gpsTrack
@@ -360,8 +359,8 @@ class SummitEntryTrackFragment : Fragment() {
                 lineChart.data = LineData(dataSets)
                 lineChart.setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
                     override fun onValueSelected(e: Entry, h: Highlight?) {
-                        if (e.data is TrackPoint) {
-                            val trackPoint = e.data as TrackPoint
+                        if (e.data is Pair<*,*> && (e.data as Pair<*, *>).first is TrackPoint) {
+                            val trackPoint = (e.data as Pair<*, *>).first as TrackPoint
                             binding.osmap.overlays.remove(marker)
                             marker = OpenStreetMapUtils.addMarker(
                                 binding.osmap,

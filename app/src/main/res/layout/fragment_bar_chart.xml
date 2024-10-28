@@ -5,13 +5,12 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <ImageView
-        android:id="@+id/imageView"
+    <TextView
+        android:id="@+id/X"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-
-        android:contentDescription="@string/choose_data_source"
-        android:src="@drawable/ic_baseline_bar_chart_24"
+        android:layout_marginStart="2dp"
+        android:text="X"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -31,18 +30,18 @@
         android:layout_height="wrap_content"
 
         android:layout_weight="5"
-        app:layout_constraintStart_toEndOf="@+id/imageView"
+        app:layout_constraintStart_toEndOf="@+id/X"
         app:layout_constraintTop_toTopOf="parent" />
 
     <ImageView
         android:id="@+id/calender"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="gone"
         android:contentDescription="@string/choose_data_source"
         android:src="@drawable/baseline_today_black_24dp"
+        android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/imageView" />
+        app:layout_constraintTop_toBottomOf="@+id/barChartSpinnerXAxis" />
 
     <Spinner
         android:id="@+id/barChartSpinnerMonth"
@@ -54,24 +53,38 @@
         app:layout_constraintTop_toBottomOf="@+id/barChartSpinnerXAxis" />
 
     <TextView
-        android:id="@+id/textViewVs"
+        android:id="@+id/Y"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
         android:layout_marginStart="2dp"
-        android:layout_weight="1"
-        android:padding="1dp"
-        android:text="@string/vs"
-        app:layout_constraintStart_toEndOf="@+id/barChartSpinnerXAxis"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:text="Y"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/barChartSpinnerMonth" />
 
     <Spinner
-        android:id="@+id/barChartSpinnerData"
+        android:id="@+id/barChartSpinnerYAxis"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="5"
-        app:layout_constraintStart_toEndOf="@+id/textViewVs"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toEndOf="@+id/Y"
+        app:layout_constraintTop_toBottomOf="@+id/barChartSpinnerMonth" />
+
+    <TextView
+        android:id="@+id/Z"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="2dp"
+        android:text="Z"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/barChartSpinnerYAxis" />
+
+    <Spinner
+        android:id="@+id/barChartSpinnerZAxis"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="5"
+        app:layout_constraintStart_toEndOf="@+id/Z"
+        app:layout_constraintTop_toBottomOf="@+id/barChartSpinnerYAxis" />
 
     <de.drtobiasprinz.summitbook.ui.utils.CustomBarChart
         android:id="@+id/barChart"
@@ -79,5 +92,5 @@
         android:layout_height="wrap_content"
         app:layout_constraintBaseline_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="@+id/imageView"
-        app:layout_constraintTop_toBottomOf="@+id/barChartSpinnerMonth" />
+        app:layout_constraintTop_toBottomOf="@+id/barChartSpinnerZAxis" />
 </androidx.constraintlayout.widget.ConstraintLayout>

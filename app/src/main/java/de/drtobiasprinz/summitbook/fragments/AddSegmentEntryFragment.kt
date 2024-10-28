@@ -28,7 +28,6 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.google.android.material.button.MaterialButton
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SegmentsViewAdapter
@@ -217,21 +216,20 @@ class AddSegmentEntryFragment : Fragment() {
             val selectedTrackPoints = allTrackPoints.subList(startPointId, endPointId)
 
             val averageHeartRate = selectedTrackPoints.sumOf {
-                it.pointExtension?.heartRate ?: 0
+                it.second.hr ?: 0
             } / selectedTrackPoints.size
             val averagePower = selectedTrackPoints.sumOf {
-                it.pointExtension?.power ?: 0
+                it.second.power ?: 0
             } / selectedTrackPoints.size
             val pointsOnlyWithMaximalValues = TrackUtils.keepOnlyMaximalValues(selectedTrackPoints)
             val heightMeterResult =
                 TrackUtils.removeDeltasSmallerAs(10, pointsOnlyWithMaximalValues)
 
             val duration =
-                (endTrackPoint.time.millis - startTrackPoint.time.millis).toDouble() / 60000.0
-            val distance =
-                ((endTrackPoint.pointExtension?.distance
-                    ?: 0.0) - (startTrackPoint.pointExtension?.distance
-                    ?: 0.0)) / 1000.0
+                (endTrackPoint.first.time.millis - startTrackPoint.first.time.millis).toDouble() / 60000.0
+            val distance = ((endTrackPoint.second.distance
+                ?: 0.0) - (startTrackPoint.second.distance
+                ?: 0.0)) / 1000.0
 
             binding.duration.text = String.format(
                 requireContext().resources.configuration.locales[0],
@@ -274,11 +272,11 @@ class AddSegmentEntryFragment : Fragment() {
                 summitToCompare.date,
                 summitToCompare.activityId,
                 startPointId,
-                startTrackPoint.latitude,
-                startTrackPoint.longitude,
+                startTrackPoint.first.latitude,
+                startTrackPoint.first.longitude,
                 endPointId,
-                endTrackPoint.latitude,
-                endTrackPoint.longitude,
+                endTrackPoint.first.latitude,
+                endTrackPoint.first.longitude,
                 duration,
                 distance,
                 heightMeterResult.second.roundToInt(),
@@ -375,8 +373,8 @@ class AddSegmentEntryFragment : Fragment() {
             binding.lineChart.setOnChartValueSelectedListener(object :
                 OnChartValueSelectedListener {
                 override fun onValueSelected(e: Entry, h: Highlight?) {
-                    if (e.data is TrackPoint) {
-                        val trackPoint = e.data as TrackPoint
+                    if (e.data is Pair<*, *>) {
+                        val trackPoint = e.data as Pair<*, *>
                         val index = summit.gpsTrack?.trackPoints?.indexOf(trackPoint)
                         if (index != null) {
                             if (startSelected) {
@@ -404,7 +402,7 @@ class AddSegmentEntryFragment : Fragment() {
     }
 
     private fun drawVerticalLine(summit: Summit, index: Int, color: Int) {
-        val distance = summit.gpsTrack?.trackPoints?.get(index)?.pointExtension?.distance?.toFloat()
+        val distance = summit.gpsTrack?.trackPoints?.get(index)?.second?.distance?.toFloat()
         if (distance != null) {
             val ll = LimitLine(distance)
             ll.lineColor = color

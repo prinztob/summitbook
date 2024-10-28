@@ -28,14 +28,12 @@ import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.Keys
-import de.drtobiasprinz.summitbook.Keys.PREF_USE_SPORT_GROUP_INSTEAD_OF_TYPE
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentBarChartBinding
-import de.drtobiasprinz.summitbook.db.entities.SportGroup
-import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.BarChartXAxisSelector
 import de.drtobiasprinz.summitbook.models.BarChartYAxisSelector
+import de.drtobiasprinz.summitbook.models.BarChartZAxisSelector
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.utils.BarChartCustomRenderer
 import de.drtobiasprinz.summitbook.ui.utils.IntervalHelper
@@ -60,10 +58,11 @@ class BarChartFragment : Fragment() {
     @Inject
     lateinit var sortFilterValues: SortFilterValues
 
+    private var selectedXAxisSpinnerEntry: BarChartXAxisSelector = BarChartXAxisSelector.DateByMonth
     private var selectedYAxisSpinnerEntry: BarChartYAxisSelector = BarChartYAxisSelector.Count
+    private var selectedZAxisSpinnerEntry: BarChartZAxisSelector = BarChartZAxisSelector.SportGroup
     private var indoorHeightMeterPercent = 0
     private var selectedXAxisSpinnerMonth: Int = 0
-    private var selectedXAxisSpinnerEntry: BarChartXAxisSelector = BarChartXAxisSelector.DateByMonth
     private var barChartEntries: MutableList<BarEntry?> = mutableListOf()
     private var lineChartEntriesForecast: MutableList<Entry?> = mutableListOf()
     private var unit: String = "hm"
@@ -243,19 +242,8 @@ class BarChartFragment : Fragment() {
     private fun setGraphViewBarChart(dataSet: BarDataSet) {
         dataSet.setDrawValues(false)
         dataSet.highLightColor = Color.RED
-        dataSet.colors =
-            if (sharedPreferences.getBoolean(PREF_USE_SPORT_GROUP_INSTEAD_OF_TYPE, false)) {
-                SportGroup.entries.map { ContextCompat.getColor(requireContext(), it.color) }
-            } else {
-                SportType.entries.map { ContextCompat.getColor(requireContext(), it.color) }
-            }
-        dataSet.stackLabels =
-            if (sharedPreferences.getBoolean(PREF_USE_SPORT_GROUP_INSTEAD_OF_TYPE, false)) {
-                SportGroup.entries.map { getString(it.sportNameStringId) }.toTypedArray()
-            } else {
-                SportType.entries.map { getString(it.sportNameStringId) }.toTypedArray()
-            }
-
+        dataSet.colors = selectedZAxisSpinnerEntry.getColors(requireContext())
+        dataSet.stackLabels = selectedZAxisSpinnerEntry.getStackLabels(requireContext())
     }
 
     private fun setGraphViewLineChart(dataSet: LineDataSet) {
@@ -336,7 +324,7 @@ class BarChartFragment : Fragment() {
                 )
             }
             val xValue = annotation[i]
-            val yValues = getValueForEntry(streamSupplier)
+            val yValues = selectedZAxisSpinnerEntry.getValueForEntry(streamSupplier, selectedYAxisSpinnerEntry, indoorHeightMeterPercent)
             barChartEntries.add(BarEntry(xValue, yValues))
         }
     }
@@ -377,33 +365,22 @@ class BarChartFragment : Fragment() {
         }
     }
 
-    private fun getValueForEntry(entriesSupplier: Supplier<Stream<Summit?>?>): FloatArray {
-        val list: MutableList<Float> = mutableListOf()
-        if (sharedPreferences.getBoolean(PREF_USE_SPORT_GROUP_INSTEAD_OF_TYPE, false)) {
-            SportGroup.entries.forEach { sportGroup ->
-                list.add(
-                    selectedYAxisSpinnerEntry.f(
-                        entriesSupplier.get()?.filter { it?.sportType in sportGroup.sportTypes },
-                        indoorHeightMeterPercent
-                    )
-                )
-            }
-        } else {
-            SportType.entries.forEach { sportType ->
-                list.add(
-                    selectedYAxisSpinnerEntry.f(
-                        entriesSupplier.get()?.filter { it?.sportType == sportType },
-                        indoorHeightMeterPercent
-                    )
-                )
-            }
-        }
-        return list.toFloatArray()
-    }
-
-
     private fun listenOnDataSpinner(summits: List<Summit>) {
-        binding.barChartSpinnerData.onItemSelectedListener = object : OnItemSelectedListener {
+        binding.barChartSpinnerZAxis.onItemSelectedListener = object : OnItemSelectedListener {
+            override fun onItemSelected(
+                adapterView: AdapterView<*>?,
+                view: View?,
+                i: Int,
+                l: Long
+            ) {
+                selectedZAxisSpinnerEntry = BarChartZAxisSelector.entries.toTypedArray()[i]
+                selectedDataSpinner(summits)
+                drawChart()
+            }
+
+            override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+        }
+        binding.barChartSpinnerYAxis.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onItemSelected(
                 adapterView: AdapterView<*>?,
                 view: View?,
@@ -455,20 +432,31 @@ class BarChartFragment : Fragment() {
     }
 
     private fun fillDateSpinner() {
-        val dateAdapter = ArrayAdapter(
+        val yAxisAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
             BarChartYAxisSelector.entries.map { resources.getString(it.nameId) }.toTypedArray()
         )
-        dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.barChartSpinnerData.adapter = dateAdapter
+        yAxisAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.barChartSpinnerYAxis.adapter = yAxisAdapter
+
         val xAxisAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
             BarChartXAxisSelector.entries.map { resources.getString(it.nameId) }.toTypedArray()
         )
-        dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        xAxisAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.barChartSpinnerXAxis.adapter = xAxisAdapter
+
+
+        val zAxisAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            BarChartZAxisSelector.entries.map { resources.getString(it.nameId) }.toTypedArray()
+        )
+        zAxisAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.barChartSpinnerZAxis.adapter = zAxisAdapter
+
         val symbols = DateFormatSymbols()
         val monthNames = mutableListOf(getString(R.string.all))
         symbols.shortMonths.forEach { monthNames.add(it) }
@@ -547,15 +535,7 @@ class BarChartFragment : Fragment() {
                             unitString,
                             value,
                             getString(
-                                if (sharedPreferences.getBoolean(
-                                        PREF_USE_SPORT_GROUP_INSTEAD_OF_TYPE,
-                                        false
-                                    )
-                                ) {
-                                    SportGroup.entries[highlight.stackIndex].sportNameStringId
-                                } else {
-                                    SportType.entries[highlight.stackIndex].sportNameStringId
-                                }
+                                selectedZAxisSpinnerEntry.getStringIdForSelectedItem(highlight.stackIndex)
                             )
                         )
                     }

@@ -69,6 +69,7 @@
     <string name="total_summits">Total summits</string>
     <string name="achievement">Achievement in selected year</string>
     <string name="sport_type">sport type</string>
+    <string name="sport_group">sport group</string>
     <string name="sport_type_image">sport type image</string>
     <string name="delete_icon">delete icon</string>
     <string name="edit_icon">edit icon</string>
@@ -204,7 +205,6 @@
     <string name="use_simplified_tracks_title">Use simplified tracks</string>
     <string name="use_simplified_tracks">Use simplified tracks to reduce the loading time of gps tracks.</string>
     <string name="export_third_party_data_title">Export third party data.</string>
-    <string name="switch_sport_type_or_group">Use sport group instead of sport type.</string>
     <string name="export_third_party_data">Export data to csv from added third party data.</string>
     <string name="export_calculated_data_title">Export calculated data.</string>
     <string name="export_calculated_data">Export calculated data to csv which were determined from track.</string>

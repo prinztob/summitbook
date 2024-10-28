@@ -8,13 +8,15 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import com.github.mikephil.charting.data.Entry
-import de.drtobiasprinz.gpx.GPXParser
-import de.drtobiasprinz.gpx.Gpx
-import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.getDistance
-import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.setDistanceFromPoints
+import io.ticofab.androidgpxparser.parser.GPXParser
+import io.ticofab.androidgpxparser.parser.domain.Gpx
+import io.ticofab.androidgpxparser.parser.domain.TrackPoint
+import kotlinx.serialization.Serializable
+import net.mamoe.yamlkt.Yaml
+import net.mamoe.yamlkt.YamlDecodingException
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Polyline
@@ -34,17 +36,18 @@ import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Path
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToLong
 import kotlin.system.measureTimeMillis
 
 
-class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPath: Path? = null) {
+class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPath: Path? = null, private val yamlExtensionsFile: File? = null) {
     var osMapRoute: Polyline? = null
     var isShownOnMap: Boolean = false
     var trackGeoPoints: MutableList<GeoPoint> = mutableListOf()
     private var usedTrackGeoPoints: MutableList<GeoPoint> = mutableListOf()
-    var trackPoints: MutableList<TrackPoint> = mutableListOf()
-    private var usedTrackPoints: MutableList<TrackPoint> = mutableListOf()
+    var trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>> = mutableListOf()
+    private var usedTrackPoints: MutableList<Pair<TrackPoint, ExtensionFromYaml>> = mutableListOf()
     var gpxTrack: Gpx? = null
     private var minForColorCoding = 0f
     private var maxForColorCoding = 0f
@@ -64,8 +67,9 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                     textView.visibility = View.VISIBLE
                     val trackPoint = usedTrackPoints.minByOrNull {
                         getDistance(
-                            it,
-                            TrackPoint.Builder().setLatitude(eventPos.latitude).setLongitude(eventPos.longitude).build() as TrackPoint
+                            it.first,
+                            TrackPoint.Builder().setLatitude(eventPos.latitude)
+                                .setLongitude(eventPos.longitude).build() as TrackPoint
                         )
                     }
                     if (trackPoint != null && (minForColorCoding != 0f || maxForColorCoding != 0f)) {
@@ -125,21 +129,26 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         }
     }
 
-    private fun setUsedPoints(f: (TrackPoint) -> Double?) {
-        usedTrackPoints = trackPoints.filter { f(it) != null } as MutableList<TrackPoint>
+    private fun setUsedPoints(f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?) {
+        usedTrackPoints = trackPoints.filter { f(it) != null }.toMutableList()
         usedTrackGeoPoints =
-            usedTrackPoints.map { GeoPoint(it.latitude, it.longitude) } as MutableList<GeoPoint>
+            usedTrackPoints.map {
+                GeoPoint(
+                    it.first.latitude,
+                    it.first.longitude
+                )
+            } as MutableList<GeoPoint>
     }
 
 
     private fun setUsedPoints() {
-        usedTrackPoints = trackPoints
+        usedTrackPoints = trackPoints.toMutableList()
         usedTrackGeoPoints = trackGeoPoints
     }
 
 
     private fun setTextForDouble(
-        trackPoint: TrackPoint,
+        trackPoint: Pair<TrackPoint, ExtensionFromYaml>,
         textView: TextView,
         trackColor: TrackColor,
         context: Context
@@ -257,7 +266,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         arrowPath.lineTo(-5f, 5f)
         arrowPath.close()
         val backgroundPaint = getFillPaint()
-        return MilestoneManager( // display an arrow at 500m every 1km
+        return MilestoneManager(
             MilestoneMeterDistanceLister(500.0),
             object : MilestonePathDisplayer(0.0, true, arrowPath, backgroundPaint) {
                 override fun draw(pCanvas: Canvas, pParameter: Any) {
@@ -287,24 +296,34 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
     fun parseTrack(useSimplifiedIfExists: Boolean = true, deleteEmptyTrack: Boolean = false) {
+        var useOriginalTrack = false
         val fileToUse =
             if (useSimplifiedIfExists && simplifiedGpsTrackPath != null && simplifiedGpsTrackPath.toFile()
                     .exists()
-            ) simplifiedGpsTrackPath.toFile() else gpsTrackPath.toFile()
+            ) {
+                simplifiedGpsTrackPath.toFile()
+            } else {
+                useOriginalTrack = true
+                gpsTrackPath.toFile()
+            }
         val time = measureTimeMillis {
             gpxTrack = getTrack(fileToUse, gpsTrackPath.toFile())
         }
-        trackPoints = calculateTrackPoints()
+        trackPoints = calculateTrackPoints(useOriginalTrack)
         Log.i("GpxTrack", "Parsing took $time")
         trackGeoPoints = calculateGeoPoints()
-        val isDistancesIncorrect = trackPoints.size == 0 || trackPoints.mapIndexed { i, e ->
-            if (i == 0) {
-                false
-            } else {
-                (trackPoints[i -1].pointExtension?.distance?:0.0) - (e.pointExtension?.distance?: 0.0) > 0
-            }
-        }.contains(true)
-        if (trackPoints.size > 0 && (trackPoints.first().pointExtension?.distance == null || isDistancesIncorrect)) {
+
+        val isDistancesIncorrect =
+            trackPoints.isEmpty() || trackPoints.mapIndexed { i, e ->
+                if (i == 0) {
+                    false
+                } else {
+                    (trackPoints[i - 1].second.distance ?: 0.0) - (e.second.distance ?: 0.0) > 0
+                }
+            }.contains(true)
+        if (trackPoints.isNotEmpty() &&
+            (trackPoints.first().second.distance == null || isDistancesIncorrect)
+        ) {
             setDistance()
         }
         if (trackPoints.isEmpty() && deleteEmptyTrack) {
@@ -312,7 +331,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         }
     }
 
-    private fun calculateTrackPoints(): MutableList<TrackPoint> {
+    private fun calculateTrackPoints(useOriginalTrack: Boolean): List<Pair<TrackPoint, ExtensionFromYaml>> {
         val trackPoints = mutableListOf<TrackPoint>()
         val tracks = gpxTrack?.tracks
         if (tracks != null) {
@@ -322,32 +341,84 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                     trackPoints.addAll(points.filter { it.latitude != 0.0 && it.longitude != 0.0 })
                 }
             }
+            if (useOriginalTrack) {
+                val extensions = getExtensionFromYaml()
+                if (extensions.size == trackPoints.size) {
+                    return trackPoints.mapIndexed { index, trackPoint ->
+                        Pair(
+                            trackPoint,
+                            extensions[index]
+                        )
+                    }
+                }
+            }
         }
-        return trackPoints
+        return trackPoints.map { trackPoint -> Pair(trackPoint, ExtensionFromYaml()) }
+
     }
 
     private fun calculateGeoPoints(): MutableList<GeoPoint> {
         return trackPoints.map {
             GeoPoint(
-                it.latitude,
-                it.longitude,
-                it.elevation ?: 0.0
+                it.first.latitude,
+                it.first.longitude,
+                it.first.elevation ?: 0.0
             )
         } as MutableList<GeoPoint>
     }
 
+    private fun getExtensionFromYaml(): List<ExtensionFromYaml> {
+        val yamlDefault = Yaml.Default
+        var pointExtensionFromYaml: ExtensionsFromYaml? = null
+        if (yamlExtensionsFile?.exists() == true) {
+            try {
+                val timeYaml = measureTimeMillis {
+                    pointExtensionFromYaml =
+                        yamlDefault.decodeFromString(
+                            ExtensionsFromYaml.serializer(),
+                            yamlExtensionsFile.readText()
+                        )
+                }
+                Log.i(
+                    "YAML",
+                    "Successful loaded in $timeYaml with ${pointExtensionFromYaml?.extensions?.size} points."
+                )
+            } catch (ex: YamlDecodingException) {
+                yamlExtensionsFile.delete()
+                Log.w("YAML", "Could not load $yamlExtensionsFile because an error occurred: ${ex.message}")
+            }
+
+        }
+        return pointExtensionFromYaml?.extensions ?: emptyList()
+    }
+
 
     fun getTrackPositions(): List<TrackPoint?> {
-        return trackPoints
+        return trackPoints.map { it.first }
     }
 
     fun setDistance() {
-        setDistanceFromPoints(trackPoints)
+        trackPoints.forEachIndexed { i, trackPoint ->
+            if (i == 0) {
+                trackPoint.second.distance = 0.0
+            } else {
+                val distance = trackPoints[i - 1].second.distance
+                if (distance != null) {
+                    trackPoint.second.distance =
+                        distance + abs(
+                            getDistance(
+                                trackPoint.first,
+                                trackPoints[i - 1].first
+                            )
+                        ).toDouble()
+                }
+            }
+        }
     }
 
 
-    fun getTrackGraph(f: (TrackPoint) -> Double?): MutableList<Entry> {
-        if (trackPoints.firstOrNull()?.pointExtension?.distance == null) {
+    fun getTrackGraph(f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?): MutableList<Entry> {
+        if (trackPoints.lastOrNull()?.second?.distance == 0.0) {
             setDistance()
         }
         val filterTrackPoints = trackPoints
@@ -355,7 +426,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             val graph = mutableListOf<Entry>()
             for (trackPoint in filterTrackPoints) {
                 val value = f(trackPoint)?.toFloat()
-                val distance = trackPoint.pointExtension?.distance?.toFloat()
+                val distance = trackPoint.second.distance?.toFloat()
                 if (value != null && distance != null) {
                     graph.add(Entry(distance, value, trackPoint))
                 }
@@ -367,7 +438,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
     fun getTrackSlopeGraph(): MutableList<Entry> {
-        if (trackPoints.first().pointExtension?.distance == null) {
+        if (trackPoints.first().second.distance == null) {
             setDistance()
         }
         //TODO
@@ -375,9 +446,9 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
     fun getHighestElevation(): GeoPoint? {
-        val trackPoint =  trackPoints.maxByOrNull { it.elevation ?: 0.0 }
+        val trackPoint = trackPoints.maxByOrNull { it.first.elevation ?: 0.0 }
         return if (trackPoint != null) {
-            GeoPoint(trackPoint.latitude, trackPoint.longitude)
+            GeoPoint(trackPoint.first.latitude, trackPoint.first.longitude)
         } else {
             null
         }
@@ -388,7 +459,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     }
 
     fun hasOnlyZeroCoordinates(): Boolean {
-        return trackPoints.none { it.latitude != 0.0 && it.longitude != 0.0 }
+        return trackPoints.none { it.first.latitude != 0.0 && it.first.longitude != 0.0 }
     }
 
 
@@ -441,12 +512,12 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
 
 
     internal class AttitudeColorList(
-        private val points: List<TrackPoint>,
+        private val points: List<Pair<TrackPoint, ExtensionFromYaml>>,
         private val trackMin: Float,
         private val trackMax: Float,
         private val startColor: Int,
         private val endColor: Int,
-        val f: (TrackPoint) -> Double?
+        val f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?
     ) : ColorMapping {
         override fun getColorForIndex(pSegmentIndex: Int): Int {
             return if (pSegmentIndex < points.size) {
@@ -461,3 +532,19 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
 
 
 }
+
+@Serializable
+data class ExtensionsFromYaml(
+    val extensions: List<ExtensionFromYaml>
+)
+
+@Serializable
+data class ExtensionFromYaml(
+    var distance: Double? = 0.0,
+    val hr: Int? = 0,
+    val power: Int? = 0,
+    val cadence: Int? = 0,
+    val slope: Double? = 0.0,
+    val speed: Double? = 0.0,
+    val verticalVelocity: Double? = 0.0
+)

@@ -157,20 +157,20 @@ class GarminTrackAndDataDownloader(
                 if (finalEntryLocal.latLng == null || finalEntryLocal.latLng?.latitude == 0.0) {
                     if (gpsTrack.trackPoints.isNotEmpty()) {
                         val notZeroLatLonPoints =
-                            gpsTrack.trackPoints.filter { it.latitude != 0.0 && it.longitude != 0.0 }
+                            gpsTrack.trackPoints.filter { it.first.latitude != 0.0 && it.first.longitude != 0.0 }
                         if (notZeroLatLonPoints.isNotEmpty()) {
                             var highestTrackPoint = notZeroLatLonPoints.first()
                             for (point in notZeroLatLonPoints) {
-                                if ((point.elevation ?: 0.0) > (highestTrackPoint.elevation
+                                if ((point.first.elevation ?: 0.0) > (highestTrackPoint.first.elevation
                                         ?: 0.0)
                                 ) {
                                     highestTrackPoint = point
                                 }
                             }
                             finalEntryLocal.latLng =
-                                GeoPoint(highestTrackPoint.latitude, highestTrackPoint.longitude)
-                            finalEntryLocal.lat = highestTrackPoint.latitude
-                            finalEntryLocal.lng = highestTrackPoint.longitude
+                                GeoPoint(highestTrackPoint.first.latitude, highestTrackPoint.first.longitude)
+                            finalEntryLocal.lat = highestTrackPoint.first.latitude
+                            finalEntryLocal.lng = highestTrackPoint.first.longitude
                         }
                     }
                 }

@@ -3,13 +3,13 @@ package de.drtobiasprinz.summitbook.db.entities
 import android.content.Context
 import android.content.res.Resources
 import androidx.room.*
-import de.drtobiasprinz.gpx.TrackPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_VERSION
 import de.drtobiasprinz.summitbook.utils.Constants
+import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import java.io.File
@@ -22,6 +22,7 @@ import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.io.path.absolutePathString
 import kotlin.math.roundToInt
 
 
@@ -127,6 +128,10 @@ class Summit(
         return Paths.get(baseFolder.toString(), fileName)
     }
 
+    fun getYamlExtensionsFile(): File {
+        return File(getGpsTrackPath().absolutePathString().replace(".gpx", "_extensions.yaml"))
+    }
+
     fun getGpxPyPath(): Path {
         val fileName = "id_${activityId}_gpxpy.json"
         return if (isBookmark) {
@@ -226,10 +231,10 @@ class Summit(
         if (hasGpsTrack()) {
             if (gpsTrack == null || updateTrack) {
                 gpsTrack =
-                    GpsTrack(getGpsTrackPath(), getGpsTrackPath(simplified = useSimplifiedTrack))
+                    GpsTrack(getGpsTrackPath(), getGpsTrackPath(simplified = useSimplifiedTrack), getYamlExtensionsFile())
             }
             if (gpsTrack?.hasNoTrackPoints() == true) {
-                gpsTrack?.parseTrack()
+                gpsTrack?.parseTrack(useSimplifiedIfExists = useSimplifiedTrack)
             }
             if (gpsTrack?.trackPoints?.isEmpty() == true && deleteEmptyTrack) {
                 if (getGpsTrackPath().toFile().exists()) {

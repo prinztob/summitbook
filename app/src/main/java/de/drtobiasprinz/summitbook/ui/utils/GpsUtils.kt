@@ -1,44 +1,13 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import android.location.Location
-import de.drtobiasprinz.gpx.PointExtension
-import de.drtobiasprinz.gpx.TrackPoint
+import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import org.osmdroid.util.GeoPoint
-import kotlin.math.abs
 
 
 class GpsUtils {
 
     companion object {
-
-        fun setDistanceFromPoints(trackPoints: List<TrackPoint?>) {
-            var lastTrackPoint: TrackPoint? = null
-            for (trackPoint in trackPoints) {
-                if (trackPoint != null) {
-                    if (lastTrackPoint == null) {
-                        setDistance(trackPoint)
-                        lastTrackPoint = trackPoint
-                    } else {
-                        val distance = lastTrackPoint.pointExtension?.distance
-                        if (distance != null) {
-                            setDistance(
-                                trackPoint,
-                                distance + abs(getDistance(trackPoint, lastTrackPoint)).toDouble()
-                            )
-                            lastTrackPoint = trackPoint
-                        }
-                    }
-                }
-            }
-        }
-
-        private fun setDistance(trackPoint: TrackPoint, distance: Double = 0.0) {
-            if (trackPoint.pointExtension == null) {
-                trackPoint.pointExtension = PointExtension.Builder().setDistance(distance).build()
-            } else {
-                trackPoint.pointExtension?.distance = distance
-            }
-        }
 
         fun getDistance(trackPoint1: TrackPoint, trackPoint2: TrackPoint): Float {
             val location1 = getLocationFromTrackPoint(trackPoint1)

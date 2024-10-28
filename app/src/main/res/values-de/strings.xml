@@ -71,6 +71,7 @@
     <string name="achievement">Zielerreichung im gewählten Jahr</string>
     <string name="sport_type_image">Sportart Bild</string>
     <string name="sport_type">Sportart</string>
+    <string name="sport_group">Sportgruppe</string>
     <string name="delete_icon">Löschicon</string>
     <string name="edit_icon">Modifiziere Icon</string>
     <string name="add_coordinate">Füge Koordinaten hinzu</string>
@@ -208,7 +209,6 @@
     <string name="use_simplified_tracks_title">Verwende vereinfachte Tracks</string>
     <string name="use_simplified_tracks">Verwende vereinfachte Tracks um die ladezeit von GPX tracks zu verkürzen.</string>
     <string name="export_third_party_data_title">Exportiere Third Party Daten.</string>
-    <string name="switch_sport_type_or_group">Verwende Sportgruppe anstatt Sporttyp.</string>
     <string name="export_third_party_data">Exportiere Daten von Third Party in die CSV Datei.</string>
     <string name="export_calculated_data_title">Exportiere berechnete Daten.</string>
     <string name="export_calculated_data">Exportiere vom GPS Track berechnete Daten in die CSV Datei.</string>

@@ -11,18 +11,26 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.chaquo.python.Python
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitViewBinding
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
+import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.hasRecordsBeenAdded
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.updateOfTracksStarted
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.observeOnce
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
@@ -31,6 +39,9 @@ import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.isVisible
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -136,6 +147,9 @@ class SummitViewFragment : Fragment() {
                                 sharedPreferences
                             )
                             summitsAdapter.differ.submitList(data)
+                            if (!updateOfTracksStarted) {
+                                summitsStatus.data?.let { updateTracks(it) }
+                            }
                         }
 
                         DataStatus.Status.ERROR -> {
@@ -237,6 +251,99 @@ class SummitViewFragment : Fragment() {
                                 summit.segmentInfo.minOf { it.third }
                         }
                     }
+                }
+            }
+        }
+    }
+
+
+    private fun updateTracks(summits: List<Summit>) {
+        updateOfTracksStarted = true
+        val useSimplifiedTracks =
+            MainActivity.sharedPreferences.getBoolean(Keys.PREF_USE_SIMPLIFIED_TRACKS, true)
+        if (useSimplifiedTracks) {
+            simplifyTracks(summits)
+        } else {
+            summits.filter {
+                it.hasGpsTrack(simplified = true)
+            }.forEach {
+                val trackFile = it.getGpsTrackPath(simplified = true).toFile()
+                if (trackFile.exists()) {
+                    trackFile.delete()
+                }
+                val gpxPyFile = it.getGpxPyPath().toFile()
+                if (gpxPyFile.exists()) {
+                    gpxPyFile.delete()
+                }
+                Log.e(
+                    "useSimplifiedTracks",
+                    "Deleted ${it.getDateAsString()}_${it.name} because useSimplifiedTracks was set to false."
+                )
+            }
+        }
+    }
+
+    private fun simplifyTracks(summits: List<Summit>) {
+        summits.forEach {
+            if (it.ignoreSimplifyingTrack) {
+                Log.w(
+                    "updateSimplifiedTracks",
+                    "Track ${it.getDateAsString()} ${it.name} (${it.getGpsTrackPath()}) " +
+                            "will not be simplified, because it failed before"
+                )
+            }
+        }
+        val entriesWithoutSimplifiedGpxTrack = summits.filter {
+            !it.ignoreSimplifyingTrack &&
+                    it.hasGpsTrack() &&
+                    (!it.getYamlExtensionsFile().exists() || !it.hasGpsTrack(simplified = true)) &&
+                    it.sportType != SportType.IndoorTrainer
+        }.sortedByDescending { it.date }
+        if (entriesWithoutSimplifiedGpxTrack.isEmpty()) {
+            Log.i(
+                "Scheduler", "No more tracks to simplify."
+            )
+        } else {
+            pythonInstance?.let {
+                asyncSimplifyGpsTracks(
+                    entriesWithoutSimplifiedGpxTrack.take(100), it
+                )
+            }
+        }
+    }
+
+    private fun asyncSimplifyGpsTracks(
+        summitsWithoutSimplifiedTracks: List<Summit>, pythonInstance: Python
+    ) {
+        var numberSimplifiedGpxTracks = 0
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                if (summitsWithoutSimplifiedTracks.isNotEmpty()) {
+                    summitsWithoutSimplifiedTracks.forEachIndexed { i, e ->
+                        try {
+                            Log.i(
+                                "AsyncSimplifyGpsTracks",
+                                "Simplifying track $i of ${summitsWithoutSimplifiedTracks.size} for ${e.getDateAsString()}_${e.name}."
+                            )
+                            GpxPyExecutor(pythonInstance).createSimplifiedGpxTrackAndGpxPyDataFile(
+                                e.getGpsTrackPath(),
+                            )
+                            numberSimplifiedGpxTracks += 1
+                            Log.i(
+                                "AsyncSimplifyGpsTracks",
+                                "Simplified track for ${e.getDateAsString()}_${e.name}."
+                            )
+                        } catch (ex: RuntimeException) {
+                            Log.e(
+                                "AsyncSimplifyGpsTracks",
+                                "Error in simplify track for ${e.getDateAsString()}_${e.name}: ${ex.message}"
+                            )
+                            e.ignoreSimplifyingTrack = true
+                            viewModel?.saveSummit(true, e)
+                        }
+                    }
+                } else {
+                    Log.i("AsyncSimplifyGpsTracks", "No more gpx tracks to simplify.")
                 }
             }
         }

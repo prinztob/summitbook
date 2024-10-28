@@ -16,7 +16,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.FragmentActivity
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.gpx.GPXParser
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.ActivitySelectOnOsmapBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -30,6 +29,7 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addTrackAndMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.drawBoundingBox
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import io.ticofab.androidgpxparser.parser.GPXParser
 import org.osmdroid.bonuspack.location.GeocoderNominatim
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver

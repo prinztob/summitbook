@@ -432,60 +432,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             Log.i(
                 "Scheduler", "No more bounding boxes to update."
             )
-            updateSimplifiedTracks(summits)
         }
     }
 
-    private fun updateSimplifiedTracks(summits: List<Summit>) {
-        val useSimplifiedTracks =
-            sharedPreferences.getBoolean(Keys.PREF_USE_SIMPLIFIED_TRACKS, true)
-        if (useSimplifiedTracks) {
-            summits.forEach {
-                if (it.ignoreSimplifyingTrack) {
-                    Log.w(
-                        "updateSimplifiedTracks",
-                        "Track ${it.getDateAsString()} ${it.name} (${it.getGpsTrackPath()}) " +
-                                "will not be simplified, because it failed before"
-                    )
-                }
-            }
-            val entriesWithoutSimplifiedGpxTrack = summits.filter {
-                !it.ignoreSimplifyingTrack &&
-                        it.hasGpsTrack() &&
-                        !it.hasGpsTrack(simplified = true) &&
-                        it.sportType != SportType.IndoorTrainer
-            }.sortedByDescending { it.date }
-            if (entriesWithoutSimplifiedGpxTrack.isEmpty()) {
-                Log.i(
-                    "Scheduler", "No more tracks to simplify."
-                )
-            }
-            pythonInstance.let {
-                if (it != null) {
-                    asyncSimplifyGpsTracks(
-                        entriesWithoutSimplifiedGpxTrack, it
-                    )
-                }
-            }
-        } else {
-            summits.filter {
-                it.hasGpsTrack(simplified = true)
-            }.forEach {
-                val trackFile = it.getGpsTrackPath(simplified = true).toFile()
-                if (trackFile.exists()) {
-                    trackFile.delete()
-                }
-                val gpxPyFile = it.getGpxPyPath().toFile()
-                if (gpxPyFile.exists()) {
-                    gpxPyFile.delete()
-                }
-                Log.e(
-                    "useSimplifiedTracks",
-                    "Deleted ${it.getDateAsString()}_${it.name} because useSimplifiedTracks was set to false."
-                )
-            }
-        }
-    }
 
     private fun updateBoundingBox(entriesWithoutBoundingBox: List<Summit>) {
         val entriesToCheck = entriesWithoutBoundingBox.take(50)
@@ -511,44 +460,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
-    private fun asyncSimplifyGpsTracks(
-        summitsWithoutSimplifiedTracks: List<Summit>, pythonInstance: Python
-    ) {
-        var numberSimplifiedGpxTracks = 0
-        lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                if (summitsWithoutSimplifiedTracks.isNotEmpty()) {
-                    summitsWithoutSimplifiedTracks.forEachIndexed { i, e ->
-                        try {
-                            Log.i(
-                                "AsyncSimplifyGpsTracks",
-                                "Simplifying track $i of ${summitsWithoutSimplifiedTracks.size} for ${e.getDateAsString()}_${e.name}."
-                            )
-                            GpxPyExecutor(pythonInstance).createSimplifiedGpxTrackAndGpxPyDataFile(
-                                e.getGpsTrackPath(
-                                    simplified = false
-                                )
-                            )
-                            numberSimplifiedGpxTracks += 1
-                            Log.i(
-                                "AsyncSimplifyGpsTracks",
-                                "Simplified track for ${e.getDateAsString()}_${e.name}."
-                            )
-                        } catch (ex: RuntimeException) {
-                            Log.e(
-                                "AsyncSimplifyGpsTracks",
-                                "Error in simplify track for ${e.getDateAsString()}_${e.name}: ${ex.message}"
-                            )
-                            e.ignoreSimplifyingTrack = true
-                            viewModel.saveSummit(true, e)
-                        }
-                    }
-                } else {
-                    Log.i("AsyncSimplifyGpsTracks", "No more gpx tracks to simplify.")
-                }
-            }
-        }
-    }
 
     private fun drawChart(
         lineChart: CustomLineChartWithMarker,
@@ -800,6 +711,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var CSV_FILE_NAME_FORECASTS: String = "de-prinz-summitbook-export-forecasts.csv"
 
         var hasRecordsBeenAdded: Boolean = false
+        var updateOfTracksStarted: Boolean = false
         var entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
         var storage: File? = null
         var cache: File? = null
