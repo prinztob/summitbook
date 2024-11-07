@@ -306,9 +306,10 @@ class SummitViewFragment : Fragment() {
         } else {
             pythonInstance?.let {
                 asyncSimplifyGpsTracks(
-                    entriesWithoutSimplifiedGpxTrack.take(100), it
+                    entriesWithoutSimplifiedGpxTrack.take(50), it
                 )
             }
+            updateOfTracksStarted = false
         }
     }
 

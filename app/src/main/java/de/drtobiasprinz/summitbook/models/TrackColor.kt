@@ -36,6 +36,9 @@ enum class TrackColor(
     Power(R.string.power, 5, "W", R.string.power_profile_label, f = { e ->
         e.second.power?.toDouble()
     }),
+    Power1Min(R.string.power_1min, 5, "W", R.string.power_profile_label, f = { e ->
+        e.second.power60s?.toDouble()
+    }),
     Speed(R.string.speed, 6, "km/h", R.string.speed_profile_label, digits = 1, f = { e ->
         (e.second.speed ?: 0.0) * 3.6
     }),

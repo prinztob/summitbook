@@ -543,6 +543,7 @@ data class ExtensionFromYaml(
     var distance: Double? = 0.0,
     val hr: Int? = 0,
     val power: Int? = 0,
+    val power60s: Int? = 0,
     val cadence: Int? = 0,
     val slope: Double? = 0.0,
     val speed: Double? = 0.0,

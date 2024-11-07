@@ -326,7 +326,6 @@ def analyze_gpx_track(path):
         start_time = datetime.now()
         analyzer = TrackAnalyzer(path)
         analyzer.analyze()
-        analyzer.get_maximal_values()
         analyzer.write_file()
         print(f"Analyzing of {path} took {(datetime.now() - start_time).total_seconds()}")
         return "return code: 0"
