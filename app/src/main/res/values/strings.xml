@@ -340,7 +340,8 @@
     <string name="mileage">Mileage</string>
     <string name="speed">Speed</string>
     <string name="slope">Slope (50m)</string>
-    <string name="vertical_speed">Vertical Speed (1min)</string>
+    <string name="vertical_speed_up">Vertical Speed up (1min)</string>
+    <string name="vertical_speed_down">Vertical Speed down(1min)</string>
     <string name="masl">m.a.s.l.</string>
     <string name="value_with_masl">%1$s m.a.s.l.</string>
     <string name="show_all">Show all</string>

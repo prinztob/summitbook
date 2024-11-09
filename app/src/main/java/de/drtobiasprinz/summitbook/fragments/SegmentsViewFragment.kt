@@ -30,7 +30,7 @@ class SegmentsViewFragment : Fragment() {
         viewModel.segmentsList.observe(viewLifecycleOwner) {
             it.data.let { segments ->
                 if (segments != null) {
-                    val data = sortFilterValues.apply(it.data ?: emptyList())
+                    val data = sortFilterValues.apply(segments)
                     val adapter = SegmentsViewAdapter(data)
                     adapter.onClickDelete = { segment -> viewModel.deleteSegment(segment) }
                     binding.root.adapter = adapter

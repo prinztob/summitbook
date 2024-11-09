@@ -49,7 +49,7 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
                 pageViewModel?.summitToView?.observe(this) { itData ->
                     itData.data?.let { entry ->
                         summitEntry = entry
-                        pythonInstance?.let { simplifyTrack(it, entry) }
+                        pythonInstance?.let { analyzeAndSimplifyTrack(it, entry) }
                         val tabsPagerAdapter = TabsPagerAdapter(this, summitEntry)
                         viewPager = findViewById(R.id.pager)
                         viewPager.adapter = tabsPagerAdapter
@@ -64,14 +64,13 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
         }
     }
 
-    private fun simplifyTrack(
+    private fun analyzeAndSimplifyTrack(
         pythonInstance: Python,
         summit: Summit
     ) {
         val useSimplifiedTracks =
             MainActivity.sharedPreferences.getBoolean(Keys.PREF_USE_SIMPLIFIED_TRACKS, true)
         if (
-            !summit.ignoreSimplifyingTrack &&
             useSimplifiedTracks &&
             summit.hasGpsTrack() &&
             !summit.hasGpsTrack(simplified = true) &&
@@ -80,7 +79,33 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
-                        GpxPyExecutor(pythonInstance).createSimplifiedGpxTrackAndGpxPyDataFile(
+                        GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
+                            summit.getGpsTrackPath(
+                                simplified = false
+                            )
+                        )
+                        Log.i(
+                            "AsyncSimplifyGpsTracks",
+                            "Simplified track for ${summit.getDateAsString()}_${summit.name}."
+                        )
+                    } catch (ex: RuntimeException) {
+                        Log.e(
+                            "AsyncSimplifyGpsTracks",
+                            "Error in simplify track for ${summit.getDateAsString()}_${summit.name}: ${ex.message}"
+                        )
+                    }
+                }
+            }
+        }
+        if (
+            useSimplifiedTracks &&
+            !summit.hasTrackData() &&
+            summit.sportType != SportType.IndoorTrainer
+        ) {
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    try {
+                        GpxPyExecutor(pythonInstance).analyzeGpxTrackAndCreateGpxPyDataFile(
                             summit.getGpsTrackPath(
                                 simplified = false
                             )

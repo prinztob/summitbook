@@ -22,7 +22,7 @@ import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.io.path.absolutePathString
+import kotlin.io.path.name
 import kotlin.math.roundToInt
 
 
@@ -115,7 +115,7 @@ class Summit(
     }
 
     fun getGpsTrackPath(simplified: Boolean = false): Path {
-        val folder = MainActivity.storage
+        val folder = if (simplified) MainActivity.cache else MainActivity.storage
         val fileName = if (simplified) "id_${activityId}_simplified.gpx" else "id_${activityId}.gpx"
         val baseFolder = if (isBookmark) {
             File(folder, subDirForGpsTracksBookmark)
@@ -129,15 +129,15 @@ class Summit(
     }
 
     fun getYamlExtensionsFile(): File {
-        return File(getGpsTrackPath().absolutePathString().replace(".gpx", "_extensions.yaml"))
+        return File(File(MainActivity.cache, subDirForGpsTracks), getGpsTrackPath().name.replace(".gpx", "_extensions.yaml"))
     }
 
     fun getGpxPyPath(): Path {
         val fileName = "id_${activityId}_gpxpy.json"
         return if (isBookmark) {
-            Paths.get(MainActivity.storage.toString(), subDirForGpsTracksBookmark, fileName)
+            Paths.get(MainActivity.cache.toString(), subDirForGpsTracksBookmark, fileName)
         } else {
-            Paths.get(MainActivity.storage.toString(), subDirForGpsTracks, fileName)
+            Paths.get(MainActivity.cache.toString(), subDirForGpsTracks, fileName)
         }
     }
 
@@ -199,6 +199,11 @@ class Summit(
         if (!simplified) {
             hasTrack = checkIfHasTrack
         }
+        return checkIfHasTrack
+    }
+
+    fun hasTrackData(): Boolean {
+        val checkIfHasTrack = getYamlExtensionsFile().exists() && getGpxPyPath().toFile().exists()
         return checkIfHasTrack
     }
 

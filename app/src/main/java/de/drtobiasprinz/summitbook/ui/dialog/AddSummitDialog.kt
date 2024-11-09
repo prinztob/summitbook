@@ -902,7 +902,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                             "AddSummitDialog.asyncAnalyzeGpsTracks",
                             "Entry ${entry.name} will be simplified"
                         )
-                        GpxPyExecutor(python).createSimplifiedGpxTrackAndGpxPyDataFile(entry.getGpsTrackPath())
+                        GpxPyExecutor(python).createSimplifiedGpxTrack(entry.getGpsTrackPath())
                         entry.setGpsTrack()
                         highestElevation = entry.gpsTrack?.getHighestElevation()
                         entry.gpsTrack?.setDistance()

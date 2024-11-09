@@ -1,5 +1,6 @@
 import datetime
 import json
+import os.path
 import re
 from typing import List
 
@@ -15,15 +16,18 @@ from velocity_track_analyzer import VelocityTrackAnalyzer
 
 GPXTrackPoint.extensions_calculted = Extension()
 
-
 class TrackAnalyzer(object):
     NAMESPACE_NAME = 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1'
     NAMESPACE = '{' + NAMESPACE_NAME + '}'
     TRACK_EXTENSIONS = 'TrackPointExtension'
 
-    def __init__(self, file, yaml_file=None):
+    def __init__(self, file, additional_data_folder=None):
         self.file = file
-        self.yaml_file = yaml_file if yaml_file else file.replace(".gpx", "_extensions.yaml")
+        if not additional_data_folder:
+            additional_data_folder = os.path.dirname(file)
+        self.yaml_file = os.path.join(additional_data_folder, os.path.basename(file.replace(".gpx", "_extensions.yaml")))
+        self.gpx_file_simplified = os.path.join(additional_data_folder, prefix_filename(os.path.basename(file)))
+        self.gpx_file_gpxpy = os.path.join(additional_data_folder, os.path.basename(file).replace(".gpx", "_gpxpy.json"))
         with open(file, 'r') as f:
             search_result = re.search(r'<\?xml(.|\n)*?(\<\/gpx\>)', f.read())
             if search_result:
@@ -34,22 +38,28 @@ class TrackAnalyzer(object):
         self.distance_entries = []
         self.duration = 0
 
-    def write_file(self, file_gpx=None, yaml_file=None):
-        if not file_gpx:
-            file_gpx = self.file
-        if not yaml_file:
-            yaml_file = self.yaml_file
-        if yaml_file:
-            write_extensions_to_yaml([e.extensions_calculted for e in self.all_points], yaml_file)
-        gpx_file_simplified = prefix_filename(file_gpx)
-        gpx_file_gpxpy = file_gpx.replace(".gpx", "_gpxpy.json")
-        with open(gpx_file_gpxpy, 'w') as fp:
-            json.dump(self.data, fp, indent=4)
-        print(f"Written data of track to {gpx_file_gpxpy}")
+    def write_simplified_track_to_file(self, gpx_file_simplified=None):
+        if self.gpx_file:
+            if self.gpx is None:
+                self.parse_track()
+        if not gpx_file_simplified:
+            gpx_file_simplified = self.gpx_file_simplified
         self.gpx.simplify()
         with open(gpx_file_simplified, 'w') as f:
             f.write(self.gpx.to_xml())
         print(f"Written simplified track to {gpx_file_simplified}")
+
+    def write_data_and_extension_to_file(self, gpx_file_gpxpy=None, yaml_file=None):
+        if not yaml_file:
+            yaml_file = self.yaml_file
+        if not gpx_file_gpxpy:
+            gpx_file_gpxpy = self.gpx_file_gpxpy
+        if yaml_file:
+            write_extensions_to_yaml([e.extensions_calculted for e in self.all_points], yaml_file)
+        with open(gpx_file_gpxpy, 'w') as fp:
+            json.dump(self.data, fp, indent=4)
+        print(f"Written data of track to {gpx_file_gpxpy}")
+
 
     def analyze(self):
         start_time = datetime.datetime.now()

@@ -341,7 +341,8 @@
     <string name="mileage">Mileage</string>
     <string name="speed">Geschwindigkeit</string>
     <string name="slope">Steigung (50m)</string>
-    <string name="vertical_speed">Vertikale Geschw. (1min)</string>
+    <string name="vertical_speed_up">Vertikale Geschw. + (1min)</string>
+    <string name="vertical_speed_down">Vertikale Geschw. - (1min)</string>
     <string name="masl">m.ü.M.</string>
     <string name="value_with_masl">%1$s m.ü.M.</string>
     <string name="show_all">Zeige alle</string>

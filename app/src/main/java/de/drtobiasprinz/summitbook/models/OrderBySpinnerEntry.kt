@@ -8,7 +8,7 @@ enum class OrderBySpinnerEntry(
     val nameId: Int, val unit: Int = R.string.empty, val accumulate: Boolean = false,
     var includeIndoorActivities: Boolean = false, var excludeFromLineChart: Boolean = false,
     var f: (Summit) -> Float?,
-    var segmentSorting: (Segment) -> Float? = { e -> e.segmentEntries.maxBy { it.date }.date.time.toFloat() }
+    var segmentSorting: (Segment) -> Float? = { e -> e.segmentEntries.maxByOrNull { it.date }?.date?.time?.toFloat() }
 ) {
     Date(
         R.string.date,

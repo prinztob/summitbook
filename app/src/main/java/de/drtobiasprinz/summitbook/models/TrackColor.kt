@@ -45,14 +45,25 @@ enum class TrackColor(
     Slope(R.string.slope, 7, "%", R.string.slope_profile_label, digits = 1, f = { e ->
         e.second.slope
     }),
-    VerticalSpeed(
-        R.string.vertical_speed,
+    VerticalSpeedUp(
+        R.string.vertical_speed_up,
         8,
         "m/min",
         R.string.vertical_speed_profile_label,
         f = { e ->
-            e.second.verticalVelocity?.times(60)
+            val v = e.second.verticalVelocity ?: 0.0
+            if (v > 0) v.times(60) else 0.0
+        }),
+    VerticalSpeeddDown(
+        R.string.vertical_speed_down,
+        8,
+        "m/min",
+        R.string.vertical_speed_profile_label,
+        f = { e ->
+            val v = e.second.verticalVelocity ?: 0.0
+            if (v < 0) v.times(60) else 0.0
         });
+
 
     override fun toString(): String {
         return name

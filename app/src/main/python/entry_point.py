@@ -321,13 +321,24 @@ def update_power_data(activity, api, selected_date):
         activity['maxAvgPower_18000'] = power_data['entries'][14]['power']
 
 
-def analyze_gpx_track(path):
+def analyze_gpx_track(gpx_path, additional_data_folder):
     try:
         start_time = datetime.now()
-        analyzer = TrackAnalyzer(path)
+        analyzer = TrackAnalyzer(gpx_path, additional_data_folder)
         analyzer.analyze()
-        analyzer.write_file()
-        print(f"Analyzing of {path} took {(datetime.now() - start_time).total_seconds()}")
+        analyzer.write_data_and_extension_to_file()
+        print(f"Analyzing of {gpx_path} took {(datetime.now() - start_time).total_seconds()}")
+        return "return code: 0"
+    except Exception as err:  # pylint: disable=broad-except
+        return f"return code: 1Unknown error occurred {err}"
+
+
+def simplify_gpx_track(gpx_path, additional_data_folder):
+    try:
+        start_time = datetime.now()
+        analyzer = TrackAnalyzer(gpx_path, additional_data_folder)
+        analyzer.write_simplified_track_to_file()
+        print(f"Simplifying of {gpx_path} took {(datetime.now() - start_time).total_seconds()}")
         return "return code: 0"
     except Exception as err:  # pylint: disable=broad-except
         return f"return code: 1Unknown error occurred {err}"

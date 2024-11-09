@@ -79,7 +79,11 @@ class SummitViewFragment : Fragment() {
 
     private fun adapterOnClickDelete(summit: Summit) {
         viewModel?.deleteSummit(summit)
-        Snackbar.make(binding.root, String.format(getString(R.string.delete_entry_done), summit.name), Snackbar.LENGTH_LONG)
+        Snackbar.make(
+            binding.root,
+            String.format(getString(R.string.delete_entry_done), summit.name),
+            Snackbar.LENGTH_LONG
+        )
             .apply {
                 setAction(getString(R.string.delete_undo)) {
                     viewModel?.saveSummit(false, summit)
@@ -294,27 +298,33 @@ class SummitViewFragment : Fragment() {
             }
         }
         val entriesWithoutSimplifiedGpxTrack = summits.filter {
-            !it.ignoreSimplifyingTrack &&
-                    it.hasGpsTrack() &&
-                    (!it.getYamlExtensionsFile().exists() || !it.hasGpsTrack(simplified = true)) &&
+            it.hasGpsTrack() &&
+                    !it.hasGpsTrack(simplified = true) &&
                     it.sportType != SportType.IndoorTrainer
         }.sortedByDescending { it.date }
-        if (entriesWithoutSimplifiedGpxTrack.isEmpty()) {
-            Log.i(
-                "Scheduler", "No more tracks to simplify."
-            )
+
+        val entriesWithoutAdditionalData = if (entriesWithoutSimplifiedGpxTrack.size < 50) {
+            summits.filter {
+                it.hasGpsTrack() &&
+                        (!it.getYamlExtensionsFile().exists() ||
+                                !it.getGpxPyPath().toFile().exists()) &&
+                        it.sportType != SportType.IndoorTrainer
+            }.sortedByDescending { it.date }.take(51 - entriesWithoutSimplifiedGpxTrack.size)
         } else {
-            pythonInstance?.let {
-                asyncSimplifyGpsTracks(
-                    entriesWithoutSimplifiedGpxTrack.take(50), it
-                )
-            }
-            updateOfTracksStarted = false
+            emptyList()
+        }
+        pythonInstance?.let {
+            asyncSimplifyGpsTracks(
+                entriesWithoutSimplifiedGpxTrack.take(50),
+                entriesWithoutAdditionalData.take(50), it
+            )
         }
     }
 
     private fun asyncSimplifyGpsTracks(
-        summitsWithoutSimplifiedTracks: List<Summit>, pythonInstance: Python
+        summitsWithoutSimplifiedTracks: List<Summit>,
+        summitsWithoutAdditionalData: List<Summit>,
+        pythonInstance: Python
     ) {
         var numberSimplifiedGpxTracks = 0
         lifecycleScope.launch {
@@ -326,7 +336,7 @@ class SummitViewFragment : Fragment() {
                                 "AsyncSimplifyGpsTracks",
                                 "Simplifying track $i of ${summitsWithoutSimplifiedTracks.size} for ${e.getDateAsString()}_${e.name}."
                             )
-                            GpxPyExecutor(pythonInstance).createSimplifiedGpxTrackAndGpxPyDataFile(
+                            GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
                                 e.getGpsTrackPath(),
                             )
                             numberSimplifiedGpxTracks += 1
@@ -339,8 +349,31 @@ class SummitViewFragment : Fragment() {
                                 "AsyncSimplifyGpsTracks",
                                 "Error in simplify track for ${e.getDateAsString()}_${e.name}: ${ex.message}"
                             )
-                            e.ignoreSimplifyingTrack = true
-                            viewModel?.saveSummit(true, e)
+                            //e.ignoreSimplifyingTrack = true
+                            //viewModel?.saveSummit(true, e)
+                        }
+                    }
+                } else if (summitsWithoutAdditionalData.isNotEmpty()) {
+                    summitsWithoutAdditionalData.forEachIndexed { i, e ->
+                        try {
+                            Log.i(
+                                "AsyncSimplifyGpsTracks",
+                                "Calculate additional data for  $i of ${summitsWithoutAdditionalData.size} for ${e.getDateAsString()}_${e.name}."
+                            )
+                            GpxPyExecutor(pythonInstance).analyzeGpxTrackAndCreateGpxPyDataFile(
+                                e.getGpsTrackPath(),
+                            )
+                            Log.i(
+                                "AsyncSimplifyGpsTracks",
+                                "Calculated additional data for ${e.getDateAsString()}_${e.name}."
+                            )
+                        } catch (ex: RuntimeException) {
+                            Log.e(
+                                "AsyncSimplifyGpsTracks",
+                                "Error in simplify track for ${e.getDateAsString()}_${e.name}: ${ex.message}"
+                            )
+                            //e.ignoreSimplifyingTrack = true
+                            //viewModel?.saveSummit(true, e)
                         }
                     }
                 } else {
