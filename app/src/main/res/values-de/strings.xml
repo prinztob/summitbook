@@ -317,8 +317,11 @@
     <string name="visited_countries">Anzahl besuchter Länder</string>
     <string name="max_slope">Max. Steigung</string>
     <string name="max_verticalVelocity_1Min">vert. Geschw. 1Min</string>
+    <string name="max_verticalVelocity_down_1Min">vert. Geschw. - (1Min)</string>
     <string name="max_verticalVelocity_10Min">vert. Geschw. 10min</string>
+    <string name="max_verticalVelocity_down_10Min">vert. Geschw. - (10min)</string>
     <string name="max_verticalVelocity_1h">vert. Geschw. 1h</string>
+    <string name="max_verticalVelocity_down_1h">vert. Geschw. - (1h)</string>
     <string name="forecast">Schätzung</string>
     <string name="forecast_abbr">Erw.</string>
     <string name="january">Januar</string>

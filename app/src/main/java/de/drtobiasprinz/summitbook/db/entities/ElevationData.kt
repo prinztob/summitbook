@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.db.entities
 
 import android.content.res.Resources
+import androidx.room.ColumnInfo
 import de.drtobiasprinz.summitbook.R
 
 class ElevationData(
@@ -9,7 +10,11 @@ class ElevationData(
     var maxVerticalVelocity1Min: Double = 0.0,
     var maxVerticalVelocity10Min: Double = 0.0,
     var maxVerticalVelocity1h: Double = 0.0,
-    var maxSlope: Double = 0.0
+    @ColumnInfo(defaultValue = "0.0") var maxSlope: Double = 0.0,
+    @ColumnInfo(defaultValue = "0.0") var maxVerticalVelocityDown1Min: Double = 0.0,
+    @ColumnInfo(defaultValue = "0.0") var maxVerticalVelocityDown10Min: Double = 0.0,
+    @ColumnInfo(defaultValue = "0.0") var maxVerticalVelocityDown1h: Double = 0.0,
+    @ColumnInfo(defaultValue = "0.0") var maxSlopeDown: Double = 0.0,
 ) {
 
     var avgVelocity: Double = 0.0
@@ -23,7 +28,7 @@ class ElevationData(
     }
 
     fun toStringCalculated(): String {
-        return "$maxVerticalVelocity1Min,$maxVerticalVelocity10Min,$maxVerticalVelocity1h,$maxSlope"
+        return "$maxVerticalVelocity1Min,$maxVerticalVelocity10Min,$maxVerticalVelocity1h,$maxSlope,$maxVerticalVelocityDown1Min,$maxVerticalVelocityDown10Min,$maxVerticalVelocityDown1h,$maxSlopeDown"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -38,6 +43,10 @@ class ElevationData(
         if (maxVerticalVelocity10Min != other.maxVerticalVelocity10Min) return false
         if (maxVerticalVelocity1h != other.maxVerticalVelocity1h) return false
         if (maxSlope != other.maxSlope) return false
+        if (maxVerticalVelocityDown1Min != other.maxVerticalVelocityDown1Min) return false
+        if (maxVerticalVelocityDown10Min != other.maxVerticalVelocityDown1h) return false
+        if (maxVerticalVelocityDown1h != other.maxVerticalVelocityDown1h) return false
+        if (maxSlopeDown != other.maxSlopeDown) return false
 
         return true
     }
@@ -59,7 +68,11 @@ class ElevationData(
             maxVerticalVelocity1Min,
             maxVerticalVelocity10Min,
             maxVerticalVelocity1h,
-            maxSlope
+            maxSlope,
+            maxVerticalVelocityDown10Min,
+            maxVerticalVelocityDown1Min,
+            maxVerticalVelocityDown1h,
+            maxSlopeDown,
         )
     }
 
@@ -68,18 +81,26 @@ class ElevationData(
     }
 
     fun parseCalculatedData(inputData: List<String>): Boolean {
-        if (inputData.size == ENTRIES && inputData.any { it != "0.0" }) {
-            maxVerticalVelocity1Min = inputData[0].toDouble()
-            maxVerticalVelocity10Min = inputData[1].toDouble()
-            maxVerticalVelocity1h = inputData[2].toDouble()
-            maxSlope = inputData[3].toDouble()
+        if (inputData.any { it != "0.0" }) {
+            if (inputData.size == ENTRIES || inputData.size == 4) {
+                maxVerticalVelocity1Min = inputData[0].toDouble()
+                maxVerticalVelocity10Min = inputData[1].toDouble()
+                maxVerticalVelocity1h = inputData[2].toDouble()
+                maxSlope = inputData[3].toDouble()
+                if (inputData.size == ENTRIES) {
+                    maxVerticalVelocityDown1Min = inputData[4].toDouble()
+                    maxVerticalVelocityDown10Min = inputData[5].toDouble()
+                    maxVerticalVelocityDown1h = inputData[6].toDouble()
+                    maxSlopeDown = inputData[7].toDouble()
+                }
+            }
             return true
         }
         return false
     }
 
     companion object {
-        const val ENTRIES: Int = 4
+        const val ENTRIES: Int = 8
 
         fun parse(inputData: List<String>, maxElevation: Int): ElevationData {
             return when (inputData.size) {
@@ -110,7 +131,7 @@ class ElevationData(
         }
 
         fun getCsvHeadline(): String {
-            return "maxVerticalVelocity1Min;maxVerticalVelocity10Min;maxVerticalVelocity1h;maxSlope"
+            return "maxVerticalVelocity1Min;maxVerticalVelocity10Min;maxVerticalVelocity1h;maxSlope,maxVerticalVelocityDown1Min;maxVerticalVelocityDown10Min;maxVerticalVelocityDown1h;maxSlopeDown"
         }
 
         fun getCsvDescription(resources: Resources): String {

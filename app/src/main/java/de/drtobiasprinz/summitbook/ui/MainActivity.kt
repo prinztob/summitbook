@@ -437,7 +437,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
     private fun updateBoundingBox(entriesWithoutBoundingBox: List<Summit>) {
-        val entriesToCheck = entriesWithoutBoundingBox.take(50)
+        val entriesToCheck = entriesWithoutBoundingBox.take(250)
         entriesToCheck.forEachIndexed { index, entryToCheck ->
             lifecycleScope.launch {
                 withContext(Dispatchers.Default) {

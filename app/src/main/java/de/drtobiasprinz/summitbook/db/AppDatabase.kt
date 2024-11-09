@@ -11,8 +11,11 @@ import de.drtobiasprinz.summitbook.db.entities.*
 @Database(
     entities = [Summit::class, Forecast::class, IgnoredActivity::class,
         SegmentDetails::class, SegmentEntry::class],
-    version = 1,
-    exportSchema = true
+    version = 2,
+    exportSchema = true,
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2),
+    ]
 )
 
 @TypeConverters(Converters::class)

@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import org.mapsforge.map.android.rendertheme.AssetsRenderTheme
-import org.mapsforge.map.rendertheme.XmlRenderTheme
 import org.mapsforge.map.rendertheme.XmlRenderThemeMenuCallback
 import org.osmdroid.mapsforge.MapsForgeTileProvider
 import org.osmdroid.mapsforge.MapsForgeTileSource
@@ -44,10 +43,9 @@ object MapHelper {
         context: Context,
         mapFiles: List<DocumentFile>,
         item: MapProvider
-    ): MapsForgeTileProvider {
-        var theme: XmlRenderTheme? = null
+    ): MapsForgeTileProvider? {
         try {
-            theme = AssetsRenderTheme(
+            val theme = AssetsRenderTheme(
                 context.assets,
                 "rendertheme/",
                 "Elevate.xml",
@@ -66,19 +64,20 @@ object MapHelper {
                     categories
                 }
             )
+            val mapFileInputStreams: Array<FileInputStream> =
+                FileHelper.getOnDeviceMapFileInputStreams(context, mapFiles)
+            val mapsForgeTileSource: MapsForgeTileSource =
+                MapsForgeTileSource.createFromFileInputStream(
+                    mapFileInputStreams,
+                    theme,
+                    "Elevate.xml"
+                )
+            mapsForgeTileSource.setUserScaleFactor(0.5f)
+            return MapsForgeTileProvider(SimpleRegisterReceiver(context), mapsForgeTileSource, null)
         } catch (e: Exception) {
             e.printStackTrace()
+            return null
         }
-        val mapFileInputStreams: Array<FileInputStream> =
-            FileHelper.getOnDeviceMapFileInputStreams(context, mapFiles)
-        val mapsForgeTileSource: MapsForgeTileSource =
-            MapsForgeTileSource.createFromFileInputStream(
-                mapFileInputStreams,
-                theme,
-                "Elevate.xml"
-            )
-        mapsForgeTileSource.setUserScaleFactor(0.5f)
-        return MapsForgeTileProvider(SimpleRegisterReceiver(context), mapsForgeTileSource, null)
     }
 
 }

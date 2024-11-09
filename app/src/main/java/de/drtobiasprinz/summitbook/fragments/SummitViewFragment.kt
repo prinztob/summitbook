@@ -299,6 +299,7 @@ class SummitViewFragment : Fragment() {
         }
         val entriesWithoutSimplifiedGpxTrack = summits.filter {
             it.hasGpsTrack() &&
+                    !it.ignoreSimplifyingTrack &&
                     !it.hasGpsTrack(simplified = true) &&
                     it.sportType != SportType.IndoorTrainer
         }.sortedByDescending { it.date }
@@ -306,6 +307,7 @@ class SummitViewFragment : Fragment() {
         val entriesWithoutAdditionalData = if (entriesWithoutSimplifiedGpxTrack.size < 50) {
             summits.filter {
                 it.hasGpsTrack() &&
+                        !it.ignoreSimplifyingTrack &&
                         (!it.getYamlExtensionsFile().exists() ||
                                 !it.getGpxPyPath().toFile().exists()) &&
                         it.sportType != SportType.IndoorTrainer
@@ -315,7 +317,7 @@ class SummitViewFragment : Fragment() {
         }
         pythonInstance?.let {
             asyncSimplifyGpsTracks(
-                entriesWithoutSimplifiedGpxTrack.take(50),
+                entriesWithoutSimplifiedGpxTrack.take(250),
                 entriesWithoutAdditionalData.take(50), it
             )
         }
@@ -349,8 +351,8 @@ class SummitViewFragment : Fragment() {
                                 "AsyncSimplifyGpsTracks",
                                 "Error in simplify track for ${e.getDateAsString()}_${e.name}: ${ex.message}"
                             )
-                            //e.ignoreSimplifyingTrack = true
-                            //viewModel?.saveSummit(true, e)
+                            e.ignoreSimplifyingTrack = true
+                            viewModel?.saveSummit(true, e)
                         }
                     }
                 } else if (summitsWithoutAdditionalData.isNotEmpty()) {
@@ -372,8 +374,8 @@ class SummitViewFragment : Fragment() {
                                 "AsyncSimplifyGpsTracks",
                                 "Error in simplify track for ${e.getDateAsString()}_${e.name}: ${ex.message}"
                             )
-                            //e.ignoreSimplifyingTrack = true
-                            //viewModel?.saveSummit(true, e)
+                            e.ignoreSimplifyingTrack = true
+                            viewModel?.saveSummit(true, e)
                         }
                     }
                 } else {

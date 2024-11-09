@@ -410,7 +410,7 @@ def merge_tracks(gpx_track_files_to_merge, output_file, name):
         files = list(gpx_track_files_to_merge)
         analyzer_for_all_tracks = None
         for file in files:
-            analyzer_for_single_track = TrackAnalyzer(file, True)
+            analyzer_for_single_track = TrackAnalyzer(file)
             analyzer_for_single_track.parse_track()
             if analyzer_for_all_tracks is None:
                 analyzer_for_all_tracks = analyzer_for_single_track
@@ -422,7 +422,6 @@ def merge_tracks(gpx_track_files_to_merge, output_file, name):
                 else:
                     analyzer_for_single_track.gpx.tracks.extend(analyzer_for_all_tracks.gpx.tracks)
                     analyzer_for_all_tracks = analyzer_for_single_track
-        analyzer_for_all_tracks.set_all_points_with_distance()
         analyzer_for_all_tracks.gpx.name = name
         with open(output_file, "w") as f:
             f.write(analyzer_for_all_tracks.gpx.to_xml())

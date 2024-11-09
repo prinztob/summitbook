@@ -122,7 +122,7 @@ enum class AdditionalDataTableEntry(
         R.string.m,
         { e -> e.elevationData.maxVerticalVelocity1Min },
         { e, d -> e.elevationData.maxVerticalVelocity1Min = d },
-        jsonKey = "vertical_velocities_60s",
+        jsonKey = "vertical_velocity_60s_+",
         scaleFactorView = 60
     ),
     VerticalVelocity600Seconds(
@@ -130,7 +130,7 @@ enum class AdditionalDataTableEntry(
         R.string.m,
         { e -> e.elevationData.maxVerticalVelocity10Min },
         { e, d -> e.elevationData.maxVerticalVelocity10Min = d },
-        jsonKey = "vertical_velocities_600s",
+        jsonKey = "vertical_velocity_600s_+",
         scaleFactorView = 600
     ),
     VerticalVelocity360Seconds(
@@ -138,7 +138,32 @@ enum class AdditionalDataTableEntry(
         R.string.m,
         { e -> e.elevationData.maxVerticalVelocity1h },
         { e, d -> e.elevationData.maxVerticalVelocity1h = d },
-        jsonKey = "vertical_velocities_3600s",
+        jsonKey = "vertical_velocity_3600s_+",
+        scaleFactorView = 3600
+    ),
+
+    VerticalVelocityDown60Seconds(
+        R.string.max_verticalVelocity_down_1Min,
+        R.string.m,
+        { e -> e.elevationData.maxVerticalVelocityDown1Min },
+        { e, d -> e.elevationData.maxVerticalVelocityDown1Min = d },
+        jsonKey = "vertical_velocity_60s_-",
+        scaleFactorView = 60
+    ),
+    VerticalVelocityDown600Seconds(
+        R.string.max_verticalVelocity_down_10Min,
+        R.string.m,
+        { e -> e.elevationData.maxVerticalVelocityDown10Min },
+        { e, d -> e.elevationData.maxVerticalVelocityDown10Min = d },
+        jsonKey = "vertical_velocity_600s_-",
+        scaleFactorView = 600
+    ),
+    VerticalVelocityDown360Seconds(
+        R.string.max_verticalVelocity_down_1h,
+        R.string.m,
+        { e -> e.elevationData.maxVerticalVelocityDown1h },
+        { e, d -> e.elevationData.maxVerticalVelocityDown1h = d },
+        jsonKey = "vertical_velocity_3600s_-",
         scaleFactorView = 3600
     ),
     PowerAverage(

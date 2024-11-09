@@ -314,8 +314,11 @@
     <string name="longest_duration">Longest duration</string>
     <string name="max_slope">Max slope</string>
     <string name="max_verticalVelocity_1Min">Max vertical velocity in 1min</string>
+    <string name="max_verticalVelocity_down_1Min">Max vertical velocity - in 1min</string>
     <string name="max_verticalVelocity_10Min">Max vertical velocity in 10min</string>
+    <string name="max_verticalVelocity_down_10Min">Max vertical velocity - in 10min</string>
     <string name="max_verticalVelocity_1h">Max vertical velocity in 1h</string>
+    <string name="max_verticalVelocity_down_1h">Max vertical velocity - in 1h</string>
     <string name="ok">OK</string>
     <string name="forecast">Forecast</string>
     <string name="forecast_abbr">Est.</string>

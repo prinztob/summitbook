@@ -261,17 +261,26 @@ object OpenStreetMapUtils {
     fun setTileSource(mapView: MapView, context: Context) {
         val mapFiles: List<DocumentFile> = FileHelper.getOnDeviceMapFiles(context)
         if (selectedItem.isOffline) {
-            mapView.setTileProvider(MapHelper.getOfflineMapProvider(context, mapFiles, selectedItem))
-        } else {
-            val tileSourceBase = selectedItem.onlineTileSourceBase
-            if (tileSourceBase != null) {
-                mapView.tileProvider = MapHelper.getOnlineMapProvider(tileSourceBase, context)
-                mapView.setTileSource(tileSourceBase)
+            val provider = MapHelper.getOfflineMapProvider(context, mapFiles, selectedItem)
+            if (provider != null) {
+                mapView.setTileProvider(provider)
+            } else {
+                setOnlineMap(mapView, context)
             }
+        } else {
+            setOnlineMap(mapView, context)
         }
     }
 
-    fun getMapProviders(isOfflineEnabled: Boolean): List<MapProvider> {
+    private fun setOnlineMap(mapView: MapView, context: Context) {
+        val tileSourceBase = selectedItem.onlineTileSourceBase
+        if (tileSourceBase != null) {
+            mapView.tileProvider = MapHelper.getOnlineMapProvider(tileSourceBase, context)
+            mapView.setTileSource(tileSourceBase)
+        }
+    }
+
+    private fun getMapProviders(isOfflineEnabled: Boolean): List<MapProvider> {
         return if (isOfflineEnabled) MapProvider.entries else MapProvider.entries.filter { !it.isOffline }
     }
 
