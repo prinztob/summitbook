@@ -109,8 +109,11 @@ class SegmentEntryDetailsFragment : Fragment() {
                         segmentToUse?.segmentEntries?.let { sorter(it).firstOrNull() }?.entryId
                             ?: -1
                 }
-                segmentEntryToShow =
-                    if (segmentEntryId == -1L) segmentToUse?.segmentEntries?.let { sorter(it).firstOrNull() } else segmentToUse?.segmentEntries?.firstOrNull { it.entryId == segmentEntryId }
+                segmentEntryToShow = if (segmentEntryId == -1L) {
+                        segmentToUse?.segmentEntries?.let { sorter(it).firstOrNull() }
+                    } else {
+                        segmentToUse?.segmentEntries?.firstOrNull { it.entryId == segmentEntryId }
+                    }
                 viewModel.summitsList.observe(viewLifecycleOwner) { itDataSummits ->
                     itDataSummits.data.let { summits ->
                         val relevantSummits = segmentToUse?.segmentEntries?.mapNotNull { entry ->

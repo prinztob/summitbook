@@ -27,9 +27,9 @@ object MapHelper {
         val fileSystemProvider = MapTileFilesystemProvider(
             registerReceiver, tileSource
         )
-        val networkAvailablityCheck = NetworkAvailabliltyCheck(context)
+        val networkAvailabilityCheck = NetworkAvailabliltyCheck(context)
         val downloaderProvider = MapTileDownloader(
-            tileSource, tileWriter, networkAvailablityCheck
+            tileSource, tileWriter, networkAvailabilityCheck
         )
         val mapTileApprox = MapTileApproximater()
         return MapTileProviderArray(
@@ -58,7 +58,7 @@ object MapHelper {
 
                     val categories: MutableSet<String> = renderThemeStyleLayer.categories
 
-                    for (overlay in renderThemeStyleLayer.getOverlays()) {
+                    for (overlay in renderThemeStyleLayer.overlays) {
                         if (overlay.isEnabled) categories.addAll(overlay.categories)
                     }
                     categories

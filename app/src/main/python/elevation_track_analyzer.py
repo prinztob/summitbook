@@ -35,14 +35,14 @@ class ElevationTrackAnalyzer(object):
         self.set_velocity_per_time_entries(negative_deltas, velocity_per_time_entries, "-")
 
         df = DataFrame({'deltas': deltas})
-        df.index = to_datetime([p.extensions_calculted.distance for p in self.points_with_time], unit="s")
+        df.index = to_datetime([p.extensions_calculated.distance for p in self.points_with_time], unit="s")
         window = 100
         sums = df.rolling(f"{window}s").sum().dropna()
         slopes = sums.loc[(df.index >= to_datetime(window, unit="s"))].values
         if len(slopes) > 0:
             for i, e in enumerate(self.points_with_time):
                 if i < len(slopes) - 1:
-                    e.extensions_calculted.slope = round(float(slopes[i]), 3)
+                    e.extensions_calculated.slope = round(float(slopes[i]), 3)
             self.data[f"slope_{window}"] = round(slopes.max() / window * 100.0, 3)
         return self.data
 
@@ -58,10 +58,11 @@ class ElevationTrackAnalyzer(object):
                         if len(values) > 0:
                             if entry.window == "60s":
                                 for i, e in enumerate(self.points_with_time):
-                                    if i < len(values) - 1 and e.extensions_calculted.verticalVelocity == 0.0:
-                                        e.extensions_calculted.verticalVelocity = round(float(values[i]),
-                                                                                        3) if sign == "+" else -1 * round(
-                                            float(values[i]), 3)
+                                    if i < len(values) - 1 and e.extensions_calculated.verticalVelocity == 0.0:
+                                        if sign == "+":
+                                            e.extensions_calculated.verticalVelocity = round(float(values[i]), 3)
+                                        else:
+                                            e.extensions_calculated.verticalVelocity = -1 * round(float(values[i]), 3)
                             self.data[f"{entry.json_key_interval}_{sign}"] = round(
                                 (max(values / entry.time_interval))[0], 3)
                     except ValueError as ex:

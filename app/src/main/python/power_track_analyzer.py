@@ -23,10 +23,10 @@ class PowerTrackAnalyzer(object):
                         self.power_entries.append(0)
                 if diff < 300:
                     self.time_entries.append(point.time)
-                    self.power_entries.append(point.extensions_calculted.power)
+                    self.power_entries.append(point.extensions_calculated.power)
             else:
                 self.time_entries.append(point.time)
-                self.power_entries.append(point.extensions_calculted.power)
+                self.power_entries.append(point.extensions_calculated.power)
 
     def analyze(self) -> dict:
         self.set_time_entries()
@@ -56,7 +56,7 @@ class PowerTrackAnalyzer(object):
                     if entry.window == "1min":
                         for i, e in enumerate(self.points_with_time):
                             if i < len(values) - 1:
-                                e.extensions_calculted.power60s = int(values[i])
+                                e.extensions_calculated.power60s = int(values[i])
                     if len(values) > 0:
                         self.data[entry.json_key_interval] = int(max(values))
         return self.data

@@ -14,7 +14,8 @@ from power_track_analyzer import PowerTrackAnalyzer
 from utils import prefix_filename, write_extensions_to_yaml
 from velocity_track_analyzer import VelocityTrackAnalyzer
 
-GPXTrackPoint.extensions_calculted = Extension()
+GPXTrackPoint.extensions_calculated = Extension()
+
 
 class TrackAnalyzer(object):
     NAMESPACE_NAME = 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1'
@@ -55,7 +56,7 @@ class TrackAnalyzer(object):
         if not gpx_file_gpxpy:
             gpx_file_gpxpy = self.gpx_file_gpxpy
         if yaml_file:
-            write_extensions_to_yaml([e.extensions_calculted for e in self.all_points], yaml_file)
+            write_extensions_to_yaml([e.extensions_calculated for e in self.all_points], yaml_file)
         with open(gpx_file_gpxpy, 'w') as fp:
             json.dump(self.data, fp, indent=4)
         print(f"Written data of track to {gpx_file_gpxpy}")
@@ -66,9 +67,18 @@ class TrackAnalyzer(object):
         self.set_all_points_with_distance()
         self.calculate_data_with_gpxpy()
         points = [e for e in self.all_points if e.time]
-        self.data.update(ElevationTrackAnalyzer(points).analyze())
-        self.data.update(PowerTrackAnalyzer(points).analyze())
-        self.data.update(VelocityTrackAnalyzer(points).analyze())
+        try:
+            self.data.update(ElevationTrackAnalyzer(points).analyze())
+        except Exception as err:
+            print(f"ElevationTrackAnalyzer failed with {err}")
+        try:
+            self.data.update(PowerTrackAnalyzer(points).analyze())
+        except Exception as err:
+            print(f"PowerTrackAnalyzer failed with {err}")
+        try:
+            self.data.update(VelocityTrackAnalyzer(points).analyze())
+        except Exception as err:
+            print(f"VelocityTrackAnalyzer failed with {err}")
         self.duration = (datetime.datetime.now() - start_time).total_seconds()
 
     def calculate_data_with_gpxpy(self):
@@ -105,16 +115,24 @@ class TrackAnalyzer(object):
             for track in self.gpx.tracks:
                 for segment in track.segments:
                     points = []
+                    delta = 0.0
                     for i, point in enumerate(segment.points):
-                        point.extensions_calculted = Extension.parse(point.extensions)
+                        point.extensions_calculated = Extension.parse(point.extensions)
                         if point.latitude != 0 and point.longitude != 0:
-                            if point.extensions_calculted.distance == 0.0:
+                            if (i == 0
+                                    and len(self.all_points) > 0
+                                    and point.extensions_calculated.distance == 0
+                                    and point.extensions_calculated.distance < self.all_points[-1].extensions_calculated.distance):
+                                delta = self.all_points[-1].extensions_calculated.distance
+                            if point.extensions_calculated.distance == 0.0:
                                 if i != 0:
                                     distance += geopy.distance.distance(
                                         (points[-1].latitude, points[-1].longitude),
                                         (point.latitude, point.longitude)
                                     ).km
-                                point.extensions_calculted.distance = round(distance * 1000, 1)
+                                point.extensions_calculated.distance = distance * 1000 + delta
+                            elif delta > 0:
+                                point.extensions_calculated.distance += delta
                             self.all_points.append(point)
                             points.append(point)
                     segment.points = points

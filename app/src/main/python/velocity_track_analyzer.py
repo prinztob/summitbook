@@ -8,7 +8,7 @@ class VelocityTrackAnalyzer(object):
     def __init__(self, points: List[GPXTrackPoint]):
         self.points_with_time = points
         self.time_deltas = []
-        self.distance_entries = [p.extensions_calculted.distance for p in self.points_with_time]
+        self.distance_entries = [p.extensions_calculated.distance for p in self.points_with_time]
 
         self.data = {}
 

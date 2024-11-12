@@ -1,7 +1,9 @@
 import json
 import os
-import requests
 from datetime import date, datetime
+
+import lxml.etree as mod_etree
+import requests
 from garminconnect import (
     Garmin,
     GarminConnectConnectionError,
@@ -10,8 +12,9 @@ from garminconnect import (
 )
 from garth.exc import GarthHTTPError
 
-from gpx_track_analyzer import TrackAnalyzer
 from tcx_to_gpx import convert_tcx_to_gpx
+from Extension import Extension
+from gpx_track_analyzer import TrackAnalyzer
 
 BASE_URL = 'https://connect.garmin.com'
 
@@ -327,6 +330,7 @@ def analyze_gpx_track(gpx_path, additional_data_folder):
         analyzer = TrackAnalyzer(gpx_path, additional_data_folder)
         analyzer.analyze()
         analyzer.write_data_and_extension_to_file()
+        analyzer.write_simplified_track_to_file()
         print(f"Analyzing of {gpx_path} took {(datetime.now() - start_time).total_seconds()}")
         return "return code: 0"
     except Exception as err:  # pylint: disable=broad-except
@@ -344,66 +348,6 @@ def simplify_gpx_track(gpx_path, additional_data_folder):
         return f"return code: 1Unknown error occurred {err}"
 
 
-def get_device_id(api):
-    """
-    Get device id
-    """
-    response_json = api.get_devices()
-    if len(response_json) > 0:
-        for device in response_json:
-            if "deviceId" in device:
-                return device["deviceId"]
-        return "return code: 1Error no devices listed on devices json"
-    else:
-        return "return code: 1Error could not retrieve device json"
-
-
-def get_solar_intensity_for_date(api, selected_date, device_id):
-    """
-    Get solar intensity for date
-    """
-    try:
-        url = f"/web-gateway/solar/{device_id}/{selected_date}/{selected_date}"
-        print(f"Fetching solar intensity with url {url}")
-        return api.connectapi(url)
-    except (
-            GarminConnectConnectionError,
-            GarminConnectAuthenticationError,
-            GarminConnectTooManyRequestsError,
-    ) as err:
-        return (
-            f"return code: 1Error occurred during Garmin Connect Client get solar intensity for date "
-            f"{selected_date}: {err}")
-    except Exception as err:  # pylint: disable=broad-except
-        return (
-            f"return code: 1Unknown error occurred during Garmin Connect Client get solar intensity for date "
-            f"{selected_date}: {err}")
-
-
-def get_battery_charged_in_percent(solar):
-    if "deviceSolarInput" in solar and "solarDailyDataDTOs" in solar["deviceSolarInput"]:
-        data_for_dates = solar["deviceSolarInput"]["solarDailyDataDTOs"]
-        for data in data_for_dates:
-            if "solarInputReadings" in data:
-                solar_reading_for_date = data["solarInputReadings"]
-                solar_utilization = [intensity["solarUtilization"] for intensity in
-                                     solar_reading_for_date if
-                                     intensity["solarUtilization"] > 0]
-
-                solar_exposition = [intensity["solarUtilization"] for intensity in
-                                    solar_reading_for_date if
-                                    intensity["solarUtilization"] > 5]
-                start_date = datetime.strptime(solar_reading_for_date[0]["readingTimestampLocal"],
-                                               '%Y-%m-%dT%H:%M:%S.%f')
-                end_date = datetime.strptime(solar_reading_for_date[-1]["readingTimestampLocal"],
-                                             '%Y-%m-%dT%H:%M:%S.%f')
-                seconds = (end_date - start_date).seconds
-                multiplicand = 0.2 / (
-                            60 * 100)  # 0.2 % per 60 minutes 100% solar intensity (Fenix 6)
-                return sum(solar_utilization) * multiplicand, len(
-                    solar_exposition) / 60, 86400 - seconds < 999
-
-
 def merge_tracks(gpx_track_files_to_merge, output_file, name):
     try:
         print(f"Trying to merge the following tracks: {gpx_track_files_to_merge}")
@@ -418,8 +362,10 @@ def merge_tracks(gpx_track_files_to_merge, output_file, name):
                 time1 = get_time(analyzer_for_all_tracks.gpx)
                 time2 = get_time(analyzer_for_single_track.gpx)
                 if time1 is None or time2 is None or time1 < time2:
+                    update_distance(analyzer_for_all_tracks.gpx, analyzer_for_single_track.gpx)
                     analyzer_for_all_tracks.gpx.tracks.extend(analyzer_for_single_track.gpx.tracks)
                 else:
+                    update_distance(analyzer_for_single_track.gpx, analyzer_for_all_tracks.gpx)
                     analyzer_for_single_track.gpx.tracks.extend(analyzer_for_all_tracks.gpx.tracks)
                     analyzer_for_all_tracks = analyzer_for_single_track
         analyzer_for_all_tracks.gpx.name = name
@@ -429,6 +375,44 @@ def merge_tracks(gpx_track_files_to_merge, output_file, name):
         return "return code: 0Merging of tracks successful"
     except Exception as err:
         return "return code: 1Unknown error occurred during merging of tracks: %s" % err
+
+
+def update_distance(gpx_with_correct_distances, gpx_track_to_be_updated):
+    last_point = Extension.parse(gpx_with_correct_distances.tracks[-1].segments[-1].points[
+                                     -1].extensions)
+    delta = last_point.distance
+    for track in gpx_track_to_be_updated.tracks:
+        for segment in track.segments:
+            points = []
+            for point in segment.points:
+                point.extensions_calculated = Extension.parse(point.extensions)
+                set_tag_in_extensions(
+                    gpx_track_to_be_updated,
+                    delta + point.extensions_calculated.distance,
+                    point,
+                    "distance"
+                )
+                points.append(point)
+            segment.points = points
+
+
+def set_tag_in_extensions(gpx, value, point, tag_name):
+    namespace_name = 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1'
+    namespace = '{' + namespace_name + '}'
+    track_extensions = 'TrackPointExtension'
+    tag = f"{namespace}{track_extensions}"
+    if len([e for e in point.extensions if e.tag == tag]) == 0:
+        gpx.nsmap["n3"] = namespace_name
+        point.extensions.append(mod_etree.Element(tag))
+    root = mod_etree.Element(namespace + tag_name)
+    root.text = f"{value}"
+    elements = [e for e in point.extensions if e.tag == tag][0]
+    extensions = [e for e in elements if e.tag.endswith("}" + tag_name)]
+    if len(extensions) == 0:
+        elements.append(root)
+    else:
+        elements.remove(extensions[0])
+        elements.append(root)
 
 
 def get_time(gpx):

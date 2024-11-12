@@ -133,7 +133,7 @@ enum class AdditionalDataTableEntry(
         jsonKey = "vertical_velocity_600s_+",
         scaleFactorView = 600
     ),
-    VerticalVelocity360Seconds(
+    VerticalVelocity3600Seconds(
         R.string.max_verticalVelocity_1h,
         R.string.m,
         { e -> e.elevationData.maxVerticalVelocity1h },
