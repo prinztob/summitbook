@@ -453,5 +453,9 @@
     <string name="not_recalculate_current_year">Recalculate only possible for next year</string>
     <string name="ignored">ignored</string>
     <string name="screenshot_taken">Screenshot was taken</string>
+    <string name="add_offline_map">Add offline map in mbtiles format</string>
+    <string name="add_offline_map_done">Add offline map done</string>
+    <string name="add_offline_map_failed">Add offline map failed</string>
+    <string name="add_offline_map_wrong_format">Add offline map failed</string>
 
 </resources>

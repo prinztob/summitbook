@@ -117,6 +117,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setContentView(binding.root)
         cache = applicationContext.cacheDir
         storage = applicationContext.filesDir
+        osmdroid = File(storage, "osmdroid")
         setDropDown()
         if (!Python.isStarted()) {
             Python.start(AndroidPlatform(this))
@@ -714,6 +715,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var updateOfTracksStarted: Boolean = false
         var entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
         var storage: File? = null
+        var osmdroid: File? = null
         var cache: File? = null
         var activitiesDir: File? = null
         var segmentScreenshotDir: File? = null

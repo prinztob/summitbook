@@ -134,9 +134,11 @@ object OpenStreetMapUtils {
     @JvmStatic
     fun setOsmConfForTiles() {
         val osmConf = Configuration.getInstance()
-        val osmdroidBasePath = File(MainActivity.storage, "osmdroid")
-        osmdroidBasePath.mkdirs()
-        osmConf.osmdroidBasePath = osmdroidBasePath
+        val osmdroidBasePath = MainActivity.osmdroid
+        if (osmdroidBasePath != null) {
+            osmdroidBasePath.mkdirs()
+            osmConf.osmdroidBasePath = osmdroidBasePath
+        }
         val tileCache = File(MainActivity.cache, "tile")
         tileCache.mkdirs()
         osmConf.osmdroidTileCache = tileCache

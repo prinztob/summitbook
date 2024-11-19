@@ -24,8 +24,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/loadingPanel"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="wrap_content" />
 
+    <ImageButton
+        android:id="@+id/addOfflineWorldMap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toStartOf="@id/centerOnLocation"
+        app:layout_constraintTop_toTopOf="parent"
+        android:contentDescription="@string/add_offline_map"
+        android:src="@drawable/baseline_map_black_24dp" />
     <ImageButton
         android:id="@+id/centerOnLocation"
         android:layout_width="wrap_content"

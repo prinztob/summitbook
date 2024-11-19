@@ -454,5 +454,9 @@
     <string name="not_recalculate_current_year">Erneute Berechnung nur möglich für nächstes Jahr</string>
     <string name="ignored">ignoriert</string>
     <string name="screenshot_taken">Screenshot erstellt</string>
+    <string name="add_offline_map">Füge eine offline Karte in mbtiles Format hinzu</string>
+    <string name="add_offline_map_done">Eine offline Karte wurde hinzugefügt</string>
+    <string name="add_offline_map_failed">Das Hinzufüügen einer offline Karte wurde hinzugefügt</string>
+    <string name="add_offline_map_wrong_format">Falsches Format der ausgewälten Offline Karte</string>
 
 </resources>

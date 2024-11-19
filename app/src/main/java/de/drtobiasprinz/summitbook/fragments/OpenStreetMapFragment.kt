@@ -1,8 +1,11 @@
 package de.drtobiasprinz.summitbook.fragments
 
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.InputDevice
@@ -11,6 +14,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -24,6 +28,7 @@ import de.drtobiasprinz.summitbook.databinding.FragmentOpenStreetMapBinding
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
@@ -42,12 +47,16 @@ import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.bonuspack.utils.BonusPackHelper
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.tileprovider.modules.ArchiveFileFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -175,6 +184,14 @@ class OpenStreetMapFragment : Fragment() {
             }
         }
 
+        binding.addOfflineWorldMap.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+            }
+            resultLauncher.launch(intent)
+        }
+
         binding.osmap.setOnGenericMotionListener { _: View?, event: MotionEvent ->
             if (0 != event.source and InputDevice.SOURCE_CLASS_POINTER) {
                 if (event.action == MotionEvent.ACTION_SCROLL) {
@@ -299,6 +316,67 @@ class OpenStreetMapFragment : Fragment() {
         }
     }
 
+    private var resultLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { resultData ->
+            if (resultData.resultCode == Activity.RESULT_OK) {
+                resultData.data?.data.also { uri ->
+                    val fileName = uri?.path?.split("/")?.last()
+                    val extension = fileName?.substring(fileName.lastIndexOf(".") + 1)
+                    if (ArchiveFileFactory.isFileExtensionRegistered(extension)) {
+                        if (uri != null && fileName != null) {
+                            copyMap(fileName, uri)
+                        }
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "${getString(R.string.add_offline_map_wrong_format)}: $extension",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        Log.w(TAG, "File extension $extension is not allowed.")
+                    }
+                }
+            }
+        }
+
+    private fun copyMap(fileName: String, uri: Uri) {
+        try {
+            binding.loadingPanel.visibility = View.VISIBLE
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    val destination = File(MainActivity.osmdroid, fileName)
+                    Log.i(TAG, "Copy file $fileName to $destination")
+                    if (!destination.exists()) {
+                        requireContext().contentResolver.openInputStream(uri)?.use { inputStream ->
+                            Files.copy(
+                                inputStream,
+                                destination.toPath(),
+                                StandardCopyOption.REPLACE_EXISTING
+                            )
+                        }
+                    }
+                }
+                binding.loadingPanel.visibility = View.GONE
+                Toast.makeText(
+                    context,
+                    getString(R.string.add_offline_map_done),
+                    Toast.LENGTH_LONG
+                ).show()
+                getParentFragmentManager().beginTransaction().detach(this@OpenStreetMapFragment)
+                    .commitNow()
+                getParentFragmentManager().beginTransaction().attach(this@OpenStreetMapFragment)
+                    .commitNow()
+            }
+        } catch (e: RuntimeException) {
+            Log.e(TAG, e.message ?: "")
+            Toast.makeText(
+                context,
+                getString(R.string.add_offline_map_failed),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+
     private fun getMarker(
         localMapView: MapView?,
         entry: Summit,
@@ -334,7 +412,7 @@ class OpenStreetMapFragment : Fragment() {
     }
 
     companion object {
-        const val TAG = "osmBaseFrag"
+        const val TAG = "OpenStreetMapFragment"
     }
 
 }
