@@ -75,6 +75,36 @@ enum class TextField(
         factor = 3600,
         digits = 0
     ),
+    TopVerticalVelocityDown1Min(
+        TextFieldGroup.Base,
+        { b -> b.topVerticalVelocityDown1MinText },
+        { b -> b.topVerticalVelocityDown1Min },
+        "m",
+        { e -> e.elevationData.maxVerticalVelocityDown1Min },
+        { e -> e?.topVerticalVelocityDown1MinMinMax },
+        factor = 60,
+        digits = 0
+    ),
+    TopVerticalVelocityDown10Min(
+        TextFieldGroup.Base,
+        { b -> b.topVerticalVelocityDown10MinText },
+        { b -> b.topVerticalVelocityDown10Min },
+        "m",
+        { e -> e.elevationData.maxVerticalVelocityDown10Min },
+        { e -> e?.topVerticalVelocityDown10MinMinMax },
+        factor = 600,
+        digits = 0
+    ),
+    TopVerticalVelocityDown1H(
+        TextFieldGroup.Base,
+        { b -> b.topVerticalVelocityDown1hText },
+        { b -> b.topVerticalVelocityDown1h },
+        "m",
+        { e -> e.elevationData.maxVerticalVelocityDown1h },
+        { e -> e?.topVerticalVelocityDown1hMinMax },
+        factor = 3600,
+        digits = 0
+    ),
     TopSlope(TextFieldGroup.Base,
         { b -> b.topSlopeText },
         { b -> b.topSlope },

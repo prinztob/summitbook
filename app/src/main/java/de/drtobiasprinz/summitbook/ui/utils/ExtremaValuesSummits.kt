@@ -27,6 +27,9 @@ class ExtremaValuesSummits(val entries: List<Summit>, val shouldIndoorActivityBe
     var topVerticalVelocity1MinMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.elevationData.maxVerticalVelocity1Min }
     var topVerticalVelocity10MinMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.elevationData.maxVerticalVelocity10Min }
     var topVerticalVelocity1hMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.elevationData.maxVerticalVelocity1h }
+    var topVerticalVelocityDown1MinMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.elevationData.maxVerticalVelocityDown1Min }
+    var topVerticalVelocityDown10MinMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.elevationData.maxVerticalVelocityDown10Min }
+    var topVerticalVelocityDown1hMinMax = getMinMax(shouldIndoorActivityBeExcluded) { e -> e.elevationData.maxVerticalVelocityDown1h }
 
     var averageHRMinMax = getMinMax { e -> e.garminData?.averageHR ?: 0 }
 

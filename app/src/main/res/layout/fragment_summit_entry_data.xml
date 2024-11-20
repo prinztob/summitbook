@@ -200,6 +200,50 @@
                     app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocity10MinText" />
 
                 <TextView
+                    android:id="@+id/top_verticalVelocityDown1MinText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/max_verticalVelocity_down_1Min"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/baseline_terrain_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocity1hText" />
+
+                <TextView
+                    android:id="@+id/top_verticalVelocityDown10MinText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/max_verticalVelocity_down_10Min"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/baseline_terrain_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocityDown1MinText" />
+
+                <TextView
+                    android:id="@+id/top_verticalVelocityDown1hText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/max_verticalVelocity_down_1h"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/baseline_terrain_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocityDown10MinText" />
+                <TextView
                     android:id="@+id/paceText"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
@@ -212,7 +256,7 @@
                     app:drawableStartCompat="@drawable/baseline_speed_black_24dp"
                     app:drawableTint="?android:attr/colorControlNormal"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocity1hText" />
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocityDown1hText" />
 
                 <TextView
                     android:id="@+id/durationText"
@@ -349,6 +393,41 @@
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocity10Min" />
+                <TextView
+                    android:id="@+id/top_verticalVelocityDown1Min"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocity1h" />
+
+                <TextView
+                    android:id="@+id/top_verticalVelocityDown10Min"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocityDown1Min" />
+
+                <TextView
+                    android:id="@+id/top_verticalVelocityDown1h"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:drawablePadding="5dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocityDown10Min" />
 
                 <TextView
                     android:id="@+id/pace"
@@ -360,7 +439,7 @@
                     android:padding="3.5dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocity1h" />
+                    app:layout_constraintTop_toBottomOf="@+id/top_verticalVelocityDown1h" />
 
                 <TextView
                     android:id="@+id/duration"
