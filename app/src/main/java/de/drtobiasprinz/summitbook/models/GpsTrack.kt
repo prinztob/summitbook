@@ -57,6 +57,9 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         color: Int = COLOR_POLYLINE_STATIC, rootView: View? = null, summit: Summit? = null
     ) {
         try {
+            if (osMapRoute != null) {
+                mMapView?.overlays?.remove(osMapRoute)
+            }
             osMapRoute = Polyline(mMapView)
             val textView: TextView? = rootView?.findViewById(R.id.track_value)
             val defaultText = "${trackPoints.size} ${rootView?.resources?.getString(R.string.pts)}"

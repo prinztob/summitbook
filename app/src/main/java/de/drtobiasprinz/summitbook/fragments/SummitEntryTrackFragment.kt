@@ -88,6 +88,11 @@ class SummitEntryTrackFragment : Fragment() {
         binding.osmap.overlays.add(mLocationOverlay)
         binding.loadingPanel.visibility = View.VISIBLE
         binding.lineChart.visibility = View.GONE
+        OpenStreetMapUtils.addDefaultSettings(
+            requireContext(),
+            binding.osmap,
+            requireActivity()
+        )
         return binding.root
     }
 
@@ -116,6 +121,7 @@ class SummitEntryTrackFragment : Fragment() {
                         binding.summitName.text = summitToView.name
                         binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
                         binding.osmap.overlays.clear()
+                        OpenStreetMapUtils.setTileSource(binding.osmap, requireContext())
                         lifecycleScope.launch {
                             withContext(Dispatchers.IO) {
                                 setGpsTrack(summitToView, useSimplifiedTrack = true)
@@ -129,7 +135,7 @@ class SummitEntryTrackFragment : Fragment() {
                                     setGpsTrack(summitToView, forceUpdate = true)
                                 }
                                 drawChart(summitToView)
-                                updateMap(summitToView, summitToCompare, allSummits)
+                                updateMap(summitToView, summitToCompare, allSummits, false)
                                 setButtons(summitToView)
                             }
                         }
@@ -169,13 +175,11 @@ class SummitEntryTrackFragment : Fragment() {
     private fun updateMap(
         summitToView: Summit,
         summitToCompare: Summit?,
-        summits: List<Summit>?
+        summits: List<Summit>?,
+        doCleanUp: Boolean = true
     ) {
-        binding.osmap.overlays?.clear()
-        binding.osmap.overlayManager?.clear()
-        binding.osmap.overlays.add(mLocationOverlay)
         setUsedItemsForColorCode()
-        setOpenStreetMap(summitToView, summitToCompare, summits)
+        setOpenStreetMap(summitToView, summitToCompare, summits, doCleanUp=doCleanUp)
         OpenStreetMapUtils.setOsmConfForTiles()
     }
 
@@ -471,7 +475,6 @@ class SummitEntryTrackFragment : Fragment() {
         doCleanUp: Boolean = true
     ) {
         val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || summitToView.latLng != null
-        OpenStreetMapUtils.setTileSource(binding.osmap, requireContext())
         binding.changeMapType.setImageResource(R.drawable.baseline_more_vert_black_24dp)
         binding.changeMapType.setOnClickListener {
             OpenStreetMapUtils.showMapTypeSelectorDialog(
@@ -485,12 +488,13 @@ class SummitEntryTrackFragment : Fragment() {
         if (hasPoints) {
             if (doCleanUp) {
                 binding.osmap.overlays.clear()
+                binding.osmap.overlays.add(mLocationOverlay)
+                OpenStreetMapUtils.addDefaultSettings(
+                    requireContext(),
+                    binding.osmap,
+                    requireActivity()
+                )
             }
-            OpenStreetMapUtils.addDefaultSettings(
-                requireContext(),
-                binding.osmap,
-                requireActivity()
-            )
             if (summitToCompare != null) {
                 OpenStreetMapUtils.drawTrack(
                     summitToCompare,
@@ -609,7 +613,6 @@ class SummitEntryTrackFragment : Fragment() {
         maxPointsToShow: Int
     ) {
         binding.osmap.overlays.clear()
-        binding.osmap.overlayManager?.clear()
 
         val summitsWithSameBoundingBox = summits.filter {
             it.activityId != summitToView.activityId && binding.osmap.boundingBox?.let { it1 ->
