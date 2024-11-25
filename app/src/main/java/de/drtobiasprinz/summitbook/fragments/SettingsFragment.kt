@@ -3,7 +3,9 @@ package de.drtobiasprinz.summitbook.fragments
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.widget.Toast
@@ -19,6 +21,7 @@ import androidx.preference.SeekBarPreference
 import androidx.preference.SwitchPreferenceCompat
 import androidx.preference.contains
 import com.google.android.material.snackbar.Snackbar
+import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.storage
@@ -313,17 +316,23 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     /* Opens up a file picker to select the folder containing the on-device map files */
     private fun openOnDeviceMapsFolderDialog() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
-        }
-        try {
-            requestOnDeviceMapsFolderLauncher.launch(intent)
-        } catch (exception: Exception) {
-            Log.e(TAG, "Unable to select a on-device maps folder.\n$exception")
-            Toast.makeText(
-                requireContext(),
-                R.string.toast_message_install_file_helper,
-                Toast.LENGTH_LONG
-            ).show()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                Uri.parse("package:" + BuildConfig.APPLICATION_ID)
+            ).apply {}
+            try {
+                requestOnDeviceMapsFolderLauncher.launch(intent)
+            } catch (exception: Exception) {
+                Log.e(TAG, "Unable to select a on-device maps folder.\n$exception")
+                Toast.makeText(
+                    requireContext(),
+                    R.string.toast_message_install_file_helper,
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        } else {
+            Log.i(TAG, "This is not supported in your Android Version")
         }
     }
 

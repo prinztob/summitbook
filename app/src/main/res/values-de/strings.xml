@@ -458,5 +458,6 @@
     <string name="add_offline_map_done">Eine offline Karte wurde hinzugefügt</string>
     <string name="add_offline_map_failed">Das Hinzufüügen einer offline Karte wurde hinzugefügt</string>
     <string name="add_offline_map_wrong_format">Falsches Format der ausgewälten Offline Karte</string>
+    <string name="location_not_enabled">Position is nicht verfügbar, überprüfe die Berechtigungen.</string>
 
 </resources>

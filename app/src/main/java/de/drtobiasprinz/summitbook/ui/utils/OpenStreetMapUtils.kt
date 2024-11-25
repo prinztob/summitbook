@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.ui.utils
 import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
+import android.os.Environment
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
@@ -15,6 +16,7 @@ import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.storage
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.MapHelper
@@ -131,14 +133,25 @@ object OpenStreetMapUtils {
         return mGeoPoints
     }
 
+    private fun getOsmdroidTilesFolder(): File {
+        val folders = PreferencesHelper.loadOnDeviceMapsFolder().split("%3A")
+        val guessOsmdroidFolder = File(
+            Environment.getExternalStorageDirectory(),
+            folders.subList(1, folders.size).joinToString("/")
+        )
+        if (guessOsmdroidFolder.exists()) {
+            return guessOsmdroidFolder
+        } else {
+            return File(storage, "osmdroid")
+        }
+    }
+
     @JvmStatic
     fun setOsmConfForTiles() {
         val osmConf = Configuration.getInstance()
-        val osmdroidBasePath = MainActivity.osmdroid
-        if (osmdroidBasePath != null) {
-            osmdroidBasePath.mkdirs()
-            osmConf.osmdroidBasePath = osmdroidBasePath
-        }
+        val osmdroidBasePath = getOsmdroidTilesFolder()
+        osmdroidBasePath.mkdirs()
+        osmConf.osmdroidBasePath = osmdroidBasePath
         val tileCache = File(MainActivity.cache, "tile")
         tileCache.mkdirs()
         osmConf.osmdroidTileCache = tileCache
