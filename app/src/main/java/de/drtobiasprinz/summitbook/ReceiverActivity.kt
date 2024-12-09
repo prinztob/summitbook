@@ -13,6 +13,7 @@ import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
+import de.drtobiasprinz.summitbook.utils.Utils
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -28,6 +29,7 @@ class ReceiverActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityReceiverBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        Utils.fixEdgeToEdge(binding.root)
 
         Log.i("ReceiverActivity", "onCreate")
         MainActivity.cache = applicationContext.cacheDir

@@ -73,6 +73,7 @@ import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
 import de.drtobiasprinz.summitbook.ui.utils.PosterOverlayView
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileWriter
+import de.drtobiasprinz.summitbook.utils.Utils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -115,6 +116,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        Utils.fixEdgeToEdge(binding.root)
+
         cache = applicationContext.cacheDir
         storage = applicationContext.filesDir
         setDropDown()
@@ -138,6 +142,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.string.nav_open_drawer,
             R.string.nav_close_drawer
         )
+
         binding.drawerLayout.addDrawerListener(actionBarDrawerToggle)
         actionBarDrawerToggle.syncState()
 

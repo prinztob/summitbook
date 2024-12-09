@@ -28,6 +28,7 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addTrackAndMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.drawBoundingBox
+import de.drtobiasprinz.summitbook.utils.Utils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import io.ticofab.androidgpxparser.parser.GPXParser
 import org.osmdroid.bonuspack.location.GeocoderNominatim
@@ -68,6 +69,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySelectOnOsmapBinding.inflate(layoutInflater)
+        Utils.fixEdgeToEdge(binding.root)
         setContentView(binding.root)
         binding.expander.setOnClickListener {
             if (binding.searchPanel.visibility == View.VISIBLE) {
