@@ -2,6 +2,7 @@ package de.drtobiasprinz.summitbook.db.entities
 
 import android.content.Context
 import android.content.res.Resources
+import android.util.Log
 import androidx.room.*
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.*
@@ -434,13 +435,16 @@ class Summit(
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
         val that = other as Summit
+        Log.i("TAG", that.toString())
+        Log.i("TAG", this.toString())
         return that.kilometers == kilometers &&
                 that.getDateAsString() == getDateAsString() &&
                 name == that.name &&
                 sportType == that.sportType &&
                 velocityData.maxVelocity == that.velocityData.maxVelocity &&
                 elevationData.elevationGain == that.elevationData.elevationGain &&
-                elevationData.maxElevation == that.elevationData.maxElevation
+                elevationData.maxElevation == that.elevationData.maxElevation &&
+                imageIds == that.imageIds
     }
 
     override fun equals(other: Any?): Boolean {
@@ -482,9 +486,9 @@ class Summit(
             places,
             countries,
             comments,
-            elevationData,
+            elevationData.clone(),
             kilometers,
-            velocityData,
+            velocityData.clone(),
             lat,
             lng,
             participants,
