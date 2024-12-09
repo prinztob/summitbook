@@ -8,8 +8,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
+import androidx.lifecycle.LiveData
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.db.entities.Forecast
@@ -23,10 +25,12 @@ import java.util.Calendar
 import javax.inject.Inject
 import kotlin.math.roundToInt
 
+
 @AndroidEntryPoint
 class SummitBookWidgetProvider : AppWidgetProvider() {
     @Inject
     lateinit var repository: DatabaseRepository
+
     override fun onUpdate(
         context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray
     ) {
@@ -40,37 +44,60 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
             ),
             R.id.widget
         )
-        val summitsLiveData = repository.getAllSummitsLiveData()
-        val forecastsLiveData = repository.getAllForecastsLiveData()
-        summitsLiveData.observeForever { summits ->
-            if (summits != null) {
-                val thisWidget = ComponentName(context, SummitBookWidgetProvider::class.java)
-                val allWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
-                for (widgetId in allWidgetIds) {
-                    val remoteViews = RemoteViews(context.packageName, R.layout.widget_layout)
-                    forecastsLiveData.observeForever { forecasts ->
-                        if (forecasts != null && forecasts.any { it.year == (Calendar.getInstance())[Calendar.YEAR] }) {
-                            setRemoteViewsFromForecast(
-                                forecasts,
-                                summits,
-                                remoteViews,
-                                context
-                            )
-                        } else {
-                            setTextFromStatisticEntry(summits, remoteViews, context)
-                        }
-                        val configIntent = Intent(context, MainActivity::class.java)
-                        val pIntent = PendingIntent.getActivity(
-                            context,
-                            0,
-                            configIntent,
-                            FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                        )
-                        remoteViews.setOnClickPendingIntent(R.id.widget, pIntent)
+        repository.getAllSummitsLiveData().observeForever { summits ->
+            update(summits, context, appWidgetManager, repository.getAllForecastsLiveData())
+        }
+    }
 
-                        appWidgetManager.updateAppWidget(widgetId, remoteViews)
-                    }
+    override fun onReceive(context: Context, intent: Intent?) {
+        super.onReceive(context, intent)
+        val appWidgetManager = AppWidgetManager.getInstance(context.applicationContext)
+        val thisWidget = ComponentName(
+            context.applicationContext,
+            SummitBookWidgetProvider::class.java
+        )
+        val appWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
+        if (intent?.action != null && appWidgetIds != null && appWidgetIds.isNotEmpty()) {
+            onUpdate(context, appWidgetManager, appWidgetIds)
+            Log.i(TAG, "onReceive - call on update")
+        } else {
+            Log.i(TAG, "onReceive - nothing to do.")
+        }
+    }
+
+    private fun update(
+        summits: MutableList<Summit>,
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        forecastsLiveData: LiveData<MutableList<Forecast>>
+    ) {
+        val thisWidget = ComponentName(context, SummitBookWidgetProvider::class.java)
+        val allWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
+        for (widgetId in allWidgetIds) {
+            Log.i(TAG, "Widget id: $widgetId")
+            val remoteViews = RemoteViews(context.packageName, R.layout.widget_layout)
+
+            forecastsLiveData.observeForever { forecasts ->
+                if (forecasts != null && forecasts.any { it.year == (Calendar.getInstance())[Calendar.YEAR] }) {
+                    setRemoteViewsFromForecast(
+                        forecasts,
+                        summits,
+                        remoteViews,
+                        context
+                    )
+                } else {
+                    setTextFromStatisticEntry(summits, remoteViews, context)
                 }
+                val configIntent = Intent(context, MainActivity::class.java)
+                val pIntent = PendingIntent.getActivity(
+                    context,
+                    0,
+                    configIntent,
+                    FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                remoteViews.setOnClickPendingIntent(R.id.widget, pIntent)
+
+                appWidgetManager.updateAppWidget(widgetId, remoteViews)
             }
         }
     }
@@ -301,6 +328,10 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
             }
         }
         return entries
+    }
+
+    companion object {
+        private val TAG = "WIDGET"
     }
 
 }
