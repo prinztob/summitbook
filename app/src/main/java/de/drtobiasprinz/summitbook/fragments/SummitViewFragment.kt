@@ -362,9 +362,7 @@ class SummitViewFragment : Fragment() {
                                 "AsyncSimplifyGpsTracks",
                                 "Calculate additional data for  $i of ${summitsWithoutAdditionalData.size} for ${e.getDateAsString()}_${e.name}."
                             )
-                            GpxPyExecutor(pythonInstance).analyzeGpxTrackAndCreateGpxPyDataFile(
-                                e.getGpsTrackPath(),
-                            )
+                            GpxPyExecutor(pythonInstance).analyzeGpxTrackAndCreateGpxPyDataFile(e)
                             Log.i(
                                 "AsyncSimplifyGpsTracks",
                                 "Calculated additional data for ${e.getDateAsString()}_${e.name}."

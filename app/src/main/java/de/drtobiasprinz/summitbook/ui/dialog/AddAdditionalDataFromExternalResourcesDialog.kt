@@ -101,11 +101,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                             "Simplifying track ${summit.getDateAsString()}_${summit.name}."
                         )
                         pythonInstance?.let { it1 ->
-                            GpxPyExecutor(it1).analyzeGpxTrackAndCreateGpxPyDataFile(
-                                summit.getGpsTrackPath(
-                                    simplified = false
-                                )
-                            )
+                            GpxPyExecutor(it1).analyzeGpxTrackAndCreateGpxPyDataFile(summit)
                         }
                     } catch (ex: RuntimeException) {
                         Log.e(
@@ -142,11 +138,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
                         "Entry ${summit.name} will be simplified again in order to obtain newest data"
                     )
                     withContext(Dispatchers.IO) {
-                        GpxPyExecutor(instance).analyzeGpxTrackAndCreateGpxPyDataFile(
-                            summit.getGpsTrackPath(
-                                simplified = false
-                            )
-                        )
+                        GpxPyExecutor(instance).analyzeGpxTrackAndCreateGpxPyDataFile(summit)
                     }
                 }
             }

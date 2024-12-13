@@ -108,9 +108,7 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
                 withContext(Dispatchers.IO) {
                     try {
                         GpxPyExecutor(pythonInstance).analyzeGpxTrackAndCreateGpxPyDataFile(
-                            summit.getGpsTrackPath(
-                                simplified = false
-                            )
+                            summit
                         )
                         Log.i(
                             "AsyncSimplifyGpsTracks",
