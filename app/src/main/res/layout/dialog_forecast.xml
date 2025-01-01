@@ -120,17 +120,31 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/group_forecast_property" />
 
+        <ImageButton
+            android:id="@+id/recalculateDataMonth1"
+            android:layout_marginTop="-5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="?android:attr/colorControlNormal"
+            android:contentDescription="@string/recalculate"
+            android:src="@drawable/baseline_refresh_12"
+            app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month1"
+            app:layout_constraintStart_toEndOf="@+id/text_month1"
+            app:layout_constraintBottom_toBottomOf="@+id/text_month1"
+            app:layout_constraintTop_toTopOf="@+id/text_month1" />
+
         <TextView
             android:id="@+id/fulfilled_forecast_month1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
             android:layout_marginStart="30dp"
             android:drawablePadding="5dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:text=""
             app:drawableStartCompat="@drawable/ic_baseline_edit_12"
             app:drawableTint="?android:attr/colorControlNormal"
-            app:layout_constraintStart_toEndOf="@+id/text_month1"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/group_forecast_property" />
 
 
@@ -139,7 +153,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="-10dp"
+            android:layout_marginTop="-4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_month1"
             app:thumbRadius="6dp" />
@@ -155,20 +169,31 @@
             android:text="@string/february"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month1" />
-
+        <ImageButton
+            android:id="@+id/recalculateDataMonth2"
+            android:backgroundTint="?android:attr/colorControlNormal"
+            android:layout_marginTop="-5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/recalculate"
+            android:src="@drawable/baseline_refresh_12"
+            app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month2"
+            app:layout_constraintStart_toEndOf="@+id/text_month2"
+            app:layout_constraintBottom_toBottomOf="@+id/text_month2"
+            app:layout_constraintTop_toTopOf="@+id/text_month2" />
         <TextView
             android:id="@+id/fulfilled_forecast_month2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
             android:layout_marginStart="30dp"
             android:layout_marginTop="-5dp"
             android:drawablePadding="5dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:text=""
             app:drawableStartCompat="@drawable/ic_baseline_edit_12"
             app:drawableTint="?android:attr/colorControlNormal"
-
-            app:layout_constraintStart_toEndOf="@+id/text_month2"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month1" />
 
         <com.google.android.material.slider.Slider
@@ -176,7 +201,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="-10dp"
+            android:layout_marginTop="-4dp"
             app:layout_constraintStart_toStartOf="parent"
 
             app:layout_constraintTop_toBottomOf="@+id/text_month2"
@@ -193,7 +218,18 @@
             android:text="@string/march"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month2" />
-
+        <ImageButton
+            android:id="@+id/recalculateDataMonth3"
+            android:backgroundTint="?android:attr/colorControlNormal"
+            android:layout_marginTop="-5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/recalculate"
+            android:src="@drawable/baseline_refresh_12"
+            app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month3"
+            app:layout_constraintStart_toEndOf="@+id/text_month3"
+            app:layout_constraintBottom_toBottomOf="@+id/text_month3"
+            app:layout_constraintTop_toTopOf="@+id/text_month3" />
         <TextView
             android:id="@+id/fulfilled_forecast_month3"
             android:layout_width="wrap_content"
@@ -202,11 +238,12 @@
             android:layout_marginStart="30dp"
             android:layout_marginTop="-5dp"
             android:drawablePadding="5dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:text=""
             app:drawableStartCompat="@drawable/ic_baseline_edit_12"
             app:drawableTint="?android:attr/colorControlNormal"
-
-            app:layout_constraintStart_toEndOf="@+id/text_month3"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month2" />
 
         <com.google.android.material.slider.Slider
@@ -214,7 +251,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="-10dp"
+            android:layout_marginTop="-4dp"
             app:layout_constraintStart_toStartOf="parent"
 
             app:layout_constraintTop_toBottomOf="@+id/text_month3"
@@ -231,7 +268,18 @@
             android:text="@string/april"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month3" />
-
+        <ImageButton
+            android:id="@+id/recalculateDataMonth4"
+            android:backgroundTint="?android:attr/colorControlNormal"
+            android:layout_marginTop="-5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/recalculate"
+            android:src="@drawable/baseline_refresh_12"
+            app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month4"
+            app:layout_constraintStart_toEndOf="@+id/text_month4"
+            app:layout_constraintBottom_toBottomOf="@+id/text_month4"
+            app:layout_constraintTop_toTopOf="@+id/text_month4" />
         <TextView
             android:id="@+id/fulfilled_forecast_month4"
             android:layout_width="wrap_content"
@@ -240,11 +288,12 @@
             android:layout_marginStart="30dp"
             android:layout_marginTop="-5dp"
             android:drawablePadding="5dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:text=""
             app:drawableStartCompat="@drawable/ic_baseline_edit_12"
             app:drawableTint="?android:attr/colorControlNormal"
-
-            app:layout_constraintStart_toEndOf="@+id/text_month4"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month3" />
 
         <com.google.android.material.slider.Slider
@@ -252,7 +301,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="-10dp"
+            android:layout_marginTop="-4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_month4"
             app:thumbRadius="6dp" />
@@ -268,7 +317,18 @@
             android:text="@string/may"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month4" />
-
+        <ImageButton
+            android:id="@+id/recalculateDataMonth5"
+            android:backgroundTint="?android:attr/colorControlNormal"
+            android:layout_marginTop="-5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/recalculate"
+            android:src="@drawable/baseline_refresh_12"
+            app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month5"
+            app:layout_constraintStart_toEndOf="@+id/text_month5"
+            app:layout_constraintBottom_toBottomOf="@+id/text_month5"
+            app:layout_constraintTop_toTopOf="@+id/text_month5" />
         <TextView
             android:id="@+id/fulfilled_forecast_month5"
             android:layout_width="wrap_content"
@@ -277,10 +337,12 @@
             android:layout_marginStart="30dp"
             android:layout_marginTop="-5dp"
             android:drawablePadding="5dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:text=""
             app:drawableStartCompat="@drawable/ic_baseline_edit_12"
             app:drawableTint="?android:attr/colorControlNormal"
-            app:layout_constraintStart_toEndOf="@+id/text_month5"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month4" />
 
         <com.google.android.material.slider.Slider
@@ -288,7 +350,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="-10dp"
+            android:layout_marginTop="-4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_month5"
             app:thumbRadius="6dp" />
@@ -304,7 +366,18 @@
             android:text="@string/june"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month5" />
-
+        <ImageButton
+            android:id="@+id/recalculateDataMonth6"
+            android:backgroundTint="?android:attr/colorControlNormal"
+            android:layout_marginTop="-5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/recalculate"
+            android:src="@drawable/baseline_refresh_12"
+            app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month6"
+            app:layout_constraintStart_toEndOf="@+id/text_month6"
+            app:layout_constraintBottom_toBottomOf="@+id/text_month6"
+            app:layout_constraintTop_toTopOf="@+id/text_month6" />
         <TextView
             android:id="@+id/fulfilled_forecast_month6"
             android:layout_width="wrap_content"
@@ -313,10 +386,12 @@
             android:layout_marginStart="30dp"
             android:layout_marginTop="-5dp"
             android:drawablePadding="5dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:text=""
             app:drawableStartCompat="@drawable/ic_baseline_edit_12"
             app:drawableTint="?android:attr/colorControlNormal"
-            app:layout_constraintStart_toEndOf="@+id/text_month6"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month5" />
 
         <com.google.android.material.slider.Slider
@@ -324,7 +399,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="-10dp"
+            android:layout_marginTop="-4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_month6"
             app:thumbRadius="6dp" />
@@ -340,7 +415,18 @@
             android:text="@string/july"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month6" />
-
+        <ImageButton
+            android:id="@+id/recalculateDataMonth7"
+            android:backgroundTint="?android:attr/colorControlNormal"
+            android:layout_marginTop="-5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/recalculate"
+            android:src="@drawable/baseline_refresh_12"
+            app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month7"
+            app:layout_constraintStart_toEndOf="@+id/text_month7"
+            app:layout_constraintBottom_toBottomOf="@+id/text_month7"
+            app:layout_constraintTop_toTopOf="@+id/text_month7" />
         <TextView
             android:id="@+id/fulfilled_forecast_month7"
             android:layout_width="wrap_content"
@@ -349,10 +435,12 @@
             android:layout_marginStart="30dp"
             android:layout_marginTop="-5dp"
             android:drawablePadding="5dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:text=""
             app:drawableStartCompat="@drawable/ic_baseline_edit_12"
             app:drawableTint="?android:attr/colorControlNormal"
-            app:layout_constraintStart_toEndOf="@+id/text_month7"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month6" />
 
         <com.google.android.material.slider.Slider
@@ -360,7 +448,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="-10dp"
+            android:layout_marginTop="-4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_month7"
             app:thumbRadius="6dp" />
@@ -376,7 +464,18 @@
             android:text="@string/august"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month7" />
-
+        <ImageButton
+            android:id="@+id/recalculateDataMonth8"
+            android:backgroundTint="?android:attr/colorControlNormal"
+            android:layout_marginTop="-5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/recalculate"
+            android:src="@drawable/baseline_refresh_12"
+            app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month8"
+            app:layout_constraintStart_toEndOf="@+id/text_month8"
+            app:layout_constraintBottom_toBottomOf="@+id/text_month8"
+            app:layout_constraintTop_toTopOf="@+id/text_month8" />
         <TextView
             android:id="@+id/fulfilled_forecast_month8"
             android:layout_width="wrap_content"
@@ -385,10 +484,12 @@
             android:layout_marginStart="30dp"
             android:layout_marginTop="-5dp"
             android:drawablePadding="5dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:text=""
             app:drawableStartCompat="@drawable/ic_baseline_edit_12"
             app:drawableTint="?android:attr/colorControlNormal"
-            app:layout_constraintStart_toEndOf="@+id/text_month8"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month7" />
 
         <com.google.android.material.slider.Slider
@@ -396,7 +497,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="-10dp"
+            android:layout_marginTop="-4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_month8"
             app:thumbRadius="6dp" />
@@ -413,7 +514,18 @@
 
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month8" />
-
+        <ImageButton
+            android:id="@+id/recalculateDataMonth9"
+            android:backgroundTint="?android:attr/colorControlNormal"
+            android:layout_marginTop="-5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/recalculate"
+            android:src="@drawable/baseline_refresh_12"
+            app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month9"
+            app:layout_constraintStart_toEndOf="@+id/text_month9"
+            app:layout_constraintBottom_toBottomOf="@+id/text_month9"
+            app:layout_constraintTop_toTopOf="@+id/text_month9" />
         <TextView
             android:id="@+id/fulfilled_forecast_month9"
             android:layout_width="wrap_content"
@@ -422,10 +534,12 @@
             android:layout_marginStart="30dp"
             android:layout_marginTop="-5dp"
             android:drawablePadding="5dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:text=""
             app:drawableStartCompat="@drawable/ic_baseline_edit_12"
             app:drawableTint="?android:attr/colorControlNormal"
-            app:layout_constraintStart_toEndOf="@+id/text_month9"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month8" />
 
         <com.google.android.material.slider.Slider
@@ -433,7 +547,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="-10dp"
+            android:layout_marginTop="-4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_month9"
             app:thumbRadius="6dp" />
@@ -450,7 +564,18 @@
             app:layout_constraintStart_toStartOf="parent"
 
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month9" />
-
+        <ImageButton
+            android:id="@+id/recalculateDataMonth10"
+            android:backgroundTint="?android:attr/colorControlNormal"
+            android:layout_marginTop="-5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/recalculate"
+            android:src="@drawable/baseline_refresh_12"
+            app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month10"
+            app:layout_constraintStart_toEndOf="@+id/text_month10"
+            app:layout_constraintBottom_toBottomOf="@+id/text_month10"
+            app:layout_constraintTop_toTopOf="@+id/text_month10" />
         <TextView
             android:id="@+id/fulfilled_forecast_month10"
             android:layout_width="wrap_content"
@@ -459,10 +584,12 @@
             android:layout_marginStart="30dp"
             android:layout_marginTop="-5dp"
             android:drawablePadding="5dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:text=""
             app:drawableStartCompat="@drawable/ic_baseline_edit_12"
             app:drawableTint="?android:attr/colorControlNormal"
-            app:layout_constraintStart_toEndOf="@+id/text_month10"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month9" />
 
         <com.google.android.material.slider.Slider
@@ -470,7 +597,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="-10dp"
+            android:layout_marginTop="-4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_month10"
             app:thumbRadius="6dp" />
@@ -486,7 +613,18 @@
             android:text="@string/november"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month10" />
-
+        <ImageButton
+            android:id="@+id/recalculateDataMonth11"
+            android:backgroundTint="?android:attr/colorControlNormal"
+            android:layout_marginTop="-5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/recalculate"
+            android:src="@drawable/baseline_refresh_12"
+            app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month11"
+            app:layout_constraintStart_toEndOf="@+id/text_month11"
+            app:layout_constraintBottom_toBottomOf="@+id/text_month11"
+            app:layout_constraintTop_toTopOf="@+id/text_month11" />
         <TextView
             android:id="@+id/fulfilled_forecast_month11"
             android:layout_width="wrap_content"
@@ -495,10 +633,12 @@
             android:layout_marginStart="30dp"
             android:layout_marginTop="-5dp"
             android:drawablePadding="5dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:text=""
             app:drawableStartCompat="@drawable/ic_baseline_edit_12"
             app:drawableTint="?android:attr/colorControlNormal"
-            app:layout_constraintStart_toEndOf="@+id/text_month11"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month10" />
 
         <com.google.android.material.slider.Slider
@@ -506,7 +646,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="-10dp"
+            android:layout_marginTop="-4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_month11"
             app:thumbRadius="6dp" />
@@ -521,9 +661,19 @@
             android:layout_marginTop="-5dp"
             android:text="@string/december"
             app:layout_constraintStart_toStartOf="parent"
-
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month11" />
-
+        <ImageButton
+            android:id="@+id/recalculateDataMonth12"
+            android:backgroundTint="?android:attr/colorControlNormal"
+            android:layout_marginTop="-5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/recalculate"
+            android:src="@drawable/baseline_refresh_12"
+            app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month12"
+            app:layout_constraintStart_toEndOf="@+id/text_month12"
+            app:layout_constraintBottom_toBottomOf="@+id/text_month12"
+            app:layout_constraintTop_toTopOf="@+id/text_month12" />
         <TextView
             android:id="@+id/fulfilled_forecast_month12"
             android:layout_width="wrap_content"
@@ -532,10 +682,12 @@
             android:layout_marginStart="30dp"
             android:layout_marginTop="-5dp"
             android:drawablePadding="5dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:text=""
             app:drawableStartCompat="@drawable/ic_baseline_edit_12"
             app:drawableTint="?android:attr/colorControlNormal"
-            app:layout_constraintStart_toEndOf="@+id/text_month12"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month11" />
 
         <com.google.android.material.slider.Slider
@@ -543,7 +695,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:layout_marginTop="-10dp"
+            android:layout_marginTop="-4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_month12"
             app:thumbRadius="6dp" />

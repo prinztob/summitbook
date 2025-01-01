@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.widget.AppCompatImageButton
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
@@ -90,6 +91,7 @@ class ForecastDialog : DialogFragment() {
                                     }
                                     setForecastsInDialog(
                                         forecasts,
+                                        summits,
                                         yearsWithForecasts[selectedSegmentedYear],
                                         view
                                     )
@@ -113,6 +115,7 @@ class ForecastDialog : DialogFragment() {
                                         )
                                         setForecastsInDialog(
                                             forecasts,
+                                            summits,
                                             yearsWithForecasts[selectedSegmentedYear],
                                             view
                                         )
@@ -155,6 +158,7 @@ class ForecastDialog : DialogFragment() {
                                         )
                                         setForecastsInDialog(
                                             forecasts,
+                                            summits,
                                             yearsWithForecasts[selectedSegmentedYear],
                                             view
                                         )
@@ -170,6 +174,7 @@ class ForecastDialog : DialogFragment() {
                                         )
                                         setForecastsInDialog(
                                             forecasts,
+                                            summits,
                                             yearsWithForecasts[selectedSegmentedYear],
                                             view
                                         )
@@ -199,25 +204,35 @@ class ForecastDialog : DialogFragment() {
         updateIfEntryExists: Boolean = false
     ) {
         for (month in 1..12) {
-            val updatedForecast = Forecast.getNewForecastFrom(
-                month,
-                year,
-                summits,
-                averageOfLastXYears,
-                annualTargetActivity,
-                annualTargetKm,
-                annualTargetHm
-            )
-            val existingForecast = forecasts?.firstOrNull { it.month == month && it.year == year }
-            if (existingForecast == null) {
-                Log.d(TAG, "Add new Forecast for month $month and year $year: $updatedForecast")
-                viewModel.saveForecast(false, updatedForecast)
-            } else if (updateIfEntryExists) {
-                existingForecast.forecastDistance = updatedForecast.forecastDistance
-                existingForecast.forecastHeightMeter = updatedForecast.forecastHeightMeter
-                existingForecast.forecastNumberActivities = updatedForecast.forecastNumberActivities
-                Log.d(TAG, "Update Forecast for month $month and year $year: $existingForecast")
-            }
+            updateForecastForMonthAndYear(month, year, summits, forecasts, updateIfEntryExists)
+        }
+    }
+
+    private fun updateForecastForMonthAndYear(
+        month: Int,
+        year: Int,
+        summits: List<Summit>?,
+        forecasts: List<Forecast>?,
+        updateIfEntryExists: Boolean
+    ) {
+        val updatedForecast = Forecast.getNewForecastFrom(
+            month,
+            year,
+            summits,
+            averageOfLastXYears,
+            annualTargetActivity,
+            annualTargetKm,
+            annualTargetHm
+        )
+        val existingForecast = forecasts?.firstOrNull { it.month == month && it.year == year }
+        if (existingForecast == null) {
+            Log.d(TAG, "Add new Forecast for month $month and year $year: $updatedForecast")
+            viewModel.saveForecast(false, updatedForecast)
+        } else if (updateIfEntryExists) {
+            existingForecast.forecastDistance = updatedForecast.forecastDistance
+            existingForecast.forecastHeightMeter = updatedForecast.forecastHeightMeter
+            existingForecast.forecastNumberActivities = updatedForecast.forecastNumberActivities
+            Log.d(TAG, "Update Forecast for month $month and year $year: $existingForecast")
         }
     }
 
@@ -288,7 +303,7 @@ class ForecastDialog : DialogFragment() {
     }
 
     @SuppressLint("DiscouragedApi")
-    private fun setForecastsInDialog(forecasts: List<Forecast>, year: Int, view: View) {
+    private fun setForecastsInDialog(forecasts: List<Forecast>, summits: List<Summit>?, year: Int, view: View) {
         forecasts.forEach {
             if (it.year == year) {
                 val resourceIdSlider = resources.getIdentifier(
@@ -303,27 +318,49 @@ class ForecastDialog : DialogFragment() {
                         binding.buttonKilometers.id -> {
                             slider.value = it.forecastDistance.toFloat()
                             slider.valueTo = 500F
-                            slider.stepSize = stepSizeKm.toFloat()
+                            slider.stepSize = STEP_SIZE_KM.toFloat()
                         }
 
                         binding.buttonActivity.id -> {
                             slider.value = it.forecastNumberActivities.toFloat()
                             slider.valueTo = 20F
-                            slider.stepSize = stepSizeActivity.toFloat()
+                            slider.stepSize = STEP_SIZE_ACTIVITY.toFloat()
                         }
 
                         else -> {
                             slider.value = it.forecastHeightMeter.toFloat()
                             slider.valueTo = 15000F
-                            slider.stepSize = stepSizeHm.toFloat()
+                            slider.stepSize = STEP_SIZE_HM.toFloat()
                         }
                     }
+                    val recalculateDataMonthId = resources.getIdentifier(
+                        "recalculateDataMonth${it.month}",
+                        "id",
+                        requireContext().packageName
+                    )
+                    val button: AppCompatImageButton = view.findViewById(recalculateDataMonthId)
                     if (it.year == currentYear && it.month < currentMonth) {
+                        button.visibility = View.GONE
                         slider.isEnabled = false
                         setAchievementText(it, view, slider)
                     } else {
                         slider.isEnabled = true
                         setForecastText(it, view, slider)
+                        button.visibility = View.VISIBLE
+                        button.setOnClickListener { _ ->
+                            Log.i("TAG", "updated")
+                            updateForecastForMonthAndYear(it.month, year, summits, forecasts, true)
+                            setOverview(
+                                forecasts,
+                                yearsWithForecasts[selectedSegmentedYear]
+                            )
+                            setForecastsInDialog(
+                                forecasts,
+                                summits,
+                                yearsWithForecasts[selectedSegmentedYear],
+                                view
+                            )
+                        }
                     }
                     slider.addOnChangeListener { clickedSlider: Slider, value: Float, fromUser: Boolean ->
                         if (fromUser && it.year == yearsWithForecasts[selectedSegmentedYear]) {
@@ -343,7 +380,7 @@ class ForecastDialog : DialogFragment() {
         }
     }
 
-    @SuppressLint("DiscouragedApi")
+    @SuppressLint("DiscouragedApi", "SetTextI18n")
     private fun setForecastText(forecast: Forecast, view: View, slider: Slider) {
         val resourceIdText = resources.getIdentifier(
             "fulfilled_forecast_month${forecast.month}",
@@ -377,7 +414,7 @@ class ForecastDialog : DialogFragment() {
             binding.buttonKilometers.id -> textView.text =
                 String.format(
                     resources.getString(R.string.value_with_km),
-                    forecast.forecastDistance
+                    forecast.forecastDistance.toString()
                 )
 
             binding.buttonActivity.id -> textView.text =
@@ -385,7 +422,7 @@ class ForecastDialog : DialogFragment() {
 
             else -> textView.text = String.format(
                 resources.getString(R.string.value_with_hm),
-                forecast.forecastHeightMeter
+                forecast.forecastHeightMeter.toString()
             )
         }
     }
@@ -447,9 +484,9 @@ class ForecastDialog : DialogFragment() {
     }
 
     companion object {
-        const val stepSizeActivity: Int = 1
-        const val stepSizeKm: Int = 10
-        const val stepSizeHm: Int = 250
+        const val STEP_SIZE_ACTIVITY: Int = 1
+        const val STEP_SIZE_KM: Int = 10
+        const val STEP_SIZE_HM: Int = 250
         const val TAG: String = "ForecastDialog"
     }
 }

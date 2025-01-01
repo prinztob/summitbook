@@ -5,7 +5,9 @@ import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
@@ -48,7 +50,7 @@ data class Forecast(
 
     fun getDate(): Date? {
         val df = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
-        return df.parse("$year-${String.format("%02d", month)}-15")
+        return df.parse("$year-${String.format(Locale.getDefault(), "%02d", month)}-15")
     }
 
     fun getStringRepresentation(): String {
@@ -115,7 +117,7 @@ data class Forecast(
         fun getNewForecastFrom(
             month: Int,
             year: Int,
-            summits: List<Summit>,
+            summits: List<Summit>?,
             averageOfLastXYears: Int,
             annualTargetActivity: String,
             annualTargetKm: String,
@@ -123,7 +125,7 @@ data class Forecast(
             today: Date = Date()
         ): Forecast {
 
-            val summitsInTimeRange = if (averageOfLastXYears > 0) {
+            val summitsInTimeRange = if (averageOfLastXYears > 0 && summits?.isNotEmpty() == true) {
                 summits.filter {
                     val cal = Calendar.getInstance()
                     cal.time = it.date
@@ -142,9 +144,9 @@ data class Forecast(
             } else annualTargetActivity.toInt() / 12.0
             val forecast = Forecast(
                 year, month,
-                (floor((hmForecast) / ForecastDialog.stepSizeHm) * ForecastDialog.stepSizeHm).toInt(),
-                (floor((kmForecast) / ForecastDialog.stepSizeKm) * ForecastDialog.stepSizeKm).toInt(),
-                (floor((numberActivitiesForecast) / ForecastDialog.stepSizeActivity) * ForecastDialog.stepSizeActivity).toInt()
+                (floor((hmForecast) / ForecastDialog.STEP_SIZE_HM) * ForecastDialog.STEP_SIZE_HM).toInt(),
+                (floor((kmForecast) / ForecastDialog.STEP_SIZE_KM) * ForecastDialog.STEP_SIZE_KM).toInt(),
+                (floor((numberActivitiesForecast) / ForecastDialog.STEP_SIZE_ACTIVITY) * ForecastDialog.STEP_SIZE_ACTIVITY).toInt()
             )
             return forecast
         }
@@ -167,6 +169,7 @@ data class Forecast(
                             currentYear,
                             currentMonth
                         )
+
                         2 -> getSumPerYear(
                             it,
                             { e -> e.forecastNumberActivities },
@@ -174,6 +177,7 @@ data class Forecast(
                             currentYear,
                             currentMonth
                         )
+
                         else -> getSumPerYear(
                             it,
                             { e -> e.forecastHeightMeter },
