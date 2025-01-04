@@ -349,7 +349,7 @@ class BarChartFragment : Fragment() {
                             val shouldAddThisMonth =
                                 selectedXAxisSpinnerEntry != BarChartXAxisSelector.DateByYear || selectedXAxisSpinnerMonth == 0 || selectedXAxisSpinnerMonth == forecast.month
                             if (date != null && date in range && shouldAddThisMonth) {
-                                selectedYAxisSpinnerEntry.getForecastValue(forecast).toInt()
+                                selectedYAxisSpinnerEntry.getForecastValue(forecast)?.toInt()?: 0
                             } else {
                                 0
                             }

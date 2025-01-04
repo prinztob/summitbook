@@ -458,5 +458,7 @@
     <string name="add_offline_map_failed">Add offline map failed</string>
     <string name="add_offline_map_wrong_format">Add offline map failed</string>
     <string name="location_not_enabled">Location is not enabled, check permission.</string>
+    <string name="h">h</string>
+    <string name="indoor">Indoor</string>
 
 </resources>

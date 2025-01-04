@@ -127,7 +127,6 @@ enum class SportGroup(
         listOf(
             SportType.Bicycle,
             SportType.Racer,
-            SportType.IndoorTrainer,
             SportType.Mountainbike
         ),
         R.string.onBicycle,
@@ -138,8 +137,13 @@ enum class SportGroup(
         R.string.onFoot,
         R.color.brown_700,
     ),
+    Indoor(
+        listOf(SportType.IndoorTrainer),
+        R.string.indoor,
+        R.color.green_800,
+    ),
     Other(
-        listOf(SportType.BikeAndHike, SportType.Other),
+        listOf(SportType.BikeAndHike, SportType.IndoorTrainer, SportType.Other),
         R.string.other,
         R.color.grey_500,
     )

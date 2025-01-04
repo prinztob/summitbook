@@ -10,10 +10,10 @@ import java.util.stream.Stream
 enum class BarChartYAxisSelector(
     val nameId: Int,
     val unitId: Int,
-    val sharedPreferenceKey: String,
+    val sharedPreferenceKey: String?,
     val defaultAnnualTarget: Int,
     val f: (Stream<Summit?>?, Int) -> Float,
-    val getForecastValue: (Forecast) -> Float
+    val getForecastValue: (Forecast) -> Float?
 ) {
     Count(R.string.count, R.string.empty, Keys.PREF_ANNUAL_TARGET_ACTIVITIES, 52, { stream, _ ->
         stream?.count()?.toFloat() ?: 0f
@@ -39,6 +39,10 @@ enum class BarChartYAxisSelector(
                 }
                 ?.sum()?.toFloat() ?: 0.0f
         },
-        { forecast -> forecast.forecastHeightMeter.toFloat() })
-
+        { forecast -> forecast.forecastHeightMeter.toFloat() }),
+    Duration(R.string.duration, R.string.h, null, 0, { stream, _ ->
+        (stream
+            ?.mapToInt { o: Summit? -> (o?.duration ?: 0) }
+            ?.sum()?.toFloat() ?: 0.0f) / 3600f
+    }, { _ -> null }),
 }
