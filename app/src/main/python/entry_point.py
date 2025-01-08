@@ -384,9 +384,14 @@ def merge_tracks(gpx_track_files_to_merge, output_file, name):
 
 
 def update_distance(gpx_with_correct_distances, gpx_track_to_be_updated):
-    last_point = Extension.parse(gpx_with_correct_distances.tracks[-1].segments[-1].points[
-                                     -1].extensions)
-    delta = last_point.distance
+    last_point_first_track = Extension.parse(
+        gpx_with_correct_distances.tracks[-1].segments[-1].points[-1].extensions
+    )
+    last_point_last_track = Extension.parse(
+        gpx_track_to_be_updated.tracks[0].segments[0].points[0].extensions
+    )
+    delta_last_track = last_point_last_track.distance
+    delta_first_track = last_point_first_track.distance - delta_last_track
     for track in gpx_track_to_be_updated.tracks:
         for segment in track.segments:
             points = []
@@ -394,7 +399,7 @@ def update_distance(gpx_with_correct_distances, gpx_track_to_be_updated):
                 point.extensions_calculated = Extension.parse(point.extensions)
                 set_tag_in_extensions(
                     gpx_track_to_be_updated,
-                    delta + point.extensions_calculated.distance,
+                    delta_first_track + point.extensions_calculated.distance,
                     point,
                     "distance"
                 )

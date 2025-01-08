@@ -109,7 +109,7 @@ class SortAndFilterFragment : DialogFragment() {
         binding.groupSortAscDesc.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 sortFilterValues.orderByAscDescButtonGroup =
-                    OrderByAscDescButtonGroup.values().firstOrNull {
+                    OrderByAscDescButtonGroup.entries.firstOrNull {
                         it.bindingId(binding) == checkedId
                     } ?: OrderByAscDescButtonGroup.Descending
             }
@@ -118,7 +118,7 @@ class SortAndFilterFragment : DialogFragment() {
         binding.groupGpx.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 sortFilterValues.hasGpxTrackButtonGroup =
-                    HasGpxTrackButtonGroup.values().firstOrNull {
+                    HasGpxTrackButtonGroup.entries.firstOrNull {
                         it.bindingId(binding) == checkedId
                     } ?: HasGpxTrackButtonGroup.Indifferent
             }
@@ -131,7 +131,7 @@ class SortAndFilterFragment : DialogFragment() {
         binding.groupPosition.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 sortFilterValues.hasPositionButtonGroup =
-                    HasPositionButtonGroup.values().firstOrNull {
+                    HasPositionButtonGroup.entries.firstOrNull {
                         it.bindingId(binding) == checkedId
                     } ?: HasPositionButtonGroup.Indifferent
             }
@@ -140,7 +140,7 @@ class SortAndFilterFragment : DialogFragment() {
         binding.groupImage.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 sortFilterValues.hasImageButtonGroup =
-                    HasImageButtonGroup.values().firstOrNull {
+                    HasImageButtonGroup.entries.firstOrNull {
                         it.bindingId(binding) == checkedId
                     } ?: HasImageButtonGroup.Indifferent
             }
@@ -153,7 +153,7 @@ class SortAndFilterFragment : DialogFragment() {
         binding.groupMarkedSummits.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 sortFilterValues.peakFavoriteButtonGroup =
-                    PeakFavoriteButtonGroup.values().firstOrNull {
+                    PeakFavoriteButtonGroup.entries.firstOrNull {
                         it.bindingId(binding) == checkedId
                     } ?: PeakFavoriteButtonGroup.Indifferent
             }
@@ -246,7 +246,7 @@ class SortAndFilterFragment : DialogFragment() {
 
     private fun updateSpinner() {
         val sportTypes: ArrayList<String> = arrayListOf(requireContext().getString(R.string.all))
-        for (value in SportType.values()) {
+        for (value in SportType.entries) {
             sportTypes.add(getString(value.sportNameStringId))
         }
         val sportTypeAdapter: ArrayAdapter<*> = ArrayAdapter(
@@ -257,7 +257,7 @@ class SortAndFilterFragment : DialogFragment() {
         val position = if (sortFilterValues.sportType == null) {
             0
         } else {
-            SportType.values().indexOfFirst { it == sortFilterValues.sportType } + 1
+            SportType.entries.toTypedArray().indexOfFirst { it == sortFilterValues.sportType } + 1
         }
         binding.spinnerSportsType.setSelection(position)
         binding.spinnerSportsType.onItemSelectedListener =
@@ -271,7 +271,7 @@ class SortAndFilterFragment : DialogFragment() {
                     sortFilterValues.sportType = if (position == 0) {
                         null
                     } else {
-                        SportType.values()[position - 1]
+                        SportType.entries[position - 1]
                     }
                 }
 
@@ -349,7 +349,7 @@ class SortAndFilterFragment : DialogFragment() {
         val dateAdapter =
             ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, dates)
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        val dt = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.ENGLISH)
+        val dt = SimpleDateFormat(Summit.DATETIME_FORMAT_SIMPLE, Locale.ENGLISH)
         binding.spinnerDate.adapter = dateAdapter
         binding.spinnerDate.setSelection(sortFilterValues.selectedDateSpinner)
         binding.spinnerDate.onItemSelectedListener =

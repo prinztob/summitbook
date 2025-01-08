@@ -1,5 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.db.entities.GarminData
 import de.drtobiasprinz.summitbook.db.entities.PowerData
@@ -196,5 +198,25 @@ class GarminTrackAndDataDownloaderTest {
         )
         downloader.extractFinalSummit()
         Assert.assertEquals(garminDataExpected.toString(), downloader.finalEntry?.garminData.toString())
+    }
+
+    @Test
+    fun testParsingOfActivityJson() {
+        val resource = this.javaClass.classLoader?.getResource("activity1.json")
+        if (resource != null) {
+            val gson = JsonParser.parseString(resource.readText()) as JsonObject
+            Assert.assertNotNull(GarminPythonExecutor.parseJsonObjectFromParentActivity(gson))
+        }
+    }
+
+    @Test
+    fun testParsingOfChildJson() {
+        val resourceChild = this.javaClass.classLoader?.getResource("child.json")
+        val resourceParent = this.javaClass.classLoader?.getResource("child.json")
+        if (resourceChild != null && resourceParent != null) {
+            val gsonChild = JsonParser.parseString(resourceChild.readText()) as JsonObject
+            val gsonParent = JsonParser.parseString(resourceParent.readText()) as JsonObject
+            Assert.assertNotNull(GarminPythonExecutor.parseJsonObjectFromChildActivity(gsonChild, gsonParent))
+        }
     }
 }

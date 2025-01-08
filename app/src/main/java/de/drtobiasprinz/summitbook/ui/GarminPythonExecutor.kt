@@ -15,6 +15,7 @@ import de.drtobiasprinz.summitbook.db.entities.SportGroup
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.SportType.Companion.getSportTypeFromGarminId
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.DATETIME_FORMAT_COMPLEX
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
@@ -139,7 +140,7 @@ class GarminPythonExecutor(
             for (i in 0 until activities.size()) {
                 val row = activities[i] as JsonObject
                 try {
-                    entries.add(parseJsonObject(row))
+                    entries.add(parseJsonObjectFromParentActivity(row))
                 } catch (e: ParseException) {
                     e.printStackTrace()
                 } catch (e: NullPointerException) {
@@ -161,13 +162,26 @@ class GarminPythonExecutor(
                     files.sortByDescending { it.absolutePath }
                     files.forEach {
                         if (
-                            it.name.startsWith("activity_") &&
+                            (it.name.startsWith("activity_") || it.name.startsWith("child_")) &&
                             !it.name.endsWith("_splits.json") &&
                             !it.name.endsWith("_exercise_set.json")
                         ) {
                             try {
                                 val gson = JsonParser.parseString(it.readText()) as JsonObject
-                                val entry = parseJsonObject(gson)
+                                val entry = if (it.name.startsWith("child_")) {
+                                    val parentId = gson.getAsJsonPrimitive("parentId").toString()
+                                    val gsonParentFile =
+                                        File(it.parentFile, "activity_${parentId}.json")
+                                    var gsonParent: JsonObject? = null
+                                    if (gsonParentFile.exists()) {
+                                        gsonParent = JsonParser.parseString(
+                                            gsonParentFile.readText()
+                                        ) as JsonObject
+                                    }
+                                    parseJsonObjectFromChildActivity(gson, gsonParent)
+                                } else {
+                                    parseJsonObjectFromParentActivity(gson)
+                                }
                                 if (entry.garminData?.activityId !in activityIdsInSummitBook && entry.garminData?.activityId !in activitiesIdIgnored) {
                                     entries.add(entry)
                                     if (entries.size > 20) {
@@ -179,13 +193,11 @@ class GarminPythonExecutor(
                                     "GarminPythonExecutor",
                                     "Could not parse file ${it.absolutePath}"
                                 )
-                                it.delete()
                             } catch (ex: NullPointerException) {
                                 Log.i(
                                     "GarminPythonExecutor",
                                     "Could not parse file ${it.absolutePath}"
                                 )
-                                it.delete()
                             }
                         }
                     }
@@ -202,9 +214,9 @@ class GarminPythonExecutor(
             return (value * 100.0).roundToInt() / 100.0
         }
 
-        fun parseJsonObject(jsonObject: JsonObject): Summit {
+        fun parseJsonObjectFromParentActivity(jsonObject: JsonObject): Summit {
             val date = SimpleDateFormat(
-                Summit.DATETIME_FORMAT,
+                Summit.DATETIME_FORMAT_SIMPLE,
                 Locale.ENGLISH
             ).parse(jsonObject.getAsJsonPrimitive("startTimeLocal").asString) ?: Date()
             val sportType = parseSportType(jsonObject["activityType"].asJsonObject)
@@ -214,11 +226,6 @@ class GarminPythonExecutor(
             if (jsonObject.has("childIds")) {
                 activityIds.addAll(jsonObject["childIds"].asJsonArray.map { it.asString })
             }
-            val vo2max = if (jsonObject.has("vo2MaxPreciseValue")) {
-                roundToTwoDigits(getJsonObjectEntryNotNull(jsonObject, "vo2MaxPreciseValue"))
-            } else {
-                roundToTwoDigits(getJsonObjectEntryNotNull(jsonObject, "vO2MaxValue"))
-            }
             val garminData = GarminData(
                 activityIds,
                 getJsonObjectEntryNotNull(jsonObject, "calories"),
@@ -226,7 +233,7 @@ class GarminPythonExecutor(
                 getJsonObjectEntryNotNull(jsonObject, "maxHR"),
                 getPower(jsonObject),
                 getFtp(activityIds),
-                vo2max,
+                getVo2max(jsonObject),
                 getJsonObjectEntryNotNull(jsonObject, "aerobicTrainingEffect"),
                 getJsonObjectEntryNotNull(jsonObject, "anaerobicTrainingEffect"),
                 getJsonObjectEntryNotNull(jsonObject, "grit"),
@@ -242,7 +249,8 @@ class GarminPythonExecutor(
                 ElevationData(0, 0)
             }
             val velocityData = try {
-                VelocityData.parse(if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(
+                VelocityData.parse(
+                    if (jsonObject["maxSpeed"] != JsonNull.INSTANCE) round(
                         convertMphToKmh(
                             getJsonObjectEntryNotNull(jsonObject, "maxSpeed").toDouble()
                         )
@@ -278,6 +286,92 @@ class GarminPythonExecutor(
                 trackBoundingBox = null,
                 duration = duration.toInt()
             )
+        }
+
+        fun parseJsonObjectFromChildActivity(json: JsonObject, jsonParent: JsonObject?): Summit {
+            val summaryDTO = json.getAsJsonObject("summaryDTO")
+            val date = SimpleDateFormat(
+                DATETIME_FORMAT_COMPLEX,
+                Locale.ENGLISH
+            ).parse(summaryDTO.getAsJsonPrimitive("startTimeLocal").asString) ?: Date()
+            val sportType = parseSportType(json["activityTypeDTO"].asJsonObject)
+            val duration: Double =
+                if (summaryDTO["movingDuration"] != JsonNull.INSTANCE && sportType in SportGroup.OnABicycle.sportTypes) summaryDTO["movingDuration"].asDouble else summaryDTO["duration"].asDouble
+            val activityIds: MutableList<String> = mutableListOf(json["activityId"].asString)
+            val garminData = GarminData(
+                activityIds,
+                getJsonObjectEntryNotNull(summaryDTO, "calories"),
+                getJsonObjectEntryNotNull(summaryDTO, "averageHR"),
+                getJsonObjectEntryNotNull(summaryDTO, "maxHR"),
+                if (getJsonObjectEntryNotNull(summaryDTO, "averagePower") > 0) {
+                    getPower(jsonParent ?: json)
+                } else {
+                    PowerData(0f, 0f, 0f)
+                },
+                getFtp(activityIds),
+                getVo2max(jsonParent ?: json),
+                getJsonObjectEntryNotNull(summaryDTO, "aerobicTrainingEffect"),
+                getJsonObjectEntryNotNull(summaryDTO, "anaerobicTrainingEffect"),
+                getJsonObjectEntryNotNull(summaryDTO, "grit"),
+                getJsonObjectEntryNotNull(summaryDTO, "avgFlow"),
+                getJsonObjectEntryNotNull(summaryDTO, "activityTrainingLoad"),
+            )
+            val elevationData = try {
+                ElevationData.parse(
+                    getJsonObjectEntryNotNull(summaryDTO, "maxElevation").toInt(),
+                    getJsonObjectEntryNotNull(summaryDTO, "elevationGain").toInt()
+                )
+            } catch (_: NullPointerException) {
+                ElevationData(0, 0)
+            }
+            val velocityData = try {
+                VelocityData.parse(
+                    if (summaryDTO["maxSpeed"] != JsonNull.INSTANCE) round(
+                        convertMphToKmh(
+                            getJsonObjectEntryNotNull(summaryDTO, "maxSpeed").toDouble()
+                        )
+                    ) else 0.0
+                )
+            } catch (_: NullPointerException) {
+                VelocityData(0.0, 0.0)
+            }
+            return Summit(
+                date,
+                json["activityName"].asString,
+                sportType,
+                emptyList(),
+                emptyList(),
+                "",
+                elevationData,
+                roundToTwoDigits(
+                    convertMeterToKm(
+                        getJsonObjectEntryNotNull(
+                            summaryDTO, "distance"
+                        ).toDouble()
+                    )
+                ),
+                velocityData,
+                null,
+                null,
+                emptyList(),
+                emptyList(),
+                isFavorite = false,
+                isPeak = false,
+                imageIds = mutableListOf(),
+                garminData = garminData,
+                trackBoundingBox = null,
+                duration = duration.toInt()
+            )
+        }
+
+        private fun getVo2max(json: JsonObject): Float {
+            return if (json.has("vo2MaxPreciseValue")) {
+                roundToTwoDigits(getJsonObjectEntryNotNull(json, "vo2MaxPreciseValue"))
+            } else if (json.has("vO2MaxValue")) {
+                roundToTwoDigits(getJsonObjectEntryNotNull(json, "vO2MaxValue"))
+            } else {
+                0.0f
+            }
         }
 
         private fun getFtp(activityIds: MutableList<String>): Int {

@@ -511,7 +511,8 @@ class Summit(
     companion object {
         const val DATE_FORMAT: String = "yyyy-MM-dd"
         private const val EQUIPMENT_SUFFIX: String = ":eq"
-        const val DATETIME_FORMAT: String = "yyyy-MM-dd HH:mm:ss"
+        const val DATETIME_FORMAT_SIMPLE: String = "yyyy-MM-dd HH:mm:ss"
+        const val DATETIME_FORMAT_COMPLEX: String = "yyyy-MM-dd'T'HH:mm:ss.s"
         const val CONNECTED_ACTIVITY_PREFIX: String = "ac_id:"
         const val SUMMIT_ID_EXTRA_IDENTIFIER = "SUMMIT_ID"
         private const val NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY = 28
@@ -716,7 +717,7 @@ class Summit(
 
         @Throws(ParseException::class)
         fun parseDate(date: String): Date {
-            val df: DateFormat = SimpleDateFormat(DATETIME_FORMAT, Locale.getDefault())
+            val df: DateFormat = SimpleDateFormat(DATETIME_FORMAT_SIMPLE, Locale.getDefault())
             df.isLenient = false
             return df.parse(String.format("%s 07:00:00", date)) ?: Date()
         }

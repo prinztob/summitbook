@@ -161,7 +161,7 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
 
     companion object {
         fun parseDate(date: String): Date {
-            val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT, Locale.getDefault())
+            val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT_SIMPLE, Locale.getDefault())
             df.isLenient = false
             return df.parse(date) ?: Date()
         }

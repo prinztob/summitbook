@@ -109,7 +109,7 @@ class GarminTrackAndDataDownloader(
             val activityJsonFile = File(MainActivity.activitiesDir, "activity_${activityId}.json")
             if (activityJsonFile.exists()) {
                 val gson = JsonParser.parseString(activityJsonFile.readText()) as JsonObject
-                val parsedEntry = GarminPythonExecutor.parseJsonObject(gson)
+                val parsedEntry = GarminPythonExecutor.parseJsonObjectFromParentActivity(gson)
                 val ids = parsedEntry.garminData?.activityIds
                 if (ids != null) {
                     entry.garminData?.activityIds = ids
