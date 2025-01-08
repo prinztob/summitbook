@@ -22,6 +22,7 @@ import de.drtobiasprinz.summitbook.databinding.CardSegmentBinding
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.fragments.AddSegmentEntryFragment
 import de.drtobiasprinz.summitbook.ui.dialog.AddSegmentDetailsDialog
+import java.util.Locale
 
 
 class SegmentsViewAdapter(var segments: List<Segment>) :
@@ -71,7 +72,6 @@ class SegmentsViewAdapter(var segments: List<Segment>) :
             holder.binding.addSegmentDetail.setOnClickListener {
                 AddSegmentDetailsDialog.getInstance(
                     null,
-                    this
                 ).show(
                     (FragmentComponentManager.findActivity(context) as FragmentActivity).supportFragmentManager.beginTransaction(),
                     "Add Segment Details"
@@ -95,12 +95,14 @@ class SegmentsViewAdapter(var segments: List<Segment>) :
             if (segment.segmentEntries.isNotEmpty()) segment.segmentEntries.sumOf { it.heightMetersDown } / segment.segmentEntries.size else 0
         binding.distance.text =
             if (averageDistance > 0.0) String.format(
+                Locale.getDefault(),
                 "%.1f %s",
                 averageDistance,
                 context.getString(R.string.km)
             ) else ""
         binding.elevationGain.text =
             if (averageElevationGainUp > 0 || averageElevationGainDown > 0) String.format(
+                Locale.getDefault(),
                 "%s/%s %s",
                 averageElevationGainUp,
                 averageElevationGainDown,
@@ -126,7 +128,6 @@ class SegmentsViewAdapter(var segments: List<Segment>) :
         binding.entryEdit.setOnClickListener { view: View? ->
             AddSegmentDetailsDialog.getInstance(
                 segment.segmentDetails,
-                this
             ).show(
                 (FragmentComponentManager.findActivity(view?.context) as FragmentActivity).supportFragmentManager.beginTransaction(),
                 "Add Segment Details"

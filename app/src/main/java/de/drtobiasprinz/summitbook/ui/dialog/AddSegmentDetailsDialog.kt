@@ -13,7 +13,6 @@ import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.SegmentsViewAdapter
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.ParseException
@@ -23,7 +22,6 @@ class AddSegmentDetailsDialog : DialogFragment() {
 
     var isUpdate = false
     private var currentSegmentDetails: SegmentDetails? = null
-    private var segmentsViewAdapter: SegmentsViewAdapter? = null
     private lateinit var usedView: View
     private lateinit var startPointName: EditText
     private lateinit var endPointName: EditText
@@ -115,13 +113,11 @@ class AddSegmentDetailsDialog : DialogFragment() {
     companion object {
         @JvmStatic
         fun getInstance(
-            entry: SegmentDetails?,
-            segmentsViewAdapter: SegmentsViewAdapter
+            entry: SegmentDetails?
         ): AddSegmentDetailsDialog {
             val add = AddSegmentDetailsDialog()
             add.isUpdate = entry != null
             add.currentSegmentDetails = entry
-            add.segmentsViewAdapter = segmentsViewAdapter
             return add
         }
 

@@ -12,15 +12,14 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.TableLayout
-import android.widget.TableRow
-import android.widget.TextView
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.LegendEntry
@@ -33,6 +32,7 @@ import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.adapter.SegmentsEntryAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSegmentEntryDetailsBinding
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.Segment.Companion.getMapScreenshotFile
@@ -40,7 +40,6 @@ import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.fragments.AddSegmentEntryFragment
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
@@ -64,8 +63,6 @@ import org.osmdroid.views.overlay.advancedpolyline.PolychromaticPaintList
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
-import java.util.Locale
-import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
@@ -78,12 +75,11 @@ class SegmentEntryDetailsFragment : Fragment() {
     private var segmentEntryId: Long = -1L
     private var descending: Boolean = false
     private lateinit var binding: FragmentSegmentEntryDetailsBinding
-
+    private var selectedSegmentEntrySorter = SegmentSortOptions.AverageVelocity
     private var summitShown: Summit? = null
     private var segmentEntryToShow: SegmentEntry? = null
     private var selectedCustomizeTrackItem = TrackColor.Elevation
-
-    private var setSortLabelFor: Int = 21
+    private lateinit var segmentsEntryAdapter: SegmentsEntryAdapter
     private var sorter: (List<SegmentEntry>) -> List<SegmentEntry> =
         { e -> if (descending) e.sortedByDescending { it.duration } else e.sortedBy { it.duration } }
 
@@ -110,10 +106,10 @@ class SegmentEntryDetailsFragment : Fragment() {
                             ?: -1
                 }
                 segmentEntryToShow = if (segmentEntryId == -1L) {
-                        segmentToUse?.segmentEntries?.let { sorter(it).firstOrNull() }
-                    } else {
-                        segmentToUse?.segmentEntries?.firstOrNull { it.entryId == segmentEntryId }
-                    }
+                    segmentToUse?.segmentEntries?.let { sorter(it).firstOrNull() }
+                } else {
+                    segmentToUse?.segmentEntries?.firstOrNull { it.entryId == segmentEntryId }
+                }
                 viewModel.summitsList.observe(viewLifecycleOwner) { itDataSummits ->
                     itDataSummits.data.let { summits ->
                         val relevantSummits = segmentToUse?.segmentEntries?.mapNotNull { entry ->
@@ -124,15 +120,15 @@ class SegmentEntryDetailsFragment : Fragment() {
                         if (relevantSummits != null && summitShown != null) {
                             binding.osMap.visibility = View.VISIBLE
                             binding.lineChart.visibility = View.VISIBLE
-                            binding.tableSegments.visibility = View.VISIBLE
+                            binding.recyclerView.visibility = View.VISIBLE
                             binding.gridLayout.visibility = View.VISIBLE
                             binding.changeMapType.visibility = View.VISIBLE
                             prepareMap()
-                            update(summitShown, segmentEntryToShow, segmentToUse, relevantSummits)
+                            update(summitShown, segmentEntryToShow, segmentToUse)
                         } else {
                             binding.osMap.visibility = View.GONE
                             binding.lineChart.visibility = View.GONE
-                            binding.tableSegments.visibility = View.GONE
+                            binding.recyclerView.visibility = View.GONE
                             binding.gridLayout.visibility = View.GONE
                             binding.changeMapType.visibility = View.GONE
                         }
@@ -169,8 +165,7 @@ class SegmentEntryDetailsFragment : Fragment() {
     private fun update(
         summitToShow: Summit?,
         segmentEntryToShow: SegmentEntry?,
-        segmentToUse: Segment?,
-        relevantSummits: List<Summit>
+        segmentToUse: Segment?
     ) {
         if (segmentEntryToShow != null && summitToShow != null && segmentToUse != null) {
             binding.segmentName.text = segmentToUse.segmentDetails.getDisplayName()
@@ -178,7 +173,53 @@ class SegmentEntryDetailsFragment : Fragment() {
             binding.osMap.overlayManager?.clear()
             drawMarker(segmentToUse.segmentEntries)
             drawGpxTrackAndItsProfile(summitToShow, segmentEntryToShow)
-            drawTable(binding.root, binding.tableSegments, segmentToUse, relevantSummits)
+
+            segmentsEntryAdapter =
+                SegmentsEntryAdapter(segmentToUse.segmentDetails, segmentEntryToShow)
+            segmentsEntryAdapter.differ.submitList(
+                selectedSegmentEntrySorter.sorter(segmentToUse.segmentEntries)
+            )
+            segmentsEntryAdapter.onClickDelete = {
+                viewModel.deleteSegmentEntry(it)
+            }
+            segmentsEntryAdapter.onClickSegment = {
+                segmentsEntryAdapter.differ.submitList(
+                    selectedSegmentEntrySorter.sorter(segmentToUse.segmentEntries)
+                )
+                drawGpxTrackAndItsProfile(summitToShow, it)
+            }
+            binding.recyclerView.apply {
+                layoutManager = LinearLayoutManager(requireContext())
+                adapter = segmentsEntryAdapter
+            }
+
+            binding.spinnerSorting.adapter = ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                SegmentSortOptions.entries.map { resources.getString(it.stringId) }
+                    .toTypedArray()
+            )
+            binding.spinnerSorting.onItemSelectedListener =
+                object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(
+                        adapterView: AdapterView<*>?,
+                        view: View?,
+                        position: Int,
+                        id: Long
+                    ) {
+                        if (view != null) {
+                            selectedSegmentEntrySorter = SegmentSortOptions.entries[position]
+                            segmentsEntryAdapter.differ.submitList(
+                                selectedSegmentEntrySorter.sorter(segmentToUse.segmentEntries)
+                            )
+                        }
+                    }
+
+                    override fun onNothingSelected(parent: AdapterView<*>?) {
+                        //Another interface callback
+                    }
+                }
+
             if (!getMapScreenshotFile(segmentDetailsId).exists()) {
                 takeScreenshotWhenTilesAreLoaded()
             }
@@ -361,7 +402,7 @@ class SegmentEntryDetailsFragment : Fragment() {
 
     private fun setTextView(gpxTrack: GpsTrack, segmentEntry: SegmentEntry) {
         val allTrackPoints = gpxTrack.trackPoints
-        if (allTrackPoints.isNotEmpty()) {
+        if (allTrackPoints.isNotEmpty() && segmentEntry.endPositionInTrack < allTrackPoints.size) {
 
             val startTrackPoint = allTrackPoints[segmentEntry.startPositionInTrack]
             val endTrackPoint = allTrackPoints[segmentEntry.endPositionInTrack]
@@ -499,237 +540,6 @@ class SegmentEntryDetailsFragment : Fragment() {
         set1?.setDrawHorizontalHighlightIndicator(true)
     }
 
-
-    private fun drawTable(
-        view: View,
-        tableLayout: TableLayout,
-        segment: Segment,
-        relevantSummits: List<Summit>
-    ) {
-        tableLayout.removeAllViews()
-        addHeader(view, tableLayout, segment, relevantSummits)
-        sorter(segment.segmentEntries).forEachIndexed { index, entry ->
-            val summit = relevantSummits.firstOrNull {
-                it.activityId == entry.activityId
-            }
-            if (summit != null) {
-                addSegmentToTable(
-                    summit,
-                    entry,
-                    view,
-                    index,
-                    tableLayout,
-                    segment,
-                    summit == summitShown && segmentEntryToShow == entry,
-                    relevantSummits
-                )
-            }
-        }
-    }
-
-    private fun addHeader(
-        view: View,
-        tableLayout: TableLayout,
-        segment: Segment,
-        relevantSummits: List<Summit>
-    ) {
-        val tableRowHead = TableRow(view.context)
-        10.also { tableRowHead.id = it }
-        tableRowHead.setBackgroundColor(Color.WHITE)
-        tableRowHead.layoutParams = TableLayout.LayoutParams(
-            TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT
-        )
-        addLabel(view,
-            tableRowHead,
-            20,
-            getString(R.string.date),
-            tableLayout,
-            segment,
-            relevantSummits,
-            sorter = { e -> if (descending) e.sortedByDescending { it.date } else e.sortedBy { it.date } })
-        addLabel(
-            view,
-            tableRowHead,
-            21,
-            getString(R.string.minutes),
-            tableLayout,
-            segment,
-            relevantSummits
-        )
-        addLabel(view,
-            tableRowHead,
-            22,
-            getString(R.string.kmh),
-            tableLayout,
-            segment,
-            relevantSummits,
-            sorter = { e -> if (descending) e.sortedByDescending { it.kilometers * 60 / it.duration } else e.sortedBy { it.kilometers * 60 / it.duration } })
-        addLabel(view,
-            tableRowHead,
-            23,
-            getString(R.string.bpm),
-            tableLayout,
-            segment,
-            relevantSummits,
-            sorter = { e -> if (descending) e.sortedByDescending { it.averageHeartRate } else e.sortedBy { it.averageHeartRate } })
-        addLabel(view,
-            tableRowHead,
-            24,
-            getString(R.string.watt),
-            tableLayout,
-            segment,
-            relevantSummits,
-            sorter = { e -> if (descending) e.sortedByDescending { it.averagePower } else e.sortedBy { it.averagePower } })
-        addLabel(view, tableRowHead, 25, "", tableLayout, segment, relevantSummits)
-        addLabel(view, tableRowHead, 26, "", tableLayout, segment, relevantSummits)
-        tableLayout.addView(
-            tableRowHead, TableLayout.LayoutParams(
-                TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
-    }
-
-    private fun addLabel(
-        view: View,
-        tr: TableRow,
-        id: Int,
-        text: String,
-        color: Int = Color.BLACK,
-        padding: Int = 5,
-        alignment: Int = View.TEXT_ALIGNMENT_CENTER
-    ) {
-        val label = TextView(view.context)
-        label.id = id
-        label.text = text
-        label.gravity = alignment
-        label.setTextColor(color)
-        label.setPadding(padding, padding, padding, padding)
-        tr.addView(label)
-    }
-
-    private fun addLabel(
-        view: View,
-        tr: TableRow,
-        id: Int,
-        text: String,
-        tableLayout: TableLayout,
-        segment: Segment,
-        relevantSummits: List<Summit>,
-        sorter: (List<SegmentEntry>) -> List<SegmentEntry> = { e -> if (descending) e.sortedByDescending { it.duration } else e.sortedBy { it.duration } }
-    ) {
-        val label = TextView(view.context)
-        label.id = id
-        label.text = text
-        if (id == setSortLabelFor) {
-            label.setCompoundDrawablesWithIntrinsicBounds(
-                if (descending) R.drawable.baseline_keyboard_double_arrow_down_black_24dp else R.drawable.baseline_keyboard_double_arrow_up_black_24dp,
-                0,
-                0,
-                0
-            )
-        }
-        label.setOnClickListener {
-            descending = !descending
-            this.sorter = sorter
-            setSortLabelFor = id
-            drawTable(view, tableLayout, segment, relevantSummits)
-        }
-        label.setTextColor(Color.BLACK)
-        tr.addView(label)
-    }
-
-    private fun addSegmentToTable(
-        summit: Summit,
-        entry: SegmentEntry,
-        view: View,
-        i: Int,
-        tableLayout: TableLayout,
-        segment: Segment,
-        mark: Boolean,
-        relevantSummits: List<Summit>
-    ) {
-        val dateParts = (summit.getDateAsString() ?: "").split("-")
-        val date = "${dateParts[0]}\n${dateParts[1]}-${dateParts[2]}"
-        val tr = TableRow(view.context)
-        tr.setOnClickListener {
-            segmentEntryToShow = entry
-            segmentEntryId = entry.entryId
-            summitShown = summit
-            update(summitShown, segmentEntryToShow, segment, relevantSummits)
-        }
-        if (mark) {
-            tr.setBackgroundColor(Color.YELLOW)
-        } else {
-            tr.setBackgroundColor(Color.WHITE)
-        }
-        tr.id = 100 + i
-        tr.layoutParams = TableLayout.LayoutParams(
-            TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT
-        )
-        addLabel(
-            view,
-            tr,
-            200 + i,
-            date,
-            padding = 2,
-            alignment = View.TEXT_ALIGNMENT_TEXT_END
-        )
-        addLabel(
-            view, tr, 201 + i, String.format(
-                "%s:%s",
-                floor(entry.duration).toInt(),
-                ((entry.duration - floor(entry.duration)) * 60).roundToInt().toString()
-                    .padStart(2, '0')
-            ), padding = 2, alignment = View.TEXT_ALIGNMENT_TEXT_END
-        )
-        addLabel(
-            view,
-            tr,
-            202 + i,
-            String.format(Locale.getDefault(), "%.1f", entry.kilometers * 60 / entry.duration),
-            padding = 2,
-            alignment = View.TEXT_ALIGNMENT_TEXT_END
-        )
-        addLabel(
-            view,
-            tr,
-            203 + i,
-            String.format("%s", entry.averageHeartRate),
-            padding = 2,
-            alignment = View.TEXT_ALIGNMENT_TEXT_END
-        )
-        addLabel(
-            view,
-            tr,
-            204 + i,
-            String.format("%s", entry.averagePower),
-            padding = 2,
-            alignment = View.TEXT_ALIGNMENT_TEXT_END
-        )
-        val updateButton = ImageButton(view.context)
-        updateButton.setImageResource(R.drawable.ic_baseline_edit_24)
-        updateButton.setOnClickListener {
-            val fragment: Fragment = AddSegmentEntryFragment.getInstance(
-                segment.segmentDetails.segmentDetailsId, null, entry.entryId
-            )
-            requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.content_frame, fragment).addToBackStack(null).commit()
-        }
-        tr.addView(updateButton)
-        val removeButton = ImageButton(view.context)
-        removeButton.setImageResource(R.drawable.ic_baseline_delete_forever_24)
-        removeButton.setOnClickListener {
-            viewModel.deleteSegmentEntry(entry)
-        }
-        tr.addView(removeButton)
-
-        tableLayout.addView(
-            tr, TableLayout.LayoutParams(
-                TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
-    }
-
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putLong(SegmentDetails.SEGMENT_DETAILS_ID_EXTRA_IDENTIFIER, segmentDetailsId)
@@ -742,4 +552,15 @@ class SegmentEntryDetailsFragment : Fragment() {
         const val TAG = "SegmentEntryDetailsFragment"
     }
 
+    enum class SegmentSortOptions(
+        val stringId: Int,
+        val sorter: (List<SegmentEntry>) -> List<SegmentEntry>
+    ) {
+        AverageVelocity(
+            R.string.pace_hint,
+            { it.sortedBy { entry -> entry.kilometers / entry.duration }.reversed() }),
+        Date(R.string.date, { it.sortedBy { entry -> entry.getDateAsString() }.reversed() }),
+        AverageHeartRate(R.string.bpm, { it.sortedBy { entry -> entry.averageHeartRate } }),
+        Power(R.string.power, { it.sortedBy { entry -> entry.averagePower }.reversed() }),
+    }
 }
