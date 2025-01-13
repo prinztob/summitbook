@@ -33,6 +33,8 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProviders;
 
+import de.drtobiasprinz.summitbook.R;
+
 public abstract class ConsoleActivity extends AppCompatActivity
         implements ViewTreeObserver.OnGlobalLayoutListener, ViewTreeObserver.OnScrollChangedListener {
 
@@ -68,6 +70,7 @@ public abstract class ConsoleActivity extends AppCompatActivity
         setContentView(resId("layout", "activity_console"));
         createInput();
         createOutput();
+        Utils.fixEdgeToEdge(findViewById(R.id.constraintLayout));
     }
 
     protected abstract Class<? extends Task> getTaskClass();

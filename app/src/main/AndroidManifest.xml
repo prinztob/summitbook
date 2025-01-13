@@ -20,8 +20,13 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.FlowDatabaseYoutube"
-        tools:targetApi="31">
+        android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar"
+        tools:targetApi="35">
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MaterialComponents.DayNight.WindowOptOutEdgeToEdge"
+            tools:replace="android:theme" />
         <activity
             android:name="de.drtobiasprinz.summitbook.ui.MainActivity"
             android:exported="true">
@@ -65,7 +70,6 @@
             android:name=".ReceiverActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:screenOrientation="unspecified"
             android:windowSoftInputMode="adjustResize">
 
             <intent-filter>
@@ -74,14 +78,12 @@
 
                 <category android:name="android.intent.category.DEFAULT" />
 
-                <data
-                    android:host="*"
-                    android:mimeType="binary/octet-stream"
-                    android:scheme="content" />
-                <data
-                    android:host="*"
-                    android:mimeType="application/octet-stream"
-                    android:scheme="content" />
+                <data android:scheme="content"/>
+                <data android:host="*"/>
+                <data android:mimeType="binary/octet-stream"/>
+                <data android:scheme="content"/>
+                <data android:host="*"/>
+                <data android:mimeType="application/octet-stream"/>
             </intent-filter>
 
             <intent-filter
@@ -121,15 +123,17 @@
                 <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.gpx" />
             </intent-filter>
 
+
         </activity>
+
 
         <receiver
             android:name=".SummitBookWidgetProvider"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="android.appwidget.action.APPWIDGET_ENABLED" />
-                <action android:name="android.appwidget.action.APPWIDGET_DISABLED"/>
+                <action android:name="android.appwidget.action.APPWIDGET_DISABLED" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -138,8 +142,9 @@
                 <action android:name="android.intent.action.ACTION_EXTERNAL_APPLICATION_AVAILABLE" />
             </intent-filter>
             <intent-filter>
-                <action android:name="android.appwidget.action.ACTION_PACKAGE_REPLACED"/>
+                <action android:name="android.appwidget.action.ACTION_PACKAGE_REPLACED" />
             </intent-filter>
+
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info" />

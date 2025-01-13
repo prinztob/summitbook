@@ -1,43 +1,53 @@
 package de.drtobiasprinz.summitbook.utils;
 
-import android.app.*;
-import android.os.*;
-import android.text.*;
-import android.util.*;
-import android.widget.*;
-import androidx.lifecycle.*;
-import com.chaquo.python.*;
+import android.app.Application;
+import android.os.Bundle;
+import android.text.InputType;
+import android.util.Log;
+import android.widget.TextView;
 
+import androidx.lifecycle.ViewModelProviders;
+
+import com.chaquo.python.PyObject;
+import com.chaquo.python.Python;
+
+import de.drtobiasprinz.summitbook.R;
 import de.drtobiasprinz.summitbook.ui.MainActivity;
 
-/** Base class for a console-based activity that will run Python code. sys.stdout and sys.stderr
+/**
+ * Base class for a console-based activity that will run Python code. sys.stdout and sys.stderr
  * will be directed to the output view whenever the activity is resumed. If the Python code
  * caches their values, it can direct output to the activity even when it's paused.
  * Unless inputType is InputType.TYPE_NULL, sys.stdin will also be redirected whenever
  * the activity is resumed. The input box will initially be hidden, and will be displayed the
- * first time sys.stdin is read. */
+ * first time sys.stdin is read.
+ */
 public abstract class PythonConsoleActivity extends ConsoleActivity {
 
     protected Task task;
 
-    @Override protected void onCreate(Bundle savedInstanceState) {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         task = ViewModelProviders.of(this).get(getTaskClass());
         if (task.inputType != InputType.TYPE_NULL) {
             ((TextView) findViewById(resId("id", "etInput"))).setInputType(task.inputType);
         }
+        Utils.fixEdgeToEdge(findViewById(R.id.constraintLayout));
     }
 
     protected abstract Class<? extends Task> getTaskClass();
 
-    @Override protected void onResume() {
+    @Override
+    protected void onResume() {
         task.resumeStreams();
         super.onResume();  // Starts the task thread.
     }
 
-    @Override protected void onPause() {
+    @Override
+    protected void onPause() {
         super.onPause();
-        if (! isChangingConfigurations()) {
+        if (!isChangingConfigurations()) {
             task.pauseStreams();
         }
     }
@@ -102,7 +112,8 @@ public abstract class PythonConsoleActivity extends ConsoleActivity {
             }
         }
 
-        @Override public void onInput(String text) {
+        @Override
+        public void onInput(String text) {
             if (text != null) {
                 // Messages which are empty (or only consist of newlines) will not be logged.
                 Log.i("python.stdin", text.equals("\n") ? " " : text);
@@ -110,7 +121,8 @@ public abstract class PythonConsoleActivity extends ConsoleActivity {
             stdin.callAttr("on_input", text);
         }
 
-        @Override protected void onCleared() {
+        @Override
+        protected void onCleared() {
             super.onCleared();
             if (stdin != null) {
                 onInput(null);  // Signals EOF

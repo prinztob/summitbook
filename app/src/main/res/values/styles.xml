@@ -6,6 +6,12 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
     </style>
 
+    <style name="Theme.MaterialComponents.DayNight.WindowOptOutEdgeToEdge" parent="@style/Theme.AppCompat.Light.NoActionBar">
+
+    </style>
+
+
+
     <style name="MyProgressBarTwo" parent="@style/Widget.AppCompat.ProgressBar.Horizontal">
         <item name="colorButtonNormal">#f50057</item>
         <item name="colorControlActivated">#33691e</item>
@@ -28,10 +34,12 @@
         <item name="android:maxLines">5</item>
         <item name="android:ellipsize">start</item>
     </style>
+
     <style name="ThemeOverlay.App.Switch" parent="">
         <item name="color">@color/colorPrimary</item>
         <item name="colorSecondary">@color/colorPrimaryDark</item>
     </style>
+
     <style name="Widget.App.Switch" parent="Widget.MaterialComponents.CompoundButton.Switch">
         <item name="materialThemeOverlay">@style/ThemeOverlay.App.Switch</item>
     </style>

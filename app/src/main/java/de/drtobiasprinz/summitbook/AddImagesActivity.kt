@@ -11,20 +11,21 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.RelativeLayout
 import android.widget.Toast
-import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
-import com.github.drjacky.imagepicker.ImagePicker
+import com.yalantis.ucrop.UCrop
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.ActivityAddImagesBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.utils.Utils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -43,10 +44,13 @@ class AddImagesActivity : AppCompatActivity() {
     private var summitEntry: Summit? = null
     private var canImageBeOnFirstPosition: Map<Int, Boolean>? = emptyMap()
 
+    private var selectedCropValues: Pair<Float, Float> = HORIZONTAL
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAddImagesBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        Utils.fixEdgeToEdge(binding.root)
         val bundle = intent.extras
         if (bundle != null) {
             val summitEntryId = bundle.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
@@ -74,7 +78,7 @@ class AddImagesActivity : AppCompatActivity() {
     private fun drawLayout(localSummit: Summit, layout: RelativeLayout) {
         var id = 0
         if (localSummit.hasImagePath()) {
-            canImageBeOnFirstPosition = summitEntry?.imageIds?.associate {
+            canImageBeOnFirstPosition = localSummit.imageIds.associate {
                 val bitmap = BitmapDrawable(resources, localSummit.getImagePath(it).toString())
                 it to (bitmap.bitmap.height < bitmap.bitmap.width)
             }
@@ -219,8 +223,7 @@ class AddImagesActivity : AppCompatActivity() {
             layout,
             addHorizontalImageButton,
             localSummitImage,
-            16f,
-            9f
+            HORIZONTAL
         )
         if (id > 0) {
             val addVerticalImageButton = ImageButton(this)
@@ -229,8 +232,7 @@ class AddImagesActivity : AppCompatActivity() {
                 layout,
                 addVerticalImageButton,
                 localSummitImage,
-                9f,
-                16f,
+                VERTICAL,
                 addHorizontalImageButton.id
             )
         }
@@ -238,16 +240,15 @@ class AddImagesActivity : AppCompatActivity() {
 
     private fun addImageOnClickListener(
         layout: RelativeLayout, button: ImageButton,
-        localSummitImage: PhotoView, cropX: Float, cropY: Float, idOtherButton: Int = 0
+        localSummitImage: PhotoView, crop: Pair<Float, Float>, idOtherButton: Int = 0
     ) {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+        }
         button.setOnClickListener {
-            startForProfileImageResult.launch(
-                ImagePicker.with(this)
-                    .crop(cropX, cropY)
-                    .maxResultSize(2048, 2048)
-                    .galleryOnly()
-                    .createIntent()
-            )
+            selectedCropValues = crop
+            resultLauncherForAddingImage.launch(intent)
         }
         if (idOtherButton > 0) {
             layout.addView(
@@ -259,30 +260,31 @@ class AddImagesActivity : AppCompatActivity() {
         }
     }
 
-    private val startForProfileImageResult =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
-            val resultCode = result.resultCode
-            val data = result.data
-            val localSummit = summitEntry
-
-            if (resultCode == Activity.RESULT_OK) {
-                val fileUri = data?.data
-                if (fileUri != null && localSummit != null) {
-                    val file = localSummit.getNextImagePath(true).toFile()
-                    contentResolver.openInputStream(fileUri)?.use { inputStream ->
-                        SelectOnOsMapActivity.copyGpxFileToCache(inputStream, file)
+    private val resultLauncherForAddingImage =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.data?.also { sourceUri ->
+                    val localSummit = summitEntry
+                    if (localSummit != null) {
+                        UCrop.of(sourceUri, localSummit.getNextImagePath(true).toFile().toUri())
+                            .withAspectRatio(selectedCropValues.first, selectedCropValues.second)
+                            .withMaxResultSize(2048, 2048)
+                            .start(this, resultLauncherCroppedImageDone)
                     }
-                    updateAdapterAndDatabase(localSummit)
-                    binding.images.removeAllViewsInLayout()
-                    drawLayout(localSummit, binding.images)
                 }
-            } else if (resultCode == ImagePicker.RESULT_ERROR) {
-                Toast.makeText(this, ImagePicker.getError(data), Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, getString(R.string.add_image_canceled), Toast.LENGTH_SHORT)
-                    .show()
             }
         }
+
+    private val resultLauncherCroppedImageDone =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val localSummit = summitEntry
+            if (localSummit != null && result.resultCode == Activity.RESULT_OK) {
+                updateAdapterAndDatabase(localSummit)
+                binding.images.removeAllViewsInLayout()
+                drawLayout(localSummit, binding.images)
+            }
+        }
+
 
     private fun updateAdapterAndDatabase(localSummit: Summit) {
         viewModel.saveSummit(true, localSummit)
@@ -323,5 +325,8 @@ class AddImagesActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         return true
     }
-
+    companion object {
+        val HORIZONTAL = Pair(16f, 9f)
+        val VERTICAL = Pair(9f, 16f)
+    }
 }
