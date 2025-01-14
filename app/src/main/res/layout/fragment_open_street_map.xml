@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="150dp"
         android:gravity="center"
-        android:visibility="visible"
+        android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -26,6 +26,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
+    <ImageButton
+        android:id="@+id/showSummits"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toStartOf="@id/centerOnLocation"
+        app:layout_constraintTop_toTopOf="parent"
+        android:contentDescription="@string/show_all"
+        android:src="@drawable/baseline_directions_run_24" />
     <ImageButton
         android:id="@+id/centerOnLocation"
         android:layout_width="wrap_content"

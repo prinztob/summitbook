@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
@@ -66,6 +67,8 @@ class OpenStreetMapFragment : Fragment() {
     private var mMarkersShown: MutableList<Marker?> = ArrayList()
     private var gotoLocationDialog: AlertDialog? = null
     private var maxPointsToShow: Int = 10000
+    private var summitsShown: Boolean = false
+    private var summits: List<Summit> = emptyList()
 
     private lateinit var mLocationOverlay: MyLocationNewOverlay
 
@@ -88,6 +91,7 @@ class OpenStreetMapFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         binding = FragmentOpenStreetMapBinding.inflate(layoutInflater, container, false)
+        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
         setMap()
         return binding.root
     }
@@ -103,8 +107,15 @@ class OpenStreetMapFragment : Fragment() {
         binding.osmap.onResume()
     }
 
+    override fun onStop() {
+        super.onStop()
+        activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (PreferencesHelper.loadOnDeviceMaps() &&
             FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
         ) {
@@ -117,26 +128,8 @@ class OpenStreetMapFragment : Fragment() {
         mLocationOverlay.enableMyLocation()
         addDefaultSettings(requireContext(), binding.osmap, requireActivity())
         viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
-            binding.loadingPanel.visibility = View.VISIBLE
-            binding.osmap.visibility = View.GONE
             itData.data?.let { summits ->
-                lifecycleScope.launch {
-                    var filteredSummits: List<Pair<Summit, GeoPoint>> = listOf()
-                    withContext(Dispatchers.IO) {
-                        val relevantSummits = sortFilterValues.apply(summits, sharedPreferences)
-                            .filter {
-                                it.sportType != SportType.IndoorTrainer
-                                        && it.lat != null
-                                        && it.lat != 0.0
-                                        && it.lng != null
-                                        && it.lng != 0.0
-                            }
-                        filteredSummits =
-                            relevantSummits.map { Pair(it, GeoPoint(it.lat!!, it.lng!!)) }
-                    }
-                    addAllMarkers(filteredSummits)
-                    binding.osmap.visibility = View.VISIBLE
-                }
+                this.summits = summits
             }
         }
     }
@@ -156,6 +149,31 @@ class OpenStreetMapFragment : Fragment() {
 
     private fun setMap() {
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
+        binding.showSummits.setOnClickListener {
+            if (!summitsShown) {
+                summitsShown = true
+                binding.loadingPanel.visibility = View.VISIBLE
+                lifecycleScope.launch {
+                    var filteredSummits: List<Pair<Summit, GeoPoint>> = listOf()
+                    withContext(Dispatchers.IO) {
+                        val relevantSummits = sortFilterValues.apply(summits, sharedPreferences)
+                            .filter {
+                                it.sportType != SportType.IndoorTrainer
+                                        && it.lat != null
+                                        && it.lat != 0.0
+                                        && it.lng != null
+                                        && it.lng != 0.0
+                            }
+                        filteredSummits =
+                            relevantSummits.map { Pair(it, GeoPoint(it.lat!!, it.lng!!)) }
+                    }
+                    addAllMarkers(filteredSummits)
+                }
+            } else {
+                summitsShown = false
+                binding.osmap.overlays?.clear()
+            }
+        }
         binding.changeMap.setOnClickListener {
             showMapTypeSelectorDialog(
                 requireContext(),
