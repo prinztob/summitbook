@@ -10,7 +10,6 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
@@ -25,6 +24,7 @@ import de.drtobiasprinz.summitbook.databinding.FragmentOpenStreetMapBinding
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
@@ -43,6 +43,7 @@ import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.bonuspack.utils.BonusPackHelper
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
@@ -67,8 +68,11 @@ class OpenStreetMapFragment : Fragment() {
     private var mMarkersShown: MutableList<Marker?> = ArrayList()
     private var gotoLocationDialog: AlertDialog? = null
     private var maxPointsToShow: Int = 10000
-    private var summitsShown: Boolean = false
+    private var showSummits: Boolean = false
+    private var showBookmarks: Boolean = false
+    private var fullscreenEnabled: Boolean = false
     private var summits: List<Summit> = emptyList()
+    private var bookmarks: List<Summit> = emptyList()
 
     private lateinit var mLocationOverlay: MyLocationNewOverlay
 
@@ -91,8 +95,27 @@ class OpenStreetMapFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         binding = FragmentOpenStreetMapBinding.inflate(layoutInflater, container, false)
-        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
         setMap()
+        fullscreen(fullscreenEnabled)
+        val osMapBoundingBox =
+            sharedPreferences.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")?.split(";")
+                ?: emptyList()
+        if (osMapBoundingBox.size == 4) {
+            try {
+                val boundingBox = BoundingBox()
+                boundingBox.set(
+                    osMapBoundingBox[0].toDouble(),
+                    osMapBoundingBox[1].toDouble(),
+                    osMapBoundingBox[2].toDouble(),
+                    osMapBoundingBox[3].toDouble()
+                )
+                binding.osmap.post {
+                    binding.osmap.zoomToBoundingBox(boundingBox, false, 30)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Getting bounding box from shared preference failed. ${e.message}")
+            }
+        }
         return binding.root
     }
 
@@ -107,15 +130,21 @@ class OpenStreetMapFragment : Fragment() {
         binding.osmap.onResume()
     }
 
-    override fun onStop() {
-        super.onStop()
-        activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-
+    override fun onDetach() {
+        super.onDetach()
+        val boundingBox = binding.osmap.boundingBox
+        val editor = sharedPreferences.edit()
+        editor.putString(
+            Keys.PREF_OS_MAP_BOUNDING_BOX,
+            "${boundingBox.latNorth};${boundingBox.lonEast};${boundingBox.latSouth};${boundingBox.lonWest}"
+        )
+        editor.apply()
+        Log.d(TAG, "onDetach ${binding.osmap.boundingBox} and updated shared preference")
+        fullscreen(true)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (PreferencesHelper.loadOnDeviceMaps() &&
             FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
         ) {
@@ -130,6 +159,11 @@ class OpenStreetMapFragment : Fragment() {
         viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
             itData.data?.let { summits ->
                 this.summits = summits
+            }
+        }
+        viewModel.bookmarksList.observe(viewLifecycleOwner) { itData ->
+            itData.data?.let { bookmarksList ->
+                this.bookmarks = bookmarksList
             }
         }
     }
@@ -149,30 +183,26 @@ class OpenStreetMapFragment : Fragment() {
 
     private fun setMap() {
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
+        binding.fullscreen.setOnClickListener {
+            fullscreen(fullscreenEnabled)
+        }
         binding.showSummits.setOnClickListener {
-            if (!summitsShown) {
-                summitsShown = true
-                binding.loadingPanel.visibility = View.VISIBLE
-                lifecycleScope.launch {
-                    var filteredSummits: List<Pair<Summit, GeoPoint>> = listOf()
-                    withContext(Dispatchers.IO) {
-                        val relevantSummits = sortFilterValues.apply(summits, sharedPreferences)
-                            .filter {
-                                it.sportType != SportType.IndoorTrainer
-                                        && it.lat != null
-                                        && it.lat != 0.0
-                                        && it.lng != null
-                                        && it.lng != 0.0
-                            }
-                        filteredSummits =
-                            relevantSummits.map { Pair(it, GeoPoint(it.lat!!, it.lng!!)) }
-                    }
-                    addAllMarkers(filteredSummits)
-                }
+            showSummits = !showSummits
+            if (showSummits) {
+                binding.showSummits.alpha = 1f
             } else {
-                summitsShown = false
-                binding.osmap.overlays?.clear()
+                binding.showSummits.alpha = 0.5f
             }
+            showSummitsAndBookmarksIfEnabled()
+        }
+        binding.showBookmarks.setOnClickListener {
+            showBookmarks = !showBookmarks
+            if (showBookmarks) {
+                binding.showBookmarks.alpha = 1f
+            } else {
+                binding.showBookmarks.alpha = 0.5f
+            }
+            showSummitsAndBookmarksIfEnabled()
         }
         binding.changeMap.setOnClickListener {
             showMapTypeSelectorDialog(
@@ -184,20 +214,11 @@ class OpenStreetMapFragment : Fragment() {
         binding.showAllTracks.setOnClickListener {
             showAllTracksOfSummitInBoundingBox()
         }
-
+        binding.centerOnSummits.setOnClickListener {
+            binding.osmap.post { calculateBoundingBox(binding.osmap, mGeoPoints) }
+        }
         binding.centerOnLocation.setOnClickListener {
-            if (mLocationOverlay.isMyLocationEnabled) {
-                binding.osmap.overlays.add(mLocationOverlay)
-                val mapController = binding.osmap.controller
-                mapController.setZoom(10.0)
-                mapController.setCenter(mLocationOverlay.myLocation)
-            } else {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.location_not_enabled),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+            zoomToLocation()
         }
 
         binding.osmap.setOnGenericMotionListener { _: View?, event: MotionEvent ->
@@ -215,6 +236,51 @@ class OpenStreetMapFragment : Fragment() {
         }
     }
 
+    private fun showSummitsAndBookmarksIfEnabled() {
+        if (showSummits || showBookmarks) {
+            binding.loadingPanel.visibility = View.VISIBLE
+            lifecycleScope.launch {
+                var filteredSummits: List<Pair<Summit, GeoPoint>> = listOf()
+                withContext(Dispatchers.IO) {
+                    val relevantSummits = if (showSummits) sortFilterValues.apply(
+                        summits,
+                        sharedPreferences
+                    ) else emptyList()
+                    val relevantBookmarks =
+                        if (showBookmarks) sortFilterValues.applyForBookmarks(bookmarks) else emptyList()
+
+                    filteredSummits =
+                        (relevantSummits + relevantBookmarks).filter {
+                            it.sportType != SportType.IndoorTrainer
+                                    && it.lat != null
+                                    && it.lat != 0.0
+                                    && it.lng != null
+                                    && it.lng != 0.0
+                        }.map { Pair(it, GeoPoint(it.lat!!, it.lng!!)) }
+                }
+                addAllMarkers(filteredSummits)
+            }
+        } else {
+            binding.osmap.overlays?.clear()
+            binding.osmap.invalidate()
+        }
+    }
+
+    private fun zoomToLocation() {
+        if (mLocationOverlay.isMyLocationEnabled) {
+            binding.osmap.overlays.add(mLocationOverlay)
+            val mapController = binding.osmap.controller
+            mapController.setZoom(10.0)
+            mapController.setCenter(mLocationOverlay.myLocation)
+        } else {
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.location_not_enabled),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     private fun showAllTracksOfSummitInBoundingBox() {
         var pointsShown = mMarkersShown.sumOf {
             (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size ?: 0
@@ -225,7 +291,7 @@ class OpenStreetMapFragment : Fragment() {
                 mapCustomInfoBubble.entry.isInBoundingBox(it1)
             }
             if (shouldBeShown == false && it in mMarkersShown) {
-                Log.e(
+                Log.i(
                     "trackPoints",
                     "trackPoints --: ${mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0}"
                 )
@@ -276,7 +342,7 @@ class OpenStreetMapFragment : Fragment() {
                 }
             }
         }
-        binding.osmap.zoomController.activate()
+        binding.osmap.invalidate()
     }
 
     private fun addAllMarkers(summits: List<Pair<Summit, GeoPoint>>) {
@@ -319,8 +385,8 @@ class OpenStreetMapFragment : Fragment() {
             val eventsOverlay = MapEventsOverlay(mReceive)
             binding.osmap.overlays.add(markers)
             binding.osmap.overlays?.add(eventsOverlay)
-            binding.osmap.post { calculateBoundingBox(binding.osmap, mGeoPoints) }
             binding.loadingPanel.visibility = View.GONE
+            binding.osmap.invalidate()
         }
     }
 
@@ -357,6 +423,21 @@ class OpenStreetMapFragment : Fragment() {
             false
         }
         return marker
+    }
+
+    private fun fullscreen(exit: Boolean) {
+        fullscreenEnabled = !fullscreenEnabled
+        if (exit) {
+            binding.fullscreen.setImageResource(R.drawable.baseline_fullscreen_24)
+            (requireActivity() as MainActivity).binding.toolbarInclude.toolbar.visibility =
+                View.VISIBLE
+            (requireActivity() as MainActivity).binding.overviewLayout.visibility = View.VISIBLE
+        } else {
+            binding.fullscreen.setImageResource(R.drawable.baseline_fullscreen_exit_24)
+            (requireActivity() as MainActivity).binding.toolbarInclude.toolbar.visibility =
+                View.GONE
+            (requireActivity() as MainActivity).binding.overviewLayout.visibility = View.GONE
+        }
     }
 
     companion object {

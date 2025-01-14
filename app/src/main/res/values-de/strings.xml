@@ -426,6 +426,7 @@
     <string name="description">Description</string>
     <string name="summits_for_segments_not_found">Es wurde keine Aktivität für Segment gefunden.</string>
     <string name="center_on_current_location">Zentriere auf aktuelle Position</string>
+    <string name="center_on_summits">Zentriere auf Gipfel</string>
     <string name="pythonConsoleText">Das ist der erste Login in Garmin Connect mit aktivierten MFA.
         Wir versuchen jetzt dich einzuloggen und du musst dein MFA Token eingeben.</string>
     <string name="min_5_yrs">Min. letzte 5 Jahre</string>

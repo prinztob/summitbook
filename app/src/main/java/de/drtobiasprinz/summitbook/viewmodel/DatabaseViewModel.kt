@@ -48,6 +48,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
 
     init {
         getAllSummits()
+        getAllBookmarks()
         getAllSegments()
         getAllForecasts()
         getAllIgnoredActivities()
