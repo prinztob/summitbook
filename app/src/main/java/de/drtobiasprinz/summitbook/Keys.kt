@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook
 
 object Keys {
     const val PREF_ON_DEVICE_MAPS: String = "prefOnDeviceMaps"
+    const val PREF_ACCESS_ALL_FILES: String = "prefAccessAllFiles"
     const val PREF_ON_DEVICE_MAPS_FOLDER: String = "prefOnDeviceMapsFolder"
     const val PREF_ANNUAL_TARGET: String = "annual_target"
     const val PREF_ANNUAL_TARGET_KM: String = "annual_target_km"

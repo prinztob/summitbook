@@ -40,6 +40,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.TrackColor
+import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.getSportTypeForMapProviders
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
@@ -102,6 +103,8 @@ class SummitEntryTrackFragment : Fragment() {
             FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
         ) {
             selectedItem = getSportTypeForMapProviders(summitToView.sportType, requireContext())
+        } else if (FileHelper.getOnDeviceMbtilesFiles(requireContext()).isNotEmpty()) {
+            selectedItem = MapProvider.MBTILES
         }
         pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { itData ->
             itData.data.let { summitToCompare ->

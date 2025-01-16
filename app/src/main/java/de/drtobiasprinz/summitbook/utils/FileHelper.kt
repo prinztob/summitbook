@@ -27,22 +27,27 @@ object FileHelper {
     }
 
     fun getOnDeviceMapFiles(context: Context): List<DocumentFile> {
-        val fileList: MutableList<DocumentFile> = mutableListOf()
         val onDeviceMapsFolder: String = PreferencesHelper.loadOnDeviceMapsFolder()
         if (onDeviceMapsFolder.isNotEmpty()) {
             val folder: DocumentFile? =
                 DocumentFile.fromTreeUri(context, onDeviceMapsFolder.toUri())
-            if (folder != null) {
-                val files = folder.listFiles()
-                folder.listFiles().forEach { file ->
-                    if (file.name?.endsWith(".map") == true) {
-                        file
-                        fileList.add(file)
-                    }
-                }
-            }
+            return folder?.listFiles()?.filter { file ->
+                file.name?.endsWith(".map") == true
+            } ?: emptyList()
         }
-        return fileList
+        return emptyList()
+    }
+
+    fun getOnDeviceMbtilesFiles(context: Context): List<DocumentFile> {
+        val onDeviceMapsFolder: String = PreferencesHelper.loadOnDeviceMapsFolder()
+        if (onDeviceMapsFolder.isNotEmpty()) {
+            val folder: DocumentFile? =
+                DocumentFile.fromTreeUri(context, onDeviceMapsFolder.toUri())
+            return folder?.listFiles()?.filter { file ->
+                file.name?.endsWith(".mbtiles") == true
+            } ?: emptyList()
+        }
+        return emptyList()
     }
 
     fun getOnDeviceMapsFolderName(context: Context): String {

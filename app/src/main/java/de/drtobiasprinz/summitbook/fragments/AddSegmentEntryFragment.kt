@@ -96,6 +96,8 @@ class AddSegmentEntryFragment : Fragment() {
             FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
         ) {
             selectedItem = MapProvider.HIKING
+        } else if (FileHelper.getOnDeviceMbtilesFiles(requireContext()).isNotEmpty()) {
+            selectedItem = MapProvider.MBTILES
         }
         setTileSource(binding.osmap, requireContext())
         viewModel.segmentsList.observe(viewLifecycleOwner, object :

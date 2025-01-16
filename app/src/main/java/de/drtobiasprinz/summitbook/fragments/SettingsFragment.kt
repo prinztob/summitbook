@@ -44,6 +44,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private lateinit var preferenceForecastAverageOfLastXYears: SeekBarPreference
 
     private lateinit var preferenceMapProvider: SwitchPreferenceCompat
+    private lateinit var preferenceAccessAllFiles: SwitchPreferenceCompat
     private lateinit var preferenceOnDeviceMapsFolder: EditTextPreference
     private lateinit var preferenceUseSimplifiedTracks: SwitchPreferenceCompat
     private lateinit var preferenceMaxPointsOnTrack: EditTextPreference
@@ -58,6 +59,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private lateinit var preferenceExportCalculatedData: SwitchPreferenceCompat
 
     private lateinit var onDeviceMapFiles: List<DocumentFile>
+    private lateinit var onDeviceMbTilesFiles: List<DocumentFile>
     private lateinit var onDeviceMapsFolderName: String
 
 
@@ -186,6 +188,28 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceForecastAverageOfLastXYears.min = 0
         preferenceForecastAverageOfLastXYears.max = 20
 
+
+        preferenceAccessAllFiles = SwitchPreferenceCompat(requireContext())
+        preferenceAccessAllFiles.title = getString(R.string.access_all_files)
+        preferenceAccessAllFiles.setIcon(R.drawable.baseline_map_black_24dp)
+        preferenceAccessAllFiles.key = Keys.PREF_ACCESS_ALL_FILES
+        preferenceAccessAllFiles.summary = getString(R.string.access_all_files_summary)
+        preferenceAccessAllFiles.setDefaultValue(false)
+        preferenceAccessAllFiles.setOnPreferenceClickListener {
+            // open the folder chooser, if on-device maps is selected and folder does not contain any .map files
+            if (preferenceAccessAllFiles.isChecked) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                        Uri.parse("package:" + BuildConfig.APPLICATION_ID)
+                    ).apply {}
+                    startActivity(intent)
+                } else {
+                    Log.i(TAG, "This is not supported in your Android Version")
+                }
+            }
+            return@setOnPreferenceClickListener true
+        }
         // set up "Map Provider" preference
         preferenceMapProvider = SwitchPreferenceCompat(requireContext())
         preferenceMapProvider.title = getString(R.string.map_provider)
@@ -196,12 +220,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceMapProvider.setDefaultValue(false)
         preferenceMapProvider.setOnPreferenceClickListener {
             // open the folder chooser, if on-device maps is selected and folder does not contain any .map files
-            if (preferenceMapProvider.isChecked && onDeviceMapFiles.isEmpty()) {
+            if (preferenceMapProvider.isChecked && onDeviceMapFiles.isEmpty() && onDeviceMbTilesFiles.isEmpty()) {
                 openOnDeviceMapsFolderDialog()
             } else {
                 preferenceOnDeviceMapsFolder.isVisible = preferenceMapProvider.isChecked
                 selectedItem = if (preferenceMapProvider.isChecked) {
                     MapProvider.HIKING
+                } else if (onDeviceMbTilesFiles.isNotEmpty()) {
+                    MapProvider.MBTILES
                 } else {
                     MapProvider.OPENTOPO
                 }
@@ -234,6 +260,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val preferenceCategoryMap = PreferenceCategory(requireContext())
         preferenceCategoryMap.title = getString(R.string.pref_map_title)
         preferenceCategoryMap.contains(preferenceMapProvider)
+        preferenceCategoryMap.contains(preferenceAccessAllFiles)
         preferenceCategoryMap.contains(preferenceOnDeviceMapsFolder)
         preferenceCategoryMap.contains(preferenceUseSimplifiedTracks)
         preferenceCategoryMap.contains(preferenceMaxPointsOnTrack)
@@ -263,6 +290,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         screen.addPreference(preferenceCategoryMap)
         screen.addPreference(preferenceMapProvider)
+        screen.addPreference(preferenceAccessAllFiles)
         screen.addPreference(preferenceOnDeviceMapsFolder)
         screen.addPreference(preferenceUseSimplifiedTracks)
         screen.addPreference(preferenceMaxPointsOnTrack)
@@ -296,6 +324,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     /* Toggle the visibility of the "On-device Maps Folder" preference and reset the "Map Provider" switch */
     private fun updateOnDeviceMapsPreferencesState() {
         onDeviceMapFiles = FileHelper.getOnDeviceMapFiles(preferenceManager.context)
+        onDeviceMbTilesFiles = FileHelper.getOnDeviceMbtilesFiles(preferenceManager.context)
         onDeviceMapsFolderName = FileHelper.getOnDeviceMapsFolderName(preferenceManager.context)
         preferenceOnDeviceMapsFolder.isVisible =
             preferenceMapProvider.isChecked && onDeviceMapFiles.isNotEmpty()
@@ -313,14 +342,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
         this::requestOnDeviceMapsFolderResult
     )
 
-
     /* Opens up a file picker to select the folder containing the on-device map files */
     private fun openOnDeviceMapsFolderDialog() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val intent = Intent(
-                Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                Uri.parse("package:" + BuildConfig.APPLICATION_ID)
-            ).apply {}
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {}
             try {
                 requestOnDeviceMapsFolderLauncher.launch(intent)
             } catch (exception: Exception) {
@@ -335,7 +360,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
             Log.i(TAG, "This is not supported in your Android Version")
         }
     }
-
 
     /* Get the activity result from the on-device folder dialog */
     private fun requestOnDeviceMapsFolderResult(result: ActivityResult) {

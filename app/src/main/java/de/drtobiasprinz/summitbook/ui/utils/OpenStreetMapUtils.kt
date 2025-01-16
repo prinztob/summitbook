@@ -253,10 +253,7 @@ object OpenStreetMapUtils {
     fun showMapTypeSelectorDialog(context: Context, mapView: MapView) {
         val fDialogTitle = context.getString(R.string.select_map_type)
         val builder = AlertDialog.Builder(context)
-        val mapProviders = getMapProviders(
-            PreferencesHelper.loadOnDeviceMaps() &&
-                    FileHelper.getOnDeviceMapFiles(context).isNotEmpty()
-        )
+        val mapProviders = getMapProviders(context)
         builder.setTitle(fDialogTitle)
         builder.setSingleChoiceItems(
             mapProviders.map { context.getString(it.textId) }.toTypedArray(),
@@ -295,8 +292,8 @@ object OpenStreetMapUtils {
         }
     }
 
-    private fun getMapProviders(isOfflineEnabled: Boolean): List<MapProvider> {
-        return if (isOfflineEnabled) MapProvider.entries else MapProvider.entries.filter { !it.isOffline }
+    private fun getMapProviders(context: Context): List<MapProvider> {
+        return MapProvider.entries.filter { it.exists(context) }
     }
 
     fun getSportTypeForMapProviders(sportType: SportType, context: Context): MapProvider {
@@ -306,6 +303,8 @@ object OpenStreetMapUtils {
             FileHelper.getOnDeviceMapFiles(context).isNotEmpty()
         ) {
             MapProvider.HIKING
+        } else if (FileHelper.getOnDeviceMbtilesFiles(context).isNotEmpty()) {
+            MapProvider.MBTILES
         } else {
             MapProvider.OPENTOPO
         }
@@ -317,6 +316,7 @@ enum class MapProvider(
     var onlineTileSourceBase: OnlineTileSourceBase?,
     var offlineStyle: String?,
     var isOffline: Boolean = false,
+    var exists: (Context) -> Boolean = { true },
     var relevantSportTypes: List<SportType> = listOf()
 ) {
     OPENTOPO(
@@ -329,11 +329,22 @@ enum class MapProvider(
         TileSourceFactory.MAPNIK,
         null
     ),
+    MBTILES(
+        R.string.generic_offline_map_type,
+        null,
+        null,
+        true,
+        { context -> FileHelper.getOnDeviceMbtilesFiles(context).isNotEmpty() },
+    ),
     HIKING(
         R.string.hiking_map_type,
         null,
         "elv-hiking",
         true,
+        { context ->
+            PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
+                .isNotEmpty()
+        },
         relevantSportTypes = listOf(
             SportType.Hike,
             SportType.Climb,
@@ -346,6 +357,10 @@ enum class MapProvider(
         null,
         "elv-city",
         true,
+        { context ->
+            PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
+                .isNotEmpty()
+        },
         relevantSportTypes = listOf(SportType.Other, SportType.IndoorTrainer, SportType.Running)
     ),
     CYCLING(
@@ -353,6 +368,10 @@ enum class MapProvider(
         null,
         "elv-cycling",
         true,
+        { context ->
+            PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
+                .isNotEmpty()
+        },
         relevantSportTypes = listOf(SportType.Bicycle, SportType.Racer)
     ),
     MTB(
@@ -360,6 +379,10 @@ enum class MapProvider(
         null,
         "elv-mtb",
         true,
+        { context ->
+            PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
+                .isNotEmpty()
+        },
         relevantSportTypes = listOf(SportType.Mountainbike)
     )
 }
