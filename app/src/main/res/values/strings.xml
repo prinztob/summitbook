@@ -5,7 +5,7 @@
     <string name="nav_summits">Summits</string>
     <string name="nav_statistics">Statistics</string>
     <string name="nav_diagrams">Diagrams</string>
-    <string name="nav_osmap">Show summits on map</string>
+    <string name="nav_osmap">Map</string>
     <string name="nav_diashow">Image Diashow</string>
     <string name="nav_import">Import backup</string>
     <string name="nav_export">Export backup</string>

@@ -124,7 +124,7 @@ class SummitEntryTrackFragment : Fragment() {
                         binding.summitName.text = summitToView.name
                         binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
                         binding.osmap.overlays.clear()
-                        OpenStreetMapUtils.setTileSource(binding.osmap, requireContext())
+                        OpenStreetMapUtils.setTileProvider(binding.osmap, requireContext())
                         lifecycleScope.launch {
                             withContext(Dispatchers.IO) {
                                 setGpsTrack(summitToView, useSimplifiedTrack = true)

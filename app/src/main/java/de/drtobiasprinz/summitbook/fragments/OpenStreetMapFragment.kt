@@ -3,6 +3,8 @@ package de.drtobiasprinz.summitbook.fragments
 import android.app.AlertDialog
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.Color
+import android.graphics.ColorMatrixColorFilter
 import android.os.Bundle
 import android.util.Log
 import android.view.InputDevice
@@ -16,6 +18,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
+import com.google.android.material.slider.Slider
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.Keys
@@ -30,8 +33,9 @@ import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.getOsmdroidTilesFolder
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
@@ -43,13 +47,18 @@ import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.bonuspack.utils.BonusPackHelper
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.tileprovider.modules.ArchiveFileFactory
+import org.osmdroid.tileprovider.modules.OfflineTileProvider
+import org.osmdroid.tileprovider.util.SimpleRegisterReceiver
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.TilesOverlay
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import java.io.File
 import javax.inject.Inject
 
 
@@ -73,6 +82,8 @@ class OpenStreetMapFragment : Fragment() {
     private var fullscreenEnabled: Boolean = false
     private var summits: List<Summit> = emptyList()
     private var bookmarks: List<Summit> = emptyList()
+    private var layer: TilesOverlay? = null
+    private var alpha: Float = 0f
 
     private lateinit var mLocationOverlay: MyLocationNewOverlay
 
@@ -146,13 +157,27 @@ class OpenStreetMapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         if (PreferencesHelper.loadOnDeviceMaps() &&
+            FileHelper.getOnDeviceMbtilesFiles(requireContext()).isNotEmpty()
+        ) {
+            selectedItem = MapProvider.MBTILES
+        } else if (PreferencesHelper.loadOnDeviceMaps() &&
             FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
         ) {
             selectedItem = MapProvider.HIKING
-        } else if (FileHelper.getOnDeviceMbtilesFiles(requireContext()).isNotEmpty()) {
-            selectedItem = MapProvider.MBTILES
         }
-        setTileSource(binding.osmap, requireContext())
+        setTileProvider(binding.osmap, requireContext())
+        showOverlayIfExist()
+        binding.slider.addOnSliderTouchListener(
+            object : Slider.OnSliderTouchListener {
+                override fun onStartTrackingTouch(slider: Slider) {
+                }
+
+                override fun onStopTrackingTouch(slider: Slider) {
+                    alpha = slider.value
+                    setAlphaForLayer()
+                }
+            }
+        )
         val context: Context? = this@OpenStreetMapFragment.activity
         mLocationOverlay =
             MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
@@ -352,6 +377,7 @@ class OpenStreetMapFragment : Fragment() {
         var mReceive: MapEventsReceiver
         val markers = RadiusMarkerClusterer(context)
         binding.osmap.overlays?.clear()
+        showOverlayIfExist()
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(
@@ -441,6 +467,46 @@ class OpenStreetMapFragment : Fragment() {
             (requireActivity() as MainActivity).binding.overviewLayout.visibility = View.GONE
         }
     }
+
+
+    private fun showOverlayIfExist() {
+        val fileEnding = "mbtiles"
+        val overlayFolder = File(getOsmdroidTilesFolder(), "overlays")
+        val files = overlayFolder.listFiles()?.filter { it.name.endsWith(".${fileEnding}") }
+        if (ArchiveFileFactory.isFileExtensionRegistered(fileEnding) && files?.size == 1) {
+            try {
+                val file = files.first()
+                val tileProvider =
+                    OfflineTileProvider(SimpleRegisterReceiver(context), arrayOf(file))
+                layer = TilesOverlay(tileProvider, context)
+                layer?.loadingBackgroundColor = Color.TRANSPARENT
+                layer?.loadingLineColor = Color.TRANSPARENT
+                setAlphaForLayer()
+                binding.osmap.overlays.add(layer)
+                binding.osmap.invalidate()
+                return
+            } catch (ex: Exception) {
+                Log.e(TAG, Log.getStackTraceString(ex))
+            }
+        } else {
+            binding.slider.visibility = View.GONE
+        }
+    }
+
+    private fun setAlphaForLayer() {
+        layer?.setColorFilter(
+            ColorMatrixColorFilter(
+                floatArrayOf(
+                    1f, 0f, 0f, 0f, 0f,  //red
+                    0f, 1f, 0f, 0f, 0f,  //green
+                    0f, 0f, 1f, 0f, 0f,  //blue
+                    alpha, alpha, alpha, alpha, alpha
+                )
+            )
+        )
+        binding.osmap.invalidate()
+    }
+
 
     companion object {
         const val TAG = "OpenStreetMapFragment"

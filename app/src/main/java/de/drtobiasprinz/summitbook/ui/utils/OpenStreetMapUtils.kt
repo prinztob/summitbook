@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
 import android.os.Environment
+import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
@@ -38,6 +39,8 @@ object OpenStreetMapUtils {
 
     @JvmStatic
     var selectedItem = MapProvider.OPENTOPO
+    private const val TAG = "OpenStreetMapUtils"
+    private var osmdroidBasePathDefault: File? = null
 
     @JvmStatic
     fun addTrackAndMarker(
@@ -133,25 +136,29 @@ object OpenStreetMapUtils {
         return mGeoPoints
     }
 
-    private fun getOsmdroidTilesFolder(): File {
+    fun getOsmdroidTilesFolder(): File {
         val folders = PreferencesHelper.loadOnDeviceMapsFolder().split("%3A")
         val guessOsmdroidFolder = File(
             Environment.getExternalStorageDirectory(),
             folders.subList(1, folders.size).joinToString("/")
         )
-        if (guessOsmdroidFolder.exists()) {
-            return guessOsmdroidFolder
+        return if (guessOsmdroidFolder.exists()) {
+            guessOsmdroidFolder
         } else {
-            return File(storage, "osmdroid")
+            File(storage, "osmdroid")
         }
     }
 
     @JvmStatic
-    fun setOsmConfForTiles() {
+    fun setOsmConfForTiles(setToDefault: Boolean = false) {
         val osmConf = Configuration.getInstance()
+        if (osmdroidBasePathDefault == null) {
+            osmdroidBasePathDefault = osmConf.osmdroidBasePath
+        }
         val osmdroidBasePath = getOsmdroidTilesFolder()
         osmdroidBasePath.mkdirs()
-        osmConf.osmdroidBasePath = osmdroidBasePath
+        osmConf.osmdroidBasePath = if (setToDefault) osmdroidBasePathDefault else osmdroidBasePath
+        Log.i(TAG, "set osmdroidBasePath to ${osmConf.osmdroidBasePath}")
         val tileCache = File(MainActivity.cache, "tile")
         tileCache.mkdirs()
         osmConf.osmdroidTileCache = tileCache
@@ -228,10 +235,10 @@ object OpenStreetMapUtils {
         fragmentActivity: FragmentActivity
     ) {
 
-        val dm = context.resources.displayMetrics
         val mScaleBarOverlay = ScaleBarOverlay(mMapView)
-        mScaleBarOverlay.setCentred(true)
-        mScaleBarOverlay.setScaleBarOffset(dm.widthPixels / 4, 10)
+        mScaleBarOverlay.setTextSize(64f)
+        mScaleBarOverlay.setAlignBottom(true)
+        mScaleBarOverlay.setScaleBarOffset(64, 64)
         mMapView.overlays.add(mScaleBarOverlay)
 
         //support for map rotation
@@ -260,7 +267,7 @@ object OpenStreetMapUtils {
             mapProviders.indexOf(selectedItem)
         ) { dialog: DialogInterface, item: Int ->
             selectedItem = mapProviders[item]
-            setTileSource(mapView, context)
+            setTileProvider(mapView, context)
             dialog.dismiss()
         }
 
@@ -270,12 +277,21 @@ object OpenStreetMapUtils {
     }
 
     @JvmStatic
-    fun setTileSource(mapView: MapView, context: Context) {
+    fun setTileProvider(mapView: MapView, context: Context) {
         val mapFiles: List<DocumentFile> = FileHelper.getOnDeviceMapFiles(context)
         if (selectedItem.isOffline) {
+            if (selectedItem == MapProvider.MBTILES) {
+                setOsmConfForTiles()
+                setOnlineMap(mapView, context)
+                mapView.invalidate()
+            } else {
+                setOsmConfForTiles(true)
+            }
             val provider = MapHelper.getOfflineMapProvider(context, mapFiles, selectedItem)
             if (provider != null) {
+                Log.i(TAG, "Use offline map")
                 mapView.setTileProvider(provider)
+                setOsmConfForTiles()
             } else {
                 setOnlineMap(mapView, context)
             }

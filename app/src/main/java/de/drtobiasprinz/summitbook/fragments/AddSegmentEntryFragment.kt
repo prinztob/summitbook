@@ -43,7 +43,7 @@ import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileSource
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
 import de.drtobiasprinz.summitbook.utils.DataStatus
@@ -99,7 +99,7 @@ class AddSegmentEntryFragment : Fragment() {
         } else if (FileHelper.getOnDeviceMbtilesFiles(requireContext()).isNotEmpty()) {
             selectedItem = MapProvider.MBTILES
         }
-        setTileSource(binding.osmap, requireContext())
+        setTileProvider(binding.osmap, requireContext())
         viewModel.segmentsList.observe(viewLifecycleOwner, object :
             Observer<DataStatus<List<Segment>>> {
             override fun onChanged(value: DataStatus<List<Segment>>) {

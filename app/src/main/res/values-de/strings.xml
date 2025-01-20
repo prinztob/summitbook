@@ -5,7 +5,7 @@
     <string name="nav_summits">Gipfel</string>
     <string name="nav_statistics">Statistik</string>
     <string name="nav_diagrams">Liniendiagramm</string>
-    <string name="nav_osmap">Zeige Gipfel auf Karte</string>
+    <string name="nav_osmap">Karte</string>
     <string name="nav_diashow">Bilderdiashow</string>
     <string name="nav_import">Importiere backup</string>
     <string name="nav_export">Exportiere backup</string>

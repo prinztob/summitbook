@@ -278,7 +278,7 @@ class SegmentEntryDetailsFragment : Fragment() {
         binding.updateSnapshot.setOnClickListener {
             takeScreenshotWhenTilesAreLoaded()
         }
-        OpenStreetMapUtils.setTileSource(binding.osMap, requireContext())
+        OpenStreetMapUtils.setTileProvider(binding.osMap, requireContext())
         OpenStreetMapUtils.addDefaultSettings(
             requireContext(), binding.osMap, requireActivity()
         )
