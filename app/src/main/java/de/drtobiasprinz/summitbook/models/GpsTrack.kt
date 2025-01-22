@@ -61,6 +61,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                 mMapView?.overlays?.remove(osMapRoute)
             }
             osMapRoute = Polyline(mMapView)
+
             val textView: TextView? = rootView?.findViewById(R.id.track_value)
             val defaultText = "${trackPoints.size} ${rootView?.resources?.getString(R.string.pts)}"
             textView?.visibility = View.VISIBLE
@@ -101,7 +102,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             osMapRoute?.outlinePaint?.strokeWidth = LINE_WIDTH_BIG
             osMapRoute?.outlinePaint?.strokeCap = Paint.Cap.ROUND
             val paintBorder = Paint()
-            paintBorder.strokeWidth = 20F
+            paintBorder.strokeWidth = 20f
             when (selectedCustomizeTrackItem) {
                 TrackColor.Mileage -> {
                     setUsedPoints()
@@ -471,7 +472,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         private const val COLOR_POLYLINE_STATIC = Color.BLUE
         private const val COLOR_POLYLINE_ANIMATED = Color.GREEN
         private const val COLOR_BACKGROUND = Color.WHITE
-        const val LINE_WIDTH_BIG = 12f
+        const val LINE_WIDTH_BIG = 16f
         private const val TEXT_SIZE = 20f
         private const val TAG = "GpsTrack"
 
