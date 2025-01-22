@@ -14,6 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -297,6 +298,14 @@ class OpenStreetMapFragment : Fragment() {
 
     private fun zoomToLocation() {
         if (mLocationOverlay.isMyLocationEnabled) {
+            val arrow = ResourcesCompat.getDrawable(
+                resources, R.drawable.baseline_my_location_24,
+                null
+            )?.toBitmap()
+            mLocationOverlay.setPersonIcon(arrow)
+            mLocationOverlay.setPersonAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+            mLocationOverlay.setDirectionIcon(arrow)
+            mLocationOverlay.setDirectionAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
             binding.osmap.overlays.add(mLocationOverlay)
             val mapController = binding.osmap.controller
             mapController.setZoom(10.0)

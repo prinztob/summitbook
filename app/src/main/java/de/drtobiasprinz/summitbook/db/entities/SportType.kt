@@ -17,7 +17,7 @@ enum class SportType(
         R.drawable.icons8_cycling_white_50,
         R.drawable.ic_filled_location_green_48,
         R.drawable.ic_outline_location_green_48,
-        R.color.green_200,
+        R.color.green_500,
         listOf(2, 10, 21, 22)
     ),
     Racer(
