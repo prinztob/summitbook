@@ -724,6 +724,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var segmentScreenshotDir: File? = null
         var pythonInstance: Python? = null
         var pythonExecutor: GarminPythonExecutor? = null
+        var allSummits: List<Summit> = emptyList()
         lateinit var sharedPreferences: SharedPreferences
     }
 
@@ -800,7 +801,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun showNewSummitsDialog() {
         val dialog = ShowNewSummitsFromGarminDialog()
-        dialog.summits = summitViewFragment.summitsAdapter.differ.currentList
+        dialog.summits = if (allSummits.isNotEmpty()) allSummits else summitViewFragment.summitsAdapter.differ.currentList
         dialog.save = { summits, isMerge ->
             binding.loading.visibility = View.VISIBLE
             binding.loading.tooltipText =

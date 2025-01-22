@@ -28,6 +28,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.allSummits
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.hasRecordsBeenAdded
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.updateOfTracksStarted
@@ -146,6 +147,7 @@ class SummitViewFragment : Fragment() {
                             }
                             summitsStatus.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
                             loading.isVisible(false, recyclerView)
+                            allSummits = summitsStatus.data ?: emptyList()
                             val data = sortFilterValues.apply(
                                 summitsStatus.data ?: emptyList(),
                                 sharedPreferences

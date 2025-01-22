@@ -28,6 +28,7 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.allSummits
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
@@ -185,6 +186,7 @@ class OpenStreetMapFragment : Fragment() {
         addDefaultSettings(requireContext(), binding.osmap, requireActivity())
         viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
             itData.data?.let { summits ->
+                allSummits = summits
                 this.summits = summits
             }
         }
