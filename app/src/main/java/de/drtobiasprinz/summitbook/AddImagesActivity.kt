@@ -266,7 +266,7 @@ class AddImagesActivity : AppCompatActivity() {
                 result.data?.data?.also { sourceUri ->
                     val localSummit = summitEntry
                     if (localSummit != null) {
-                        UCrop.of(sourceUri, localSummit.getNextImagePath(true).toFile().toUri())
+                        UCrop.of(sourceUri, localSummit.getNextImagePath().toFile().toUri())
                             .withAspectRatio(selectedCropValues.first, selectedCropValues.second)
                             .withMaxResultSize(2048, 2048)
                             .start(this, resultLauncherCroppedImageDone)
@@ -279,6 +279,7 @@ class AddImagesActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val localSummit = summitEntry
             if (localSummit != null && result.resultCode == Activity.RESULT_OK) {
+                localSummit.getNextImagePath(true)
                 updateAdapterAndDatabase(localSummit)
                 binding.images.removeAllViewsInLayout()
                 drawLayout(localSummit, binding.images)
