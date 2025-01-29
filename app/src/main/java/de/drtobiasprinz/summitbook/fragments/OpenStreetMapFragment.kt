@@ -14,6 +14,8 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.fragment.app.Fragment
@@ -85,8 +87,7 @@ class OpenStreetMapFragment : Fragment() {
     private var fullscreenEnabled: Boolean = false
     private var summits: List<Summit> = emptyList()
     private var bookmarks: List<Summit> = emptyList()
-    private var layer: TilesOverlay? = null
-    private var alpha: Float = 0f
+    private var layers: MutableList<TilesOverlay> = mutableListOf()
 
     private lateinit var mLocationOverlay: MyLocationNewOverlay
 
@@ -132,7 +133,10 @@ class OpenStreetMapFragment : Fragment() {
                     showBookmarks = true
                     binding.showBookmarks.alpha = 1f
                 }
-                Log.i(TAG, "Content: ${sharedPreferences.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")}")
+                Log.i(
+                    TAG,
+                    "Content: ${sharedPreferences.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")}"
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Getting bounding box from shared preference failed. ${e.message}")
             }
@@ -180,17 +184,49 @@ class OpenStreetMapFragment : Fragment() {
         }
         setTileProvider(binding.osmap, requireContext())
         showOverlayIfExist()
-        binding.slider.addOnSliderTouchListener(
-            object : Slider.OnSliderTouchListener {
-                override fun onStartTrackingTouch(slider: Slider) {
-                }
 
-                override fun onStopTrackingTouch(slider: Slider) {
-                    alpha = slider.value
-                    setAlphaForLayer()
-                }
+        val cl: ConstraintLayout = binding.constraintLayout
+        var lastId = -1
+        val factor = requireContext().resources.displayMetrics.density.toInt()
+
+        for (layer in layers) {
+            val slider = Slider(requireContext())
+            slider.id = View.generateViewId()
+
+            val layoutParams = ConstraintLayout.LayoutParams(
+                factor * 200,
+                ConstraintLayout.LayoutParams.WRAP_CONTENT
+            )
+            layoutParams.endToEnd = ConstraintSet.PARENT_ID
+
+            if (lastId == -1) {
+                layoutParams.topToBottom = binding.showAllTracks.id
+            } else {
+                layoutParams.topToBottom = lastId
             }
-        )
+            layoutParams.marginEnd = 40 * factor
+            slider.layoutParams = layoutParams
+            slider.stepSize = 0.1f
+            slider.valueFrom = 0f
+            slider.valueTo = 0.4f
+
+
+            slider.addOnSliderTouchListener(
+                object : Slider.OnSliderTouchListener {
+                    override fun onStartTrackingTouch(slider: Slider) {
+                    }
+
+                    override fun onStopTrackingTouch(slider: Slider) {
+                        binding.osmap.overlays.remove(layer)
+                        setAlphaForLayer(layer, slider.value)
+                        binding.osmap.overlays.add(layer)
+                        binding.osmap.invalidate()
+                    }
+                }
+            )
+            cl.addView(slider)
+            lastId = slider.id
+        }
         val context: Context? = this@OpenStreetMapFragment.activity
         mLocationOverlay =
             MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
@@ -501,28 +537,29 @@ class OpenStreetMapFragment : Fragment() {
         val fileEnding = "mbtiles"
         val overlayFolder = File(getOsmdroidTilesFolder(), "overlays")
         val files = overlayFolder.listFiles()?.filter { it.name.endsWith(".${fileEnding}") }
-        if (ArchiveFileFactory.isFileExtensionRegistered(fileEnding) && files?.size == 1) {
+        if (ArchiveFileFactory.isFileExtensionRegistered(fileEnding) && files?.isNotEmpty() == true) {
             try {
-                val file = files.first()
-                val tileProvider =
-                    OfflineTileProvider(SimpleRegisterReceiver(context), arrayOf(file))
-                layer = TilesOverlay(tileProvider, context)
-                layer?.loadingBackgroundColor = Color.TRANSPARENT
-                layer?.loadingLineColor = Color.TRANSPARENT
-                setAlphaForLayer()
-                binding.osmap.overlays.add(layer)
-                binding.osmap.invalidate()
+                files.forEach {
+                    val tileProvider =
+                        OfflineTileProvider(SimpleRegisterReceiver(context), arrayOf(it))
+                    val layer = TilesOverlay(tileProvider, context)
+                    layer.loadingBackgroundColor = Color.TRANSPARENT
+                    layer.loadingLineColor = Color.TRANSPARENT
+                    setAlphaForLayer(layer)
+                    binding.osmap.overlays.add(layer)
+                    layers.add(layer)
+                    binding.osmap.invalidate()
+                }
                 return
             } catch (ex: Exception) {
                 Log.e(TAG, Log.getStackTraceString(ex))
             }
-        } else {
-            binding.slider.visibility = View.GONE
         }
     }
 
-    private fun setAlphaForLayer() {
-        layer?.setColorFilter(
+    private fun setAlphaForLayer(layer: TilesOverlay, alpha: Float=0f) {
+        Log.i(TAG, "Set alpha $alpha")
+        layer.setColorFilter(
             ColorMatrixColorFilter(
                 floatArrayOf(
                     1f, 0f, 0f, 0f, 0f,  //red
@@ -532,7 +569,6 @@ class OpenStreetMapFragment : Fragment() {
                 )
             )
         )
-        binding.osmap.invalidate()
     }
 
 
