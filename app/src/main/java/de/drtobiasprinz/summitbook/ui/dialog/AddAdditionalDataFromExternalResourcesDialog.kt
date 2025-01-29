@@ -92,27 +92,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             dialog?.cancel()
         }
         binding.recalculate.setOnClickListener {
-            binding.loadingPanel.visibility = View.VISIBLE
-            lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    try {
-                        Log.i(
-                            "AsyncSimplifyGpsTracks",
-                            "Simplifying track ${summit.getDateAsString()}_${summit.name}."
-                        )
-                        pythonInstance?.let { it1 ->
-                            GpxPyExecutor(it1).analyzeGpxTrackAndCreateGpxPyDataFile(summit)
-                        }
-                    } catch (ex: RuntimeException) {
-                        Log.e(
-                            "AsyncSimplifyGpsTracks",
-                            "Error in simplify track for ${summit.getDateAsString()}_${summit.name}: ${ex.message}"
-                        )
-                    }
-                }
-                binding.loadingPanel.visibility = View.GONE
-                extractDataFromFilesAndPutIntoView(summit)
-            }
+            recalculate(summit)
         }
         binding.ignore.setOnClickListener {
             summit.velocityData = VelocityData(
@@ -148,13 +128,38 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         extractDataFromFilesAndPutIntoView(summit)
     }
 
+    private fun recalculate(summit: Summit) {
+        binding.loadingPanel.visibility = View.VISIBLE
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    Log.i(
+                        "AsyncSimplifyGpsTracks",
+                        "Simplifying track ${summit.getDateAsString()}_${summit.name}."
+                    )
+                    pythonInstance?.let { it1 ->
+                        GpxPyExecutor(it1).analyzeGpxTrackAndCreateGpxPyDataFile(summit)
+                    }
+                } catch (ex: RuntimeException) {
+                    Log.e(
+                        "AsyncSimplifyGpsTracks",
+                        "Error in simplify track for ${summit.getDateAsString()}_${summit.name}: ${ex.message}"
+                    )
+                }
+            }
+            binding.loadingPanel.visibility = View.GONE
+            extractDataFromFilesAndPutIntoView(summit)
+        }
+    }
+
     private fun extractDataFromFilesAndPutIntoView(summit: Summit) {
         tableEntries.clear()
         val gpxPyJsonFile = summit.getGpxPyPath().toFile()
         if (gpxPyJsonFile.exists()) {
             extractGpxPyJson(gpxPyJsonFile, summit)
+        } else {
+            recalculate(summit)
         }
-
         val addAdditionalDataAdapter = AddAdditionalDataAdapter(summit)
         addAdditionalDataAdapter.differ.submitList(
             tableEntries

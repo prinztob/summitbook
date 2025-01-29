@@ -132,10 +132,10 @@ class SummitsAdapter :
             } else {
                 entryAddVelocityData.setImageResource(R.drawable.baseline_more_time_black_24dp)
             }
-            if ((entity.garminData == null || entity.garminData?.activityId == null) && !entity.hasGpsTrack()) {
-                entryAddVelocityData.visibility = View.GONE
-            } else {
+            if (entity.hasGpsTrack()) {
                 entryAddVelocityData.visibility = View.VISIBLE
+            } else {
+                entryAddVelocityData.visibility = View.GONE
             }
             entryAddVelocityData.setOnClickListener { v: View? ->
                 AddAdditionalDataFromExternalResourcesDialog.getInstance(entity)
