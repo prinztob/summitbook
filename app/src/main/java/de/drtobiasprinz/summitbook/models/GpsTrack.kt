@@ -483,6 +483,8 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                 return mParser.parse(inputStream)
             } catch (e: IOException) {
                 e.printStackTrace()
+            } catch (e: org.joda.time.IllegalFieldValueException) {
+                e.printStackTrace()
             } catch (e: NumberFormatException) {
                 e.printStackTrace()
             } catch (e: XmlPullParserException) {
@@ -492,6 +494,8 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                     e.printStackTrace()
                 }
             } catch (e: ArrayIndexOutOfBoundsException) {
+                e.printStackTrace()
+            } catch (e: RuntimeException) {
                 e.printStackTrace()
             }
             return null

@@ -13,39 +13,35 @@ import android.view.View
 import android.widget.RemoteViews
 import androidx.lifecycle.LiveData
 import androidx.preference.PreferenceManager
-import dagger.hilt.android.AndroidEntryPoint
+import androidx.room.Room
+import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.utils.Constants.DATABASE
 import java.text.NumberFormat
 import java.util.Calendar
-import javax.inject.Inject
 import kotlin.math.roundToInt
 
 
-@AndroidEntryPoint
 class SummitBookWidgetProvider : AppWidgetProvider() {
-    @Inject
-    lateinit var repository: DatabaseRepository
+
+    private lateinit var repository: DatabaseRepository
+    private lateinit var dao: AppDatabase
+
 
     override fun onUpdate(
         context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray
     ) {
-        val widgetManager = AppWidgetManager.getInstance(context.applicationContext)
-        widgetManager.notifyAppWidgetViewDataChanged(
-            widgetManager.getAppWidgetIds(
-                ComponentName(
-                    context.applicationContext.packageName,
-                    SummitBookWidgetProvider::class.java.name
-                )
-            ),
-            R.id.widget
-        )
+        dao = Room.databaseBuilder(
+            context, AppDatabase::class.java, DATABASE
+        ).build()
+        repository = DatabaseRepository(dao.summitsDao(), dao.segmentsDao(), dao.forecastDao(), dao.ignoredActivityDao())
         repository.getAllSummitsLiveData().observeForever { summits ->
-            update(summits, context, appWidgetManager, repository.getAllForecastsLiveData())
+            updateAllWidgets(summits, context, appWidgetManager, repository.getAllForecastsLiveData(), appWidgetIds)
         }
     }
 
@@ -65,16 +61,15 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    private fun update(
+    private fun updateAllWidgets(
         summits: MutableList<Summit>,
         context: Context,
         appWidgetManager: AppWidgetManager,
-        forecastsLiveData: LiveData<MutableList<Forecast>>
+        forecastsLiveData: LiveData<MutableList<Forecast>>,
+        allWidgetIds: IntArray
     ) {
-        val thisWidget = ComponentName(context, SummitBookWidgetProvider::class.java)
-        val allWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
         for (widgetId in allWidgetIds) {
-            Log.i(TAG, "Widget id: $widgetId")
+            Log.i(TAG, "Update all widgets:  id -> $widgetId")
             val remoteViews = RemoteViews(context.packageName, R.layout.widget_layout)
 
             forecastsLiveData.observeForever { forecasts ->
@@ -331,7 +326,7 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        private val TAG = "WIDGET"
+        private const val TAG = "WIDGET"
     }
 
 }
