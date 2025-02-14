@@ -205,7 +205,7 @@ class SummitEntryPowerFragment : Fragment() {
             setXAxis(binding.lineChart)
             binding.lineChart.axisLeft.axisMinimum = 0f
             binding.lineChart.axisRight.axisMinimum = 0f
-
+            binding.lineChart.description.isEnabled = false
             when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
                 Configuration.UI_MODE_NIGHT_YES -> {
                     binding.lineChart.xAxis.textColor = Color.BLACK
