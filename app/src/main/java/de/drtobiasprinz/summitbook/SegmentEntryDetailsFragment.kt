@@ -77,6 +77,7 @@ class SegmentEntryDetailsFragment : Fragment() {
     private lateinit var binding: FragmentSegmentEntryDetailsBinding
     private var selectedSegmentEntrySorter = SegmentSortOptions.AverageVelocity
     private var summitShown: Summit? = null
+    private var relevantSummits: List<Summit> = emptyList()
     private var segmentEntryToShow: SegmentEntry? = null
     private var selectedCustomizeTrackItem = TrackColor.Elevation
     private lateinit var segmentsEntryAdapter: SegmentsEntryAdapter
@@ -112,19 +113,19 @@ class SegmentEntryDetailsFragment : Fragment() {
                 }
                 viewModel.summitsList.observe(viewLifecycleOwner) { itDataSummits ->
                     itDataSummits.data.let { summits ->
-                        val relevantSummits = segmentToUse?.segmentEntries?.mapNotNull { entry ->
+                        relevantSummits = segmentToUse?.segmentEntries?.mapNotNull { entry ->
                             summits?.firstOrNull { it.activityId == entry.activityId }
-                        }
+                        } ?: emptyList()
                         summitShown =
-                            relevantSummits?.firstOrNull { it.activityId == segmentEntryToShow?.activityId }
-                        if (relevantSummits != null && summitShown != null) {
+                            relevantSummits.firstOrNull { it.activityId == segmentEntryToShow?.activityId }
+                        if (relevantSummits.isNotEmpty() && summitShown != null) {
                             binding.osMap.visibility = View.VISIBLE
                             binding.lineChart.visibility = View.VISIBLE
                             binding.recyclerView.visibility = View.VISIBLE
                             binding.gridLayout.visibility = View.VISIBLE
                             binding.changeMapType.visibility = View.VISIBLE
                             prepareMap()
-                            update(summitShown, segmentEntryToShow, segmentToUse)
+                            update(segmentEntryToShow, segmentToUse)
                         } else {
                             binding.osMap.visibility = View.GONE
                             binding.lineChart.visibility = View.GONE
@@ -163,16 +164,15 @@ class SegmentEntryDetailsFragment : Fragment() {
     }
 
     private fun update(
-        summitToShow: Summit?,
         segmentEntryToShow: SegmentEntry?,
         segmentToUse: Segment?
     ) {
-        if (segmentEntryToShow != null && summitToShow != null && segmentToUse != null) {
+        if (segmentEntryToShow != null && summitShown != null && segmentToUse != null) {
             binding.segmentName.text = segmentToUse.segmentDetails.getDisplayName()
             binding.osMap.overlays?.clear()
             binding.osMap.overlayManager?.clear()
             drawMarker(segmentToUse.segmentEntries)
-            drawGpxTrackAndItsProfile(summitToShow, segmentEntryToShow)
+            drawGpxTrackAndItsProfile(summitShown, segmentEntryToShow)
 
             segmentsEntryAdapter =
                 SegmentsEntryAdapter(segmentToUse.segmentDetails, segmentEntryToShow)
@@ -182,11 +182,12 @@ class SegmentEntryDetailsFragment : Fragment() {
             segmentsEntryAdapter.onClickDelete = {
                 viewModel.deleteSegmentEntry(it)
             }
-            segmentsEntryAdapter.onClickSegment = {
+            segmentsEntryAdapter.onClickSegment = { segmentEntryToUse ->
                 segmentsEntryAdapter.differ.submitList(
                     selectedSegmentEntrySorter.sorter(segmentToUse.segmentEntries)
                 )
-                drawGpxTrackAndItsProfile(summitToShow, it)
+                summitShown = relevantSummits.firstOrNull { it.activityId == segmentEntryToUse.activityId }
+                drawGpxTrackAndItsProfile(summitShown, segmentEntryToUse)
             }
             binding.recyclerView.apply {
                 layoutManager = LinearLayoutManager(requireContext())
@@ -246,6 +247,7 @@ class SegmentEntryDetailsFragment : Fragment() {
 
     private fun drawGpxTrackAndItsProfile(localSummit: Summit?, segmentEntry: SegmentEntry) {
         if (localSummit != null && localSummit.hasGpsTrack()) {
+            binding.loadingPanel.visibility = View.VISIBLE
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     localSummit.setGpsTrack(useSimplifiedTrack = false)
@@ -262,6 +264,7 @@ class SegmentEntryDetailsFragment : Fragment() {
 
                     drawChart(gpsTrack, segmentEntry)
                     setTextView(gpsTrack, segmentEntry)
+                    binding.loadingPanel.visibility = View.GONE
                 }
             }
         }

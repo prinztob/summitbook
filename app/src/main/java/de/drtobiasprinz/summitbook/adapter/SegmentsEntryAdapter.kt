@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
@@ -20,7 +21,9 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.CardSegmentEntryBinding
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
-import de.drtobiasprinz.summitbook.ui.dialog.AddSegmentDetailsDialog
+import de.drtobiasprinz.summitbook.fragments.AddSegmentEntryFragment
+import kotlin.math.floor
+import kotlin.math.round
 
 
 class SegmentsEntryAdapter(
@@ -88,8 +91,10 @@ class SegmentsEntryAdapter(
         binding.date.text = (segmentEntry.getDateAsString() ?: "")
         binding.minutes.text = String.format(
             context.resources.configuration.locales[0],
-            "%.1f %s",
-            segmentEntry.duration,
+            "%s:%s %s",
+            floor(segmentEntry.duration).toInt(),
+            round((segmentEntry.duration - floor(segmentEntry.duration)) * 60).toInt().toString()
+                .padStart(2, '0'),
             context.getString(R.string.min)
         )
         binding.velocity.text = String.format(
@@ -117,12 +122,11 @@ class SegmentsEntryAdapter(
             }
         }
         binding.entryEdit.setOnClickListener { view: View? ->
-            AddSegmentDetailsDialog.getInstance(
-                segmentDetails,
-            ).show(
-                (FragmentComponentManager.findActivity(view?.context) as FragmentActivity).supportFragmentManager.beginTransaction(),
-                "Add Segment Details"
+            val fragment: Fragment = AddSegmentEntryFragment.getInstance(
+                segmentDetails.segmentDetailsId, null, segmentEntry.entryId
             )
+            (FragmentComponentManager.findActivity(view?.context) as FragmentActivity).supportFragmentManager.beginTransaction()
+                .replace(R.id.content_frame, fragment).addToBackStack(null).commit()
         }
     }
 
