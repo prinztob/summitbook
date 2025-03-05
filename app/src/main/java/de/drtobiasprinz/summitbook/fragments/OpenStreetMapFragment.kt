@@ -13,6 +13,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
@@ -87,7 +88,7 @@ class OpenStreetMapFragment : Fragment() {
     private var fullscreenEnabled: Boolean = false
     private var summits: List<Summit> = emptyList()
     private var bookmarks: List<Summit> = emptyList()
-    private var layers: MutableList<TilesOverlay> = mutableListOf()
+    private var layers: MutableList<Pair<String, TilesOverlay>> = mutableListOf()
 
     private lateinit var mLocationOverlay: MyLocationNewOverlay
 
@@ -185,7 +186,28 @@ class OpenStreetMapFragment : Fragment() {
         setTileProvider(binding.osmap, requireContext())
         showOverlayIfExist()
 
-        val cl: ConstraintLayout = binding.constraintLayout
+        setSlidersForOverlayMaps()
+        val context: Context? = this@OpenStreetMapFragment.activity
+        mLocationOverlay =
+            MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
+        mLocationOverlay.enableMyLocation()
+        showMyLocation()
+        addDefaultSettings(requireContext(), binding.osmap, requireActivity())
+        viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
+            itData.data?.let { summits ->
+                allSummits = summits
+                this.summits = summits
+                showSummitsAndBookmarksIfEnabled()
+            }
+        }
+        viewModel.bookmarksList.observe(viewLifecycleOwner) { itData ->
+            itData.data?.let { bookmarksList ->
+                this.bookmarks = bookmarksList
+            }
+        }
+    }
+
+    private fun setSlidersForOverlayMaps() {
         var lastId = -1
         val factor = requireContext().resources.displayMetrics.density.toInt()
 
@@ -204,6 +226,7 @@ class OpenStreetMapFragment : Fragment() {
             } else {
                 layoutParams.topToBottom = lastId
             }
+            layoutParams.topMargin = 10 * factor
             layoutParams.marginEnd = 40 * factor
             slider.layoutParams = layoutParams
             slider.stepSize = 0.1f
@@ -217,33 +240,26 @@ class OpenStreetMapFragment : Fragment() {
                     }
 
                     override fun onStopTrackingTouch(slider: Slider) {
-                        binding.osmap.overlays.remove(layer)
-                        setAlphaForLayer(layer, slider.value)
-                        binding.osmap.overlays.add(layer)
+                        binding.osmap.overlays.remove(layer.second)
+                        setAlphaForLayer(layer.second, slider.value)
+                        binding.osmap.overlays.add(layer.second)
                         binding.osmap.invalidate()
                     }
                 }
             )
-            cl.addView(slider)
+            binding.constraintLayout.addView(slider)
+            val tv = TextView(requireContext())
+            tv.text = layer.first
+            val layoutParamsTv = ConstraintLayout.LayoutParams(
+                ConstraintLayout.LayoutParams.WRAP_CONTENT,
+                ConstraintLayout.LayoutParams.WRAP_CONTENT
+            )
+            layoutParamsTv.startToStart = slider.id
+            layoutParamsTv.topToTop = slider.id
+            layoutParamsTv.topMargin = -10 * factor
+            tv.layoutParams = layoutParamsTv
+            binding.constraintLayout.addView(tv)
             lastId = slider.id
-        }
-        val context: Context? = this@OpenStreetMapFragment.activity
-        mLocationOverlay =
-            MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
-        mLocationOverlay.enableMyLocation()
-        showMyLocation()
-        addDefaultSettings(requireContext(), binding.osmap, requireActivity())
-        viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
-            itData.data?.let { summits ->
-                allSummits = summits
-                this.summits = summits
-                showSummitsAndBookmarksIfEnabled()
-            }
-        }
-        viewModel.bookmarksList.observe(viewLifecycleOwner) { itData ->
-            itData.data?.let { bookmarksList ->
-                this.bookmarks = bookmarksList
-            }
         }
     }
 
@@ -529,6 +545,7 @@ class OpenStreetMapFragment : Fragment() {
             (requireActivity() as MainActivity).binding.toolbarInclude.toolbar.visibility =
                 View.GONE
             (requireActivity() as MainActivity).binding.overviewLayout.visibility = View.GONE
+            (requireActivity() as MainActivity).binding.chartLayout.visibility = View.GONE
         }
     }
 
@@ -545,9 +562,9 @@ class OpenStreetMapFragment : Fragment() {
                     val layer = TilesOverlay(tileProvider, context)
                     layer.loadingBackgroundColor = Color.TRANSPARENT
                     layer.loadingLineColor = Color.TRANSPARENT
-                    setAlphaForLayer(layer)
                     binding.osmap.overlays.add(layer)
-                    layers.add(layer)
+                    layers.add(Pair(it.name.replace(".$fileEnding", ""), layer))
+                    setAlphaForLayer(layer)
                     binding.osmap.invalidate()
                 }
                 return
@@ -557,7 +574,7 @@ class OpenStreetMapFragment : Fragment() {
         }
     }
 
-    private fun setAlphaForLayer(layer: TilesOverlay, alpha: Float=0f) {
+    private fun setAlphaForLayer(layer: TilesOverlay, alpha: Float = 0f) {
         Log.i(TAG, "Set alpha $alpha")
         layer.setColorFilter(
             ColorMatrixColorFilter(
