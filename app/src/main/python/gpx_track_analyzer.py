@@ -137,9 +137,6 @@ class TrackAnalyzer(object):
                                 point.extensions_calculated.distance = distance * 1000 + delta
                             elif delta > 0:
                                 point.extensions_calculated.distance += delta
-                            if i != 0 and point_distance < segment.points[i - 1].extensions_calculated.distance:
-                                point.extensions_calculated.distance = segment.points[
-                                    i - 1].extensions_calculated.distance
                             self.all_points.append(point)
                             points.append(point)
                     segment.points = points

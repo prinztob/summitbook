@@ -4,9 +4,10 @@ import android.util.Log
 import com.chaquo.python.PyObject
 import com.chaquo.python.Python
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.subDirForGpsTracks
+import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.subDirForGpsTrackExtensions
+import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.subDirForGpsTracksSimplified
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.cache
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.storage
 import java.io.File
 import java.nio.file.Path
 
@@ -14,7 +15,7 @@ class GpxPyExecutor(private var pythonInstance: Python) {
     private lateinit var pythonModule: PyObject
 
     fun analyzeGpxTrackAndCreateGpxPyDataFile(summit: Summit) {
-        val targetFolder = File(cache, subDirForGpsTracks)
+        val targetFolder = File(storage, subDirForGpsTrackExtensions)
         if (!targetFolder.exists()) {
             targetFolder.mkdirs()
         }
@@ -36,7 +37,7 @@ class GpxPyExecutor(private var pythonInstance: Python) {
     }
 
     fun createSimplifiedGpxTrack(originalGpxTrackPath: Path) {
-        val targetFolder = File(cache, subDirForGpsTracks)
+        val targetFolder = File(storage, subDirForGpsTracksSimplified)
         if (!targetFolder.exists()) {
             targetFolder.mkdirs()
         }

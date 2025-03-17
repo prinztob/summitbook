@@ -29,6 +29,7 @@ import java.util.Locale
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
+import kotlin.system.measureTimeMillis
 
 class GarminPythonExecutor(
     val username: String, val password: String
@@ -37,19 +38,27 @@ class GarminPythonExecutor(
     private var client: PyObject? = null
 
     private fun login() {
-        val storage = MainActivity.storage
-        if (client == null) {
-            if (Python.isStarted()) {
-                pythonModule = pythonInstance?.getModule("entry_point")
-                Log.i("GarminPythonExecutor", "do login")
-                if (storage != null) {
-                    val result =
-                        pythonModule?.callAttr("init_api", username, password, storage.absolutePath)
-                    checkOutput(result)
-                    client = result
+        val time = measureTimeMillis {
+            val storage = MainActivity.storage
+            if (client == null) {
+                if (Python.isStarted()) {
+                    pythonModule = pythonInstance?.getModule("entry_point")
+                    Log.i(TAG, "do login")
+                    if (storage != null) {
+                        val result =
+                            pythonModule?.callAttr(
+                                "init_api",
+                                username,
+                                password,
+                                storage.absolutePath
+                            )
+                        checkOutput(result)
+                        client = result
+                    }
                 }
             }
         }
+        Log.i(TAG, "Login took $time")
     }
 
     fun getActivityJsonAtDate(dateAsString: String): List<Summit> {
@@ -75,17 +84,20 @@ class GarminPythonExecutor(
         downloadPathTcx: String,
         downloadPathGpx: String
     ) {
-        if (client == null) {
-            login()
+        val time = measureTimeMillis {
+            if (client == null) {
+                login()
+            }
+            val result = pythonModule?.callAttr(
+                Keys.PREF_DOWNLOAD_TCX,
+                client,
+                garminActivityId,
+                downloadPathTcx,
+                downloadPathGpx
+            )
+            checkOutput(result)
         }
-        val result = pythonModule?.callAttr(
-            Keys.PREF_DOWNLOAD_TCX,
-            client,
-            garminActivityId,
-            downloadPathTcx,
-            downloadPathGpx
-        )
-        checkOutput(result)
+        Log.i(TAG, "downloadTcxFile took $time")
     }
 
     fun downloadActivitiesByDate(activitiesDir: File, startDate: String, endDate: String) {
@@ -134,6 +146,8 @@ class GarminPythonExecutor(
     }
 
     companion object {
+
+        const val TAG = "GarminPythonExecutor"
 
         fun getSummitsAtDate(activities: JsonArray): List<Summit> {
             val entries = ArrayList<Summit>()
@@ -189,15 +203,9 @@ class GarminPythonExecutor(
                                     }
                                 }
                             } catch (ex: IllegalArgumentException) {
-                                Log.i(
-                                    "GarminPythonExecutor",
-                                    "Could not parse file ${it.absolutePath}"
-                                )
+                                Log.i(TAG, "Could not parse file ${it.absolutePath}")
                             } catch (ex: NullPointerException) {
-                                Log.i(
-                                    "GarminPythonExecutor",
-                                    "Could not parse file ${it.absolutePath}"
-                                )
+                                Log.i(TAG, "Could not parse file ${it.absolutePath}")
                             }
                         }
                     }
@@ -389,7 +397,7 @@ class GarminPythonExecutor(
                             summaryDTO.getAsJsonPrimitive("functionalThresholdPower").asDouble.toInt()
                     }
                 }
-                Log.d("PythonExecutor", "FTP: $ftp")
+                Log.d(TAG, "FTP: $ftp")
             }
             return ftp
         }

@@ -116,12 +116,11 @@ class Summit(
     }
 
     fun getGpsTrackPath(simplified: Boolean = false): Path {
-        val folder = if (simplified) MainActivity.cache else MainActivity.storage
         val fileName = if (simplified) "id_${activityId}_simplified.gpx" else "id_${activityId}.gpx"
         val baseFolder = if (isBookmark) {
-            File(folder, subDirForGpsTracksBookmark)
+            File(MainActivity.storage, if (simplified) subDirForGpsTracksBookmarkSimplified else subDirForGpsTracksBookmark)
         } else {
-            File(folder, subDirForGpsTracks)
+            File(MainActivity.storage, if (simplified) subDirForGpsTracksSimplified else subDirForGpsTracks)
         }
         if (!baseFolder.exists()) {
             baseFolder.mkdirs()
@@ -130,15 +129,15 @@ class Summit(
     }
 
     fun getYamlExtensionsFile(): File {
-        return File(File(MainActivity.cache, subDirForGpsTracks), getGpsTrackPath().name.replace(".gpx", "_extensions.yaml"))
+        return File(File(MainActivity.storage, subDirForGpsTrackExtensions), getGpsTrackPath().name.replace(".gpx", "_extensions.yaml"))
     }
 
     fun getGpxPyPath(): Path {
         val fileName = "id_${activityId}_gpxpy.json"
         return if (isBookmark) {
-            Paths.get(MainActivity.cache.toString(), subDirForGpsTracksBookmark, fileName)
+            Paths.get(MainActivity.storage.toString(), subDirForGpsTracksBookmarkExtensions, fileName)
         } else {
-            Paths.get(MainActivity.cache.toString(), subDirForGpsTracks, fileName)
+            Paths.get(MainActivity.storage.toString(), subDirForGpsTrackExtensions, fileName)
         }
     }
 
@@ -520,7 +519,11 @@ class Summit(
         const val REFERENCE_VALUE_DATE: Long = 946681200000
 
         var subDirForGpsTracks: String = "summitbook_tracks"
+        var subDirForGpsTracksSimplified: String = "summitbook_tracks_simplified"
+        var subDirForGpsTrackExtensions: String = "summitbook_tracks_extensions"
         var subDirForGpsTracksBookmark: String = "summitbook_tracks_bookmark"
+        var subDirForGpsTracksBookmarkSimplified: String = "summitbook_tracks_bookmark_simplified"
+        var subDirForGpsTracksBookmarkExtensions: String = "summitbook_tracks_bookmark_extensions"
         var subDirForImages: String = "summitbook_images"
 
         fun parseFromCsvFileLine(line: String, version: String): Summit {

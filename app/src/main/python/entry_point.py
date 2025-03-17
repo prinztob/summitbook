@@ -336,7 +336,6 @@ def analyze_gpx_track(gpx_path, additional_data_folder, split_files):
         analyzer = TrackAnalyzer(gpx_path, additional_data_folder, split_files)
         analyzer.analyze()
         analyzer.write_data_and_extension_to_file()
-        analyzer.write_simplified_track_to_file()
         print(f"Analyzing of {gpx_path} took {(datetime.now() - start_time).total_seconds()}")
         return "return code: 0"
     except Exception as err:  # pylint: disable=broad-except

@@ -320,7 +320,7 @@ class SummitViewFragment : Fragment() {
         pythonInstance?.let {
             asyncSimplifyGpsTracks(
                 entriesWithoutSimplifiedGpxTrack.take(250),
-                entriesWithoutAdditionalData.take(50), it
+                entriesWithoutAdditionalData, it
             )
         }
     }
@@ -338,7 +338,7 @@ class SummitViewFragment : Fragment() {
                         try {
                             Log.i(
                                 "AsyncSimplifyGpsTracks",
-                                "Simplifying track $i of ${summitsWithoutSimplifiedTracks.size} for ${e.getDateAsString()}_${e.name}."
+                                "Simplifying track ${i + 1} of ${summitsWithoutSimplifiedTracks.size} for ${e.getDateAsString()}_${e.name}."
                             )
                             GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
                                 e.getGpsTrackPath(),
