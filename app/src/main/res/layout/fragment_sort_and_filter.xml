@@ -609,27 +609,30 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/layout_top_elevation">
 
-            <com.google.android.material.button.MaterialButton
+            <ImageButton
                 android:id="@+id/apply"
-                style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/green_500"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:minHeight="0dp"
-                android:text="@string/apply" />
+                android:contentDescription="@string/apply"
+                android:src="@drawable/baseline_done_24" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/set_to_default"
-                style="@style/Widget.MaterialComponents.Button"
+            <ImageButton
+                android:id="@+id/applyAll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/green_500"
+                android:contentDescription="@string/apply"
+                android:src="@drawable/baseline_done_all_24" />
+
+            <ImageButton
+                android:id="@+id/setToDefault"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/red_500"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:minHeight="0dp"
-                android:text="@string/set_to_default" />
+                android:contentDescription="@string/set_to_default"
+                android:src="@drawable/baseline_cancel_24" />
+
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

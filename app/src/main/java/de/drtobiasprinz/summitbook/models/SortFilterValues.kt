@@ -186,10 +186,10 @@ class SortFilterValues(
             return calendar[Calendar.YEAR]
         }
 
-        private fun setSelectedDateSpinnerAndItsDefault(
+        fun setSelectedDateSpinnerAndItsDefault(
             sortFilterValues: SortFilterValues,
             selectedDateSpinner: Int,
-            selectedDateSpinnerDefault: Int
+            selectedDateSpinnerDefault: Int = sortFilterValues.selectedDateSpinnerDefault
         ) {
             sortFilterValues.selectedDateSpinner = selectedDateSpinner
             sortFilterValues.selectedDateSpinnerDefault = selectedDateSpinnerDefault

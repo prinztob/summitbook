@@ -23,6 +23,7 @@ import de.drtobiasprinz.summitbook.databinding.FragmentSortAndFilterBinding
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.*
+import de.drtobiasprinz.summitbook.models.SortFilterValues.Companion.setSelectedDateSpinnerAndItsDefault
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.hasRecordsBeenAdded
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
@@ -78,6 +79,12 @@ class SortAndFilterFragment : DialogFragment() {
             }
             sortFilterValues.participants =
                 binding.chipGroupParticipants.children.toList().map { (it as Chip).text.toString() }
+            apply()
+            dismiss()
+        }
+        binding.applyAll.setOnClickListener{
+            sortFilterValues.setToDefault()
+            setSelectedDateSpinnerAndItsDefault(sortFilterValues, 0)
             apply()
             dismiss()
         }
