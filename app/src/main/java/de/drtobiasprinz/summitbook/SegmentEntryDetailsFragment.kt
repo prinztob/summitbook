@@ -168,7 +168,7 @@ class SegmentEntryDetailsFragment : Fragment() {
         segmentToUse: Segment?
     ) {
         if (segmentEntryToShow != null && summitShown != null && segmentToUse != null) {
-            binding.segmentName.text = segmentToUse.segmentDetails.getDisplayName()
+            binding.segmentName.text = segmentToUse.segmentDetails.getDisplayNameWithLineBreak()
             binding.osMap.overlays?.clear()
             binding.osMap.overlayManager?.clear()
             drawMarker(segmentToUse.segmentEntries)

@@ -14,7 +14,7 @@
         android:hint="@string/summit_name_hint"
         app:smsp_enableErrorLabel="false"
         app:smsp_enableFloatingLabel="false"
-        app:smsp_hint="@string/summit_name_compare_hint"
+        app:smsp_hint="@string/select_summit"
         app:smsp_isSearchable="true"
         app:smsp_itemColor="#512DA8"
         app:smsp_itemListColor="#7C4DFF"
@@ -28,8 +28,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="5dp"
-        android:columnCount="3"
-        android:rowCount="4">
+        android:columnCount="2"
+        android:rowCount="5">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/save"
@@ -54,9 +54,6 @@
             android:minHeight="0dp"
             android:text="@string/cancelButtonText" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
 
         <TextView
             android:id="@+id/tour_date"
@@ -82,9 +79,6 @@
             app:drawableStartCompat="@drawable/baseline_trending_up_black_24dp"
             app:drawableTint="?android:attr/colorControlNormal" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
 
         <TextView
             android:id="@+id/kilometers"
@@ -111,19 +105,7 @@
             app:drawableStartCompat="@drawable/ic_baseline_monitor_heart_24"
             app:drawableTint="?android:attr/colorControlNormal" />
 
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            android:id="@+id/mapOnOff"
-            style="@style/Widget.App.Switch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:checked="true"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:minHeight="0dp"
-            android:text="@string/map"
-            app:thumbTint="@color/switch_thumb_selector"
-            app:trackTint="@color/switch_track_selector" />
+
 
         <TextView
             android:id="@+id/duration"
@@ -149,7 +131,19 @@
             app:drawableStartCompat="@drawable/ic_baseline_power_24"
             app:drawableTint="?android:attr/colorControlNormal" />
 
-
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/mapOnOff"
+            style="@style/Widget.App.Switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:checked="true"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="0dp"
+            android:text="@string/map"
+            app:thumbTint="@color/switch_thumb_selector"
+            app:trackTint="@color/switch_track_selector" />
         <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/chartOnOff"
             style="@style/Widget.App.Switch"

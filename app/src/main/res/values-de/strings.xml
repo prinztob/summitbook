@@ -16,6 +16,7 @@
     <string name="accept">Akzeptiere</string>
     <string name="summit_name_hint">Name des Gipfel</string>
     <string name="summit_name_compare_hint">Vergleiche mit Gipfel</string>
+    <string name="select_summit">Wähle Gipfel aus</string>
     <string name="height_meter_hint">Höhenmeter</string>
     <string name="activity_hint">Aktivitäten</string>
     <string name="action_share">Teilen</string>

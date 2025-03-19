@@ -16,6 +16,7 @@
     <string name="accept">Accept</string>
     <string name="summit_name_hint">Name of summit</string>
     <string name="summit_name_compare_hint">Compare with summit</string>
+    <string name="select_summit">Select summit</string>
     <string name="height_meter_hint">Elevation gain</string>
     <string name="action_share">share</string>
     <string name="date">Date</string>

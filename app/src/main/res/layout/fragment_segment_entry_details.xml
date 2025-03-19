@@ -29,6 +29,7 @@
                 android:layout_marginStart="20dp"
                 android:drawablePadding="5dp"
                 android:padding="1dp"
+                android:gravity="center"
                 app:drawableStartCompat="@drawable/baseline_today_black_24dp"
                 app:drawableTint="?android:attr/colorControlNormal" />
 
