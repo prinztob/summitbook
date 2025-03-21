@@ -14,6 +14,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.TextView
 import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -569,11 +570,13 @@ class OpenStreetMapFragment : Fragment() {
     private fun fullscreen(exit: Boolean) {
         fullscreenEnabled = !fullscreenEnabled
         if (exit) {
+            requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             binding.fullscreen.setImageResource(R.drawable.baseline_fullscreen_24)
             (requireActivity() as MainActivity).binding.toolbarInclude.toolbar.visibility =
                 View.VISIBLE
             (requireActivity() as MainActivity).binding.overviewLayout.visibility = View.VISIBLE
         } else {
+            requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             binding.fullscreen.setImageResource(R.drawable.baseline_fullscreen_exit_24)
             (requireActivity() as MainActivity).binding.toolbarInclude.toolbar.visibility =
                 View.GONE
