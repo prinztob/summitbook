@@ -39,6 +39,16 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <ImageButton
+        android:id="@+id/followLocation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:alpha="0.5"
+        android:contentDescription="@string/show_all"
+        android:src="@drawable/baseline_play_circle_filled_24"
+        app:layout_constraintEnd_toStartOf="@id/showSummits"
+        app:layout_constraintTop_toTopOf="@+id/fullscreen" />
+
+    <ImageButton
         android:id="@+id/showSummits"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

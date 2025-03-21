@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.ColorMatrixColorFilter
+import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import android.view.InputDevice
@@ -61,8 +62,10 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.TilesOverlay
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.File
 import javax.inject.Inject
@@ -85,6 +88,7 @@ class OpenStreetMapFragment : Fragment() {
     private var maxPointsToShow: Int = 10000
     private var showSummits: Boolean = false
     private var showBookmarks: Boolean = false
+    private var followLocationEnabled: Boolean = false
     private var fullscreenEnabled: Boolean = false
     private var summits: List<Summit> = emptyList()
     private var bookmarks: List<Summit> = emptyList()
@@ -188,8 +192,7 @@ class OpenStreetMapFragment : Fragment() {
 
         setSlidersForOverlayMaps()
         val context: Context? = this@OpenStreetMapFragment.activity
-        mLocationOverlay =
-            MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
+        addFollowTrack(context)
         mLocationOverlay.enableMyLocation()
         showMyLocation()
         addDefaultSettings(requireContext(), binding.osmap, requireActivity())
@@ -205,6 +208,36 @@ class OpenStreetMapFragment : Fragment() {
                 this.bookmarks = bookmarksList
             }
         }
+    }
+
+    private fun addFollowTrack(context: Context?) {
+        var currentTrack = mutableListOf<GeoPoint>()
+        val polyline = Polyline(binding.osmap)
+
+        binding.followLocation.setOnClickListener {
+            followLocationEnabled = !followLocationEnabled
+            if (followLocationEnabled) {
+                binding.followLocation.setImageResource(R.drawable.baseline_stop_circle_24)
+            } else {
+                currentTrack = mutableListOf()
+                binding.osmap.overlayManager?.remove(polyline)
+                binding.followLocation.setImageResource(R.drawable.baseline_play_circle_filled_24)
+            }
+        }
+
+        mLocationOverlay =
+            object : MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap) {
+                override fun onLocationChanged(location: Location?, source: IMyLocationProvider?) {
+                    super.onLocationChanged(location, source)
+                    if (location != null && followLocationEnabled && location.speed > 0f) {
+                        currentTrack.add(GeoPoint(location.latitude, location.longitude))
+                        polyline.outlinePaint?.color = Color.MAGENTA
+                        polyline.outlinePaint?.strokeWidth = 16f
+                        polyline.setPoints(currentTrack)
+                        binding.osmap.overlayManager?.add(polyline)
+                    }
+                }
+            }
     }
 
     private fun setSlidersForOverlayMaps() {
