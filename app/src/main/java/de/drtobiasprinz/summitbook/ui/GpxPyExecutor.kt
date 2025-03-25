@@ -5,6 +5,7 @@ import com.chaquo.python.PyObject
 import com.chaquo.python.Python
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.subDirForGpsTrackExtensions
+import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.subDirForGpsTracksBookmarkExtensions
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.subDirForGpsTracksSimplified
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.storage
@@ -15,7 +16,7 @@ class GpxPyExecutor(private var pythonInstance: Python) {
     private lateinit var pythonModule: PyObject
 
     fun analyzeGpxTrackAndCreateGpxPyDataFile(summit: Summit) {
-        val targetFolder = File(storage, subDirForGpsTrackExtensions)
+        val targetFolder = File(storage, if (!summit.isBookmark) subDirForGpsTrackExtensions else subDirForGpsTracksBookmarkExtensions)
         if (!targetFolder.exists()) {
             targetFolder.mkdirs()
         }

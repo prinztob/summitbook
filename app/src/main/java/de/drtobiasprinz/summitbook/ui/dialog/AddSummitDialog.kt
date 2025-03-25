@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.ui.dialog
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Context
@@ -892,6 +893,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         return countries
     }
 
+    @SuppressLint("SetTextI18n")
     private fun asyncAnalyzeGpsTracks(entry: Summit, python: Python) {
         var highestElevation: GeoPoint? = null
         lifecycleScope.launch {
@@ -903,6 +905,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                             "Entry ${entry.name} will be simplified"
                         )
                         GpxPyExecutor(python).createSimplifiedGpxTrack(entry.getGpsTrackPath())
+                        GpxPyExecutor(python).analyzeGpxTrackAndCreateGpxPyDataFile(entry)
                         entry.setGpsTrack()
                         highestElevation = entry.gpsTrack?.getHighestElevation()
                         entry.gpsTrack?.setDistance()
