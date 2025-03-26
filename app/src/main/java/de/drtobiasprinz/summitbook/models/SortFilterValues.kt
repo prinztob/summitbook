@@ -6,7 +6,6 @@ import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.hasRecordsBeenAdded
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -160,9 +159,6 @@ class SortFilterValues(
     }
 
     fun setToDefault() {
-        if (selectedDateSpinner != selectedDateSpinnerDefault) {
-            hasRecordsBeenAdded = false
-        }
         selectedDateSpinner = selectedDateSpinnerDefault
         setDates()
         sportType = null

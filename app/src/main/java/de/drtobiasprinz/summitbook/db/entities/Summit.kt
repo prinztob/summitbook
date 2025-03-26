@@ -71,12 +71,6 @@ class Summit(
     @Ignore
     var segmentInfo: List<Triple<SegmentEntry, SegmentDetails, Int>> = mutableListOf()
 
-    @Ignore
-    var hasPowerRecord: Boolean = false
-
-    @Ignore
-    var bestPositionInSegment: Int = -1
-
     fun getImagePath(imageId: Int): Path {
         return Paths.get(
             getRootDirectoryImages().toString(),

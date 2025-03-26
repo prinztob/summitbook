@@ -26,6 +26,7 @@ import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.CardSummitBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.utils.Constants
@@ -269,9 +270,10 @@ class SummitsAdapter :
     }
 
     private fun setRecords(entity: Summit, segmentRecord: ImageView, powerRecord: ImageView) {
-        if (entity.bestPositionInSegment in 1..3) {
+        val bestPositionInSegment = MainActivity.activitiesWithSegmentsRecord.firstOrNull { it.first == entity.activityId }
+        if (bestPositionInSegment != null) {
             segmentRecord.visibility = View.VISIBLE
-            when (entity.bestPositionInSegment) {
+            when (bestPositionInSegment.second) {
                 1 -> segmentRecord.setColorFilter(Color.rgb(255, 215, 0))
                 2 -> segmentRecord.setColorFilter(Color.rgb(192, 192, 192))
                 3 -> segmentRecord.setColorFilter(Color.rgb(168, 112, 0))
@@ -280,7 +282,7 @@ class SummitsAdapter :
         } else {
             segmentRecord.visibility = View.GONE
         }
-        if (entity.hasPowerRecord) {
+        if (entity.activityId in MainActivity.activitiesWithPowerRecords) {
             powerRecord.visibility = View.VISIBLE
             powerRecord.setColorFilter(Color.rgb(255, 215, 0))
         } else {

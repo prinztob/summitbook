@@ -12,7 +12,6 @@ import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.hasRecordsBeenAdded
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -63,7 +62,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         if (isEdite) {
             repository.updateSummit(entity)
         } else {
-            hasRecordsBeenAdded = false
             entity.id = repository.saveSummit(entity)
         }
     }
@@ -107,7 +105,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     }
 
     fun saveSegmentDetails(isEdite: Boolean, entity: SegmentDetails) = viewModelScope.launch {
-        hasRecordsBeenAdded = false
         if (isEdite) {
             repository.updateSegmentDetails(entity)
         } else {

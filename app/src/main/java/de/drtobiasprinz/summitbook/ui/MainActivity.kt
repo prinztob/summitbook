@@ -336,7 +336,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var selectedYear =
             if (sortFilterValues.getSelectedYear() != "") sortFilterValues.getSelectedYear()
                 .toInt() else currentYear
-        binding.textYear.text = selectedYear.toString()
+        binding.textYear.text =
+            String.format(resources.configuration.locales[0], "%s", selectedYear)
         drawChart(binding.lineChartYear, graphType, selectedYear.toString())
         binding.textYear.setOnTouchListener(OnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
@@ -344,14 +345,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 if (event.rawX >= binding.textYear.right - compounds[2].bounds.width() && selectedYear < (sortFilterValues.years.maxOfOrNull { it.toInt() }
                         ?: 0)) {
                     selectedYear += 1
-                    binding.textYear.text = selectedYear.toString()
+                    binding.textYear.text =
+                        String.format(resources.configuration.locales[0], "%s", selectedYear)
                     drawChart(binding.lineChartYear, graphType, selectedYear.toString())
                     return@OnTouchListener true
                 }
                 if (event.rawX <= binding.textYear.left + compounds[0].bounds.width() && selectedYear > (sortFilterValues.years.minOfOrNull { it.toInt() }
                         ?: 0)) {
                     selectedYear -= 1
-                    binding.textYear.text = selectedYear.toString()
+                    binding.textYear.text =
+                        String.format(resources.configuration.locales[0], "%s", selectedYear)
                     drawChart(binding.lineChartYear, graphType, selectedYear.toString())
                     return@OnTouchListener true
                 }
@@ -715,7 +718,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var CSV_FILE_NAME_SEGMENTS: String = "de-prinz-summitbook-export-segments.csv"
         var CSV_FILE_NAME_FORECASTS: String = "de-prinz-summitbook-export-forecasts.csv"
 
-        var hasRecordsBeenAdded: Boolean = false
         var updateOfTracksStarted: Boolean = false
         var entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
         var storage: File? = null
@@ -725,6 +727,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var pythonInstance: Python? = null
         var pythonExecutor: GarminPythonExecutor? = null
         var allSummits: List<Summit> = emptyList()
+        var activitiesWithPowerRecords: MutableList<Long> = mutableListOf()
+        var activitiesWithSegmentsRecord: MutableList<Pair<Long, Int>> = mutableListOf()
         lateinit var sharedPreferences: SharedPreferences
     }
 
@@ -801,7 +805,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun showNewSummitsDialog() {
         val dialog = ShowNewSummitsFromGarminDialog()
-        dialog.summits = if (allSummits.isNotEmpty()) allSummits else summitViewFragment.summitsAdapter.differ.currentList
+        dialog.summits =
+            allSummits.ifEmpty { summitViewFragment.summitsAdapter.differ.currentList }
         dialog.save = { summits, isMerge ->
             binding.loading.visibility = View.VISIBLE
             binding.loading.tooltipText =

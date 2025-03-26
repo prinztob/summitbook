@@ -25,7 +25,6 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.models.SortFilterValues.Companion.setSelectedDateSpinnerAndItsDefault
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.hasRecordsBeenAdded
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.DateFormat
@@ -368,9 +367,6 @@ class SortAndFilterFragment : DialogFragment() {
                     id: Long
                 ) {
                     if (view != null) {
-                        if (sortFilterValues.selectedDateSpinner != position) {
-                            hasRecordsBeenAdded = false
-                        }
                         sortFilterValues.selectedDateSpinner = position
                         when (position) {
                             1 -> {

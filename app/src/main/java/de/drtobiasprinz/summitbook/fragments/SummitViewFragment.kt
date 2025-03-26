@@ -29,7 +29,6 @@ import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.allSummits
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.hasRecordsBeenAdded
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.updateOfTracksStarted
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
@@ -142,9 +141,7 @@ class SummitViewFragment : Fragment() {
                         }
 
                         DataStatus.Status.SUCCESS -> {
-                            if (!hasRecordsBeenAdded) {
-                                setRecordsOnce(summitsStatus.data ?: emptyList())
-                            }
+                            setRecordsOnce(summitsStatus.data ?: emptyList())
                             summitsStatus.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
                             loading.isVisible(false, recyclerView)
                             allSummits = summitsStatus.data ?: emptyList()
@@ -227,6 +224,8 @@ class SummitViewFragment : Fragment() {
     }
 
     private fun setRecordsOnce(summits: List<Summit>) {
+        MainActivity.activitiesWithPowerRecords = mutableListOf()
+        MainActivity.activitiesWithSegmentsRecord = mutableListOf()
         val filteredSummits = summits.filter {
             !it.isBookmark && sortFilterValues.filterDate(it)
         }
@@ -234,7 +233,6 @@ class SummitViewFragment : Fragment() {
             "SummitViewFragment",
             "records will be added for ${filteredSummits.size} summits."
         )
-        hasRecordsBeenAdded = true
         val maxSummits = TimeIntervalPower.entries.map {
             it.getMaxSummit(
                 ExtremaValuesSummits(
@@ -244,18 +242,30 @@ class SummitViewFragment : Fragment() {
             )
         }
 
+        summits.forEach { summit ->
+            if (summit in maxSummits) {
+                MainActivity.activitiesWithPowerRecords.add(summit.activityId)
+            }
+        }
+
         viewModel?.segmentsList?.observeOnce(viewLifecycleOwner) { itDataSegments ->
             itDataSegments.data.let { segments ->
                 if (!segments.isNullOrEmpty()) {
                     summits.forEach { summit ->
                         summit.updateSegmentInfo(segments)
                     }
-                    summits.forEach { summit ->
-                        summit.hasPowerRecord = summit in maxSummits
-                        if (summit.segmentInfo.isNotEmpty()) {
-                            summit.bestPositionInSegment =
-                                summit.segmentInfo.minOf { it.third }
-                        }
+                }
+            }
+            summits.forEach { summit ->
+                if (summit.segmentInfo.isNotEmpty()) {
+                    val position = summit.segmentInfo.minOf { it.third }
+                    if (position in 1..3) {
+                        MainActivity.activitiesWithSegmentsRecord.add(
+                            Pair(
+                                summit.activityId,
+                                position
+                            )
+                        )
                     }
                 }
             }
