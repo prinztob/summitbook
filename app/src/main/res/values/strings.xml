@@ -465,5 +465,6 @@
     <string name="access_all_files">Allow access to all files</string>
     <string name="access_all_files_summary">If you want to add offline mpfiles in the map folder to have to allow access to all files</string>
     <string name="generic_offline_map_type">Offline mbtiles</string>
+    <string name="show_summit_disabled">During recoding of current location diabled</string>
 
 </resources>

@@ -212,15 +212,17 @@ class OpenStreetMapFragment : Fragment() {
     }
 
     private fun addFollowTrack(context: Context?) {
-        var currentTrack = mutableListOf<GeoPoint>()
         val polyline = Polyline(binding.osmap)
+
+        polyline.outlinePaint?.color = Color.MAGENTA
+        polyline.outlinePaint?.strokeWidth = 16f
 
         binding.followLocation.setOnClickListener {
             followLocationEnabled = !followLocationEnabled
             if (followLocationEnabled) {
                 binding.followLocation.setImageResource(R.drawable.baseline_stop_circle_24)
             } else {
-                currentTrack = mutableListOf()
+                polyline.setPoints(mutableListOf())
                 binding.osmap.overlayManager?.remove(polyline)
                 binding.followLocation.setImageResource(R.drawable.baseline_play_circle_filled_24)
             }
@@ -231,11 +233,10 @@ class OpenStreetMapFragment : Fragment() {
                 override fun onLocationChanged(location: Location?, source: IMyLocationProvider?) {
                     super.onLocationChanged(location, source)
                     if (location != null && followLocationEnabled && location.speed > 0f) {
-                        currentTrack.add(GeoPoint(location.latitude, location.longitude))
-                        polyline.outlinePaint?.color = Color.MAGENTA
-                        polyline.outlinePaint?.strokeWidth = 16f
-                        polyline.setPoints(currentTrack)
+                        polyline.addPoint(GeoPoint(location.latitude, location.longitude))
+                        binding.osmap.overlayManager?.remove(polyline)
                         binding.osmap.overlayManager?.add(polyline)
+                        binding.osmap.controller.setCenter(mLocationOverlay.myLocation)
                     }
                 }
             }
@@ -317,22 +318,32 @@ class OpenStreetMapFragment : Fragment() {
             fullscreen(fullscreenEnabled)
         }
         binding.showSummits.setOnClickListener {
-            showSummits = !showSummits
-            if (showSummits) {
-                binding.showSummits.alpha = 1f
+            if (!followLocationEnabled) {
+                showSummits = !showSummits
+                if (showSummits) {
+                    binding.showSummits.alpha = 1f
+                } else {
+                    binding.showSummits.alpha = 0.5f
+                }
+                showSummitsAndBookmarksIfEnabled()
             } else {
-                binding.showSummits.alpha = 0.5f
+                Toast.makeText(
+                    requireContext(),
+                    R.string.show_summit_disabled,
+                    Toast.LENGTH_LONG
+                ).show()
             }
-            showSummitsAndBookmarksIfEnabled()
         }
         binding.showBookmarks.setOnClickListener {
-            showBookmarks = !showBookmarks
-            if (showBookmarks) {
-                binding.showBookmarks.alpha = 1f
-            } else {
-                binding.showBookmarks.alpha = 0.5f
+            if (!followLocationEnabled) {
+                showBookmarks = !showBookmarks
+                if (showBookmarks) {
+                    binding.showBookmarks.alpha = 1f
+                } else {
+                    binding.showBookmarks.alpha = 0.5f
+                }
+                showSummitsAndBookmarksIfEnabled()
             }
-            showSummitsAndBookmarksIfEnabled()
         }
         binding.changeMap.setOnClickListener {
             showMapTypeSelectorDialog(
@@ -408,9 +419,8 @@ class OpenStreetMapFragment : Fragment() {
             mLocationOverlay.setDirectionIcon(arrow)
             mLocationOverlay.setDirectionAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
             binding.osmap.overlays.add(mLocationOverlay)
-            val mapController = binding.osmap.controller
             if (zoom) {
-                mapController.setCenter(mLocationOverlay.myLocation)
+                binding.osmap.controller.setCenter(mLocationOverlay.myLocation)
             }
         } else {
             Toast.makeText(
