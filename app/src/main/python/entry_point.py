@@ -334,7 +334,9 @@ def analyze_gpx_track(gpx_path, additional_data_folder, split_files):
     try:
         start_time = datetime.now()
         analyzer = TrackAnalyzer(gpx_path, additional_data_folder, split_files)
-        analyzer.analyze()
+        if not analyzer.analyze():
+            analyzer = TrackAnalyzer(gpx_path, additional_data_folder, split_files)
+            analyzer.analyze(True)
         analyzer.write_data_and_extension_to_file()
         print(f"Analyzing of {gpx_path} took {(datetime.now() - start_time).total_seconds()}")
         return "return code: 0"
