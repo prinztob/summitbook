@@ -143,7 +143,7 @@ enum class SportGroup(
         R.color.green_800,
     ),
     Other(
-        listOf(SportType.BikeAndHike, SportType.IndoorTrainer, SportType.Other),
+        listOf(SportType.BikeAndHike, SportType.Other),
         R.string.other,
         R.color.grey_500,
     )

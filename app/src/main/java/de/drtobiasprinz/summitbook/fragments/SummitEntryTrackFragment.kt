@@ -355,7 +355,6 @@ class SummitEntryTrackFragment : Fragment() {
                 val label = getString(trackColor.labelId)
 
                 val leftAxis: YAxis = lineChart.axisLeft
-                leftAxis.textColor = Color.BLACK
                 leftAxis.setDrawGridLines(true)
                 leftAxis.isGranularityEnabled = true
 
@@ -418,7 +417,7 @@ class SummitEntryTrackFragment : Fragment() {
 
         when (requireContext().resources?.configuration?.uiMode?.and(android.content.res.Configuration.UI_MODE_NIGHT_MASK)) {
             android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
-                binding.lineChart.xAxis.textColor = Color.BLACK
+                binding.lineChart.xAxis.textColor = Color.WHITE
                 binding.lineChart.axisRight.textColor = Color.WHITE
                 binding.lineChart.axisLeft.textColor = Color.WHITE
                 binding.lineChart.legend?.textColor = Color.WHITE
