@@ -94,14 +94,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
         binding.recalculate.setOnClickListener {
             recalculate(summit)
         }
-        binding.ignore.setOnClickListener {
-            summit.velocityData = VelocityData(
-                summit.velocityData.maxVelocity
-            )
-            summit.elevationData = ElevationData(
-                summit.elevationData.maxElevation,
-                summit.elevationData.elevationGain
-            )
+        binding.delete.setOnClickListener {
             val gpxPyFile = summit.getGpxPyPath().toFile()
             if (gpxPyFile.exists()) {
                 gpxPyFile.delete()
@@ -110,22 +103,25 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             if (trackFile.exists()) {
                 trackFile.delete()
             }
-            val instance = pythonInstance
-            if (instance != null) {
-                lifecycleScope.launch {
-                    Log.i(
-                        "AddAdditionalDataFromExternalResourcesDialog.asyncAnalyzeGpsTracks",
-                        "Entry ${summit.name} will be simplified again in order to obtain newest data"
-                    )
-                    withContext(Dispatchers.IO) {
-                        GpxPyExecutor(instance).analyzeGpxTrackAndCreateGpxPyDataFile(summit)
-                    }
-                }
-            }
-            viewModel.saveSummit(true, summit)
+            ignoreAllAdditionalData(summit)
+            dialog?.cancel()
+        }
+        binding.ignore.setOnClickListener {
+            ignoreAllAdditionalData(summit)
             dialog?.cancel()
         }
         extractDataFromFilesAndPutIntoView(summit)
+    }
+
+    private fun ignoreAllAdditionalData(summit: Summit) {
+        summit.velocityData = VelocityData(
+            summit.velocityData.maxVelocity
+        )
+        summit.elevationData = ElevationData(
+            summit.elevationData.maxElevation,
+            summit.elevationData.elevationGain
+        )
+        viewModel.saveSummit(true, summit)
     }
 
     private fun recalculate(summit: Summit) {

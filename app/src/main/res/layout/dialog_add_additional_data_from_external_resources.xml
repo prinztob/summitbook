@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:tools="http://schemas.android.com/tools"
     tools:context=".ui.dialog.AddAdditionalDataFromExternalResourcesDialog">
 
 
@@ -25,9 +25,7 @@
         android:contentDescription="@string/ignore"
         android:src="@drawable/baseline_do_not_disturb_on_total_silence_24"
         app:layout_constraintStart_toEndOf="@id/save"
-        app:layout_constraintEnd_toStartOf="@+id/recalculate"
         app:layout_constraintTop_toTopOf="parent" />
-
 
 
     <ImageButton
@@ -37,17 +35,26 @@
         android:backgroundTint="@color/grey_500"
         android:contentDescription="@string/update"
         android:src="@drawable/baseline_refresh_24"
-        app:layout_constraintBottom_toBottomOf="@id/ignore"
-        app:layout_constraintStart_toEndOf="@id/ignore"
-        app:layout_constraintEnd_toStartOf="@+id/back"
+        app:layout_constraintBottom_toBottomOf="@id/delete"
+        app:layout_constraintStart_toEndOf="@id/delete"
         app:layout_constraintTop_toTopOf="@id/ignore" />
 
+    <ImageButton
+        android:id="@+id/delete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/red"
+        android:contentDescription="@string/delete"
+        android:src="@drawable/baseline_delete_black_24dp"
+        app:layout_constraintBottom_toBottomOf="@id/ignore"
+        app:layout_constraintStart_toEndOf="@id/ignore"
+        app:layout_constraintTop_toTopOf="@id/ignore" />
 
     <ImageButton
         android:id="@+id/back"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:backgroundTint="@color/red"
+        android:backgroundTint="@color/white"
         android:contentDescription="@string/cancelButtonText"
         android:src="@drawable/ic_baseline_clear_24"
         app:layout_constraintEnd_toEndOf="parent"
