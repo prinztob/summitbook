@@ -432,6 +432,7 @@
         Wir versuchen jetzt dich einzuloggen und du musst dein MFA Token eingeben.</string>
     <string name="min_5_yrs">Min. letzte 5 Jahre</string>
     <string name="max_5_yrs">Max. letzte 5 Jahre</string>
+    <string name="min_max_5_yrs">Min/Max letzte 5 J.</string>
     <string name="actually">Tatsächlich</string>
 
     <string name="map_provider">Karten Provider</string>
@@ -467,5 +468,7 @@
     <string name="access_all_files_summary">If you want to add offline mpfiles in the map folder to have to allow access to all files</string>
     <string name="generic_offline_map_type">Offline mbtiles</string>
     <string name="show_summit_disabled">Während der Trackaufnahme deaktiviert</string>
+    <string name="new_record">Rekord</string>
+    <string name="better_then">Besser als</string>
 
 </resources>

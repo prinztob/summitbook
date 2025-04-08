@@ -584,14 +584,13 @@ class OpenStreetMapFragment : Fragment() {
             binding.fullscreen.setImageResource(R.drawable.baseline_fullscreen_24)
             (requireActivity() as MainActivity).binding.toolbarInclude.toolbar.visibility =
                 View.VISIBLE
-            (requireActivity() as MainActivity).binding.overviewLayout.visibility = View.VISIBLE
+            (requireActivity() as MainActivity).binding.contentFrameOverview.visibility = View.VISIBLE
         } else {
             requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             binding.fullscreen.setImageResource(R.drawable.baseline_fullscreen_exit_24)
             (requireActivity() as MainActivity).binding.toolbarInclude.toolbar.visibility =
                 View.GONE
-            (requireActivity() as MainActivity).binding.overviewLayout.visibility = View.GONE
-            (requireActivity() as MainActivity).binding.chartLayout.visibility = View.GONE
+            (requireActivity() as MainActivity).binding.contentFrameOverview.visibility = View.GONE
         }
     }
 

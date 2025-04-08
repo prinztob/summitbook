@@ -27,9 +27,9 @@ class TestSummitsPreparation {
             val filteredSummits = getSummitsForLastFiveYears().filter {
                 it.date.after(startDate) && it.date.before(endDate)
             }
-            assert(filteredSummits.size == expected[0]) { "For year ${year} -> expected: ${expected[0]} actual: ${filteredSummits.size}" }
-            assert(filteredSummits.sumOf { it.kilometers } == expected[1]) { "For year ${year} -> expected: ${expected[1]} actual: ${filteredSummits.sumOf { it.kilometers }}" }
-            assert(filteredSummits.sumOf { it.elevationData.elevationGain } == expected[2]) { "For year ${year} -> expected: ${expected[2]} actual: ${filteredSummits.sumOf { it.elevationData.elevationGain }}" }
+            assert(filteredSummits.size == expected[0]) { "For year $year -> expected: ${expected[0]} actual: ${filteredSummits.size}" }
+            assert(filteredSummits.sumOf { it.kilometers } == expected[1]) { "For year $year -> expected: ${expected[1]} actual: ${filteredSummits.sumOf { it.kilometers }}" }
+            assert(filteredSummits.sumOf { it.elevationData.elevationGain } == expected[2]) { "For year $year -> expected: ${expected[2]} actual: ${filteredSummits.sumOf { it.elevationData.elevationGain }}" }
         }
     }
 
@@ -42,7 +42,8 @@ class TestSummitsPreparation {
     companion object {
 
         fun parseDate(date: String): Date {
-            val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT_SIMPLE, Locale.getDefault())
+            val df: DateFormat =
+                SimpleDateFormat(Summit.DATETIME_FORMAT_SIMPLE, Locale.getDefault())
             df.isLenient = false
             return df.parse(date) ?: Date()
         }

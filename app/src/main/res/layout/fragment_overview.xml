@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/rounded_win"
+    android:orientation="vertical">
+
+
+    <LinearLayout
+        android:id="@+id/overviewLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/overview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginEnd="15dp"
+            android:drawablePadding="15dp"
+            android:gravity="center"
+            android:text="@string/overview"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="#999"
+            app:drawableStartCompat="@drawable/ic_baseline_directions_run_24"
+            app:drawableTint="?android:attr/colorControlNormal" />
+
+        <TextView
+            android:id="@+id/overview_summits"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginEnd="15dp"
+            android:drawablePadding="15dp"
+            android:gravity="center"
+            android:text="@string/overview"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="#999"
+            app:drawableStartCompat="@drawable/icons8_mountain_24"
+            app:drawableTint="?android:attr/colorControlNormal" />
+
+
+        <ImageView
+            android:id="@+id/dopDown"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/choose_data_source"
+            android:src="@drawable/baseline_arrow_drop_down_24" />
+    </LinearLayout>
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/chartLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/overviewLayout">
+
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/group_property"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:checkedButton="@id/button_height_meter"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <Button
+                android:id="@+id/button_height_meter"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:text="@string/hm"
+                android:textSize="11sp" />
+
+            <Button
+                android:id="@+id/button_kilometers"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:text="@string/km"
+                android:textSize="11sp" />
+
+            <Button
+                android:id="@+id/button_activity"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:text="@string/count"
+                android:textSize="11sp" />
+
+            <Button
+                android:id="@+id/button_power"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:text="@string/watt"
+                android:textSize="11sp" />
+
+            <Button
+                android:id="@+id/button_vo2max"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:breakStrategy="simple"
+                android:minWidth="0dp"
+                android:text="@string/vo2Max"
+                android:textSize="11sp" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+
+        <de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
+            android:id="@+id/lineChartMonth"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/group_property" />
+
+        <Button
+            android:id="@+id/showMonthButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/monthly"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toStartOf="@+id/textMonth"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/lineChartMonth" />
+
+
+        <TextView
+            android:id="@+id/textMonth"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/monthly"
+            app:drawableEndCompat="@drawable/ic_chevron_right"
+            app:drawableStartCompat="@drawable/ic_chevron_left"
+            app:layout_constraintBottom_toBottomOf="@+id/showMonthButton"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/showMonthButton"
+            app:layout_constraintTop_toTopOf="@+id/showMonthButton" />
+
+
+        <de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
+            android:id="@+id/lineChartYear"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textMonth" />
+
+        <Button
+            android:id="@+id/showYearButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/yearly"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toStartOf="@+id/textYear"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/lineChartYear" />
+
+        <TextView
+            android:id="@+id/textYear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerInParent="true"
+            android:text="@string/yearly"
+            app:drawableEndCompat="@drawable/ic_chevron_right"
+            app:drawableStartCompat="@drawable/ic_chevron_left"
+            app:layout_constraintBottom_toBottomOf="@+id/showYearButton"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/showYearButton"
+            app:layout_constraintTop_toTopOf="@+id/showYearButton" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

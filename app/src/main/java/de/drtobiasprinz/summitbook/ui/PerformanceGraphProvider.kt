@@ -2,6 +2,7 @@ package de.drtobiasprinz.summitbook.ui
 
 import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.summitbook.db.entities.Forecast
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -10,13 +11,14 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Forecast>) {
+class PerformanceGraphProvider(
+    val summits: List<Summit>,
+    private val forecasts: List<Forecast>,
+    private val indoorHeightMeterPercent: Int = 0
+) {
 
     fun getActualGraphForSummits(
-        graphType: GraphType,
-        year: String,
-        month: String? = null,
-        currentDate: Date? = null
+        graphType: GraphType, year: String, month: String? = null, currentDate: Date? = null
     ): List<Entry> {
         var (dateRange, maximum) = getDateRange(year, month)
         val filteredSummits = getRelevantSummitsSorted(dateRange, graphType)
@@ -29,7 +31,7 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
                 cal.time = it.date
                 val x =
                     (cal.get(if (month != null) Calendar.DAY_OF_MONTH else Calendar.DAY_OF_YEAR))
-                val newValue = graphType.getSummitValue(it).toFloat()
+                val newValue = graphType.getSummitValue(it, indoorHeightMeterPercent).toFloat()
                 val checkValue = if (graphType.filterZeroValues) newValue > 0 else newValue >= 0
                 if (checkValue) {
                     basicGraph[x] = newValue + (if (graphType.cumulative) lastY else 0f)
@@ -57,24 +59,11 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
     }
 
     fun getForecastGraphForSummits(
-        graphType: GraphType,
-        year: String,
-        month: String? = null
+        graphType: GraphType, year: String, month: String? = null, allDays: Boolean = false
     ): List<Entry> {
         val graph = mutableListOf(Entry(1f, 0f))
         val months = if (month != null) listOf(month) else listOf(
-            "01",
-            "02",
-            "03",
-            "04",
-            "05",
-            "06",
-            "07",
-            "08",
-            "09",
-            "10",
-            "11",
-            "12"
+            "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"
         )
         months.forEach { selectedMonth ->
             val startDate = parseDate(String.format("${year}-${selectedMonth}-01 00:00:00"))
@@ -82,27 +71,47 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
             cal.time = startDate
             val lastX = if (graph.size == 1) 0f else graph.last().x
             graph.add(
-                Entry(
-                    cal.getActualMaximum(Calendar.DAY_OF_MONTH).toFloat() + lastX,
-                    forecasts
-                        .filter { it.year == year.toInt() && it.month == selectedMonth.toInt() }
+                Entry(cal.getActualMaximum(Calendar.DAY_OF_MONTH).toFloat() + lastX,
+                    forecasts.filter { it.year == year.toInt() && it.month == selectedMonth.toInt() }
                         .sumOf { graphType.getForecastValue(it) }.toFloat() + graph.last().y
                 )
             )
         }
-        return graph
+        return if (allDays) {
+            expandGraphWithMissingDays(graph)
+        } else {
+            graph
+        }
+    }
+
+    private fun expandGraphWithMissingDays(graph: MutableList<Entry>): MutableList<Entry> {
+        val allDaysGraph = mutableListOf<Entry>()
+        graph.forEach {
+            if (allDaysGraph.isEmpty()) {
+                allDaysGraph.add(it)
+            } else {
+                val startX = allDaysGraph.last().x
+                val steps = it.x - startX
+                val stepSize = (it.y - allDaysGraph.last().y) / steps
+                for (i in 1..<steps.toInt()) {
+                    allDaysGraph.add(
+                        Entry(
+                            startX + i, allDaysGraph.last().y + stepSize
+                        )
+                    )
+                }
+                allDaysGraph.add(it)
+            }
+        }
+        return allDaysGraph
     }
 
     fun getActualGraphMinMaxForSummits(
-        graphType: GraphType,
-        year: String,
-        month: String? = null
+        graphType: GraphType, year: String, month: String? = null
     ): Pair<List<Entry>, List<Entry>> {
         val graphs = (year.toInt() - 5 until year.toInt()).map {
             getActualGraphForSummits(
-                graphType,
-                it.toString(),
-                month
+                graphType, it.toString(), month
             )
         }.filter { it.isNotEmpty() }
         val size = graphs.minOfOrNull { it.size }
@@ -127,19 +136,18 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
     }
 
     fun getRelevantSummitsSorted(
-        range: ClosedRange<Date>,
-        graphType: GraphType = GraphType.ElevationGain
+        range: ClosedRange<Date>, graphType: GraphType = GraphType.ElevationGain
     ): List<Summit> {
         return summits.filter {
-            it.date.after(range.start)
-                    && it.date.before(range.endInclusive)
-                    && graphType.getSummitValue(it) >= 0
+            it.date.after(range.start) && it.date.before(range.endInclusive) && graphType.getSummitValue(
+                it,
+                indoorHeightMeterPercent
+            ) >= 0
         }.sortedBy { it.date }
     }
 
     fun getDateRange(
-        year: String,
-        month: String? = null
+        year: String, month: String? = null
     ): Pair<ClosedRange<Date>, Int> {
         val startDate = parseDate(String.format("${year}-${month ?: "01"}-01 00:00:00"))
         val cal: Calendar = Calendar.getInstance(TimeZone.getDefault())
@@ -161,7 +169,8 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
 
     companion object {
         fun parseDate(date: String): Date {
-            val df: DateFormat = SimpleDateFormat(Summit.DATETIME_FORMAT_SIMPLE, Locale.getDefault())
+            val df: DateFormat =
+                SimpleDateFormat(Summit.DATETIME_FORMAT_SIMPLE, Locale.getDefault())
             df.isLenient = false
             return df.parse(date) ?: Date()
         }
@@ -170,7 +179,7 @@ class PerformanceGraphProvider(val summits: List<Summit>, val forecasts: List<Fo
 
 enum class GraphType(
     val unit: String,
-    val getSummitValue: (Summit) -> Double,
+    val getSummitValue: (Summit, Int) -> Double,
     val getForecastValue: (Forecast) -> Int,
     val cumulative: Boolean = true,
     val hasForecast: Boolean = true,
@@ -180,30 +189,34 @@ enum class GraphType(
 
     Count(
         "",
-        { 1.0 },
+        { _, _ -> 1.0 },
         { f -> f.forecastNumberActivities },
     ),
     ElevationGain(
         "hm",
-        { e -> e.elevationData.elevationGain.toDouble() },
+        { e, indoorHeightMeterPercent ->
+            if (e.sportType == SportType.IndoorTrainer) {
+                e.elevationData.elevationGain.toDouble() * indoorHeightMeterPercent.toDouble() / 100.0
+            } else {
+                e.elevationData.elevationGain.toDouble()
+            }
+        },
         { f -> f.forecastHeightMeter },
         delta = 10f
     ),
     Kilometer(
         "km",
-        { e -> e.kilometers },
+        { e, _ -> e.kilometers },
         { f -> f.forecastDistance },
     ),
     Power(
         "W",
-        { e -> e.garminData?.power?.twentyMin?.toDouble() ?: -1.0 },
+        { e, _ -> e.garminData?.power?.twentyMin?.toDouble() ?: -1.0 },
         { 0 },
-        false, false, true
+        false,
+        false,
+        true
     ),
-    Vo2Max(
-        "",
-        { e -> e.garminData?.vo2max?.toDouble() ?: -1.0 },
-        { 0 },
-        false, false, true
+    Vo2Max("", { e, _ -> e.garminData?.vo2max?.toDouble() ?: -1.0 }, { 0 }, false, false, true
     ), ;
 }

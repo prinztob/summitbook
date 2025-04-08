@@ -430,6 +430,7 @@
         We will try to login and you may have to enter your MFA token.</string>
     <string name="min_5_yrs">Min. last 5 years</string>
     <string name="max_5_yrs">Max. last 5 years</string>
+    <string name="min_max_5_yrs">Min/Max last 5yrs</string>
     <string name="actually">Actually</string>
     //SETTINGS
     <string name="map_provider">Map Provider</string>
@@ -466,5 +467,7 @@
     <string name="access_all_files_summary">If you want to add offline mpfiles in the map folder to have to allow access to all files</string>
     <string name="generic_offline_map_type">Offline mbtiles</string>
     <string name="show_summit_disabled">During recoding of current location diabled</string>
+    <string name="new_record">Record</string>
+    <string name="better_then">Better then</string>
 
 </resources>

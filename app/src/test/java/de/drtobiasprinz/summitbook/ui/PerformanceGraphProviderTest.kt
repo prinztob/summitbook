@@ -323,12 +323,6 @@ class PerformanceGraphProviderTest {
 
     @Test
     fun testGetForecastGraphForWholeYear() {
-        val performanceGraphProvider =
-            PerformanceGraphProvider(emptyList(), TestSummitsPreparation.getForecasts())
-        val graphCount = performanceGraphProvider.getForecastGraphForSummits(
-            GraphType.Count,
-            "2024"
-        )
         val expectedGraph = listOf(
             Entry(1f, 0f),
             Entry(31f, 5f),
@@ -344,11 +338,25 @@ class PerformanceGraphProviderTest {
             Entry(335f, 141f),
             Entry(366f, 145f),
         )
+        val performanceGraphProvider =
+            PerformanceGraphProvider(emptyList(), TestSummitsPreparation.getForecasts())
+        val graphCount = performanceGraphProvider.getForecastGraphForSummits(
+            GraphType.Count,
+            "2024"
+        )
+
         assert(graphCount.size == expectedGraph.size)
         expectedGraph.forEachIndexed { i, e ->
             assert(
                 graphCount[i].equalTo(e)
             ) { "Count Forecast graph for index $i was '${graphCount[i]}' not '${e}'." }
         }
+
+        val graphCountAllDays = performanceGraphProvider.getForecastGraphForSummits(
+            GraphType.Count,
+            "2024",
+            allDays = true
+        )
+        assert(graphCountAllDays.size == 366)
     }
 }
