@@ -54,26 +54,28 @@ class ZipFileWriter(
                     entries,
                 )
             )
-            if (exportThirdPartyData) {
-                files.add(
-                    writeThirdPartyDataToFile(
-                        localDir,
-                        context.resources,
-                        entries
+            if (entries.isNotEmpty()) {
+                if (exportThirdPartyData) {
+                    files.add(
+                        writeThirdPartyDataToFile(
+                            localDir,
+                            context.resources,
+                            entries
+                        )
                     )
-                )
-            }
-            if (exportCalculatedData) {
-                files.add(
-                    writeCalculatedDataToFile(
-                        localDir,
-                        context.resources,
-                        entries
+                }
+                if (exportCalculatedData) {
+                    files.add(
+                        writeCalculatedDataToFile(
+                            localDir,
+                            context.resources,
+                            entries
+                        )
                     )
-                )
+                }
+                segments?.let { files.add(writeSegmentsToFile(localDir, it)) }
+                forecasts?.let { files.add(writeForecastsToFile(localDir, it)) }
             }
-            segments?.let { files.add(writeSegmentsToFile(localDir, it)) }
-            forecasts?.let { files.add(writeForecastsToFile(localDir, it)) }
 
             ZipOutputStream(BufferedOutputStream(outputStream)).use { out ->
                 files.forEach { addFileToZip(it, it.name, out) }

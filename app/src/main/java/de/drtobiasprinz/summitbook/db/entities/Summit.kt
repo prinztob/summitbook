@@ -525,13 +525,17 @@ class Summit(
                 val listPatternOnce = "[^;]+"
                 val listPatternNullOrOnce = "[^;]*"
                 val regex =
-                    """(?<date>(\d{4}-\d{2}-\d{2}));(?<name>($listPatternOnce));(?<sportType>(\w+));(?<activityId>(\d+));(?<kilometers>([\d.]+));(?<duration>([\d.]*));(?<elevationGain>([\d.]+));(?<maxElevation>([\d.]+));(?<maxVelocity>([\d.]+));(?<lat>([\d.]*));(?<long>([\d.]*));(?<isFavorite>([01]));(?<isPeak>([01]));(?<comments>(.*));(?<participants>($listPatternNullOrOnce));(?<equipments>($listPatternNullOrOnce));(?<places>($listPatternNullOrOnce));(?<countries>($listPatternNullOrOnce))""".toRegex()
+                    """(?<date>(\d{4}-\d{2}-\d{2}));(?<name>($listPatternOnce));(?<sportType>(\w*));(?<activityId>(\d+));(?<kilometers>([\d.]+));(?<duration>([\d.]*));(?<elevationGain>([\d.]+));(?<maxElevation>([\d.]+));(?<maxVelocity>([\d.]+));(?<lat>([\d.]*));(?<long>([\d.]*));(?<isFavorite>([01]));(?<isPeak>([01]));(?<comments>(.*));(?<participants>($listPatternNullOrOnce));(?<equipments>($listPatternNullOrOnce));(?<places>($listPatternNullOrOnce));(?<countries>($listPatternNullOrOnce))""".toRegex()
                 val matchResult = regex.find(line.replace("\n", ""))
                 return if (matchResult != null) {
                     Summit(
                         parseDate(matchResult.groups["date"]!!.value),
                         matchResult.groups["name"]!!.value,
-                        SportType.valueOf(matchResult.groups["sportType"]!!.value),
+                        try {
+                            SportType.valueOf(matchResult.groups["sportType"]!!.value)
+                        } catch (e: IllegalArgumentException) {
+                            SportType.Other
+                        },
                         if (matchResult.groups["places"]!!.value != "") matchResult.groups["places"]!!.value.split(
                             ","
                         ) else emptyList(),
@@ -766,7 +770,7 @@ class Summit(
         fun getCsvDescription(resources: Resources): String {
             return ("${resources.getString(R.string.required)}; " +
                     "${resources.getString(R.string.required)}; " +
-                    "${resources.getString(R.string.required)}; " +
+                    "${resources.getString(R.string.optional)}; " +
                     "${resources.getString(R.string.optional)}; " +
                     "${resources.getString(R.string.optional)}; " +
                     "${resources.getString(R.string.optional)}; " +
