@@ -3,6 +3,11 @@
 ## An android app to manage your Activities on your device without storage online
 
 ## Features:
+### Main screen
+* Manage your summits and bookmarks 
+<img src="screenshots/main-screen.png" alt="main screen" width="200"/>
+
+
 - Import/Export zip file with details in CSV Format to view with LibraOffice
 - Add Bookmarks for Summits you still want to to
 - Show statistics of all summits you climbed
@@ -13,4 +18,3 @@
 - Sort and filter your summitsK
 - Import tracks and data from Garmin Connect
 - use offline maps
-K
