@@ -480,7 +480,7 @@ class AddSegmentEntryFragment : Fragment() {
                     requireContext(), binding.osmap
                 )
             }
-            addDefaultSettings(requireContext(), binding.osmap, requireActivity())
+            addDefaultSettings(binding.osmap, requireActivity())
             Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
 
             val hasPoints =

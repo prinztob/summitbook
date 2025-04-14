@@ -196,7 +196,7 @@ class OpenStreetMapFragment : Fragment() {
         addFollowTrack(context)
         mLocationOverlay.enableMyLocation()
         showMyLocation()
-        addDefaultSettings(requireContext(), binding.osmap, requireActivity())
+        addDefaultSettings(binding.osmap, requireActivity())
         viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
             itData.data?.let { summits ->
                 allSummits = summits

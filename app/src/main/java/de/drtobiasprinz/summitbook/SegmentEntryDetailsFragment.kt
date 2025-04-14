@@ -283,7 +283,7 @@ class SegmentEntryDetailsFragment : Fragment() {
         }
         OpenStreetMapUtils.setTileProvider(binding.osMap, requireContext())
         OpenStreetMapUtils.addDefaultSettings(
-            requireContext(), binding.osMap, requireActivity()
+            binding.osMap, requireActivity()
         )
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
     }

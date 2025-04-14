@@ -90,7 +90,6 @@ class SummitEntryTrackFragment : Fragment() {
         binding.loadingPanel.visibility = View.VISIBLE
         binding.lineChart.visibility = View.GONE
         OpenStreetMapUtils.addDefaultSettings(
-            requireContext(),
             binding.osmap,
             requireActivity()
         )
@@ -492,7 +491,6 @@ class SummitEntryTrackFragment : Fragment() {
                 binding.osmap.overlays.clear()
                 binding.osmap.overlays.add(mLocationOverlay)
                 OpenStreetMapUtils.addDefaultSettings(
-                    requireContext(),
                     binding.osmap,
                     requireActivity()
                 )
