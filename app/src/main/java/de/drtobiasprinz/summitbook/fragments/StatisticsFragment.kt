@@ -31,6 +31,7 @@ import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Collections
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -601,6 +602,7 @@ class StatisticsFragment : Fragment() {
             if (toHHms) {
                 val valueInMs = (value * 3600000.0).toLong()
                 data.text = String.format(
+                    Locale.getDefault(),
                     "%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
                     TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
                     TimeUnit.MILLISECONDS.toSeconds(valueInMs) % TimeUnit.MINUTES.toSeconds(1),

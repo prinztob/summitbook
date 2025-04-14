@@ -1,0 +1,12 @@
+An android app to
+
+- Manage your climbed summits and any other activities on your device
+- Manage bookmarks for future climbs
+- Add images to summits
+- Calculate statistics of your summit climb if you have added a gpx file
+- Import zip file with your climbed summits
+- Show plots of all summits you climbed
+- Show bar graph with summary per time interval per sport type
+- Show all your summits and bookmarks on online/offline maps
+- Add estimates for climbed height meter, distance traveled and number of activities per year and check progress
+- Import tracks and data from Garmin Connect (second factor is supported)

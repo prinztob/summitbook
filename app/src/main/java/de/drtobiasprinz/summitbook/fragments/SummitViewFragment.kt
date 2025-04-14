@@ -1,8 +1,6 @@
 package de.drtobiasprinz.summitbook.fragments
 
 import android.content.SharedPreferences
-import android.graphics.Canvas
-import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -38,7 +36,6 @@ import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.isVisible
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
-import it.xabaras.android.recyclerview.swipedecorator.RecyclerViewSwipeDecorator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -187,32 +184,6 @@ class SummitViewFragment : Fragment() {
                             startAddSummitDialog(summit)
                         }
                     }
-                }
-
-                override fun onChildDraw(
-                    c: Canvas,
-                    recyclerView: RecyclerView,
-                    viewHolder: RecyclerView.ViewHolder,
-                    dX: Float,
-                    dY: Float,
-                    actionState: Int,
-                    isCurrentlyActive: Boolean
-                ) {
-                    RecyclerViewSwipeDecorator.Builder(
-                        c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive
-                    ).addSwipeLeftLabel(getString(R.string.update))
-                        .addSwipeLeftBackgroundColor(Color.GREEN)
-                        .setSwipeLeftLabelColor(Color.WHITE)
-                        .setSwipeLeftActionIconTint(Color.WHITE)
-                        .addSwipeLeftActionIcon(R.drawable.ic_baseline_edit_24)
-                        .addSwipeRightLabel(getString(R.string.update))
-                        .addSwipeRightBackgroundColor(Color.GREEN)
-                        .setSwipeRightLabelColor(Color.WHITE)
-                        .setSwipeRightActionIconTint(Color.WHITE)
-                        .addSwipeRightActionIcon(R.drawable.ic_baseline_edit_24).create().decorate()
-                    super.onChildDraw(
-                        c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive
-                    )
                 }
 
             }

@@ -108,7 +108,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                             )
                         }
                     }
-                    addDefaultSettings(this, binding.osmap, this)
+                    addDefaultSettings(binding.osmap, this)
                     val mReceive: MapEventsReceiver = object : MapEventsReceiver {
                         override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
                             if (entry != null) {

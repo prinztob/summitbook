@@ -230,7 +230,6 @@ object OpenStreetMapUtils {
 
     @JvmStatic
     fun addDefaultSettings(
-        context: Context,
         mMapView: MapView,
         fragmentActivity: FragmentActivity
     ) {

@@ -38,7 +38,7 @@ class ReceiverActivity : AppCompatActivity() {
         binding.osmap.setTileSource(TileSourceFactory.OpenTopo)
 
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-        OpenStreetMapUtils.addDefaultSettings(this, binding.osmap, this)
+        OpenStreetMapUtils.addDefaultSettings(binding.osmap, this)
 
         binding.addToSummits.setOnClickListener {
             if (gpxTrackUri != null) {

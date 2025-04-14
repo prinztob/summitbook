@@ -22,6 +22,7 @@ import de.drtobiasprinz.summitbook.models.TextFieldGroup
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import java.text.NumberFormat
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
@@ -225,8 +226,9 @@ class SummitEntryDataFragment : Fragment() {
                         selectedPosition = position
                         val text = items[position]
                         if (text != "") {
-                            val newSummitToCompare =
-                                summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
+                            val newSummitToCompare = summitsToCompare.find {
+                                "${it.getDateAsString()} ${it.name}" == text
+                            }
                             newSummitToCompare?.id?.let { pageViewModel?.getSummitToCompare(it) }
                         }
                     }
@@ -281,6 +283,7 @@ class SummitEntryDataFragment : Fragment() {
             if (textField.toHHms) {
                 val valueInMs = (value.toDouble() * 1000.0).toLong()
                 textField.valueTextView(binding).text = String.format(
+                    Locale.getDefault(),
                     "%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
                     TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
                     TimeUnit.MILLISECONDS.toSeconds(valueInMs) % TimeUnit.MINUTES.toSeconds(1),
@@ -318,6 +321,7 @@ class SummitEntryDataFragment : Fragment() {
                     ?: 0.0) * 1000.0).toLong()
                 if (valueInMsCompareSummit > 0) {
                     textField.valueTextView(binding).text = String.format(
+                        Locale.getDefault(),
                         "%02d:%02d (%02d:%02d)", TimeUnit.MILLISECONDS.toHours(valueInMs),
                         TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
                         TimeUnit.MILLISECONDS.toHours(valueInMsCompareSummit),
@@ -327,6 +331,7 @@ class SummitEntryDataFragment : Fragment() {
                     )
                 } else {
                     textField.valueTextView(binding).text = String.format(
+                        Locale.getDefault(),
                         "%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
                         TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
                         TimeUnit.MILLISECONDS.toSeconds(valueInMs) % TimeUnit.MINUTES.toSeconds(1),
@@ -406,7 +411,7 @@ class SummitEntryDataFragment : Fragment() {
                         val chip = createChip(
                             String.format(
                                 getString(R.string.rank_in_activity),
-                                entry.third,
+                                entry.third.toString(),
                                 entry.second.getDisplayName()
                             ), imageId
                         )
@@ -414,7 +419,7 @@ class SummitEntryDataFragment : Fragment() {
                             binding.segmentDetails.visibility = View.VISIBLE
                             binding.segmentName.text = String.format(
                                 getString(R.string.ranked),
-                                entry.third,
+                                entry.third.toString(),
                             )
                             binding.durationSegment.text = String.format(
                                 resources.configuration.locales[0],

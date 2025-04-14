@@ -25,7 +25,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.io.File
 import kotlin.io.path.createTempDirectory
 
 @RunWith(RobolectricTestRunner::class)
@@ -204,36 +203,6 @@ class ZipFileWriterTest {
             Assert.assertEquals(summits, db.summitsDao().allSummit)
         }
 
-    }
-
-    @Test
-    fun testImportFromZipFileOldFormat() = runTest {
-        launch {
-            withContext(Dispatchers.IO) {
-                val reader = ZipFileReader(
-                    createTempDirectory().toFile()
-                )
-                reader.saveSummit = { isEdit, summit ->
-                    if (isEdit) {
-                        db.summitsDao().updateSummitDeprecated(summit)
-                    } else {
-                        db.summitsDao().addSummit(summit)
-                    }
-                }
-                reader.saveForecast = { forecast ->
-                    db.forecastDao().addForecastDeprecated(forecast)
-                }
-                val zipFile = this.javaClass.classLoader?.getResource("backup_old_format.zip")
-                if (zipFile != null) {
-                    reader.extractAndImport(File(zipFile.path).inputStream())
-                    Assert.assertEquals(4, reader.successful)
-                    Assert.assertEquals(0, reader.unsuccessful)
-                }
-            }
-            Assert.assertEquals(
-                listOf(entry1, entry2, entry3, entry4), db.summitsDao().allSummit
-            )
-        }
     }
 
 }

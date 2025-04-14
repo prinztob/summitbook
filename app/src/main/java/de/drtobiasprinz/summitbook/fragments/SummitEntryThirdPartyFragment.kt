@@ -20,6 +20,7 @@ import de.drtobiasprinz.summitbook.models.TextFieldThirdParty
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import java.text.NumberFormat
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
@@ -96,7 +97,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
         textFieldGroup: TextFieldGroupThirdPArty = TextFieldGroupThirdPArty.ThirdParty,
         visibility: Int = View.VISIBLE
     ) {
-        TextFieldThirdParty.values().filter { it.group == textFieldGroup }.forEach {
+        TextFieldThirdParty.entries.filter { it.group == textFieldGroup }.forEach {
             setTextForCurrentSummitAndCompareWithSummit(
                 it,
                 summitToView,
@@ -111,7 +112,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
         extrema: ExtremaValuesSummits? = null,
         textFieldGroup: TextFieldGroupThirdPArty = TextFieldGroupThirdPArty.ThirdParty
     ) {
-        TextFieldThirdParty.values().filter { it.group == textFieldGroup }.forEach {
+        TextFieldThirdParty.entries.filter { it.group == textFieldGroup }.forEach {
             setCircleBeforeText(it, summitToView, extrema)
         }
     }
@@ -129,12 +130,12 @@ class SummitEntryThirdPartyFragment : Fragment() {
             binding.link.text = Html.fromHtml(text, 0)
             binding.constraintLayout.visibility = View.VISIBLE
 
-            TextFieldThirdParty.values().filter { it.group == TextFieldGroupThirdPArty.ThirdParty }
+            TextFieldThirdParty.entries.filter { it.group == TextFieldGroupThirdPArty.ThirdParty }
                 .forEach {
                     setTextOnlyForCurrentSummit(it, summitToView)
                 }
 
-            TextFieldThirdParty.values()
+            TextFieldThirdParty.entries
                 .filter { it.group == TextFieldGroupThirdPArty.ThirdPartyAdditionalData }
                 .forEach {
                     setTextOnlyForCurrentSummit(it, summitToView, View.GONE)
@@ -242,8 +243,9 @@ class SummitEntryThirdPartyFragment : Fragment() {
                         selectedPosition = position
                         val text = items[position]
                         if (text != "") {
-                            val newSummitToCompare =
-                                summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
+                            val newSummitToCompare = summitsToCompare.find {
+                                "${it.getDateAsString()} ${it.name}" == text
+                            }
                             newSummitToCompare?.id?.let { pageViewModel?.getSummitToCompare(it) }
                         }
                     }
@@ -288,6 +290,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
             if (textField.toHHms) {
                 val valueInMs = (value.toDouble() * 3600000.0).toLong()
                 textField.valueTextView(binding).text = String.format(
+                    Locale.getDefault(),
                     "%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
                     TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1)
                 )
@@ -325,6 +328,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
                     ?: 0.0) * 3600000.0).toLong()
                 if (valueInMsCompareSummit > 0) {
                     textField.valueTextView(binding).text = String.format(
+                        Locale.getDefault(),
                         "%02d:%02d (%02d:%02d)", TimeUnit.MILLISECONDS.toHours(valueInMs),
                         TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
                         TimeUnit.MILLISECONDS.toHours(valueInMsCompareSummit),
@@ -334,6 +338,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
                     )
                 } else {
                     textField.valueTextView(binding).text = String.format(
+                        Locale.getDefault(),
                         "%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
                         TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1)
                     )

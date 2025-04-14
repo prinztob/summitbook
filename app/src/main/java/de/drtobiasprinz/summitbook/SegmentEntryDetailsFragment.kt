@@ -186,7 +186,8 @@ class SegmentEntryDetailsFragment : Fragment() {
                 segmentsEntryAdapter.differ.submitList(
                     selectedSegmentEntrySorter.sorter(segmentToUse.segmentEntries)
                 )
-                summitShown = relevantSummits.firstOrNull { it.activityId == segmentEntryToUse.activityId }
+                summitShown =
+                    relevantSummits.firstOrNull { it.activityId == segmentEntryToUse.activityId }
                 drawGpxTrackAndItsProfile(summitShown, segmentEntryToUse)
             }
             binding.recyclerView.apply {
@@ -283,7 +284,7 @@ class SegmentEntryDetailsFragment : Fragment() {
         }
         OpenStreetMapUtils.setTileProvider(binding.osMap, requireContext())
         OpenStreetMapUtils.addDefaultSettings(
-            requireContext(), binding.osMap, requireActivity()
+            binding.osMap, requireActivity()
         )
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
     }

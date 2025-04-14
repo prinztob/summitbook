@@ -90,7 +90,6 @@ class SummitEntryTrackFragment : Fragment() {
         binding.loadingPanel.visibility = View.VISIBLE
         binding.lineChart.visibility = View.GONE
         OpenStreetMapUtils.addDefaultSettings(
-            requireContext(),
             binding.osmap,
             requireActivity()
         )
@@ -182,7 +181,7 @@ class SummitEntryTrackFragment : Fragment() {
         doCleanUp: Boolean = true
     ) {
         setUsedItemsForColorCode()
-        setOpenStreetMap(summitToView, summitToCompare, summits, doCleanUp=doCleanUp)
+        setOpenStreetMap(summitToView, summitToCompare, summits, doCleanUp = doCleanUp)
         OpenStreetMapUtils.setOsmConfForTiles()
     }
 
@@ -287,8 +286,9 @@ class SummitEntryTrackFragment : Fragment() {
                         selectedPosition = position
                         val text = items[position]
                         if (text != "") {
-                            val newSummitToCompare =
-                                summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
+                            val newSummitToCompare = summitsToCompare.find {
+                                "${it.getDateAsString()} ${it.name}" == text
+                            }
                             newSummitToCompare?.id?.let { pageViewModel?.getSummitToCompare(it) }
                         }
                     }
@@ -365,7 +365,7 @@ class SummitEntryTrackFragment : Fragment() {
                 lineChart.data = LineData(dataSets)
                 lineChart.setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
                     override fun onValueSelected(e: Entry, h: Highlight?) {
-                        if (e.data is Pair<*,*> && (e.data as Pair<*, *>).first is TrackPoint) {
+                        if (e.data is Pair<*, *> && (e.data as Pair<*, *>).first is TrackPoint) {
                             val trackPoint = (e.data as Pair<*, *>).first as TrackPoint
                             binding.osmap.overlays.remove(marker)
                             marker = OpenStreetMapUtils.addMarker(
@@ -492,7 +492,6 @@ class SummitEntryTrackFragment : Fragment() {
                 binding.osmap.overlays.clear()
                 binding.osmap.overlays.add(mLocationOverlay)
                 OpenStreetMapUtils.addDefaultSettings(
-                    requireContext(),
                     binding.osmap,
                     requireActivity()
                 )

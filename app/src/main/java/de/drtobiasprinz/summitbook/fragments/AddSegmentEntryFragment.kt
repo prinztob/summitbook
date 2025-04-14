@@ -480,7 +480,7 @@ class AddSegmentEntryFragment : Fragment() {
                     requireContext(), binding.osmap
                 )
             }
-            addDefaultSettings(requireContext(), binding.osmap, requireActivity())
+            addDefaultSettings(binding.osmap, requireActivity())
             Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
 
             val hasPoints =
@@ -511,7 +511,8 @@ class AddSegmentEntryFragment : Fragment() {
                         entries.first().endPositionLongitude
                     )
                 addMarker(
-                    binding.osmap, firstStartPoint, ResourcesCompat.getDrawable(
+                    binding.osmap, firstStartPoint,
+                    ResourcesCompat.getDrawable(
                         requireContext().resources,
                         R.drawable.ic_filled_location_lightbrown_48,
                         null

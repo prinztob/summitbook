@@ -168,8 +168,9 @@ class SummitEntryPowerFragment : Fragment() {
                         selectedPosition = position
                         val text = items[position]
                         if (text != "") {
-                            val newSummitToCompare =
-                                summitsToCompare.find { "${it.getDateAsString()} ${it.name}" == text }
+                            val newSummitToCompare = summitsToCompare.find {
+                                "${it.getDateAsString()} ${it.name}" == text
+                            }
                             newSummitToCompare?.id?.let { pageViewModel?.getSummitToCompare(it) }
                         }
                     }
@@ -213,12 +214,14 @@ class SummitEntryPowerFragment : Fragment() {
                     binding.lineChart.axisLeft.textColor = Color.WHITE
                     binding.lineChart.legend?.textColor = Color.WHITE
                 }
+
                 Configuration.UI_MODE_NIGHT_NO -> {
                     binding.lineChart.xAxis.textColor = Color.BLACK
                     binding.lineChart.axisRight.textColor = Color.BLACK
                     binding.lineChart.axisLeft.textColor = Color.BLACK
                     binding.lineChart.legend?.textColor = Color.BLACK
                 }
+
                 Configuration.UI_MODE_NIGHT_UNDEFINED -> {
                     binding.lineChart.xAxis.textColor = Color.BLACK
                     binding.lineChart.axisRight.textColor = Color.WHITE
@@ -453,7 +456,8 @@ class SummitEntryPowerFragment : Fragment() {
 
         override fun refreshContent(e: Entry, highlight: Highlight?) {
             val timeIntervalPower =
-                TimeIntervalPower.entries.toTypedArray().minByOrNull { abs(10f.pow(e.x) - it.seconds) }
+                TimeIntervalPower.entries.toTypedArray()
+                    .minByOrNull { abs(10f.pow(e.x) - it.seconds) }
             var text = "${e.y.roundToInt()} W "
             if (extremaValuesAllSummits != null && timeIntervalPower != null && (timeIntervalPower.maxPower(
                     extremaValuesAllSummits
