@@ -228,6 +228,14 @@ class OpenStreetMapFragment : Fragment() {
             }
         }
 
+        binding.info.setOnClickListener {
+            if (binding.horizontalInfo.isShown) {
+                binding.horizontalInfo.visibility = View.GONE
+            } else {
+                binding.horizontalInfo.visibility = View.VISIBLE
+            }
+        }
+
         mLocationOverlay =
             object : MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap) {
                 override fun onLocationChanged(location: Location?, source: IMyLocationProvider?) {
