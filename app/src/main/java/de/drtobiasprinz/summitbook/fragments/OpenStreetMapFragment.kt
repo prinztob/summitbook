@@ -228,6 +228,15 @@ class OpenStreetMapFragment : Fragment() {
             }
         }
 
+        onMapTypeSelected()
+        binding.info.setOnClickListener {
+            if (binding.horizontalInfo.isShown) {
+                binding.horizontalInfo.visibility = View.GONE
+            } else {
+                binding.horizontalInfo.visibility = View.VISIBLE
+            }
+        }
+
         mLocationOverlay =
             object : MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap) {
                 override fun onLocationChanged(location: Location?, source: IMyLocationProvider?) {
@@ -348,7 +357,10 @@ class OpenStreetMapFragment : Fragment() {
         binding.changeMap.setOnClickListener {
             showMapTypeSelectorDialog(
                 requireContext(),
-                binding.osmap
+                binding.osmap,
+                onSelected = {
+                    onMapTypeSelected()
+                }
             )
         }
 
@@ -374,6 +386,14 @@ class OpenStreetMapFragment : Fragment() {
                 }
             }
             false
+        }
+    }
+
+    private fun onMapTypeSelected() {
+        if (selectedItem == MapProvider.MTB) {
+            binding.info.visibility = View.VISIBLE
+        } else {
+            binding.info.visibility = View.GONE
         }
     }
 

@@ -1,15 +1,468 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/constraintLayout"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
+    <HorizontalScrollView
+        android:id="@+id/horizontal_info"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border">
+
+                <TextView
+                    android:layout_margin="1dp"
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_s0"
+                    app:drawableLeftCompat="@drawable/openandromaps_mtb_s0" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_s0"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border">
+
+                <TextView
+                    android:layout_margin="1dp"
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_s1"
+                    app:drawableLeftCompat="@drawable/openandromaps_mtb_s1" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_s1"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border">
+
+                <TextView
+                    android:layout_margin="1dp"
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_s2"
+                    app:drawableLeftCompat="@drawable/openandromaps_mtb_s2" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_s2"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border">
+
+                <TextView
+                    android:layout_margin="1dp"
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_s3"
+                    app:drawableLeftCompat="@drawable/openandromaps_mtb_s3" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_s3"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border">
+
+                <TextView
+                    android:layout_margin="1dp"
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_s4"
+                    app:drawableLeftCompat="@drawable/openandromaps_mtb_s4" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_s4"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border">
+
+                <TextView
+                    android:layout_margin="1dp"
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_s5"
+                    app:drawableLeftCompat="@drawable/openandromaps_mtb_s5" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_s5"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border">
+
+                <TextView
+                    android:layout_margin="1dp"
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_uphill_0"
+                    app:drawableLeftCompat="@drawable/openandromaps_mtb_uphill_0" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_uphill_0"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border">
+
+                <TextView
+                    android:layout_margin="1dp"
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_uphill_1"
+                    app:drawableLeftCompat="@drawable/openandromaps_mtb_uphill_1" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_uphill_1"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border">
+
+                <TextView
+                    android:layout_margin="1dp"
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_uphill_2"
+                    app:drawableLeftCompat="@drawable/openandromaps_mtb_uphill_2" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_uphill_2"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border">
+
+                <TextView
+                    android:layout_margin="1dp"
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_uphill_3"
+                    app:drawableLeftCompat="@drawable/openandromaps_mtb_uphill_3" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_uphill_3"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border">
+
+                <TextView
+                    android:layout_margin="1dp"
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_uphill_4"
+                    app:drawableLeftCompat="@drawable/openandromaps_mtb_uphill_4" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_uphill_4"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:layout_margin="1dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_uphill_5"
+                    app:drawableLeftCompat="@drawable/openandromaps_mtb_uphill_5" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_uphill_5"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:layout_margin="1dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_track_1"
+                    app:drawableLeftCompat="@drawable/openandromaps_track1" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_track_1"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:layout_margin="1dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_track_2"
+                    app:drawableLeftCompat="@drawable/openandromaps_track2" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_track_2"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:layout_margin="1dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_track_3"
+                    app:drawableLeftCompat="@drawable/openandromaps_track3" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_track_3"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:layout_margin="1dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_track_4"
+                    app:drawableLeftCompat="@drawable/openandromaps_track4" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_track_4"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:layout_margin="1dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_track_5"
+                    app:drawableLeftCompat="@drawable/openandromaps_track5" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_track_5"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/box_border"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:layout_margin="1dp"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_track_wo"
+                    app:drawableLeftCompat="@drawable/openandromaps_track_o" />
+
+                <TextView
+                    android:layout_width="250dp"
+                    android:layout_height="75dp"
+                    android:lines="3"
+                    android:scaleType="fitCenter"
+                    android:text="@string/openandromaps_track_wo"
+                    android:textAlignment="center"
+                    android:textAppearance="?android:attr/textAppearanceSmall" />
+            </LinearLayout>
+        </LinearLayout>
+    </HorizontalScrollView>
 
     <org.osmdroid.views.MapView
         android:id="@+id/osmap"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/horizontal_info" />
 
     <RelativeLayout
         android:id="@+id/loadingPanel"
@@ -29,14 +482,14 @@
 
 
     <ImageButton
-        android:layout_marginTop="8dp"
         android:id="@+id/fullscreen"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:contentDescription="@string/show_all"
         android:src="@drawable/baseline_fullscreen_24"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="@+id/osmap" />
 
     <ImageButton
         android:id="@+id/followLocation"
@@ -105,15 +558,25 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/fullscreen" />
 
-<!--    <com.google.android.material.slider.Slider-->
-<!--        android:id="@+id/slider"-->
-<!--        android:layout_marginStart="40dp"-->
-<!--        android:layout_marginEnd="40dp"-->
-<!--        android:layout_width="200dp"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:stepSize="0.1"-->
-<!--        android:valueFrom="0.0"-->
-<!--        android:valueTo="0.4">-->
+    <ImageButton
+        android:id="@+id/info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/osmap"
+        android:contentDescription="@string/info"
+        android:src="@drawable/baseline_info_24"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/fullscreen" />
+
+    <!--    <com.google.android.material.slider.Slider-->
+    <!--        android:id="@+id/slider"-->
+    <!--        android:layout_marginStart="40dp"-->
+    <!--        android:layout_marginEnd="40dp"-->
+    <!--        android:layout_width="200dp"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        android:stepSize="0.1"-->
+    <!--        android:valueFrom="0.0"-->
+    <!--        android:valueTo="0.4">-->
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

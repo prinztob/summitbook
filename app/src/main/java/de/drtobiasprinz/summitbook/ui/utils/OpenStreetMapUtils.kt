@@ -256,7 +256,7 @@ object OpenStreetMapUtils {
     }
 
     @JvmStatic
-    fun showMapTypeSelectorDialog(context: Context, mapView: MapView) {
+    fun showMapTypeSelectorDialog(context: Context, mapView: MapView, onSelected: () -> Unit = {}) {
         val fDialogTitle = context.getString(R.string.select_map_type)
         val builder = AlertDialog.Builder(context)
         val mapProviders = getMapProviders(context)
@@ -267,6 +267,7 @@ object OpenStreetMapUtils {
         ) { dialog: DialogInterface, item: Int ->
             selectedItem = mapProviders[item]
             setTileProvider(mapView, context)
+            onSelected()
             dialog.dismiss()
         }
 

@@ -249,6 +249,7 @@
     <string name="other">Andere</string>
     <string name="of">von</string>
     <string name="show_all_tracks">Show all tracks</string>
+    <string name="info">Info</string>
     <string name="highest_VO2MAX">Höchstes Vo2max</string>
     <string name="highest_FTP">Höchste FTP</string>
     <string name="highest_power_5h">Höchste Leitung 5h</string>
@@ -470,5 +471,23 @@
     <string name="show_summit_disabled">Während der Trackaufnahme deaktiviert</string>
     <string name="new_record">Rekord</string>
     <string name="better_then">Besser als</string>
-
+    <string name="openandromaps_cycle_network">openandromaps_cycle_network</string>
+    <string name="openandromaps_s0">S0: Blaue Balken auf Wegen heißt kein besonderes fahrtechnisches Können nötig</string>
+    <string name="openandromaps_s1">S1: Blau-rote Balken auf Wegen heißt fahrtechnische Grundkenntnisse nötig, Hindernisse können überrollt werden</string>
+    <string name="openandromaps_s2">S2: Rote Balken auf Wegen heißt fortgeschrittene Fahrtechnik nötig</string>
+    <string name="openandromaps_s3">S3: Rot-schwarze Balken auf Wegen heißt sehr gute Bike-Beherrschung nötig</string>
+    <string name="openandromaps_s4">S4: Schwarze Balken auf Wegen heißt perfekte Bike-Beherrschung mit Trial-Techniken nötig</string>
+    <string name="openandromaps_s5">S5/S6: Mehrere dünne schwarze Balken auf Wegen heißt exzellente Beherrschung spezieller Trial-Techniken nötig oder fast komplett unpassierbar</string>
+    <string name="openandromaps_uphill_0">Blaue Balken: 15% Steigung bergauf max.</string>
+    <string name="openandromaps_uphill_1">Blau-rote Balken: 20% Steigung bergauf max</string>
+    <string name="openandromaps_uphill_2">Rote Balken: 25% Steigung bergauf max</string>
+    <string name="openandromaps_uphill_3">Rot-schwarze Balken: 30% Steigung bergauf max</string>
+    <string name="openandromaps_uphill_4">Schwarze Balken: 40% Steigung bergauf max</string>
+    <string name="openandromaps_uphill_5">Zwei dünne schwarze Balken: bergauf fahren nicht möglich</string>
+    <string name="openandromaps_track_1">Befestigter und versiegelter Weg - Asphalt, Beton oder Pflastersteine</string>
+    <string name="openandromaps_track_2">Befestigter Weg - Schotter</string>
+    <string name="openandromaps_track_3">Unbefestigter Weg</string>
+    <string name="openandromaps_track_4">Leicht bewachsener Weg</string>
+    <string name="openandromaps_track_5">Stark bewachsener Weg</string>
+    <string name="openandromaps_track_wo">Weg ohne Beschaffenheitsangabe</string>
 </resources>

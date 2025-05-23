@@ -245,6 +245,7 @@
     <string name="other">Other</string>
     <string name="of">of</string>
     <string name="show_all_tracks">Show all tracks</string>
+    <string name="info">Info</string>
     <string name="highest_VO2MAX">Highest Vo2max</string>
     <string name="highest_FTP">Highest FTP</string>
     <string name="highest_power">Highest normalized Power</string>
@@ -469,5 +470,23 @@
     <string name="show_summit_disabled">During recoding of current location diabled</string>
     <string name="new_record">Record</string>
     <string name="better_then">Better then</string>
-
+    <string name="openandromaps_cycle_network">openandromaps cycle network</string>
+    <string name="openandromaps_s0">S0: Blue bars on ways: no special driving skills required</string>
+    <string name="openandromaps_s1">S1: Blue-red bars on ways: basic driving skills required</string>
+    <string name="openandromaps_s2">S2: Red bars on ways: advanced driving skills required</string>
+    <string name="openandromaps_s3">S3: Red-black bars on ways: very good bike control required</string>
+    <string name="openandromaps_s4">S4: Black bars on ways: at least perfect bike control with trial skills required</string>
+    <string name="openandromaps_s5">S5/S6: Several thin black bars on ways: excellent mastering of special trail techniques required or nearly completely impassable</string>
+    <string name="openandromaps_uphill_0">Blue dashes: 15% incline uphill max</string>
+    <string name="openandromaps_uphill_1">Blue-red dashes: 20% incline uphill max</string>
+    <string name="openandromaps_uphill_2">Red dashes: 25% incline uphill max</string>
+    <string name="openandromaps_uphill_3">Red-black dashes: 30% incline uphill max</string>
+    <string name="openandromaps_uphill_4">Black dashes: 40% incline uphill max</string>
+    <string name="openandromaps_uphill_5">Two thin black dashes: uphill riding not possible</string>
+    <string name="openandromaps_track_1">Paved track</string>
+    <string name="openandromaps_track_2">Unpaved track, gravel road</string>
+    <string name="openandromaps_track_3">Track made out of a mixture of gravel and dirt</string>
+    <string name="openandromaps_track_4">Track mainly made out of dirt/grass, some gravel</string>
+    <string name="openandromaps_track_5">Track only made out of dirt/grass</string>
+    <string name="openandromaps_track_wo">Track without grade</string>
 </resources>
