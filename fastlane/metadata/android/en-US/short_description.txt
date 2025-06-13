@@ -1,1 +1,1 @@
-An android app to manage your climbed summits and any other activities on your device offline
+Manage your climbed summits and any other activities - all on your device
