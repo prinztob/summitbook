@@ -152,9 +152,22 @@
             app:drawableEndCompat="@drawable/ic_chevron_right"
             app:drawableStartCompat="@drawable/ic_chevron_left"
             app:layout_constraintBottom_toBottomOf="@+id/showMonthButton"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/showMonthButton"
             app:layout_constraintTop_toTopOf="@+id/showMonthButton" />
+
+        <ImageButton
+            android:id="@+id/refreshMonth"
+            android:layout_width="50dp"
+            android:layout_height="40dp"
+            android:layout_centerVertical="true"
+            android:layout_margin="5dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@drawable/baseline_refresh_24"
+            app:layout_constraintBottom_toBottomOf="@+id/textMonth"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/textMonth"
+            app:layout_constraintTop_toTopOf="@+id/textMonth" />
 
 
         <de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
@@ -185,9 +198,22 @@
             app:drawableEndCompat="@drawable/ic_chevron_right"
             app:drawableStartCompat="@drawable/ic_chevron_left"
             app:layout_constraintBottom_toBottomOf="@+id/showYearButton"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/showYearButton"
             app:layout_constraintTop_toTopOf="@+id/showYearButton" />
+
+        <ImageButton
+            android:id="@+id/refreshYear"
+            android:layout_width="50dp"
+            android:layout_height="40dp"
+            android:layout_centerVertical="true"
+            android:layout_margin="5dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@drawable/baseline_refresh_24"
+            app:layout_constraintBottom_toBottomOf="@+id/textYear"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/textYear"
+            app:layout_constraintTop_toTopOf="@+id/textYear" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

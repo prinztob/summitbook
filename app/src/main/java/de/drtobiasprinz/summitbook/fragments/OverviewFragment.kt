@@ -62,6 +62,10 @@ class OverviewFragment : Fragment() {
     private lateinit var numberFormat: NumberFormat
 
     private var graphIsVisible: Boolean = false
+    private var currentMonth: Int = 0
+    private var currentYear: Int = 0
+    private var selectedYear: Int = 0
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -104,6 +108,12 @@ class OverviewFragment : Fragment() {
         binding.showYearButton.setOnClickListener {
             showYears = !showYears
             updateLayoutOfCharts(showMonths, showYears)
+        }
+        binding.refreshMonth.setOnClickListener {
+            binding.lineChartMonth.fitScreen()
+        }
+        binding.refreshYear.setOnClickListener {
+            binding.lineChartYear.fitScreen()
         }
         binding.overviewLayout.setOnClickListener {
             if (!graphIsVisible) {
@@ -202,9 +212,9 @@ class OverviewFragment : Fragment() {
     private fun drawPerformanceGraph(
         graphType: GraphType
     ) {
-        val currentYear = Calendar.getInstance()[Calendar.YEAR]
-        var currentMonth = Calendar.getInstance()[Calendar.MONTH] + 1
-        var selectedYear =
+        currentYear = Calendar.getInstance()[Calendar.YEAR]
+        currentMonth = Calendar.getInstance()[Calendar.MONTH] + 1
+        selectedYear =
             if (sortFilterValues.getSelectedYear() != "") sortFilterValues.getSelectedYear()
                 .toInt() else currentYear
         binding.textYear.text =
