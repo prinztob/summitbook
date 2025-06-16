@@ -362,6 +362,7 @@
     <string name="no_email_program_installed">E-Mail program not installed</string>
     <string name="add_new_summit">Add new summit</string>
     <string name="new_summits">New summits</string>
+    <string name="additional_summit_data">Additional data</string>
     <string name="add_new_bookmark">Add new bookmark</string>
     <string name="color_code_selection">Select value used for color code</string>
     <string name="entry">Entry</string>

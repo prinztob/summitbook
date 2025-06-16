@@ -144,6 +144,14 @@ class SortFilterValues(
         }
     }
 
+    fun applyOnSummitEntities(summitEntities: List<SummitEntities>): List<SummitEntities> {
+        return if (orderByAscDescButtonGroup == OrderByAscDescButtonGroup.Ascending) {
+            summitEntities.sortedBy { orderByValueSpinner.summitEntitySorting(it) }
+        } else {
+            summitEntities.sortedByDescending { orderByValueSpinner.summitEntitySorting(it) }
+        }
+    }
+
     fun filterDate(summit: Summit): Boolean {
         val date1 = startDate
         val date2 = endDate

@@ -12,7 +12,7 @@ interface ForecastDao {
     suspend fun addForecast(forecast: Forecast): Long
 
     @get:Query("select * from forecast")
-    val allForecastsDeprecated: List<Forecast>?
+    val allForecastsDeprecated: List<Forecast>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addForecastDeprecated(forecast: Forecast): Long

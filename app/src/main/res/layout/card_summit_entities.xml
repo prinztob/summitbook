@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:card_view="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="2dp"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintTop_toTopOf="parent"
+    app:strokeColor="@color/black"
+    app:strokeWidth="1dp"
+    card_view:cardBackgroundColor="@color/color_white"
+    card_view:cardCornerRadius="10dp"
+    card_view:cardElevation="5dp"
+    card_view:cardPreventCornerOverlap="true"
+    card_view:cardUseCompatPadding="true">
+
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:shrinkColumns="*"
+        android:stretchColumns="*">
+
+        <RelativeLayout
+            android:id="@+id/card_view_text"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="#33000000"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/sport_type_image"
+                android:layout_width="50dp"
+                android:layout_height="40dp"
+                android:layout_margin="5dp"
+                android:contentDescription="@string/sport_type_image"
+                android:paddingTop="5dp"
+                android:paddingBottom="5dp"
+                android:tag="image_tag" />
+
+            <TextView
+                android:id="@+id/summit_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="10dp"
+                android:layout_toEndOf="@id/sport_type_image"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:textColor="?android:attr/textColorSecondary" />
+        </RelativeLayout>
+
+
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:columnCount="3"
+            android:rowCount="1">
+
+            <TextView
+                android:id="@+id/tour_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="20dp"
+                android:drawablePadding="5dp"
+                android:padding="1dp"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                card_view:drawableStartCompat="@drawable/ic_today_black_24dp" />
+
+            <TextView
+                android:id="@+id/height_meter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="20dp"
+                android:drawablePadding="5dp"
+                android:padding="1dp"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                card_view:drawableStartCompat="@drawable/ic_trending_up_black_24dp" />
+
+            <TextView
+                android:id="@+id/distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="20dp"
+                android:drawablePadding="5dp"
+                android:padding="1dp"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                card_view:drawableStartCompat="@drawable/ic_trending_up_black_24dp" />
+        </GridLayout>
+
+        <RelativeLayout
+            android:id="@+id/cardRelativeLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:background="@color/colorPrimary">
+
+            <ImageButton
+                android:id="@+id/entry_edit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:background="@color/color_white"
+                android:contentDescription="@string/edit_icon"
+                android:paddingStart="5dp"
+                android:paddingEnd="0dp"
+                android:src="@drawable/baseline_mode_edit_black_24dp" />
+
+
+        </RelativeLayout>
+
+    </TableLayout>
+
+</com.google.android.material.card.MaterialCardView>
+

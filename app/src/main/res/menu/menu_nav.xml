@@ -44,6 +44,10 @@
             android:icon="@drawable/baseline_landscape_black_24dp"
             android:title="@string/new_summits" />
         <item
+            android:id="@+id/nav_additional_summit_data"
+            android:icon="@drawable/ic_baseline_handyman_24"
+            android:title="@string/additional_summit_data" />
+        <item
             android:id="@+id/export_csv"
             android:icon="@drawable/baseline_upload_black_24dp"
             android:title="@string/nav_export" />
@@ -52,7 +56,7 @@
             android:icon="@drawable/baseline_download_black_24dp"
             android:title="@string/nav_import" />
     </group>
-    <group  android:checkableBehavior="single">
+    <group android:checkableBehavior="single">
         <item
             android:id="@+id/action_settings"
             android:icon="@drawable/baseline_settings_white_24dp"

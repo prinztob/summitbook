@@ -8,7 +8,8 @@ enum class OrderBySpinnerEntry(
     val nameId: Int, val unit: Int = R.string.empty, val accumulate: Boolean = false,
     var includeIndoorActivities: Boolean = false, var excludeFromLineChart: Boolean = false,
     var f: (Summit) -> Float?,
-    var segmentSorting: (Segment) -> Float? = { e -> e.segmentEntries.maxByOrNull { it.date }?.date?.time?.toFloat() }
+    var segmentSorting: (Segment) -> Float? = { e -> e.segmentEntries.maxByOrNull { it.date }?.date?.time?.toFloat() },
+    var summitEntitySorting: (SummitEntities) -> Double = { it.count.toDouble() }
 ) {
     Date(
         R.string.date,
@@ -21,6 +22,7 @@ enum class OrderBySpinnerEntry(
         R.string.hm,
         f = { e -> e.elevationData.elevationGain.toFloat() },
         segmentSorting = { e -> (e.segmentEntries.sumOf { it.heightMetersUp } / e.segmentEntries.size).toFloat() },
+        summitEntitySorting = { it.heightMeters.toDouble() }
     ),
     HeightMeterAccumulated(
         R.string.height_meter_accumulated,
@@ -33,6 +35,7 @@ enum class OrderBySpinnerEntry(
         R.string.km,
         f = { e -> e.kilometers.toFloat() },
         segmentSorting = { e -> (e.segmentEntries.sumOf { it.kilometers } / e.segmentEntries.size).toFloat() },
+        summitEntitySorting = { it.distance }
     ),
     KilometersAccumulated(
         R.string.kilometers_accumulated,

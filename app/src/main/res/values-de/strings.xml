@@ -363,6 +363,7 @@
     <string name="no_email_program_installed">E-Mail program not installed</string>
     <string name="add_new_summit">Füge neuen Gipfel hinzu</string>
     <string name="new_summits">Neue Gipfel</string>
+    <string name="additional_summit_data">Zusätzliche Daten</string>
     <string name="add_new_bookmark">Füge neues Lesezeichen hinzu</string>
     <string name="color_code_selection">Farbauswahl für Track</string>
     <string name="entry">Eintrag</string>

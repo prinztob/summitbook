@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui
 
-import android.app.Activity
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
@@ -39,6 +38,7 @@ import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.fragments.SummitEntitiesFragment
 import de.drtobiasprinz.summitbook.fragments.BarChartFragment
 import de.drtobiasprinz.summitbook.fragments.LineChartFragment
 import de.drtobiasprinz.summitbook.fragments.OpenStreetMapFragment
@@ -369,6 +369,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 showNewSummitsDialog()
             }
 
+            R.id.nav_additional_summit_data -> {
+                commitFragment(SummitEntitiesFragment())
+            }
+
             R.id.nav_diashow -> {
                 openViewer()
             }
@@ -464,7 +468,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private val resultLauncherForExportZipSummits =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
+            if (result.resultCode == RESULT_OK) {
                 val exportThirdPartyData =
                     sharedPreferences.getBoolean(Keys.PREF_EXPORT_THIRD_PARTY_DATA, true)
                 val exportCalculatedData =
@@ -497,7 +501,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     private val resultLauncherForImportZip =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
+            if (result.resultCode == RESULT_OK) {
                 result.data?.data.also { uri ->
                     if (uri != null) {
                         asyncImportZipFile(uri)

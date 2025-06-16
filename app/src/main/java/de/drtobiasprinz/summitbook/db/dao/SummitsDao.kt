@@ -39,8 +39,8 @@ interface SummitsDao {
     fun updateSummitDeprecated(entity: Summit)
 
     @get:Query("select * from $SUMMITS_TABLE where isBookmark = 0")
-    val allSummit: List<Summit>?
+    val allSummit: List<Summit>
 
     @get:Query("select * from $SUMMITS_TABLE where isBookmark = 1")
-    val allBookmark: List<Summit>?
+    val allBookmark: List<Summit>
 }
