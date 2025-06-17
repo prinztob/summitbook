@@ -17,48 +17,79 @@
     card_view:cardUseCompatPadding="true">
 
 
-    <TableLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:shrinkColumns="*"
         android:stretchColumns="*">
 
-        <RelativeLayout
-            android:id="@+id/card_view_text"
-            android:layout_width="fill_parent"
+
+        <ImageView
+            android:id="@+id/image"
+            android:layout_width="50dp"
+            android:layout_height="40dp"
+            android:layout_margin="5dp"
+            android:contentDescription="@string/sport_type_image"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:tag="image_tag"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/entity_name"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:background="#33000000"
-            android:orientation="vertical">
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="10dp"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="?android:attr/textColorSecondary"
+            app:layout_constraintStart_toEndOf="@id/image"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <ImageView
-                android:id="@+id/sport_type_image"
-                android:layout_width="50dp"
-                android:layout_height="40dp"
-                android:layout_margin="5dp"
-                android:contentDescription="@string/sport_type_image"
-                android:paddingTop="5dp"
-                android:paddingBottom="5dp"
-                android:tag="image_tag" />
+        <EditText
+            android:id="@+id/entity_name_edit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:autofillHints=""
+            android:hint="@string/name"
+            android:inputType="text"
+            android:visibility="gone"
+            app:layout_constraintStart_toEndOf="@id/entity_name"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:id="@+id/summit_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="10dp"
-                android:layout_toEndOf="@id/sport_type_image"
-                android:textAppearance="?android:attr/textAppearanceLarge"
-                android:textColor="?android:attr/textColorSecondary" />
-        </RelativeLayout>
+        <ImageButton
+            android:id="@+id/save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/saveButtonText"
+            android:src="@drawable/baseline_done_24"
+            android:visibility="gone"
+            app:layout_constraintStart_toEndOf="@id/entity_name_edit"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/green_500" />
+
+        <ImageButton
+            android:id="@+id/cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/cancelButtonText"
+            android:src="@drawable/baseline_cancel_24"
+            android:visibility="gone"
+            app:layout_constraintStart_toEndOf="@id/save"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/red" />
 
 
         <GridLayout
+            android:id="@+id/grid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
             android:columnCount="3"
-            android:rowCount="1">
+            android:rowCount="1"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/image">
 
             <TextView
                 android:id="@+id/tour_date"
@@ -99,7 +130,10 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:background="@color/colorPrimary">
+            android:background="@color/colorPrimary"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/grid">
 
             <ImageButton
                 android:id="@+id/entry_edit"
@@ -115,7 +149,7 @@
 
         </RelativeLayout>
 
-    </TableLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </com.google.android.material.card.MaterialCardView>
 

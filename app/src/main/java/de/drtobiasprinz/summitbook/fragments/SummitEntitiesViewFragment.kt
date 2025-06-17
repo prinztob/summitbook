@@ -41,6 +41,14 @@ class SummitEntitiesViewFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         summitEntitiesAdapter = SummitEntitiesAdapter()
+        summitEntitiesAdapter.onClickUpdate = { entity, newName ->
+            allSummits.forEach {
+                if (entity.name in usedSummitEntityType.getRelevantValueFromSummit(it)) {
+                    usedSummitEntityType.setRelevantValueFromSummit(it, entity.name, newName)
+                    viewModel?.saveSummit(true, it)
+                }
+            }
+        }
         binding = FragmentSummitEntitiesViewBinding.inflate(layoutInflater, container, false)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         return binding.root
@@ -83,7 +91,11 @@ class SummitEntitiesViewFragment : Fragment() {
                                 relevantSummits.sumOf { it.elevationData.elevationGain }
                             )
                         }
-                        summitEntitiesAdapter.differ.submitList(sortFilterValues.applyOnSummitEntities(data))
+                        summitEntitiesAdapter.differ.submitList(
+                            sortFilterValues.applyOnSummitEntities(
+                                data
+                            )
+                        )
                     }
 
                     DataStatus.Status.ERROR -> {

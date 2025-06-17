@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.models
 
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import java.util.Collections
 
 
 class SummitEntities(
@@ -13,14 +14,34 @@ class SummitEntities(
 
 
 enum class SummitEntityType(
-    var getRelevantValueFromSummit: (Summit) -> List<String>
+    var getRelevantValueFromSummit: (Summit) -> List<String>,
+    var setRelevantValueFromSummit: (Summit, String, String) -> Unit
 ) {
     COUNTRIES(
-        getRelevantValueFromSummit = { summit -> summit.countries }),
+        { summit -> summit.countries },
+        { summit, oldValue, newValue ->
+            Collections.replaceAll(summit.countries, oldValue, newValue)
+        }
+    ),
     PARTICIPANTS(
-        getRelevantValueFromSummit = { summit -> summit.participants }),
-    EQUIPMENTS(getRelevantValueFromSummit = { summit -> summit.equipments }),
-    PLACES_VISITED(getRelevantValueFromSummit = { summit -> summit.places + summit.name }),
+        getRelevantValueFromSummit = { summit -> summit.participants },
+        { summit, oldValue, newValue ->
+            Collections.replaceAll(summit.participants, oldValue, newValue)
+        }
+    ),
+    EQUIPMENTS(getRelevantValueFromSummit = { summit -> summit.equipments },
+        { summit, oldValue, newValue ->
+            Collections.replaceAll(summit.equipments, oldValue, newValue)
+        }
+    ),
+    PLACES_VISITED(getRelevantValueFromSummit = { summit -> summit.places + summit.name },
+        { summit, oldValue, newValue ->
+            Collections.replaceAll(summit.places, oldValue, newValue)
+            if (summit.name == oldValue) {
+                summit.name = newValue
+            }
+        }
+    ),
 
 }
 

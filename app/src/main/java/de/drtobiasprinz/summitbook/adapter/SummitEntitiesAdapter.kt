@@ -2,6 +2,7 @@ package de.drtobiasprinz.summitbook.adapter
 
 import android.content.Context
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
@@ -19,6 +20,7 @@ class SummitEntitiesAdapter :
     RecyclerView.Adapter<SummitEntitiesAdapter.ViewHolder>() {
 
     lateinit var context: Context
+    var onClickUpdate: (SummitEntities, String) -> Unit = { _, _ -> }
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -44,7 +46,8 @@ class SummitEntitiesAdapter :
         RecyclerView.ViewHolder(binding.root) {
         fun setData(entity: SummitEntities) {
             binding.apply {
-                summitName.text = entity.name
+                entityNameEdit.setText(entity.name)
+                entityName.text = entity.name
                 tourDate.text = String.format(Locale.getDefault(), "# %s", entity.count)
                 distance.text = String.format(
                     Locale.getDefault(),
@@ -58,6 +61,26 @@ class SummitEntitiesAdapter :
                     entity.heightMeters,
                     context.getString(R.string.hm)
                 )
+
+                entryEdit.setOnClickListener {
+                    entityName.visibility = View.GONE
+                    entityNameEdit.visibility = View.VISIBLE
+                    save.visibility = View.VISIBLE
+                    cancel.visibility = View.VISIBLE
+                }
+                save.setOnClickListener {
+                    entityName.visibility = View.VISIBLE
+                    entityNameEdit.visibility = View.GONE
+                    save.visibility = View.GONE
+                    cancel.visibility = View.GONE
+                    onClickUpdate(entity, entityNameEdit.text.toString())
+                }
+                cancel.setOnClickListener {
+                    entityName.visibility = View.VISIBLE
+                    entityNameEdit.visibility = View.GONE
+                    save.visibility = View.GONE
+                    cancel.visibility = View.GONE
+                }
             }
         }
     }

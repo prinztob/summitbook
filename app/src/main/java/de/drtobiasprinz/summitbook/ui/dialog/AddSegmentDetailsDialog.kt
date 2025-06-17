@@ -111,7 +111,6 @@ class AddSegmentDetailsDialog : DialogFragment() {
     }
 
     companion object {
-        @JvmStatic
         fun getInstance(
             entry: SegmentDetails?
         ): AddSegmentDetailsDialog {
