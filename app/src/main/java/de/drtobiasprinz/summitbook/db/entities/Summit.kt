@@ -4,11 +4,24 @@ import android.content.Context
 import android.content.res.Resources
 import android.util.Log
 import androidx.room.*
+import com.google.gson.JsonNull.INSTANCE
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.db.entities.SportType.Companion.getSportTypeFromGarminId
+import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.DATETIME_FORMAT_COMPLEX
+import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.DATETIME_FORMAT_SIMPLE
+import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.convertMeterToKm
+import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.getFtp
+import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.parseSportType
 import de.drtobiasprinz.summitbook.models.GpsTrack
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.TAG
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getJsonObjectEntryNotNull
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.roundToTwoDigits
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_VERSION
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.utils.Constants
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import org.osmdroid.util.BoundingBox
@@ -112,9 +125,15 @@ class Summit(
     fun getGpsTrackPath(simplified: Boolean = false): Path {
         val fileName = if (simplified) "id_${activityId}_simplified.gpx" else "id_${activityId}.gpx"
         val baseFolder = if (isBookmark) {
-            File(MainActivity.storage, if (simplified) subDirForGpsTracksBookmarkSimplified else subDirForGpsTracksBookmark)
+            File(
+                MainActivity.storage,
+                if (simplified) subDirForGpsTracksBookmarkSimplified else subDirForGpsTracksBookmark
+            )
         } else {
-            File(MainActivity.storage, if (simplified) subDirForGpsTracksSimplified else subDirForGpsTracks)
+            File(
+                MainActivity.storage,
+                if (simplified) subDirForGpsTracksSimplified else subDirForGpsTracks
+            )
         }
         if (!baseFolder.exists()) {
             baseFolder.mkdirs()
@@ -123,13 +142,20 @@ class Summit(
     }
 
     fun getYamlExtensionsFile(): File {
-        return File(File(MainActivity.storage, subDirForGpsTrackExtensions), getGpsTrackPath().name.replace(".gpx", "_extensions.yaml"))
+        return File(
+            File(MainActivity.storage, subDirForGpsTrackExtensions),
+            getGpsTrackPath().name.replace(".gpx", "_extensions.yaml")
+        )
     }
 
     fun getGpxPyPath(): Path {
         val fileName = "id_${activityId}_gpxpy.json"
         return if (isBookmark) {
-            Paths.get(MainActivity.storage.toString(), subDirForGpsTracksBookmarkExtensions, fileName)
+            Paths.get(
+                MainActivity.storage.toString(),
+                subDirForGpsTracksBookmarkExtensions,
+                fileName
+            )
         } else {
             Paths.get(MainActivity.storage.toString(), subDirForGpsTrackExtensions, fileName)
         }
@@ -230,7 +256,11 @@ class Summit(
         if (hasGpsTrack()) {
             if (gpsTrack == null || updateTrack) {
                 gpsTrack =
-                    GpsTrack(getGpsTrackPath(), getGpsTrackPath(simplified = useSimplifiedTrack), getYamlExtensionsFile())
+                    GpsTrack(
+                        getGpsTrackPath(),
+                        getGpsTrackPath(simplified = useSimplifiedTrack),
+                        getYamlExtensionsFile()
+                    )
             }
             if (gpsTrack?.hasNoTrackPoints() == true) {
                 gpsTrack?.parseTrack(useSimplifiedIfExists = useSimplifiedTrack)
@@ -808,6 +838,125 @@ class Summit(
             return false
         }
 
+        fun parseFromGarminJson(
+            jsonObject: JsonObject,
+            parentJsonObject: JsonObject? = null,
+            jsonObjectForActivityId: JsonObject? = null
+        ): Summit {
+            val summit = Summit()
+            SummitEntity.entries.forEach {
+                it.updateSummit(
+                    summit,
+                    jsonObject,
+                    parentJsonObject,
+                    jsonObjectForActivityId
+                )
+            }
+            return summit
+        }
+
+        fun parseSportType(jsonObject: JsonObject): SportType {
+            return getSportTypeFromGarminId(jsonObject["typeId"].asInt)
+        }
+
+
+        fun getFtp(activityIds: MutableList<String>): Int {
+            var ftp = 0
+            val exerciseSet =
+                File(activitiesDir, "activity_${activityIds[0]}_exercise_set.json")
+            if (exerciseSet.exists()) {
+                val gsonExerciseSet =
+                    JsonParser.parseString(exerciseSet.readText()) as JsonObject
+                if (gsonExerciseSet.has("summaryDTO")) {
+                    val summaryDTO =
+                        gsonExerciseSet.getAsJsonObject("summaryDTO")
+                    if (summaryDTO.has("functionalThresholdPower")) {
+                        ftp =
+                            summaryDTO.getAsJsonPrimitive("functionalThresholdPower").asDouble.toInt()
+                    }
+                }
+                Log.d(TAG, "FTP: $ftp")
+            }
+            return ftp
+        }
+
+        fun convertMeterToKm(meter: Double): Double {
+            return meter / 1000.0
+        }
     }
 
+
+}
+
+enum class SummitEntity(
+    val updateSummit: (Summit, JsonObject, JsonObject?, JsonObject?) -> Unit
+) {
+    Date({ summit, json, _, _ ->
+        val date = try {
+            SimpleDateFormat(
+                DATETIME_FORMAT_SIMPLE,
+                Locale.ENGLISH
+            ).parse(json.getAsJsonPrimitive("startTimeLocal").asString)
+        } catch (_: ParseException) {
+            SimpleDateFormat(
+                DATETIME_FORMAT_COMPLEX,
+                Locale.ENGLISH
+            ).parse(json.getAsJsonPrimitive("startTimeLocal").asString)
+        }
+        summit.date = date ?: Date()
+    }),
+    SportType({ summit, json, _, jsonObjectForActivityId ->
+        summit.sportType =
+            (if (json.has("activityType")) {
+                parseSportType(json["activityType"].asJsonObject)
+            } else if (jsonObjectForActivityId != null) {
+                parseSportType(jsonObjectForActivityId["activityTypeDTO"].asJsonObject)
+            } else {
+                de.drtobiasprinz.summitbook.db.entities.SportType.Other
+            }
+                    )
+    }),
+    ActivityName({ summit, json, _, _ ->
+        summit.name = if (json.has("activityName")) json["activityName"].asString else ""
+    }),
+    Elevation({ summit, json, _, _ ->
+        summit.elevationData = ElevationData.parseFromGarminJson(json)
+    }),
+    Velocity({ summit, json, _, _ ->
+        summit.velocityData = VelocityData.parseFromGarminJson(json)
+    }),
+    GarminAdditionalData({ summit, json, parentJsonObject, jsonObjectForActivityId ->
+        val activityIds: MutableList<String> =
+            mutableListOf(
+                if (jsonObjectForActivityId != null && jsonObjectForActivityId.has("activityId")) {
+                    jsonObjectForActivityId["activityId"].asString
+                } else {
+                    json["activityId"].asString
+                }
+            )
+        if (json.has("childIds")) {
+            activityIds.addAll(json["childIds"].asJsonArray.map { it.asString })
+        }
+        val garminData = GarminData.parseFromGarminJson(activityIds, json, parentJsonObject)
+        garminData.ftp = getFtp(garminData.activityIds)
+        summit.garminData = garminData
+    }),
+    Distance({ summit, json, _, _ ->
+        summit.kilometers =
+            roundToTwoDigits(
+                convertMeterToKm(
+                    getJsonObjectEntryNotNull(
+                        json, "distance"
+                    ).toDouble()
+                )
+            )
+    }),
+    Duration({ summit, json, _, _ ->
+        summit.duration =
+            if (json["movingDuration"] != INSTANCE && summit.sportType in SportGroup.OnABicycle.sportTypes) {
+                json["movingDuration"].asDouble.toInt()
+            } else {
+                json["duration"].asDouble.toInt()
+            }
+    }),
 }

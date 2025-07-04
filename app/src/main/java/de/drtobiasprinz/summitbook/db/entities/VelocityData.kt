@@ -1,10 +1,19 @@
 package de.drtobiasprinz.summitbook.db.entities
 
 import android.content.res.Resources
+import com.google.gson.JsonNull.INSTANCE
+import com.google.gson.JsonObject
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.db.entities.VelocityData.Companion.convertMphToKmh
+import de.drtobiasprinz.summitbook.db.entities.VelocityData.Companion.round
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getJsonObjectEntryNotNull
+import java.math.BigDecimal
+import java.math.RoundingMode
+import kotlin.math.pow
+import kotlin.math.roundToLong
 
 class VelocityData(
-    var maxVelocity: Double,
+    var maxVelocity: Double = 0.0,
     var oneKilometer: Double = 0.0,
     var fiveKilometer: Double = 0.0,
     var tenKilometers: Double = 0.0,
@@ -173,6 +182,46 @@ class VelocityData(
                     "${resources.getString(R.string.optional)};"
         }
 
+        fun parseFromGarminJson(jsonObject: JsonObject): VelocityData {
+            try {
+                val data = VelocityData()
+                GarminVelocityDataEntity.entries.forEach {
+                    it.updateGarminVelocityData(
+                        data,
+                        jsonObject
+                    )
+                }
+                return data
+            } catch (_: NullPointerException) {
+                return VelocityData()
+            }
+        }
+
+        fun round(value: Double): Double {
+            val precision = 2
+            val scale = 10.0.pow(precision.toDouble()).toInt()
+            return (value * scale).roundToLong().toDouble() / scale
+        }
+
+        fun convertMphToKmh(mph: Double): Double {
+            return BigDecimal(mph * 3.6).setScale(2, RoundingMode.HALF_UP).toDouble()
+        }
     }
 
+}
+
+enum class GarminVelocityDataEntity(
+    val updateGarminVelocityData: (VelocityData, JsonObject) -> Unit
+) {
+    MaxVelocity({ data, json ->
+        data.maxVelocity =
+            if (json["maxSpeed"] != INSTANCE) round(
+                convertMphToKmh(
+                    getJsonObjectEntryNotNull(
+                        json,
+                        "maxSpeed"
+                    ).toDouble()
+                )
+            ) else 0.0
+    }),
 }

@@ -3,22 +3,25 @@ package de.drtobiasprinz.summitbook.db.entities
 import android.content.res.Resources
 import androidx.room.Embedded
 import androidx.room.Ignore
+import com.google.gson.JsonObject
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getJsonObjectEntryNotNull
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.roundToTwoDigits
 import java.util.Objects
 
 class GarminData(
     var activityIds: MutableList<String>,
-    var calories: Float,
-    var averageHR: Float,
-    var maxHR: Float,
-    @Embedded var power: PowerData,
-    var ftp: Int,
-    var vo2max: Float,
-    var aerobicTrainingEffect: Float,
-    var anaerobicTrainingEffect: Float,
-    var grit: Float,
-    var flow: Float,
-    var trainingLoad: Float,
+    var calories: Float = 0f,
+    var averageHR: Float = 0f,
+    var maxHR: Float = 0f,
+    @Embedded var power: PowerData = PowerData(),
+    var ftp: Int = 0,
+    var vo2max: Float = 0f,
+    var aerobicTrainingEffect: Float = 0f,
+    var anaerobicTrainingEffect: Float = 0f,
+    var grit: Float = 0f,
+    var flow: Float = 0f,
+    var trainingLoad: Float = 0f,
 ) {
 
     @Ignore
@@ -136,5 +139,51 @@ class GarminData(
                 return null
             }
         }
+
+        fun parseFromGarminJson(
+            activityIds: MutableList<String>,
+            jsonObject: JsonObject,
+            parentJsonObject: JsonObject? = null
+        ): GarminData {
+            val garminData = GarminData(activityIds)
+            GarminEntity.entries.forEach {
+                it.updateGarminData(
+                    garminData,
+                    jsonObject,
+                    parentJsonObject
+                )
+            }
+            return garminData
+        }
     }
+}
+
+enum class GarminEntity(
+    val updateGarminData: (GarminData, JsonObject, JsonObject?) -> Unit
+) {
+    Calories({ data, json, _ -> data.calories = getJsonObjectEntryNotNull(json, "calories") }),
+    AverageHR({ data, json, _ -> data.averageHR = getJsonObjectEntryNotNull(json, "averageHR") }),
+    MaxHR({ data, json, _ -> data.maxHR = getJsonObjectEntryNotNull(json, "maxHR") }),
+    Power({ data, json, _ -> data.power = PowerData.parseFromGarminJson(json) }),
+    AerobicTrainingEffect({ data, json, _ ->
+        data.maxHR = getJsonObjectEntryNotNull(json, "aerobicTrainingEffect")
+    }),
+    AnaerobicTrainingEffect({ data, json, _ ->
+        data.maxHR = getJsonObjectEntryNotNull(json, "anaerobicTrainingEffect")
+    }),
+    Grit({ data, json, _ -> data.maxHR = getJsonObjectEntryNotNull(json, "grit") }),
+    AvgFlow({ data, json, _ -> data.maxHR = getJsonObjectEntryNotNull(json, "avgFlow") }),
+    ActivityTrainingLoad({ data, json, _ ->
+        data.maxHR = getJsonObjectEntryNotNull(json, "activityTrainingLoad")
+    }),
+    Vo2Max({ data, json, jsonParent ->
+        val usedJson = jsonParent ?: json
+        data.vo2max = if (usedJson.has("vo2MaxPreciseValue")) {
+            roundToTwoDigits(getJsonObjectEntryNotNull(usedJson, "vo2MaxPreciseValue"))
+        } else if (usedJson.has("vO2MaxValue")) {
+            roundToTwoDigits(getJsonObjectEntryNotNull(usedJson, "vO2MaxValue"))
+        } else {
+            0.0f
+        }
+    })
 }

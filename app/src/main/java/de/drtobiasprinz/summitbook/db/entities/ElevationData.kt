@@ -2,7 +2,9 @@ package de.drtobiasprinz.summitbook.db.entities
 
 import android.content.res.Resources
 import androidx.room.ColumnInfo
+import com.google.gson.JsonObject
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getJsonObjectEntryNotNull
 
 class ElevationData(
     var maxElevation: Int = 0,
@@ -141,6 +143,31 @@ class ElevationData(
                     "${resources.getString(R.string.optional)};"
         }
 
+        fun parseFromGarminJson(jsonObject: JsonObject): ElevationData {
+            try {
+                val garminData = ElevationData()
+                GarminElevationEntity.entries.forEach {
+                    it.updateGarminElevationData(
+                        garminData,
+                        jsonObject
+                    )
+                }
+                return garminData
+            } catch (_: NullPointerException) {
+                return ElevationData()
+            }
+        }
     }
 
+}
+
+enum class GarminElevationEntity(
+    val updateGarminElevationData: (ElevationData, JsonObject) -> Unit
+) {
+    MaxElevation({ data, json ->
+        data.maxElevation = getJsonObjectEntryNotNull(json, "maxElevation").toInt()
+    }),
+    ElevationGain({ data, json ->
+        data.elevationGain = getJsonObjectEntryNotNull(json, "elevationGain").toInt()
+    })
 }

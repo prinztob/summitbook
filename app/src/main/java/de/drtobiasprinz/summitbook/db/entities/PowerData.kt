@@ -1,9 +1,12 @@
 package de.drtobiasprinz.summitbook.db.entities
 
+import com.google.gson.JsonObject
+import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getJsonObjectEntryNotNull
+
 class PowerData(
-    var avgPower: Float,
-    var maxPower: Float,
-    var normPower: Float,
+    var avgPower: Float = 0f,
+    var maxPower: Float = 0f,
+    var normPower: Float = 0f,
     var oneSec: Int = 0,
     var twoSec: Int = 0,
     var fiveSec: Int = 0,
@@ -45,6 +48,70 @@ class PowerData(
                 PowerData(0f, 0f, 0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
             }
         }
+
+        fun parseFromGarminJson(jsonObject: JsonObject): PowerData {
+            val garminData = PowerData()
+            GarminPowerDataEntity.entries.forEach {
+                it.updateGarminPowerData(
+                    garminData,
+                    jsonObject
+                )
+            }
+            return garminData
+        }
     }
 
+}
+
+enum class GarminPowerDataEntity(
+    val updateGarminPowerData: (PowerData, JsonObject) -> Unit
+) {
+    AvgPower({ data, json -> data.avgPower = getJsonObjectEntryNotNull(json, "avgPower") }),
+    MaxPower({ data, json -> data.maxPower = getJsonObjectEntryNotNull(json, "maxPower") }),
+    NormPower({ data, json -> data.normPower = getJsonObjectEntryNotNull(json, "normPower") }),
+    MaxAvgPower1s({ data, json ->
+        data.oneSec = getJsonObjectEntryNotNull(json, "maxAvgPower_1").toInt()
+    }),
+    MaxAvgPower2s({ data, json ->
+        data.twoSec = getJsonObjectEntryNotNull(json, "maxAvgPower_2").toInt()
+    }),
+    MaxAvgPower5s({ data, json ->
+        data.fiveSec = getJsonObjectEntryNotNull(json, "maxAvgPower_5").toInt()
+    }),
+    MaxAvgPower10s({ data, json ->
+        data.tenSec = getJsonObjectEntryNotNull(json, "maxAvgPower_10").toInt()
+    }),
+    MaxAvgPower20s({ data, json ->
+        data.twentySec = getJsonObjectEntryNotNull(json, "maxAvgPower_20").toInt()
+    }),
+    MaxAvgPower30s({ data, json ->
+        data.thirtySec = getJsonObjectEntryNotNull(json, "maxAvgPower_30").toInt()
+    }),
+    MaxAvgPower60s({ data, json ->
+        data.oneMin = getJsonObjectEntryNotNull(json, "maxAvgPower_60").toInt()
+    }),
+    MaxAvgPower120s({ data, json ->
+        data.twoMin = getJsonObjectEntryNotNull(json, "maxAvgPower_120").toInt()
+    }),
+    MaxAvgPower300s({ data, json ->
+        data.fiveMin = getJsonObjectEntryNotNull(json, "maxAvgPower_300").toInt()
+    }),
+    MaxAvgPower600s({ data, json ->
+        data.tenMin = getJsonObjectEntryNotNull(json, "maxAvgPower_600").toInt()
+    }),
+    MaxAvgPower1200s({ data, json ->
+        data.twentyMin = getJsonObjectEntryNotNull(json, "maxAvgPower_1200").toInt()
+    }),
+    MaxAvgPower1800s({ data, json ->
+        data.thirtyMin = getJsonObjectEntryNotNull(json, "maxAvgPower_1800").toInt()
+    }),
+    MaxAvgPower3600s({ data, json ->
+        data.oneHour = getJsonObjectEntryNotNull(json, "maxAvgPower_3600").toInt()
+    }),
+    MaxAvgPower7200s({ data, json ->
+        data.twoHours = getJsonObjectEntryNotNull(json, "maxAvgPower_7200").toInt()
+    }),
+    MaxAvgPower18000s({ data, json ->
+        data.fiveHours = getJsonObjectEntryNotNull(json, "maxAvgPower_18000").toInt()
+    })
 }
