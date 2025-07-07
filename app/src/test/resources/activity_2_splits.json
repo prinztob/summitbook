@@ -1,0 +1,868 @@
+{
+  "activityId": 19618464792,
+  "lapDTOs": [
+    {
+      "startTimeGMT": "2025-07-03T09:35:07.0",
+      "startLatitude": 48.00842262804508,
+      "startLongitude": 11.791747715324163,
+      "distance": 5000.0,
+      "duration": 570.765,
+      "movingDuration": 570.765,
+      "elapsedDuration": 570.765,
+      "elevationGain": 52.0,
+      "elevationLoss": 36.0,
+      "maxElevation": 628.6,
+      "minElevation": 594.0,
+      "averageSpeed": 8.760000228881836,
+      "averageMovingSpeed": 8.760172525780593,
+      "maxSpeed": 12.810999870300295,
+      "calories": 148.0,
+      "bmrCalories": 14.0,
+      "averageHR": 141.0,
+      "maxHR": 152.0,
+      "averageBikeCadence": 63.0,
+      "maxBikeCadence": 80.0,
+      "averageTemperature": 33.0,
+      "maxTemperature": 35.0,
+      "minTemperature": 30.0,
+      "averagePower": 235.0,
+      "maxPower": 721.0,
+      "minPower": 0.0,
+      "normalizedPower": 257.0,
+      "totalWork": 31.980754268476048,
+      "leftBalance": 48.62,
+      "rightBalance": 51.38,
+      "leftTorqueEffectiveness": 83.0,
+      "rightTorqueEffectiveness": 81.0,
+      "leftPedalSmoothness": 24.0,
+      "rightPedalSmoothness": 23.5,
+      "totalNumberOfStrokes": 582,
+      "maxSeatedPower": 721.0,
+      "averageSeatedPower": 236.0,
+      "maxSeatedCadence": 80.0,
+      "maxStandingCadence": 69.0,
+      "averageSeatedCadence": 64.0,
+      "averageStandingCadence": 60.0,
+      "leftPowerPhaseStart": 0.0,
+      "leftPowerPhaseEnd": 219.375,
+      "leftPowerPhaseArcLength": 219.375,
+      "leftPowerPhaseArcCenter": 109.6875,
+      "leftPowerPhasePeakStart": 56.25,
+      "leftPowerPhasePeakEnd": 113.90625,
+      "leftPowerPhasePeakArcLength": 57.65625,
+      "leftPowerPhasePeakArcCenter": 85.78125,
+      "leftPlatformCenterOffset": 9.0,
+      "rightPowerPhaseStart": 357.1875,
+      "rightPowerPhaseEnd": 206.71875,
+      "rightPowerPhaseArcLength": 208.125,
+      "rightPowerPhaseArcCenter": 102.65625,
+      "rightPowerPhasePeakStart": 56.25,
+      "rightPowerPhasePeakEnd": 112.5,
+      "rightPowerPhasePeakArcLength": 56.25,
+      "rightPowerPhasePeakArcCenter": 84.375,
+      "rightPlatformCenterOffset": 16.0,
+      "endLatitude": 47.97694271430373,
+      "endLongitude": 11.829689405858517,
+      "maxVerticalSpeed": 0.8000488281250001,
+      "maxRespirationRate": 48.61000061035156,
+      "avgRespirationRate": 36.91999816894531,
+      "surfaceTypeUnpavedPercentage": 0.0,
+      "lapIndex": 1,
+      "lengthDTOs": [],
+      "connectIQMeasurement": [
+        {
+          "appID": "c5d949c3-9acb-4e00-bb2d-c3b871e9e733",
+          "developerFieldNumber": 4,
+          "value": "0.0"
+        }
+      ],
+      "messageIndex": 0
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:44:38.0",
+      "startLatitude": 47.976882699877024,
+      "startLongitude": 11.829789485782385,
+      "distance": 5000.0,
+      "duration": 681.002,
+      "movingDuration": 681.0,
+      "elapsedDuration": 681.002,
+      "elevationGain": 118.0,
+      "elevationLoss": 93.0,
+      "maxElevation": 638.2,
+      "minElevation": 570.2,
+      "averageSpeed": 7.3420000076293945,
+      "averageMovingSpeed": 7.342143906020558,
+      "maxSpeed": 15.45199966430664,
+      "calories": 170.0,
+      "bmrCalories": 17.0,
+      "averageHR": 149.0,
+      "maxHR": 170.0,
+      "averageBikeCadence": 71.0,
+      "maxBikeCadence": 108.0,
+      "averageTemperature": 34.0,
+      "maxTemperature": 35.0,
+      "minTemperature": 32.0,
+      "averagePower": 225.0,
+      "maxPower": 636.0,
+      "minPower": 0.0,
+      "normalizedPower": 294.0,
+      "totalWork": 36.515338828931604,
+      "leftBalance": 49.09,
+      "rightBalance": 50.91,
+      "leftTorqueEffectiveness": 83.0,
+      "rightTorqueEffectiveness": 82.0,
+      "leftPedalSmoothness": 24.0,
+      "rightPedalSmoothness": 24.0,
+      "totalNumberOfStrokes": 672,
+      "maxSeatedPower": 636.0,
+      "averageSeatedPower": 225.0,
+      "maxSeatedCadence": 108.0,
+      "maxStandingCadence": 255.0,
+      "averageSeatedCadence": 71.0,
+      "averageStandingCadence": 255.0,
+      "leftPowerPhaseStart": 354.375,
+      "leftPowerPhaseEnd": 225.0,
+      "leftPowerPhaseArcLength": 229.21875,
+      "leftPowerPhaseArcCenter": 109.6875,
+      "leftPowerPhasePeakStart": 56.25,
+      "leftPowerPhasePeakEnd": 116.71875,
+      "leftPowerPhasePeakArcLength": 60.46875,
+      "leftPowerPhasePeakArcCenter": 87.1875,
+      "leftPlatformCenterOffset": 9.0,
+      "rightPowerPhaseStart": 351.5625,
+      "rightPowerPhaseEnd": 213.75,
+      "rightPowerPhaseArcLength": 220.78125,
+      "rightPowerPhaseArcCenter": 102.65625,
+      "rightPowerPhasePeakStart": 59.0625,
+      "rightPowerPhasePeakEnd": 118.125,
+      "rightPowerPhasePeakArcLength": 59.0625,
+      "rightPowerPhasePeakArcCenter": 88.59375,
+      "rightPlatformCenterOffset": 16.0,
+      "endLatitude": 47.95180907472968,
+      "endLongitude": 11.812361078336835,
+      "maxVerticalSpeed": 1.0,
+      "maxRespirationRate": 43.439998626708984,
+      "avgRespirationRate": 36.060001373291016,
+      "surfaceTypeUnpavedPercentage": 0.0,
+      "lapIndex": 2,
+      "lengthDTOs": [],
+      "connectIQMeasurement": [
+        {
+          "appID": "c5d949c3-9acb-4e00-bb2d-c3b871e9e733",
+          "developerFieldNumber": 4,
+          "value": "1.0"
+        }
+      ],
+      "messageIndex": 1
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:55:59.0",
+      "startLatitude": 47.95173673890531,
+      "startLongitude": 11.812366023659706,
+      "distance": 5000.0,
+      "duration": 623.455,
+      "movingDuration": 623.455,
+      "elapsedDuration": 623.455,
+      "elevationGain": 64.0,
+      "elevationLoss": 70.0,
+      "maxElevation": 655.8,
+      "minElevation": 620.6,
+      "averageSpeed": 8.020000457763672,
+      "averageMovingSpeed": 8.01982478758282,
+      "maxSpeed": 15.0600004196167,
+      "calories": 124.0,
+      "bmrCalories": 15.0,
+      "averageHR": 146.0,
+      "maxHR": 158.0,
+      "averageBikeCadence": 67.0,
+      "maxBikeCadence": 106.0,
+      "averageTemperature": 35.0,
+      "maxTemperature": 36.0,
+      "minTemperature": 35.0,
+      "averagePower": 174.0,
+      "maxPower": 628.0,
+      "minPower": 0.0,
+      "normalizedPower": 237.0,
+      "totalWork": 26.014195636297682,
+      "leftBalance": 49.67,
+      "rightBalance": 50.33,
+      "leftTorqueEffectiveness": 78.5,
+      "rightTorqueEffectiveness": 75.5,
+      "leftPedalSmoothness": 22.5,
+      "rightPedalSmoothness": 21.5,
+      "totalNumberOfStrokes": 548,
+      "standingCount": 1,
+      "seatedTime": 613.4560174942017,
+      "standingTime": 9.99899959564209,
+      "maxSeatedPower": 628.0,
+      "maxStandingPower": 563.0,
+      "averageSeatedPower": 169.0,
+      "averageStandingPower": 491.0,
+      "maxSeatedCadence": 106.0,
+      "maxStandingCadence": 89.0,
+      "averageSeatedCadence": 67.0,
+      "averageStandingCadence": 78.0,
+      "leftPowerPhaseStart": 357.1875,
+      "leftPowerPhaseEnd": 215.15625,
+      "leftPowerPhaseArcLength": 216.5625,
+      "leftPowerPhaseArcCenter": 106.875,
+      "leftPowerPhasePeakStart": 57.65625,
+      "leftPowerPhasePeakEnd": 116.71875,
+      "leftPowerPhasePeakArcLength": 59.0625,
+      "leftPowerPhasePeakArcCenter": 87.1875,
+      "leftPlatformCenterOffset": 9.0,
+      "rightPowerPhaseStart": 354.375,
+      "rightPowerPhaseEnd": 203.90625,
+      "rightPowerPhaseArcLength": 208.125,
+      "rightPowerPhaseArcCenter": 99.84375,
+      "rightPowerPhasePeakStart": 59.0625,
+      "rightPowerPhasePeakEnd": 118.125,
+      "rightPowerPhasePeakArcLength": 59.0625,
+      "rightPowerPhasePeakArcCenter": 88.59375,
+      "rightPlatformCenterOffset": 16.0,
+      "endLatitude": 47.91706323623657,
+      "endLongitude": 11.81011020205915,
+      "maxVerticalSpeed": 0.79998779296875,
+      "maxRespirationRate": 42.77000045776367,
+      "avgRespirationRate": 34.43000030517578,
+      "surfaceTypeUnpavedPercentage": 0.0,
+      "lapIndex": 3,
+      "lengthDTOs": [],
+      "connectIQMeasurement": [
+        {
+          "appID": "c5d949c3-9acb-4e00-bb2d-c3b871e9e733",
+          "developerFieldNumber": 4,
+          "value": "0.0"
+        }
+      ],
+      "messageIndex": 2
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:06:23.0",
+      "startLatitude": 47.91702979244292,
+      "startLongitude": 11.809931332245469,
+      "distance": 5000.0,
+      "duration": 895.779,
+      "movingDuration": 895.779,
+      "elapsedDuration": 895.779,
+      "elevationGain": 146.0,
+      "elevationLoss": 152.0,
+      "maxElevation": 657.0,
+      "minElevation": 565.0,
+      "averageSpeed": 5.581999778747558,
+      "averageMovingSpeed": 5.581733939211293,
+      "maxSpeed": 14.088999748229982,
+      "calories": 217.0,
+      "bmrCalories": 22.0,
+      "averageHR": 150.0,
+      "maxHR": 172.0,
+      "averageBikeCadence": 70.0,
+      "maxBikeCadence": 109.0,
+      "averageTemperature": 32.0,
+      "maxTemperature": 35.0,
+      "minTemperature": 31.0,
+      "averagePower": 218.0,
+      "maxPower": 549.0,
+      "minPower": 0.0,
+      "normalizedPower": 268.0,
+      "totalWork": 46.539157330991266,
+      "leftBalance": 50.06,
+      "rightBalance": 49.94,
+      "leftTorqueEffectiveness": 84.5,
+      "rightTorqueEffectiveness": 82.0,
+      "leftPedalSmoothness": 25.0,
+      "rightPedalSmoothness": 24.5,
+      "totalNumberOfStrokes": 892,
+      "maxSeatedPower": 549.0,
+      "averageSeatedPower": 218.0,
+      "maxSeatedCadence": 109.0,
+      "maxStandingCadence": 61.0,
+      "averageSeatedCadence": 71.0,
+      "averageStandingCadence": 54.0,
+      "leftPowerPhaseStart": 352.96875,
+      "leftPowerPhaseEnd": 226.40625,
+      "leftPowerPhaseArcLength": 232.03125,
+      "leftPowerPhaseArcCenter": 109.6875,
+      "leftPowerPhasePeakStart": 56.25,
+      "leftPowerPhasePeakEnd": 116.71875,
+      "leftPowerPhasePeakArcLength": 60.46875,
+      "leftPowerPhasePeakArcCenter": 87.1875,
+      "leftPlatformCenterOffset": 8.0,
+      "rightPowerPhaseStart": 350.15625,
+      "rightPowerPhaseEnd": 220.78125,
+      "rightPowerPhaseArcLength": 229.21875,
+      "rightPowerPhaseArcCenter": 105.46875,
+      "rightPowerPhasePeakStart": 59.0625,
+      "rightPowerPhasePeakEnd": 119.53125,
+      "rightPowerPhasePeakArcLength": 60.46875,
+      "rightPowerPhasePeakArcCenter": 90.0,
+      "rightPlatformCenterOffset": 17.0,
+      "endLatitude": 47.93106202036142,
+      "endLongitude": 11.786247594282031,
+      "maxVerticalSpeed": 0.60003662109375,
+      "maxRespirationRate": 42.060001373291016,
+      "avgRespirationRate": 34.02000045776367,
+      "surfaceTypeUnpavedPercentage": 0.0,
+      "lapIndex": 4,
+      "lengthDTOs": [],
+      "connectIQMeasurement": [
+        {
+          "appID": "c5d949c3-9acb-4e00-bb2d-c3b871e9e733",
+          "developerFieldNumber": 4,
+          "value": "1.0"
+        }
+      ],
+      "messageIndex": 3
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:21:22.0",
+      "startLatitude": 47.93113058432937,
+      "startLongitude": 11.7862216103822,
+      "distance": 5000.0,
+      "duration": 630.755,
+      "movingDuration": 630.0,
+      "elapsedDuration": 630.755,
+      "elevationGain": 51.0,
+      "elevationLoss": 68.0,
+      "maxElevation": 655.6,
+      "minElevation": 601.8,
+      "averageSpeed": 7.927000045776367,
+      "averageMovingSpeed": 7.936507936507937,
+      "maxSpeed": 15.088000297546387,
+      "calories": 137.0,
+      "bmrCalories": 16.0,
+      "averageHR": 148.0,
+      "maxHR": 158.0,
+      "averageBikeCadence": 69.0,
+      "maxBikeCadence": 97.0,
+      "averageTemperature": 33.0,
+      "maxTemperature": 35.0,
+      "minTemperature": 31.0,
+      "averagePower": 192.0,
+      "maxPower": 584.0,
+      "minPower": 0.0,
+      "normalizedPower": 219.0,
+      "totalWork": 28.878143779743297,
+      "leftBalance": 50.46,
+      "rightBalance": 49.54,
+      "leftTorqueEffectiveness": 79.5,
+      "rightTorqueEffectiveness": 75.5,
+      "leftPedalSmoothness": 23.0,
+      "rightPedalSmoothness": 22.0,
+      "totalNumberOfStrokes": 670,
+      "maxSeatedPower": 584.0,
+      "averageSeatedPower": 192.0,
+      "maxSeatedCadence": 97.0,
+      "maxStandingCadence": 74.0,
+      "averageSeatedCadence": 70.0,
+      "averageStandingCadence": 68.0,
+      "leftPowerPhaseStart": 1.40625,
+      "leftPowerPhaseEnd": 210.9375,
+      "leftPowerPhaseArcLength": 209.53125,
+      "leftPowerPhaseArcCenter": 106.875,
+      "leftPowerPhasePeakStart": 60.46875,
+      "leftPowerPhasePeakEnd": 119.53125,
+      "leftPowerPhasePeakArcLength": 59.0625,
+      "leftPowerPhasePeakArcCenter": 90.0,
+      "leftPlatformCenterOffset": 9.0,
+      "rightPowerPhaseStart": 357.1875,
+      "rightPowerPhaseEnd": 199.6875,
+      "rightPowerPhaseArcLength": 201.09375,
+      "rightPowerPhaseArcCenter": 98.4375,
+      "rightPowerPhasePeakStart": 61.875,
+      "rightPowerPhasePeakEnd": 120.9375,
+      "rightPowerPhasePeakArcLength": 59.0625,
+      "rightPowerPhasePeakArcCenter": 91.40625,
+      "rightPlatformCenterOffset": 17.0,
+      "endLatitude": 47.96248099766672,
+      "endLongitude": 11.824803091585636,
+      "maxVerticalSpeed": 0.79998779296875,
+      "maxRespirationRate": 43.529998779296875,
+      "avgRespirationRate": 36.47999954223633,
+      "surfaceTypeUnpavedPercentage": 0.0,
+      "lapIndex": 5,
+      "lengthDTOs": [],
+      "connectIQMeasurement": [
+        {
+          "appID": "c5d949c3-9acb-4e00-bb2d-c3b871e9e733",
+          "developerFieldNumber": 4,
+          "value": "4.0"
+        }
+      ],
+      "messageIndex": 4
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:31:52.0",
+      "startLatitude": 47.96260136179626,
+      "startLongitude": 11.824880372732878,
+      "distance": 5000.0,
+      "duration": 640.009,
+      "movingDuration": 640.0,
+      "elapsedDuration": 640.009,
+      "elevationGain": 55.0,
+      "elevationLoss": 38.0,
+      "maxElevation": 629.6,
+      "minElevation": 598.4,
+      "averageSpeed": 7.811999797821045,
+      "averageMovingSpeed": 7.8125,
+      "maxSpeed": 14.192000389099121,
+      "calories": 152.0,
+      "bmrCalories": 16.0,
+      "averageHR": 145.0,
+      "maxHR": 156.0,
+      "averageBikeCadence": 70.0,
+      "maxBikeCadence": 96.0,
+      "averageTemperature": 34.0,
+      "maxTemperature": 35.0,
+      "minTemperature": 32.0,
+      "averagePower": 212.0,
+      "maxPower": 585.0,
+      "minPower": 0.0,
+      "normalizedPower": 226.0,
+      "totalWork": 32.45807895905032,
+      "leftBalance": 49.45,
+      "rightBalance": 50.55,
+      "leftTorqueEffectiveness": 81.0,
+      "rightTorqueEffectiveness": 77.5,
+      "leftPedalSmoothness": 23.5,
+      "rightPedalSmoothness": 22.5,
+      "totalNumberOfStrokes": 710,
+      "maxSeatedPower": 585.0,
+      "averageSeatedPower": 212.0,
+      "maxSeatedCadence": 96.0,
+      "maxStandingCadence": 73.0,
+      "averageSeatedCadence": 70.0,
+      "averageStandingCadence": 60.0,
+      "leftPowerPhaseStart": 1.40625,
+      "leftPowerPhaseEnd": 208.125,
+      "leftPowerPhaseArcLength": 206.71875,
+      "leftPowerPhaseArcCenter": 105.46875,
+      "leftPowerPhasePeakStart": 59.0625,
+      "leftPowerPhasePeakEnd": 118.125,
+      "leftPowerPhasePeakArcLength": 59.0625,
+      "leftPowerPhasePeakArcCenter": 88.59375,
+      "leftPlatformCenterOffset": 9.0,
+      "rightPowerPhaseStart": 0.0,
+      "rightPowerPhaseEnd": 199.6875,
+      "rightPowerPhaseArcLength": 199.6875,
+      "rightPowerPhaseArcCenter": 99.84375,
+      "rightPowerPhasePeakStart": 60.46875,
+      "rightPowerPhasePeakEnd": 119.53125,
+      "rightPowerPhasePeakArcLength": 59.0625,
+      "rightPowerPhasePeakArcCenter": 90.0,
+      "rightPlatformCenterOffset": 15.0,
+      "endLatitude": 47.99333402886987,
+      "endLongitude": 11.803150540217757,
+      "maxVerticalSpeed": 0.60003662109375,
+      "maxRespirationRate": 39.959999084472656,
+      "avgRespirationRate": 33.959999084472656,
+      "surfaceTypeUnpavedPercentage": 0.0,
+      "lapIndex": 6,
+      "lengthDTOs": [],
+      "connectIQMeasurement": [
+        {
+          "appID": "c5d949c3-9acb-4e00-bb2d-c3b871e9e733",
+          "developerFieldNumber": 4,
+          "value": "0.0"
+        }
+      ],
+      "messageIndex": 5
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:42:32.0",
+      "startLatitude": 47.99342991784215,
+      "startLongitude": 11.803094632923603,
+      "distance": 2224.9,
+      "duration": 241.297,
+      "movingDuration": 241.0,
+      "elapsedDuration": 241.297,
+      "elevationGain": 10.0,
+      "elevationLoss": 34.0,
+      "maxElevation": 628.8,
+      "minElevation": 596.6,
+      "averageSpeed": 9.220999717712402,
+      "averageMovingSpeed": 9.231949802256224,
+      "maxSpeed": 12.288999557495117,
+      "calories": 61.0,
+      "bmrCalories": 6.0,
+      "averageHR": 159.0,
+      "maxHR": 163.0,
+      "averageBikeCadence": 67.0,
+      "maxBikeCadence": 88.0,
+      "averageTemperature": 32.0,
+      "maxTemperature": 33.0,
+      "minTemperature": 31.0,
+      "averagePower": 225.0,
+      "maxPower": 669.0,
+      "minPower": 0.0,
+      "normalizedPower": 271.0,
+      "totalWork": 13.126428990792407,
+      "leftBalance": 48.3,
+      "rightBalance": 51.7,
+      "leftTorqueEffectiveness": 83.0,
+      "rightTorqueEffectiveness": 81.5,
+      "leftPedalSmoothness": 23.5,
+      "rightPedalSmoothness": 23.0,
+      "totalNumberOfStrokes": 230,
+      "maxSeatedPower": 669.0,
+      "averageSeatedPower": 225.0,
+      "maxSeatedCadence": 88.0,
+      "maxStandingCadence": 54.0,
+      "averageSeatedCadence": 68.0,
+      "averageStandingCadence": 49.0,
+      "leftPowerPhaseStart": 357.1875,
+      "leftPowerPhaseEnd": 212.34375,
+      "leftPowerPhaseArcLength": 213.75,
+      "leftPowerPhaseArcCenter": 105.46875,
+      "leftPowerPhasePeakStart": 60.46875,
+      "leftPowerPhasePeakEnd": 118.125,
+      "leftPowerPhasePeakArcLength": 57.65625,
+      "leftPowerPhasePeakArcCenter": 90.0,
+      "leftPlatformCenterOffset": 9.0,
+      "rightPowerPhaseStart": 355.78125,
+      "rightPowerPhaseEnd": 205.3125,
+      "rightPowerPhaseArcLength": 208.125,
+      "rightPowerPhaseArcCenter": 101.25,
+      "rightPowerPhasePeakStart": 56.25,
+      "rightPowerPhasePeakEnd": 113.90625,
+      "rightPowerPhasePeakArcLength": 57.65625,
+      "rightPowerPhasePeakArcCenter": 85.78125,
+      "rightPlatformCenterOffset": 14.0,
+      "endLatitude": 48.008477948606014,
+      "endLongitude": 11.79174612276256,
+      "maxVerticalSpeed": 0.5999755859375,
+      "maxRespirationRate": 41.68000030517578,
+      "avgRespirationRate": 37.15999984741211,
+      "surfaceTypeUnpavedPercentage": 0.0,
+      "lapIndex": 7,
+      "lengthDTOs": [],
+      "connectIQMeasurement": [
+        {
+          "appID": "c5d949c3-9acb-4e00-bb2d-c3b871e9e733",
+          "developerFieldNumber": 4,
+          "value": "1.0"
+        }
+      ],
+      "messageIndex": 6
+    }
+  ],
+  "eventDTOs": [
+    {
+      "startTimeGMT": "2025-07-03T09:35:06.0",
+      "startTimeGMTDoubleValue": 1751535306000.0,
+      "sectionTypeDTO": {
+        "id": 4,
+        "key": "timerTrigger",
+        "sectionTypeKey": "TIMER_TRIGGER"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:35:07.0",
+      "startTimeGMTDoubleValue": 1751535307000.0,
+      "sectionTypeDTO": {
+        "id": 4,
+        "key": "timerTrigger",
+        "sectionTypeKey": "TIMER_TRIGGER"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:35:09.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751535309000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:35:44.0",
+      "riderPosition": 3,
+      "startTimeGMTDoubleValue": 1751535344000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:35:48.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751535348000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:36:42.0",
+      "riderPosition": 3,
+      "startTimeGMTDoubleValue": 1751535402000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:36:45.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751535405000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:37:35.0",
+      "riderPosition": 3,
+      "startTimeGMTDoubleValue": 1751535455000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:37:41.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751535461000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:38:45.0",
+      "riderPosition": 3,
+      "startTimeGMTDoubleValue": 1751535525000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:38:50.0",
+      "riderPosition": 2,
+      "startTimeGMTDoubleValue": 1751535530000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T09:38:55.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751535535000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:01:58.0",
+      "riderPosition": 3,
+      "startTimeGMTDoubleValue": 1751536918000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:02:02.0",
+      "riderPosition": 1,
+      "startTimeGMTDoubleValue": 1751536922000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:02:08.0",
+      "riderPosition": 2,
+      "startTimeGMTDoubleValue": 1751536928000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:02:13.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751536933000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:04:34.0",
+      "riderPosition": 3,
+      "startTimeGMTDoubleValue": 1751537074000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:04:35.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751537075000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:12:04.0",
+      "riderPosition": 3,
+      "startTimeGMTDoubleValue": 1751537524000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:12:07.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751537527000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:30:05.0",
+      "riderPosition": 3,
+      "startTimeGMTDoubleValue": 1751538605000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:30:13.0",
+      "riderPosition": 2,
+      "startTimeGMTDoubleValue": 1751538613000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:30:17.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751538617000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:35:41.0",
+      "riderPosition": 3,
+      "startTimeGMTDoubleValue": 1751538941000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:35:45.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751538945000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:40:14.0",
+      "riderPosition": 3,
+      "startTimeGMTDoubleValue": 1751539214000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:40:17.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751539217000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:42:48.0",
+      "riderPosition": 3,
+      "startTimeGMTDoubleValue": 1751539368000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:42:49.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751539369000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:44:24.0",
+      "riderPosition": 3,
+      "startTimeGMTDoubleValue": 1751539464000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:44:27.0",
+      "riderPosition": 0,
+      "startTimeGMTDoubleValue": 1751539467000.0,
+      "sectionTypeDTO": {
+        "id": 7000,
+        "key": "riderPosition",
+        "sectionTypeKey": "RIDER_POSITION"
+      }
+    },
+    {
+      "startTimeGMT": "2025-07-03T10:46:33.0",
+      "startTimeGMTDoubleValue": 1751539593000.0,
+      "sectionTypeDTO": {
+        "id": 4,
+        "key": "timerTrigger",
+        "sectionTypeKey": "TIMER_TRIGGER"
+      }
+    }
+  ]
+}
