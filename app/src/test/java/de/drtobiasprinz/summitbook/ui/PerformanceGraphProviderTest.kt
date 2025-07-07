@@ -2,8 +2,14 @@ package de.drtobiasprinz.summitbook.ui
 
 import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.summitbook.TestSummitsPreparation
+import de.drtobiasprinz.summitbook.db.entities.GarminData
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import org.junit.Test
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileInputStream
+import java.io.InputStream
+import java.io.InputStreamReader
 import kotlin.system.measureTimeMillis
 
 class PerformanceGraphProviderTest {
@@ -185,8 +191,13 @@ class PerformanceGraphProviderTest {
 
 
         val countGraphUntilJanuary28th =
-            performanceGraphProvider.getActualGraphForSummits(GraphType.Count, "2024", "01", Summit.parseDate("2024-01-28"))
-        assert(countGraphUntilJanuary28th.size == 28) { "Limiting the graph to 28th has a size of ${countGraphUntilJanuary28th.size}"}
+            performanceGraphProvider.getActualGraphForSummits(
+                GraphType.Count,
+                "2024",
+                "01",
+                Summit.parseDate("2024-01-28")
+            )
+        assert(countGraphUntilJanuary28th.size == 28) { "Limiting the graph to 28th has a size of ${countGraphUntilJanuary28th.size}" }
 
         val kilometersGraphJanuary =
             performanceGraphProvider.getActualGraphForSummits(GraphType.Kilometer, "2024", "01")
@@ -210,6 +221,33 @@ class PerformanceGraphProviderTest {
             ) { "Elevation mismatch for Y on day ${n}: ${it.y}" }
         }
     }
+
+    @Test
+    fun testGetActualGraphMinMaxForLast5YearsSummits() {
+        val entries = getTestEntries()
+        val graphProvider =
+            PerformanceGraphProvider(
+                entries,
+                emptyList()
+            )
+        GraphType.entries.filter { !it.cumulative }.forEach { type ->
+            val maxGraphJuly =
+                graphProvider.getActualGraphMinMaxForSummits(type, "2025", "07").second
+            val maxGraph2025 =
+                graphProvider.getActualGraphMinMaxForSummits(type, "2025").second
+            maxGraphJuly.forEach {
+                assert(
+                    it.y == maxGraph2025[it.x.toInt() + 180].y
+                ) { "${type.name} mismatch for X on day ${maxGraph2025[it.x.toInt() + 180].x}: ${maxGraphJuly[0]} and ${maxGraph2025[182]}" }
+            }
+            if (type == GraphType.Vo2Max) {
+                assert(maxGraphJuly[0].y == 52.3f)
+                assert(maxGraphJuly[1].y == 53.8f)
+            }
+
+        }
+    }
+
 
     @Test
     fun testGetActualGraphMinMaxForSummits() {
@@ -358,5 +396,52 @@ class PerformanceGraphProviderTest {
             allDays = true
         )
         assert(graphCountAllDays.size == 366)
+    }
+
+
+    private fun getTestEntries(): List<Summit> {
+        val entries = mutableListOf<Summit>()
+        val resourceSummit = this.javaClass.classLoader?.getResource("summits.csv")
+        if (resourceSummit != null) {
+            val iStream: InputStream = FileInputStream(File(resourceSummit.path))
+            BufferedReader(InputStreamReader(iStream)).use { br ->
+                var line: String?
+                while (br.readLine().also { line = it } != null) {
+                    val lineLocal = line
+                    try {
+                        if (
+                            lineLocal != null &&
+                            !lineLocal.startsWith("Activity") &&
+                            !lineLocal.startsWith("required")
+                        ) {
+                            entries.add(Summit.parseFromCsvFileLine(lineLocal, "v0"))
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+        val resourceThirdParty = this.javaClass.classLoader?.getResource("third_party.csv")
+        if (resourceThirdParty != null) {
+            val iStream: InputStream = FileInputStream(File(resourceThirdParty.path))
+            BufferedReader(InputStreamReader(iStream)).use { br ->
+                var line: String?
+                while (br.readLine().also { line = it } != null) {
+                    val lineLocal = line
+                    try {
+                        if (lineLocal != null && !lineLocal.startsWith("activityId") && !lineLocal.startsWith(
+                                "required"
+                            )
+                        ) {
+                            GarminData.parseFromCsvFileLineAndSave(lineLocal, entries, { _, _ -> })
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+        return entries
     }
 }

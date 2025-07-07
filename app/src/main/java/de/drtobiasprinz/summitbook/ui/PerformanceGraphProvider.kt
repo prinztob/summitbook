@@ -29,8 +29,11 @@ class PerformanceGraphProvider(
             basicGraph[0] = 0f
             filteredSummits.forEach {
                 cal.time = it.date
-                val x =
+                var x =
                     (cal.get(if (month != null) Calendar.DAY_OF_MONTH else Calendar.DAY_OF_YEAR))
+                if (cal.get(Calendar.YEAR) % 4 == 0 && cal.get(Calendar.YEAR) % 100 != 0 && x >= 60) {
+                    x -= 1
+                }
                 val newValue = graphType.getSummitValue(it, indoorHeightMeterPercent).toFloat()
                 val checkValue = if (graphType.filterZeroValues) newValue > 0 else newValue >= 0
                 if (checkValue) {
@@ -50,7 +53,7 @@ class PerformanceGraphProvider(
 
             lastY = 0f
             return (0 until maximum).map {
-                lastY = basicGraph[it + 1] ?: lastY
+                lastY = basicGraph[it + 1] ?: (if (graphType.cumulative) lastY else 0f)
                 Entry((it + 1).toFloat(), lastY)
             }
         } else {
