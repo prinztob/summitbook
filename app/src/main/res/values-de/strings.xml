@@ -269,6 +269,10 @@
     <string name="average_power">Durchschn. Leistung</string>
     <string name="max_power">Maximale Leistung</string>
     <string name="normalized_power">Norm. Leistung</string>
+    <string name="training_stress_score">TSS</string>
+    <string name="balance">Verhältnis</string>
+    <string name="torque_effectiveness">Drehmoment-Effektivität</string>
+    <string name="pedal_smoothness">Gleichmäßigkeit des Tretens</string>
     <string name="power_1sec">Leistung 1s</string>
     <string name="power_2sec">Leistung 2s</string>
     <string name="power_5sec">Leistung 5s</string>

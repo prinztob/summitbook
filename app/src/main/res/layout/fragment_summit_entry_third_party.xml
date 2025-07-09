@@ -257,6 +257,56 @@
                     app:drawableTint="?android:attr/colorControlNormal"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/maxPowerText" />
+
+                <TextView
+                    android:id="@+id/trainingStressScoreText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:text="@string/training_stress_score"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/normPowerText" />
+                <TextView
+                    android:id="@+id/balanceText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:text="@string/balance"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/trainingStressScoreText" />
+                <TextView
+                    android:id="@+id/torque_effectiveness_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:text="@string/torque_effectiveness"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/balanceText" />
+
+                <TextView
+                    android:id="@+id/pedal_smoothness_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:text="@string/pedal_smoothness"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/torque_effectiveness_text" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -396,6 +446,75 @@
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/maxPower" />
+
+                <TextView
+                    android:id="@+id/trainingStressScore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/normPower" />
+
+                <TextView
+                    android:id="@+id/balance_left"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/trainingStressScore" />
+                <TextView
+                    android:id="@+id/balance_right"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/trainingStressScore" />
+
+                <TextView
+                    android:id="@+id/torque_effectiveness_left"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/balance_left" />
+
+                <TextView
+                    android:id="@+id/torque_effectiveness_right"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/balance_right" />
+
+                <TextView
+                    android:id="@+id/pedal_smoothness_left"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/torque_effectiveness_left" />
+
+                <TextView
+                    android:id="@+id/pedal_smoothness_right"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toEndOf="@+id/pedal_smoothness_left"
+                    app:layout_constraintTop_toBottomOf="@+id/torque_effectiveness_right" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <TextView

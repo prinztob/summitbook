@@ -268,6 +268,10 @@
     <string name="average_power">Average power</string>
     <string name="max_power">Max power</string>
     <string name="normalized_power">Normalized Power</string>
+    <string name="training_stress_score">TSS</string>
+    <string name="balance">Balance</string>
+    <string name="torque_effectiveness">torque effectiveness</string>
+    <string name="pedal_smoothness">pedal smoothness</string>
     <string name="power_1sec">Power 1s</string>
     <string name="power_2sec">Power 2s</string>
     <string name="power_5sec">Power 5s</string>

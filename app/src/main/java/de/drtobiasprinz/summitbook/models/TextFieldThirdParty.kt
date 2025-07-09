@@ -16,11 +16,13 @@ enum class TextFieldThirdParty(
     val valueTextView: (FragmentSummitEntryThirdPartyBinding) -> TextView,
     val unit: String,
     val getValue: (Summit) -> Number?,
-    val getMinMaxSummit: (ExtremaValuesSummits?) -> Pair<Summit, Summit>?,
+    val getMinMaxSummit: (ExtremaValuesSummits?) -> Pair<Summit, Summit>? = { _ -> null },
     val reverse: Boolean = false,
     val toHHms: Boolean = false,
     val digits: Int = 1,
-    val factor: Int = 1
+    val factor: Int = 1,
+    val valueTextViewRange: (FragmentSummitEntryThirdPartyBinding) -> TextView? = { _ -> null },
+    val getValueRange: (Summit) -> Number? = { _ -> null },
 ) {
 
 
@@ -79,6 +81,45 @@ enum class TextFieldThirdParty(
         { e -> e.garminData?.power?.normPower },
         { e -> e?.normPowerMinMax },
         digits = 0
+    ),
+    TrainingStressScore(
+        TextFieldGroupThirdPArty.ThirdParty,
+        { b -> b.trainingStressScoreText },
+        { b -> b.trainingStressScore },
+        "",
+        { e -> e.garminData?.cyclingDynamics?.trainingStressScore },
+        { e -> e?.trainingStressScoreMinMax },
+        digits = 0
+    ),
+    Balance(
+        TextFieldGroupThirdPArty.ThirdParty,
+        { b -> b.balanceText },
+        { b -> b.balanceLeft },
+        "%",
+        { e -> e.garminData?.cyclingDynamics?.leftBalance },
+        digits = 0,
+        valueTextViewRange = { b -> b.balanceRight },
+        getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightBalance },
+    ),
+    TorqueEffectiveness(
+        TextFieldGroupThirdPArty.ThirdParty,
+        { b -> b.torqueEffectivenessText },
+        { b -> b.torqueEffectivenessLeft },
+        "%",
+        { e -> e.garminData?.cyclingDynamics?.leftTorqueEffectiveness },
+        digits = 0,
+        valueTextViewRange = { b -> b.torqueEffectivenessRight },
+        getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightTorqueEffectiveness },
+    ),
+    PedalSmoothness(
+        TextFieldGroupThirdPArty.ThirdParty,
+        { b -> b.pedalSmoothnessText },
+        { b -> b.pedalSmoothnessLeft },
+        "%",
+        { e -> e.garminData?.cyclingDynamics?.leftPedalSmoothness },
+        digits = 0,
+        valueTextViewRange = { b -> b.pedalSmoothnessRight },
+        getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPedalSmoothness },
     ),
     AerobicTrainingEffect(
         TextFieldGroupThirdPArty.ThirdParty,

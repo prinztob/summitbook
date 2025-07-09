@@ -298,7 +298,11 @@ class SummitEntryThirdPartyFragment : Fragment() {
                 numberFormat.maximumFractionDigits = textField.digits
                 textField.valueTextView(binding).text =
                     "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unit}"
-
+            }
+            val rangeValue = textField.getValueRange(summit)
+            if (rangeValue != null) {
+                textField.valueTextView(binding).text =
+                    "- ${numberFormat.format(rangeValue.toDouble() * textField.factor)} ${textField.unit}"
             }
         }
     }

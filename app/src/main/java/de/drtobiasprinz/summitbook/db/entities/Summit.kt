@@ -22,6 +22,7 @@ import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.roundToTwoD
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_VERSION
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.utils.Constants
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import org.osmdroid.util.BoundingBox
@@ -937,7 +938,8 @@ enum class SummitEntity(
         if (json.has("childIds")) {
             activityIds.addAll(json["childIds"].asJsonArray.map { it.asString })
         }
-        val garminData = GarminData.parseFromGarminJson(activityIds, json, parentJsonObject)
+        val gsonExerciseSet = pythonExecutor?.getExerciseSet(activityIds.first())
+        val garminData = GarminData.parseFromGarminJson(activityIds, json, parentJsonObject, gsonExerciseSet)
         garminData.ftp = getFtp(garminData.activityIds)
         summit.garminData = garminData
     }),

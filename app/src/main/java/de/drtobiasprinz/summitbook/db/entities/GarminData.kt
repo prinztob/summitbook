@@ -22,6 +22,7 @@ class GarminData(
     var grit: Float = 0f,
     var flow: Float = 0f,
     var trainingLoad: Float = 0f,
+    @Embedded var cyclingDynamics: CyclingDynamicsData = CyclingDynamicsData(),
 ) {
 
     @Ignore
@@ -142,16 +143,25 @@ class GarminData(
 
         fun parseFromGarminJson(
             activityIds: MutableList<String>,
-            jsonObject: JsonObject,
-            parentJsonObject: JsonObject? = null
+            activityJsonObject: JsonObject,
+            parentJsonObject: JsonObject? = null,
+            gsonExerciseSet: JsonObject? = null
         ): GarminData {
             val garminData = GarminData(activityIds)
             GarminEntity.entries.forEach {
                 it.updateGarminData(
                     garminData,
-                    jsonObject,
+                    activityJsonObject,
                     parentJsonObject
                 )
+            }
+            if (gsonExerciseSet != null) {
+                if (gsonExerciseSet.has("summaryDTO")) {
+                    garminData.cyclingDynamics =
+                        CyclingDynamicsData.parseCyclingDynamicsFromGarminJson(
+                            gsonExerciseSet.getAsJsonObject("summaryDTO")
+                        )
+                }
             }
             return garminData
         }

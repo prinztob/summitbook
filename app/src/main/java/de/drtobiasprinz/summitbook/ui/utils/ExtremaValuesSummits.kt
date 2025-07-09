@@ -35,6 +35,7 @@ class ExtremaValuesSummits(val entries: List<Summit>, val shouldIndoorActivityBe
 
     var maxHRMinMax = getMinMax { e -> e.garminData?.maxHR ?: 0 }
     var normPowerMinMax = getMinMax { e -> e.garminData?.power?.normPower ?: 0 }
+    var trainingStressScoreMinMax = getMinMax { e -> e.garminData?.cyclingDynamics?.trainingStressScore ?: 0 }
     var maxPowerMinMax = getMinMax { e -> e.garminData?.power?.maxPower ?: 0 }
     var averagePowerMinMax = getMinMax { e -> e.garminData?.power?.avgPower ?: 0 }
     var power1sMinMax = getMinMax { e -> e.garminData?.power?.oneSec ?: 0 }
