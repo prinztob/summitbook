@@ -473,7 +473,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="10dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/balance_left"
                     app:layout_constraintTop_toBottomOf="@+id/trainingStressScore" />
 
                 <TextView
@@ -493,7 +493,7 @@
                     android:layout_gravity="start"
                     android:layout_marginStart="10dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/torque_effectiveness_left"
                     app:layout_constraintTop_toBottomOf="@+id/balance_right" />
 
                 <TextView

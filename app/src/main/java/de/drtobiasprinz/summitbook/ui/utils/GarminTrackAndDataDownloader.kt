@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.ui.utils
 import android.util.Log
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import de.drtobiasprinz.summitbook.db.entities.CyclingDynamicsData
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.db.entities.GarminData
 import de.drtobiasprinz.summitbook.db.entities.PowerData
@@ -161,14 +162,18 @@ class GarminTrackAndDataDownloader(
                         if (notZeroLatLonPoints.isNotEmpty()) {
                             var highestTrackPoint = notZeroLatLonPoints.first()
                             for (point in notZeroLatLonPoints) {
-                                if ((point.first.elevation ?: 0.0) > (highestTrackPoint.first.elevation
+                                if ((point.first.elevation
+                                        ?: 0.0) > (highestTrackPoint.first.elevation
                                         ?: 0.0)
                                 ) {
                                     highestTrackPoint = point
                                 }
                             }
                             finalEntryLocal.latLng =
-                                GeoPoint(highestTrackPoint.first.latitude, highestTrackPoint.first.longitude)
+                                GeoPoint(
+                                    highestTrackPoint.first.latitude,
+                                    highestTrackPoint.first.longitude
+                                )
                             finalEntryLocal.lat = highestTrackPoint.first.latitude
                             finalEntryLocal.lng = highestTrackPoint.first.longitude
                         }
@@ -237,7 +242,8 @@ class GarminTrackAndDataDownloader(
                 }?.anaerobicTrainingEffect ?: 0f,
                 garminDataSets.maxByOrNull { it?.grit?.toDouble() ?: 0.0 }?.grit ?: 0f,
                 garminDataSets.maxByOrNull { it?.flow?.toDouble() ?: 0.0 }?.flow ?: 0f,
-                garminDataSets.sumOf { it?.trainingLoad?.toDouble() ?: 0.0 }.toFloat()
+                garminDataSets.sumOf { it?.trainingLoad?.toDouble() ?: 0.0 }.toFloat(),
+                getCyclingDynamics()
             )
         }
         return null
@@ -269,7 +275,70 @@ class GarminTrackAndDataDownloader(
             powerDataSets.maxByOrNull { it?.power?.oneHour ?: 0 }?.power?.oneHour ?: 0,
             powerDataSets.maxByOrNull { it?.power?.twoHours ?: 0 }?.power?.twoHours ?: 0,
             powerDataSets.maxByOrNull { it?.power?.fiveHours ?: 0 }?.power?.fiveHours ?: 0
-        ) else PowerData(0f, 0f, 0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        ) else PowerData()
+    }
+
+    private fun getCyclingDynamics(): CyclingDynamicsData {
+        val sets = entries.filter { it.garminData?.cyclingDynamics?.hasCyclingDynamics() == true }
+            .map { it.garminData }
+        val numberOfSets = sets.size
+        return if (sets.isNotEmpty()) CyclingDynamicsData(
+            (sets.sumOf {
+                (it?.cyclingDynamics?.leftBalance?.toDouble() ?: 0.0)
+            } / numberOfSets).toFloat(),
+            (sets.sumOf {
+                (it?.cyclingDynamics?.rightBalance?.toDouble() ?: 0.0)
+            } / numberOfSets).toFloat(),
+            (sets.sumOf {
+                (it?.cyclingDynamics?.leftTorqueEffectiveness?.toDouble() ?: 0.0)
+            } / numberOfSets).toFloat(),
+            (sets.sumOf {
+                (it?.cyclingDynamics?.rightTorqueEffectiveness?.toDouble() ?: 0.0)
+            } / numberOfSets).toFloat(),
+            (sets.sumOf {
+                (it?.cyclingDynamics?.leftPedalSmoothness?.toDouble() ?: 0.0)
+            } / numberOfSets).toFloat(),
+            (sets.sumOf {
+                (it?.cyclingDynamics?.rightPedalSmoothness?.toDouble() ?: 0.0)
+            } / numberOfSets).toFloat(),
+            (sets.sumOf {
+                (it?.cyclingDynamics?.trainingStressScore?.toDouble() ?: 0.0)
+            } / numberOfSets).toFloat(),
+            (sets.sumOf {
+                (it?.cyclingDynamics?.intensityFactor?.toDouble() ?: 0.0)
+            } / numberOfSets).toFloat(),
+            sets.sumOf { (it?.cyclingDynamics?.totalNumberOfStrokes ?: 0) },
+            sets.sumOf { (it?.cyclingDynamics?.standingTime ?: 0) },
+            sets.maxOf { (it?.cyclingDynamics?.maxStandingPower ?: 0) },
+            (sets.sumOf {
+                (it?.cyclingDynamics?.averageStandingPower?.toDouble() ?: 0.0) * (it?.duration
+                    ?: 0.0)
+            } / sets.sumOf { it?.duration ?: 0.0 }).toInt(),
+            sets.first()?.cyclingDynamics?.leftPowerPhaseStart ?: 0,
+            sets.first()?.cyclingDynamics?.leftPowerPhaseEnd ?: 0,
+            sets.first()?.cyclingDynamics?.leftPowerPhaseArcCenter ?: 0,
+            sets.first()?.cyclingDynamics?.leftPowerPhasePeakStart ?: 0,
+            sets.first()?.cyclingDynamics?.leftPowerPhasePeakEnd ?: 0,
+            sets.first()?.cyclingDynamics?.leftPowerPhasePeakArcCenter ?: 0,
+            sets.first()?.cyclingDynamics?.leftPlatformCenterOffset ?: 0,
+            sets.first()?.cyclingDynamics?.rightPowerPhaseStart ?: 0,
+            sets.first()?.cyclingDynamics?.rightPowerPhaseEnd ?: 0,
+            sets.first()?.cyclingDynamics?.rightPowerPhaseArcCenter ?: 0,
+            sets.first()?.cyclingDynamics?.rightPowerPhasePeakStart ?: 0,
+            sets.first()?.cyclingDynamics?.rightPowerPhasePeakEnd ?: 0,
+            sets.first()?.cyclingDynamics?.rightPowerPhasePeakArcCenter ?: 0,
+            sets.first()?.cyclingDynamics?.rightPlatformCenterOffset ?: 0,
+            sets.sumOf { it?.cyclingDynamics?.waterEstimated ?: 0 },
+            sets.sumOf { it?.cyclingDynamics?.gainSolarActivityTime ?: 0 },
+            (sets.sumOf {
+                (it?.cyclingDynamics?.avgSolarChargePercent?.toDouble() ?: 0.0) * (it?.duration
+                    ?: 0.0)
+            } / sets.sumOf { it?.duration ?: 0.0 }).toInt(),
+            (sets.sumOf {
+                (it?.cyclingDynamics?.surfaceTypeUnpavedPercentage?.toDouble()
+                    ?: 0.0) * (it?.duration ?: 0.0)
+            } / sets.sumOf { it?.duration ?: 0.0 }).toFloat(),
+        ) else CyclingDynamicsData()
     }
 
     companion object {

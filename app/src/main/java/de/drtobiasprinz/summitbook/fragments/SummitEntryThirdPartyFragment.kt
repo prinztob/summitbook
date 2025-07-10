@@ -284,6 +284,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
         if (abs(value.toDouble() * textField.factor) < 0.01) {
             textField.descriptionTextView(binding).visibility = View.GONE
             textField.valueTextView(binding).visibility = View.GONE
+            textField.valueTextViewRange(binding)?.visibility = View.GONE
         } else {
             textField.descriptionTextView(binding).visibility = visibility
             textField.valueTextView(binding).visibility = visibility
@@ -303,6 +304,8 @@ class SummitEntryThirdPartyFragment : Fragment() {
             if (rangeValue != null) {
                 textField.valueTextViewRange(binding)?.text =
                     "- ${numberFormat.format(rangeValue.toDouble() * textField.factor)} ${textField.unit}"
+            } else {
+                textField.valueTextViewRange(binding)?.visibility = View.GONE
             }
         }
     }
@@ -391,7 +394,12 @@ class SummitEntryThirdPartyFragment : Fragment() {
         reverse: Boolean
     ) {
         textView.compoundDrawablePadding = 20
-        var drawable = R.drawable.filled_circle_white
+        var drawable =
+            if (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
+                R.drawable.filled_circle_black
+            } else {
+                R.drawable.filled_circle_white
+            }
         if (min != null && max != null) {
             val percent =
                 if (reverse) (max.toDouble() - value) / (max.toDouble() - min.toDouble()) else
@@ -402,7 +410,11 @@ class SummitEntryThirdPartyFragment : Fragment() {
                 in 0.4..0.6 -> R.drawable.filled_circle_yellow
                 in 0.6..0.8 -> R.drawable.filled_circle_blue
                 in 0.8..1.0 -> R.drawable.filled_circle_green
-                else -> R.drawable.filled_circle_white
+                else -> if (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
+                    R.drawable.filled_circle_black
+                } else {
+                    R.drawable.filled_circle_white
+                }
             }
         }
         textView.setCompoundDrawablesWithIntrinsicBounds(drawable, 0, 0, 0)
