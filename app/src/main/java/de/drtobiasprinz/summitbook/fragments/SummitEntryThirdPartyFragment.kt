@@ -301,7 +301,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
             }
             val rangeValue = textField.getValueRange(summit)
             if (rangeValue != null) {
-                textField.valueTextView(binding).text =
+                textField.valueTextViewRange(binding)?.text =
                     "- ${numberFormat.format(rangeValue.toDouble() * textField.factor)} ${textField.unit}"
             }
         }

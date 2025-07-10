@@ -373,7 +373,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
 
     private fun getExtensionFromYaml(): List<ExtensionFromYaml> {
         val yamlDefault = Yaml.Default
-        var pointExtensionFromYaml: ExtensionsFromYaml? = null
+        var pointExtensionFromYaml = ExtensionsFromYaml()
         if (yamlExtensionsFile?.exists() == true) {
             try {
                 val timeYaml = measureTimeMillis {
@@ -385,7 +385,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                 }
                 Log.i(
                     "YAML",
-                    "Successful loaded in $timeYaml with ${pointExtensionFromYaml?.extensions?.size} points."
+                    "Successful loaded in $timeYaml with ${pointExtensionFromYaml.extensions.size} points."
                 )
             } catch (ex: YamlDecodingException) {
                 yamlExtensionsFile.delete()
@@ -393,7 +393,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             }
 
         }
-        return pointExtensionFromYaml?.extensions ?: emptyList()
+        return pointExtensionFromYaml.extensions
     }
 
 
@@ -543,7 +543,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
 
 @Serializable
 data class ExtensionsFromYaml(
-    val extensions: List<ExtensionFromYaml>
+    val extensions: List<ExtensionFromYaml> = emptyList()
 )
 
 @Serializable
