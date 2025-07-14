@@ -21,12 +21,15 @@ class PowerData(
     var thirtyMin: Int = 0,
     var oneHour: Int = 0,
     var twoHours: Int = 0,
-    var fiveHours: Int = 0
+    var threeHours: Int = 0,
+    var fourHours: Int = 0,
+    var fiveHours: Int = 0,
+
 ) {
 
     override fun toString(): String {
         return "$avgPower,$maxPower,$normPower,$oneSec,$twoSec,$fiveSec,$tenSec,$twentySec,$thirtySec,$oneMin,$twoMin,$fiveMin," +
-                "$tenMin,$twentyMin,$thirtyMin,$oneHour,$twoHours,$fiveHours"
+                "$tenMin,$twentyMin,$thirtyMin,$oneHour,$twoHours,$threeHours,$fourHours,$fiveHours"
     }
 
     fun hasPowerData(): Boolean {
@@ -45,7 +48,7 @@ class PowerData(
                     data[15].toInt(), data[16].toInt(), data[17].toInt()
                 )
             } else {
-                PowerData(0f, 0f, 0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                PowerData()
             }
         }
 
@@ -110,6 +113,12 @@ enum class GarminPowerDataEntity(
     }),
     MaxAvgPower7200s({ data, json ->
         data.twoHours = getJsonObjectEntryNotNull(json, "maxAvgPower_7200").toInt()
+    }),
+    MaxAvgPower10800s({ data, json ->
+        data.threeHours = getJsonObjectEntryNotNull(json, "maxAvgPower_10800").toInt()
+    }),
+    MaxAvgPower14400s({ data, json ->
+        data.fourHours = getJsonObjectEntryNotNull(json, "maxAvgPower_14400").toInt()
     }),
     MaxAvgPower18000s({ data, json ->
         data.fiveHours = getJsonObjectEntryNotNull(json, "maxAvgPower_18000").toInt()

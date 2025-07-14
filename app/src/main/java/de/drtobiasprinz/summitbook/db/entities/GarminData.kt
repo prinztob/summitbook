@@ -8,6 +8,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getJsonObjectEntryNotNull
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.roundToTwoDigits
 import java.util.Objects
+import kotlin.math.roundToInt
 
 class GarminData(
     var activityIds: MutableList<String>,
@@ -155,13 +156,14 @@ class GarminData(
                     parentJsonObject
                 )
             }
-            if (gsonExerciseSet != null) {
-                if (gsonExerciseSet.has("summaryDTO")) {
-                    garminData.cyclingDynamics =
-                        CyclingDynamicsData.parseCyclingDynamicsFromGarminJson(
-                            gsonExerciseSet.getAsJsonObject("summaryDTO")
-                        )
-                }
+            if (gsonExerciseSet != null && gsonExerciseSet.has("summaryDTO")) {
+                val summaryDTO = gsonExerciseSet.getAsJsonObject("summaryDTO")
+                garminData.cyclingDynamics =
+                    CyclingDynamicsData.parseCyclingDynamicsFromGarminJson(summaryDTO)
+                garminData.ftp = getJsonObjectEntryNotNull(
+                    summaryDTO,
+                    "functionalThresholdPower"
+                ).roundToInt()
             }
             return garminData
         }

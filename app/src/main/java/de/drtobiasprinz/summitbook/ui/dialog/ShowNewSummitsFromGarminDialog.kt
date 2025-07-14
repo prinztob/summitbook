@@ -85,7 +85,6 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                 binding.recyclerView.apply {
                     layoutManager = LinearLayoutManager(requireContext())
                     adapter = addNewSummitsAdapter
-
                 }
                 binding.recyclerView.minimumWidth = (width * 0.97).toInt()
                 binding.save.setOnClickListener {

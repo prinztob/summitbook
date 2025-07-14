@@ -270,6 +270,7 @@
     <string name="max_power">Maximale Leistung</string>
     <string name="normalized_power">Norm. Leistung</string>
     <string name="training_stress_score">TSS</string>
+    <string name="intensity_factor">Intensitätsfaktor</string>
     <string name="balance">Verhältnis</string>
     <string name="torque_effectiveness">Drehm.-Effektivität</string>
     <string name="pedal_smoothness">Trittgleichmäßigkeit</string>
@@ -287,6 +288,8 @@
     <string name="power_30min">Leistung 30min</string>
     <string name="power_1h">Leistung 1h</string>
     <string name="power_2h">Leistung 2h</string>
+    <string name="power_3h">Leistung 3h</string>
+    <string name="power_4h">Leistung 4h</string>
     <string name="power_5h">Leistung 5h</string>
     <string name="active_duration">Aktivitätsminuten</string>
     <string name="moderate_intensity_minutes">Mäßige Intensitätsminuten</string>
@@ -495,4 +498,5 @@
     <string name="openandromaps_track_4">Leicht bewachsener Weg</string>
     <string name="openandromaps_track_5">Stark bewachsener Weg</string>
     <string name="openandromaps_track_wo">Weg ohne Beschaffenheitsangabe</string>
+    <string name="part_unpaved">Anteil unbfestigt</string>
 </resources>

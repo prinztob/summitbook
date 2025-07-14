@@ -246,6 +246,22 @@ enum class AdditionalDataTableEntry(
         jsonKey = "power_2h",
         isInt = true
     ),
+    Power3Hours(
+        R.string.power_3h,
+        R.string.watt,
+        { e -> e.garminData?.power?.threeHours?.toDouble() ?: 0.0 },
+        { e, d -> e.garminData?.power?.threeHours = d.roundToInt() },
+        jsonKey = "power_3h",
+        isInt = true
+    ),
+    Power4Hours(
+        R.string.power_4h,
+        R.string.watt,
+        { e -> e.garminData?.power?.fourHours?.toDouble() ?: 0.0 },
+        { e, d -> e.garminData?.power?.fourHours = d.roundToInt() },
+        jsonKey = "power_4h",
+        isInt = true
+    ),
     Power5Hours(
         R.string.power_5h,
         R.string.watt,

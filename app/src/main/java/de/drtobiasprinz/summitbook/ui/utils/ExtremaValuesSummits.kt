@@ -36,6 +36,8 @@ class ExtremaValuesSummits(val entries: List<Summit>, val shouldIndoorActivityBe
     var maxHRMinMax = getMinMax { e -> e.garminData?.maxHR ?: 0 }
     var normPowerMinMax = getMinMax { e -> e.garminData?.power?.normPower ?: 0 }
     var trainingStressScoreMinMax = getMinMax { e -> e.garminData?.cyclingDynamics?.trainingStressScore ?: 0 }
+    var intensityFactorMinMax = getMinMax { e -> e.garminData?.cyclingDynamics?.intensityFactor ?: 0 }
+    var surfaceTypeUnpavedPercentageMinMax = getMinMax { e -> e.garminData?.cyclingDynamics?.surfaceTypeUnpavedPercentage ?: 0 }
     var maxPowerMinMax = getMinMax { e -> e.garminData?.power?.maxPower ?: 0 }
     var averagePowerMinMax = getMinMax { e -> e.garminData?.power?.avgPower ?: 0 }
     var power1sMinMax = getMinMax { e -> e.garminData?.power?.oneSec ?: 0 }
@@ -52,6 +54,8 @@ class ExtremaValuesSummits(val entries: List<Summit>, val shouldIndoorActivityBe
     var power30minMinMax = getMinMax { e -> e.garminData?.power?.thirtyMin ?: 0 }
     var power1hMinMax = getMinMax { e -> e.garminData?.power?.oneHour ?: 0 }
     var power2hMinMax = getMinMax { e -> e.garminData?.power?.twoHours ?: 0 }
+    var power3hMinMax = getMinMax { e -> e.garminData?.power?.threeHours ?: 0 }
+    var power4hMinMax = getMinMax { e -> e.garminData?.power?.fourHours ?: 0 }
     var power5hMinMax = getMinMax { e -> e.garminData?.power?.fiveHours ?: 0 }
 
     var caloriesMinMax = getMinMax { e -> e.garminData?.calories ?: 0 }

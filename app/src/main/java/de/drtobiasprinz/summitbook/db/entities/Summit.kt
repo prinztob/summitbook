@@ -6,23 +6,19 @@ import android.util.Log
 import androidx.room.*
 import com.google.gson.JsonNull.INSTANCE
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.db.entities.SportType.Companion.getSportTypeFromGarminId
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.DATETIME_FORMAT_COMPLEX
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.DATETIME_FORMAT_SIMPLE
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.convertMeterToKm
-import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.getFtp
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.parseSportType
 import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.TAG
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getJsonObjectEntryNotNull
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.roundToTwoDigits
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_VERSION
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.utils.Constants
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import org.osmdroid.util.BoundingBox
@@ -860,27 +856,6 @@ class Summit(
             return getSportTypeFromGarminId(jsonObject["typeId"].asInt)
         }
 
-
-        fun getFtp(activityIds: MutableList<String>): Int {
-            var ftp = 0
-            val exerciseSet =
-                File(activitiesDir, "activity_${activityIds[0]}_exercise_set.json")
-            if (exerciseSet.exists()) {
-                val gsonExerciseSet =
-                    JsonParser.parseString(exerciseSet.readText()) as JsonObject
-                if (gsonExerciseSet.has("summaryDTO")) {
-                    val summaryDTO =
-                        gsonExerciseSet.getAsJsonObject("summaryDTO")
-                    if (summaryDTO.has("functionalThresholdPower")) {
-                        ftp =
-                            summaryDTO.getAsJsonPrimitive("functionalThresholdPower").asDouble.toInt()
-                    }
-                }
-                Log.d(TAG, "FTP: $ftp")
-            }
-            return ftp
-        }
-
         fun convertMeterToKm(meter: Double): Double {
             return meter / 1000.0
         }
@@ -938,9 +913,15 @@ enum class SummitEntity(
         if (json.has("childIds")) {
             activityIds.addAll(json["childIds"].asJsonArray.map { it.asString })
         }
-        val gsonExerciseSet = pythonExecutor?.getExerciseSet(activityIds.first())
-        val garminData = GarminData.parseFromGarminJson(activityIds, json, parentJsonObject, gsonExerciseSet)
-        garminData.ftp = getFtp(garminData.activityIds)
+        val exerciseSet =
+            File(activitiesDir, "activity_${activityIds[0]}_exercise_set.json")
+        val gsonExerciseSet = if (exerciseSet.exists()) {
+            com.google.gson.JsonParser.parseString(exerciseSet.readText()) as JsonObject
+        } else {
+            null
+        }
+        val garminData =
+            GarminData.parseFromGarminJson(activityIds, json, parentJsonObject, gsonExerciseSet)
         summit.garminData = garminData
     }),
     Distance({ summit, json, _, _ ->

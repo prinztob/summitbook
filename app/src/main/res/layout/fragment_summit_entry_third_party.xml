@@ -259,6 +259,19 @@
                     app:layout_constraintTop_toBottomOf="@+id/maxPowerText" />
 
                 <TextView
+                    android:id="@+id/surfaceTypeUnpavedPercentageText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:text="@string/part_unpaved"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/normPowerText" />
+
+                <TextView
                     android:id="@+id/trainingStressScoreText"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
@@ -266,10 +279,24 @@
                     android:layout_marginStart="20dp"
                     android:text="@string/training_stress_score"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
                     app:drawableTint="?android:attr/colorControlNormal"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/normPowerText" />
+                    app:layout_constraintTop_toBottomOf="@+id/surfaceTypeUnpavedPercentageText" />
+
+                <TextView
+                    android:id="@+id/intensityFactorText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:text="@string/intensity_factor"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/trainingStressScoreText" />
+
                 <TextView
                     android:id="@+id/balanceText"
                     android:layout_width="wrap_content"
@@ -278,10 +305,11 @@
                     android:layout_marginStart="20dp"
                     android:text="@string/balance"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
                     app:drawableTint="?android:attr/colorControlNormal"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/trainingStressScoreText" />
+                    app:layout_constraintTop_toBottomOf="@+id/intensityFactorText" />
+
                 <TextView
                     android:id="@+id/torque_effectiveness_text"
                     android:layout_width="wrap_content"
@@ -290,7 +318,7 @@
                     android:layout_marginStart="20dp"
                     android:text="@string/torque_effectiveness"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
                     app:drawableTint="?android:attr/colorControlNormal"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/balanceText" />
@@ -303,7 +331,7 @@
                     android:layout_marginStart="20dp"
                     android:text="@string/pedal_smoothness"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
                     app:drawableTint="?android:attr/colorControlNormal"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/torque_effectiveness_text" />
@@ -448,7 +476,7 @@
                     app:layout_constraintTop_toBottomOf="@+id/maxPower" />
 
                 <TextView
-                    android:id="@+id/trainingStressScore"
+                    android:id="@+id/surfaceTypeUnpavedPercentage"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
@@ -458,7 +486,17 @@
                     app:layout_constraintTop_toBottomOf="@+id/normPower" />
 
                 <TextView
-                    android:id="@+id/balance_left"
+                    android:id="@+id/trainingStressScore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/surfaceTypeUnpavedPercentage" />
+
+                <TextView
+                    android:id="@+id/intensityFactor"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
@@ -466,6 +504,17 @@
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/trainingStressScore" />
+
+                <TextView
+                    android:id="@+id/balance_left"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/intensityFactor" />
+
                 <TextView
                     android:id="@+id/balance_right"
                     android:layout_width="wrap_content"
@@ -474,7 +523,7 @@
                     android:layout_marginStart="10dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toEndOf="@+id/balance_left"
-                    app:layout_constraintTop_toBottomOf="@+id/trainingStressScore" />
+                    app:layout_constraintTop_toBottomOf="@+id/intensityFactor" />
 
                 <TextView
                     android:id="@+id/torque_effectiveness_left"
@@ -752,6 +801,36 @@
                     app:layout_constraintTop_toBottomOf="@+id/power1hText" />
 
                 <TextView
+                    android:id="@+id/power3hText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/power_3h"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/power2hText" />
+
+                <TextView
+                    android:id="@+id/power4hText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/power_4h"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/power3hText" />
+
+                <TextView
                     android:id="@+id/power5hText"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
@@ -764,7 +843,7 @@
                     app:drawableStartCompat="@drawable/ic_baseline_power_24"
                     app:drawableTint="?android:attr/colorControlNormal"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power2hText" />
+                    app:layout_constraintTop_toBottomOf="@+id/power4hText" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -930,7 +1009,7 @@
                     app:layout_constraintTop_toBottomOf="@+id/power1h" />
 
                 <TextView
-                    android:id="@+id/power5h"
+                    android:id="@+id/power3h"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
@@ -939,6 +1018,28 @@
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/power2h" />
+
+                <TextView
+                    android:id="@+id/power4h"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/power3h" />
+
+                <TextView
+                    android:id="@+id/power5h"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/power4h" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

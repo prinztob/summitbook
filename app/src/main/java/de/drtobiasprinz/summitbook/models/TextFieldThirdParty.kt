@@ -82,6 +82,15 @@ enum class TextFieldThirdParty(
         { e -> e?.normPowerMinMax },
         digits = 0
     ),
+    IntensityFactor(
+        TextFieldGroupThirdPArty.ThirdParty,
+        { b -> b.intensityFactorText },
+        { b -> b.intensityFactor },
+        "",
+        { e -> e.garminData?.cyclingDynamics?.intensityFactor },
+        { e -> e?.intensityFactorMinMax },
+        digits = 2
+    ),
     TrainingStressScore(
         TextFieldGroupThirdPArty.ThirdParty,
         { b -> b.trainingStressScoreText },
@@ -110,6 +119,15 @@ enum class TextFieldThirdParty(
         digits = 1,
         valueTextViewRange = { b -> b.torqueEffectivenessRight },
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightTorqueEffectiveness },
+    ),
+    PartPaved(
+        TextFieldGroupThirdPArty.ThirdParty,
+        { b -> b.surfaceTypeUnpavedPercentageText },
+        { b -> b.surfaceTypeUnpavedPercentage },
+        "%",
+        { e -> e.garminData?.cyclingDynamics?.surfaceTypeUnpavedPercentage },
+        { e -> e?.surfaceTypeUnpavedPercentageMinMax },
+        digits = 1,
     ),
     PedalSmoothness(
         TextFieldGroupThirdPArty.ThirdParty,
@@ -304,6 +322,24 @@ enum class TextFieldThirdParty(
         "W",
         { e -> e.garminData?.power?.twoHours },
         { e -> e?.power2hMinMax },
+        digits = 0
+    ),
+    Power3H(
+        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
+        { b -> b.power3hText },
+        { b -> b.power3h },
+        "W",
+        { e -> e.garminData?.power?.threeHours },
+        { e -> e?.power3hMinMax },
+        digits = 0
+    ),
+    Power4H(
+        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
+        { b -> b.power4hText },
+        { b -> b.power4h },
+        "W",
+        { e -> e.garminData?.power?.fourHours },
+        { e -> e?.power4hMinMax },
         digits = 0
     ),
     Power5H(

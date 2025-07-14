@@ -269,9 +269,10 @@
     <string name="max_power">Max power</string>
     <string name="normalized_power">Normalized Power</string>
     <string name="training_stress_score">TSS</string>
+    <string name="intensity_factor">Intensity Factor</string>
     <string name="balance">Balance</string>
-    <string name="torque_effectiveness">torque effectiveness</string>
-    <string name="pedal_smoothness">pedal smoothness</string>
+    <string name="torque_effectiveness">Torque effectiveness</string>
+    <string name="pedal_smoothness">Pedal smoothness</string>
     <string name="power_1sec">Power 1s</string>
     <string name="power_2sec">Power 2s</string>
     <string name="power_5sec">Power 5s</string>
@@ -286,6 +287,8 @@
     <string name="power_30min">Power 30min</string>
     <string name="power_1h">Power 1h</string>
     <string name="power_2h">Power 2h</string>
+    <string name="power_3h">Power 3h</string>
+    <string name="power_4h">Power 4h</string>
     <string name="power_5h">Power 5h</string>
     <string name="active_duration">Active Minutes</string>
     <string name="moderate_intensity_minutes">moderate intensity minutes</string>
@@ -494,4 +497,5 @@
     <string name="openandromaps_track_4">Track mainly made out of dirt/grass, some gravel</string>
     <string name="openandromaps_track_5">Track only made out of dirt/grass</string>
     <string name="openandromaps_track_wo">Track without grade</string>
+    <string name="part_unpaved">Part unpaved</string>
 </resources>
