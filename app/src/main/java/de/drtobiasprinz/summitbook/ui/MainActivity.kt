@@ -304,7 +304,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         private const val KEY_IS_DIALOG_SHOWN = "IS_DIALOG_SHOWN"
         private const val KEY_CURRENT_POSITION = "CURRENT_POSITION"
         var CSV_FILE_NAME_VERSION: String = "de-prinz-summitbook-export.version"
-        var CSV_FILE_VERSION: String = "v0"
+        var CSV_FILE_VERSION: String = "v1"
         var CSV_FILE_NAME_SUMMITS: String = "de-prinz-summitbook-export.csv"
         var CSV_FILE_NAME_THIRD_PARTY_DATA: String =
             "de-prinz-summitbook-export-third-party-data.csv"

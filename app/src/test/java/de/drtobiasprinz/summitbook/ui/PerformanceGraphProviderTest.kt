@@ -4,6 +4,7 @@ import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.summitbook.TestSummitsPreparation
 import de.drtobiasprinz.summitbook.db.entities.GarminData
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.utils.ZipFileVersions
 import org.junit.Test
 import java.io.BufferedReader
 import java.io.File
@@ -434,7 +435,7 @@ class PerformanceGraphProviderTest {
                                 "required"
                             )
                         ) {
-                            GarminData.parseFromCsvFileLineAndSave(lineLocal, entries, { _, _ -> })
+                            GarminData.parseFromCsvFileLineAndSave(lineLocal, entries, { _, _ -> }, ZipFileVersions.V0)
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()

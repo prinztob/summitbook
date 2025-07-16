@@ -8,6 +8,7 @@ import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SEGME
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SUMMITS
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_THIRD_PARTY_DATA
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_VERSION
+import de.drtobiasprinz.summitbook.utils.ZipFileVersions
 import kotlinx.coroutines.Job
 import java.io.*
 import java.nio.file.Files
@@ -241,7 +242,8 @@ class ZipFileReader(
                             GarminData.parseFromCsvFileLineAndSave(
                                 lineLocal,
                                 allSummits,
-                                saveSummit
+                                saveSummit,
+                                ZipFileVersions.entries.find { it.versionName == version } ?: ZipFileVersions.V0
                             )
                         if (added) {
                             Log.d(

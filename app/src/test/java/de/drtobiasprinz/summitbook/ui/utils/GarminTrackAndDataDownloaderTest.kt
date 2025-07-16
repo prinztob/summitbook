@@ -194,7 +194,7 @@ class GarminTrackAndDataDownloaderTest {
         )
         val downloader = GarminTrackAndDataDownloader(
             listOf(entry1, entry2, entry3),
-            GarminPythonExecutor("aaa", "bbbb")
+            GarminPythonExecutor("user", "password")
         )
         downloader.extractFinalSummit()
         Assert.assertEquals(garminDataExpected.toString(), downloader.finalEntry?.garminData.toString())

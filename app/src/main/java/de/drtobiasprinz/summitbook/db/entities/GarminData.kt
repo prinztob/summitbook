@@ -7,6 +7,7 @@ import com.google.gson.JsonObject
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getJsonObjectEntryNotNull
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.roundToTwoDigits
+import de.drtobiasprinz.summitbook.utils.ZipFileVersions
 import java.util.Objects
 import kotlin.math.roundToInt
 
@@ -23,6 +24,11 @@ class GarminData(
     var grit: Float = 0f,
     var flow: Float = 0f,
     var trainingLoad: Float = 0f,
+    var waterEstimated: Int = 0,
+    var gainSolarActivityTime: Int = 0,
+    var avgSolarChargePercent: Int = 0,
+    var surfaceTypeUnpavedPercentage: Float = 0f,
+
     @Embedded var cyclingDynamics: CyclingDynamicsData = CyclingDynamicsData(),
 ) {
 
@@ -51,7 +57,12 @@ class GarminData(
                 anaerobicTrainingEffect + ';' +
                 grit + ';' +
                 flow + ';' +
-                trainingLoad + "\n"
+                trainingLoad + ';' +
+                waterEstimated + ';' +
+                gainSolarActivityTime + ';' +
+                avgSolarChargePercent + ';' +
+                surfaceTypeUnpavedPercentage + ';' +
+                cyclingDynamics.toString() + "\n"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -101,12 +112,13 @@ class GarminData(
         fun parseFromCsvFileLineAndSave(
             line: String,
             allSummits: MutableList<Summit>,
-            saveSummit: (Boolean, Summit) -> Unit
+            saveSummit: (Boolean, Summit) -> Unit,
+            zipFileVersions: ZipFileVersions
         ): Boolean {
             val activityId = line.split(";").first().toLong()
             val summit = allSummits.find { it.activityId == activityId }
             if (summit != null) {
-                val garminData = parseFromCsvFileLine(line)
+                val garminData = parseFromCsvFileLine(line, zipFileVersions)
                 if (garminData != null) {
                     summit.garminData = garminData
                     saveSummit(true, summit)
@@ -118,28 +130,9 @@ class GarminData(
 
         fun parseFromCsvFileLine(
             line: String,
+            zipFileVersions: ZipFileVersions
         ): GarminData? {
-            val regex =
-                """(?<activityId>(\d+));(?<garminIds>([\d,]+));(?<cal>([\d.]+));(?<averageHR>([\d.]+));(?<maxHR>([\d.]+));(?<power>([\d,.]+));(?<ftp>(\d+));(?<vo2max>([\d.]+));(?<aerobicTrainingEffect>([\d.]+));(?<anaerobicTrainingEffect>([\d.]+));(?<grit>([\d.]+));(?<flow>([\d.]+));(?<trainingLoad>([\d.]+))""".toRegex()
-            val matchResult = regex.find(line.replace("\n", ""))
-            if (matchResult != null) {
-                return GarminData(
-                    matchResult.groups["garminIds"]!!.value.split(",") as MutableList<String>,
-                    matchResult.groups["cal"]!!.value.toFloat(),
-                    matchResult.groups["averageHR"]!!.value.toFloat(),
-                    matchResult.groups["maxHR"]!!.value.toFloat(),
-                    PowerData.parse(matchResult.groups["power"]!!.value.split(",")),
-                    matchResult.groups["ftp"]!!.value.toInt(),
-                    matchResult.groups["vo2max"]!!.value.toFloat(),
-                    matchResult.groups["aerobicTrainingEffect"]!!.value.toFloat(),
-                    matchResult.groups["anaerobicTrainingEffect"]!!.value.toFloat(),
-                    matchResult.groups["grit"]!!.value.toFloat(),
-                    matchResult.groups["flow"]!!.value.toFloat(),
-                    matchResult.groups["trainingLoad"]!!.value.toFloat(),
-                )
-            } else {
-                return null
-            }
+            return zipFileVersions.getGarminData(line)
         }
 
         fun parseFromGarminJson(
@@ -174,7 +167,9 @@ enum class GarminEntity(
     val updateGarminData: (GarminData, JsonObject, JsonObject?) -> Unit
 ) {
     Calories({ data, json, _ -> data.calories = getJsonObjectEntryNotNull(json, "calories") }),
-    AverageHR({ data, json, _ -> data.averageHR = getJsonObjectEntryNotNull(json, "averageHR") }),
+    AverageHR({ data, json, _ ->
+        data.averageHR = getJsonObjectEntryNotNull(json, "averageHR")
+    }),
     MaxHR({ data, json, _ -> data.maxHR = getJsonObjectEntryNotNull(json, "maxHR") }),
     Power({ data, json, _ -> data.power = PowerData.parseFromGarminJson(json) }),
     AerobicTrainingEffect({ data, json, _ ->
@@ -197,5 +192,20 @@ enum class GarminEntity(
         } else {
             0.0f
         }
-    })
+    }),
+    WaterEstimated({ data, json, _ ->
+        data.waterEstimated = getJsonObjectEntryNotNull(json, "waterEstimated").roundToInt()
+    }),
+    GainSolarActivityTime({ data, json, _ ->
+        data.gainSolarActivityTime =
+            getJsonObjectEntryNotNull(json, "gainSolarActivityTime").roundToInt()
+    }),
+    AvgSolarChargePercent({ data, json, _ ->
+        data.avgSolarChargePercent =
+            getJsonObjectEntryNotNull(json, "avgSolarChargePercent").roundToInt()
+    }),
+    SurfaceTypeUnpavedPercentage({ data, json, _ ->
+        data.surfaceTypeUnpavedPercentage =
+            getJsonObjectEntryNotNull(json, "surfaceTypeUnpavedPercentage")
+    }),
 }

@@ -6,6 +6,7 @@ import de.drtobiasprinz.summitbook.db.entities.CyclingDynamicsData
 import de.drtobiasprinz.summitbook.db.entities.GarminData
 import de.drtobiasprinz.summitbook.db.entities.GarminData.Companion.parseFromCsvFileLine
 import de.drtobiasprinz.summitbook.db.entities.PowerData
+import de.drtobiasprinz.summitbook.utils.ZipFileVersions
 import org.junit.Assert
 import org.junit.Test
 import java.util.*
@@ -48,7 +49,9 @@ class GarminDataTest {
                 263,
                 237,
                 218,
-                210
+                210,
+                trainingStressScore = 114.3f,
+                intensityFactor = 0.984f,
             ),
             261,
             54f,
@@ -57,6 +60,10 @@ class GarminDataTest {
             0f,
             0f,
             199.4f,
+            1184,
+            908,
+            93,
+            0.0f,
             cyclingDynamics = CyclingDynamicsData(
                 49.49f,
                 50.51f,
@@ -64,8 +71,6 @@ class GarminDataTest {
                 79.5f,
                 23.5f,
                 23f,
-                114.3f,
-                0.984f,
                 4304,
                 10,
                 563,
@@ -83,11 +88,7 @@ class GarminDataTest {
                 59,
                 118,
                 89,
-                16,
-                1184,
-                908,
-                93,
-                0.0f
+                16
             )
         )
     }
@@ -97,7 +98,7 @@ class GarminDataTest {
     fun parseFromCsvFileLineUsingRegex() {
         Assert.assertEquals(
             garminData1,
-            parseFromCsvFileLine(garminData1.getStringRepresentation(123456L))
+            parseFromCsvFileLine(garminData1.getStringRepresentation(123456L), ZipFileVersions.V0)
         )
     }
 
@@ -118,6 +119,11 @@ class GarminDataTest {
             )
             Assert.assertEquals(garminData, garminDataFromJsonExtracted)
             Assert.assertEquals(garminData.cyclingDynamics.toString(), garminDataFromJsonExtracted.cyclingDynamics.toString())
+            Assert.assertEquals(garminData.power.toString(), garminDataFromJsonExtracted.power.toString())
+            val garminDataFromStringRepresentation = parseFromCsvFileLine(garminData.getStringRepresentation(19618464792), ZipFileVersions.V1)
+            Assert.assertEquals(garminDataFromJsonExtracted, garminDataFromStringRepresentation)
+            Assert.assertEquals(garminDataFromJsonExtracted.cyclingDynamics.toString(), garminDataFromStringRepresentation?.cyclingDynamics.toString())
+            Assert.assertEquals(garminDataFromJsonExtracted.power.toString(), garminDataFromStringRepresentation?.power.toString())
         }
     }
 

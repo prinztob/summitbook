@@ -164,8 +164,8 @@ class ZipFileWriterTest {
         segmentEntry2.segmentId = id
         db.segmentsDao().addSegmentEntry(segmentEntry1)
         db.segmentsDao().addSegmentEntry(segmentEntry2)
-        val summits = db.summitsDao().allSummit ?: emptyList()
-        val segments = db.segmentsDao().getAllSegmentsDeprecated() ?: emptyList()
+        val summits = db.summitsDao().allSummit
+        val segments = db.segmentsDao().getAllSegmentsDeprecated()
         val file = kotlin.io.path.createTempFile(suffix = ".zip").toFile()
 
         val writer = ZipFileWriter(

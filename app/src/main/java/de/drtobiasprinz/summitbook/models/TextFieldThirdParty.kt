@@ -87,7 +87,7 @@ enum class TextFieldThirdParty(
         { b -> b.intensityFactorText },
         { b -> b.intensityFactor },
         "",
-        { e -> e.garminData?.cyclingDynamics?.intensityFactor },
+        { e -> e.garminData?.power?.intensityFactor },
         { e -> e?.intensityFactorMinMax },
         digits = 2
     ),
@@ -96,7 +96,7 @@ enum class TextFieldThirdParty(
         { b -> b.trainingStressScoreText },
         { b -> b.trainingStressScore },
         "",
-        { e -> e.garminData?.cyclingDynamics?.trainingStressScore },
+        { e -> e.garminData?.power?.trainingStressScore },
         { e -> e?.trainingStressScoreMinMax },
         digits = 0
     ),
@@ -125,7 +125,7 @@ enum class TextFieldThirdParty(
         { b -> b.surfaceTypeUnpavedPercentageText },
         { b -> b.surfaceTypeUnpavedPercentage },
         "%",
-        { e -> e.garminData?.cyclingDynamics?.surfaceTypeUnpavedPercentage },
+        { e -> e.garminData?.surfaceTypeUnpavedPercentage },
         { e -> e?.surfaceTypeUnpavedPercentageMinMax },
         digits = 1,
     ),

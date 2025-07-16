@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "c71cbc63cb822643e5e970332f6b5771",
+    "identityHash": "40d13dfcc1e1a4bfa28ca34a782d8e5c",
     "entities": [
       {
         "tableName": "summits_table",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` INTEGER NOT NULL, `name` TEXT NOT NULL, `sportType` TEXT NOT NULL, `places` TEXT NOT NULL, `countries` TEXT NOT NULL, `comments` TEXT NOT NULL, `kilometers` REAL NOT NULL, `lat` REAL, `lng` REAL, `participants` TEXT NOT NULL, `equipments` TEXT NOT NULL DEFAULT '', `isFavorite` INTEGER NOT NULL, `isPeak` INTEGER NOT NULL DEFAULT false, `imageIds` TEXT NOT NULL, `activityId` INTEGER NOT NULL, `duration` INTEGER NOT NULL DEFAULT 0, `isBookmark` INTEGER NOT NULL DEFAULT false, `hasTrack` INTEGER NOT NULL DEFAULT false, `ignoreSimplifyingTrack` INTEGER NOT NULL DEFAULT false, `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `maxElevation` INTEGER NOT NULL, `elevationGain` INTEGER NOT NULL, `maxVerticalVelocity1Min` REAL NOT NULL, `maxVerticalVelocity10Min` REAL NOT NULL, `maxVerticalVelocity1h` REAL NOT NULL, `maxSlope` REAL NOT NULL DEFAULT 0.0, `maxVerticalVelocityDown1Min` REAL NOT NULL DEFAULT 0.0, `maxVerticalVelocityDown10Min` REAL NOT NULL DEFAULT 0.0, `maxVerticalVelocityDown1h` REAL NOT NULL DEFAULT 0.0, `maxSlopeDown` REAL NOT NULL DEFAULT 0.0, `avgVelocity` REAL NOT NULL, `maxVelocity` REAL NOT NULL, `oneKilometer` REAL NOT NULL, `fiveKilometer` REAL NOT NULL, `tenKilometers` REAL NOT NULL, `fifteenKilometers` REAL NOT NULL, `twentyKilometers` REAL NOT NULL, `thirtyKilometers` REAL NOT NULL, `fortyKilometers` REAL NOT NULL, `fiftyKilometers` REAL NOT NULL, `seventyFiveKilometers` REAL NOT NULL, `hundredKilometers` REAL NOT NULL, `activityIds` TEXT, `calories` REAL, `averageHR` REAL, `maxHR` REAL, `ftp` INTEGER, `vo2max` REAL, `aerobicTrainingEffect` REAL, `anaerobicTrainingEffect` REAL, `grit` REAL, `flow` REAL, `trainingLoad` REAL, `avgPower` REAL, `maxPower` REAL, `normPower` REAL, `oneSec` INTEGER, `twoSec` INTEGER, `fiveSec` INTEGER, `tenSec` INTEGER, `twentySec` INTEGER, `thirtySec` INTEGER, `oneMin` INTEGER, `twoMin` INTEGER, `fiveMin` INTEGER, `tenMin` INTEGER, `twentyMin` INTEGER, `thirtyMin` INTEGER, `oneHour` INTEGER, `twoHours` INTEGER, `fiveHours` INTEGER, `leftBalance` REAL, `rightBalance` REAL, `leftTorqueEffectiveness` REAL, `rightTorqueEffectiveness` REAL, `leftPedalSmoothness` REAL, `rightPedalSmoothness` REAL, `trainingStressScore` REAL, `intensityFactor` REAL, `totalNumberOfStrokes` INTEGER, `standingTime` INTEGER, `maxStandingPower` INTEGER, `averageStandingPower` INTEGER, `leftPowerPhaseStart` INTEGER, `leftPowerPhaseEnd` INTEGER, `leftPowerPhaseArcCenter` INTEGER, `leftPowerPhasePeakStart` INTEGER, `leftPowerPhasePeakEnd` INTEGER, `leftPowerPhasePeakArcCenter` INTEGER, `leftPlatformCenterOffset` INTEGER, `rightPowerPhaseStart` INTEGER, `rightPowerPhaseEnd` INTEGER, `rightPowerPhaseArcCenter` INTEGER, `rightPowerPhasePeakStart` INTEGER, `rightPowerPhasePeakEnd` INTEGER, `rightPowerPhasePeakArcCenter` INTEGER, `rightPlatformCenterOffset` INTEGER, `waterEstimated` INTEGER, `gainSolarActivityTime` INTEGER, `avgSolarChargePercent` INTEGER, `surfaceTypeUnpavedPercentage` REAL, `latNorth` REAL, `latSouth` REAL, `lonWest` REAL, `lonEast` REAL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` INTEGER NOT NULL, `name` TEXT NOT NULL, `sportType` TEXT NOT NULL, `places` TEXT NOT NULL, `countries` TEXT NOT NULL, `comments` TEXT NOT NULL, `kilometers` REAL NOT NULL, `lat` REAL, `lng` REAL, `participants` TEXT NOT NULL, `equipments` TEXT NOT NULL DEFAULT '', `isFavorite` INTEGER NOT NULL, `isPeak` INTEGER NOT NULL DEFAULT false, `imageIds` TEXT NOT NULL, `activityId` INTEGER NOT NULL, `duration` INTEGER NOT NULL DEFAULT 0, `isBookmark` INTEGER NOT NULL DEFAULT false, `hasTrack` INTEGER NOT NULL DEFAULT false, `ignoreSimplifyingTrack` INTEGER NOT NULL DEFAULT false, `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `maxElevation` INTEGER NOT NULL, `elevationGain` INTEGER NOT NULL, `maxVerticalVelocity1Min` REAL NOT NULL, `maxVerticalVelocity10Min` REAL NOT NULL, `maxVerticalVelocity1h` REAL NOT NULL, `maxSlope` REAL NOT NULL DEFAULT 0.0, `maxVerticalVelocityDown1Min` REAL NOT NULL DEFAULT 0.0, `maxVerticalVelocityDown10Min` REAL NOT NULL DEFAULT 0.0, `maxVerticalVelocityDown1h` REAL NOT NULL DEFAULT 0.0, `maxSlopeDown` REAL NOT NULL DEFAULT 0.0, `avgVelocity` REAL NOT NULL, `maxVelocity` REAL NOT NULL, `oneKilometer` REAL NOT NULL, `fiveKilometer` REAL NOT NULL, `tenKilometers` REAL NOT NULL, `fifteenKilometers` REAL NOT NULL, `twentyKilometers` REAL NOT NULL, `thirtyKilometers` REAL NOT NULL, `fortyKilometers` REAL NOT NULL, `fiftyKilometers` REAL NOT NULL, `seventyFiveKilometers` REAL NOT NULL, `hundredKilometers` REAL NOT NULL, `activityIds` TEXT, `calories` REAL, `averageHR` REAL, `maxHR` REAL, `ftp` INTEGER, `vo2max` REAL, `aerobicTrainingEffect` REAL, `anaerobicTrainingEffect` REAL, `grit` REAL, `flow` REAL, `trainingLoad` REAL, `waterEstimated` INTEGER, `gainSolarActivityTime` INTEGER, `avgSolarChargePercent` INTEGER, `surfaceTypeUnpavedPercentage` REAL, `avgPower` REAL, `maxPower` REAL, `normPower` REAL, `oneSec` INTEGER, `twoSec` INTEGER, `fiveSec` INTEGER, `tenSec` INTEGER, `twentySec` INTEGER, `thirtySec` INTEGER, `oneMin` INTEGER, `twoMin` INTEGER, `fiveMin` INTEGER, `tenMin` INTEGER, `twentyMin` INTEGER, `thirtyMin` INTEGER, `oneHour` INTEGER, `twoHours` INTEGER, `threeHours` INTEGER, `fourHours` INTEGER, `fiveHours` INTEGER, `trainingStressScore` REAL, `intensityFactor` REAL, `leftBalance` REAL, `rightBalance` REAL, `leftTorqueEffectiveness` REAL, `rightTorqueEffectiveness` REAL, `leftPedalSmoothness` REAL, `rightPedalSmoothness` REAL, `totalNumberOfStrokes` INTEGER, `standingTime` INTEGER, `maxStandingPower` INTEGER, `averageStandingPower` INTEGER, `leftPowerPhaseStart` INTEGER, `leftPowerPhaseEnd` INTEGER, `leftPowerPhaseArcCenter` INTEGER, `leftPowerPhasePeakStart` INTEGER, `leftPowerPhasePeakEnd` INTEGER, `leftPowerPhasePeakArcCenter` INTEGER, `leftPlatformCenterOffset` INTEGER, `rightPowerPhaseStart` INTEGER, `rightPowerPhaseEnd` INTEGER, `rightPowerPhaseArcCenter` INTEGER, `rightPowerPhasePeakStart` INTEGER, `rightPowerPhasePeakEnd` INTEGER, `rightPowerPhasePeakArcCenter` INTEGER, `rightPlatformCenterOffset` INTEGER, `latNorth` REAL, `latSouth` REAL, `lonWest` REAL, `lonEast` REAL)",
         "fields": [
           {
             "fieldPath": "date",
@@ -325,6 +325,26 @@
             "affinity": "REAL"
           },
           {
+            "fieldPath": "garminData.waterEstimated",
+            "columnName": "waterEstimated",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "garminData.gainSolarActivityTime",
+            "columnName": "gainSolarActivityTime",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "garminData.avgSolarChargePercent",
+            "columnName": "avgSolarChargePercent",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "garminData.surfaceTypeUnpavedPercentage",
+            "columnName": "surfaceTypeUnpavedPercentage",
+            "affinity": "REAL"
+          },
+          {
             "fieldPath": "garminData.power.avgPower",
             "columnName": "avgPower",
             "affinity": "REAL"
@@ -410,9 +430,29 @@
             "affinity": "INTEGER"
           },
           {
+            "fieldPath": "garminData.power.threeHours",
+            "columnName": "threeHours",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "garminData.power.fourHours",
+            "columnName": "fourHours",
+            "affinity": "INTEGER"
+          },
+          {
             "fieldPath": "garminData.power.fiveHours",
             "columnName": "fiveHours",
             "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "garminData.power.trainingStressScore",
+            "columnName": "trainingStressScore",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "garminData.power.intensityFactor",
+            "columnName": "intensityFactor",
+            "affinity": "REAL"
           },
           {
             "fieldPath": "garminData.cyclingDynamics.leftBalance",
@@ -442,16 +482,6 @@
           {
             "fieldPath": "garminData.cyclingDynamics.rightPedalSmoothness",
             "columnName": "rightPedalSmoothness",
-            "affinity": "REAL"
-          },
-          {
-            "fieldPath": "garminData.cyclingDynamics.trainingStressScore",
-            "columnName": "trainingStressScore",
-            "affinity": "REAL"
-          },
-          {
-            "fieldPath": "garminData.cyclingDynamics.intensityFactor",
-            "columnName": "intensityFactor",
             "affinity": "REAL"
           },
           {
@@ -543,26 +573,6 @@
             "fieldPath": "garminData.cyclingDynamics.rightPlatformCenterOffset",
             "columnName": "rightPlatformCenterOffset",
             "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "garminData.cyclingDynamics.waterEstimated",
-            "columnName": "waterEstimated",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "garminData.cyclingDynamics.gainSolarActivityTime",
-            "columnName": "gainSolarActivityTime",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "garminData.cyclingDynamics.avgSolarChargePercent",
-            "columnName": "avgSolarChargePercent",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "garminData.cyclingDynamics.surfaceTypeUnpavedPercentage",
-            "columnName": "surfaceTypeUnpavedPercentage",
-            "affinity": "REAL"
           },
           {
             "fieldPath": "trackBoundingBox.latNorth",
@@ -805,7 +815,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c71cbc63cb822643e5e970332f6b5771')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '40d13dfcc1e1a4bfa28ca34a782d8e5c')"
     ]
   }
 }

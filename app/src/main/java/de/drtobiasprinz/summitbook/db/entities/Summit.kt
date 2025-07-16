@@ -16,9 +16,9 @@ import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getJsonObjectEntryNotNull
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.roundToTwoDigits
 import de.drtobiasprinz.summitbook.ui.MainActivity
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_VERSION
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.utils.Constants
+import de.drtobiasprinz.summitbook.utils.ZipFileVersions
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
@@ -460,8 +460,7 @@ class Summit(
                 sportType == that.sportType &&
                 velocityData.maxVelocity == that.velocityData.maxVelocity &&
                 elevationData.elevationGain == that.elevationData.elevationGain &&
-                elevationData.maxElevation == that.elevationData.maxElevation &&
-                imageIds == that.imageIds
+                elevationData.maxElevation == that.elevationData.maxElevation
     }
 
     override fun equals(other: Any?): Boolean {
@@ -545,54 +544,8 @@ class Summit(
         var subDirForImages: String = "summitbook_images"
 
         fun parseFromCsvFileLine(line: String, version: String): Summit {
-            if (version == CSV_FILE_VERSION) {
-                val listPatternOnce = "[^;]+"
-                val listPatternNullOrOnce = "[^;]*"
-                val regex =
-                    """(?<date>(\d{4}-\d{2}-\d{2}));(?<name>($listPatternOnce));(?<sportType>(\w*));(?<activityId>(\d+));(?<kilometers>([\d.]+));(?<duration>([\d.]*));(?<elevationGain>(-?[\d.]+));(?<maxElevation>(-?[\d.]+));(?<maxVelocity>(-?[\d.]+));(?<lat>(-?[\d.]*));(?<long>(-?[\d.]*));(?<isFavorite>([01]));(?<isPeak>([01]));(?<comments>(.*));(?<participants>($listPatternNullOrOnce));(?<equipments>($listPatternNullOrOnce));(?<places>($listPatternNullOrOnce));(?<countries>($listPatternNullOrOnce))""".toRegex()
-                val matchResult = regex.find(line.replace("\n", ""))
-                return if (matchResult != null) {
-                    Summit(
-                        parseDate(matchResult.groups["date"]!!.value),
-                        matchResult.groups["name"]!!.value,
-                        try {
-                            SportType.valueOf(matchResult.groups["sportType"]!!.value)
-                        } catch (e: IllegalArgumentException) {
-                            SportType.Other
-                        },
-                        if (matchResult.groups["places"]!!.value != "") matchResult.groups["places"]!!.value.split(
-                            ","
-                        ) else emptyList(),
-                        if (matchResult.groups["countries"]!!.value != "") matchResult.groups["countries"]!!.value.split(
-                            ","
-                        ) else emptyList(),
-                        matchResult.groups["comments"]!!.value,
-                        ElevationData(
-                            maxElevation = matchResult.groups["maxElevation"]!!.value.toInt(),
-                            elevationGain = matchResult.groups["elevationGain"]!!.value.toInt()
-                        ),
-                        matchResult.groups["kilometers"]!!.value.toDouble(),
-                        VelocityData(matchResult.groups["maxVelocity"]!!.value.toDouble()),
-                        if (matchResult.groups["lat"]!!.value != "") matchResult.groups["lat"]!!.value.toDouble() else null,
-                        if (matchResult.groups["long"]!!.value != "") matchResult.groups["long"]!!.value.toDouble() else null,
-                        if (matchResult.groups["participants"]!!.value != "") matchResult.groups["participants"]!!.value.split(
-                            ","
-                        ) else emptyList(),
-                        if (matchResult.groups["equipments"]!!.value != "") matchResult.groups["equipments"]!!.value.split(
-                            ","
-                        ) else emptyList(),
-                        matchResult.groups["isFavorite"]!!.value == "1",
-                        matchResult.groups["isPeak"]!!.value == "1",
-                        activityId = if (matchResult.groups["activityId"]!!.value != "") matchResult.groups["activityId"]!!.value.toLong() else System.currentTimeMillis(),
-                        duration = matchResult.groups["duration"]!!.value.toInt()
-                    )
-                } else {
-                    parseFromCsvFileLine(line)
-                }
-            } else {
-                return parseFromCsvFileLine(line)
-            }
-
+            val zipFileVersions = ZipFileVersions.entries.find { it.versionName == version }
+            return zipFileVersions?.getSummit?.let { it(line) } ?: parseFromCsvFileLine(line)
         }
 
         @Throws(Exception::class)

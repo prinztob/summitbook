@@ -243,6 +243,16 @@ class GarminTrackAndDataDownloader(
                 garminDataSets.maxByOrNull { it?.grit?.toDouble() ?: 0.0 }?.grit ?: 0f,
                 garminDataSets.maxByOrNull { it?.flow?.toDouble() ?: 0.0 }?.flow ?: 0f,
                 garminDataSets.sumOf { it?.trainingLoad?.toDouble() ?: 0.0 }.toFloat(),
+                garminDataSets.sumOf { it?.waterEstimated ?: 0 },
+                garminDataSets.sumOf { it?.gainSolarActivityTime ?: 0 },
+                (garminDataSets.sumOf {
+                    (it?.avgSolarChargePercent?.toDouble() ?: 0.0) * (it?.duration
+                        ?: 0.0)
+                } / garminDataSets.sumOf { it?.duration ?: 0.0 }).toInt(),
+                (garminDataSets.sumOf {
+                    (it?.surfaceTypeUnpavedPercentage?.toDouble()
+                        ?: 0.0) * (it?.duration ?: 0.0)
+                } / garminDataSets.sumOf { it?.duration ?: 0.0 }).toFloat(),
                 getCyclingDynamics()
             )
         }
@@ -274,7 +284,15 @@ class GarminTrackAndDataDownloader(
             powerDataSets.maxByOrNull { it?.power?.thirtyMin ?: 0 }?.power?.thirtyMin ?: 0,
             powerDataSets.maxByOrNull { it?.power?.oneHour ?: 0 }?.power?.oneHour ?: 0,
             powerDataSets.maxByOrNull { it?.power?.twoHours ?: 0 }?.power?.twoHours ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.fiveHours ?: 0 }?.power?.fiveHours ?: 0
+            powerDataSets.maxByOrNull { it?.power?.threeHours ?: 0 }?.power?.threeHours ?: 0,
+            powerDataSets.maxByOrNull { it?.power?.fourHours ?: 0 }?.power?.fourHours ?: 0,
+            powerDataSets.maxByOrNull { it?.power?.fiveHours ?: 0 }?.power?.fiveHours ?: 0,
+            powerDataSets.sumOf {
+                (it?.power?.trainingStressScore?.toDouble() ?: 0.0)
+            }.toFloat(),
+            (powerDataSets.sumOf {
+                (it?.power?.intensityFactor?.toDouble() ?: 0.0)
+            } / powerDataSets.size).toFloat(),
         ) else PowerData()
     }
 
@@ -301,12 +319,6 @@ class GarminTrackAndDataDownloader(
             (sets.sumOf {
                 (it?.cyclingDynamics?.rightPedalSmoothness?.toDouble() ?: 0.0)
             } / numberOfSets).toFloat(),
-            (sets.sumOf {
-                (it?.cyclingDynamics?.trainingStressScore?.toDouble() ?: 0.0)
-            } / numberOfSets).toFloat(),
-            (sets.sumOf {
-                (it?.cyclingDynamics?.intensityFactor?.toDouble() ?: 0.0)
-            } / numberOfSets).toFloat(),
             sets.sumOf { (it?.cyclingDynamics?.totalNumberOfStrokes ?: 0) },
             sets.sumOf { (it?.cyclingDynamics?.standingTime ?: 0) },
             sets.maxOf { (it?.cyclingDynamics?.maxStandingPower ?: 0) },
@@ -328,16 +340,6 @@ class GarminTrackAndDataDownloader(
             sets.first()?.cyclingDynamics?.rightPowerPhasePeakEnd ?: 0,
             sets.first()?.cyclingDynamics?.rightPowerPhasePeakArcCenter ?: 0,
             sets.first()?.cyclingDynamics?.rightPlatformCenterOffset ?: 0,
-            sets.sumOf { it?.cyclingDynamics?.waterEstimated ?: 0 },
-            sets.sumOf { it?.cyclingDynamics?.gainSolarActivityTime ?: 0 },
-            (sets.sumOf {
-                (it?.cyclingDynamics?.avgSolarChargePercent?.toDouble() ?: 0.0) * (it?.duration
-                    ?: 0.0)
-            } / sets.sumOf { it?.duration ?: 0.0 }).toInt(),
-            (sets.sumOf {
-                (it?.cyclingDynamics?.surfaceTypeUnpavedPercentage?.toDouble()
-                    ?: 0.0) * (it?.duration ?: 0.0)
-            } / sets.sumOf { it?.duration ?: 0.0 }).toFloat(),
         ) else CyclingDynamicsData()
     }
 
