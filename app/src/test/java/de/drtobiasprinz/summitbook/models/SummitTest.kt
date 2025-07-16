@@ -133,7 +133,13 @@ class SummitTest {
             parseFromCsvFileLine(entryNotInList.toString(), CSV_FILE_VERSION)
         )
     }
-
+    @Test
+    @Throws(Exception::class)
+    fun parseGarminDataFromCsvFileLineWithNegativeCoordinates() {
+        val lineWithGarminToParse = "2016-12-07;Geysire de Tatio;Hike;162765688;0.0;0;150;4300;-1.0;-22.3306024913;-68.0121152569;0;0;zusätzlicher Stop mit 90 hm;Mirjam Prinz,Miranda Ochsner;;;Chile\n"
+        val entry: Summit = parseFromCsvFileLine(lineWithGarminToParse, CSV_FILE_VERSION)
+        Assert.assertNotNull(entry)
+    }
     @Test
     @Throws(Exception::class)
     fun parseGarminDataFromCsvFileLine() {

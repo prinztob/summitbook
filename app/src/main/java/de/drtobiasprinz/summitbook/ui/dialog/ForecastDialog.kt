@@ -348,7 +348,6 @@ class ForecastDialog : DialogFragment() {
                         setForecastText(it, view, slider)
                         button.visibility = View.VISIBLE
                         button.setOnClickListener { _ ->
-                            Log.i("TAG", "updated")
                             updateForecastForMonthAndYear(it.month, year, summits, forecasts, true)
                             setOverview(
                                 forecasts,

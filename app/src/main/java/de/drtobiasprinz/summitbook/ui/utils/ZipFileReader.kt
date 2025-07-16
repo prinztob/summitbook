@@ -238,9 +238,16 @@ class ZipFileReader(
                         )
                     ) {
                         val added =
-                            GarminData.parseFromCsvFileLineAndSave(lineLocal, allSummits, saveSummit)
+                            GarminData.parseFromCsvFileLineAndSave(
+                                lineLocal,
+                                allSummits,
+                                saveSummit
+                            )
                         if (added) {
-                            Log.d("ZipFileReader", "ThirdPartyData line $lineLocal was added in db.")
+                            Log.d(
+                                "ZipFileReader",
+                                "ThirdPartyData line $lineLocal was added in db."
+                            )
                         } else {
                             Log.d("ZipFileReader", "ThirdPartyData line $lineLocal is already db.")
                         }
@@ -266,16 +273,26 @@ class ZipFileReader(
                         )
                     ) {
                         val added =
-                            Summit.parseCalculatedDataFromCsvFileLineAndSave(lineLocal, allSummits, saveSummit)
+                            Summit.parseCalculatedDataFromCsvFileLineAndSave(
+                                lineLocal,
+                                allSummits,
+                                saveSummit
+                            )
                         if (added) {
-                            Log.d("ZipFileReader", "CalculatedData line $lineLocal was added in db.")
+                            Log.d(
+                                "ZipFileReader",
+                                "CalculatedData line $lineLocal was added in db."
+                            )
                         } else {
                             Log.d("ZipFileReader", "CalculatedData line $lineLocal is already db.")
                         }
                     }
                 } catch (e: Exception) {
                     unsuccessful++
-                    e.printStackTrace()
+                    Log.w(
+                        "ZipFileReader",
+                        "CalculatedData line $lineLocal was not added in db. Error: ${e.printStackTrace()}"
+                    )
                 }
             }
         }

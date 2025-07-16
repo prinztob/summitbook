@@ -2,7 +2,6 @@ package de.drtobiasprinz.summitbook.db.entities
 
 import android.content.Context
 import android.content.res.Resources
-import android.util.Log
 import androidx.room.*
 import com.google.gson.JsonNull.INSTANCE
 import com.google.gson.JsonObject
@@ -455,8 +454,6 @@ class Summit(
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
         val that = other as Summit
-        Log.i("TAG", that.toString())
-        Log.i("TAG", this.toString())
         return that.kilometers == kilometers &&
                 that.getDateAsString() == getDateAsString() &&
                 name == that.name &&
@@ -552,7 +549,7 @@ class Summit(
                 val listPatternOnce = "[^;]+"
                 val listPatternNullOrOnce = "[^;]*"
                 val regex =
-                    """(?<date>(\d{4}-\d{2}-\d{2}));(?<name>($listPatternOnce));(?<sportType>(\w*));(?<activityId>(\d+));(?<kilometers>([\d.]+));(?<duration>([\d.]*));(?<elevationGain>([\d.]+));(?<maxElevation>([\d.]+));(?<maxVelocity>([\d.]+));(?<lat>([\d.]*));(?<long>([\d.]*));(?<isFavorite>([01]));(?<isPeak>([01]));(?<comments>(.*));(?<participants>($listPatternNullOrOnce));(?<equipments>($listPatternNullOrOnce));(?<places>($listPatternNullOrOnce));(?<countries>($listPatternNullOrOnce))""".toRegex()
+                    """(?<date>(\d{4}-\d{2}-\d{2}));(?<name>($listPatternOnce));(?<sportType>(\w*));(?<activityId>(\d+));(?<kilometers>([\d.]+));(?<duration>([\d.]*));(?<elevationGain>(-?[\d.]+));(?<maxElevation>(-?[\d.]+));(?<maxVelocity>(-?[\d.]+));(?<lat>(-?[\d.]*));(?<long>(-?[\d.]*));(?<isFavorite>([01]));(?<isPeak>([01]));(?<comments>(.*));(?<participants>($listPatternNullOrOnce));(?<equipments>($listPatternNullOrOnce));(?<places>($listPatternNullOrOnce));(?<countries>($listPatternNullOrOnce))""".toRegex()
                 val matchResult = regex.find(line.replace("\n", ""))
                 return if (matchResult != null) {
                     Summit(
