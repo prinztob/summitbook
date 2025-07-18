@@ -251,6 +251,8 @@
     <string name="highest_power">Highest normalized Power</string>
     <string name="highest_power_1h">Highest Power 1h</string>
     <string name="highest_power_2h">Highest power 2h</string>
+    <string name="highest_power_3h">Highest power 3h</string>
+    <string name="highest_power_4h">Highest power 4h</string>
     <string name="highest_power_5h">Highest power 5h</string>
     <string name="highest_power_30min">Highest power 30min</string>
     <string name="highest_power_20min">Highest Power 20min</string>
@@ -273,6 +275,15 @@
     <string name="balance">Balance</string>
     <string name="torque_effectiveness">Torque effectiveness</string>
     <string name="pedal_smoothness">Pedal smoothness</string>
+    <string name="totalNumberOfStrokes"># strokes</string>
+    <string name="standingTime">Standing time</string>
+    <string name="maxStandingPower">Max standing power</string>
+    <string name="averageStandingPower">Avg standing power</string>
+    <string name="platform_center_offset">Platform center offset</string>
+    <string name="power_phase_left">Power Phase left</string>
+    <string name="power_phase_right">Power Phase right</string>
+    <string name="peak_power_phase_left">Peak Power Phase right</string>
+    <string name="Peak_power_phase_right">Peak Power Phase right</string>
     <string name="power_1sec">Power 1s</string>
     <string name="power_2sec">Power 2s</string>
     <string name="power_5sec">Power 5s</string>

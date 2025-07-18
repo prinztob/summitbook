@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.fragments
 
+import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.text.Html
@@ -15,7 +16,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryThirdPartyBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.TextFieldGroupThirdPArty
+import de.drtobiasprinz.summitbook.models.TextFieldGroupThirdParty
 import de.drtobiasprinz.summitbook.models.TextFieldThirdParty
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
@@ -94,7 +95,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
     private fun setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
         summitToView: Summit,
         summitToCompare: Summit?,
-        textFieldGroup: TextFieldGroupThirdPArty = TextFieldGroupThirdPArty.ThirdParty,
+        textFieldGroup: TextFieldGroupThirdParty = TextFieldGroupThirdParty.ThirdParty,
         visibility: Int = View.VISIBLE
     ) {
         TextFieldThirdParty.entries.filter { it.group == textFieldGroup }.forEach {
@@ -110,7 +111,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
     private fun setCircleBeforeTextForAllTextFields(
         summitToView: Summit,
         extrema: ExtremaValuesSummits? = null,
-        textFieldGroup: TextFieldGroupThirdPArty = TextFieldGroupThirdPArty.ThirdParty
+        textFieldGroup: TextFieldGroupThirdParty = TextFieldGroupThirdParty.ThirdParty
     ) {
         TextFieldThirdParty.entries.filter { it.group == textFieldGroup }.forEach {
             setCircleBeforeText(it, summitToView, extrema)
@@ -130,13 +131,13 @@ class SummitEntryThirdPartyFragment : Fragment() {
             binding.link.text = Html.fromHtml(text, 0)
             binding.constraintLayout.visibility = View.VISIBLE
 
-            TextFieldThirdParty.entries.filter { it.group == TextFieldGroupThirdPArty.ThirdParty }
+            TextFieldThirdParty.entries.filter { it.group == TextFieldGroupThirdParty.ThirdParty }
                 .forEach {
                     setTextOnlyForCurrentSummit(it, summitToView)
                 }
 
             TextFieldThirdParty.entries
-                .filter { it.group == TextFieldGroupThirdPArty.ThirdPartyAdditionalData }
+                .filter { it.group == TextFieldGroupThirdParty.ThirdPartyAdditionalData }
                 .forEach {
                     setTextOnlyForCurrentSummit(it, summitToView, View.GONE)
                 }
@@ -166,12 +167,12 @@ class SummitEntryThirdPartyFragment : Fragment() {
                 setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
                     summitToView,
                     summitToCompare,
-                    textFieldGroup = TextFieldGroupThirdPArty.ThirdParty
+                    textFieldGroup = TextFieldGroupThirdParty.ThirdParty
                 )
                 setCircleBeforeTextForAllTextFields(
                     summitToView,
                     extrema,
-                    TextFieldGroupThirdPArty.ThirdParty
+                    TextFieldGroupThirdParty.ThirdParty
                 )
                 binding.expandMorePowerData.setOnClickListener {
                     if (binding.expandMorePowerData.text == getString(R.string.more_power)) {
@@ -185,12 +186,12 @@ class SummitEntryThirdPartyFragment : Fragment() {
                         setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
                             summitToView,
                             summitToCompare,
-                            textFieldGroup = TextFieldGroupThirdPArty.ThirdPartyAdditionalData
+                            textFieldGroup = TextFieldGroupThirdParty.ThirdPartyAdditionalData
                         )
                         setCircleBeforeTextForAllTextFields(
                             summitToView,
                             extrema,
-                            TextFieldGroupThirdPArty.ThirdPartyAdditionalData
+                            TextFieldGroupThirdParty.ThirdPartyAdditionalData
                         )
                     } else {
                         binding.expandMorePowerData.text = getString(R.string.more_power)
@@ -200,11 +201,10 @@ class SummitEntryThirdPartyFragment : Fragment() {
                             0,
                             0
                         )
-                        binding.power1sec.visibility = View.GONE
                         setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
                             summitToView,
                             summitToCompare,
-                            textFieldGroup = TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
+                            textFieldGroup = TextFieldGroupThirdParty.ThirdPartyAdditionalData,
                             visibility = View.GONE
                         )
                     }
@@ -288,6 +288,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
         } else {
             textField.descriptionTextView(binding).visibility = visibility
             textField.valueTextView(binding).visibility = visibility
+            textField.valueTextViewRange(binding)?.visibility = visibility
             if (textField.toHHms) {
                 val valueInMs = (value.toDouble() * 3600000.0).toLong()
                 textField.valueTextView(binding).text = String.format(
@@ -326,9 +327,11 @@ class SummitEntryThirdPartyFragment : Fragment() {
         if (abs(value.toDouble() * textField.factor) < 0.01) {
             textField.descriptionTextView(binding).visibility = View.GONE
             textField.valueTextView(binding).visibility = View.GONE
+            textField.valueTextViewRange(binding)?.visibility = View.GONE
         } else {
             textField.descriptionTextView(binding).visibility = visibility
             textField.valueTextView(binding).visibility = visibility
+            textField.valueTextViewRange(binding)?.visibility = visibility
             if (textField.toHHms) {
                 val valueInMs = (value.toDouble() * 3600000.0).toLong()
                 val valueInMsCompareSummit = ((valueToCompare?.toDouble()
@@ -380,43 +383,49 @@ class SummitEntryThirdPartyFragment : Fragment() {
                     ?: 0.0,
                 maxSummit?.let { textField.getValue(it)?.toDouble() },
                 value.toDouble(),
-                textField.reverse
+                textField.reverse,
+                requireContext()
             )
         }
     }
 
 
-    private fun drawCircleWithIndication(
-        textView: TextView,
-        min: Double?,
-        max: Double?,
-        value: Double,
-        reverse: Boolean
-    ) {
-        textView.compoundDrawablePadding = 20
-        var drawable =
-            if (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
-                R.drawable.filled_circle_black
-            } else {
-                R.drawable.filled_circle_white
-            }
-        if (min != null && max != null) {
-            val percent =
-                if (reverse) (max.toDouble() - value) / (max.toDouble() - min.toDouble()) else
-                    (value - min.toDouble()) / (max.toDouble() - min.toDouble())
-            drawable = when (percent) {
-                in 0.0..0.2 -> R.drawable.filled_circle_red
-                in 0.2..0.4 -> R.drawable.filled_circle_orange
-                in 0.4..0.6 -> R.drawable.filled_circle_yellow
-                in 0.6..0.8 -> R.drawable.filled_circle_blue
-                in 0.8..1.0 -> R.drawable.filled_circle_green
-                else -> if (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
+
+    companion object {
+
+        fun drawCircleWithIndication(
+            textView: TextView,
+            min: Double?,
+            max: Double?,
+            value: Double,
+            reverse: Boolean,
+            context: Context
+        ) {
+            textView.compoundDrawablePadding = 20
+            var drawable =
+                if (context.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
                     R.drawable.filled_circle_black
                 } else {
                     R.drawable.filled_circle_white
                 }
+            if (min != null && max != null) {
+                val percent =
+                    if (reverse) (max.toDouble() - value) / (max.toDouble() - min.toDouble()) else
+                        (value - min.toDouble()) / (max.toDouble() - min.toDouble())
+                drawable = when (percent) {
+                    in 0.0..0.2 -> R.drawable.filled_circle_red
+                    in 0.2..0.4 -> R.drawable.filled_circle_orange
+                    in 0.4..0.6 -> R.drawable.filled_circle_yellow
+                    in 0.6..0.8 -> R.drawable.filled_circle_blue
+                    in 0.8..1.0 -> R.drawable.filled_circle_green
+                    else -> if (context.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
+                        R.drawable.filled_circle_black
+                    } else {
+                        R.drawable.filled_circle_white
+                    }
+                }
             }
+            textView.setCompoundDrawablesWithIntrinsicBounds(drawable, 0, 0, 0)
         }
-        textView.setCompoundDrawablesWithIntrinsicBounds(drawable, 0, 0, 0)
     }
 }

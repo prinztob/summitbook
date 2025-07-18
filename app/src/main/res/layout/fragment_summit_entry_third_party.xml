@@ -206,57 +206,6 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/trainingLoadText" />
 
-                <TextView
-                    android:id="@+id/FTPText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:text="@string/ftp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/vo2MaxText" />
-
-                <TextView
-                    android:id="@+id/averagePowerText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:text="@string/average_power"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/FTPText" />
-
-                <TextView
-                    android:id="@+id/maxPowerText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:text="@string/max_power"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/averagePowerText" />
-
-                <TextView
-                    android:id="@+id/normPowerText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:text="@string/normalized_power"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/maxPowerText" />
 
                 <TextView
                     android:id="@+id/surfaceTypeUnpavedPercentageText"
@@ -269,15 +218,15 @@
                     app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
                     app:drawableTint="?android:attr/colorControlNormal"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/normPowerText" />
+                    app:layout_constraintTop_toBottomOf="@+id/vo2MaxText" />
 
                 <TextView
-                    android:id="@+id/trainingStressScoreText"
+                    android:id="@+id/strokes_text"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
-                    android:text="@string/training_stress_score"
+                    android:text="@string/totalNumberOfStrokes"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
                     app:drawableTint="?android:attr/colorControlNormal"
@@ -285,56 +234,43 @@
                     app:layout_constraintTop_toBottomOf="@+id/surfaceTypeUnpavedPercentageText" />
 
                 <TextView
-                    android:id="@+id/intensityFactorText"
+                    android:id="@+id/standing_time_text"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
-                    android:text="@string/intensity_factor"
+                    android:text="@string/standingTime"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
                     app:drawableTint="?android:attr/colorControlNormal"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/trainingStressScoreText" />
+                    app:layout_constraintTop_toBottomOf="@+id/strokes_text" />
 
                 <TextView
-                    android:id="@+id/balanceText"
+                    android:id="@+id/standing_max_power_text"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
-                    android:text="@string/balance"
+                    android:text="@string/maxStandingPower"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
                     app:drawableTint="?android:attr/colorControlNormal"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/intensityFactorText" />
+                    app:layout_constraintTop_toBottomOf="@+id/standing_time_text" />
 
                 <TextView
-                    android:id="@+id/torque_effectiveness_text"
+                    android:id="@+id/standing_avg_power_text"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="20dp"
-                    android:text="@string/torque_effectiveness"
+                    android:text="@string/averageStandingPower"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
                     app:drawableTint="?android:attr/colorControlNormal"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/balanceText" />
-
-                <TextView
-                    android:id="@+id/pedal_smoothness_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:text="@string/pedal_smoothness"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/torque_effectiveness_text" />
+                    app:layout_constraintTop_toBottomOf="@+id/standing_max_power_text" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -436,46 +372,6 @@
                     app:layout_constraintTop_toBottomOf="@+id/trainingLoad" />
 
                 <TextView
-                    android:id="@+id/FTP"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/vo2Max" />
-
-                <TextView
-                    android:id="@+id/averagePower"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/FTP" />
-
-                <TextView
-                    android:id="@+id/maxPower"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/averagePower" />
-
-                <TextView
-                    android:id="@+id/normPower"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/maxPower" />
-
-                <TextView
                     android:id="@+id/surfaceTypeUnpavedPercentage"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
@@ -483,10 +379,9 @@
                     android:layout_marginStart="10dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/normPower" />
-
+                    app:layout_constraintTop_toBottomOf="@+id/vo2Max" />
                 <TextView
-                    android:id="@+id/trainingStressScore"
+                    android:id="@+id/strokes"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
@@ -494,16 +389,182 @@
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/surfaceTypeUnpavedPercentage" />
-
                 <TextView
-                    android:id="@+id/intensityFactor"
+                    android:id="@+id/standing_time"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="10dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/trainingStressScore" />
+                    app:layout_constraintTop_toBottomOf="@+id/strokes" />
+                <TextView
+                    android:id="@+id/standing_max_power"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/standing_time" />
+                <TextView
+                    android:id="@+id/standing_avg_power"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/standing_max_power" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <TextView
+                android:id="@+id/expand_more_power_data"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="20dp"
+                android:clickable="true"
+                android:padding="1dp"
+                android:text="@string/more_power"
+                android:visibility="gone"
+                app:drawableStartCompat="@drawable/ic_baseline_expand_more_24"
+                app:drawableTint="?android:attr/colorControlNormal"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/constraintLayout" />
+
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/constraint_layout_more_power_data"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/expand_more_power_data"
+                tools:layout_constraintStart_creator="1">
+
+
+                <TextView
+                    android:id="@+id/balanceText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:text="@string/balance"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/torque_effectiveness_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:text="@string/torque_effectiveness"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/balanceText" />
+
+                <TextView
+                    android:id="@+id/pedal_smoothness_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:text="@string/pedal_smoothness"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/baseline_electric_bolt_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/torque_effectiveness_text" />
+                <TextView
+                    android:id="@+id/cyclingDynamicsLeftPowerPhaseText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/power_phase_left"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/pedal_smoothness_text" />
+
+
+                <TextView
+                    android:id="@+id/cyclingDynamicsRightPowerPhaseText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/power_phase_right"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/cyclingDynamicsLeftPowerPhaseText" />
+                <TextView
+                    android:id="@+id/cyclingDynamicsLeftPeakPowerPhaseText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/peak_power_phase_left"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/cyclingDynamicsRightPowerPhaseText" />
+
+                <TextView
+                    android:id="@+id/cyclingDynamicsRightPeakPowerPhaseText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/Peak_power_phase_right"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/cyclingDynamicsLeftPeakPowerPhaseText" />
+                <TextView
+                    android:id="@+id/cyclingDynamicsPCOText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:drawablePadding="5dp"
+                    android:padding="1dp"
+                    android:text="@string/platform_center_offset"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/cyclingDynamicsRightPeakPowerPhaseText" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="@+id/constraint_layout_more_power_data"
+                app:layout_constraintStart_toEndOf="@+id/constraint_layout_more_power_data"
+                app:layout_constraintTop_toTopOf="@+id/constraint_layout_more_power_data"
+                tools:layout_constraintEnd_creator="1">
 
                 <TextView
                     android:id="@+id/balance_left"
@@ -513,7 +574,7 @@
                     android:layout_marginStart="10dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/intensityFactor" />
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <TextView
                     android:id="@+id/balance_right"
@@ -523,7 +584,7 @@
                     android:layout_marginStart="10dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toEndOf="@+id/balance_left"
-                    app:layout_constraintTop_toBottomOf="@+id/intensityFactor" />
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <TextView
                     android:id="@+id/torque_effectiveness_left"
@@ -564,298 +625,9 @@
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toEndOf="@+id/pedal_smoothness_left"
                     app:layout_constraintTop_toBottomOf="@+id/torque_effectiveness_right" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <TextView
-                android:id="@+id/expand_more_power_data"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:layout_marginStart="20dp"
-                android:clickable="true"
-                android:padding="1dp"
-                android:text="@string/more_power"
-                android:visibility="gone"
-                app:drawableStartCompat="@drawable/ic_baseline_expand_more_24"
-                app:drawableTint="?android:attr/colorControlNormal"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/constraintLayout" />
-
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/constraint_layout_more_power_data"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/expand_more_power_data"
-                tools:layout_constraintStart_creator="1">
 
                 <TextView
-                    android:id="@+id/power1secText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_1sec"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <TextView
-                    android:id="@+id/power2secText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_2sec"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power1secText" />
-
-                <TextView
-                    android:id="@+id/power5secText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_5sec"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power2secText" />
-
-                <TextView
-                    android:id="@+id/power10secText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_10sec"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power5secText" />
-
-                <TextView
-                    android:id="@+id/power20secText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_20sec"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power10secText" />
-
-                <TextView
-                    android:id="@+id/power30secText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_30sec"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power20secText" />
-
-                <TextView
-                    android:id="@+id/power1minText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_1min"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power30secText" />
-
-                <TextView
-                    android:id="@+id/power2minText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_2min"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power1minText" />
-
-                <TextView
-                    android:id="@+id/power5minText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_5min"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power2minText" />
-
-                <TextView
-                    android:id="@+id/power10minText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_10min"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power5minText" />
-
-                <TextView
-                    android:id="@+id/power20minText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_20min"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power10minText" />
-
-                <TextView
-                    android:id="@+id/power30minText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_30min"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power20minText" />
-
-                <TextView
-                    android:id="@+id/power1hText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_1h"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power30minText" />
-
-                <TextView
-                    android:id="@+id/power2hText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_2h"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power1hText" />
-
-                <TextView
-                    android:id="@+id/power3hText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_3h"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power2hText" />
-
-                <TextView
-                    android:id="@+id/power4hText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_4h"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power3hText" />
-
-                <TextView
-                    android:id="@+id/power5hText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="20dp"
-                    android:drawablePadding="5dp"
-                    android:padding="1dp"
-                    android:text="@string/power_5h"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/ic_baseline_power_24"
-                    app:drawableTint="?android:attr/colorControlNormal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power4hText" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:layout_constraintBottom_toBottomOf="@+id/constraint_layout_more_power_data"
-                app:layout_constraintStart_toEndOf="@+id/constraint_layout_more_power_data"
-                app:layout_constraintTop_toTopOf="@+id/constraint_layout_more_power_data"
-                tools:layout_constraintEnd_creator="1">
-
-                <TextView
-                    android:id="@+id/power1sec"
+                    android:id="@+id/cyclingDynamicsLeftPowerPhaseStart"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
@@ -863,10 +635,20 @@
                     android:padding="3.5dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintTop_toBottomOf="@+id/pedal_smoothness_left" />
 
                 <TextView
-                    android:id="@+id/power2sec"
+                    android:id="@+id/cyclingDynamicsLeftPowerPhaseEnd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toEndOf="@+id/cyclingDynamicsLeftPowerPhaseStart"
+                    app:layout_constraintTop_toBottomOf="@+id/pedal_smoothness_left" />
+                <TextView
+                    android:id="@+id/cyclingDynamicsRightPowerPhaseStart"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
@@ -874,10 +656,21 @@
                     android:padding="3.5dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power1sec" />
+                    app:layout_constraintTop_toBottomOf="@+id/cyclingDynamicsLeftPowerPhaseStart" />
 
                 <TextView
-                    android:id="@+id/power5sec"
+                    android:id="@+id/cyclingDynamicsRightPowerPhaseEnd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toEndOf="@+id/cyclingDynamicsRightPowerPhaseStart"
+                    app:layout_constraintTop_toBottomOf="@+id/cyclingDynamicsLeftPowerPhaseStart" />
+
+                <TextView
+                    android:id="@+id/cyclingDynamicsLeftPeakPowerPhaseStart"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
@@ -885,10 +678,21 @@
                     android:padding="3.5dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power2sec" />
+                    app:layout_constraintTop_toBottomOf="@+id/cyclingDynamicsRightPowerPhaseStart" />
 
                 <TextView
-                    android:id="@+id/power10sec"
+                    android:id="@+id/cyclingDynamicsLeftPeakPowerPhaseEnd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toEndOf="@+id/cyclingDynamicsLeftPeakPowerPhaseStart"
+                    app:layout_constraintTop_toBottomOf="@+id/cyclingDynamicsRightPowerPhaseStart" />
+
+                <TextView
+                    android:id="@+id/cyclingDynamicsRightPeakPowerPhaseStart"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
@@ -896,10 +700,21 @@
                     android:padding="3.5dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power5sec" />
+                    app:layout_constraintTop_toBottomOf="@+id/cyclingDynamicsLeftPeakPowerPhaseStart" />
 
                 <TextView
-                    android:id="@+id/power20sec"
+                    android:id="@+id/cyclingDynamicsRightPeakPowerPhaseEnd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="27dp"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="10dp"
+                    android:padding="3.5dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    app:layout_constraintStart_toEndOf="@+id/cyclingDynamicsRightPeakPowerPhaseStart"
+                    app:layout_constraintTop_toBottomOf="@+id/cyclingDynamicsLeftPeakPowerPhaseStart" />
+
+                <TextView
+                    android:id="@+id/cyclingDynamicsPCOLeft"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
@@ -907,139 +722,18 @@
                     android:padding="3.5dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power10sec" />
+                    app:layout_constraintTop_toBottomOf="@+id/cyclingDynamicsRightPeakPowerPhaseStart" />
 
                 <TextView
-                    android:id="@+id/power30sec"
+                    android:id="@+id/cyclingDynamicsPCORight"
                     android:layout_width="wrap_content"
                     android:layout_height="27dp"
                     android:layout_gravity="start"
                     android:layout_marginStart="10dp"
                     android:padding="3.5dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power20sec" />
-
-                <TextView
-                    android:id="@+id/power1min"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:padding="3.5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power30sec" />
-
-                <TextView
-                    android:id="@+id/power2min"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:padding="3.5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power1min" />
-
-                <TextView
-                    android:id="@+id/power5min"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:padding="3.5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power2min" />
-
-                <TextView
-                    android:id="@+id/power10min"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:padding="3.5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power5min" />
-
-                <TextView
-                    android:id="@+id/power20min"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:padding="3.5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power10min" />
-
-                <TextView
-                    android:id="@+id/power30min"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:padding="3.5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power20min" />
-
-                <TextView
-                    android:id="@+id/power1h"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:padding="3.5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power30min" />
-
-                <TextView
-                    android:id="@+id/power2h"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:padding="3.5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power1h" />
-
-                <TextView
-                    android:id="@+id/power3h"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:padding="3.5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power2h" />
-
-                <TextView
-                    android:id="@+id/power4h"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:padding="3.5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power3h" />
-
-                <TextView
-                    android:id="@+id/power5h"
-                    android:layout_width="wrap_content"
-                    android:layout_height="27dp"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="10dp"
-                    android:padding="3.5dp"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/power4h" />
+                    app:layout_constraintStart_toEndOf="@+id/cyclingDynamicsPCOLeft"
+                    app:layout_constraintTop_toBottomOf="@+id/cyclingDynamicsRightPeakPowerPhaseStart" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -37,6 +37,10 @@ class ExtremaValuesSummits(val entries: List<Summit>, val shouldIndoorActivityBe
     var normPowerMinMax = getMinMax { e -> e.garminData?.power?.normPower ?: 0 }
     var trainingStressScoreMinMax = getMinMax { e -> e.garminData?.power?.trainingStressScore ?: 0 }
     var intensityFactorMinMax = getMinMax { e -> e.garminData?.power?.intensityFactor ?: 0 }
+    var standingMaxPowerMinMax = getMinMax { e -> e.garminData?.cyclingDynamics?.maxStandingPower ?: 0 }
+    var standingAvgPowerMinMax = getMinMax { e -> e.garminData?.cyclingDynamics?.averageStandingPower ?: 0 }
+    var strokesMinMax = getMinMax { e -> e.garminData?.cyclingDynamics?.standingTime ?: 0 }
+    var standingTimeMinMax = getMinMax { e -> e.garminData?.cyclingDynamics?.standingTime ?: 0 }
     var surfaceTypeUnpavedPercentageMinMax = getMinMax { e -> e.garminData?.surfaceTypeUnpavedPercentage ?: 0 }
     var maxPowerMinMax = getMinMax { e -> e.garminData?.power?.maxPower ?: 0 }
     var averagePowerMinMax = getMinMax { e -> e.garminData?.power?.avgPower ?: 0 }

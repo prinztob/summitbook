@@ -5,13 +5,13 @@ import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryThirdPartyBind
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 
-enum class TextFieldGroupThirdPArty {
+enum class TextFieldGroupThirdParty {
     ThirdParty,
     ThirdPartyAdditionalData,
 }
 
 enum class TextFieldThirdParty(
-    val group: TextFieldGroupThirdPArty,
+    val group: TextFieldGroupThirdParty,
     val descriptionTextView: (FragmentSummitEntryThirdPartyBinding) -> TextView,
     val valueTextView: (FragmentSummitEntryThirdPartyBinding) -> TextView,
     val unit: String,
@@ -24,10 +24,8 @@ enum class TextFieldThirdParty(
     val valueTextViewRange: (FragmentSummitEntryThirdPartyBinding) -> TextView? = { _ -> null },
     val getValueRange: (Summit) -> Number? = { _ -> null },
 ) {
-
-
     AverageHr(
-        TextFieldGroupThirdPArty.ThirdParty,
+        TextFieldGroupThirdParty.ThirdParty,
         { b -> b.averageHrText },
         { b -> b.averageHr },
         "bpm",
@@ -37,7 +35,7 @@ enum class TextFieldThirdParty(
         reverse = true
     ),
     MaxHr(
-        TextFieldGroupThirdPArty.ThirdParty,
+        TextFieldGroupThirdParty.ThirdParty,
         { b -> b.maxHrText },
         { b -> b.maxHr },
         "bpm",
@@ -47,7 +45,7 @@ enum class TextFieldThirdParty(
         reverse = true
     ),
     Calories(
-        TextFieldGroupThirdPArty.ThirdParty,
+        TextFieldGroupThirdParty.ThirdParty,
         { b -> b.caloriesText },
         { b -> b.calories },
         "kcal",
@@ -55,53 +53,113 @@ enum class TextFieldThirdParty(
         { e -> e?.caloriesMinMax },
         digits = 0
     ),
-    MaxPower(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.maxPowerText },
-        { b -> b.maxPower },
-        "W",
-        { e -> e.garminData?.power?.maxPower },
-        { e -> e?.maxPowerMinMax },
-        digits = 0
+    PartPaved(
+        TextFieldGroupThirdParty.ThirdParty,
+        { b -> b.surfaceTypeUnpavedPercentageText },
+        { b -> b.surfaceTypeUnpavedPercentage },
+        "%",
+        { e -> e.garminData?.surfaceTypeUnpavedPercentage },
+        { e -> e?.surfaceTypeUnpavedPercentageMinMax },
+        digits = 1,
     ),
-    AveragePower(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.averagePowerText },
-        { b -> b.averagePower },
-        "W",
-        { e -> e.garminData?.power?.avgPower },
-        { e -> e?.averagePowerMinMax },
-        digits = 0
-    ),
-    NormPower(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.normPowerText },
-        { b -> b.normPower },
-        "W",
-        { e -> e.garminData?.power?.normPower },
-        { e -> e?.normPowerMinMax },
-        digits = 0
-    ),
-    IntensityFactor(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.intensityFactorText },
-        { b -> b.intensityFactor },
+    AerobicTrainingEffect(
+        TextFieldGroupThirdParty.ThirdParty,
+        { b -> b.aerobicTrainingEffectText },
+        { b -> b.aerobicTrainingEffect },
         "",
-        { e -> e.garminData?.power?.intensityFactor },
-        { e -> e?.intensityFactorMinMax },
-        digits = 2
+        { e -> e.garminData?.aerobicTrainingEffect },
+        { e -> e?.aerobicTrainingEffectMinMax },
     ),
-    TrainingStressScore(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.trainingStressScoreText },
-        { b -> b.trainingStressScore },
+    AnaerobicTrainingEffect(
+        TextFieldGroupThirdParty.ThirdParty,
+        { b -> b.anaerobicTrainingEffectText },
+        { b -> b.anaerobicTrainingEffect },
         "",
-        { e -> e.garminData?.power?.trainingStressScore },
-        { e -> e?.trainingStressScoreMinMax },
+        { e -> e.garminData?.anaerobicTrainingEffect },
+        { e -> e?.anaerobicTrainingEffectMinMax },
+    ),
+    Grit(
+        TextFieldGroupThirdParty.ThirdParty,
+        { b -> b.gritText },
+        { b -> b.grit },
+        "",
+        { e -> e.garminData?.grit },
+        { e -> e?.gritMinMax },
+    ),
+    Flow(
+        TextFieldGroupThirdParty.ThirdParty,
+        { b -> b.flowText },
+        { b -> b.flow },
+        "",
+        { e -> e.garminData?.flow },
+        { e -> e?.flowMinMax },
+    ),
+    TrainingsLoad(
+        TextFieldGroupThirdParty.ThirdParty,
+        { b -> b.trainingLoadText },
+        { b -> b.trainingLoad },
+        "",
+        { e -> e.garminData?.trainingLoad },
+        { e -> e?.trainingsLoadMinMax },
+    ),
+    Vo2Max(
+        TextFieldGroupThirdParty.ThirdParty,
+        { b -> b.vo2MaxText },
+        { b -> b.vo2Max },
+        "",
+        { e -> e.garminData?.vo2max },
+        { e -> e?.vo2maxMinMax },
+        digits = 1
+    ),
+    Strokes(
+        TextFieldGroupThirdParty.ThirdParty,
+        { b -> b.strokesText },
+        { b -> b.strokes },
+        "",
+        { e -> e.garminData?.cyclingDynamics?.totalNumberOfStrokes },
+        { e -> e?.strokesMinMax },
+        digits = 1
+    ),
+    StandingTime(
+        TextFieldGroupThirdParty.ThirdParty,
+        { b -> b.standingTimeText },
+        { b -> b.standingTime },
+        "",
+        { e -> e.garminData?.cyclingDynamics?.standingTime },
+        { e -> e?.standingTimeMinMax },
+        digits = 1,
+        toHHms = true
+    ),
+    StandingAvgPower(
+        TextFieldGroupThirdParty.ThirdParty,
+        { b -> b.standingAvgPowerText },
+        { b -> b.standingAvgPower },
+        "",
+        { e -> e.garminData?.cyclingDynamics?.averageStandingPower },
+        { e -> e?.standingAvgPowerMinMax },
         digits = 0
+    ),
+    StandingMaxPower(
+        TextFieldGroupThirdParty.ThirdParty,
+        { b -> b.standingMaxPowerText },
+        { b -> b.standingMaxPower },
+        "",
+        { e -> e.garminData?.cyclingDynamics?.maxStandingPower },
+        { e -> e?.standingMaxPowerMinMax },
+        digits = 0
+    ),
+    PedalSmoothness(
+        TextFieldGroupThirdParty.ThirdPartyAdditionalData,
+        { b -> b.pedalSmoothnessText },
+        { b -> b.pedalSmoothnessLeft },
+        "%",
+        { e -> e.garminData?.cyclingDynamics?.leftPedalSmoothness },
+        digits = 1,
+        valueTextViewRange = { b -> b.pedalSmoothnessRight },
+        getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPedalSmoothness },
     ),
     Balance(
-        TextFieldGroupThirdPArty.ThirdParty,
+        TextFieldGroupThirdParty.ThirdPartyAdditionalData,
         { b -> b.balanceText },
         { b -> b.balanceLeft },
         "%",
@@ -111,7 +169,7 @@ enum class TextFieldThirdParty(
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightBalance },
     ),
     TorqueEffectiveness(
-        TextFieldGroupThirdPArty.ThirdParty,
+        TextFieldGroupThirdParty.ThirdPartyAdditionalData,
         { b -> b.torqueEffectivenessText },
         { b -> b.torqueEffectivenessLeft },
         "%",
@@ -120,236 +178,54 @@ enum class TextFieldThirdParty(
         valueTextViewRange = { b -> b.torqueEffectivenessRight },
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightTorqueEffectiveness },
     ),
-    PartPaved(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.surfaceTypeUnpavedPercentageText },
-        { b -> b.surfaceTypeUnpavedPercentage },
-        "%",
-        { e -> e.garminData?.surfaceTypeUnpavedPercentage },
-        { e -> e?.surfaceTypeUnpavedPercentageMinMax },
+    LeftPowerPhase(
+        TextFieldGroupThirdParty.ThirdPartyAdditionalData,
+        { b -> b.cyclingDynamicsLeftPowerPhaseText },
+        { b -> b.cyclingDynamicsLeftPowerPhaseStart },
+        "°",
+        { e -> e.garminData?.cyclingDynamics?.leftPowerPhaseStart },
         digits = 1,
+        valueTextViewRange = { b -> b.cyclingDynamicsLeftPowerPhaseEnd },
+        getValueRange =  { e -> e.garminData?.cyclingDynamics?.leftPowerPhaseEnd },
     ),
-    PedalSmoothness(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.pedalSmoothnessText },
-        { b -> b.pedalSmoothnessLeft },
-        "%",
-        { e -> e.garminData?.cyclingDynamics?.leftPedalSmoothness },
+    RightPowerPhase(
+        TextFieldGroupThirdParty.ThirdPartyAdditionalData,
+        { b -> b.cyclingDynamicsRightPowerPhaseText },
+        { b -> b.cyclingDynamicsRightPowerPhaseStart },
+        "°",
+        { e -> e.garminData?.cyclingDynamics?.rightPowerPhaseStart },
         digits = 1,
-        valueTextViewRange = { b -> b.pedalSmoothnessRight },
-        getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPedalSmoothness },
+        valueTextViewRange = { b -> b.cyclingDynamicsRightPowerPhaseEnd },
+        getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPowerPhaseEnd },
     ),
-    AerobicTrainingEffect(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.aerobicTrainingEffectText },
-        { b -> b.aerobicTrainingEffect },
-        "",
-        { e -> e.garminData?.aerobicTrainingEffect },
-        { e -> e?.aerobicTrainingEffectMinMax },
+    LeftPeakPowerPhase(
+        TextFieldGroupThirdParty.ThirdPartyAdditionalData,
+        { b -> b.cyclingDynamicsLeftPeakPowerPhaseText },
+        { b -> b.cyclingDynamicsLeftPeakPowerPhaseStart },
+        "°",
+        { e -> e.garminData?.cyclingDynamics?.leftPowerPhasePeakStart },
+        digits = 1,
+        valueTextViewRange = { b -> b.cyclingDynamicsLeftPeakPowerPhaseEnd },
+        getValueRange =  { e -> e.garminData?.cyclingDynamics?.leftPowerPhasePeakEnd },
     ),
-    AnaerobicTrainingEffect(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.anaerobicTrainingEffectText },
-        { b -> b.anaerobicTrainingEffect },
-        "",
-        { e -> e.garminData?.anaerobicTrainingEffect },
-        { e -> e?.anaerobicTrainingEffectMinMax },
+    RightPeakPowerPhase(
+        TextFieldGroupThirdParty.ThirdPartyAdditionalData,
+        { b -> b.cyclingDynamicsRightPeakPowerPhaseText },
+        { b -> b.cyclingDynamicsRightPeakPowerPhaseStart },
+        "°",
+        { e -> e.garminData?.cyclingDynamics?.rightPowerPhasePeakStart },
+        digits = 1,
+        valueTextViewRange = { b -> b.cyclingDynamicsRightPeakPowerPhaseEnd },
+        getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPowerPhasePeakEnd },
     ),
-    Grit(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.gritText },
-        { b -> b.grit },
-        "",
-        { e -> e.garminData?.grit },
-        { e -> e?.gritMinMax },
+    PlatformCenterOffset(
+        TextFieldGroupThirdParty.ThirdPartyAdditionalData,
+        { b -> b.cyclingDynamicsPCOText },
+        { b -> b.cyclingDynamicsPCOLeft },
+        "mm",
+        { e -> e.garminData?.cyclingDynamics?.leftPlatformCenterOffset },
+        digits = 1,
+        valueTextViewRange = { b -> b.cyclingDynamicsPCORight },
+        getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPlatformCenterOffset },
     ),
-    Flow(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.flowText },
-        { b -> b.flow },
-        "",
-        { e -> e.garminData?.flow },
-        { e -> e?.flowMinMax },
-    ),
-    TrainingsLoad(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.trainingLoadText },
-        { b -> b.trainingLoad },
-        "",
-        { e -> e.garminData?.trainingLoad },
-        { e -> e?.trainingsLoadMinMax },
-    ),
-    Vo2Max(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.vo2MaxText },
-        { b -> b.vo2Max },
-        "",
-        { e -> e.garminData?.vo2max },
-        { e -> e?.vo2maxMinMax },
-        digits = 1
-    ),
-    FTP(
-        TextFieldGroupThirdPArty.ThirdParty,
-        { b -> b.FTPText },
-        { b -> b.FTP },
-        "",
-        { e -> e.garminData?.ftp },
-        { e -> e?.ftpMinMax },
-        digits = 0
-    ),
-
-    Power1s(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power1secText },
-        { b -> b.power1sec },
-        "W",
-        { e -> e.garminData?.power?.oneSec },
-        { e -> e?.power1sMinMax },
-        digits = 0
-    ),
-    Power2s(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power2secText },
-        { b -> b.power2sec },
-        "W",
-        { e -> e.garminData?.power?.twoSec },
-        { e -> e?.power2sMinMax },
-        digits = 0
-    ),
-    Power5s(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power5secText },
-        { b -> b.power5sec },
-        "W",
-        { e -> e.garminData?.power?.fiveSec },
-        { e -> e?.power5sMinMax },
-        digits = 0
-    ),
-    Power10s(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power10secText },
-        { b -> b.power10sec },
-        "W",
-        { e -> e.garminData?.power?.tenSec },
-        { e -> e?.power10sMinMax },
-        digits = 0
-    ),
-    Power20s(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power20secText },
-        { b -> b.power20sec },
-        "W",
-        { e -> e.garminData?.power?.twentySec },
-        { e -> e?.power20sMinMax },
-        digits = 0
-    ),
-    Power30s(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power30secText },
-        { b -> b.power30sec },
-        "W",
-        { e -> e.garminData?.power?.thirtySec },
-        { e -> e?.power30sMinMax },
-        digits = 0
-    ),
-    Power1Min(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power1minText },
-        { b -> b.power1min },
-        "W",
-        { e -> e.garminData?.power?.oneMin },
-        { e -> e?.power1minMinMax },
-        digits = 0
-    ),
-    Power2Min(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power2minText },
-        { b -> b.power2min },
-        "W",
-        { e -> e.garminData?.power?.twoMin },
-        { e -> e?.power2minMinMax },
-        digits = 0
-    ),
-    Power5Min(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power5minText },
-        { b -> b.power5min },
-        "W",
-        { e -> e.garminData?.power?.fiveMin },
-        { e -> e?.power5minMinMax },
-        digits = 0
-    ),
-    Power10Min(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power10minText },
-        { b -> b.power10min },
-        "W",
-        { e -> e.garminData?.power?.tenMin },
-        { e -> e?.power10minMinMax },
-        digits = 0
-    ),
-    Power20Min(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power20minText },
-        { b -> b.power20min },
-        "W",
-        { e -> e.garminData?.power?.twentyMin },
-        { e -> e?.power20minMinMax },
-        digits = 0
-    ),
-    Power30Min(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power30minText },
-        { b -> b.power30min },
-        "W",
-        { e -> e.garminData?.power?.thirtyMin },
-        { e -> e?.power30minMinMax },
-        digits = 0
-    ),
-    Power1H(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power1hText },
-        { b -> b.power1h },
-        "W",
-        { e -> e.garminData?.power?.oneHour },
-        { e -> e?.power1hMinMax },
-        digits = 0
-    ),
-    Power2H(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power2hText },
-        { b -> b.power2h },
-        "W",
-        { e -> e.garminData?.power?.twoHours },
-        { e -> e?.power2hMinMax },
-        digits = 0
-    ),
-    Power3H(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power3hText },
-        { b -> b.power3h },
-        "W",
-        { e -> e.garminData?.power?.threeHours },
-        { e -> e?.power3hMinMax },
-        digits = 0
-    ),
-    Power4H(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power4hText },
-        { b -> b.power4h },
-        "W",
-        { e -> e.garminData?.power?.fourHours },
-        { e -> e?.power4hMinMax },
-        digits = 0
-    ),
-    Power5H(
-        TextFieldGroupThirdPArty.ThirdPartyAdditionalData,
-        { b -> b.power5hText },
-        { b -> b.power5h },
-        "W",
-        { e -> e.garminData?.power?.fiveHours },
-        { e -> e?.power5hMinMax },
-        digits = 0
-    ),
-
 }

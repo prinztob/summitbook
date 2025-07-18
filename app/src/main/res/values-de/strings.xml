@@ -253,6 +253,8 @@
     <string name="highest_VO2MAX">Höchstes Vo2max</string>
     <string name="highest_FTP">Höchste FTP</string>
     <string name="highest_power_5h">Höchste Leitung 5h</string>
+    <string name="highest_power_4h">Höchste Leistung 4h</string>
+    <string name="highest_power_3h">Höchste Leistung 3h</string>
     <string name="highest_power_2h">Höchste Leistung 2h</string>
     <string name="highest_power_30min">Höchste Leitung 30min</string>
     <string name="highest_power_10min">Höchste Leitung 10min</string>
@@ -274,6 +276,15 @@
     <string name="balance">Verhältnis</string>
     <string name="torque_effectiveness">Drehm.-Effektivität</string>
     <string name="pedal_smoothness">Trittgleichmäßigkeit</string>
+    <string name="totalNumberOfStrokes"># Umdrehungen</string>
+    <string name="standingTime">Zeit im stehen</string>
+    <string name="maxStandingPower">Max. Leistung Stehend</string>
+    <string name="averageStandingPower">Durchschn. Leistung Stehend</string>
+    <string name="platform_center_offset">Platform center offset</string>
+    <string name="power_phase_left">Power Phase links</string>
+    <string name="power_phase_right">Power Phase rechts</string>
+    <string name="peak_power_phase_left">Peak Power Phase links</string>
+    <string name="Peak_power_phase_right">Peak Power Phase rechts</string>
     <string name="power_1sec">Leistung 1s</string>
     <string name="power_2sec">Leistung 2s</string>
     <string name="power_5sec">Leistung 5s</string>

@@ -29,13 +29,18 @@ import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryPowerBinding
 import de.drtobiasprinz.summitbook.db.entities.PowerData
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.fragments.SummitEntryThirdPartyFragment.Companion.drawCircleWithIndication
+import de.drtobiasprinz.summitbook.models.TextFieldPower
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
 import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
+import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.GregorianCalendar
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.pow
@@ -50,6 +55,7 @@ class SummitEntryPowerFragment : Fragment() {
     private var selectedTimeRangeSpinner: Int = 0
     private var summitsToCompare: List<Summit> = emptyList()
     private var extremaValuesAllSummits: ExtremaValuesSummits? = null
+    private lateinit var numberFormat: NumberFormat
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +67,7 @@ class SummitEntryPowerFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentSummitEntryPowerBinding.inflate(layoutInflater, container, false)
+        numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
         return binding.root
     }
 
@@ -89,13 +96,23 @@ class SummitEntryPowerFragment : Fragment() {
                         }
                         summitsListData.data.let { summits ->
                             if (summits != null) {
-
+                                val extrema = ExtremaValuesSummits(summits)
                                 pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { itSummitData ->
                                     itSummitData.data.let { summitToCompare ->
 
                                         drawChart(summitToView, summitToCompare, summits)
                                         setTimeRangeAdapter(summitToView, summitToCompare, summits)
+                                        TextFieldPower.entries.forEach { entry ->
+                                            setTextForCurrentSummitAndCompareWithSummit(
+                                                entry,
+                                                summitToView,
+                                                summitToCompare,
+                                            )
+                                        }
                                     }
+                                }
+                                TextFieldPower.entries.forEach { entry ->
+                                    setCircleBeforeText(entry, summitToView, extrema)
                                 }
                             }
                         }
@@ -103,9 +120,34 @@ class SummitEntryPowerFragment : Fragment() {
                     }
                     binding.summitName.text = summitToView.name
                     binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
+                    TextFieldPower.entries.forEach { entry ->
+                        setTextOnlyForCurrentSummit(entry, summitToView)
+                    }
 
                 }
             }
+        }
+    }
+
+    private fun setCircleBeforeText(
+        textField: TextFieldPower,
+        summit: Summit,
+        extrema: ExtremaValuesSummits?
+    ) {
+        val minSummit = textField.getMinMaxSummit(extrema)?.first
+        val maxSummit = textField.getMinMaxSummit(extrema)?.second
+        val value =
+            textField.getValue(summit) ?: (if (textField.getValue(summit) is Int) 0 else 0.0)
+        if (abs(value.toDouble() * textField.factor) > 0.01) {
+            drawCircleWithIndication(
+                textField.valueTextView(binding),
+                minSummit?.let { textField.getValue(it)?.toDouble() }
+                    ?: 0.0,
+                maxSummit?.let { textField.getValue(it)?.toDouble() },
+                value.toDouble(),
+                textField.reverse,
+                requireContext()
+            )
         }
     }
 
@@ -321,6 +363,96 @@ class SummitEntryPowerFragment : Fragment() {
         return filtered.ifEmpty { summits }.filter { !it.equalsInBaseProperties(summitToView) }
     }
 
+    private fun setTextOnlyForCurrentSummit(
+        textField: TextFieldPower,
+        summit: Summit,
+        visibility: Int = View.VISIBLE
+    ) {
+        val value =
+            textField.getValue(summit) ?: (if (textField.getValue(summit) is Int) 0 else 0.0)
+        if (abs(value.toDouble() * textField.factor) < 0.01) {
+            textField.descriptionTextView(binding).visibility = View.GONE
+            textField.valueTextView(binding).visibility = View.GONE
+            textField.valueTextViewRange(binding)?.visibility = View.GONE
+        } else {
+            textField.descriptionTextView(binding).visibility = visibility
+            textField.valueTextView(binding).visibility = visibility
+            if (textField.toHHms) {
+                val valueInMs = (value.toDouble() * 3600000.0).toLong()
+                textField.valueTextView(binding).text = String.format(
+                    Locale.getDefault(),
+                    "%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
+                    TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1)
+                )
+            } else {
+                numberFormat.maximumFractionDigits = textField.digits
+                textField.valueTextView(binding).text =
+                    "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unit}"
+            }
+            val rangeValue = textField.getValueRange(summit)
+            if (rangeValue != null) {
+                textField.valueTextViewRange(binding)?.text =
+                    "- ${numberFormat.format(rangeValue.toDouble() * textField.factor)} ${textField.unit}"
+            } else {
+                textField.valueTextViewRange(binding)?.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun setTextForCurrentSummitAndCompareWithSummit(
+        textField: TextFieldPower,
+        summit: Summit,
+        compareSummit: Summit? = null,
+        visibility: Int = View.VISIBLE
+    ) {
+        val value =
+            textField.getValue(summit) ?: (if (textField.getValue(summit) is Int) 0 else 0.0)
+        val valueToCompare =
+            if (compareSummit != null) textField.getValue(compareSummit) else (if (textField.getValue(
+                    summit
+                ) is Int
+            ) 0 else 0.0)
+        if (abs(value.toDouble() * textField.factor) < 0.01) {
+            textField.descriptionTextView(binding).visibility = View.GONE
+            textField.valueTextView(binding).visibility = View.GONE
+        } else {
+            textField.descriptionTextView(binding).visibility = visibility
+            textField.valueTextView(binding).visibility = visibility
+            if (textField.toHHms) {
+                val valueInMs = (value.toDouble() * 3600000.0).toLong()
+                val valueInMsCompareSummit = ((valueToCompare?.toDouble()
+                    ?: 0.0) * 3600000.0).toLong()
+                if (valueInMsCompareSummit > 0) {
+                    textField.valueTextView(binding).text = String.format(
+                        Locale.getDefault(),
+                        "%02d:%02d (%02d:%02d)", TimeUnit.MILLISECONDS.toHours(valueInMs),
+                        TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
+                        TimeUnit.MILLISECONDS.toHours(valueInMsCompareSummit),
+                        TimeUnit.MILLISECONDS.toMinutes(valueInMsCompareSummit) % TimeUnit.HOURS.toMinutes(
+                            1
+                        )
+                    )
+                } else {
+                    textField.valueTextView(binding).text = String.format(
+                        Locale.getDefault(),
+                        "%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
+                        TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1)
+                    )
+                }
+            } else {
+                numberFormat.maximumFractionDigits = textField.digits
+                textField.valueTextView(binding).text =
+                    if (valueToCompare != null && valueToCompare.toInt() != 0) {
+                        "${numberFormat.format(value.toDouble() * textField.factor)} " +
+                                "(${numberFormat.format(valueToCompare.toDouble() * textField.factor)}) " +
+                                textField.unit
+                    } else {
+                        "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unit}"
+                    }
+            }
+        }
+    }
+
     private fun getYear(date: Date): Int {
         val calendar: Calendar = GregorianCalendar()
         calendar.time = date
@@ -400,6 +532,18 @@ class SummitEntryPowerFragment : Fragment() {
             Entry(
                 scaleCbr(7200.0),
                 power.twoHours.toFloat()
+            )
+        )
+        if (power.threeHours > 0) lineChartEntries.add(
+            Entry(
+                scaleCbr(10400.0),
+                power.threeHours.toFloat()
+            )
+        )
+        if (power.fourHours > 0) lineChartEntries.add(
+            Entry(
+                scaleCbr(14400.0),
+                power.fourHours.toFloat()
             )
         )
         if (power.fiveHours > 0) lineChartEntries.add(
