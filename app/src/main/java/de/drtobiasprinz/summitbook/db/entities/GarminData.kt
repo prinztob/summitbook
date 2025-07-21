@@ -28,7 +28,6 @@ class GarminData(
     var gainSolarActivityTime: Int = 0,
     var avgSolarChargePercent: Int = 0,
     var surfaceTypeUnpavedPercentage: Float = 0f,
-
     @Embedded var cyclingDynamics: CyclingDynamicsData = CyclingDynamicsData(),
 ) {
 
@@ -79,7 +78,6 @@ class GarminData(
     companion object {
         fun getCsvHeadline(resources: Resources): String {
             return "activityId; " +
-                    "garminid; " +
                     "${resources.getString(R.string.calories)}; " +
                     "${resources.getString(R.string.average_hr)} (${resources.getString(R.string.bpm)}); " +
                     "${resources.getString(R.string.max_hr)} (${resources.getString(R.string.bpm)}); " +
@@ -90,12 +88,21 @@ class GarminData(
                     "anaerobicTrainingEffect; " +
                     "grit; " +
                     "flow; " +
-                    "trainingsload;\n"
+                    "trainingsload;" +
+                    "waterEstimated;" +
+                    "gainSolarActivityTime;" +
+                    "avgSolarChargePercent;" +
+                    "surfaceTypeUnpavedPercentage;" +
+                    "cyclingDynamics" + "\n"
         }
 
         fun getCsvDescription(resources: Resources): String {
             return "${resources.getString(R.string.required)}; " +
-                    "${resources.getString(R.string.required)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
+                    "${resources.getString(R.string.optional)}; " +
                     "${resources.getString(R.string.optional)}; " +
                     "${resources.getString(R.string.optional)}; " +
                     "${resources.getString(R.string.optional)}; " +
@@ -142,7 +149,7 @@ class GarminData(
             gsonExerciseSet: JsonObject? = null
         ): GarminData {
             val garminData = GarminData(activityIds)
-            GarminEntity.entries.forEach {
+            GarminEntityFromActivityJson.entries.forEach {
                 it.updateGarminData(
                     garminData,
                     activityJsonObject,
@@ -151,19 +158,19 @@ class GarminData(
             }
             if (gsonExerciseSet != null && gsonExerciseSet.has("summaryDTO")) {
                 val summaryDTO = gsonExerciseSet.getAsJsonObject("summaryDTO")
-                garminData.cyclingDynamics =
-                    CyclingDynamicsData.parseCyclingDynamicsFromGarminJson(summaryDTO)
-                garminData.ftp = getJsonObjectEntryNotNull(
-                    summaryDTO,
-                    "functionalThresholdPower"
-                ).roundToInt()
+                GarminEntityFromSplitJson.entries.forEach {
+                    it.updateGarminData(
+                        garminData,
+                        summaryDTO
+                    )
+                }
             }
             return garminData
         }
     }
 }
 
-enum class GarminEntity(
+enum class GarminEntityFromActivityJson(
     val updateGarminData: (GarminData, JsonObject, JsonObject?) -> Unit
 ) {
     Calories({ data, json, _ -> data.calories = getJsonObjectEntryNotNull(json, "calories") }),
@@ -193,19 +200,34 @@ enum class GarminEntity(
             0.0f
         }
     }),
-    WaterEstimated({ data, json, _ ->
+}
+
+enum class GarminEntityFromSplitJson(
+    val updateGarminData: (GarminData, JsonObject) -> Unit
+) {
+    WaterEstimated({ data, json ->
         data.waterEstimated = getJsonObjectEntryNotNull(json, "waterEstimated").roundToInt()
     }),
-    GainSolarActivityTime({ data, json, _ ->
+    GainSolarActivityTime({ data, json ->
         data.gainSolarActivityTime =
             getJsonObjectEntryNotNull(json, "gainSolarActivityTime").roundToInt()
     }),
-    AvgSolarChargePercent({ data, json, _ ->
+    AvgSolarChargePercent({ data, json ->
         data.avgSolarChargePercent =
             getJsonObjectEntryNotNull(json, "avgSolarChargePercent").roundToInt()
     }),
-    SurfaceTypeUnpavedPercentage({ data, json, _ ->
+    SurfaceTypeUnpavedPercentage({ data, json ->
         data.surfaceTypeUnpavedPercentage =
             getJsonObjectEntryNotNull(json, "surfaceTypeUnpavedPercentage")
     }),
+    CyclingDynamics({ data, json ->
+        data.cyclingDynamics =
+            CyclingDynamicsData.parseCyclingDynamicsFromGarminJson(json)
+    }),
+    FTP({ data, json ->
+        data.ftp = getJsonObjectEntryNotNull(
+            json,
+            "functionalThresholdPower"
+        ).roundToInt()
+    })
 }

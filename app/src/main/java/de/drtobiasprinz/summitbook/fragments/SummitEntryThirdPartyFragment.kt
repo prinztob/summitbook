@@ -289,7 +289,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
             textField.descriptionTextView(binding).visibility = visibility
             textField.valueTextView(binding).visibility = visibility
             textField.valueTextViewRange(binding)?.visibility = visibility
-            if (textField.toHHms) {
+            if (textField.toMinSec) {
                 val valueInMs = (value.toDouble() * 3600000.0).toLong()
                 textField.valueTextView(binding).text = String.format(
                     Locale.getDefault(),
@@ -299,12 +299,18 @@ class SummitEntryThirdPartyFragment : Fragment() {
             } else {
                 numberFormat.maximumFractionDigits = textField.digits
                 textField.valueTextView(binding).text =
-                    "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unit}"
+                    String.format(
+                        getString(textField.unitWithPlaceHolder),
+                        numberFormat.format(value.toDouble() * textField.factor)
+                    )
             }
             val rangeValue = textField.getValueRange(summit)
             if (rangeValue != null) {
                 textField.valueTextViewRange(binding)?.text =
-                    "- ${numberFormat.format(rangeValue.toDouble() * textField.factor)} ${textField.unit}"
+                    String.format(
+                        getString(textField.unitWithPlaceHolder),
+                        "- ${numberFormat.format(rangeValue.toDouble() * textField.factor)}"
+                    )
             } else {
                 textField.valueTextViewRange(binding)?.visibility = View.GONE
             }
@@ -332,25 +338,25 @@ class SummitEntryThirdPartyFragment : Fragment() {
             textField.descriptionTextView(binding).visibility = visibility
             textField.valueTextView(binding).visibility = visibility
             textField.valueTextViewRange(binding)?.visibility = visibility
-            if (textField.toHHms) {
-                val valueInMs = (value.toDouble() * 3600000.0).toLong()
-                val valueInMsCompareSummit = ((valueToCompare?.toDouble()
-                    ?: 0.0) * 3600000.0).toLong()
-                if (valueInMsCompareSummit > 0) {
+            if (textField.toMinSec) {
+                val valueInSec = (value.toDouble()).toLong()
+                val valueInSecCompareSummit = (valueToCompare?.toDouble()
+                    ?: 0.0).toLong()
+                if (valueInSecCompareSummit > 0) {
                     textField.valueTextView(binding).text = String.format(
                         Locale.getDefault(),
-                        "%02d:%02d (%02d:%02d)", TimeUnit.MILLISECONDS.toHours(valueInMs),
-                        TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
-                        TimeUnit.MILLISECONDS.toHours(valueInMsCompareSummit),
-                        TimeUnit.MILLISECONDS.toMinutes(valueInMsCompareSummit) % TimeUnit.HOURS.toMinutes(
-                            1
-                        )
+                        "%02d:%02d (%02d:%02d)",
+                        TimeUnit.SECONDS.toMinutes(valueInSec),
+                        valueInSec % TimeUnit.MINUTES.toSeconds(1),
+                        TimeUnit.SECONDS.toMinutes(valueInSecCompareSummit),
+                        valueInSecCompareSummit % TimeUnit.MINUTES.toSeconds(1)
                     )
                 } else {
                     textField.valueTextView(binding).text = String.format(
                         Locale.getDefault(),
-                        "%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
-                        TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1)
+                        "%02d:%02d",
+                        TimeUnit.SECONDS.toMinutes(valueInSec),
+                        valueInSec % TimeUnit.MINUTES.toSeconds(1)
                     )
                 }
             } else {
@@ -359,9 +365,9 @@ class SummitEntryThirdPartyFragment : Fragment() {
                     if (valueToCompare != null && valueToCompare.toInt() != 0) {
                         "${numberFormat.format(value.toDouble() * textField.factor)} " +
                                 "(${numberFormat.format(valueToCompare.toDouble() * textField.factor)}) " +
-                                textField.unit
+                                textField.unitWithPlaceHolder
                     } else {
-                        "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unit}"
+                        "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unitWithPlaceHolder}"
                     }
             }
         }
@@ -388,7 +394,6 @@ class SummitEntryThirdPartyFragment : Fragment() {
             )
         }
     }
-
 
 
     companion object {

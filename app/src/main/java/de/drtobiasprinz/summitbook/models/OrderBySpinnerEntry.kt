@@ -9,7 +9,7 @@ enum class OrderBySpinnerEntry(
     var includeIndoorActivities: Boolean = false, var excludeFromLineChart: Boolean = false,
     var f: (Summit) -> Float?,
     var segmentSorting: (Segment) -> Float? = { e -> e.segmentEntries.maxByOrNull { it.date }?.date?.time?.toFloat() },
-    var summitEntitySorting: (SummitEntities) -> Double = { it.count.toDouble() }
+    var summitEntitySorting: (SummitEntities) -> Double = { it.count.toDouble() },
 ) {
     Date(
         R.string.date,
@@ -102,6 +102,54 @@ enum class OrderBySpinnerEntry(
         includeIndoorActivities = true,
         f = { e -> e.garminData?.power?.oneHour?.toFloat() },
         segmentSorting = { e -> e.segmentEntries.maxBy { it.averagePower }.averagePower.toFloat() },
+    ),
+    LeftPowerPhase(
+        R.string.power_phase_left,
+        R.string.degree,
+        includeIndoorActivities = true,
+        f = { e ->
+            (e.garminData?.cyclingDynamics?.leftPowerPhaseEnd?.toFloat()
+                ?: 0f) - (e.garminData?.cyclingDynamics?.leftPowerPhaseStart?.toFloat() ?: 0f)
+        },
+    ),
+    LeftPowerPhasePeak(
+        R.string.peak_power_phase_left,
+        R.string.degree,
+        includeIndoorActivities = true,
+        f = { e ->
+            (e.garminData?.cyclingDynamics?.leftPowerPhasePeakEnd?.toFloat()
+                ?: 0f) - (e.garminData?.cyclingDynamics?.leftPowerPhasePeakStart?.toFloat() ?: 0f)
+        },
+    ),
+    LeftPlatformCenterOffset(
+        R.string.platform_center_offset_left,
+        R.string.millimeter,
+        includeIndoorActivities = true,
+        f = { e -> e.garminData?.cyclingDynamics?.leftPlatformCenterOffset?.toFloat() },
+    ),
+    RightPowerPhase(
+        R.string.power_phase_right,
+        R.string.degree,
+        includeIndoorActivities = true,
+        f = { e ->
+            (e.garminData?.cyclingDynamics?.rightPowerPhaseEnd?.toFloat()
+                ?: 0f) - (e.garminData?.cyclingDynamics?.rightPowerPhaseStart?.toFloat() ?: 0f)
+        },
+    ),
+    RightPowerPhasePeak(
+        R.string.peak_power_phase_right,
+        R.string.degree,
+        includeIndoorActivities = true,
+        f = { e ->
+            (e.garminData?.cyclingDynamics?.rightPowerPhasePeakEnd?.toFloat()
+                ?: 0f) - (e.garminData?.cyclingDynamics?.rightPowerPhasePeakStart?.toFloat() ?: 0f)
+        },
+    ),
+    RightPlatformCenterOffset(
+        R.string.platform_center_offset_right,
+        R.string.millimeter,
+        includeIndoorActivities = true,
+        f = { e -> e.garminData?.cyclingDynamics?.rightPlatformCenterOffset?.toFloat() },
     ),
     VerticalVelocity1Min(
         R.string.max_verticalVelocity_1Min,

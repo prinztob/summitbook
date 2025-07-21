@@ -208,7 +208,7 @@
     "minAvailableStamina": 21.0,
     "gainSolarActivityTime": 908.0,
     "avgSolarChargePercent": 93.0,
-    "surfaceTypeUnpavedPercentage": 0.0
+    "surfaceTypeUnpavedPercentage": 20.0
   },
   "connectIQMeasurements": [
     {

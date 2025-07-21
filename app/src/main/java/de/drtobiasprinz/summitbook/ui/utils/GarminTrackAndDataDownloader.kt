@@ -196,8 +196,9 @@ class GarminTrackAndDataDownloader(
             entries.map { it.places }.flatten(),
             entries.map { it.countries }.flatten(),
             if (entries.size > 1) "merge of " + entries.joinToString(", ") { it.name } else "",
-            ElevationData.parse(entries.maxByOrNull { it.elevationData.maxElevation }?.elevationData?.maxElevation
-                ?: 0,
+            ElevationData.parse(
+                entries.maxByOrNull { it.elevationData.maxElevation }?.elevationData?.maxElevation
+                    ?: 0,
                 entries.sumOf { it.elevationData.elevationGain }),
             entries.sumOf { it.kilometers },
             VelocityData.parse(
@@ -213,46 +214,48 @@ class GarminTrackAndDataDownloader(
     }
 
     private fun getGarminData(): GarminData? {
-        val garminDataSets = entries.filter { it.garminData != null }.map { it.garminData }
-        entries.forEach {
-            if (it.garminData != null) {
-                it.garminData?.duration = it.duration.toDouble()
-            }
-        }
+        val garminDataSets = entries.filter { it.garminData != null }.map { it }
         if (garminDataSets.isNotEmpty()) {
             val activityIds: MutableList<String> = mutableListOf()
-            garminDataSets.forEach { it?.activityIds?.let { it1 -> activityIds.addAll(it1) } }
+            garminDataSets.forEach { it.garminData?.activityIds?.let { it1 -> activityIds.addAll(it1) } }
             return GarminData(
                 activityIds,
-                garminDataSets.sumOf { it?.calories?.toDouble() ?: 0.0 }.toFloat(),
+                garminDataSets.sumOf { it.garminData?.calories?.toDouble() ?: 0.0 }.toFloat(),
                 (garminDataSets.sumOf {
-                    (it?.averageHR?.toDouble() ?: 0.0) * (it?.duration ?: 0.0)
+                    (it.garminData?.averageHR?.toDouble() ?: 0.0) * (it.duration)
                 } / entries.filter {
                     it.garminData?.averageHR != null && (it.garminData?.averageHR ?: 0f) > 0
                 }.sumOf { it.duration }).toFloat(),
-                garminDataSets.maxByOrNull { it?.maxHR?.toDouble() ?: 0.0 }?.maxHR ?: 0f,
+                garminDataSets.maxByOrNull {
+                    it.garminData?.maxHR?.toDouble() ?: 0.0
+                }?.garminData?.maxHR ?: 0f,
                 getPowerData(),
-                garminDataSets.maxByOrNull { it?.ftp ?: 0 }?.ftp ?: 0,
-                garminDataSets.maxByOrNull { it?.vo2max ?: 0f }?.vo2max ?: 0f,
+                garminDataSets.maxByOrNull { it.garminData?.ftp ?: 0 }?.garminData?.ftp ?: 0,
+                garminDataSets
+                    .maxByOrNull { it.garminData?.vo2max ?: 0f }
+                    ?.garminData?.vo2max ?: 0f,
                 garminDataSets.maxByOrNull {
-                    it?.aerobicTrainingEffect?.toDouble() ?: 0.0
-                }?.aerobicTrainingEffect ?: 0f,
+                    it.garminData?.aerobicTrainingEffect?.toDouble() ?: 0.0
+                }?.garminData?.aerobicTrainingEffect ?: 0f,
                 garminDataSets.maxByOrNull {
-                    it?.anaerobicTrainingEffect?.toDouble() ?: 0.0
-                }?.anaerobicTrainingEffect ?: 0f,
-                garminDataSets.maxByOrNull { it?.grit?.toDouble() ?: 0.0 }?.grit ?: 0f,
-                garminDataSets.maxByOrNull { it?.flow?.toDouble() ?: 0.0 }?.flow ?: 0f,
-                garminDataSets.sumOf { it?.trainingLoad?.toDouble() ?: 0.0 }.toFloat(),
-                garminDataSets.sumOf { it?.waterEstimated ?: 0 },
-                garminDataSets.sumOf { it?.gainSolarActivityTime ?: 0 },
+                    it.garminData?.anaerobicTrainingEffect?.toDouble() ?: 0.0
+                }?.garminData?.anaerobicTrainingEffect ?: 0f,
+                garminDataSets.maxByOrNull {
+                    it.garminData?.grit?.toDouble() ?: 0.0
+                }?.garminData?.grit ?: 0f,
+                garminDataSets.maxByOrNull {
+                    it.garminData?.flow?.toDouble() ?: 0.0
+                }?.garminData?.flow ?: 0f,
+                garminDataSets.sumOf { it.garminData?.trainingLoad?.toDouble() ?: 0.0 }.toFloat(),
+                garminDataSets.sumOf { it.garminData?.waterEstimated ?: 0 },
+                garminDataSets.sumOf { it.garminData?.gainSolarActivityTime ?: 0 },
                 (garminDataSets.sumOf {
-                    (it?.avgSolarChargePercent?.toDouble() ?: 0.0) * (it?.duration
-                        ?: 0.0)
-                } / garminDataSets.sumOf { it?.duration ?: 0.0 }).toInt(),
+                    (it.garminData?.avgSolarChargePercent?.toDouble() ?: 0.0) * (it.duration)
+                } / garminDataSets.sumOf { it.kilometers }).toInt(),
                 (garminDataSets.sumOf {
-                    (it?.surfaceTypeUnpavedPercentage?.toDouble()
-                        ?: 0.0) * (it?.duration ?: 0.0)
-                } / garminDataSets.sumOf { it?.duration ?: 0.0 }).toFloat(),
+                    (it.garminData?.surfaceTypeUnpavedPercentage?.toDouble()
+                        ?: 0.0) * (it.kilometers)
+                } / garminDataSets.sumOf { it.duration }).toFloat(),
                 getCyclingDynamics()
             )
         }

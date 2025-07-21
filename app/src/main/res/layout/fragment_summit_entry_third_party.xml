@@ -535,7 +535,7 @@
                     android:layout_marginStart="20dp"
                     android:drawablePadding="5dp"
                     android:padding="1dp"
-                    android:text="@string/Peak_power_phase_right"
+                    android:text="@string/peak_power_phase_right"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     app:drawableStartCompat="@drawable/ic_baseline_power_24"
                     app:drawableTint="?android:attr/colorControlNormal"

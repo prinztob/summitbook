@@ -63,7 +63,7 @@ class GarminDataTest {
             1184,
             908,
             93,
-            0.0f,
+            20.0f,
             cyclingDynamics = CyclingDynamicsData(
                 49.49f,
                 50.51f,
@@ -118,12 +118,27 @@ class GarminDataTest {
                 gsonExerciseSet = exerciseSets
             )
             Assert.assertEquals(garminData, garminDataFromJsonExtracted)
-            Assert.assertEquals(garminData.cyclingDynamics.toString(), garminDataFromJsonExtracted.cyclingDynamics.toString())
-            Assert.assertEquals(garminData.power.toString(), garminDataFromJsonExtracted.power.toString())
-            val garminDataFromStringRepresentation = parseFromCsvFileLine(garminData.getStringRepresentation(19618464792), ZipFileVersions.V1)
+            Assert.assertEquals(
+                garminData.cyclingDynamics.toString(),
+                garminDataFromJsonExtracted.cyclingDynamics.toString()
+            )
+            Assert.assertEquals(
+                garminData.power.toString(),
+                garminDataFromJsonExtracted.power.toString()
+            )
+            val garminDataFromStringRepresentation = parseFromCsvFileLine(
+                garminData.getStringRepresentation(19618464792),
+                ZipFileVersions.V1
+            )
             Assert.assertEquals(garminDataFromJsonExtracted, garminDataFromStringRepresentation)
-            Assert.assertEquals(garminDataFromJsonExtracted.cyclingDynamics.toString(), garminDataFromStringRepresentation?.cyclingDynamics.toString())
-            Assert.assertEquals(garminDataFromJsonExtracted.power.toString(), garminDataFromStringRepresentation?.power.toString())
+            Assert.assertEquals(
+                garminDataFromJsonExtracted.cyclingDynamics.toString(),
+                garminDataFromStringRepresentation?.cyclingDynamics.toString()
+            )
+            Assert.assertEquals(
+                garminDataFromJsonExtracted.power.toString(),
+                garminDataFromStringRepresentation?.power.toString()
+            )
         }
     }
 
