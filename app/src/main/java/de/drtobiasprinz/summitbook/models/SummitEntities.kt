@@ -29,12 +29,14 @@ enum class SummitEntityType(
             Collections.replaceAll(summit.participants, oldValue, newValue)
         }
     ),
-    EQUIPMENTS(getRelevantValueFromSummit = { summit -> summit.equipments },
+    EQUIPMENTS(
+        getRelevantValueFromSummit = { summit -> summit.equipments },
         { summit, oldValue, newValue ->
             Collections.replaceAll(summit.equipments, oldValue, newValue)
         }
     ),
-    PLACES_VISITED(getRelevantValueFromSummit = { summit -> summit.places + summit.name },
+    PLACES_VISITED(
+        getRelevantValueFromSummit = { summit -> summit.places + summit.name },
         { summit, oldValue, newValue ->
             Collections.replaceAll(summit.places, oldValue, newValue)
             if (summit.name == oldValue) {

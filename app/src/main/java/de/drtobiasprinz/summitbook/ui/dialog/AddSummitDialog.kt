@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -89,6 +88,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.round
 import kotlin.math.roundToInt
+import androidx.core.graphics.drawable.toDrawable
 
 @AndroidEntryPoint
 class AddSummitDialog : DialogFragment(), BaseDialog {
@@ -124,7 +124,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = DialogAddSummitBinding.inflate(layoutInflater, container, false)
-        dialog!!.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog!!.window?.setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
         return binding.root
     }
 
@@ -792,45 +792,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         }
     }
 
-    private fun showDatePicker(eText: EditText, context: Context) {
-        val calendar = Calendar.getInstance()
-        var day = calendar[Calendar.DAY_OF_MONTH]
-        var month = calendar[Calendar.MONTH]
-        var year = calendar[Calendar.YEAR]
-        if (eText.text.toString().trim() != "") {
-            val dateSplit = eText.text.toString().trim().split("-".toRegex()).toTypedArray()
-            if (dateSplit.size == 3) {
-                day = dateSplit[2].toInt()
-                month = dateSplit[1].toInt() - 1
-                year = dateSplit[0].toInt()
-            }
-        }
-        val picker = DatePickerDialog(
-            context,
-            R.style.CustomDatePickerDialogTheme,
-            { view: DatePicker, yearSelected: Int, monthSelected: Int, daySelected: Int ->
-                eText.setText(
-                    view.context.getString(
-                        R.string.date_format, String.format(
-                            requireContext().resources.configuration.locales[0], "%02d", daySelected
-                        ), String.format(
-                            requireContext().resources.configuration.locales[0],
-                            "%02d",
-                            monthSelected + 1
-                        ), String.format(
-                            requireContext().resources.configuration.locales[0],
-                            "%02d",
-                            yearSelected
-                        )
-                    )
-                )
-            },
-            year,
-            month,
-            day
-        )
-        picker.show()
-    }
 
     private fun downloadGpxForSummit(
         entry: Summit,
@@ -996,6 +957,46 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
     companion object {
+
+        fun showDatePicker(eText: EditText, context: Context) {
+            val calendar = Calendar.getInstance()
+            var day = calendar[Calendar.DAY_OF_MONTH]
+            var month = calendar[Calendar.MONTH]
+            var year = calendar[Calendar.YEAR]
+            if (eText.text.toString().trim() != "") {
+                val dateSplit = eText.text.toString().trim().split("-".toRegex()).toTypedArray()
+                if (dateSplit.size == 3) {
+                    day = dateSplit[2].toInt()
+                    month = dateSplit[1].toInt() - 1
+                    year = dateSplit[0].toInt()
+                }
+            }
+            val picker = DatePickerDialog(
+                context,
+                R.style.CustomDatePickerDialogTheme,
+                { view: DatePicker, yearSelected: Int, monthSelected: Int, daySelected: Int ->
+                    eText.setText(
+                        view.context.getString(
+                            R.string.date_format, String.format(
+                                context.resources.configuration.locales[0], "%02d", daySelected
+                            ), String.format(
+                                context.resources.configuration.locales[0],
+                                "%02d",
+                                monthSelected + 1
+                            ), String.format(
+                                context.resources.configuration.locales[0],
+                                "%02d",
+                                yearSelected
+                            )
+                        )
+                    )
+                },
+                year,
+                month,
+                day
+            )
+            picker.show()
+        }
 
         private fun setTextIfNotAlreadySet(editText: EditText, setValue: String) {
             val textValue = editText.text.toString()

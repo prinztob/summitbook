@@ -41,6 +41,9 @@ class SummitEntitiesViewFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         summitEntitiesAdapter = SummitEntitiesAdapter()
+        summitEntitiesAdapter.onClickDeleteEvent = { entityEvent ->
+            viewModel?.deleteEntityEvent(entityEvent)
+        }
         summitEntitiesAdapter.onClickUpdate = { entity, newName ->
             allSummits.forEach {
                 if (entity.name in usedSummitEntityType.getRelevantValueFromSummit(it)) {
@@ -57,11 +60,6 @@ class SummitEntitiesViewFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.apply {
-            recyclerView.apply {
-                layoutManager = LinearLayoutManager(requireContext())
-                adapter = summitEntitiesAdapter
-            }
-
             viewModel?.summitsList?.observe(viewLifecycleOwner) { summitsStatus ->
                 when (summitsStatus.status) {
                     DataStatus.Status.LOADING -> {
@@ -91,11 +89,19 @@ class SummitEntitiesViewFragment : Fragment() {
                                 relevantSummits.sumOf { it.elevationData.elevationGain }
                             )
                         }
-                        summitEntitiesAdapter.differ.submitList(
-                            sortFilterValues.applyOnSummitEntities(
-                                data
+                        summitEntitiesAdapter.summits = allSummits
+                        viewModel?.entityEvents?.observe(viewLifecycleOwner) { events ->
+                            summitEntitiesAdapter.entityEvents = events
+                            summitEntitiesAdapter.differ.submitList(
+                                sortFilterValues.applyOnSummitEntities(
+                                    data
+                                )
                             )
-                        )
+                            recyclerView.apply {
+                                layoutManager = LinearLayoutManager(requireContext())
+                                adapter = summitEntitiesAdapter
+                            }
+                        }
                     }
 
                     DataStatus.Status.ERROR -> {

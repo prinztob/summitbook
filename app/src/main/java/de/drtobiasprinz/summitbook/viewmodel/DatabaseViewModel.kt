@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
 import de.drtobiasprinz.summitbook.db.entities.Segment
@@ -45,12 +46,17 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val summitDetails: LiveData<DataStatus<Summit>>
         get() = _summitDetails
 
+    private var _entityEvents = MutableLiveData<List<EntityEvent>>()
+    val entityEvents: LiveData<List<EntityEvent>>
+        get() = _entityEvents
+
     init {
         getAllSummits()
         getAllBookmarks()
         getAllSegments()
         getAllForecasts()
         getAllIgnoredActivities()
+        getAllEntityEvent()
     }
 
     fun refresh() {
@@ -152,6 +158,25 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
 
     fun saveIgnoredActivity(entity: IgnoredActivity) = viewModelScope.launch {
         repository.saveIgnoredActivity(entity)
+    }
+
+
+    fun saveEntityEvent(isEdite: Boolean, entity: EntityEvent) = viewModelScope.launch {
+        if (isEdite) {
+            repository.updateEntityEvent(entity)
+        } else {
+            repository.saveEntityEvent(entity)
+        }
+    }
+
+    fun deleteEntityEvent(entity: EntityEvent) = viewModelScope.launch {
+        repository.deleteEntityEvent(entity)
+    }
+
+    private fun getAllEntityEvent() = viewModelScope.launch {
+        repository.getEntityEvents().collect {
+            _entityEvents.postValue(it)
+        }
     }
 
 }

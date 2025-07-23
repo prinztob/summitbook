@@ -92,7 +92,7 @@
             app:layout_constraintTop_toBottomOf="@id/image">
 
             <TextView
-                android:id="@+id/tour_date"
+                android:id="@+id/number_activities"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"
@@ -125,6 +125,25 @@
                 card_view:drawableStartCompat="@drawable/ic_trending_up_black_24dp" />
         </GridLayout>
 
+        <ImageView
+            android:id="@+id/dropDownRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/choose_data_source"
+            android:src="@drawable/baseline_arrow_drop_down_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/grid" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/dropDownRecyclerView" />
+
         <RelativeLayout
             android:id="@+id/cardRelativeLayout"
             android:layout_width="0dp"
@@ -133,7 +152,7 @@
             android:background="@color/colorPrimary"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/grid">
+            app:layout_constraintTop_toBottomOf="@id/recyclerView">
 
             <ImageButton
                 android:id="@+id/entry_edit"
@@ -146,6 +165,17 @@
                 android:paddingEnd="0dp"
                 android:src="@drawable/baseline_mode_edit_black_24dp" />
 
+            <ImageButton
+                android:id="@+id/add_event"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:layout_toEndOf="@id/entry_edit"
+                android:background="@color/color_white"
+                android:contentDescription="@string/add_event"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:src="@drawable/baseline_add_black_24dp" />
 
         </RelativeLayout>
 

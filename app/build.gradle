@@ -65,6 +65,7 @@ android {
     }
 }
 android {
+    compileSdk 36
     testOptions {
         unitTests {
             includeAndroidResources = true

@@ -525,4 +525,9 @@
     <string name="openandromaps_track_5">Stark bewachsener Weg</string>
     <string name="openandromaps_track_wo">Weg ohne Beschaffenheitsangabe</string>
     <string name="part_unpaved">Anteil unbfestigt</string>
+    <string name="add_event">Füge Event hinzu</string>
+    <string name="update_event_cancel">"Aktualisierung des Events wurde abgebrochen."</string>
+    <string name="add_new_event_cancel">"Das Hinzufügen eines neuen Events wurde abgebrochen"</string>
+    <string name="event_date">Event Datum</string>
+    <string name="event_description">Event Beschreibung</string>
 </resources>

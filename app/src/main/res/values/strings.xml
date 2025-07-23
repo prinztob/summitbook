@@ -524,4 +524,9 @@
     <string name="openandromaps_track_5">Track only made out of dirt/grass</string>
     <string name="openandromaps_track_wo">Track without grade</string>
     <string name="part_unpaved">Part unpaved</string>
+    <string name="add_event">Add event</string>
+    <string name="update_event_cancel">"Updating an existing event was canceled."</string>
+    <string name="add_new_event_cancel">"Adding a new event was canceled."</string>
+    <string name="event_date">Event date</string>
+    <string name="event_description">Event Description</string>
 </resources>

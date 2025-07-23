@@ -1,15 +1,22 @@
 package de.drtobiasprinz.summitbook.adapter
 
 import android.content.Context
+import android.content.res.Configuration
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import dagger.hilt.android.internal.managers.FragmentComponentManager
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.CardSummitEntitiesBinding
+import de.drtobiasprinz.summitbook.db.entities.EntityEvent
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SummitEntities
+import de.drtobiasprinz.summitbook.ui.dialog.AddEntityEventDialog
 import java.util.Locale
 import javax.inject.Singleton
 import kotlin.math.round
@@ -18,11 +25,12 @@ import kotlin.math.round
 @Singleton
 class SummitEntitiesAdapter :
     RecyclerView.Adapter<SummitEntitiesAdapter.ViewHolder>() {
-
+    var summits: List<Summit> = emptyList()
     lateinit var context: Context
+    var entityEvents: List<EntityEvent> = emptyList()
+    var recyclerViewVisible: Boolean = false
     var onClickUpdate: (SummitEntities, String) -> Unit = { _, _ -> }
-
-
+    var onClickDeleteEvent: (EntityEvent) -> Unit = { _ -> }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         context = parent.context
         val binding =
@@ -35,7 +43,7 @@ class SummitEntitiesAdapter :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.setData(differ.currentList[position])
+        holder.setData(differ.currentList[position], entityEvents)
     }
 
     override fun getItemCount(): Int {
@@ -44,11 +52,11 @@ class SummitEntitiesAdapter :
 
     inner class ViewHolder(var binding: CardSummitEntitiesBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        fun setData(entity: SummitEntities) {
+        fun setData(entity: SummitEntities, entityEvents: List<EntityEvent>) {
             binding.apply {
                 entityNameEdit.setText(entity.name)
                 entityName.text = entity.name
-                tourDate.text = String.format(Locale.getDefault(), "# %s", entity.count)
+                numberActivities.text = String.format(Locale.getDefault(), "# %s", entity.count)
                 distance.text = String.format(
                     Locale.getDefault(),
                     "%s %s",
@@ -61,7 +69,14 @@ class SummitEntitiesAdapter :
                     entity.heightMeters,
                     context.getString(R.string.hm)
                 )
-
+                addEvent.setOnClickListener {
+                    AddEntityEventDialog.getInstance(
+                        null, entity
+                    ).show(
+                        (FragmentComponentManager.findActivity(binding.root.context) as FragmentActivity).supportFragmentManager.beginTransaction(),
+                        "Add Event"
+                    )
+                }
                 entryEdit.setOnClickListener {
                     entityName.visibility = View.GONE
                     entityNameEdit.visibility = View.VISIBLE
@@ -82,6 +97,45 @@ class SummitEntitiesAdapter :
                     cancel.visibility = View.GONE
                 }
             }
+            val result = entityEvents.filter { it.equipmentName == entity.name }
+            val entityEventAdapter = EntityEventAdapter(summits, entity)
+            entityEventAdapter.differ.submitList(result)
+            entityEventAdapter.onClickDeleteEvent = onClickDeleteEvent
+            binding.recyclerView.apply {
+                layoutManager = LinearLayoutManager(context)
+                adapter = entityEventAdapter
+            }
+            if (result.isEmpty()) {
+                binding.dropDownRecyclerView.visibility = View.GONE
+            } else {
+                binding.dropDownRecyclerView.visibility = View.VISIBLE
+                setDropDown(binding, true)
+            }
+            binding.dropDownRecyclerView.setOnClickListener {
+                setDropDown(binding, recyclerViewVisible)
+                if (!recyclerViewVisible) {
+                    binding.recyclerView.visibility = View.VISIBLE
+                } else {
+                    binding.recyclerView.visibility = View.GONE
+                }
+                recyclerViewVisible = !recyclerViewVisible
+            }
+        }
+    }
+
+    private fun setDropDown(binding: CardSummitEntitiesBinding, showDownDrawable: Boolean) {
+        when (context.resources.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+            Configuration.UI_MODE_NIGHT_YES -> binding.dropDownRecyclerView.setImageResource(
+                if (showDownDrawable) R.drawable.baseline_arrow_drop_down_white_24dp else R.drawable.baseline_arrow_drop_up_white_24dp
+            )
+
+            Configuration.UI_MODE_NIGHT_NO -> binding.dropDownRecyclerView.setImageResource(
+                if (showDownDrawable) R.drawable.baseline_arrow_drop_down_24 else R.drawable.baseline_arrow_drop_up_black_24dp
+            )
+
+            else -> binding.dropDownRecyclerView.setImageResource(
+                if (showDownDrawable) R.drawable.baseline_arrow_drop_down_white_24dp else R.drawable.baseline_arrow_drop_up_white_24dp
+            )
         }
     }
 

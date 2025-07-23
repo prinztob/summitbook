@@ -39,9 +39,21 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
         dao = Room.databaseBuilder(
             context, AppDatabase::class.java, DATABASE
         ).build()
-        repository = DatabaseRepository(dao.summitsDao(), dao.segmentsDao(), dao.forecastDao(), dao.ignoredActivityDao())
+        repository = DatabaseRepository(
+            dao.summitsDao(),
+            dao.segmentsDao(),
+            dao.forecastDao(),
+            dao.ignoredActivityDao(),
+            dao.entityEventDao()
+        )
         repository.getAllSummitsLiveData().observeForever { summits ->
-            updateAllWidgets(summits, context, appWidgetManager, repository.getAllForecastsLiveData(), appWidgetIds)
+            updateAllWidgets(
+                summits,
+                context,
+                appWidgetManager,
+                repository.getAllForecastsLiveData(),
+                appWidgetIds
+            )
         }
     }
 

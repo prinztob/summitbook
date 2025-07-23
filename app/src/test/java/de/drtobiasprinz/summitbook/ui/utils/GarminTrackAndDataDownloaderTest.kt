@@ -189,7 +189,7 @@ class GarminTrackAndDataDownloaderTest {
         )
         entry3.garminData = GarminData(
             mutableListOf("3"), 111f, 70f, 103f,
-            PowerData(70f, 155f, 6f, 100, 99, 101, 97, 96, 96, 95, 94, 93, 92, 91, 90, 10, 10, 0),
+            PowerData(70f, 155f, 6f, 100, 99, 101, 97, 96, 96, 95, 94, 93, 92, 91, 90, 10, 10),
             46, 35f, 3.1f, 3.0f, 2f, 2f, 2f
         )
         val downloader = GarminTrackAndDataDownloader(

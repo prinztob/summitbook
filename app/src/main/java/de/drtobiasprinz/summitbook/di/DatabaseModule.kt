@@ -24,7 +24,6 @@ object DatabaseModule {
         context, AppDatabase::class.java, DATABASE
     ).build()
 
-
     @Provides
     @Singleton
     fun provideSummitsDao(db: AppDatabase) = db.summitsDao()
@@ -40,6 +39,10 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideIgnoredActivityDao(db: AppDatabase) = db.ignoredActivityDao()
+
+    @Provides
+    @Singleton
+    fun provideEntityEventDao(db: AppDatabase) = db.entityEventDao()
 
     @Provides
     @Singleton
