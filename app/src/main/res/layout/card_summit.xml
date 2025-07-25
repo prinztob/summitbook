@@ -219,7 +219,7 @@
                 android:contentDescription="@string/is_favorite"
                 android:paddingStart="5dp"
                 android:paddingEnd="0dp"
-                android:src="@drawable/icons8_mountain_24" />
+                android:src="@drawable/outline_landscape_2_24" />
 
 
             <ImageView

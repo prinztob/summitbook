@@ -125,7 +125,7 @@
             android:layout_marginTop="-5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:backgroundTint="?android:attr/colorControlNormal"
+
             android:contentDescription="@string/recalculate"
             android:src="@drawable/baseline_refresh_12"
             app:layout_constraintEnd_toStartOf="@+id/fulfilled_forecast_month1"
@@ -171,7 +171,7 @@
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month1" />
         <ImageButton
             android:id="@+id/recalculateDataMonth2"
-            android:backgroundTint="?android:attr/colorControlNormal"
+
             android:layout_marginTop="-5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -220,7 +220,7 @@
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month2" />
         <ImageButton
             android:id="@+id/recalculateDataMonth3"
-            android:backgroundTint="?android:attr/colorControlNormal"
+
             android:layout_marginTop="-5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -270,7 +270,7 @@
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month3" />
         <ImageButton
             android:id="@+id/recalculateDataMonth4"
-            android:backgroundTint="?android:attr/colorControlNormal"
+
             android:layout_marginTop="-5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -319,7 +319,7 @@
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month4" />
         <ImageButton
             android:id="@+id/recalculateDataMonth5"
-            android:backgroundTint="?android:attr/colorControlNormal"
+
             android:layout_marginTop="-5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -368,7 +368,7 @@
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month5" />
         <ImageButton
             android:id="@+id/recalculateDataMonth6"
-            android:backgroundTint="?android:attr/colorControlNormal"
+
             android:layout_marginTop="-5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -417,7 +417,7 @@
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month6" />
         <ImageButton
             android:id="@+id/recalculateDataMonth7"
-            android:backgroundTint="?android:attr/colorControlNormal"
+
             android:layout_marginTop="-5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -466,7 +466,7 @@
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month7" />
         <ImageButton
             android:id="@+id/recalculateDataMonth8"
-            android:backgroundTint="?android:attr/colorControlNormal"
+
             android:layout_marginTop="-5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -516,7 +516,7 @@
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month8" />
         <ImageButton
             android:id="@+id/recalculateDataMonth9"
-            android:backgroundTint="?android:attr/colorControlNormal"
+
             android:layout_marginTop="-5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -566,7 +566,7 @@
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month9" />
         <ImageButton
             android:id="@+id/recalculateDataMonth10"
-            android:backgroundTint="?android:attr/colorControlNormal"
+
             android:layout_marginTop="-5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -615,7 +615,7 @@
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month10" />
         <ImageButton
             android:id="@+id/recalculateDataMonth11"
-            android:backgroundTint="?android:attr/colorControlNormal"
+
             android:layout_marginTop="-5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -664,7 +664,7 @@
             app:layout_constraintTop_toBottomOf="@+id/range_slider_forecast_month11" />
         <ImageButton
             android:id="@+id/recalculateDataMonth12"
-            android:backgroundTint="?android:attr/colorControlNormal"
+
             android:layout_marginTop="-5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

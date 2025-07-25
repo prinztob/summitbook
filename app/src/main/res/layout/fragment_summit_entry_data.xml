@@ -119,7 +119,7 @@
                     android:padding="1dp"
                     android:text="@string/kilometers_hint"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    app:drawableStartCompat="@drawable/baseline_place_black_24dp"
+                    app:drawableStartCompat="@drawable/outline_distance_24"
                     app:drawableTint="?android:attr/colorControlNormal"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/height_meterText" />

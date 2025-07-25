@@ -91,7 +91,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceAnnualTargetKilometer = EditTextPreference(requireContext())
         preferenceAnnualTargetKilometer.title = getString(R.string.annual_target_kilometer_title)
         preferenceAnnualTargetKilometer.key = Keys.PREF_ANNUAL_TARGET_KM
-        preferenceAnnualTargetKilometer.setIcon(R.drawable.baseline_multiple_stop_24)
+        preferenceAnnualTargetKilometer.setIcon(R.drawable.outline_distance_24)
         preferenceAnnualTargetKilometer.summary =
             getString(R.string.annual_target_kilometer_summary)
         preferenceAnnualTargetKilometer.setDefaultValue("1200")
@@ -148,6 +148,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceUseSimplifiedTracks = SwitchPreferenceCompat(requireContext())
         preferenceUseSimplifiedTracks.title = getString(R.string.use_simplified_tracks_title)
         preferenceUseSimplifiedTracks.key = Keys.PREF_USE_SIMPLIFIED_TRACKS
+        preferenceUseSimplifiedTracks.setIcon(R.drawable.baseline_map_black_24dp)
         preferenceUseSimplifiedTracks.summary = getString(R.string.use_simplified_tracks)
         preferenceUseSimplifiedTracks.setDefaultValue(true)
 

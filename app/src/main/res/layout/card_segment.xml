@@ -71,7 +71,7 @@
                 android:drawablePadding="5dp"
                 android:padding="1dp"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                card_view:drawableStartCompat="@drawable/icons8_map_pinpoint_20" />
+                card_view:drawableStartCompat="@drawable/outline_distance_24" />
 
             <TextView
                 android:id="@+id/elevationGain"

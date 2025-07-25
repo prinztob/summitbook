@@ -213,15 +213,15 @@ class SummitsAdapter :
 
         private fun setMountainImage(summit: Summit, button: ImageButton) {
             if (summit.isPeak) {
-                button.setImageResource(R.drawable.icons8_mountain_24)
+                button.setImageResource(R.drawable.outline_landscape_2_24)
             } else {
-                button.setImageResource(R.drawable.icons8_valley_24)
+                button.setImageResource(R.drawable.outline_landscape_2_off_24)
             }
             button.setOnClickListener {
                 if (summit.isPeak) {
-                    button.setImageResource(R.drawable.icons8_valley_24)
+                    button.setImageResource(R.drawable.outline_landscape_2_off_24)
                 } else {
-                    button.setImageResource(R.drawable.icons8_mountain_24)
+                    button.setImageResource(R.drawable.outline_landscape_2_24)
                 }
                 onClickUpdateIsPeak(summit)
             }

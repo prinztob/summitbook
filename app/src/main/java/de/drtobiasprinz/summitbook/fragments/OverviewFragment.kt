@@ -60,7 +60,7 @@ class OverviewFragment : Fragment() {
 
     private var selectedGraphType = GraphType.ElevationGain
     private lateinit var numberFormat: NumberFormat
-
+    private var lastChartEntry: Entry = Entry(0f, 0f)
     private var graphIsVisible: Boolean = false
     private var currentMonth: Int = 0
     private var currentYear: Int = 0
@@ -119,8 +119,14 @@ class OverviewFragment : Fragment() {
             binding.lineChartYear.fitScreen()
         }
         binding.zoomIn.setOnClickListener {
-            val lastChartEntry = chartEntries.last()
-            binding.lineChartYear.zoom(4f, 4f,lastChartEntry.x, lastChartEntry.y, YAxis.AxisDependency.LEFT)
+            if (lastChartEntry.x != 0f || lastChartEntry.y != 0f)
+                binding.lineChartYear.zoom(
+                    4f,
+                    4f,
+                    lastChartEntry.x,
+                    lastChartEntry.y,
+                    YAxis.AxisDependency.LEFT
+                )
         }
         binding.overviewLayout.setOnClickListener {
             if (!graphIsVisible) {
@@ -296,6 +302,9 @@ class OverviewFragment : Fragment() {
                 minMax =
                     performanceGraphProvider.getActualGraphMinMaxForSummits(graphType, year, month)
             }
+            if (month == null) {
+                lastChartEntry = chartEntries.last()
+            }
             lineChart.invalidate()
             lineChart.axisRight.setDrawLabels(false)
             setYAxis(lineChart.axisLeft, graphType)
@@ -441,7 +450,7 @@ class OverviewFragment : Fragment() {
     private fun setYAxis(yAxis: YAxis?, graphType: GraphType) {
         yAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                numberFormat.maximumFractionDigits = if (value > 10 ) 0 else 1
+                numberFormat.maximumFractionDigits = if (value > 10) 0 else 1
                 val format = "${numberFormat.format(value.toDouble())} ${graphType.unit}"
                 return format
             }

@@ -108,7 +108,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_toStartOf="@id/kilometers_text"
-                android:drawableStart="@drawable/icons8_map_pinpoint_20"
+                android:drawableStart="@drawable/outline_distance_24"
                 android:drawablePadding="10dp"
                 android:hint="@string/kilometers_hint"
                 android:importantForAutofill="no"
@@ -179,7 +179,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_toStartOf="@id/top_elevation_text"
-                    android:drawableStart="@drawable/icons8_mountain_20"
+                    android:drawableStart="@drawable/outline_landscape_2_24"
                     android:drawablePadding="10dp"
                     android:hint="@string/top_elevation_hint"
                     android:importantForAutofill="no"
@@ -285,7 +285,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:contentDescription="@string/place_hint"
-                    android:src="@drawable/baseline_place_black_24dp" />
+                    android:src="@drawable/outline_distance_24" />
 
                 <AutoCompleteTextView
                     android:id="@+id/autoCompleteTextViewPlaces"

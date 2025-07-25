@@ -52,7 +52,7 @@
                 android:layout_marginStart="20dp"
                 android:drawablePadding="5dp"
                 android:padding="1dp"
-                app:drawableStartCompat="@drawable/icons8_map_pinpoint_20"
+                app:drawableStartCompat="@drawable/outline_distance_24"
                 app:drawableTint="?android:attr/colorControlNormal" />
 
 
