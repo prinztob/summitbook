@@ -363,11 +363,16 @@ class SummitEntryThirdPartyFragment : Fragment() {
                 numberFormat.maximumFractionDigits = textField.digits
                 textField.valueTextView(binding).text =
                     if (valueToCompare != null && valueToCompare.toInt() != 0) {
-                        "${numberFormat.format(value.toDouble() * textField.factor)} " +
-                                "(${numberFormat.format(valueToCompare.toDouble() * textField.factor)}) " +
-                                textField.unitWithPlaceHolder
+                        String.format(
+                            getString(textField.unitWithPlaceHolder),
+                            "${numberFormat.format(value.toDouble() * textField.factor)} " +
+                                    "(${numberFormat.format(valueToCompare.toDouble() * textField.factor)}) "
+                        )
                     } else {
-                        "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unitWithPlaceHolder}"
+                        String.format(
+                            getString(textField.unitWithPlaceHolder),
+                            numberFormat.format(value.toDouble() * textField.factor)
+                        )
                     }
             }
         }
