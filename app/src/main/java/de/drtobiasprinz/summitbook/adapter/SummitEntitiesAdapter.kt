@@ -1,7 +1,6 @@
 package de.drtobiasprinz.summitbook.adapter
 
 import android.content.Context
-import android.content.res.Configuration
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -97,7 +96,9 @@ class SummitEntitiesAdapter :
                     cancel.visibility = View.GONE
                 }
             }
-            val result = entityEvents.filter { it.equipmentName == entity.name }
+            val result = entityEvents
+                .filter { it.equipmentName == entity.name }
+                .sortedByDescending { it.date }
             val entityEventAdapter = EntityEventAdapter(summits, entity)
             entityEventAdapter.differ.submitList(result)
             entityEventAdapter.onClickDeleteEvent = onClickDeleteEvent
@@ -124,19 +125,9 @@ class SummitEntitiesAdapter :
     }
 
     private fun setDropDown(binding: CardSummitEntitiesBinding, showDownDrawable: Boolean) {
-        when (context.resources.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
-            Configuration.UI_MODE_NIGHT_YES -> binding.dropDownRecyclerView.setImageResource(
-                if (showDownDrawable) R.drawable.baseline_arrow_drop_down_white_24dp else R.drawable.baseline_arrow_drop_up_white_24dp
-            )
-
-            Configuration.UI_MODE_NIGHT_NO -> binding.dropDownRecyclerView.setImageResource(
-                if (showDownDrawable) R.drawable.baseline_arrow_drop_down_24 else R.drawable.baseline_arrow_drop_up_black_24dp
-            )
-
-            else -> binding.dropDownRecyclerView.setImageResource(
-                if (showDownDrawable) R.drawable.baseline_arrow_drop_down_white_24dp else R.drawable.baseline_arrow_drop_up_white_24dp
-            )
-        }
+        binding.dropDownRecyclerView.setImageResource(
+            if (showDownDrawable) R.drawable.baseline_arrow_drop_down_24 else R.drawable.baseline_arrow_drop_up_black_24dp
+        )
     }
 
     private val differCallback = object : DiffUtil.ItemCallback<SummitEntities>() {

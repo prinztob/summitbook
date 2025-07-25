@@ -66,13 +66,16 @@ class OverviewFragment : Fragment() {
     private var currentYear: Int = 0
     private var selectedYear: Int = 0
 
+    var chartEntries: List<Entry> = emptyList()
+    var chartEntriesForecast: List<Entry> = emptyList()
+    var minMax: Pair<List<Entry>, List<Entry>> = Pair(emptyList(), emptyList())
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         binding = FragmentOverviewBinding.inflate(layoutInflater, container, false)
-        setDropDown()
+        binding.overviewDropDown.setImageResource(R.drawable.baseline_arrow_drop_down_24)
         indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
         numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
 
@@ -115,19 +118,13 @@ class OverviewFragment : Fragment() {
         binding.refreshYear.setOnClickListener {
             binding.lineChartYear.fitScreen()
         }
+        binding.zoomIn.setOnClickListener {
+            val lastChartEntry = chartEntries.last()
+            binding.lineChartYear.zoom(4f, 4f,lastChartEntry.x, lastChartEntry.y, YAxis.AxisDependency.LEFT)
+        }
         binding.overviewLayout.setOnClickListener {
             if (!graphIsVisible) {
-                when (resources.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
-                    Configuration.UI_MODE_NIGHT_YES -> binding.dopDown.setImageResource(
-                        R.drawable.baseline_arrow_drop_up_white_24dp
-                    )
-
-                    Configuration.UI_MODE_NIGHT_NO -> binding.dopDown.setImageResource(
-                        R.drawable.baseline_arrow_drop_up_black_24dp
-                    )
-
-                    else -> binding.dopDown.setImageResource(R.drawable.baseline_arrow_drop_up_white_24dp)
-                }
+                binding.overviewDropDown.setImageResource(R.drawable.baseline_arrow_drop_up_black_24dp)
                 binding.chartLayout.visibility = View.VISIBLE
                 binding.groupProperty.addOnButtonCheckedListener { _, checkedId, isChecked ->
                     binding.lineChartMonth.clear()
@@ -161,7 +158,7 @@ class OverviewFragment : Fragment() {
                 }
             } else {
                 binding.chartLayout.visibility = View.GONE
-                setDropDown()
+                binding.overviewDropDown.setImageResource(R.drawable.baseline_arrow_drop_down_24)
             }
             graphIsVisible = !graphIsVisible
         }
@@ -192,20 +189,6 @@ class OverviewFragment : Fragment() {
         params.height = (Resources.getSystem().displayMetrics.heightPixels * height).toInt()
         params.width = Resources.getSystem().displayMetrics.widthPixels
         chart.layoutParams = params
-    }
-
-    private fun setDropDown() {
-        when (resources.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
-            Configuration.UI_MODE_NIGHT_YES -> binding.dopDown.setImageResource(
-                R.drawable.baseline_arrow_drop_down_white_24dp
-            )
-
-            Configuration.UI_MODE_NIGHT_NO -> binding.dopDown.setImageResource(
-                R.drawable.baseline_arrow_drop_down_24
-            )
-
-            else -> binding.dopDown.setImageResource(R.drawable.baseline_arrow_drop_down_white_24dp)
-        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -263,6 +246,7 @@ class OverviewFragment : Fragment() {
         } else {
             binding.lineChartMonth.visibility = View.GONE
             binding.textMonth.visibility = View.GONE
+            binding.zoomIn.visibility = View.GONE
         }
     }
 
@@ -287,9 +271,6 @@ class OverviewFragment : Fragment() {
         year: String,
         month: String? = null
     ) {
-        var chartEntries: List<Entry>
-        var chartEntriesForecast: List<Entry>
-        var minMax: Pair<List<Entry>, List<Entry>>
         lifecycleScope.launch {
             withContext(Dispatchers.Default) {
                 chartEntries = performanceGraphProvider.getActualGraphForSummits(
@@ -460,10 +441,9 @@ class OverviewFragment : Fragment() {
     private fun setYAxis(yAxis: YAxis?, graphType: GraphType) {
         yAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
+                numberFormat.maximumFractionDigits = if (value > 10 ) 0 else 1
                 val format = "${numberFormat.format(value.toDouble())} ${graphType.unit}"
-                return String.format(
-                    resources.configuration.locales[0], format, value, graphType.unit
-                )
+                return format
             }
         }
     }
@@ -489,7 +469,6 @@ class OverviewFragment : Fragment() {
 
 
     private fun setOverviewText(summits: List<Summit>) {
-        val numberFormat = NumberFormat.getInstance(resources.configuration.locales[0])
         numberFormat.maximumFractionDigits = 0
         val statisticEntry = StatisticEntry(summits, indoorHeightMeterPercent)
         statisticEntry.calculate()
