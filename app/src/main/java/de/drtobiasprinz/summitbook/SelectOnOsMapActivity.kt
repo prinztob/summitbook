@@ -51,6 +51,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import javax.inject.Inject
+import androidx.core.view.isVisible
+import de.drtobiasprinz.summitbook.db.entities.SportType
 
 @AndroidEntryPoint
 class SelectOnOsMapActivity : FragmentActivity() {
@@ -72,14 +74,12 @@ class SelectOnOsMapActivity : FragmentActivity() {
         Utils.fixEdgeToEdge(binding.root)
         setContentView(binding.root)
         binding.expander.setOnClickListener {
-            if (binding.searchPanel.visibility == View.VISIBLE) {
+            if (binding.searchPanel.isVisible) {
                 binding.searchPanel.visibility = View.GONE
             } else {
                 binding.searchPanel.visibility = View.VISIBLE
             }
         }
-
-        OpenStreetMapUtils.setOsmConfForTiles()
         val policy: StrictMode.ThreadPolicy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
         val bundle = intent.extras
@@ -92,6 +92,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     binding.osmap.setTileSource(TileSourceFactory.MAPNIK)
                     Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
                     summitEntry = entry
+                    OpenStreetMapUtils.setTileProviderDependingOnSummitSportType(binding.osmap, this, entry?.sportType ?: SportType.Other)
                     if (entry != null) {
                         addTrackAndMarker(
                             entry,

@@ -11,6 +11,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.DialogFragment
 import androidx.preference.EditTextPreference
@@ -57,13 +58,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private lateinit var preferenceExportThirdPartyData: SwitchPreferenceCompat
     private lateinit var preferenceExportCalculatedData: SwitchPreferenceCompat
+    private lateinit var preferenceDisableStartUpTasks: SwitchPreferenceCompat
 
     private lateinit var onDeviceMapFiles: List<DocumentFile>
     private lateinit var onDeviceMbTilesFiles: List<DocumentFile>
     private lateinit var onDeviceMapsFolderName: String
 
 
-    /* Overrides onCreatePreferences from PreferenceFragmentCompat */
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
 
         val screen = preferenceManager.createPreferenceScreen(preferenceManager.context)
@@ -131,6 +132,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
             return@setOnPreferenceClickListener true
         }
+
+        preferenceDisableStartUpTasks = SwitchPreferenceCompat(requireContext())
+        preferenceDisableStartUpTasks.title = getString(R.string.debug_switch_title)
+        preferenceDisableStartUpTasks.key = Keys.PREF_DEBUG
+        preferenceDisableStartUpTasks.setIcon(R.drawable.baseline_do_not_disturb_on_total_silence_24)
+        preferenceDisableStartUpTasks.summary = getString(R.string.debug_switch)
+        preferenceDisableStartUpTasks.setDefaultValue(false)
 
         preferenceCurrentYearSwitch = SwitchPreferenceCompat(requireContext())
         preferenceCurrentYearSwitch.title = getString(R.string.current_year_title)
@@ -202,7 +210,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     val intent = Intent(
                         Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                        Uri.parse("package:" + BuildConfig.APPLICATION_ID)
+                        ("package:" + BuildConfig.APPLICATION_ID).toUri()
                     ).apply {}
                     startActivity(intent)
                 } else {
@@ -211,7 +219,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
             return@setOnPreferenceClickListener true
         }
-        // set up "Map Provider" preference
         preferenceMapProvider = SwitchPreferenceCompat(requireContext())
         preferenceMapProvider.title = getString(R.string.map_provider)
         preferenceMapProvider.setIcon(R.drawable.baseline_map_black_24dp)
@@ -220,7 +227,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceMapProvider.summaryOff = getString(R.string.online_maps)
         preferenceMapProvider.setDefaultValue(false)
         preferenceMapProvider.setOnPreferenceClickListener {
-            // open the folder chooser, if on-device maps is selected and folder does not contain any .map files
             if (preferenceMapProvider.isChecked && onDeviceMapFiles.isEmpty() && onDeviceMbTilesFiles.isEmpty()) {
                 openOnDeviceMapsFolderDialog()
             } else {
@@ -236,7 +242,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
             return@setOnPreferenceClickListener true
         }
 
-        // set up "On-device Maps" preference
         preferenceOnDeviceMapsFolder = EditTextPreference(requireContext())
         preferenceOnDeviceMapsFolder.title = getString(R.string.map_folder)
         preferenceOnDeviceMapsFolder.key = Keys.PREF_ON_DEVICE_MAPS_FOLDER
@@ -248,7 +253,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
             return@setOnPreferenceClickListener true
         }
 
-        // set preference categories
         val preferenceCategoryGeneral = PreferenceCategory(requireContext())
         preferenceCategoryGeneral.title = getString(R.string.pref_general_title)
         preferenceCategoryGeneral.contains(preferenceCurrentYearSwitch)
@@ -278,9 +282,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceCategoryExport.title = getString(R.string.pref_export_title)
         preferenceCategoryExport.contains(preferenceExportThirdPartyData)
         preferenceCategoryExport.contains(preferenceExportCalculatedData)
+        preferenceCategoryExport.contains(preferenceDisableStartUpTasks)
 
 
-        // setup preference screen
         screen.addPreference(preferenceCategoryGeneral)
         screen.addPreference(preferenceCurrentYearSwitch)
         screen.addPreference(preferenceAnnualTargetActivities)
@@ -306,23 +310,24 @@ class SettingsFragment : PreferenceFragmentCompat() {
         screen.addPreference(preferenceCategoryExport)
         screen.addPreference(preferenceExportThirdPartyData)
         screen.addPreference(preferenceExportCalculatedData)
+        screen.addPreference(preferenceDisableStartUpTasks)
 
         updateOnDeviceMapsPreferencesState()
 
         preferenceScreen = screen
     }
 
+    @Suppress("DEPRECATION")
     override fun onDisplayPreferenceDialog(preference: Preference) {
         if (preference is DatePreference) {
             val f: DialogFragment = DatePreferenceDialogFragment.newInstance(preference.getKey())
             f.setTargetFragment(this, 0)
-            f.show(requireFragmentManager(), null)
+            f.show(parentFragmentManager, null)
         } else {
             super.onDisplayPreferenceDialog(preference)
         }
     }
 
-    /* Toggle the visibility of the "On-device Maps Folder" preference and reset the "Map Provider" switch */
     private fun updateOnDeviceMapsPreferencesState() {
         onDeviceMapFiles = FileHelper.getOnDeviceMapFiles(preferenceManager.context)
         onDeviceMbTilesFiles = FileHelper.getOnDeviceMbtilesFiles(preferenceManager.context)
@@ -337,13 +342,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
 
-    /* Register the ActivityResultLauncher for the Select On Device Folder dialog */
     private val requestOnDeviceMapsFolderLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
         this::requestOnDeviceMapsFolderResult
     )
 
-    /* Opens up a file picker to select the folder containing the on-device map files */
     private fun openOnDeviceMapsFolderDialog() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {}
@@ -362,9 +365,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    /* Get the activity result from the on-device folder dialog */
     private fun requestOnDeviceMapsFolderResult(result: ActivityResult) {
-        // save location of the on-device maps folder
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             val uri: Uri? = result.data?.data
             if (uri != null) {
@@ -379,7 +380,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
 
-    /* Notify user that the selected folder does not contain any .mpa files */
     private fun showEmptyFolderError() {
         val anchorView: View? = activity?.findViewById(R.id.content_frame)
         val contextView: View? = this.view?.rootView

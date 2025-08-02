@@ -146,7 +146,6 @@ class SummitEntryPowerFragment : Fragment() {
                 maxSummit?.let { textField.getValue(it)?.toDouble() },
                 value.toDouble(),
                 textField.reverse,
-                requireContext()
             )
         }
     }
@@ -386,13 +385,21 @@ class SummitEntryPowerFragment : Fragment() {
                 )
             } else {
                 numberFormat.maximumFractionDigits = textField.digits
-                textField.valueTextView(binding).text =
-                    "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unit}"
+                textField.valueTextView(binding).text = String.format(
+                    resources.configuration.locales[0],
+                    "%s %s",
+                    numberFormat.format(value.toDouble() * textField.factor),
+                    textField.unit
+                )
             }
             val rangeValue = textField.getValueRange(summit)
             if (rangeValue != null) {
-                textField.valueTextViewRange(binding)?.text =
-                    "- ${numberFormat.format(rangeValue.toDouble() * textField.factor)} ${textField.unit}"
+                textField.valueTextViewRange(binding)?.text = String.format(
+                    resources.configuration.locales[0],
+                    "- %s %s",
+                    numberFormat.format(rangeValue.toDouble() * textField.factor),
+                    textField.unit
+                )
             } else {
                 textField.valueTextViewRange(binding)?.visibility = View.GONE
             }
@@ -634,71 +641,88 @@ enum class TimeIntervalPower(
     val getMinSummit: (ExtremaValuesSummits?) -> Summit?,
     val getMaxSummit: (ExtremaValuesSummits?) -> Summit?
 ) {
-    OneSec(1, "1 sec",
+    OneSec(
+        1, "1 sec",
         { e -> e?.power1sMinMax?.first?.garminData?.power?.oneSec?.toFloat() ?: 0f },
         { e -> e?.power1sMinMax?.second?.garminData?.power?.oneSec?.toFloat() ?: 0f },
         { e -> e?.power1sMinMax?.first }, { e -> e?.power1sMinMax?.second }),
-    TwoSec(2, "2 sec",
+    TwoSec(
+        2, "2 sec",
         { e -> e?.power2sMinMax?.first?.garminData?.power?.twoSec?.toFloat() ?: 0f },
         { e -> e?.power2sMinMax?.second?.garminData?.power?.twoSec?.toFloat() ?: 0f },
         { e -> e?.power2sMinMax?.first }, { e -> e?.power2sMinMax?.second }),
-    FiveSec(5, "5 sec",
+    FiveSec(
+        5, "5 sec",
         { e -> e?.power5sMinMax?.first?.garminData?.power?.fiveSec?.toFloat() ?: 0f },
         { e -> e?.power5sMinMax?.second?.garminData?.power?.fiveSec?.toFloat() ?: 0f },
         { e -> e?.power5sMinMax?.first }, { e -> e?.power5sMinMax?.second }),
-    TenSec(10, "10 sec",
+    TenSec(
+        10, "10 sec",
         { e -> e?.power10sMinMax?.first?.garminData?.power?.tenSec?.toFloat() ?: 0f },
         { e -> e?.power10sMinMax?.second?.garminData?.power?.tenSec?.toFloat() ?: 0f },
         { e -> e?.power10sMinMax?.first }, { e -> e?.power10sMinMax?.second }),
-    TwentySec(20, "20 sec",
+    TwentySec(
+        20, "20 sec",
         { e -> e?.power20sMinMax?.first?.garminData?.power?.twentySec?.toFloat() ?: 0f },
         { e -> e?.power20sMinMax?.second?.garminData?.power?.twentySec?.toFloat() ?: 0f },
         { e -> e?.power20sMinMax?.first }, { e -> e?.power20sMinMax?.second }),
-    ThirtySec(30, "30 sec",
+    ThirtySec(
+        30, "30 sec",
         { e -> e?.power30sMinMax?.first?.garminData?.power?.thirtySec?.toFloat() ?: 0f },
         { e -> e?.power30sMinMax?.second?.garminData?.power?.thirtySec?.toFloat() ?: 0f },
         { e -> e?.power30sMinMax?.first }, { e -> e?.power30sMinMax?.second }),
-    OneMin(60, "1 min",
+    OneMin(
+        60, "1 min",
         { e -> e?.power1minMinMax?.first?.garminData?.power?.oneMin?.toFloat() ?: 0f },
         { e -> e?.power1minMinMax?.second?.garminData?.power?.oneMin?.toFloat() ?: 0f },
         { e -> e?.power1minMinMax?.first }, { e -> e?.power1minMinMax?.second }),
-    TwoMin(120, "2 min",
+    TwoMin(
+        120, "2 min",
         { e -> e?.power2minMinMax?.first?.garminData?.power?.twoMin?.toFloat() ?: 0f },
         { e -> e?.power2minMinMax?.second?.garminData?.power?.twoMin?.toFloat() ?: 0f },
         { e -> e?.power2minMinMax?.first }, { e -> e?.power2minMinMax?.second }),
-    FiveMin(300, "5 min",
+    FiveMin(
+        300, "5 min",
         { e -> e?.power5minMinMax?.first?.garminData?.power?.fiveMin?.toFloat() ?: 0f },
         { e -> e?.power5minMinMax?.second?.garminData?.power?.fiveMin?.toFloat() ?: 0f },
         { e -> e?.power5minMinMax?.first }, { e -> e?.power5minMinMax?.second }),
-    TenMin(600, "10 min",
+    TenMin(
+        600, "10 min",
         { e -> e?.power10minMinMax?.first?.garminData?.power?.tenMin?.toFloat() ?: 0f },
         { e -> e?.power10minMinMax?.second?.garminData?.power?.tenMin?.toFloat() ?: 0f },
         { e -> e?.power10minMinMax?.first }, { e -> e?.power10minMinMax?.second }),
-    TwentyMin(1200, "20 min",
+    TwentyMin(
+        1200, "20 min",
         { e -> e?.power20minMinMax?.first?.garminData?.power?.twentyMin?.toFloat() ?: 0f },
         { e -> e?.power20minMinMax?.second?.garminData?.power?.twentyMin?.toFloat() ?: 0f },
         { e -> e?.power20minMinMax?.first }, { e -> e?.power20minMinMax?.second }),
-    ThirtyMin(1800, "30 min",
+    ThirtyMin(
+        1800, "30 min",
         { e -> e?.power30minMinMax?.first?.garminData?.power?.thirtyMin?.toFloat() ?: 0f },
         { e -> e?.power30minMinMax?.second?.garminData?.power?.thirtyMin?.toFloat() ?: 0f },
         { e -> e?.power30minMinMax?.first }, { e -> e?.power30minMinMax?.second }),
-    OneHour(3600, "1 h",
+    OneHour(
+        3600, "1 h",
         { e -> e?.power1hMinMax?.first?.garminData?.power?.oneHour?.toFloat() ?: 0f },
         { e -> e?.power1hMinMax?.second?.garminData?.power?.oneHour?.toFloat() ?: 0f },
         { e -> e?.power1hMinMax?.first }, { e -> e?.power1hMinMax?.second }),
-    TwoHours(7200, "2 h",
+    TwoHours(
+        7200, "2 h",
         { e -> e?.power2hMinMax?.first?.garminData?.power?.twoHours?.toFloat() ?: 0f },
         { e -> e?.power2hMinMax?.second?.garminData?.power?.twoHours?.toFloat() ?: 0f },
         { e -> e?.power2hMinMax?.first }, { e -> e?.power2hMinMax?.second }),
-    ThreeHours(10800, "3 h",
+    ThreeHours(
+        10800, "3 h",
         { e -> e?.power3hMinMax?.first?.garminData?.power?.threeHours?.toFloat() ?: 0f },
         { e -> e?.power3hMinMax?.second?.garminData?.power?.threeHours?.toFloat() ?: 0f },
         { e -> e?.power3hMinMax?.first }, { e -> e?.power3hMinMax?.second }),
-    FourHours(14400, "4 h",
+    FourHours(
+        14400, "4 h",
         { e -> e?.power4hMinMax?.first?.garminData?.power?.fourHours?.toFloat() ?: 0f },
         { e -> e?.power4hMinMax?.second?.garminData?.power?.fourHours?.toFloat() ?: 0f },
         { e -> e?.power4hMinMax?.first }, { e -> e?.power4hMinMax?.second }),
-    FiveHours(18000, "5 h",
+    FiveHours(
+        18000, "5 h",
         { e -> e?.power5hMinMax?.first?.garminData?.power?.fiveHours?.toFloat() ?: 0f },
         { e -> e?.power5hMinMax?.second?.garminData?.power?.fiveHours?.toFloat() ?: 0f },
         { e -> e?.power5hMinMax?.first }, { e -> e?.power5hMinMax?.second })

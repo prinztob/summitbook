@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -72,6 +73,9 @@ class SummitEntryTrackFragment : Fragment() {
     private var usedItemsForColorCode: List<TrackColor> = emptyList()
     private var summitsToCompare: List<Summit> = emptyList()
     private lateinit var mLocationOverlay: MyLocationNewOverlay
+    private lateinit var summitToView: Summit
+
+    private var alreadyZoomedOnTrack: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,6 +87,7 @@ class SummitEntryTrackFragment : Fragment() {
     ): View {
         binding = FragmentSummitEntryTrackBinding.inflate(layoutInflater, container, false)
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
+        summitToView = (requireActivity() as SummitEntryDetailsActivity).summitEntry
         mLocationOverlay =
             MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
         mLocationOverlay.enableMyLocation()
@@ -93,11 +98,6 @@ class SummitEntryTrackFragment : Fragment() {
             binding.osmap,
             requireActivity()
         )
-        return binding.root
-    }
-
-    private fun setContent() {
-        val summitToView = (requireActivity() as SummitEntryDetailsActivity).summitEntry
         if (PreferencesHelper.loadOnDeviceMaps() &&
             FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
         ) {
@@ -105,6 +105,11 @@ class SummitEntryTrackFragment : Fragment() {
         } else if (FileHelper.getOnDeviceMbtilesFiles(requireContext()).isNotEmpty()) {
             selectedItem = MapProvider.MBTILES
         }
+        OpenStreetMapUtils.setTileProvider(binding.osmap, requireContext())
+        return binding.root
+    }
+
+    private fun setContent() {
         pageViewModel?.summitToCompare?.observe(viewLifecycleOwner) { itData ->
             itData.data.let { summitToCompare ->
                 pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
@@ -123,7 +128,6 @@ class SummitEntryTrackFragment : Fragment() {
                         binding.summitName.text = summitToView.name
                         binding.sportTypeImage.setImageResource(summitToView.sportType.imageIdBlack)
                         binding.osmap.overlays.clear()
-                        OpenStreetMapUtils.setTileProvider(binding.osmap, requireContext())
                         lifecycleScope.launch {
                             withContext(Dispatchers.IO) {
                                 setGpsTrack(summitToView, useSimplifiedTrack = true)
@@ -171,6 +175,7 @@ class SummitEntryTrackFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        Log.i("SummitEntryTrackFragment", "Resume")
         setContent()
     }
 
@@ -181,8 +186,13 @@ class SummitEntryTrackFragment : Fragment() {
         doCleanUp: Boolean = true
     ) {
         setUsedItemsForColorCode()
-        setOpenStreetMap(summitToView, summitToCompare, summits, doCleanUp = doCleanUp)
-        OpenStreetMapUtils.setOsmConfForTiles()
+        setOpenStreetMap(
+            summitToView,
+            summitToCompare,
+            summits,
+            doCleanUp = doCleanUp,
+            calculateBondingBox = !alreadyZoomedOnTrack
+        )
     }
 
     private fun setButtons(summitToView: Summit) {
@@ -368,12 +378,16 @@ class SummitEntryTrackFragment : Fragment() {
                         if (e.data is Pair<*, *> && (e.data as Pair<*, *>).first is TrackPoint) {
                             val trackPoint = (e.data as Pair<*, *>).first as TrackPoint
                             binding.osmap.overlays.remove(marker)
+                            val point = GeoPoint(trackPoint.latitude, trackPoint.longitude)
                             marker = OpenStreetMapUtils.addMarker(
                                 binding.osmap,
                                 requireContext(),
-                                GeoPoint(trackPoint.latitude, trackPoint.longitude),
-                                summitToView
+                                point,
+                                summitToView,
+                                useIconId = R.drawable.outline_home_pin_24
                             )
+                            binding.osmap.setExpectedCenter(point)
+                            binding.osmap.invalidate()
                         }
                     }
 
@@ -522,6 +536,7 @@ class SummitEntryTrackFragment : Fragment() {
                 rootView = binding.root,
                 calculateBondingBox = calculateBondingBox
             )
+            alreadyZoomedOnTrack = true
             binding.customizeTrack.setOnClickListener {
                 customizeColorOfTrackDialog(summitToView, summitToCompare, summits)
             }
@@ -550,7 +565,12 @@ class SummitEntryTrackFragment : Fragment() {
             selectedCustomizeTrackItem.spinnerId
         ) { dialog: DialogInterface, item: Int ->
             selectedCustomizeTrackItem = usedItemsForColorCode[item]
-            setOpenStreetMap(summitToView, summitToCompare, summits)
+            setOpenStreetMap(
+                summitToView,
+                summitToCompare,
+                summits,
+                calculateBondingBox = !alreadyZoomedOnTrack
+            )
             drawChart(summitToView)
             dialog.dismiss()
         }

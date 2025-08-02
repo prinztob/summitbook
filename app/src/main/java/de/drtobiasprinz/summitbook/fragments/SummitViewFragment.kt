@@ -138,7 +138,6 @@ class SummitViewFragment : Fragment() {
                         }
 
                         DataStatus.Status.SUCCESS -> {
-                            setRecordsOnce(summitsStatus.data ?: emptyList())
                             summitsStatus.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
                             loading.isVisible(false, recyclerView)
                             allSummits = summitsStatus.data ?: emptyList()
@@ -147,8 +146,11 @@ class SummitViewFragment : Fragment() {
                                 sharedPreferences
                             )
                             summitsAdapter.differ.submitList(data)
-                            if (!updateOfTracksStarted) {
-                                summitsStatus.data?.let { updateTracks(it) }
+                            if (!sharedPreferences.getBoolean(Keys.PREF_DEBUG, false)) {
+                                setRecordsOnce(summitsStatus.data ?: emptyList())
+                                if (!updateOfTracksStarted) {
+                                    summitsStatus.data?.let { updateTracks(it) }
+                                }
                             }
                         }
 

@@ -12,8 +12,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <LinearLayout
-
-        android:background="@color/White"
+        android:background="@color/white"
         android:id="@+id/search_panel"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
@@ -21,10 +20,10 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-
         app:layout_constraintTop_toTopOf="@id/osmap">
 
         <EditText
+            android:textColor="@color/black"
             android:id="@+id/editLocation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -60,7 +59,6 @@
         android:id="@+id/addPositionCancel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:backgroundTint="@color/White"
         android:contentDescription="@string/back"
         android:src="@drawable/ic_baseline_clear_24"
         app:layout_constraintStart_toStartOf="parent"
@@ -71,7 +69,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toStartOf="@id/add_position_save"
-        android:backgroundTint="@color/White"
         android:contentDescription="@string/addGpsTrack"
         android:src="@drawable/baseline_add_black_24dp"
         app:layout_constraintStart_toEndOf="@+id/addPositionCancel"
@@ -82,7 +79,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toStartOf="@id/add_position_delete"
-        android:backgroundTint="@color/White"
         android:contentDescription="@string/saveButtonText"
         android:src="@drawable/baseline_save_grey_500_24dp"
         app:layout_constraintStart_toEndOf="@+id/add_gps_track"
@@ -93,7 +89,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
-        android:backgroundTint="@color/White"
         android:contentDescription="@string/cancelButtonText"
         android:src="@drawable/baseline_delete_black_24dp"
         app:layout_constraintStart_toEndOf="@+id/add_position_save"

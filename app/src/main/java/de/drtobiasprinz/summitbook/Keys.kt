@@ -11,6 +11,7 @@ object Keys {
     const val PREF_CURRENT_YEAR_SWITCH: String = "current_year_switch"
     const val PREF_DOWNLOAD_TCX: String = "download_tcx"
     const val PREF_GARMIN_MFA: String = "garmin_mfa"
+    const val PREF_DEBUG: String = "debug"
     const val PREF_GARMIN_USERNAME: String = "garmin_username"
     const val PREF_GARMIN_PASSWORD: String = "garmin_password"
     const val PREF_THIRD_PARTY_START_DATE: String = "garmin_start_date"

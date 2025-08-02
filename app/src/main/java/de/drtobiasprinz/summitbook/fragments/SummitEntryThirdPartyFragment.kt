@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.fragments
 
-import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.text.Html
@@ -395,7 +394,6 @@ class SummitEntryThirdPartyFragment : Fragment() {
                 maxSummit?.let { textField.getValue(it)?.toDouble() },
                 value.toDouble(),
                 textField.reverse,
-                requireContext()
             )
         }
     }
@@ -409,33 +407,53 @@ class SummitEntryThirdPartyFragment : Fragment() {
             max: Double?,
             value: Double,
             reverse: Boolean,
-            context: Context
         ) {
             textView.compoundDrawablePadding = 20
-            var drawable =
-                if (context.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
-                    R.drawable.filled_circle_black
-                } else {
-                    R.drawable.filled_circle_white
-                }
             if (min != null && max != null) {
                 val percent =
                     if (reverse) (max.toDouble() - value) / (max.toDouble() - min.toDouble()) else
                         (value - min.toDouble()) / (max.toDouble() - min.toDouble())
-                drawable = when (percent) {
-                    in 0.0..0.2 -> R.drawable.filled_circle_red
-                    in 0.2..0.4 -> R.drawable.filled_circle_orange
-                    in 0.4..0.6 -> R.drawable.filled_circle_yellow
-                    in 0.6..0.8 -> R.drawable.filled_circle_blue
-                    in 0.8..1.0 -> R.drawable.filled_circle_green
-                    else -> if (context.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
-                        R.drawable.filled_circle_black
-                    } else {
-                        R.drawable.filled_circle_white
-                    }
+                when (percent) {
+                    in 0.0..0.2 -> textView.setCompoundDrawablesWithIntrinsicBounds(
+                        R.drawable.filled_circle_red,
+                        0,
+                        0,
+                        0
+                    )
+
+                    in 0.2..0.4 -> textView.setCompoundDrawablesWithIntrinsicBounds(
+                        R.drawable.filled_circle_orange,
+                        0,
+                        0,
+                        0
+                    )
+
+                    in 0.4..0.6 -> textView.setCompoundDrawablesWithIntrinsicBounds(
+                        R.drawable.filled_circle_yellow,
+                        0,
+                        0,
+                        0
+                    )
+
+                    in 0.6..0.8 -> textView.setCompoundDrawablesWithIntrinsicBounds(
+                        R.drawable.filled_circle_blue,
+                        0,
+                        0,
+                        0
+                    )
+
+                    in 0.8..1.0 -> textView.setCompoundDrawablesWithIntrinsicBounds(
+                        R.drawable.filled_circle_green,
+                        0,
+                        0,
+                        0
+                    )
+
+                    else -> textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
                 }
+            } else {
+                textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
             }
-            textView.setCompoundDrawablesWithIntrinsicBounds(drawable, 0, 0, 0)
         }
     }
 }

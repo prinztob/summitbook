@@ -40,7 +40,6 @@ object OpenStreetMapUtils {
     @JvmStatic
     var selectedItem = MapProvider.OPENTOPO
     private const val TAG = "OpenStreetMapUtils"
-    private var osmdroidBasePathDefault: File? = null
 
     @JvmStatic
     fun addTrackAndMarker(
@@ -152,12 +151,9 @@ object OpenStreetMapUtils {
     @JvmStatic
     fun setOsmConfForTiles(setToDefault: Boolean = false) {
         val osmConf = Configuration.getInstance()
-        if (osmdroidBasePathDefault == null) {
-            osmdroidBasePathDefault = osmConf.osmdroidBasePath
-        }
         val osmdroidBasePath = getOsmdroidTilesFolder()
         osmdroidBasePath.mkdirs()
-        osmConf.osmdroidBasePath = if (setToDefault) osmdroidBasePathDefault else osmdroidBasePath
+        osmConf.osmdroidBasePath = if (setToDefault) File(MainActivity.cache, "osmdroid") else osmdroidBasePath
         Log.i(TAG, "set osmdroidBasePath to ${osmConf.osmdroidBasePath}")
         val tileCache = File(MainActivity.cache, "tile")
         tileCache.mkdirs()
@@ -171,26 +167,25 @@ object OpenStreetMapUtils {
         startPoint: GeoPoint?,
         entry: Summit,
         addToOverlay: Boolean = true,
-        alwaysShowTrackOnMap: Boolean = false
+        alwaysShowTrackOnMap: Boolean = false,
+        useIconId: Int? = null
     ): Marker? {
         try {
             val marker = Marker(mMapView)
             marker.position = startPoint
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
             marker.title = entry.id.toString()
-            if (entry.hasGpsTrack()) {
-                marker.icon = ResourcesCompat.getDrawable(
-                    context.resources,
-                    entry.sportType.markerIdWithGpx,
-                    null
-                )
-            } else {
-                marker.icon = ResourcesCompat.getDrawable(
-                    context.resources,
-                    entry.sportType.markerIdWithoutGpx,
-                    null
-                )
-            }
+            val iconId = useIconId
+                ?: if (entry.hasGpsTrack()) {
+                    entry.sportType.markerIdWithGpx
+                } else {
+                    entry.sportType.markerIdWithoutGpx
+                }
+            marker.icon = ResourcesCompat.getDrawable(
+                context.resources,
+                iconId,
+                null
+            )
             marker.infoWindow = MapCustomInfoBubble(mMapView, entry, context, alwaysShowTrackOnMap)
             marker.setOnMarkerClickListener { marker1, _ ->
                 if (!marker1.isInfoWindowShown) {
@@ -276,11 +271,23 @@ object OpenStreetMapUtils {
         fMapTypeDialog.show()
     }
 
+    fun setTileProviderDependingOnSummitSportType(mapView: MapView, context: Context, sportType: SportType) {
+        if (PreferencesHelper.loadOnDeviceMaps() &&
+            FileHelper.getOnDeviceMapFiles(context).isNotEmpty()
+        ) {
+            selectedItem = getSportTypeForMapProviders(sportType, context)
+        } else if (FileHelper.getOnDeviceMbtilesFiles(context).isNotEmpty()) {
+            selectedItem = MapProvider.MBTILES
+        }
+        setTileProvider(mapView, context)
+    }
+
     @JvmStatic
     fun setTileProvider(mapView: MapView, context: Context) {
         val mapFiles: List<DocumentFile> = FileHelper.getOnDeviceMapFiles(context)
         if (selectedItem.isOffline) {
             if (selectedItem == MapProvider.MBTILES) {
+                Log.i(TAG, "Use MBTILES map")
                 setOsmConfForTiles()
                 setOnlineMap(mapView, context)
                 mapView.invalidate()
@@ -291,7 +298,6 @@ object OpenStreetMapUtils {
             if (provider != null) {
                 Log.i(TAG, "Use offline map")
                 mapView.setTileProvider(provider)
-                setOsmConfForTiles()
             } else {
                 setOnlineMap(mapView, context)
             }
