@@ -34,11 +34,11 @@ import de.drtobiasprinz.summitbook.PythonActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SettingsActivity
 import de.drtobiasprinz.summitbook.databinding.ActivityMainBinding
+import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.fragments.SummitEntitiesFragment
 import de.drtobiasprinz.summitbook.fragments.BarChartFragment
 import de.drtobiasprinz.summitbook.fragments.LineChartFragment
 import de.drtobiasprinz.summitbook.fragments.OpenStreetMapFragment
@@ -46,6 +46,7 @@ import de.drtobiasprinz.summitbook.fragments.OverviewFragment
 import de.drtobiasprinz.summitbook.fragments.SegmentsViewFragment
 import de.drtobiasprinz.summitbook.fragments.SortAndFilterFragment
 import de.drtobiasprinz.summitbook.fragments.StatisticsFragment
+import de.drtobiasprinz.summitbook.fragments.SummitEntitiesFragment
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.SortFilterValues
@@ -311,6 +312,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var CSV_FILE_NAME_CALCULATED_DATA: String = "de-prinz-summitbook-export-calculated-data.csv"
         var CSV_FILE_NAME_SEGMENTS: String = "de-prinz-summitbook-export-segments.csv"
         var CSV_FILE_NAME_FORECASTS: String = "de-prinz-summitbook-export-forecasts.csv"
+        var CSV_FILE_NAME_ENTITY_EVENTS: String = "de-prinz-summitbook-export-entity-events.csv"
 
         var updateOfTracksStarted: Boolean = false
         var entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
@@ -408,7 +410,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         dialog.save = { summits, isMerge ->
             binding.loading.visibility = View.VISIBLE
             binding.loading.tooltipText =
-                getString(R.string.tool_tip_progress_new_garmin_activities,
+                getString(
+                    R.string.tool_tip_progress_new_garmin_activities,
                     summits.joinToString(", ") { it.name })
             if (isMerge) {
                 executeDownload(summits)
@@ -479,17 +482,22 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                             forecastsListDataStatus.data.let { forecasts ->
                                 viewModel.segmentsList.observeOnce(this@MainActivity) { segmentsListDataStatus ->
                                     segmentsListDataStatus.data.let { segments ->
-                                        if (summits != null) {
-                                            asyncExportZipFile(
-                                                if (useFilteredSummits) sortFilterValues.apply(
-                                                    summits, sharedPreferences
-                                                ) else summits,
-                                                result.data,
-                                                segments,
-                                                forecasts,
-                                                exportThirdPartyData,
-                                                exportCalculatedData
-                                            )
+                                        viewModel.entityEvents.observeOnce(this@MainActivity) { entityEventsStatus ->
+                                            entityEventsStatus.let { entityEvents ->
+                                                if (summits != null) {
+                                                    asyncExportZipFile(
+                                                        if (useFilteredSummits) sortFilterValues.apply(
+                                                            summits, sharedPreferences
+                                                        ) else summits,
+                                                        result.data,
+                                                        segments,
+                                                        forecasts,
+                                                        entityEvents,
+                                                        exportThirdPartyData,
+                                                        exportCalculatedData
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -572,6 +580,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         resultData: Intent?,
         segments: List<Segment>?,
         forecasts: List<Forecast>?,
+        entityEvents: List<EntityEvent>?,
         exportThirdPartyData: Boolean = true,
         exportCalculatedData: Boolean = true
     ) {
@@ -582,6 +591,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 entries,
                 segments,
                 forecasts,
+                entityEvents,
                 this@MainActivity,
                 exportThirdPartyData,
                 exportCalculatedData

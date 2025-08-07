@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.ui.utils
 import android.util.Log
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_CALCULATED_DATA
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_ENTITY_EVENTS
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_FORECASTS
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SEGMENTS
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SUMMITS
@@ -21,6 +22,7 @@ class ZipFileReader(
     private val allSummits: MutableList<Summit> = mutableListOf(),
     private val allForecasts: MutableList<Forecast> = mutableListOf(),
     private val allSegments: MutableList<Segment> = mutableListOf(),
+    private val allEntityEvents: MutableList<EntityEvent> = mutableListOf(),
 ) {
     var version = ""
     var successful = 0
@@ -31,6 +33,7 @@ class ZipFileReader(
     var saveSegmentDetails: (SegmentDetails) -> Job? = { null }
     var saveSegmentEntry: (SegmentEntry) -> Unit = {}
     var saveForecast: (Forecast) -> Unit = {}
+    var saveEntityEvent: (EntityEvent) -> Unit = {}
     fun cleanUp() {
         baseDirectory.deleteRecursively()
     }
@@ -85,6 +88,7 @@ class ZipFileReader(
         val inputCsvFileForecasts = File(baseDirectory, CSV_FILE_NAME_FORECASTS)
         val inputCsvFileThirdPartyData = File(baseDirectory, CSV_FILE_NAME_THIRD_PARTY_DATA)
         val inputCsvFileCalculatedData = File(baseDirectory, CSV_FILE_NAME_CALCULATED_DATA)
+        val inputCsvFileEntityEvents = File(baseDirectory, CSV_FILE_NAME_ENTITY_EVENTS)
         try {
             if (inputCsvVersionFile.exists()) {
                 version = inputCsvVersionFile.readText().trim()
@@ -101,6 +105,9 @@ class ZipFileReader(
             }
             if (inputCsvFileCalculatedData.exists()) {
                 readCalculatedData(inputCsvFileCalculatedData)
+            }
+            if (inputCsvFileEntityEvents.exists()) {
+                readEntityEvents(inputCsvFileEntityEvents)
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -161,7 +168,8 @@ class ZipFileReader(
                     e.printStackTrace()
                 }
             }
-            writeSegmentsToDatabase(parsedSegments,
+            writeSegmentsToDatabase(
+                parsedSegments,
                 allSegments.map { it.segmentDetails } as MutableList<SegmentDetails>,
                 allSegments.flatMap { it.segmentEntries } as MutableList<SegmentEntry>)
         }
@@ -243,7 +251,8 @@ class ZipFileReader(
                                 lineLocal,
                                 allSummits,
                                 saveSummit,
-                                ZipFileVersions.entries.find { it.versionName == version } ?: ZipFileVersions.V0
+                                ZipFileVersions.entries.find { it.versionName == version }
+                                    ?: ZipFileVersions.V0
                             )
                         if (added) {
                             Log.d(
@@ -294,6 +303,40 @@ class ZipFileReader(
                     Log.w(
                         "ZipFileReader",
                         "CalculatedData line $lineLocal was not added in db. Error: ${e.printStackTrace()}"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun readEntityEvents(inputCsvFile: File) {
+        val iStream: InputStream = FileInputStream(inputCsvFile)
+        BufferedReader(InputStreamReader(iStream)).use { br ->
+            var line: String?
+            while (br.readLine().also { line = it } != null) {
+                val lineLocal = line
+                try {
+                    if (lineLocal != null && !lineLocal.startsWith("Date")) {
+                        val added =
+                            EntityEvent.parseFromCsvFileLine(
+                                lineLocal,
+                                allEntityEvents,
+                                saveEntityEvent
+                            )
+                        if (added) {
+                            Log.d(
+                                "ZipFileReader",
+                                "EntityEvent line $lineLocal was added in db."
+                            )
+                        } else {
+                            Log.d("ZipFileReader", "EntityEvent line $lineLocal is already db.")
+                        }
+                    }
+                } catch (e: Exception) {
+                    unsuccessful++
+                    Log.w(
+                        "ZipFileReader",
+                        "EntityEvent line $lineLocal was not added in db. Error: ${e.printStackTrace()}"
                     )
                 }
             }

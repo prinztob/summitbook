@@ -5,6 +5,8 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
+import de.drtobiasprinz.summitbook.db.entities.EntityEvent
+import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.GarminData
 import de.drtobiasprinz.summitbook.db.entities.PowerData
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
@@ -85,6 +87,9 @@ class ZipFileWriterTest {
             157,
             1
         )
+        private val event1 = EntityEvent(Summit.parseDate("2023-11-13"), "TestCase1", "equipment1")
+        private val event2 = EntityEvent(Summit.parseDate("2024-11-13"), "TestCase2", "equipment1")
+        private val forcast = Forecast(2025, 1, 5000, 100, 5)
         private var entry1 = Summit(
             Summit.parseDate("2019-11-13"),
             "summit1",
@@ -164,14 +169,20 @@ class ZipFileWriterTest {
         segmentEntry2.segmentId = id
         db.segmentsDao().addSegmentEntry(segmentEntry1)
         db.segmentsDao().addSegmentEntry(segmentEntry2)
+        db.entityEventDao().add(event1)
+        db.entityEventDao().add(event2)
+        db.forecastDao().addForecastDeprecated(forcast)
         val summits = db.summitsDao().allSummit
         val segments = db.segmentsDao().getAllSegmentsDeprecated()
+        val events = db.entityEventDao().allEntityEventsAsList
+        val forecasts = db.forecastDao().allForecastsDeprecated
         val file = kotlin.io.path.createTempFile(suffix = ".zip").toFile()
 
         val writer = ZipFileWriter(
             summits,
             segments,
-            emptyList(),
+            forecasts,
+            events,
             context,
             exportThirdPartyData = true,
             exportCalculatedData = true
@@ -196,11 +207,19 @@ class ZipFileWriterTest {
                 reader.saveForecast = { forecast ->
                     db.forecastDao().addForecastDeprecated(forecast)
                 }
+                reader.saveEntityEvent = { entityEvent ->
+                    db.entityEventDao().adDeprecated(entityEvent)
+                }
                 reader.extractAndImport(file.inputStream())
                 Assert.assertEquals(4, reader.successful)
                 Assert.assertEquals(0, reader.unsuccessful)
             }
             Assert.assertEquals(summits, db.summitsDao().allSummit)
+            Assert.assertEquals(4, db.summitsDao().allSummit.size)
+            Assert.assertEquals(events, db.entityEventDao().allEntityEventsAsList)
+            Assert.assertEquals(2, db.entityEventDao().allEntityEventsAsList.size)
+            Assert.assertEquals(forecasts, db.forecastDao().allForecastsDeprecated)
+            Assert.assertEquals(1, db.forecastDao().allForecastsDeprecated.size)
         }
 
     }

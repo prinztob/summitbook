@@ -5,6 +5,7 @@ import android.content.res.Resources
 import android.util.Log
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
+import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.GarminData
 import de.drtobiasprinz.summitbook.db.entities.Segment
@@ -12,6 +13,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_CALCULATED_DATA
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_ENTITY_EVENTS
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_FORECASTS
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SEGMENTS
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SUMMITS
@@ -29,8 +31,11 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class ZipFileWriter(
-    val entries: List<Summit>, val segments: List<Segment>?,
-    private val forecasts: List<Forecast>?, val context: Context,
+    val entries: List<Summit>,
+    val segments: List<Segment>?,
+    private val forecasts: List<Forecast>?,
+    private val entityEvents: List<EntityEvent>?,
+    val context: Context,
     private val exportThirdPartyData: Boolean,
     private val exportCalculatedData: Boolean
 ) {
@@ -75,6 +80,7 @@ class ZipFileWriter(
                 }
                 segments?.let { files.add(writeSegmentsToFile(localDir, it)) }
                 forecasts?.let { files.add(writeForecastsToFile(localDir, it)) }
+                entityEvents?.let { files.add(writeEntityEventsToFile(localDir, it)) }
             }
 
             ZipOutputStream(BufferedOutputStream(outputStream)).use { out ->
@@ -171,6 +177,16 @@ class ZipFileWriter(
         return sb
     }
 
+    private fun getEntityEventsStringBuilder(entries: List<EntityEvent>): StringBuilder {
+        val sb = StringBuilder()
+
+        sb.append(EntityEvent.getCsvHeadline())
+        for (entry in entries) {
+            sb.append(entry.getStringRepresentation())
+        }
+        return sb
+    }
+
     private fun writeSummitsToFile(
         downloadDirectory: File,
         resources: Resources,
@@ -184,7 +200,7 @@ class ZipFileWriter(
         try {
             FileOutputStream(file).use { stream -> stream.write(data.toByteArray()) }
         } catch (e: IOException) {
-            Log.e("Exception", "File write failed: $e")
+            Log.e("Exception", "Summit file write failed: $e")
         }
         return file
     }
@@ -203,7 +219,7 @@ class ZipFileWriter(
         try {
             FileOutputStream(file).use { stream -> stream.write(data.toByteArray()) }
         } catch (e: IOException) {
-            Log.e("Exception", "File write failed: $e")
+            Log.e("Exception", "Third party data file write failed: $e")
         }
         return file
     }
@@ -221,7 +237,7 @@ class ZipFileWriter(
         try {
             FileOutputStream(file).use { stream -> stream.write(data.toByteArray()) }
         } catch (e: IOException) {
-            Log.e("Exception", "File write failed: $e")
+            Log.e("Exception", "Calculated data file write failed: $e")
         }
         return file
     }
@@ -232,7 +248,7 @@ class ZipFileWriter(
         try {
             FileOutputStream(file).use { stream -> stream.write(data.toByteArray()) }
         } catch (e: IOException) {
-            Log.e("Exception", "File write failed: $e")
+            Log.e("Exception", "Segment file write failed: $e")
         }
         return file
     }
@@ -243,7 +259,18 @@ class ZipFileWriter(
         try {
             FileOutputStream(file).use { stream -> stream.write(data.toByteArray()) }
         } catch (e: IOException) {
-            Log.e("Exception", "File write failed: $e")
+            Log.e("Exception", "Forecast file write failed: $e")
+        }
+        return file
+    }
+
+    private fun writeEntityEventsToFile(downloadDirectory: File, entries: List<EntityEvent>): File {
+        val data = getEntityEventsStringBuilder(entries).toString()
+        val file = File(downloadDirectory, CSV_FILE_NAME_ENTITY_EVENTS)
+        try {
+            FileOutputStream(file).use { stream -> stream.write(data.toByteArray()) }
+        } catch (e: IOException) {
+            Log.e("Exception", "Entity events file write failed: $e")
         }
         return file
     }
