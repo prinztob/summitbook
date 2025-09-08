@@ -174,8 +174,8 @@ class SummitEntryThirdPartyFragment : Fragment() {
                     TextFieldGroupThirdParty.ThirdParty
                 )
                 binding.expandMorePowerData.setOnClickListener {
-                    if (binding.expandMorePowerData.text == getString(R.string.more_power)) {
-                        binding.expandMorePowerData.text = getString(R.string.less_power)
+                    if (binding.expandMorePowerData.text == getString(R.string.more_cycling_dynamics)) {
+                        binding.expandMorePowerData.text = getString(R.string.less_cycling_dynamics)
                         binding.expandMorePowerData.setCompoundDrawablesWithIntrinsicBounds(
                             R.drawable.ic_baseline_expand_less_24,
                             0,
@@ -193,7 +193,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
                             TextFieldGroupThirdParty.ThirdPartyAdditionalData
                         )
                     } else {
-                        binding.expandMorePowerData.text = getString(R.string.more_power)
+                        binding.expandMorePowerData.text = getString(R.string.more_cycling_dynamics)
                         binding.expandMorePowerData.setCompoundDrawablesWithIntrinsicBounds(
                             R.drawable.ic_baseline_expand_more_24,
                             0,

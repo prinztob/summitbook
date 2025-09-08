@@ -319,8 +319,8 @@
     <string name="vo2Max">Vo2Max</string>
     <string name="ftp">FTP</string>
     <string name="tab_text_4">Power meter profile</string>
-    <string name="more_power">More Power Data</string>
-    <string name="less_power">Less Power Data</string>
+    <string name="more_cycling_dynamics">More Cycling Dynamics</string>
+    <string name="less_cycling_dynamics">Less Cycling Dynamics</string>
     <string name="more_speed">More Speed Data</string>
     <string name="less_speed">Less Speed Data</string>
     <string name="more">More Data Fields</string>

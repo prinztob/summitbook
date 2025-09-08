@@ -377,21 +377,18 @@ def merge_tracks(gpx_track_files_to_merge, output_file, name):
         print(f"Trying to merge the following tracks: {gpx_track_files_to_merge}")
         files = list(gpx_track_files_to_merge)
         analyzer_for_all_tracks = None
+        gpx_track_analyzers = []
         for file in files:
-            analyzer_for_single_track = TrackAnalyzer(file)
-            analyzer_for_single_track.parse_track()
+            analyzer = TrackAnalyzer(file)
+            analyzer.parse_track()
+            gpx_track_analyzers.append(analyzer)
+
+        for analyzer in sorted(gpx_track_analyzers, key=lambda a: get_time(a.gpx)):
             if analyzer_for_all_tracks is None:
-                analyzer_for_all_tracks = analyzer_for_single_track
+                analyzer_for_all_tracks = analyzer
             else:
-                time1 = get_time(analyzer_for_all_tracks.gpx)
-                time2 = get_time(analyzer_for_single_track.gpx)
-                if time1 is None or time2 is None or time1 < time2:
-                    update_distance(analyzer_for_all_tracks.gpx, analyzer_for_single_track.gpx)
-                    analyzer_for_all_tracks.gpx.tracks.extend(analyzer_for_single_track.gpx.tracks)
-                else:
-                    update_distance(analyzer_for_single_track.gpx, analyzer_for_all_tracks.gpx)
-                    analyzer_for_single_track.gpx.tracks.extend(analyzer_for_all_tracks.gpx.tracks)
-                    analyzer_for_all_tracks = analyzer_for_single_track
+                update_distance(analyzer_for_all_tracks.gpx, analyzer.gpx)
+                analyzer_for_all_tracks.gpx.tracks.extend(analyzer.gpx.tracks)
         analyzer_for_all_tracks.gpx.name = name
         with open(output_file, "w") as f:
             f.write(analyzer_for_all_tracks.gpx.to_xml())

@@ -255,7 +255,7 @@ class GarminTrackAndDataDownloader(
                 (garminDataSets.sumOf {
                     (it.garminData?.surfaceTypeUnpavedPercentage?.toDouble()
                         ?: 0.0) * (it.kilometers)
-                } / garminDataSets.sumOf { it.duration }).toFloat(),
+                } / garminDataSets.sumOf { it.kilometers }).toFloat(),
                 getCyclingDynamics()
             )
         }

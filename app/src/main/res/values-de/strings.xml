@@ -322,8 +322,8 @@
     <string name="tab_text_4">Leistungsprofil</string>
     <string name="more">Mehr Datenfelder</string>
     <string name="less">Weniger Datenfelder</string>
-    <string name="more_power">Mehr Leistunsgdaten</string>
-    <string name="less_power">Weniger Leistunsgdaten</string>
+    <string name="more_cycling_dynamics">Mehr Cycling Dynamics</string>
+    <string name="less_cycling_dynamics">Weniger Cycling Dynamics</string>
     <string name="more_speed">Mehr Geschw.daten</string>
     <string name="less_speed">Weniger Geschw.daten</string>
     <string name="more_performance">Leistunsgdaten öffnen</string>
@@ -526,7 +526,7 @@
     <string name="openandromaps_track_4">Leicht bewachsener Weg</string>
     <string name="openandromaps_track_5">Stark bewachsener Weg</string>
     <string name="openandromaps_track_wo">Weg ohne Beschaffenheitsangabe</string>
-    <string name="part_unpaved">Anteil unbfestigt</string>
+    <string name="part_unpaved">Anteil unbefestigt</string>
     <string name="add_event">Füge Event hinzu</string>
     <string name="update_event_cancel">"Aktualisierung des Events wurde abgebrochen."</string>
     <string name="add_new_event_cancel">"Das Hinzufügen eines neuen Events wurde abgebrochen"</string>
