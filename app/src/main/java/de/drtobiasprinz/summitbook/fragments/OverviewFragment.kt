@@ -303,106 +303,127 @@ class OverviewFragment : Fragment() {
                 minMax =
                     performanceGraphProvider.getActualGraphMinMaxForSummits(graphType, year, month)
             }
-            if (month == null) {
-                lastChartEntry = chartEntries.last()
-            }
-            lineChart.invalidate()
-            lineChart.axisRight.setDrawLabels(false)
-            setYAxis(lineChart.axisLeft, graphType)
-            setXAxis(lineChart.xAxis, year, month)
-            if (graphType.cumulative) {
-                lineChart.axisLeft.axisMinimum = 0f
-                lineChart.axisRight.axisMinimum = 0f
+            if (chartEntries.isNotEmpty()) {
+                updateLineChart(month, chartEntries, lineChart, graphType, year, minMax, chartEntriesForecast)
             } else {
-                lineChart.axisLeft.axisMinimum =
-                    (minMax.second + chartEntries).filter { it.y > 0 }.minOf { it.y }
-                lineChart.axisRight.axisMinimum =
-                    (minMax.second + chartEntries).filter { it.y > 0 }.minOf { it.y }
+                lineChart.visibility = View.GONE
             }
-
-            setHeight(0.22, lineChart)
-
-            val dataSets: MutableList<ILineDataSet?> = ArrayList()
-            if (chartEntries.isNotEmpty() && chartEntries[0].x != 1f) {
-                chartEntries = listOf(Entry(1f, 0f)) + chartEntries
-            }
-            val entries =
-                if (graphType.filterZeroValues) chartEntries.filter { it.y > 0f } else chartEntries
-            val dataSet = LineDataSet(entries, getString(R.string.actually))
-            setGraphView(
-                dataSet,
-                false,
-                lineWidth = 5f,
-                colors = entries.map { e ->
-                    if (e.y > (minMax.second.firstOrNull { it.x == e.x }?.y ?: 0f)) {
-                        Color.rgb(255, 215, 0)
-                    } else if (
-                        graphType.hasForecast &&
-                        e.y > (chartEntriesForecast.firstOrNull { it.x == e.x }?.y ?: 0f)
-                    ) {
-                        Color.GREEN
-                    } else {
-                        Color.RED
-                    }
-                })
-
-            if (minMax.first.isNotEmpty() && minMax.second.isNotEmpty()) {
-                lineChart.axisLeft.axisMaximum =
-                    (minMax.second + chartEntries).maxOf { it.y } + graphType.delta
-                lineChart.axisRight.axisMaximum =
-                    (minMax.second + chartEntries).maxOf { it.y } + graphType.delta
-                val dataSetMaximalValues =
-                    LineDataSet(if (graphType.filterZeroValues) minMax.second.filter { it.y > 0f } else minMax.second,
-                        getString(R.string.max_5_yrs))
-                if (graphType.cumulative) {
-                    val dataSetMinimalValues = LineDataSet(
-                        minMax.first, getString(R.string.min_5_yrs)
-                    )
-                    setGraphView(dataSetMinimalValues)
-                    dataSets.add(dataSetMinimalValues)
-                    dataSetMaximalValues.fillFormatter = MyFillFormatter(dataSetMinimalValues)
-                    lineChart.renderer = MyLineLegendRenderer(
-                        lineChart, lineChart.animator, lineChart.viewPortHandler
-                    )
-                }
-                setGraphView(dataSetMaximalValues)
-                dataSets.add(dataSetMaximalValues)
-            }
-            if (graphType.hasForecast) {
-                val dataSetForecast =
-                    LineDataSet(chartEntriesForecast, getString(R.string.forecast))
-                setGraphView(dataSetForecast, false, color = Color.rgb(255, 0, 0))
-                dataSets.add(dataSetForecast)
-            }
-            dataSets.add(dataSet)
-
-            when (resources.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
-                Configuration.UI_MODE_NIGHT_YES -> {
-                    lineChart.xAxis.textColor = Color.WHITE
-                    lineChart.axisRight.textColor = Color.WHITE
-                    lineChart.axisLeft.textColor = Color.WHITE
-                    lineChart.legend?.textColor = Color.WHITE
-                }
-
-                Configuration.UI_MODE_NIGHT_NO -> {
-                    lineChart.xAxis.textColor = Color.BLACK
-                    lineChart.axisRight.textColor = Color.BLACK
-                    lineChart.axisLeft.textColor = Color.BLACK
-                    lineChart.legend?.textColor = Color.BLACK
-                }
-
-                Configuration.UI_MODE_NIGHT_UNDEFINED -> {
-                    lineChart.xAxis.textColor = Color.WHITE
-                    lineChart.axisRight.textColor = Color.WHITE
-                    lineChart.axisLeft.textColor = Color.WHITE
-                    lineChart.legend?.textColor = Color.WHITE
-                }
-            }
-
-            lineChart.setTouchEnabled(true)
-            lineChart.data = LineData(dataSets)
-            setLegend(lineChart)
         }
+    }
+
+    private fun updateLineChart(
+        month: String?,
+        chartEntries: List<Entry>,
+        lineChart: CustomLineChartWithMarker,
+        graphType: GraphType,
+        year: String,
+        minMax: Pair<List<Entry>, List<Entry>>,
+        chartEntriesForecast: List<Entry>
+    ) {
+        var chartEntries1 = chartEntries
+        if (month == null) {
+            lastChartEntry = chartEntries1.last()
+        }
+        lineChart.invalidate()
+        lineChart.axisRight.setDrawLabels(false)
+        setYAxis(lineChart.axisLeft, graphType)
+        setXAxis(lineChart.xAxis, year, month)
+        if (graphType.cumulative) {
+            lineChart.axisLeft.axisMinimum = 0f
+            lineChart.axisRight.axisMinimum = 0f
+        } else {
+            val minLeft = (minMax.second + chartEntries1).filter { it.y > 0 }.minOfOrNull { it.y }
+            if (minLeft != null) {
+                lineChart.axisLeft.axisMinimum = minLeft
+            }
+            val minRight = (minMax.second + chartEntries1).filter { it.y > 0 }.minOfOrNull { it.y }
+            if (minRight != null) {
+                lineChart.axisRight.axisMinimum = minRight
+            }
+        }
+
+        setHeight(0.22, lineChart)
+
+        val dataSets: MutableList<ILineDataSet?> = ArrayList()
+        if (chartEntries1.isNotEmpty() && chartEntries1[0].x != 1f) {
+            chartEntries1 = listOf(Entry(1f, 0f)) + chartEntries1
+        }
+        val entries =
+            if (graphType.filterZeroValues) chartEntries1.filter { it.y > 0f } else chartEntries1
+        val dataSet = LineDataSet(entries, getString(R.string.actually))
+        setGraphView(
+            dataSet,
+            false,
+            lineWidth = 5f,
+            colors = entries.map { e ->
+                if (e.y > (minMax.second.firstOrNull { it.x == e.x }?.y ?: 0f)) {
+                    Color.rgb(255, 215, 0)
+                } else if (
+                    graphType.hasForecast &&
+                    e.y > (chartEntriesForecast.firstOrNull { it.x == e.x }?.y ?: 0f)
+                ) {
+                    Color.GREEN
+                } else {
+                    Color.RED
+                }
+            })
+
+        if (minMax.first.isNotEmpty() && minMax.second.isNotEmpty()) {
+            lineChart.axisLeft.axisMaximum =
+                (minMax.second + chartEntries1).maxOf { it.y } + graphType.delta
+            lineChart.axisRight.axisMaximum =
+                (minMax.second + chartEntries1).maxOf { it.y } + graphType.delta
+            val dataSetMaximalValues =
+                LineDataSet(if (graphType.filterZeroValues) minMax.second.filter { it.y > 0f } else minMax.second,
+                    getString(R.string.max_5_yrs))
+            if (graphType.cumulative) {
+                val dataSetMinimalValues = LineDataSet(
+                    minMax.first, getString(R.string.min_5_yrs)
+                )
+                setGraphView(dataSetMinimalValues)
+                dataSets.add(dataSetMinimalValues)
+                dataSetMaximalValues.fillFormatter = MyFillFormatter(dataSetMinimalValues)
+                lineChart.renderer = MyLineLegendRenderer(
+                    lineChart, lineChart.animator, lineChart.viewPortHandler
+                )
+            }
+            setGraphView(dataSetMaximalValues)
+            dataSets.add(dataSetMaximalValues)
+        }
+        if (graphType.hasForecast) {
+            val dataSetForecast =
+                LineDataSet(chartEntriesForecast, getString(R.string.forecast))
+            setGraphView(dataSetForecast, false, color = Color.rgb(255, 0, 0))
+            dataSets.add(dataSetForecast)
+        }
+        dataSets.add(dataSet)
+
+        when (resources.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
+            Configuration.UI_MODE_NIGHT_YES -> {
+                lineChart.xAxis.textColor = Color.WHITE
+                lineChart.axisRight.textColor = Color.WHITE
+                lineChart.axisLeft.textColor = Color.WHITE
+                lineChart.legend?.textColor = Color.WHITE
+            }
+
+            Configuration.UI_MODE_NIGHT_NO -> {
+                lineChart.xAxis.textColor = Color.BLACK
+                lineChart.axisRight.textColor = Color.BLACK
+                lineChart.axisLeft.textColor = Color.BLACK
+                lineChart.legend?.textColor = Color.BLACK
+            }
+
+            Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                lineChart.xAxis.textColor = Color.WHITE
+                lineChart.axisRight.textColor = Color.WHITE
+                lineChart.axisLeft.textColor = Color.WHITE
+                lineChart.legend?.textColor = Color.WHITE
+            }
+        }
+
+        lineChart.setTouchEnabled(true)
+        lineChart.data = LineData(dataSets)
+        setLegend(lineChart)
     }
 
 

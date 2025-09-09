@@ -54,7 +54,7 @@ class PerformanceGraphProvider(
 
             lastY = 0f
             return (0 until maximum).map {
-                lastY = basicGraph[it + 1] ?: (if (graphType.cumulative) lastY else 0f)
+                lastY = basicGraph[it + 1] ?: lastY
                 Entry((it + 1).toFloat(), lastY)
             }
         } else {
