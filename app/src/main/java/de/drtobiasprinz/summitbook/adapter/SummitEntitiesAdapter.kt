@@ -16,6 +16,7 @@ import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SummitEntities
 import de.drtobiasprinz.summitbook.ui.dialog.AddEntityEventDialog
+import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
 import java.util.Locale
 import javax.inject.Singleton
 import kotlin.math.round
@@ -30,6 +31,8 @@ class SummitEntitiesAdapter :
     var recyclerViewVisible: Boolean = false
     var onClickUpdate: (SummitEntities, String) -> Unit = { _, _ -> }
     var onClickDeleteEvent: (EntityEvent) -> Unit = { _ -> }
+    var drawableIdDefault: Int? = null
+    var drawableIdActive: Int? = null
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         context = parent.context
         val binding =
@@ -53,8 +56,16 @@ class SummitEntitiesAdapter :
         RecyclerView.ViewHolder(binding.root) {
         fun setData(entity: SummitEntities, entityEvents: List<EntityEvent>) {
             binding.apply {
-                entityNameEdit.setText(entity.name)
-                entityName.text = entity.name
+                val isActive = entity.name.endsWith(PLACE_IS_SUMMIT_SUFFIX)
+                entityNameEdit.setText(entity.name.replace(PLACE_IS_SUMMIT_SUFFIX, ""))
+                val drawableIdActiveLocal = drawableIdActive
+                val drawableIdDefaultLocal = drawableIdDefault
+                if (isActive && drawableIdActiveLocal != null) {
+                    image.setImageResource(drawableIdActiveLocal)
+                } else if (drawableIdDefaultLocal != null) {
+                    image.setImageResource(drawableIdDefaultLocal)
+                }
+                entityName.text = entity.name.replace(PLACE_IS_SUMMIT_SUFFIX, "")
                 numberActivities.text = String.format(Locale.getDefault(), "# %s", entity.count)
                 distance.text = String.format(
                     Locale.getDefault(),
@@ -87,7 +98,10 @@ class SummitEntitiesAdapter :
                     entityNameEdit.visibility = View.GONE
                     save.visibility = View.GONE
                     cancel.visibility = View.GONE
-                    onClickUpdate(entity, entityNameEdit.text.toString())
+                    onClickUpdate(
+                        entity,
+                        if (isActive) entityNameEdit.text.toString() + PLACE_IS_SUMMIT_SUFFIX else entityNameEdit.text.toString()
+                    )
                 }
                 cancel.setOnClickListener {
                     entityName.visibility = View.VISIBLE

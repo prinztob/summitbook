@@ -2,8 +2,7 @@ package de.drtobiasprinz.summitbook.db.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import de.drtobiasprinz.summitbook.ui.MainActivity
-import java.io.File
+import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -28,7 +27,7 @@ data class SegmentEntry(
         var averagePower: Int
 ) {
     fun getDateAsString(): String? {
-        val dateFormat: DateFormat = SimpleDateFormat(Summit.DATE_FORMAT, Locale.ENGLISH)
+        val dateFormat: DateFormat = SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH)
         return dateFormat.format(date)
     }
 

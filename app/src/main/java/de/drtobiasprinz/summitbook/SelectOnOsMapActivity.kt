@@ -53,6 +53,7 @@ import java.nio.file.StandardCopyOption
 import javax.inject.Inject
 import androidx.core.view.isVisible
 import de.drtobiasprinz.summitbook.db.entities.SportType
+import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 
 @AndroidEntryPoint
 class SelectOnOsMapActivity : FragmentActivity() {
@@ -84,7 +85,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
         StrictMode.setThreadPolicy(policy)
         val bundle = intent.extras
         if (bundle != null) {
-            summitEntryId = bundle.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
+            summitEntryId = bundle.getLong(SUMMIT_ID_EXTRA_IDENTIFIER)
             viewModel.getDetailsSummit(summitEntryId)
             viewModel.summitDetails.observe(this) {
                 it.data.let { entry ->
@@ -222,7 +223,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     }
 
                     val data = Intent()
-                    data.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry?.id)
+                    data.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry?.id)
                     setResult(Activity.RESULT_OK, data)
                 }
 

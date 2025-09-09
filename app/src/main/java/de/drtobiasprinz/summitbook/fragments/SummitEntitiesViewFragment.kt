@@ -13,11 +13,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.SummitEntitiesAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntitiesViewBinding
-import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.CONNECTED_ACTIVITY_PREFIX
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.models.SummitEntities
 import de.drtobiasprinz.summitbook.models.SummitEntityType
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.allSummits
+import de.drtobiasprinz.summitbook.utils.Constants.CONNECTED_ACTIVITY_PREFIX
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.isVisible
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
@@ -44,6 +44,8 @@ class SummitEntitiesViewFragment : Fragment() {
         summitEntitiesAdapter.onClickDeleteEvent = { entityEvent ->
             viewModel?.deleteEntityEvent(entityEvent)
         }
+        summitEntitiesAdapter.drawableIdDefault = usedSummitEntityType.drawableIdDefault
+        summitEntitiesAdapter.drawableIdActive = usedSummitEntityType.drawableIdActive
         summitEntitiesAdapter.onClickUpdate = { entity, newName ->
             allSummits.forEach {
                 if (entity.name in usedSummitEntityType.getRelevantValueFromSummit(it)) {

@@ -6,6 +6,7 @@ import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.utils.Constants.DATETIME_FORMAT_SIMPLE
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -69,7 +70,7 @@ class SortFilterValues(
     }
 
     private fun setDates() {
-        val dt = SimpleDateFormat(Summit.DATETIME_FORMAT_SIMPLE, Locale.ENGLISH)
+        val dt = SimpleDateFormat(DATETIME_FORMAT_SIMPLE, Locale.ENGLISH)
         if (wasFullYearSelected() && getSelectedYear() != "") {
             startDate = dt.parse(
                 "${getSelectedYear()}-01-01 00:00:00"

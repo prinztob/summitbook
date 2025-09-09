@@ -59,7 +59,7 @@ class BarChartFragment : Fragment() {
     lateinit var sortFilterValues: SortFilterValues
 
     private var selectedXAxisSpinnerEntry: BarChartXAxisSelector = BarChartXAxisSelector.DateByMonth
-    private var selectedYAxisSpinnerEntry: BarChartYAxisSelector = BarChartYAxisSelector.Count
+    private var selectedYAxisSpinnerEntry: BarChartYAxisSelector = BarChartYAxisSelector.TotalActivities
     private var selectedZAxisSpinnerEntry: BarChartZAxisSelector = BarChartZAxisSelector.SportGroup
     private var indoorHeightMeterPercent = 0
     private var selectedXAxisSpinnerMonth: Int = 0

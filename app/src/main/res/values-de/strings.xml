@@ -228,7 +228,9 @@
     <string name="annual_target_kilometer_summary">Bitte trege dein Jahresziel an zurückgelegten Kilometern ein</string>
     <string name="annual_target_kilometer_title">Jahresziel an zurückgelegten Kilometern</string>
     <string name="annual_target_activities_summary">Bitte trege dein Jahresziel an absolvierten Aktivitäten ein</string>
+    <string name="annual_target_summits_summary">Bitte trege dein Jahresziel an absolvierten Gipfel ein</string>
     <string name="annual_target_activities_title">Jahresziel an Aktivitäten</string>
+    <string name="annual_target_summits_title">Jahresziel an Gipfel</string>
     <string name="export_csv_dialog">Export von Gipfel?</string>
     <string name="export_csv_dialog_text">Exportiere gerade gefilterte Gipfel?</string>
     <string name="export_csv_dialog_positive">Alle Gipfel</string>

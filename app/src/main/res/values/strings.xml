@@ -224,7 +224,9 @@
     <string name="annual_target_kilometer_summary">Please provide your annual target for kilometers covered</string>
     <string name="annual_target_kilometer_title">Annual target for kilometers</string>
     <string name="annual_target_activities_summary">Please provide your annual target for activities</string>
+    <string name="annual_target_summits_summary">Please provide your annual target for summits</string>
     <string name="annual_target_activities_title">Annual target for activities</string>
+    <string name="annual_target_summits_title">Annual target for summits</string>
     <string name="export_csv_dialog">Export summits</string>
     <string name="export_csv_dialog_text">Export currently filtered summits?</string>
     <string name="export_csv_dialog_positive">All summits</string>

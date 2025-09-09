@@ -25,6 +25,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.ActivityAddImagesBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.utils.Utils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
@@ -53,7 +54,7 @@ class AddImagesActivity : AppCompatActivity() {
         Utils.fixEdgeToEdge(binding.root)
         val bundle = intent.extras
         if (bundle != null) {
-            val summitEntryId = bundle.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
+            val summitEntryId = bundle.getLong(SUMMIT_ID_EXTRA_IDENTIFIER)
             viewModel.getDetailsSummit(summitEntryId)
             viewModel.summitDetails.observe(this) {
                 it.data.let { summit ->
@@ -67,7 +68,7 @@ class AddImagesActivity : AppCompatActivity() {
                         drawLayout(summit, binding.images)
 
                         val data = Intent()
-                        data.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
+                        data.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
                         setResult(Activity.RESULT_OK, data)
                     }
                 }
@@ -312,7 +313,7 @@ class AddImagesActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        summitEntry?.id?.let { outState.putLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
+        summitEntry?.id?.let { outState.putLong(SUMMIT_ID_EXTRA_IDENTIFIER, it) }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

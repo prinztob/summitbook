@@ -2,10 +2,14 @@ package de.drtobiasprinz.summitbook.models
 
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
+import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
 import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
@@ -33,7 +37,13 @@ class StatisticEntry {
         this.indoorHeightMeterPercent = indoorHeightMeterPercent
     }
 
-    constructor(filteredSummitEntries: List<Summit>?, activitiesPerYear: Int, kilometerPerYear: Int, elevationGainPerYear: Int, indoorHeightMeterPercent: Int = 0) {
+    constructor(
+        filteredSummitEntries: List<Summit>?,
+        activitiesPerYear: Int,
+        kilometerPerYear: Int,
+        elevationGainPerYear: Int,
+        indoorHeightMeterPercent: Int = 0
+    ) {
         this.filteredSummitEntries = filteredSummitEntries
         this.elevationGainPerYear = elevationGainPerYear
         this.activitiesPerYear = activitiesPerYear
@@ -43,8 +53,14 @@ class StatisticEntry {
 
     fun calculate() {
         totalActivities = filteredSummitEntries?.size ?: 0
-        totalSummits = filteredSummitEntries?.filter { it.isPeak }?.size ?: 0
-        visitedCountries = filteredSummitEntries?.flatMap { it.countries }?.toSet()?.filter { it != "" }?.size ?: 0
+        totalSummits = (filteredSummitEntries?.filter { it.isPeak }?.size ?: 0) + (
+                filteredSummitEntries
+                    ?.flatMap { it.places }
+                    ?.filter { it.endsWith(PLACE_IS_SUMMIT_SUFFIX) }
+                    ?.size ?: 0
+                )
+        visitedCountries =
+            filteredSummitEntries?.flatMap { it.countries }?.toSet()?.filter { it != "" }?.size ?: 0
         totalHm = filteredSummitEntries?.sumOf {
             if (it.sportType == SportType.IndoorTrainer) {
                 it.elevationData.elevationGain * indoorHeightMeterPercent / 100
@@ -63,14 +79,17 @@ class StatisticEntry {
         val now = Calendar.getInstance()
         val date = now.time
         val currentYear = now[Calendar.YEAR].toString()
-        val df: DateFormat = SimpleDateFormat(Summit.DATE_FORMAT, Locale.ENGLISH)
+        val df: DateFormat = SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH)
         val beginOfYear: Date?
         try {
             beginOfYear = df.parse(String.format("%s-01-01", currentYear))
             val diff = date.time - beginOfYear.time
-            expectedAchievementHmAbsolute = (elevationGainPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
-            expectedAchievementKmAbsolute = (kilometerPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
-            expectedAchievementActivityAbsolute = (activitiesPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
+            expectedAchievementHmAbsolute =
+                (elevationGainPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
+            expectedAchievementKmAbsolute =
+                (kilometerPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
+            expectedAchievementActivityAbsolute =
+                (activitiesPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
         } catch (e: ParseException) {
             e.printStackTrace()
         }

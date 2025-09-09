@@ -5,6 +5,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
 import java.util.stream.Stream
 
 enum class BarChartYAxisSelector(
@@ -15,9 +16,19 @@ enum class BarChartYAxisSelector(
     val f: (Stream<Summit?>?, Int) -> Float,
     val getForecastValue: (Forecast) -> Float?
 ) {
-    Count(R.string.count, R.string.empty, Keys.PREF_ANNUAL_TARGET_ACTIVITIES, 52, { stream, _ ->
+    TotalActivities(R.string.total_activities, R.string.empty, Keys.PREF_ANNUAL_TARGET_ACTIVITIES, 52, { stream, _ ->
         stream?.count()?.toFloat() ?: 0f
     }, { forecast -> forecast.forecastNumberActivities.toFloat() }),
+    TotalSummits(R.string.total_summits, R.string.empty, Keys.PREF_ANNUAL_TARGET_SUMMITS, 10, { stream, _ ->
+        val peaks = mutableListOf<String>()
+        stream?.forEach {
+            peaks.addAll(it?.places?.filter { place -> place.endsWith(PLACE_IS_SUMMIT_SUFFIX) } ?: emptyList())
+            if (it?.isPeak == true) {
+                peaks.add(it.name)
+            }
+        }
+        peaks.count().toFloat()
+    },{ _ -> null }),
     Kilometers(R.string.kilometers_hint, R.string.km, Keys.PREF_ANNUAL_TARGET_KM, 1200, { stream, _ ->
         stream
             ?.mapToDouble { o: Summit? -> o?.kilometers ?: 0.0 }

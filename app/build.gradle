@@ -11,6 +11,7 @@ plugins {
 
 android {
     namespace 'de.drtobiasprinz.summitbook'
+    compileSdk 35
 
     defaultConfig {
         applicationId "de.drtobiasprinz.summitbook"

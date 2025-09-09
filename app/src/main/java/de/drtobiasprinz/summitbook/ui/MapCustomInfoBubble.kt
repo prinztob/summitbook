@@ -8,6 +8,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.TrackColor
+import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.infowindow.InfoWindow
 
@@ -69,7 +70,7 @@ class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Con
     private fun startIntent() {
         try {
             val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-            intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entry.id)
+            intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, entry.id)
             context.startActivity(intent)
         } catch (e: NullPointerException) {
             // DO NOTHING

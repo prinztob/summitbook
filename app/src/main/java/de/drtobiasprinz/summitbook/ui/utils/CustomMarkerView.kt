@@ -12,6 +12,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.OrderBySpinnerEntry
+import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 
 class CustomMarkerView(
     context: Context?,
@@ -47,7 +48,7 @@ class CustomMarkerView(
     fun startIntent() {
         try {
             val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-            intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
+            intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
             context.startActivity(intent)
         } catch (e: NullPointerException) {
             // DO NOTHING

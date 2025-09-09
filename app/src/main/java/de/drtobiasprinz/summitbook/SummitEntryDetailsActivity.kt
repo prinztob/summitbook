@@ -22,6 +22,7 @@ import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
+import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.Utils
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
@@ -45,7 +46,7 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
         Utils.fixEdgeToEdge(findViewById(R.id.layout    ))
         val bundle = intent.extras
         if (bundle != null) {
-            val summitEntryId = intent.extras?.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
+            val summitEntryId = intent.extras?.getLong(SUMMIT_ID_EXTRA_IDENTIFIER)
             if (summitEntryId != null) {
                 pageViewModel?.getSummitToView(summitEntryId)
                 pageViewModel?.summitToView?.observe(this) { itData ->
@@ -154,7 +155,7 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry.id)
+        outState.putLong(SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry.id)
     }
 
     companion object {

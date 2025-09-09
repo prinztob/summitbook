@@ -33,6 +33,7 @@ import de.drtobiasprinz.summitbook.models.OrderBySpinnerEntry
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
 import de.drtobiasprinz.summitbook.ui.utils.CustomMarkerView
+import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -160,7 +161,7 @@ class LineChartFragment : Fragment() {
         xAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String? {
                 return SimpleDateFormat(
-                    Summit.DATE_FORMAT,
+                    DATE_FORMAT,
                     requireContext().resources.configuration.locales[0]
                 )
                     .format(Summit.getDateFromFloat(value))
@@ -228,7 +229,7 @@ class LineChartFragment : Fragment() {
             )
         )
         legends.addAll(
-            SportType.values().map {
+            SportType.entries.map {
                 LegendEntry(
                     resources.getString(it.sportNameStringId),
                     Legend.LegendForm.CIRCLE,

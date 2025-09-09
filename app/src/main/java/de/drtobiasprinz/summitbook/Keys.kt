@@ -8,6 +8,7 @@ object Keys {
     const val PREF_ANNUAL_TARGET: String = "annual_target"
     const val PREF_ANNUAL_TARGET_KM: String = "annual_target_km"
     const val PREF_ANNUAL_TARGET_ACTIVITIES: String = "annual_target_activities"
+    const val PREF_ANNUAL_TARGET_SUMMITS: String = "annual_target_summits"
     const val PREF_CURRENT_YEAR_SWITCH: String = "current_year_switch"
     const val PREF_DOWNLOAD_TCX: String = "download_tcx"
     const val PREF_GARMIN_MFA: String = "garmin_mfa"

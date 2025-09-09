@@ -23,6 +23,7 @@ import de.drtobiasprinz.summitbook.models.AdditionalDataTableEntry
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
+import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -60,7 +61,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
             setView(localSummit)
         }
         if (savedInstanceState != null && summitEntry == null) {
-            val summitEntryId = savedInstanceState.getLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER)
+            val summitEntryId = savedInstanceState.getLong(SUMMIT_ID_EXTRA_IDENTIFIER)
             viewModel.getDetailsSummit(summitEntryId)
             viewModel.summitDetails.observe(this) { itData ->
                 itData.data.let { summit ->
@@ -188,7 +189,7 @@ class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        summitEntry?.id?.let { outState.putLong(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, it) }
+        summitEntry?.id?.let { outState.putLong(SUMMIT_ID_EXTRA_IDENTIFIER, it) }
         super.onSaveInstanceState(outState)
     }
 

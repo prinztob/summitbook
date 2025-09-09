@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.content.Context
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.text.InputType
 import android.view.LayoutInflater
@@ -26,6 +25,8 @@ import de.drtobiasprinz.summitbook.models.*
 import de.drtobiasprinz.summitbook.models.SortFilterValues.Companion.setSelectedDateSpinnerAndItsDefault
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
+import de.drtobiasprinz.summitbook.utils.Constants.DATETIME_FORMAT_SIMPLE
+import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -34,6 +35,7 @@ import javax.inject.Inject
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
+import androidx.core.graphics.drawable.toDrawable
 
 
 @AndroidEntryPoint
@@ -42,7 +44,7 @@ class SortAndFilterFragment : DialogFragment() {
     @Inject
     lateinit var sortFilterValues: SortFilterValues
     private val viewModel: DatabaseViewModel by activityViewModels()
-    private val df: DateFormat = SimpleDateFormat(Summit.DATE_FORMAT, Locale.ENGLISH)
+    private val df: DateFormat = SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH)
 
     var apply: () -> Unit = { }
 
@@ -56,7 +58,7 @@ class SortAndFilterFragment : DialogFragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentSortAndFilterBinding.inflate(layoutInflater, container, false)
-        dialog!!.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog!!.window?.setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
         return binding.root
     }
 
@@ -355,7 +357,7 @@ class SortAndFilterFragment : DialogFragment() {
         val dateAdapter =
             ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, dates)
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        val dt = SimpleDateFormat(Summit.DATETIME_FORMAT_SIMPLE, Locale.ENGLISH)
+        val dt = SimpleDateFormat(DATETIME_FORMAT_SIMPLE, Locale.ENGLISH)
         binding.spinnerDate.adapter = dateAdapter
         binding.spinnerDate.setSelection(sortFilterValues.selectedDateSpinner)
         binding.spinnerDate.onItemSelectedListener =

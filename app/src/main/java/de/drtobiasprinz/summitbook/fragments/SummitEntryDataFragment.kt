@@ -20,6 +20,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.TextField
 import de.drtobiasprinz.summitbook.models.TextFieldGroup
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
+import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import java.text.NumberFormat
 import java.util.Locale
@@ -90,7 +91,8 @@ class SummitEntryDataFragment : Fragment() {
                                             requireContext(),
                                             summits
                                         ),
-                                        R.drawable.baseline_place_black_24dp
+                                        R.drawable.outline_landscape_2_off_24,
+                                        R.drawable.outline_landscape_2_24,
                                     )
                                 }
                             }
@@ -121,7 +123,7 @@ class SummitEntryDataFragment : Fragment() {
         setChipsText(R.id.countries, summitToView.countries, R.drawable.ic_baseline_flag_24)
         setChipsText(R.id.participants, summitToView.participants, R.drawable.ic_baseline_people_24)
         setChipsText(R.id.equipments, summitToView.equipments, R.drawable.ic_baseline_handyman_24)
-        setChipsTextForSegments(R.id.segments, R.drawable.ic_baseline_route_24, summitToView)
+        setChipsTextForSegments(R.drawable.ic_baseline_route_24, summitToView)
     }
 
     private fun setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
@@ -290,8 +292,12 @@ class SummitEntryDataFragment : Fragment() {
                 )
             } else {
                 numberFormat.maximumFractionDigits = textField.digits
-                textField.valueTextView(binding).text =
-                    "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unit}"
+                textField.valueTextView(binding).text = String.format(
+                    resources.configuration.locales[0],
+                    "%s %s",
+                    numberFormat.format(value.toDouble() * textField.factor),
+                    textField.unit
+                )
             }
         }
     }
@@ -398,14 +404,13 @@ class SummitEntryDataFragment : Fragment() {
         textView.setCompoundDrawablesWithIntrinsicBounds(drawable, 0, 0, 0)
     }
 
-    private fun setChipsTextForSegments(id: Int, imageId: Int, summitEntry: Summit) {
+    private fun setChipsTextForSegments(imageId: Int, summitEntry: Summit) {
         pageViewModel?.segmentsList?.observe(viewLifecycleOwner) {
             it.data.let { segments ->
                 segments?.let { segmentList -> summitEntry.updateSegmentInfo(segmentList) }
-                val chipGroup: ChipGroup = binding.root.findViewById(id)
-                chipGroup.removeAllViews()
+                binding.segments.removeAllViews()
                 if (summitEntry.segmentInfo.isEmpty()) {
-                    chipGroup.visibility = View.GONE
+                    binding.segments.visibility = View.GONE
                 } else {
                     for (entry in summitEntry.segmentInfo) {
                         val chip = createChip(
@@ -453,33 +458,46 @@ class SummitEntryDataFragment : Fragment() {
                                 getString(R.string.hm)
                             )
                         }
-                        chipGroup.addView(chip)
+                        binding.segments.addView(chip)
                     }
                 }
             }
         }
     }
 
-    private fun setChipsText(id: Int, list: List<String>, imageId: Int) {
+    private fun setChipsText(
+        id: Int, list: List<String>, imageIdDefault: Int,
+        imageIdActivated: Int? = null,
+    ) {
         val chipGroup: ChipGroup = binding.root.findViewById(id)
         chipGroup.removeAllViews()
         if (list.isEmpty() || list.first() == "") {
             chipGroup.visibility = View.GONE
         } else {
             for (entry in list) {
-                chipGroup.addView(createChip(entry, imageId))
+                chipGroup.addView(createChip(entry, imageIdDefault, imageIdActivated))
             }
         }
     }
 
     private fun createChip(
         entry: String,
-        imageId: Int
+        imageIdDefault: Int,
+        imageIdActivated: Int? = null,
     ): Chip {
         val chip = Chip(requireContext())
-        chip.text = entry
+        chip.text = entry.replace(PLACE_IS_SUMMIT_SUFFIX, "")
         chip.isClickable = false
-        chip.chipIcon = ResourcesCompat.getDrawable(resources, imageId, null)
+        chip.chipIcon =
+            if (imageIdActivated != null && entry.endsWith(PLACE_IS_SUMMIT_SUFFIX)) {
+                ResourcesCompat.getDrawable(
+                    resources,
+                    imageIdActivated,
+                    null
+                )
+            } else {
+                ResourcesCompat.getDrawable(resources, imageIdDefault, null)
+            }
         when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
             Configuration.UI_MODE_NIGHT_YES -> {
                 chip.chipIconTint =

@@ -36,6 +36,7 @@ import de.drtobiasprinz.summitbook.ui.PerformanceGraphProvider
 import de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
 import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
 import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
+import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -482,6 +483,7 @@ class OverviewFragment : Fragment() {
         val statisticEntry = StatisticEntry(summits, indoorHeightMeterPercent)
         statisticEntry.calculate()
         val peaks = summits.filter { it.isPeak }
+        val numberOfPeaks = peaks.size + summits.flatMap { it.places }.filter { it.endsWith(PLACE_IS_SUMMIT_SUFFIX) }.size
         binding.overview.text = getString(
             R.string.base_info_activities,
             numberFormat.format(summits.size),
@@ -490,7 +492,7 @@ class OverviewFragment : Fragment() {
         )
         binding.overviewSummits.text = getString(
             R.string.base_info_summits,
-            numberFormat.format(peaks.size),
+            numberFormat.format(numberOfPeaks),
             numberFormat.format(peaks.sumOf { it.kilometers }),
             numberFormat.format(peaks.sumOf { it.elevationData.elevationGain })
         )

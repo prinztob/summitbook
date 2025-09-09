@@ -39,6 +39,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private lateinit var preferenceCurrentYearSwitch: SwitchPreferenceCompat
     private lateinit var preferenceAnnualTargetActivities: EditTextPreference
+    private lateinit var preferenceAnnualTargetSummits: EditTextPreference
     private lateinit var preferenceAnnualTargetHeightMeter: EditTextPreference
     private lateinit var preferenceAnnualTargetKilometer: EditTextPreference
     private lateinit var preferenceIndoorHeightMeterPerCent: SeekBarPreference
@@ -79,6 +80,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceAnnualTargetActivities.summary =
             getString(R.string.annual_target_activities_summary)
         preferenceAnnualTargetActivities.setDefaultValue("52")
+
+        preferenceAnnualTargetSummits = EditTextPreference(requireContext())
+        preferenceAnnualTargetSummits.title = getString(R.string.annual_target_summits_title)
+        preferenceAnnualTargetSummits.key = Keys.PREF_ANNUAL_TARGET_SUMMITS
+        preferenceAnnualTargetSummits.setIcon(R.drawable.outline_landscape_2_24)
+        preferenceAnnualTargetSummits.summary =
+            getString(R.string.annual_target_summits_summary)
+        preferenceAnnualTargetSummits.setDefaultValue("10")
 
         preferenceAnnualTargetHeightMeter = EditTextPreference(requireContext())
         preferenceAnnualTargetHeightMeter.title =

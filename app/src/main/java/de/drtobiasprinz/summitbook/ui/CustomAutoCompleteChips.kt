@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.ui
 
 import android.content.res.Configuration
+import android.graphics.drawable.Drawable
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
@@ -11,9 +12,14 @@ import androidx.core.view.children
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
 
 
-class CustomAutoCompleteChips(private val mView: View, private val chipIconId: Int? = null) {
+class CustomAutoCompleteChips(
+    private val mView: View,
+    private val chipDrawableOff: Drawable? = null,
+    private val chipDrawableOn: Drawable? = null
+) {
     private val newline = "\n"
 
     fun addChips(
@@ -61,10 +67,22 @@ class CustomAutoCompleteChips(private val mView: View, private val chipIconId: I
 
     private fun addChipToGroup(name: String, chipGroup: ChipGroup) {
         val chip = Chip(mView.context)
-        chip.text = name
-        if (chipIconId != null) {
-            chip.chipIcon = ContextCompat.getDrawable(mView.context, chipIconId)
+        if (chipDrawableOn != null && chipDrawableOff != null) {
+            chip.chipIcon =
+                if (name.endsWith(PLACE_IS_SUMMIT_SUFFIX)) {
+                    chipDrawableOn
+                } else chipDrawableOff
+            chip.setOnLongClickListener {
+                chip.chipIcon = if (chip.chipIcon == chipDrawableOff
+                ) {
+                    chipDrawableOn
+                } else {
+                    chipDrawableOff
+                }
+                true
+            }
         }
+        chip.text = name.replace(PLACE_IS_SUMMIT_SUFFIX, "")
         chip.chipIconTint = ContextCompat.getColorStateList(mView.context, R.color.black)
         if (mView.context.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
             chip.chipIconTint = ContextCompat.getColorStateList(mView.context, R.color.white)

@@ -8,8 +8,6 @@ import com.google.gson.JsonObject
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.db.entities.SportType.Companion.getSportTypeFromGarminId
-import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.DATETIME_FORMAT_COMPLEX
-import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.DATETIME_FORMAT_SIMPLE
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.convertMeterToKm
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.parseSportType
 import de.drtobiasprinz.summitbook.models.GpsTrack
@@ -18,6 +16,14 @@ import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.roundToTwoD
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.utils.Constants
+import de.drtobiasprinz.summitbook.utils.Constants.CONNECTED_ACTIVITY_PREFIX
+import de.drtobiasprinz.summitbook.utils.Constants.DATETIME_FORMAT_COMPLEX
+import de.drtobiasprinz.summitbook.utils.Constants.DATETIME_FORMAT_SIMPLE
+import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
+import de.drtobiasprinz.summitbook.utils.Constants.EQUIPMENT_SUFFIX
+import de.drtobiasprinz.summitbook.utils.Constants.NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY
+import de.drtobiasprinz.summitbook.utils.Constants.NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY
+import de.drtobiasprinz.summitbook.utils.Constants.REFERENCE_VALUE_DATE
 import de.drtobiasprinz.summitbook.utils.ZipFileVersions
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import org.osmdroid.util.BoundingBox
@@ -525,16 +531,6 @@ class Summit(
     }
 
     companion object {
-        const val DATE_FORMAT: String = "yyyy-MM-dd"
-        private const val EQUIPMENT_SUFFIX: String = ":eq"
-        const val DATETIME_FORMAT_SIMPLE: String = "yyyy-MM-dd HH:mm:ss"
-        const val DATETIME_FORMAT_COMPLEX: String = "yyyy-MM-dd'T'HH:mm:ss.s"
-        const val CONNECTED_ACTIVITY_PREFIX: String = "ac_id:"
-        const val SUMMIT_ID_EXTRA_IDENTIFIER = "SUMMIT_ID"
-        private const val NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY = 28
-        private const val NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY = 16
-        const val REFERENCE_VALUE_DATE: Long = 946681200000
-
         var subDirForGpsTracks: String = "summitbook_tracks"
         var subDirForGpsTracksSimplified: String = "summitbook_tracks_simplified"
         var subDirForGpsTrackExtensions: String = "summitbook_tracks_extensions"
@@ -552,28 +548,28 @@ class Summit(
         fun parseFromCsvFileLine(line: String): Summit {
             val cvsSplitBy = ";"
             val splitLine: Array<String> =
-                line.trim { it <= ' ' }.split(cvsSplitBy.toRegex()).dropLastWhile { it.isEmpty() }
+                line.trim().split(cvsSplitBy.toRegex()).dropLastWhile { it.isEmpty() }
                     .toTypedArray()
             checkValidNumberOfElements(splitLine)
             isDateValid(splitLine)
             areNumbersValid(splitLine)
             isSportTypeValid(splitLine)
             val date = parseDate(splitLine[0])
-            val elevation = if (splitLine[10].trim { it <= ' ' } != "") splitLine[10].toInt() else 0
+            val elevation = if (splitLine[10].trim() != "") splitLine[10].toInt() else 0
             val elevationData = ElevationData.parse(splitLine[6].split(","), elevation)
             val sportType = splitLine[2].let { SportType.valueOf(it) }
             val km: Double =
-                (if (splitLine[7].trim { it <= ' ' } != "") splitLine[7].toDouble() else 0.0)
+                (if (splitLine[7].trim() != "") splitLine[7].toDouble() else 0.0)
             val topSpeed: Double =
-                (if (splitLine[9].trim { it <= ' ' } != "") splitLine[9].toDouble() else 0.0)
+                (if (splitLine[9].trim() != "") splitLine[9].toDouble() else 0.0)
             val countries = splitLine[3].split(",")
             val places = splitLine[4].split(",")
             val participantsAndEquipments = splitLine[13].split(",")
             val activityId =
-                if (splitLine[14].trim { it <= ' ' } != "") splitLine[14].toLong() else System.currentTimeMillis()
+                if (splitLine[14].trim() != "") splitLine[14].toLong() else System.currentTimeMillis()
             val garminData = getGarminData(splitLine)
             val latLng =
-                if (splitLine[11].trim { it <= ' ' } != "" && splitLine[12].trim { it <= ' ' } != "") {
+                if (splitLine[11].trim() != "" && splitLine[12].trim() != "") {
                     TrackPoint
                         .Builder()
                         .setLatitude(splitLine[11].toDouble())
@@ -628,7 +624,7 @@ class Summit(
         }
 
         private fun getGarminData(splitLine: Array<String>): GarminData? {
-            if (splitLine.size == NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY || splitLine[15].trim { it <= ' ' } == "") {
+            if (splitLine.size == NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY || splitLine[15].trim() == "") {
                 return null
             } else {
                 if (splitLine.size == 30) {
@@ -704,7 +700,7 @@ class Summit(
         private fun areNumbersValid(splitLine: Array<String>) {
             try {
                 val elevation =
-                    if (splitLine[10].trim { it <= ' ' } != "") splitLine[10].toInt() else 0
+                    if (splitLine[10].trim() != "") splitLine[10].toInt() else 0
                 ElevationData.parse(splitLine[6].split(","), elevation)
             } catch (e: Exception) {
                 throw Exception("Line " + splitLine.contentToString() + " has no valid value for required parameter height meter.")

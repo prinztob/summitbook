@@ -23,6 +23,7 @@ import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.models.StatisticEntryDefinitions
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
+import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -253,7 +254,7 @@ class StatisticsFragment : Fragment() {
             entry.layout(binding).setOnClickListener { v: View ->
                 val context = v.context
                 val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-                intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
+                intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
                 context.startActivity(intent)
             }
             entry.layout(binding).visibility = View.VISIBLE

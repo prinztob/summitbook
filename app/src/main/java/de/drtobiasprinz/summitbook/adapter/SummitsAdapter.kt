@@ -30,6 +30,7 @@ import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.utils.Constants
+import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import java.util.Locale
 import javax.inject.Singleton
 
@@ -114,13 +115,13 @@ class SummitsAdapter :
                 entryAddCoordinate.setOnClickListener { v: View? ->
                     val context = v?.context
                     val intent = Intent(context, SelectOnOsMapActivity::class.java)
-                    intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
+                    intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
                     v?.context?.startActivity(intent)
                 }
                 root.setOnClickListener { v: View? ->
                     val context = v?.context
                     val intent = Intent(context, SummitEntryDetailsActivity::class.java)
-                    intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
+                    intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
                     v?.context?.startActivity(intent)
                 }
                 setRecords(entity, segmentRecord, powerRecord)
@@ -155,7 +156,7 @@ class SummitsAdapter :
             entryAddImage.setOnClickListener { v: View? ->
                 val context = v?.context
                 val intent = Intent(context, AddImagesActivity::class.java)
-                intent.putExtra(Summit.SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
+                intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
                 v?.context?.startActivity(intent)
             }
 

@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -28,6 +29,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
@@ -47,7 +49,6 @@ import de.drtobiasprinz.summitbook.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.db.entities.GarminData
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.CONNECTED_ACTIVITY_PREFIX
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
@@ -61,8 +62,10 @@ import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
 import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
 import de.drtobiasprinz.summitbook.utils.Constants.BUNDLE_ID
+import de.drtobiasprinz.summitbook.utils.Constants.CONNECTED_ACTIVITY_PREFIX
 import de.drtobiasprinz.summitbook.utils.Constants.EDIT
 import de.drtobiasprinz.summitbook.utils.Constants.NEW
+import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -88,7 +91,6 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.round
 import kotlin.math.roundToInt
-import androidx.core.graphics.drawable.toDrawable
 
 @AndroidEntryPoint
 class AddSummitDialog : DialogFragment(), BaseDialog {
@@ -117,6 +119,8 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
 
     private var type = ""
     private var isEdit = false
+    private var drawablePlacesOn: Drawable? = null
+    private var drawablePlacesOff: Drawable? = null
     var isBookmark = false
     var fromReceiverActivity = false
 
@@ -130,6 +134,14 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        drawablePlacesOff = ContextCompat.getDrawable(
+            view.context,
+            R.drawable.outline_landscape_2_off_24
+        )
+        drawablePlacesOn = ContextCompat.getDrawable(
+            view.context,
+            R.drawable.outline_landscape_2_24
+        )
         summitId = arguments?.getLong(BUNDLE_ID) ?: 0
         if (summitId > 0) {
             type = EDIT
@@ -374,10 +386,12 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         setImageColor()
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
-                participantsAdapter = ArrayAdapter(requireContext(),
+                participantsAdapter = ArrayAdapter(
+                    requireContext(),
                     android.R.layout.simple_dropdown_item_1line,
                     summits.flatMap { it.participants }.distinct().filter { it != "" })
-                equipmentsAdapter = ArrayAdapter(requireContext(),
+                equipmentsAdapter = ArrayAdapter(
+                    requireContext(),
                     android.R.layout.simple_dropdown_item_1line,
                     summits.flatMap { it.equipments }.distinct().filter { it != "" })
                 placesAdapter = getPlacesSuggestions(summits)
@@ -517,7 +531,9 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
     private fun addPlaces(view: View, summits: List<Summit>) {
-        CustomAutoCompleteChips(view).addChips(
+        CustomAutoCompleteChips(
+            view, drawablePlacesOff, drawablePlacesOn
+        ).addChips(
             placesAdapter, entity.getPlacesWithConnectedEntryString(
                 requireContext(), summits
             ), binding.autoCompleteTextViewPlaces, binding.chipGroupPlaces
@@ -537,7 +553,14 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         addConnectedEntryString: Boolean = true
     ): ArrayAdapter<String> {
         val suggestions: MutableList<String> =
-            (summits.flatMap { it.places } + summits.map { it.name }).filter {
+            (summits.flatMap {
+                it.places.map { place ->
+                    place.replace(
+                        PLACE_IS_SUMMIT_SUFFIX,
+                        ""
+                    )
+                }
+            } + summits.map { it.name }).filter {
                 it != "" && !it.startsWith(
                     CONNECTED_ACTIVITY_PREFIX
                 )
@@ -618,17 +641,35 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
     private fun updatePlacesChipValuesWithId(): MutableList<String> {
-        val places = binding.chipGroupPlaces.children.toList().map { (it as Chip).text.toString() }
+        binding.chipGroupPlaces.children.toList().map { (it as Chip).text.toString() }
             .toMutableList()
-        for ((i, place) in places.withIndex()) {
-            for (connectedSummit in connectedSummits) if (place == connectedSummit.getConnectedEntryString(
-                    requireContext()
-                )
-            ) {
-                places[i] = "$CONNECTED_ACTIVITY_PREFIX${connectedSummit.activityId}"
+        val places = mutableListOf<String>()
+        for (chip in binding.chipGroupPlaces.children) {
+            val chipCasted = chip as Chip
+            val place = extractPlaceWithConnectedActivity(chipCasted)
+            if (place != null) {
+                places.add(place)
+            } else {
+                if ((chipCasted).chipIcon == drawablePlacesOn) {
+                    places.add(chip.text.toString() + PLACE_IS_SUMMIT_SUFFIX)
+                } else {
+                    places.add(chip.text.toString())
+                }
             }
         }
         return places
+    }
+
+    private fun extractPlaceWithConnectedActivity(chip: Chip): String? {
+        for (connectedSummit in connectedSummits) {
+            if (chip.text.toString() == connectedSummit.getConnectedEntryString(
+                    requireContext()
+                )
+            ) {
+                return "$CONNECTED_ACTIVITY_PREFIX${connectedSummit.activityId}"
+            }
+        }
+        return null
     }
 
     private fun updateDialogFields(updateSpinner: Boolean) {
@@ -692,7 +733,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         }
 
         private fun isEmpty(editText: EditText): Boolean {
-            return TextUtils.isEmpty(editText.text.toString().trim { it <= ' ' })
+            return TextUtils.isEmpty(editText.text.toString().trim())
         }
     }
 

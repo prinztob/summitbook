@@ -2,8 +2,8 @@ package de.drtobiasprinz.summitbook.db.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.DATE_FORMAT
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.parseDate
+import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
