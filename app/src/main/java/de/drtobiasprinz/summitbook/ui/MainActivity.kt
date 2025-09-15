@@ -323,7 +323,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var pythonInstance: Python? = null
         var pythonExecutor: GarminPythonExecutor? = null
         var allSummits: List<Summit> = emptyList()
-        var activitiesWithPowerRecords: MutableList<Long> = mutableListOf()
+        var activitiesWithPowerRecordsFiltered: List<Long> = emptyList()
+        var activitiesWithPowerRecordsLast5Years: List<Long> = emptyList()
+        var activitiesWithPowerRecordsAll: List<Long> = emptyList()
         var activitiesWithSegmentsRecord: MutableList<Pair<Long, Int>> = mutableListOf()
         lateinit var sharedPreferences: SharedPreferences
     }

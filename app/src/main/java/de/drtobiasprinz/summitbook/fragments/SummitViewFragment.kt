@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.fragments
 
 import android.content.SharedPreferences
+import android.icu.util.Calendar
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -31,7 +32,6 @@ import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.updateOfTracksStarted
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.observeOnce
-import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.isVisible
@@ -147,7 +147,7 @@ class SummitViewFragment : Fragment() {
                             )
                             summitsAdapter.differ.submitList(data)
                             if (!sharedPreferences.getBoolean(Keys.PREF_DEBUG, false)) {
-                                setRecordsOnce(summitsStatus.data ?: emptyList())
+                                setRecordsOnce(summitsStatus.data ?: emptyList(), data)
                                 if (!updateOfTracksStarted) {
                                     summitsStatus.data?.let { updateTracks(it) }
                                 }
@@ -196,40 +196,31 @@ class SummitViewFragment : Fragment() {
         }
     }
 
-    private fun setRecordsOnce(summits: List<Summit>) {
-        MainActivity.activitiesWithPowerRecords = mutableListOf()
-        MainActivity.activitiesWithSegmentsRecord = mutableListOf()
-        val filteredSummits = summits.filter {
-            !it.isBookmark && sortFilterValues.filterDate(it)
-        }
+    private fun setRecordsOnce(allSummits: List<Summit>, filteredSummits: List<Summit>) {
         Log.i(
             "SummitViewFragment",
             "records will be added for ${filteredSummits.size} summits."
         )
-        val maxSummits = TimeIntervalPower.entries.map {
-            it.getMaxSummit(
-                ExtremaValuesSummits(
-                    filteredSummits,
-                    excludeZeroValueFromMin = true
-                )
-            )
-        }
 
-        summits.forEach { summit ->
-            if (summit in maxSummits) {
-                MainActivity.activitiesWithPowerRecords.add(summit.activityId)
-            }
-        }
+        MainActivity.activitiesWithPowerRecordsFiltered =
+            getSummitIdsWithPowerRecord(filteredSummits)
+        val calendar = Calendar.getInstance()
+        // Move calendar back 5 years from today
+        calendar.add(Calendar.YEAR, -5)
+        MainActivity.activitiesWithPowerRecordsLast5Years = getSummitIdsWithPowerRecord(
+            allSummits.filter { it.date.after(calendar.time) }
+        )
+        MainActivity.activitiesWithPowerRecordsAll = getSummitIdsWithPowerRecord(allSummits)
 
         viewModel?.segmentsList?.observeOnce(viewLifecycleOwner) { itDataSegments ->
             itDataSegments.data.let { segments ->
                 if (!segments.isNullOrEmpty()) {
-                    summits.forEach { summit ->
+                    allSummits.forEach { summit ->
                         summit.updateSegmentInfo(segments)
                     }
                 }
             }
-            summits.forEach { summit ->
+            allSummits.forEach { summit ->
                 if (summit.segmentInfo.isNotEmpty()) {
                     val position = summit.segmentInfo.minOf { it.third }
                     if (position in 1..3) {
@@ -242,6 +233,14 @@ class SummitViewFragment : Fragment() {
                     }
                 }
             }
+        }
+    }
+
+    private fun getSummitIdsWithPowerRecord(
+        summits: List<Summit>,
+    ): List<Long> {
+        return TimeIntervalPower.entries.mapNotNull { interval ->
+            summits.maxByOrNull { interval.value(it) }?.activityId
         }
     }
 

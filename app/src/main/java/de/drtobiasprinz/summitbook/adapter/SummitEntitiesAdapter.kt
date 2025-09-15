@@ -56,7 +56,7 @@ class SummitEntitiesAdapter :
         RecyclerView.ViewHolder(binding.root) {
         fun setData(entity: SummitEntities, entityEvents: List<EntityEvent>) {
             binding.apply {
-                val isActive = entity.name.endsWith(PLACE_IS_SUMMIT_SUFFIX)
+                val isActive = entity.name.endsWith(PLACE_IS_SUMMIT_SUFFIX) || summits.find { it.name == entity.name }?.isPeak == true
                 entityNameEdit.setText(entity.name.replace(PLACE_IS_SUMMIT_SUFFIX, ""))
                 val drawableIdActiveLocal = drawableIdActive
                 val drawableIdDefaultLocal = drawableIdDefault

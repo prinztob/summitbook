@@ -271,7 +271,8 @@ class SummitsAdapter :
     }
 
     private fun setRecords(entity: Summit, segmentRecord: ImageView, powerRecord: ImageView) {
-        val bestPositionInSegment = MainActivity.activitiesWithSegmentsRecord.firstOrNull { it.first == entity.activityId }
+        val bestPositionInSegment =
+            MainActivity.activitiesWithSegmentsRecord.firstOrNull { it.first == entity.activityId }
         if (bestPositionInSegment != null) {
             segmentRecord.visibility = View.VISIBLE
             when (bestPositionInSegment.second) {
@@ -283,11 +284,25 @@ class SummitsAdapter :
         } else {
             segmentRecord.visibility = View.GONE
         }
-        if (entity.activityId in MainActivity.activitiesWithPowerRecords) {
-            powerRecord.visibility = View.VISIBLE
-            powerRecord.setColorFilter(Color.rgb(255, 215, 0))
-        } else {
-            powerRecord.visibility = View.GONE
+        when (entity.activityId) {
+            in MainActivity.activitiesWithPowerRecordsAll -> {
+                powerRecord.visibility = View.VISIBLE
+                powerRecord.setColorFilter(Color.rgb(255, 215, 0))
+            }
+
+            in MainActivity.activitiesWithPowerRecordsLast5Years -> {
+                powerRecord.visibility = View.VISIBLE
+                powerRecord.setColorFilter(Color.rgb(192, 192, 192))
+            }
+
+            in MainActivity.activitiesWithPowerRecordsFiltered -> {
+                powerRecord.visibility = View.VISIBLE
+                powerRecord.setColorFilter(Color.rgb(168, 112, 0))
+            }
+
+            else -> {
+                powerRecord.visibility = View.GONE
+            }
         }
     }
 
