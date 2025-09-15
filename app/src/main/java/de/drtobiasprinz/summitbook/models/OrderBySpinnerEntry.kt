@@ -9,7 +9,7 @@ enum class OrderBySpinnerEntry(
     var includeIndoorActivities: Boolean = false, var excludeFromLineChart: Boolean = false,
     var f: (Summit) -> Float?,
     var segmentSorting: (Segment) -> Float? = { e -> e.segmentEntries.maxByOrNull { it.date }?.date?.time?.toFloat() },
-    var summitEntitySorting: (SummitEntities) -> Double = { it.count.toDouble() },
+    var summitEntitySorting: (SummitEntitySummary) -> Double = { it.count.toDouble() },
 ) {
     Date(
         R.string.date,

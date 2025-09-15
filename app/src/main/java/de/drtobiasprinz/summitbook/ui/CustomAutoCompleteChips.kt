@@ -12,7 +12,7 @@ import androidx.core.view.children
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.peaks
 
 
 class CustomAutoCompleteChips(
@@ -69,7 +69,7 @@ class CustomAutoCompleteChips(
         val chip = Chip(mView.context)
         if (chipDrawableOn != null && chipDrawableOff != null) {
             chip.chipIcon =
-                if (name.endsWith(PLACE_IS_SUMMIT_SUFFIX)) {
+                if (name in peaks.map { it.name }) {
                     chipDrawableOn
                 } else chipDrawableOff
             chip.setOnLongClickListener {
@@ -82,7 +82,7 @@ class CustomAutoCompleteChips(
                 true
             }
         }
-        chip.text = name.replace(PLACE_IS_SUMMIT_SUFFIX, "")
+        chip.text = name
         chip.chipIconTint = ContextCompat.getColorStateList(mView.context, R.color.black)
         if (mView.context.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
             chip.chipIconTint = ContextCompat.getColorStateList(mView.context, R.color.white)

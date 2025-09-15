@@ -2,8 +2,8 @@ package de.drtobiasprinz.summitbook.models
 
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.peaks
 import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
-import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
 import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -25,24 +25,27 @@ class StatisticEntry {
     var expectedAchievementActivityAbsolute = 0.0
     var expectedAchievementHmAbsolute = 0.0
     var expectedAchievementKmAbsolute = 0.0
-    private var filteredSummitEntries: List<Summit>?
+    private var filteredSummitEntries: List<Summit> = emptyList()
     private var activitiesPerYear = 50
     private var kilometerPerYear = 1200
     private var elevationGainPerYear = 50000
     private var indoorHeightMeterPercent = 0
 
 
-    constructor(filteredSummitEntries: List<Summit>?, indoorHeightMeterPercent: Int = 0) {
+    constructor(
+        filteredSummitEntries: List<Summit>,
+        indoorHeightMeterPercent: Int = 0
+    ) {
         this.filteredSummitEntries = filteredSummitEntries
         this.indoorHeightMeterPercent = indoorHeightMeterPercent
     }
 
     constructor(
-        filteredSummitEntries: List<Summit>?,
+        filteredSummitEntries: List<Summit>,
         activitiesPerYear: Int,
         kilometerPerYear: Int,
         elevationGainPerYear: Int,
-        indoorHeightMeterPercent: Int = 0
+        indoorHeightMeterPercent: Int = 0,
     ) {
         this.filteredSummitEntries = filteredSummitEntries
         this.elevationGainPerYear = elevationGainPerYear
@@ -52,23 +55,23 @@ class StatisticEntry {
     }
 
     fun calculate() {
-        totalActivities = filteredSummitEntries?.size ?: 0
-        totalSummits = (filteredSummitEntries?.filter { it.isPeak }?.size ?: 0) + (
+        totalActivities = filteredSummitEntries.size
+        totalSummits = filteredSummitEntries.filter { it.isPeak }.size + (
                 filteredSummitEntries
-                    ?.flatMap { it.places }
-                    ?.filter { it.endsWith(PLACE_IS_SUMMIT_SUFFIX) }
-                    ?.size ?: 0
+                    .flatMap { it.places }
+                    .filter { it in peaks.map { peak -> peak.name } }
+                    .size
                 )
         visitedCountries =
-            filteredSummitEntries?.flatMap { it.countries }?.toSet()?.filter { it != "" }?.size ?: 0
-        totalHm = filteredSummitEntries?.sumOf {
+            filteredSummitEntries.flatMap { it.countries }.toSet().filter { it != "" }.size
+        totalHm = filteredSummitEntries.sumOf {
             if (it.sportType == SportType.IndoorTrainer) {
                 it.elevationData.elevationGain * indoorHeightMeterPercent / 100
             } else {
                 it.elevationData.elevationGain
             }
-        } ?: 0
-        totalKm = filteredSummitEntries?.sumOf { it.kilometers } ?: 0.0
+        }
+        totalKm = filteredSummitEntries.sumOf { it.kilometers }
         achievementActivity = (totalSummits * 100.0 / activitiesPerYear).roundToInt().toDouble()
         achievementKm = totalKm * 100.0 / kilometerPerYear
         achievementHm = totalHm * 100.0 / elevationGainPerYear

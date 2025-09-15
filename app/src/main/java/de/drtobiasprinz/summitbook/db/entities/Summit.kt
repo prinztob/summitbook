@@ -787,7 +787,7 @@ class Summit(
             jsonObjectForActivityId: JsonObject? = null
         ): Summit {
             val summit = Summit()
-            SummitEntity.entries.forEach {
+            SummitEntityParser.entries.forEach {
                 it.updateSummit(
                     summit,
                     jsonObject,
@@ -810,7 +810,7 @@ class Summit(
 
 }
 
-enum class SummitEntity(
+enum class SummitEntityParser(
     val updateSummit: (Summit, JsonObject, JsonObject?, JsonObject?) -> Unit
 ) {
     Date({ summit, json, _, _ ->

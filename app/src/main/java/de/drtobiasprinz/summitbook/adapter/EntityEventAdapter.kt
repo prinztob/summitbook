@@ -14,7 +14,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.CardEntityEventBinding
 import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.SummitEntities
+import de.drtobiasprinz.summitbook.models.SummitEntitySummary
 import de.drtobiasprinz.summitbook.ui.dialog.AddEntityEventDialog
 import java.text.NumberFormat
 import java.util.concurrent.TimeUnit
@@ -23,7 +23,7 @@ import kotlin.math.roundToInt
 
 class EntityEventAdapter(
     private val summits: List<Summit>,
-    private val summitEntities: SummitEntities
+    private val summitEntitySummary: SummitEntitySummary
 ) :
     RecyclerView.Adapter<EntityEventAdapter.ViewHolder?>() {
 
@@ -57,7 +57,7 @@ class EntityEventAdapter(
         event: EntityEvent
     ) {
         val relevantSummits = summits.filter {
-            it.date > event.date && event.equipmentName in summitEntities.type.getRelevantValueFromSummit(
+            it.date > event.date && event.equipmentName in summitEntitySummary.type.getRelevantValueFromSummit(
                 it
             )
         }
@@ -83,7 +83,7 @@ class EntityEventAdapter(
         )
         binding.entryEdit.setOnClickListener { view: View? ->
             AddEntityEventDialog.getInstance(
-                event, summitEntities
+                event, summitEntitySummary
             ).show(
                 (FragmentComponentManager.findActivity(view?.context) as FragmentActivity).supportFragmentManager.beginTransaction(),
                 "Update entity event"

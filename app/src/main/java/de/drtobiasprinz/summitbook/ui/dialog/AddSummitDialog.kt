@@ -47,6 +47,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.DialogAddSummitBinding
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.db.entities.GarminData
+import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
@@ -56,6 +57,7 @@ import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownl
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.peaks
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
@@ -65,7 +67,6 @@ import de.drtobiasprinz.summitbook.utils.Constants.BUNDLE_ID
 import de.drtobiasprinz.summitbook.utils.Constants.CONNECTED_ACTIVITY_PREFIX
 import de.drtobiasprinz.summitbook.utils.Constants.EDIT
 import de.drtobiasprinz.summitbook.utils.Constants.NEW
-import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -554,12 +555,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     ): ArrayAdapter<String> {
         val suggestions: MutableList<String> =
             (summits.flatMap {
-                it.places.map { place ->
-                    place.replace(
-                        PLACE_IS_SUMMIT_SUFFIX,
-                        ""
-                    )
-                }
+                it.places
             } + summits.map { it.name }).filter {
                 it != "" && !it.startsWith(
                     CONNECTED_ACTIVITY_PREFIX
@@ -650,11 +646,14 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             if (place != null) {
                 places.add(place)
             } else {
-                if ((chipCasted).chipIcon == drawablePlacesOn) {
-                    places.add(chip.text.toString() + PLACE_IS_SUMMIT_SUFFIX)
-                } else {
-                    places.add(chip.text.toString())
+                val newName = chip.text.toString()
+                if ((chipCasted).chipIcon == drawablePlacesOn && newName !in peaks.map { it.name }) {
+                    viewModel.savePeak(Peak(newName))
                 }
+                if ((chipCasted).chipIcon == drawablePlacesOff && newName in peaks.map { it.name }) {
+                    viewModel.deletePeak(Peak(newName))
+                }
+                places.add(newName)
             }
         }
         return places

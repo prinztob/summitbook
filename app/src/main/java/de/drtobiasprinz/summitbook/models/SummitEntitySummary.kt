@@ -5,7 +5,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import java.util.Collections
 
 
-class SummitEntities(
+class SummitEntitySummary(
     var type: SummitEntityType,
     var name: String,
     var count: Int,

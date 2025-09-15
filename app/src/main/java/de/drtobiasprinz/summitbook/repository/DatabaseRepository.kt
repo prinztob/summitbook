@@ -9,7 +9,8 @@ class DatabaseRepository @Inject constructor(
     private val segmentsDao: SegmentsDao,
     private val forecastDao: ForecastDao,
     private val ignoredActivityDao: IgnoredActivityDao,
-    private val entityEventDao: EntityEventDao
+    private val entityEventDao: EntityEventDao,
+    private val peakDao: PeakDao,
 ) {
 
     suspend fun saveSummit(entity: Summit) = summitsDao.saveSummit(entity)
@@ -37,6 +38,10 @@ class DatabaseRepository @Inject constructor(
 
     fun getIgnoredActivities() = ignoredActivityDao.getAllIgnoredActivities()
     suspend fun saveIgnoredActivity(entity: IgnoredActivity) = ignoredActivityDao.add(entity)
+
+    fun getPeaks() = peakDao.getAllPeaks()
+    suspend fun savePeak(peak: Peak) = peakDao.add(peak)
+    suspend fun deletePeak(peak: Peak) = peakDao.delete(peak)
 
     suspend fun saveEntityEvent(entity: EntityEvent) = entityEventDao.add(entity)
     suspend fun updateEntityEvent(entity: EntityEvent) = entityEventDao.update(entity)

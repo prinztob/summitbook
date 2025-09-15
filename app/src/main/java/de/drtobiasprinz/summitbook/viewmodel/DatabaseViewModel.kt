@@ -8,11 +8,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
+import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -42,6 +44,10 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val ignoredActivityList: LiveData<DataStatus<List<IgnoredActivity>>>
         get() = _ignoredActivityList
 
+    private val _peaks = MutableLiveData<DataStatus<List<Peak>>>()
+    val peaks: LiveData<DataStatus<List<Peak>>>
+        get() = _peaks
+
     private val _summitDetails = MutableLiveData<DataStatus<Summit>>()
     val summitDetails: LiveData<DataStatus<Summit>>
         get() = _summitDetails
@@ -56,6 +62,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         getAllSegments()
         getAllForecasts()
         getAllIgnoredActivities()
+        getPeaks()
         getAllEntityEvent()
     }
 
@@ -155,11 +162,24 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
             _ignoredActivityList.postValue(DataStatus.success(it, false))
         }
     }
-
     fun saveIgnoredActivity(entity: IgnoredActivity) = viewModelScope.launch {
         repository.saveIgnoredActivity(entity)
     }
 
+    private fun getPeaks() = viewModelScope.launch {
+        repository.getPeaks().collect {
+            _peaks.postValue(DataStatus.success(it, false))
+            MainActivity.peaks = it.toMutableList()
+        }
+    }
+
+    fun savePeak(peak: Peak) = viewModelScope.launch {
+        repository.savePeak(peak)
+    }
+
+    fun deletePeak(peak: Peak) = viewModelScope.launch {
+        repository.deletePeak(peak)
+    }
 
     fun saveEntityEvent(isEdite: Boolean, entity: EntityEvent) = viewModelScope.launch {
         if (isEdite) {

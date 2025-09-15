@@ -14,9 +14,9 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.CardSummitEntitiesBinding
 import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.SummitEntities
+import de.drtobiasprinz.summitbook.models.SummitEntitySummary
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.dialog.AddEntityEventDialog
-import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
 import java.util.Locale
 import javax.inject.Singleton
 import kotlin.math.round
@@ -29,7 +29,7 @@ class SummitEntitiesAdapter :
     lateinit var context: Context
     var entityEvents: List<EntityEvent> = emptyList()
     var recyclerViewVisible: Boolean = false
-    var onClickUpdate: (SummitEntities, String) -> Unit = { _, _ -> }
+    var onClickUpdate: (SummitEntitySummary, String) -> Unit = { _, _ -> }
     var onClickDeleteEvent: (EntityEvent) -> Unit = { _ -> }
     var drawableIdDefault: Int? = null
     var drawableIdActive: Int? = null
@@ -54,10 +54,10 @@ class SummitEntitiesAdapter :
 
     inner class ViewHolder(var binding: CardSummitEntitiesBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        fun setData(entity: SummitEntities, entityEvents: List<EntityEvent>) {
+        fun setData(entity: SummitEntitySummary, entityEvents: List<EntityEvent>) {
             binding.apply {
-                val isActive = entity.name.endsWith(PLACE_IS_SUMMIT_SUFFIX) || summits.find { it.name == entity.name }?.isPeak == true
-                entityNameEdit.setText(entity.name.replace(PLACE_IS_SUMMIT_SUFFIX, ""))
+                val isActive = entity.name in MainActivity.peaks.map { it.name }
+                entityNameEdit.setText(entity.name)
                 val drawableIdActiveLocal = drawableIdActive
                 val drawableIdDefaultLocal = drawableIdDefault
                 if (isActive && drawableIdActiveLocal != null) {
@@ -65,7 +65,7 @@ class SummitEntitiesAdapter :
                 } else if (drawableIdDefaultLocal != null) {
                     image.setImageResource(drawableIdDefaultLocal)
                 }
-                entityName.text = entity.name.replace(PLACE_IS_SUMMIT_SUFFIX, "")
+                entityName.text = entity.name
                 numberActivities.text = String.format(Locale.getDefault(), "# %s", entity.count)
                 distance.text = String.format(
                     Locale.getDefault(),
@@ -100,7 +100,7 @@ class SummitEntitiesAdapter :
                     cancel.visibility = View.GONE
                     onClickUpdate(
                         entity,
-                        if (isActive) entityNameEdit.text.toString() + PLACE_IS_SUMMIT_SUFFIX else entityNameEdit.text.toString()
+                        entityNameEdit.text.toString()
                     )
                 }
                 cancel.setOnClickListener {
@@ -144,12 +144,12 @@ class SummitEntitiesAdapter :
         )
     }
 
-    private val differCallback = object : DiffUtil.ItemCallback<SummitEntities>() {
-        override fun areItemsTheSame(oldItem: SummitEntities, newItem: SummitEntities): Boolean {
+    private val differCallback = object : DiffUtil.ItemCallback<SummitEntitySummary>() {
+        override fun areItemsTheSame(oldItem: SummitEntitySummary, newItem: SummitEntitySummary): Boolean {
             return oldItem == newItem
         }
 
-        override fun areContentsTheSame(oldItem: SummitEntities, newItem: SummitEntities): Boolean {
+        override fun areContentsTheSame(oldItem: SummitEntitySummary, newItem: SummitEntitySummary): Boolean {
             return oldItem.name == newItem.name
         }
 

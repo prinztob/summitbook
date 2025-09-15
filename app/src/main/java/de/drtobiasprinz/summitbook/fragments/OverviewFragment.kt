@@ -31,12 +31,12 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.ui.GraphType
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.sharedPreferences
 import de.drtobiasprinz.summitbook.ui.PerformanceGraphProvider
 import de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
 import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
 import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
-import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -304,7 +304,15 @@ class OverviewFragment : Fragment() {
                     performanceGraphProvider.getActualGraphMinMaxForSummits(graphType, year, month)
             }
             if (chartEntries.isNotEmpty()) {
-                updateLineChart(month, chartEntries, lineChart, graphType, year, minMax, chartEntriesForecast)
+                updateLineChart(
+                    month,
+                    chartEntries,
+                    lineChart,
+                    graphType,
+                    year,
+                    minMax,
+                    chartEntriesForecast
+                )
             } else {
                 lineChart.visibility = View.GONE
             }
@@ -504,7 +512,8 @@ class OverviewFragment : Fragment() {
         val statisticEntry = StatisticEntry(summits, indoorHeightMeterPercent)
         statisticEntry.calculate()
         val peaks = summits.filter { it.isPeak }
-        val numberOfPeaks = peaks.size + summits.flatMap { it.places }.filter { it.endsWith(PLACE_IS_SUMMIT_SUFFIX) }.size
+        val numberOfPeaks = peaks.size + summits.flatMap { it.places }
+            .filter { it in MainActivity.peaks.map { peak -> peak.name } }.size
         binding.overview.text = getString(
             R.string.base_info_activities,
             numberFormat.format(summits.size),

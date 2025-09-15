@@ -145,7 +145,7 @@ class SortFilterValues(
         }
     }
 
-    fun applyOnSummitEntities(summitEntities: List<SummitEntities>): List<SummitEntities> {
+    fun applyOnSummitEntities(summitEntities: List<SummitEntitySummary>): List<SummitEntitySummary> {
         return if (orderByAscDescButtonGroup == OrderByAscDescButtonGroup.Ascending) {
             summitEntities.sortedBy { orderByValueSpinner.summitEntitySorting(it) }
         } else {

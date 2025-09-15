@@ -14,7 +14,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.SummitEntitiesAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntitiesViewBinding
 import de.drtobiasprinz.summitbook.models.SortFilterValues
-import de.drtobiasprinz.summitbook.models.SummitEntities
+import de.drtobiasprinz.summitbook.models.SummitEntitySummary
 import de.drtobiasprinz.summitbook.models.SummitEntityType
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.allSummits
 import de.drtobiasprinz.summitbook.utils.Constants.CONNECTED_ACTIVITY_PREFIX
@@ -83,7 +83,7 @@ class SummitEntitiesViewFragment : Fragment() {
                             val relevantSummits = allSummits.filter {
                                 name in usedSummitEntityType.getRelevantValueFromSummit(it)
                             }
-                            SummitEntities(
+                            SummitEntitySummary(
                                 usedSummitEntityType,
                                 name,
                                 relevantSummits.size,

@@ -36,6 +36,7 @@ import de.drtobiasprinz.summitbook.SettingsActivity
 import de.drtobiasprinz.summitbook.databinding.ActivityMainBinding
 import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Forecast
+import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -302,6 +303,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
     companion object {
+        var peaks: MutableList<Peak> = mutableListOf()
         private const val KEY_IS_DIALOG_SHOWN = "IS_DIALOG_SHOWN"
         private const val KEY_CURRENT_POSITION = "CURRENT_POSITION"
         var CSV_FILE_NAME_VERSION: String = "de-prinz-summitbook-export.version"

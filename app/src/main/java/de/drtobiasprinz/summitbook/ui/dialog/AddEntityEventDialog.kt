@@ -16,7 +16,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.DialogAddEntityEventBinding
 import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.SummitEntities
+import de.drtobiasprinz.summitbook.models.SummitEntitySummary
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog.Companion.showDatePicker
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.ParseException
@@ -27,7 +27,7 @@ class AddEntityEventDialog : DialogFragment() {
 
     var isUpdate = false
     private var entityEvent: EntityEvent? = null
-    private lateinit var summitEntities: SummitEntities
+    private lateinit var summitEntitySummary: SummitEntitySummary
     private lateinit var binding: DialogAddEntityEventBinding
 
 
@@ -90,7 +90,7 @@ class AddEntityEventDialog : DialogFragment() {
             if (event != null) {
                 event.description = binding.description.text.toString()
                 event.date = Summit.parseDate(binding.date.text.toString())
-                event.equipmentName = summitEntities.name
+                event.equipmentName = summitEntitySummary.name
             }
         } catch (e: ParseException) {
             e.printStackTrace()
@@ -120,12 +120,12 @@ class AddEntityEventDialog : DialogFragment() {
     companion object {
         fun getInstance(
             event: EntityEvent?,
-            entity: SummitEntities
+            entity: SummitEntitySummary
         ): AddEntityEventDialog {
             val add = AddEntityEventDialog()
             add.isUpdate = event != null
             add.entityEvent = event
-            add.summitEntities = entity
+            add.summitEntitySummary = entity
             return add
         }
 

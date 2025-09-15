@@ -42,6 +42,10 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun providePeakDao(db: AppDatabase) = db.peakDao()
+
+    @Provides
+    @Singleton
     fun provideEntityEventDao(db: AppDatabase) = db.entityEventDao()
 
     @Provides

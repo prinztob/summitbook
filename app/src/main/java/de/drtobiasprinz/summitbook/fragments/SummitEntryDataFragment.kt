@@ -19,8 +19,8 @@ import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryDataBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.TextField
 import de.drtobiasprinz.summitbook.models.TextFieldGroup
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
-import de.drtobiasprinz.summitbook.utils.Constants.PLACE_IS_SUMMIT_SUFFIX
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import java.text.NumberFormat
 import java.util.Locale
@@ -486,10 +486,10 @@ class SummitEntryDataFragment : Fragment() {
         imageIdActivated: Int? = null,
     ): Chip {
         val chip = Chip(requireContext())
-        chip.text = entry.replace(PLACE_IS_SUMMIT_SUFFIX, "")
+        chip.text = entry
         chip.isClickable = false
         chip.chipIcon =
-            if (imageIdActivated != null && entry.endsWith(PLACE_IS_SUMMIT_SUFFIX)) {
+            if (imageIdActivated != null && entry in MainActivity.peaks.map { it.name }) {
                 ResourcesCompat.getDrawable(
                     resources,
                     imageIdActivated,

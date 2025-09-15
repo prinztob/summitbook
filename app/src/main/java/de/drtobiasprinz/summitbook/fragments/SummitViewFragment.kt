@@ -22,12 +22,14 @@ import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.FragmentSummitViewBinding
+import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.allSummits
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.peaks
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.updateOfTracksStarted
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
@@ -72,6 +74,12 @@ class SummitViewFragment : Fragment() {
     private fun adapterOnClickUpdateIsPeak(summit: Summit) {
         summit.isPeak = !summit.isPeak
         viewModel?.saveSummit(true, summit)
+        if (summit.isPeak && summit.name !in peaks.map { it.name }) {
+            viewModel?.savePeak(Peak(summit.name, summit.elevationData.maxElevation))
+        }
+        if (!summit.isPeak && summit.name in peaks.map { it.name }) {
+            viewModel?.deletePeak(Peak(summit.name, summit.elevationData.maxElevation))
+        }
     }
 
     private fun adapterOnClickDelete(summit: Summit) {
@@ -152,6 +160,7 @@ class SummitViewFragment : Fragment() {
                                     summitsStatus.data?.let { updateTracks(it) }
                                 }
                             }
+                            convertPeaks(summitsStatus.data)
                         }
 
                         DataStatus.Status.ERROR -> {
@@ -193,6 +202,16 @@ class SummitViewFragment : Fragment() {
             val itemTouchHelper = ItemTouchHelper(swipeCallback)
             itemTouchHelper.attachToRecyclerView(recyclerView)
 
+        }
+    }
+
+    private fun convertPeaks(data: List<Summit>?) {
+        data?.forEach {
+            if (it.isPeak && it.name !in peaks.map { peak -> peak.name }) {
+                Log.i("convertPeaks", "Added ${it.name}")
+                peaks.add(Peak(it.name))
+                viewModel?.savePeak(Peak(it.name, it.elevationData.maxElevation))
+            }
         }
     }
 

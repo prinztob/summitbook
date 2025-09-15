@@ -14,7 +14,6 @@ object Constants {
     const val DATETIME_FORMAT_SIMPLE: String = "yyyy-MM-dd HH:mm:ss"
     const val DATETIME_FORMAT_COMPLEX: String = "yyyy-MM-dd'T'HH:mm:ss.s"
     const val CONNECTED_ACTIVITY_PREFIX: String = "ac_id:"
-    const val PLACE_IS_SUMMIT_SUFFIX: String = ":+1"
     const val SUMMIT_ID_EXTRA_IDENTIFIER = "SUMMIT_ID"
     const val NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY = 28
     const val NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY = 16
