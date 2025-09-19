@@ -14,13 +14,16 @@ import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
+import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import org.osmdroid.util.GeoPoint
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.io.path.absolutePathString
 
@@ -183,7 +186,7 @@ class GarminTrackAndDataDownloader(
                 finalEntryLocal.setBoundingBoxFromTrack()
 
             } catch (e: RuntimeException) {
-                Log.e("GarminTrackAndDataDownloader", "Download failed: ${e.message}")
+                Log.e(TAG, "Download failed: ${e.message}")
             }
         }
     }
@@ -207,16 +210,23 @@ class GarminTrackAndDataDownloader(
             ),
             participants = entries.map { it.participants }.flatten(),
             equipments = entries.map { it.equipments }.flatten(),
-            garminData = getGarminData(),
+            garminData = getGarminData(SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH).format(entries.first().date)),
             activityId = entries.first().activityId,
             duration = entries.sumOf { it.duration }
         )
     }
 
-    private fun getGarminData(): GarminData? {
+    private fun getGarminData(date: String): GarminData? {
         val garminDataSets = entries.filter { it.garminData != null }.map { it }
         if (garminDataSets.isNotEmpty()) {
             val activityIds: MutableList<String> = mutableListOf()
+            var vo2max = garminDataSets
+                .maxByOrNull { it.garminData?.vo2max ?: 0f }
+                ?.garminData?.vo2max ?: 0f
+            if (vo2max == 0f) {
+                Log.i(TAG, "Vo2max was not set, trying to download it again from garmin.")
+                vo2max = pythonExecutor?.getVo2MaxAtDate(date) ?: 0f
+            }
             garminDataSets.forEach { it.garminData?.activityIds?.let { it1 -> activityIds.addAll(it1) } }
             return GarminData(
                 activityIds,
@@ -231,9 +241,7 @@ class GarminTrackAndDataDownloader(
                 }?.garminData?.maxHR ?: 0f,
                 getPowerData(),
                 garminDataSets.maxByOrNull { it.garminData?.ftp ?: 0 }?.garminData?.ftp ?: 0,
-                garminDataSets
-                    .maxByOrNull { it.garminData?.vo2max ?: 0f }
-                    ?.garminData?.vo2max ?: 0f,
+                vo2max,
                 garminDataSets.maxByOrNull {
                     it.garminData?.aerobicTrainingEffect?.toDouble() ?: 0.0
                 }?.garminData?.aerobicTrainingEffect ?: 0f,
@@ -347,6 +355,7 @@ class GarminTrackAndDataDownloader(
     }
 
     companion object {
+        const val TAG = "GarminTrackAndDataDownloader"
         fun getTempGpsFilePath(activityId: String, useTcx: Boolean = false): Path {
             val fileEnding = if (useTcx) "tcx" else "gpx"
             val fileName =

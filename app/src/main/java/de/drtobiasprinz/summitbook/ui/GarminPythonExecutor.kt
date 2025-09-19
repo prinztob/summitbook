@@ -55,6 +55,16 @@ class GarminPythonExecutor(
         return getSummitsAtDate(jsonResponse)
     }
 
+    fun getVo2MaxAtDate(dateAsString: String): Float {
+        if (client == null) {
+            login()
+        }
+        val result = pythonModule?.callAttr("get_vo2max", client, dateAsString)
+        Log.i(TAG, "vo2max result $result")
+        checkOutput(result)
+        return result?.toFloat() ?: 0f
+    }
+
     fun downloadGpxFile(garminActivityId: String, downloadPath: String) {
         if (client == null) {
             login()
