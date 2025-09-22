@@ -2,13 +2,12 @@ import datetime
 import json
 import os.path
 import re
-from typing import List
+from typing import Any
 
-import geopy.distance
+import geopy.distance  # type: ignore[import-untyped]
 import gpxpy.gpx
 import numpy as np
-from gpxpy.gpx import GPXTrackPoint
-from numpy import bool_
+from gpxpy.gpx import GPXTrackPoint, GPX
 
 from Extension import Extension
 from elevation_track_analyzer import ElevationTrackAnalyzer
@@ -16,107 +15,140 @@ from power_track_analyzer import PowerTrackAnalyzer
 from utils import prefix_filename, write_extensions_to_yaml
 from velocity_track_analyzer import VelocityTrackAnalyzer
 
-GPXTrackPoint.extensions_calculated = Extension()
+GPXTrackPoint.extensions_calculated = Extension()  # type: ignore[attr-defined]
 
 
 class TrackAnalyzer(object):
-    NAMESPACE_NAME = 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1'
-    NAMESPACE = '{' + NAMESPACE_NAME + '}'
-    TRACK_EXTENSIONS = 'TrackPointExtension'
+    NAMESPACE_NAME = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
+    NAMESPACE = "{" + NAMESPACE_NAME + "}"
+    TRACK_EXTENSIONS = "TrackPointExtension"
 
-    def __init__(self, file, additional_data_folder=None, split_files: List[str] = None):
+    def __init__(
+            self,
+            file: str,
+            additional_data_folder: str | None = None,
+            split_files: list[str] | None = None,
+    ) -> None:
         self.file = file
         if not additional_data_folder:
             additional_data_folder = os.path.dirname(file)
-        self.yaml_file = os.path.join(additional_data_folder,
-                                      os.path.basename(file.replace(".gpx", "_extensions.yaml")))
-        self.gpx_file_simplified = os.path.join(additional_data_folder, prefix_filename(os.path.basename(file)))
-        self.gpx_file_gpxpy = os.path.join(additional_data_folder,
-                                           os.path.basename(file).replace(".gpx", "_gpxpy.json"))
-        with open(file, 'r') as f:
-            search_result = re.search(r'<\?xml(.|\n)*?(\<\/gpx\>)', f.read())
+        self.yaml_file = os.path.join(
+            additional_data_folder,
+            os.path.basename(file.replace(".gpx", "_extensions.yaml")),
+        )
+        self.gpx_file_simplified = os.path.join(
+            additional_data_folder, prefix_filename(os.path.basename(file))
+        )
+        self.gpx_file_gpxpy = os.path.join(
+            additional_data_folder,
+            os.path.basename(file).replace(".gpx", "_gpxpy.json"),
+        )
+        with open(file, "r") as f:
+            search_result = re.search(r"<\?xml(.|\n)*?(\<\/gpx\>)", f.read())
             if search_result:
                 self.gpx_file = search_result.group(0)
-        self.data = {}
-        self.all_points: List[GPXTrackPoint] = []
-        self.gpx = None
-        self.duration = 0
+        self.data: dict[str, Any] = {}
+        self.all_points: list[GPXTrackPoint] = []
+        self.gpx: GPX | None = None
+        self.duration: float = 0.0
         self.split_files = split_files
 
-    def write_simplified_track_to_file(self, gpx_file_simplified=None):
+    def write_simplified_track_to_file(
+            self, gpx_file_simplified: str | None = None
+    ) -> None:
         if self.gpx_file:
             if self.gpx is None:
                 self.parse_track()
-        if not gpx_file_simplified:
-            gpx_file_simplified = self.gpx_file_simplified
-        self.gpx.simplify()
-        with open(gpx_file_simplified, 'w') as f:
-            f.write(self.gpx.to_xml())
-        print(f"Written simplified track to {gpx_file_simplified}")
+        if self.gpx:
+            if not gpx_file_simplified:
+                gpx_file_simplified = self.gpx_file_simplified
+            self.gpx.simplify()
+            with open(gpx_file_simplified, "w") as f:
+                f.write(self.gpx.to_xml())
+            print(f"Written simplified track to {gpx_file_simplified}")
 
-    def write_data_and_extension_to_file(self, gpx_file_gpxpy=None, yaml_file=None):
+    def write_data_and_extension_to_file(
+            self, gpx_file_gpxpy: str | None = None, yaml_file: str | None = None
+    ) -> None:
         if not yaml_file:
             yaml_file = self.yaml_file
         if not gpx_file_gpxpy:
             gpx_file_gpxpy = self.gpx_file_gpxpy
         if yaml_file:
-            write_extensions_to_yaml([e.extensions_calculated for e in self.all_points], yaml_file)
-        with open(gpx_file_gpxpy, 'w') as fp:
+            write_extensions_to_yaml(
+                [e.extensions_calculated for e in self.all_points],  # type: ignore[attr-defined]
+                yaml_file,
+            )
+        with open(gpx_file_gpxpy, "w") as fp:
             json.dump(self.data, fp, indent=4)
         print(f"Written data of track to {gpx_file_gpxpy}")
 
-    def analyze(self, track_is_non_monotonic=False) -> bool:
+    def analyze(self, track_is_non_monotonic: bool = False) -> bool:
         start_time = datetime.datetime.now()
         self.set_all_points_with_distance(track_is_non_monotonic)
         self.calculate_data_with_gpxpy()
         points = [e for e in self.all_points if e.time]
-        try:
-            self.data.update(ElevationTrackAnalyzer([p for p in points if p.elevation]).analyze())
-        except Exception as err:
-            if err.args[0] == 'index values must be monotonic':
-                return False
-            print(f"ElevationTrackAnalyzer failed with {err}")
+        self.data.update(
+            ElevationTrackAnalyzer(
+                [point for point in points if point.elevation]
+            ).analyze()
+        )
         try:
             self.data.update(PowerTrackAnalyzer(points).analyze())
         except Exception as err:
-            if err.args[0] == 'index values must be monotonic':
+            if err.args[0] == "index values must be monotonic":
                 return False
             print(f"PowerTrackAnalyzer failed with {err}")
         try:
-            self.data.update(VelocityTrackAnalyzer(points, self.split_files).analyze())
+            self.data.update(
+                VelocityTrackAnalyzer(points, self.split_files).analyze()
+            )
         except Exception as err:
-            if err.args[0] == 'index values must be monotonic':
+            if err.args[0] == "index values must be monotonic":
                 return False
             print(f"VelocityTrackAnalyzer failed with {err}")
         self.duration = (datetime.datetime.now() - start_time).total_seconds()
         return True
 
-    def calculate_data_with_gpxpy(self):
-        extremes = self.gpx.get_elevation_extremes()
-        self.gpx.smooth()
-        moving_data = self.gpx.get_moving_data()
-        uphill_downhill = self.gpx.get_uphill_downhill()
-        self.data.update({
-            "duration": self.gpx.get_duration(),
-            "min_elevation": round(extremes.minimum, 1) if extremes else 0,
-            "max_elevation": round(extremes.maximum, 1) if extremes else 0,
-            "number_points": self.gpx.get_points_no(),
-            "elevation_gain": round(uphill_downhill.uphill, 1) if uphill_downhill else 0,
-            "elevation_loss": round(uphill_downhill.downhill, 1) if uphill_downhill else 0,
-            "moving_time": moving_data.moving_time,
-            "moving_distance": round(moving_data.moving_distance, 2) if moving_data else 0,
-            "max_speed": round(moving_data.max_speed, 2) if moving_data else 0,
-        })
+    def calculate_data_with_gpxpy(self) -> None:
+        if self.gpx:
+            extremes = self.gpx.get_elevation_extremes()
+            self.gpx.smooth()
+            moving_data = self.gpx.get_moving_data()
+            uphill_downhill = self.gpx.get_uphill_downhill()
+            self.data.update(
+                {
+                    "duration": self.gpx.get_duration(),
+                    "min_elevation": round(extremes.minimum, 1)
+                    if extremes and extremes.minimum
+                    else 0,
+                    "max_elevation": round(extremes.maximum, 1)
+                    if extremes and extremes.maximum
+                    else 0,
+                    "number_points": self.gpx.get_points_no(),
+                    "elevation_gain": round(uphill_downhill.uphill, 1)
+                    if uphill_downhill
+                    else 0,
+                    "elevation_loss": round(uphill_downhill.downhill, 1)
+                    if uphill_downhill
+                    else 0,
+                    "moving_time": moving_data.moving_time,
+                    "moving_distance": round(moving_data.moving_distance, 2)
+                    if moving_data
+                    else 0,
+                    "max_speed": round(moving_data.max_speed, 2) if moving_data else 0,
+                }
+            )
 
-    def parse_track(self):
-        with open(self.file, 'r') as f:
-            search_result = re.search(r'<\?xml(.|\n)*?(\<\/gpx\>)', f.read())
+    def parse_track(self) -> None:
+        with open(self.file, "r") as f:
+            search_result = re.search(r"<\?xml(.|\n)*?(\<\/gpx\>)", f.read())
             if search_result:
                 self.gpx = gpxpy.parse(search_result.group(0))
             else:
                 self.gpx = gpxpy.parse(f)
 
-    def set_all_points_with_distance(self, track_is_non_monotonic):
+    def set_all_points_with_distance(self, track_is_non_monotonic: bool) -> None:
         print(f"Read and add distance to track file {self.file}")
         if self.gpx_file:
             if self.gpx is None:
@@ -125,55 +157,76 @@ class TrackAnalyzer(object):
             if not self.track_points_monotonic():
                 self.recalculate_distances(distance, track_is_non_monotonic)
 
-    def recalculate_distances(self, distance, track_is_non_monotonic):
+    def recalculate_distances(
+            self, distance: float, track_is_non_monotonic: bool
+    ) -> None:
         print("Distances are not set or not monotonic -> recalculate distance")
-        for track in self.gpx.tracks:
-            for segment in track.segments:
-                points = []
-                delta = 0.0
-                for i, point in enumerate(segment.points):
-                    point.extensions_calculated = Extension.parse(point.extensions)
-                    point_distance = point.extensions_calculated.distance
-                    if point.latitude != 0 and point.longitude != 0:
-                        if (i == 0
-                                and len(self.all_points) > 0
-                                and point_distance == 0
-                                and point_distance < self.all_points[-1].extensions_calculated.distance
-                        ):
-                            delta = self.all_points[-1].extensions_calculated.distance
-                        if point_distance == 0.0:
-                            if i != 0:
-                                distance += geopy.distance.distance(
-                                    (points[-1].latitude, points[-1].longitude),
-                                    (point.latitude, point.longitude)
-                                ).km
-                            point.extensions_calculated.distance = distance * 1000 + delta
-                        elif delta > 0:
-                            point.extensions_calculated.distance += delta
-                        if track_is_non_monotonic:
-                            if i != 0 and point_distance < segment.points[i - 1].extensions_calculated.distance:
-                                point.extensions_calculated.distance = segment.points[
-                                    i - 1].extensions_calculated.distance
+        if self.gpx:
+            for track in self.gpx.tracks:
+                for segment in track.segments:
+                    points: list[GPXTrackPoint] = []
+                    delta = 0.0
+                    for i, point in enumerate(segment.points):
+                        point.extensions_calculated = Extension.parse(point.extensions)  # type: ignore[attr-defined]
+                        point_distance = point.extensions_calculated.distance  # type: ignore[attr-defined]
+                        if point.latitude != 0 and point.longitude != 0:
+                            if (
+                                    i == 0
+                                    and len(self.all_points) > 0
+                                    and point_distance == 0
+                                    and point_distance
+                                    < self.all_points[-1].extensions_calculated.distance  # type: ignore[attr-defined]
+                            ):
+                                delta = self.all_points[
+                                    -1
+                                ].extensions_calculated.distance  # type: ignore[attr-defined]
+                            if point_distance == 0.0:
+                                if i != 0:
+                                    distance += geopy.distance.distance(
+                                        (points[-1].latitude, points[-1].longitude),
+                                        (point.latitude, point.longitude),
+                                    ).km
+                                point.extensions_calculated.distance = (  # type: ignore[attr-defined]
+                                        distance * 1000 + delta
+                                )
+                            elif delta > 0:
+                                point.extensions_calculated.distance += delta  # type: ignore[attr-defined]
+                            if track_is_non_monotonic:
+                                if (
+                                        i != 0
+                                        and point_distance
+                                        < segment.points[
+                                    i - 1
+                                ].extensions_calculated.distance  # type: ignore[attr-defined]
+                                ):
+                                    point.extensions_calculated.distance = (  # type: ignore[attr-defined]
+                                        segment.points[
+                                            i - 1
+                                            ].extensions_calculated.distance  # type: ignore[attr-defined]
+                                    )
 
-                        self.all_points.append(point)
-                        points.append(point)
-                segment.points = points
+                            self.all_points.append(point)
+                            points.append(point)
+                    segment.points = points
 
-    def track_points_monotonic(self) -> bool_:
+    def track_points_monotonic(self) -> bool:
         distances = []
         all_points = []
-        for track in self.gpx.tracks:
-            for segment in track.segments:
-                segment_points = []
-                for i, point in enumerate(segment.points):
-                    point.extensions_calculated = Extension.parse(point.extensions)
-                    if point.latitude != 0 and point.longitude != 0:
-                        distances.append(point.extensions_calculated.distance)
-                        segment_points.append(point)
-                segment.points = segment_points
-                all_points.extend(segment_points)
+        if self.gpx:
+            for track in self.gpx.tracks:
+                for segment in track.segments:
+                    segment_points = []
+                    for i, point in enumerate(segment.points):
+                        point.extensions_calculated = Extension.parse(point.extensions)  # type: ignore[attr-defined]
+                        if point.latitude != 0 and point.longitude != 0:
+                            distances.append(point.extensions_calculated.distance)  # type: ignore[attr-defined]
+                            segment_points.append(point)
+                    segment.points = segment_points
+                    all_points.extend(segment_points)
         dx = np.diff(distances)
-        monotonic = len(set(distances)) > 1 and (np.all(dx <= 0) or np.all(dx >= 0))
+        monotonic = len(set(distances)) > 1 and (
+                bool(np.all(dx <= 0)) or bool(np.all(dx >= 0))
+        )
         if monotonic:
             self.all_points = all_points
         return monotonic
