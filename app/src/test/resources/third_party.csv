@@ -1,5 +1,5 @@
 activityId; garminid; Kalorien; Herzfreq. i. D. (bpm); Max. Herzfreq. (bpm); powerData (W/1s - W/5h); FTP; VO2MAX; aerobicTrainingEffect; anaerobicTrainingEffect; grit; flow; trainingsload;
-Erforderlich; Erforderlich; Optional; Optional; Optional; Optional; Optional; Optional; Optional; Optional; Optional; Optional; Optional;
+required; required; Optional; Optional; Optional; Optional; Optional; Optional; Optional; Optional; Optional; Optional; Optional;
 1680967177515;10860534715;1389.0;133.0;169.0;0.0,0.0,0.0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;0;0.0;3.9;0.2;0.0;0.0;173.6183
 1680698363686;10840226872;2910.0;141.0;247.0;0.0,0.0,0.0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;0;0.0;4.5;0.4;0.0;0.0;229.78209
 1690297548441;10807593721;1466.0;145.0;167.0;202.0,669.0,227.0,669,641,600,514,447,426,374,356,286,251,222,220,207,117,0;0;51.8;4.1;2.4;0.0;0.0;235.75452

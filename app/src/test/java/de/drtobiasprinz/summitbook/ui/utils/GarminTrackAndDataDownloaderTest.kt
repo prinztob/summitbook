@@ -73,7 +73,7 @@ class GarminTrackAndDataDownloaderTest {
             "comment1",
             ElevationData(11, 1),
             1.0,
-            VelocityData( 11.3),
+            VelocityData(11.3),
             participants = mutableListOf("participant1"),
             duration = 3600
         )
@@ -99,7 +99,7 @@ class GarminTrackAndDataDownloaderTest {
             "comment3",
             ElevationData(1100, 110),
             70.0,
-            VelocityData( 10.3),
+            VelocityData(10.3),
             participants = mutableListOf("participant4"),
             duration = 25200
         )
@@ -197,7 +197,10 @@ class GarminTrackAndDataDownloaderTest {
             GarminPythonExecutor("user", "password")
         )
         downloader.extractFinalSummit()
-        Assert.assertEquals(garminDataExpected.toString(), downloader.finalEntry?.garminData.toString())
+        Assert.assertEquals(
+            garminDataExpected.toString(),
+            downloader.finalEntry?.garminData.toString()
+        )
     }
 
     @Test
@@ -216,7 +219,12 @@ class GarminTrackAndDataDownloaderTest {
         if (resourceChild != null && resourceParent != null) {
             val gsonChild = JsonParser.parseString(resourceChild.readText()) as JsonObject
             val gsonParent = JsonParser.parseString(resourceParent.readText()) as JsonObject
-            Assert.assertNotNull(GarminPythonExecutor.parseJsonObjectFromChildActivity(gsonChild, gsonParent))
+            Assert.assertNotNull(
+                GarminPythonExecutor.parseJsonObjectFromChildActivity(
+                    gsonChild,
+                    gsonParent
+                )
+            )
         }
     }
 }

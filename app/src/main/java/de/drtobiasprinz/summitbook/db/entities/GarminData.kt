@@ -180,15 +180,15 @@ enum class GarminEntityFromActivityJson(
     MaxHR({ data, json, _ -> data.maxHR = getJsonObjectEntryNotNull(json, "maxHR") }),
     Power({ data, json, _ -> data.power = PowerData.parseFromGarminJson(json) }),
     AerobicTrainingEffect({ data, json, _ ->
-        data.maxHR = getJsonObjectEntryNotNull(json, "aerobicTrainingEffect")
+        data.aerobicTrainingEffect = getJsonObjectEntryNotNull(json, "aerobicTrainingEffect")
     }),
     AnaerobicTrainingEffect({ data, json, _ ->
-        data.maxHR = getJsonObjectEntryNotNull(json, "anaerobicTrainingEffect")
+        data.anaerobicTrainingEffect = getJsonObjectEntryNotNull(json, "anaerobicTrainingEffect")
     }),
-    Grit({ data, json, _ -> data.maxHR = getJsonObjectEntryNotNull(json, "grit") }),
-    AvgFlow({ data, json, _ -> data.maxHR = getJsonObjectEntryNotNull(json, "avgFlow") }),
+    Grit({ data, json, _ -> data.grit = getJsonObjectEntryNotNull(json, "grit") }),
+    AvgFlow({ data, json, _ -> data.flow = getJsonObjectEntryNotNull(json, "avgFlow") }),
     ActivityTrainingLoad({ data, json, _ ->
-        data.maxHR = getJsonObjectEntryNotNull(json, "activityTrainingLoad")
+        data.trainingLoad = getJsonObjectEntryNotNull(json, "activityTrainingLoad")
     }),
     Vo2Max({ data, json, jsonParent ->
         val usedJson = jsonParent ?: json

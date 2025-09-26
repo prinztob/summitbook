@@ -1,5 +1,5 @@
-Gipfel Datum; Name; Sportart; Besuchte Orte; Land; Kommentare; Höhenmeter; Entfernung (km); Dauer (sec); Höchstgeschw. (km/h); Maximale Höhe (hm); Latitude; Longitude; Teilnehmer; activityId; isFavorite
-Erforderlich; Erforderlich; Optional; Optional; Optional; Optional; Erforderlich; Erforderlich; Optional; Optional; Optional; Optional; Optional; Optional; Optional; Erforderlich;
+Activity Datum; Name; Sportart; Besuchte Orte; Land; Kommentare; Höhenmeter; Entfernung (km); Dauer (sec); Höchstgeschw. (km/h); Maximale Höhe (hm); Latitude; Longitude; Teilnehmer; activityId; isFavorite
+required; required; Optional; Optional; Optional; Optional; required; required; Optional; Optional; Optional; Optional; Optional; Optional; Optional; required;
 2023-04-08;Hahnenkamm;Mountainbike;1680967177515;39.5;8618;870;444;54.1;50.07819422520697;9.10960391163826;0;0;;;Peter's Bike;Klein-Krotzenburg;Deutschland
 2023-04-05;Hohes Brett;Skitour;1680698363686;9.66;18303;1565;2340;40.8;47.58442615158856;13.049582540988922;0;1;;Florian Seilmeier;K2-Ski;;Deutschland
 2023-03-31;Münster;Racer;1690297548441;46.95;6441;330;656;50.4;47.962695909664035;11.79295789450407;0;0;;;Rose;Egmating;Deutschland

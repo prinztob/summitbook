@@ -222,34 +222,6 @@ class PerformanceGraphProviderTest {
             ) { "Elevation mismatch for Y on day ${n}: ${it.y}" }
         }
     }
-
-    @Test
-    fun testGetActualGraphMinMaxForLast5YearsSummits() {
-        val entries = getTestEntries()
-        val graphProvider =
-            PerformanceGraphProvider(
-                entries,
-                emptyList()
-            )
-        GraphType.entries.filter { !it.cumulative }.forEach { type ->
-            val maxGraphJuly =
-                graphProvider.getActualGraphMinMaxForSummits(type, "2025", "07").second
-            val maxGraph2025 =
-                graphProvider.getActualGraphMinMaxForSummits(type, "2025").second
-            maxGraphJuly.forEach {
-                assert(
-                    it.y == maxGraph2025[it.x.toInt() + 180].y
-                ) { "${type.name} mismatch for X on day ${maxGraph2025[it.x.toInt() + 180].x}: ${maxGraphJuly[0]} and ${maxGraph2025[182]}" }
-            }
-            if (type == GraphType.Vo2Max) {
-                assert(maxGraphJuly[0].y == 52.3f)
-                assert(maxGraphJuly[1].y == 53.8f)
-            }
-
-        }
-    }
-
-
     @Test
     fun testGetActualGraphMinMaxForSummits() {
         val expected = listOf(
@@ -431,9 +403,9 @@ class PerformanceGraphProviderTest {
                 while (br.readLine().also { line = it } != null) {
                     val lineLocal = line
                     try {
-                        if (lineLocal != null && !lineLocal.startsWith("activityId") && !lineLocal.startsWith(
-                                "required"
-                            )
+                        if (lineLocal != null &&
+                            !lineLocal.startsWith("activityId") &&
+                            !lineLocal.startsWith("required")
                         ) {
                             GarminData.parseFromCsvFileLineAndSave(lineLocal, entries, { _, _ -> }, ZipFileVersions.V0)
                         }

@@ -271,38 +271,38 @@ class GarminTrackAndDataDownloader(
     }
 
     private fun getPowerData(): PowerData {
-        val powerDataSets = entries.filter { it.garminData?.power != null }.map { it.garminData }
+        val powerDataSets = entries.filter { it.garminData?.power != null }.map { it }
         return if (powerDataSets.isNotEmpty()) PowerData(
             (powerDataSets.sumOf {
-                (it?.power?.avgPower?.toDouble() ?: 0.0) * (it?.duration ?: 0.0)
+                (it.garminData?.power?.avgPower?.toDouble() ?: 0.0) * (it.duration)
             } / entries.filter {
                 it.garminData?.power?.avgPower != null && (it.garminData?.power?.avgPower
                     ?: 0f) > 0
             }.sumOf { it.duration }).toFloat(),
-            powerDataSets.maxByOrNull { it?.power?.maxPower ?: 0f }?.power?.maxPower ?: 0f,
-            powerDataSets.maxByOrNull { it?.power?.normPower ?: 0f }?.power?.normPower ?: 0f,
-            powerDataSets.maxByOrNull { it?.power?.oneSec ?: 0 }?.power?.oneSec ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.twoSec ?: 0 }?.power?.twoSec ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.fiveSec ?: 0 }?.power?.fiveSec ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.tenSec ?: 0 }?.power?.tenSec ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.twentySec ?: 0 }?.power?.twentySec ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.thirtySec ?: 0 }?.power?.thirtySec ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.oneMin ?: 0 }?.power?.oneMin ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.twoMin ?: 0 }?.power?.twoMin ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.fiveMin ?: 0 }?.power?.fiveMin ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.tenMin ?: 0 }?.power?.tenMin ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.twentyMin ?: 0 }?.power?.twentyMin ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.thirtyMin ?: 0 }?.power?.thirtyMin ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.oneHour ?: 0 }?.power?.oneHour ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.twoHours ?: 0 }?.power?.twoHours ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.threeHours ?: 0 }?.power?.threeHours ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.fourHours ?: 0 }?.power?.fourHours ?: 0,
-            powerDataSets.maxByOrNull { it?.power?.fiveHours ?: 0 }?.power?.fiveHours ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.maxPower ?: 0f }?.garminData?.power?.maxPower ?: 0f,
+            powerDataSets.maxByOrNull { it.garminData?.power?.normPower ?: 0f }?.garminData?.power?.normPower ?: 0f,
+            powerDataSets.maxByOrNull { it.garminData?.power?.oneSec ?: 0 }?.garminData?.power?.oneSec ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.twoSec ?: 0 }?.garminData?.power?.twoSec ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.fiveSec ?: 0 }?.garminData?.power?.fiveSec ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.tenSec ?: 0 }?.garminData?.power?.tenSec ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.twentySec ?: 0 }?.garminData?.power?.twentySec ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.thirtySec ?: 0 }?.garminData?.power?.thirtySec ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.oneMin ?: 0 }?.garminData?.power?.oneMin ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.twoMin ?: 0 }?.garminData?.power?.twoMin ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.fiveMin ?: 0 }?.garminData?.power?.fiveMin ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.tenMin ?: 0 }?.garminData?.power?.tenMin ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.twentyMin ?: 0 }?.garminData?.power?.twentyMin ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.thirtyMin ?: 0 }?.garminData?.power?.thirtyMin ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.oneHour ?: 0 }?.garminData?.power?.oneHour ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.twoHours ?: 0 }?.garminData?.power?.twoHours ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.threeHours ?: 0 }?.garminData?.power?.threeHours ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.fourHours ?: 0 }?.garminData?.power?.fourHours ?: 0,
+            powerDataSets.maxByOrNull { it.garminData?.power?.fiveHours ?: 0 }?.garminData?.power?.fiveHours ?: 0,
             powerDataSets.sumOf {
-                (it?.power?.trainingStressScore?.toDouble() ?: 0.0)
+                (it.garminData?.power?.trainingStressScore?.toDouble() ?: 0.0)
             }.toFloat(),
             (powerDataSets.sumOf {
-                (it?.power?.intensityFactor?.toDouble() ?: 0.0)
+                (it.garminData?.power?.intensityFactor?.toDouble() ?: 0.0)
             } / powerDataSets.size).toFloat(),
         ) else PowerData()
     }

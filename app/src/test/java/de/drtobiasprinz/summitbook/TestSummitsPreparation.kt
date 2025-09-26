@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.utils.Constants.DATETIME_FORMAT_SIMPLE
 import org.junit.Test
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -43,7 +44,7 @@ class TestSummitsPreparation {
 
         fun parseDate(date: String): Date {
             val df: DateFormat =
-                SimpleDateFormat(Summit.DATETIME_FORMAT_SIMPLE, Locale.getDefault())
+                SimpleDateFormat(DATETIME_FORMAT_SIMPLE, Locale.getDefault())
             df.isLenient = false
             return df.parse(date) ?: Date()
         }

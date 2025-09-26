@@ -1,0 +1,19 @@
+{
+  "activityId": 20451565041,
+  "maxAvgPower_1": 445,
+  "maxAvgPower_2": 443,
+  "maxAvgPower_5": 420,
+  "maxAvgPower_10": 373,
+  "maxAvgPower_20": 359,
+  "maxAvgPower_30": 344,
+  "maxAvgPower_60": 301,
+  "maxAvgPower_120": 255,
+  "maxAvgPower_300": 218,
+  "maxAvgPower_600": 207,
+  "maxAvgPower_1200": 178,
+  "maxAvgPower_1800": 183,
+  "maxAvgPower_3600": null,
+  "maxAvgPower_7200": null,
+  "maxAvgPower_18000": null,
+  "excludeFromPowerCurveReports": false
+}

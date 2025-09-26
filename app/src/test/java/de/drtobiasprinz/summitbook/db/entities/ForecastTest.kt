@@ -1,8 +1,5 @@
-package de.drtobiasprinz.summitbook.fragments.db.entities
+package de.drtobiasprinz.summitbook.db.entities
 
-import de.drtobiasprinz.summitbook.db.entities.ElevationData
-import de.drtobiasprinz.summitbook.db.entities.Forecast
-import de.drtobiasprinz.summitbook.db.entities.Summit
 import org.junit.Test
 
 class ForecastTest {
