@@ -200,6 +200,12 @@ enum class GarminEntityFromActivityJson(
             0.0f
         }
     }),
+    FTP({ data, json, _ ->
+        data.ftp = getJsonObjectEntryNotNull(
+            json,
+            "functionalThresholdPower"
+        ).roundToInt()
+    })
 }
 
 enum class GarminEntityFromSplitJson(
@@ -224,10 +230,4 @@ enum class GarminEntityFromSplitJson(
         data.cyclingDynamics =
             CyclingDynamicsData.parseCyclingDynamicsFromGarminJson(json)
     }),
-    FTP({ data, json ->
-        data.ftp = getJsonObjectEntryNotNull(
-            json,
-            "functionalThresholdPower"
-        ).roundToInt()
-    })
 }
