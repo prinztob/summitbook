@@ -2,7 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <group android:checkableBehavior="single">
         <item
-            android:checked="true"
+            android:id="@+id/nav_summits"
             android:icon="@drawable/baseline_landscape_black_24dp"
             android:title="@string/nav_summits" />
         <item

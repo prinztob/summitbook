@@ -11,8 +11,14 @@ interface SummitsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveSummit(entity: Summit): Long
 
+    @Insert
+    suspend fun insertAll(summits: List<Summit>)
+
     @Update
     suspend fun updateSummit(entity: Summit)
+
+    @Query("DELETE FROM $SUMMITS_TABLE")
+    suspend fun deleteAll()
 
     @Delete
     suspend fun deleteSummit(entity: Summit)

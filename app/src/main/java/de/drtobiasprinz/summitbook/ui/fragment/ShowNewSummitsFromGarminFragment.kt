@@ -1,4 +1,4 @@
-package de.drtobiasprinz.summitbook.ui.dialog
+package de.drtobiasprinz.summitbook.ui.fragment
 
 import android.content.Context
 import android.content.res.Resources
@@ -7,9 +7,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
 import android.widget.Toast
-import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
@@ -18,9 +17,10 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.adapter.AddNewSummitsAdapter
-import de.drtobiasprinz.summitbook.databinding.DialogShowNewSummitFromGarminBinding
+import de.drtobiasprinz.summitbook.databinding.FragmentShowNewSummitsFromGarminBinding
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
@@ -32,15 +32,11 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @AndroidEntryPoint
-class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
-
+class ShowNewSummitsFromGarminFragment : Fragment() {
     private val viewModel: DatabaseViewModel by viewModels()
-
-    private lateinit var binding: DialogShowNewSummitFromGarminBinding
-
+    private lateinit var binding: FragmentShowNewSummitsFromGarminBinding
     private lateinit var currentContext: Context
     private var entriesWithoutIgnored: MutableList<Summit> = mutableListOf()
-
     private var showAllButtonEnabled = false
     private var activitiesIdIgnored: List<String> = emptyList()
     private var ignoredActivities: List<IgnoredActivity> = emptyList()
@@ -51,15 +47,8 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        binding = DialogShowNewSummitFromGarminBinding.inflate(layoutInflater, container, false)
+        binding = FragmentShowNewSummitsFromGarminBinding.inflate(layoutInflater, container, false)
         return binding.root
-    }
-
-    @Override
-    override fun onStart() {
-        super.onStart()
-        val width = (resources.displayMetrics.widthPixels * 0.90).toInt()
-        dialog?.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -131,7 +120,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                             entriesWithoutIgnored.filter { summit -> summit.isSelected },
                             false
                         )
-                        dialog?.dismiss()
+                        back(R.string.garmin_add_successful)
                     }
                 }
                 binding.addSummitMerge.isEnabled = false
@@ -141,7 +130,7 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                             entriesWithoutIgnored.filter { summit -> summit.isSelected },
                             true
                         )
-                        dialog?.dismiss()
+                        back(R.string.garmin_add_successful)
                     }
                 }
                 binding.ignore.isEnabled = false
@@ -159,9 +148,6 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
                                 }
                             }
                     }
-                }
-                binding.back.setOnClickListener {
-                    dialog?.cancel()
                 }
             }
         }
@@ -241,19 +227,14 @@ class ShowNewSummitsFromGarminDialog : DialogFragment(), BaseDialog {
         return entriesWithoutIgnored.map { it.isSelected }.contains(true)
     }
 
-    override fun getDialogContext(): Context {
-        return currentContext
+    private fun back(messageId: Int) {
+        val ft = parentFragmentManager.beginTransaction()
+        ft.replace(R.id.content_frame, SummitViewFragment())
+        ft.commit()
+        Toast.makeText(
+            activity, getString(messageId),
+            Toast.LENGTH_LONG
+        ).show()
     }
 
-    override fun getProgressBarForAsyncTask(): ProgressBar {
-        return binding.progressBar
-    }
-
-    override fun isStepByStepDownload(): Boolean {
-        return false
-    }
-
-    override fun doInPostExecute(index: Int, successfulDownloaded: Boolean) {
-        //do nothing
-    }
 }

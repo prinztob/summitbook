@@ -14,6 +14,8 @@ class DatabaseRepository @Inject constructor(
 ) {
 
     suspend fun saveSummit(entity: Summit) = summitsDao.saveSummit(entity)
+    suspend fun saveSummits(entities: List<Summit>) = summitsDao.insertAll(entities)
+    suspend fun deleteAll() = summitsDao.deleteAll()
     suspend fun updateSummit(entity: Summit) = summitsDao.updateSummit(entity)
     suspend fun deleteSummit(entity: Summit) = summitsDao.deleteSummit(entity)
     fun getDetailsSummit(id: Long) = summitsDao.getSummit(id)

@@ -79,6 +79,13 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         }
     }
 
+    fun saveSummits(entities: List<Summit>) = viewModelScope.launch {
+        repository.saveSummits(entities)
+    }
+    fun deleteSummits() = viewModelScope.launch {
+        repository.deleteAll()
+    }
+
     fun deleteSummit(entity: Summit) = viewModelScope.launch {
         repository.deleteSummit(entity)
     }

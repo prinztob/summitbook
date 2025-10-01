@@ -166,6 +166,8 @@
     <string name="forecast_info_km">"%1$s: Estimated distance: %2$s km (Goal: %3$s km)."</string>
     <string name="forecast_info_activities">"%1$s: Estimated activities: %2$s (Goal: %3$s)."</string>
     <string name="import_string_title">"Import successful"</string>
+    <string name="forecast_successfully_saved">"Forecasts successfully saved"</string>
+    <string name="forecast_canceled">"Update forcast canceled"</string>
     <string name="import_string">"Finished import of Zip File with in total %1$s entries in CSV file\nImported entries: %2$s\nInvalid entries: %3$s\nDuplicate entries: %4$s"</string>
     <string name="current_estimate">"Current estimate from annual target: %1$s hm."</string>
     <string name="found_address">"Fond address for %1$s."</string>

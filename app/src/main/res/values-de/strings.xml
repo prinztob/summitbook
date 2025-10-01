@@ -169,6 +169,8 @@
     <string name="forecast_info_km">"%1$s: Schätzung Entfernung: %2$s km (Ziel: %3$s km)."</string>
     <string name="forecast_info_activities">"%1$s: Schätzung Gipfel: %2$s (Ziel: %3$s)."</string>
     <string name="import_string_title">"Import erfolgreich"</string>
+    <string name="forecast_successfully_saved">"Schätzung erfolgreich gespeichert"</string>
+    <string name="forecast_canceled">"Aktualisierung von Schätzung wurde abgebrochen"</string>
     <string name="import_string">"Der Import der Zip Datei ist abgeschlossen mit Zeilen in CSV Datei: %1$s\nImportierte Gipfel: %2$s\nInvalide Gipfel: %3$s\nDuplizierte Gipfel: %4$s"</string>
     <string name="current_estimate">"Aktuelle Hochrechnung für Jahresziel: %1$s hm."</string>
     <string name="found_address">"Adresse für %1$s gefunden."</string>

@@ -32,7 +32,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.PythonActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SettingsActivity
 import de.drtobiasprinz.summitbook.databinding.ActivityMainBinding
 import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Forecast
@@ -45,14 +44,15 @@ import de.drtobiasprinz.summitbook.fragments.LineChartFragment
 import de.drtobiasprinz.summitbook.fragments.OpenStreetMapFragment
 import de.drtobiasprinz.summitbook.fragments.OverviewFragment
 import de.drtobiasprinz.summitbook.fragments.SegmentsViewFragment
+import de.drtobiasprinz.summitbook.fragments.SettingsFragment
 import de.drtobiasprinz.summitbook.fragments.SortAndFilterFragment
 import de.drtobiasprinz.summitbook.fragments.StatisticsFragment
 import de.drtobiasprinz.summitbook.fragments.SummitEntitiesFragment
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.SortFilterValues
-import de.drtobiasprinz.summitbook.ui.dialog.ForecastDialog
-import de.drtobiasprinz.summitbook.ui.dialog.ShowNewSummitsFromGarminDialog
+import de.drtobiasprinz.summitbook.ui.fragment.ForecastFragment
+import de.drtobiasprinz.summitbook.ui.fragment.ShowNewSummitsFromGarminFragment
 import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.PosterOverlayView
@@ -77,7 +77,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     lateinit var binding: ActivityMainBinding
     private lateinit var summitViewFragment: SummitViewFragment
 
-    private val viewModel: DatabaseViewModel by viewModels()
+    val viewModel: DatabaseViewModel by viewModels()
 
     @Inject
     lateinit var sortFilterValues: SortFilterValues
@@ -368,7 +368,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             R.id.nav_forecast -> {
-                ForecastDialog().show(this.supportFragmentManager, "ForecastDialog")
+                commitFragment(ForecastFragment())
             }
 
             R.id.nav_new_summits -> {
@@ -396,8 +396,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             R.id.action_settings -> {
-                val intent = Intent(this, SettingsActivity::class.java)
-                startActivity(intent)
+                commitFragment(SettingsFragment())
             }
 
             else -> {
@@ -408,10 +407,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun showNewSummitsDialog() {
-        val dialog = ShowNewSummitsFromGarminDialog()
-        dialog.summits =
+        val fragment = ShowNewSummitsFromGarminFragment()
+        fragment.summits =
             allSummits.ifEmpty { summitViewFragment.summitsAdapter.differ.currentList }
-        dialog.save = { summits, isMerge ->
+        fragment.save = { summits, isMerge ->
             binding.loading.visibility = View.VISIBLE
             binding.loading.tooltipText =
                 getString(
@@ -425,9 +424,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
             }
         }
-        dialog.show(
-            supportFragmentManager, "Show new summits from Garmin"
-        )
+        commitFragment(fragment)
     }
 
     private fun showExportCsvDialog() {
@@ -645,7 +642,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     usePositionAfterTransition = currentPosition
                     currentPosition = 0
                 }
-                if (allImages.size > 0) {
+                if (allImages.isNotEmpty()) {
                     overlayView = PosterOverlayView(this@MainActivity).apply {
                         update(allImages[currentPosition])
                     }

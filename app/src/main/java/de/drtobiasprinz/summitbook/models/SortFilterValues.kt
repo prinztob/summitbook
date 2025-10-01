@@ -40,8 +40,8 @@ class SortFilterValues(
     private var initialized: Boolean = false
 
     private fun setInitialValues(summits: List<Summit>, sharedPreferences: SharedPreferences) {
-        if (!initialized) {
-            Log.i("SortFilterValues", "initialized")
+        Log.i(TAG, "initialized with ${summits.size} because initialized is $initialized or years ($years) is empty is ${years.isEmpty()}")
+        if (!initialized || years.isEmpty()) {
             initialized = true
             if (summits.isNotEmpty()) {
                 val minDate = getYear(summits.minBy { it.date }.date)
@@ -55,6 +55,7 @@ class SortFilterValues(
                     years = (years + currentYear).sortedDescending()
                 }
             }
+            Log.i(TAG, "years $years")
             val showOnlyCurrentYear = sharedPreferences.getBoolean(Keys.PREF_CURRENT_YEAR_SWITCH, false)
             updateCurrentYearSwitch(showOnlyCurrentYear)
         }
@@ -185,6 +186,8 @@ class SortFilterValues(
     }
 
     companion object {
+        const val TAG = "SortFilterValues"
+
         fun getYear(date: Date): Int {
             val calendar: Calendar = GregorianCalendar()
             calendar.time = date

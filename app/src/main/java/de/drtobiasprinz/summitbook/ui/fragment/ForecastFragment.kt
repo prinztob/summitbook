@@ -1,4 +1,4 @@
-package de.drtobiasprinz.summitbook.ui.dialog
+package de.drtobiasprinz.summitbook.ui.fragment
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
@@ -12,7 +12,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.widget.AppCompatImageButton
-import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.preference.PreferenceManager
@@ -23,10 +23,11 @@ import de.drtobiasprinz.summitbook.Keys.PREF_ANNUAL_TARGET
 import de.drtobiasprinz.summitbook.Keys.PREF_ANNUAL_TARGET_ACTIVITIES
 import de.drtobiasprinz.summitbook.Keys.PREF_ANNUAL_TARGET_KM
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.databinding.DialogForecastBinding
+import de.drtobiasprinz.summitbook.databinding.FragmentForecastBinding
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Forecast.Companion.getSumForYear
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.SortFilterValues.Companion.getYear
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
@@ -35,15 +36,15 @@ import java.util.Date
 import kotlin.math.round
 
 @AndroidEntryPoint
-class ForecastDialog : DialogFragment() {
-    private lateinit var binding: DialogForecastBinding
+class ForecastFragment : Fragment() {
+    private lateinit var binding: FragmentForecastBinding
     private lateinit var sharedPreferences: SharedPreferences
     private val viewModel: DatabaseViewModel by viewModels()
 
     private var selectedSegmentedYear: Int = 0
     private var selectedSegmentedForecastProperty: Int = 0
-    private var currentYear: Int = (Calendar.getInstance())[Calendar.YEAR]
-    private var currentMonth: Int = (Calendar.getInstance())[Calendar.MONTH] + 1
+    private var currentYear: Int = Calendar.getInstance().get(Calendar.YEAR)
+    private var currentMonth: Int = Calendar.getInstance().get(Calendar.MONTH) + 1
     private var yearsWithForecasts = listOf(currentYear, currentYear + 1)
     private var annualTargetActivity: String = ""
     private var annualTargetKm: String = ""
@@ -54,9 +55,9 @@ class ForecastDialog : DialogFragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?,
+        savedInstanceState: Bundle?
     ): View {
-        binding = DialogForecastBinding.inflate(layoutInflater, container, false)
+        binding = FragmentForecastBinding.inflate(layoutInflater, container, false)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         return binding.root
     }
@@ -127,9 +128,6 @@ class ForecastDialog : DialogFragment() {
                                         ).show()
                                     }
                                 }
-                                binding.back.setOnClickListener {
-                                    dialog?.dismiss()
-                                }
                                 binding.save.setOnClickListener {
                                     binding.loadingPanel.visibility = View.VISIBLE
                                     viewModel.summitsList.removeObserver(this)
@@ -144,8 +142,7 @@ class ForecastDialog : DialogFragment() {
                                             forecastsWithChanges
                                         )
                                         job.invokeOnCompletion {
-                                            binding.loadingPanel.visibility = View.GONE
-                                            dialog?.dismiss()
+                                            back(R.string.forecast_successfully_saved)
                                         }
                                     }
                                 }
@@ -185,6 +182,16 @@ class ForecastDialog : DialogFragment() {
                     }
                 }
             })
+    }
+
+    private fun back(messageId: Int) {
+        val ft = parentFragmentManager.beginTransaction()
+        ft.replace(R.id.content_frame, SummitViewFragment())
+        ft.commit()
+        Toast.makeText(
+            activity, getString(messageId),
+            Toast.LENGTH_LONG
+        ).show()
     }
 
     private fun setMissingForecasts(
@@ -486,6 +493,6 @@ class ForecastDialog : DialogFragment() {
         const val STEP_SIZE_ACTIVITY: Int = 1
         const val STEP_SIZE_KM: Int = 10
         const val STEP_SIZE_HM: Int = 250
-        const val TAG: String = "ForecastDialog"
+        const val TAG: String = "ForecastFragment"
     }
 }
