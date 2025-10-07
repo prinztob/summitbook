@@ -116,8 +116,8 @@
     <string name="until">bis</string>
     <string name="from">von</string>
     <string name="highest_power">Höchste normalisierte Leistung</string>
-    <string name="highest_power_20min">Höchste Leistung in 20 Min.</string>
-    <string name="highest_power_1h">Höchste Leistung in 1 St.</string>
+    <string name="highest_power_20min">Höchste Leistung 20min</string>
+    <string name="highest_power_1h">Höchste Leistung 1h</string>
     <string name="highest_hr">Höchste durchschn. Herzfreq</string>
     <string name="highest_grit">Höchster grit</string>
     <string name="highest_flow">Höchster flow</string>

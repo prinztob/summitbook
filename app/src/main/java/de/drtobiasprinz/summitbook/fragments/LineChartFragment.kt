@@ -270,7 +270,6 @@ class LineChartFragment : Fragment() {
         )
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerXAxis.adapter = dateAdapter
-        binding.spinnerYAxis.visibility = View.GONE
     }
 
 

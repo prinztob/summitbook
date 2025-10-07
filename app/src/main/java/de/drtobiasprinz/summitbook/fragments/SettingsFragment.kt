@@ -137,7 +137,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 ".garminconnect"
             )
             if (!preferenceGarminMFASwitch.isChecked && garminMFA.exists()) {
-                garminMFA.delete()
+                garminMFA.deleteRecursively()
             }
             return@setOnPreferenceClickListener true
         }

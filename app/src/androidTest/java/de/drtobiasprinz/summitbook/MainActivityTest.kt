@@ -36,42 +36,52 @@ class MainActivityTest {
     fun testSummits() {
         testMenuItem(R.id.nav_summits)
     }
+
     @Test
     fun testBookmarks() {
         testMenuItem(R.id.nav_bookmarks)
     }
+
     @Test
     fun testOsMap() {
         testMenuItem(R.id.nav_osmap)
     }
+
     @Test
     fun testNewSummits() {
         testMenuItem(R.id.nav_new_summits)
     }
+
     @Test
     fun testForecast() {
         testMenuItem(R.id.nav_forecast)
     }
+
     @Test
     fun testBarChart() {
         testMenuItem(R.id.nav_barChart)
     }
+
     @Test
     fun testLineChart() {
         testMenuItem(R.id.nav_diagrams)
     }
+
     @Test
     fun testStatistics() {
         testMenuItem(R.id.nav_statistics)
     }
+
     @Test
     fun testRoutes() {
         testMenuItem(R.id.nav_routes)
     }
+
     @Test
     fun testAdditionalSummitData() {
         testMenuItem(R.id.nav_additional_summit_data)
     }
+
     @Test
     fun testSettings() {
         testMenuItem(R.id.action_settings)
@@ -84,7 +94,7 @@ class MainActivityTest {
         // Scroll to and click the menu item with visibility check
         onView(allOf(withId(menuItemId), isDisplayingAtLeast(90)))
             .perform(scrollTo(), click())
-        
+
         // Wait for content to load and verify display
         onView(withId(android.R.id.content))
             .check(matches(isDisplayingAtLeast(50)))

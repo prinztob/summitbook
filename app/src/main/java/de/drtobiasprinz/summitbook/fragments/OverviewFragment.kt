@@ -480,7 +480,7 @@ class OverviewFragment : Fragment() {
     private fun setYAxis(yAxis: YAxis?, graphType: GraphType) {
         yAxis?.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                numberFormat.maximumFractionDigits = if (value > 10) 0 else 1
+                numberFormat.maximumFractionDigits = if (value > 99) 0 else 1
                 val format = "${numberFormat.format(value.toDouble())} ${graphType.unit}"
                 return format
             }

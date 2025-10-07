@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook
 
-import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
@@ -14,6 +13,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.utils.TestUtilsForAndroidTest
+import de.drtobiasprinz.summitbook.utils.TestUtilsForAndroidTest.injectTestData
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -34,7 +34,7 @@ class SummitViewAndFilterTest {
         // Load test entries
         testEntries = TestUtilsForAndroidTest.getAllEntries()
         scenario = ActivityScenario.launch(MainActivity::class.java)
-        injectTestData()
+        injectTestData(scenario, testEntries)
         // Verify we have the expected number of current year entries
         val currentYearEntries = TestUtilsForAndroidTest.getCurrentYearEntries()
         assertEquals("Should have exactly 85 current year entries", 85, currentYearEntries.size)
@@ -43,19 +43,6 @@ class SummitViewAndFilterTest {
     @After
     fun cleanup() {
         scenario.close()
-    }
-
-    /**
-     * Injects test entries into the SummitViewFragment adapter
-     */
-    private fun injectTestData() {
-        scenario.onActivity { activity ->
-            activity.viewModel.deleteSummits()
-            val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
-            prefs.edit().putBoolean(Keys.PREF_CURRENT_YEAR_SWITCH, false).apply()
-            activity.viewModel.saveSummits(testEntries)
-        }
-        Thread.sleep(500)
     }
 
     /**

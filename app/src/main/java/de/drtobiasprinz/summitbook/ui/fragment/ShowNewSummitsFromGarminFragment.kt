@@ -232,7 +232,8 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
         ft.replace(R.id.content_frame, SummitViewFragment())
         ft.commit()
         Toast.makeText(
-            activity, getString(messageId),
+            activity, getString(messageId,
+                entriesWithoutIgnored.firstOrNull { summit -> summit.isSelected }?.name ?: "'new summit'"),
             Toast.LENGTH_LONG
         ).show()
     }
