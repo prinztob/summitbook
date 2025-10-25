@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Environment
 import android.util.Log
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.documentfile.provider.DocumentFile
@@ -15,6 +16,9 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
 import de.drtobiasprinz.summitbook.models.GpsTrack
+import de.drtobiasprinz.summitbook.models.RoadInfo
+import de.drtobiasprinz.summitbook.models.RoadType
+import de.drtobiasprinz.summitbook.models.Surface
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.storage
@@ -22,6 +26,13 @@ import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.MapHelper
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
+import de.drtobiasprinz.summitbook.utils.RoadSurfaceAnalyzer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.mapsforge.core.model.LatLong
+import org.mapsforge.map.reader.MapFile
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -153,7 +164,8 @@ object OpenStreetMapUtils {
         val osmConf = Configuration.getInstance()
         val osmdroidBasePath = getOsmdroidTilesFolder()
         osmdroidBasePath.mkdirs()
-        osmConf.osmdroidBasePath = if (setToDefault) File(MainActivity.cache, "osmdroid") else osmdroidBasePath
+        osmConf.osmdroidBasePath =
+            if (setToDefault) File(MainActivity.cache, "osmdroid") else osmdroidBasePath
         Log.i(TAG, "set osmdroidBasePath to ${osmConf.osmdroidBasePath}")
         val tileCache = File(MainActivity.cache, "tile")
         tileCache.mkdirs()
@@ -250,6 +262,105 @@ object OpenStreetMapUtils {
         mMapView.overlays.add(copyrightOverlay)
     }
 
+    /**
+     * Enable road type information display on map click.
+     * When the user clicks on the map, it will show a toast with road information at that position.
+     *
+     * @param mapView The MapView to add the click listener to
+     * @param context Android context
+     * @param scope CoroutineScope for async operations (optional, creates new scope if not provided)
+     */
+    @JvmStatic
+    fun enableRoadInfoOnMapClick(
+        mapView: MapView,
+        context: Context,
+        scope: CoroutineScope? = null
+    ) {
+        val coroutineScope = scope ?: CoroutineScope(Dispatchers.Main)
+        val mapEventsReceiver = object : org.osmdroid.events.MapEventsReceiver {
+            override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+                Log.i("MAP", "singleTapConfirmedHelper: position: $p")
+                if (p != null) {
+                    showRoadInfoAtPosition(context, p, coroutineScope)
+                }
+                return true
+            }
+
+            override fun longPressHelper(p: GeoPoint?): Boolean {
+                Log.i("MAP", "longPressHelper")
+                return false
+            }
+        }
+
+        val mapEventsOverlay = org.osmdroid.views.overlay.MapEventsOverlay(mapEventsReceiver)
+        mapView.overlays.add(0, mapEventsOverlay) // Add at index 0 to receive events first
+    }
+
+    /**
+     * Show road information at a specific position in a toast
+     */
+    fun showRoadInfoAtPosition(
+        context: Context,
+        geoPoint: GeoPoint,
+        scope: CoroutineScope
+    ) {
+        val mapFiles = FileHelper.getOnDeviceMapFiles(context)
+
+        if (mapFiles.isEmpty()) {
+            Toast.makeText(context, "No offline map files available", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Show loading toast
+        Toast.makeText(context, "Querying road info...", Toast.LENGTH_SHORT).show()
+
+        // Query road info in background thread
+        scope.launch {
+            try {
+                var roadInfo: RoadInfo? = null
+                val mapFileInputStreams =
+                    FileHelper.getOnDeviceMapFileInputStreams(context, mapFiles)
+                withContext(Dispatchers.IO) {
+                    for (inputStream in mapFileInputStreams) {
+                        val mapFile = MapFile(inputStream)
+                        roadInfo = RoadSurfaceAnalyzer.from(context).getRoadInfoForLatLong(
+                            LatLong(
+                                geoPoint.latitude,
+                                geoPoint.longitude
+                            ), mapFile
+                        )
+                    }
+                }
+
+                // Show result on main thread
+                withContext(Dispatchers.Main) {
+                    if (roadInfo != null) {
+                        AlertDialog.Builder(context)
+                            .setTitle("Road Information")
+                            .setMessage(
+                                "roadType ${roadInfo.roadType} \n" +
+                                        "name ${roadInfo.name}\n" +
+                                        "surface ${roadInfo.surface}\n" +
+                                        "minDistance ${roadInfo.minDistance} m\n" +
+                                        "trackType: ${roadInfo.trackType}\n" +
+                                        "mapped Surface: ${Surface.mapFromRoadInfo(roadInfo)}\n" +
+                                        "mapped RoadType: ${RoadType.mapFromRoadInfo(roadInfo)}\n" +
+                                        "additionalTags: ${roadInfo.additionalTags}"
+                            )
+                            .setPositiveButton("OK", null)
+                            .show()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error querying road info", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+
     @JvmStatic
     fun showMapTypeSelectorDialog(context: Context, mapView: MapView, onSelected: () -> Unit = {}) {
         val fDialogTitle = context.getString(R.string.select_map_type)
@@ -271,7 +382,11 @@ object OpenStreetMapUtils {
         fMapTypeDialog.show()
     }
 
-    fun setTileProviderDependingOnSummitSportType(mapView: MapView, context: Context, sportType: SportType) {
+    fun setTileProviderDependingOnSummitSportType(
+        mapView: MapView,
+        context: Context,
+        sportType: SportType
+    ) {
         if (PreferencesHelper.loadOnDeviceMaps() &&
             FileHelper.getOnDeviceMapFiles(context).isNotEmpty()
         ) {
@@ -284,6 +399,7 @@ object OpenStreetMapUtils {
 
     @JvmStatic
     fun setTileProvider(mapView: MapView, context: Context) {
+        enableRoadInfoOnMapClick(mapView, context)
         val mapFiles: List<DocumentFile> = FileHelper.getOnDeviceMapFiles(context)
         if (selectedItem.isOffline) {
             if (selectedItem == MapProvider.MBTILES) {
@@ -331,6 +447,8 @@ object OpenStreetMapUtils {
             MapProvider.OPENTOPO
         }
     }
+
+    fun Double.round(decimals: Int = 2): String = "%.${decimals}f".format(this)
 }
 
 enum class MapProvider(

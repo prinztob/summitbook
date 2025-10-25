@@ -136,12 +136,10 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         drawablePlacesOff = ContextCompat.getDrawable(
-            view.context,
-            R.drawable.outline_landscape_2_off_24
+            view.context, R.drawable.outline_landscape_2_off_24
         )
         drawablePlacesOn = ContextCompat.getDrawable(
-            view.context,
-            R.drawable.outline_landscape_2_24
+            view.context, R.drawable.outline_landscape_2_24
         )
         summitId = arguments?.getLong(BUNDLE_ID) ?: 0
         if (summitId > 0) {
@@ -172,8 +170,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
     private fun setData(
-        summits: List<Summit>,
-        view: View
+        summits: List<Summit>, view: View
     ) {
 
         binding.apply {
@@ -182,10 +179,9 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             }
             btnCancel.setOnClickListener {
                 dismiss()
-                val text =
-                    if (isEdit) getString(R.string.update_summit_cancel) else getString(
-                        R.string.add_new_summit_cancel
-                    )
+                val text = if (isEdit) getString(R.string.update_summit_cancel) else getString(
+                    R.string.add_new_summit_cancel
+                )
                 Snackbar.make(it, text, Snackbar.LENGTH_SHORT).show()
             }
             if (type == EDIT) {
@@ -207,9 +203,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 parseSummit(sportType)
 
                 val latlngHighestPointLocal = latlngHighestPoint
-                if (entity.latLng == null && latlngHighestPointLocal != null &&
-                    latlngHighestPointLocal.latitude != 0.0 && latlngHighestPointLocal.longitude != 0.0
-                ) {
+                if (entity.latLng == null && latlngHighestPointLocal != null && latlngHighestPointLocal.latitude != 0.0 && latlngHighestPointLocal.longitude != 0.0) {
                     entity.latLng = latlngHighestPointLocal
                 }
                 entity.hasTrack = true
@@ -223,13 +217,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     val garminDataLocal = entity.garminData
                     val gpsTrackPath = entity.getGpsTrackPath().toFile()
                     val temporaryGpxFileLocal = temporaryGpxFile
-                    if (
-                        garminDataLocal != null
-                        && temporaryGpxFileLocal != null
-                        && temporaryGpxFileLocal.exists()
-                        && gpsTrackPath != null
-                        && entity.sportType != SportType.IndoorTrainer
-                    ) {
+                    if (garminDataLocal != null && temporaryGpxFileLocal != null && temporaryGpxFileLocal.exists() && gpsTrackPath != null && entity.sportType != SportType.IndoorTrainer) {
                         temporaryGpxFileLocal.copyTo(gpsTrackPath, overwrite = true)
                     }
                     binding.loadingPanel.visibility = View.GONE
@@ -260,20 +248,17 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                             binding.loadingPanel.visibility = View.VISIBLE
                             pythonExecutor?.let { it1 ->
                                 downloadJsonViaPython(
-                                    dateAsString,
-                                    it1
+                                    dateAsString, it1
                                 )
                             }
                         } else {
                             Toast.makeText(
-                                context,
-                                getString(R.string.set_user_pwd), Toast.LENGTH_LONG
+                                context, getString(R.string.set_user_pwd), Toast.LENGTH_LONG
                             ).show()
                         }
                     } else {
                         Toast.makeText(
-                            context,
-                            getString(R.string.date_garmin_connect), Toast.LENGTH_LONG
+                            context, getString(R.string.date_garmin_connect), Toast.LENGTH_LONG
                         ).show()
                     }
                 }
@@ -317,9 +302,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
     private fun getPowerDataFromEntries(
-        entries: List<Summit>,
-        pythonExecutor: GarminPythonExecutor,
-        dateAsString: String
+        entries: List<Summit>, pythonExecutor: GarminPythonExecutor, dateAsString: String
     ): JsonObject? {
         for (entry in entries) {
             if (entry.sportType == SportType.BikeAndHike) {
@@ -364,25 +347,22 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
     private fun DialogAddSummitBinding.updateBaseBindings(
-        view: View,
-        summits: List<Summit>
+        view: View, summits: List<Summit>
     ) {
         heightMeter.addTextChangedListener(watcher)
         kilometers.addTextChangedListener(watcher)
         kilometers.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
         tourDate.addTextChangedListener(watcher)
         tourDate.inputType = InputType.TYPE_NULL
-        tourDate.onFocusChangeListener =
-            View.OnFocusChangeListener { _: View?, hasFocus: Boolean ->
-                if (hasFocus) {
-                    showDatePicker(tourDate, view.context)
-                }
+        tourDate.onFocusChangeListener = View.OnFocusChangeListener { _: View?, hasFocus: Boolean ->
+            if (hasFocus) {
+                showDatePicker(tourDate, view.context)
             }
+        }
         activities.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            SportType.entries.map { resources.getString(it.sportNameStringId) }
-                .toTypedArray()
+            SportType.entries.map { resources.getString(it.sportNameStringId) }.toTypedArray()
         )
         setImageColor()
         lifecycleScope.launch {
@@ -550,17 +530,15 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     }
 
     private fun getPlacesSuggestions(
-        summits: List<Summit>,
-        addConnectedEntryString: Boolean = true
+        summits: List<Summit>, addConnectedEntryString: Boolean = true
     ): ArrayAdapter<String> {
-        val suggestions: MutableList<String> =
-            (summits.flatMap {
-                it.places
-            } + summits.map { it.name }).filter {
-                it != "" && !it.startsWith(
-                    CONNECTED_ACTIVITY_PREFIX
-                )
-            } as MutableList<String>
+        val suggestions: MutableList<String> = (summits.flatMap {
+            it.places
+        } + summits.map { it.name }).filter {
+            it != "" && !it.startsWith(
+                CONNECTED_ACTIVITY_PREFIX
+            )
+        } as MutableList<String>
         val localSummit = entity
         if (addConnectedEntryString) {
             for (entry in summits.filter { it != entity }) {
@@ -727,8 +705,9 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
         override fun afterTextChanged(s: Editable) {
             binding.btnSave.isEnabled =
-                !(isEmpty(binding.summitName) || isEmpty(binding.heightMeter) ||
-                        isEmpty(binding.kilometers) || (if (isBookmark) false else isEmpty(binding.tourDate)))
+                !(isEmpty(binding.summitName) || isEmpty(binding.heightMeter) || isEmpty(binding.kilometers) || (if (isBookmark) false else isEmpty(
+                    binding.tourDate
+                )))
         }
 
         private fun isEmpty(editText: EditText): Boolean {
@@ -819,7 +798,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         return try {
             BigDecimal(editText.text.toString().toDouble()).setScale(2, RoundingMode.HALF_UP)
                 .toDouble()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             0.0
         }
     }
@@ -827,22 +806,18 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     private fun getTextWithDefaultInt(editText: EditText): Int {
         return try {
             editText.text.toString().toInt()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             0
         }
     }
 
 
     private fun downloadGpxForSummit(
-        entry: Summit,
-        index: Int,
-        useTcx: Boolean,
-        powerData: JsonObject? = null
+        entry: Summit, index: Int, useTcx: Boolean, powerData: JsonObject? = null
     ) {
         try {
             val downloader = GarminTrackAndDataDownloader(
-                listOf(entry),
-                pythonExecutor, useTcx
+                listOf(entry), pythonExecutor, useTcx
             )
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
@@ -851,16 +826,13 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     val activityId = downloader.finalEntry?.garminData?.activityId
                     if (activityId != null) {
                         downloader.composeFinalTrack(
-                            GarminTrackAndDataDownloader.getTempGpsFilePath(
-                                activityId
-                            ).toFile()
+                            GarminTrackAndDataDownloader.getTempGpsFilePath(activityId).toFile()
                         )
                     }
                 }
                 if (index != -1) {
                     listItemsGpsDownloadSuccessful?.set(
-                        index,
-                        downloader.downloadedTracks.none { !it.exists() })
+                        index, downloader.downloadedTracks.none { !it.exists() })
                     mDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled =
                         listItemsGpsDownloadSuccessful?.contains(false) == false
                 }
@@ -950,8 +922,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 entry.elevationData.elevationGain = elevationGain
                 binding.heightMeter.filters = arrayOf()
                 binding.heightMeter.setText(elevationGain.toString())
-                binding.heightMeter.filters =
-                    arrayOf<InputFilter>(InputFilterMinMax(0, 9999))
+                binding.heightMeter.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 9999))
 
                 val maxElevation = try {
                     gpxPyJson.getAsJsonPrimitive("max_elevation").asDouble.roundToInt()
@@ -975,9 +946,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 binding.kilometers.filters = arrayOf()
                 binding.kilometers.setText(
                     String.format(
-                        Locale.ENGLISH,
-                        "%.1f",
-                        distance
+                        Locale.ENGLISH, "%.1f", distance
                     )
                 )
                 binding.kilometers.filters = arrayOf<InputFilter>(InputFilterMinMax(0, 999))
@@ -1024,9 +993,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                                 "%02d",
                                 monthSelected + 1
                             ), String.format(
-                                context.resources.configuration.locales[0],
-                                "%02d",
-                                yearSelected
+                                context.resources.configuration.locales[0], "%02d", yearSelected
                             )
                         )
                     )

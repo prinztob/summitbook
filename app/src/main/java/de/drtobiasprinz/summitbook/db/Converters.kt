@@ -2,6 +2,8 @@ package de.drtobiasprinz.summitbook.db
 
 import androidx.room.TypeConverter
 import de.drtobiasprinz.summitbook.db.entities.SportType
+import de.drtobiasprinz.summitbook.models.RoadType
+import de.drtobiasprinz.summitbook.models.Surface
 import java.util.Date
 
 
@@ -24,11 +26,6 @@ class Converters {
     @TypeConverter
     fun stringToStringArrayList(listAsString: String?): List<String>? {
         return listAsString?.split(",")
-    }
-
-    @TypeConverter
-    fun fromStringMutableList(list: MutableList<String>?): String? {
-        return list?.joinToString(",")
     }
 
     @TypeConverter
@@ -55,6 +52,60 @@ class Converters {
     @TypeConverter
     fun stringToSportType(sportType: String?): SportType? {
         return sportType?.let { SportType.valueOf(it) }
+    }
+
+    @TypeConverter
+    fun fromRoadTypeMap(map: Map<RoadType, Int>?): String? {
+        return map?.entries?.joinToString(",") { "${it.key.name}:${it.value}" }
+    }
+
+    @TypeConverter
+    fun stringToRoadTypeMap(mapAsString: String?): Map<RoadType, Int>? {
+        return if (mapAsString.isNullOrEmpty()) {
+            emptyMap()
+        } else {
+            mapAsString.split(",")
+                .mapNotNull { entry ->
+                    val parts = entry.split(":")
+                    if (parts.size == 2) {
+                        try {
+                            RoadType.valueOf(parts[0]) to parts[1].toInt()
+                        } catch (_: Exception) {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                }
+                .toMap()
+        }
+    }
+
+    @TypeConverter
+    fun fromSurfaceMap(map: Map<Surface, Int>?): String? {
+        return map?.entries?.joinToString(",") { "${it.key.name}:${it.value}" }
+    }
+
+    @TypeConverter
+    fun stringToSurfaceMap(mapAsString: String?): Map<Surface, Int>? {
+        return if (mapAsString.isNullOrEmpty()) {
+            emptyMap()
+        } else {
+            mapAsString.split(",")
+                .mapNotNull { entry ->
+                    val parts = entry.split(":")
+                    if (parts.size == 2) {
+                        try {
+                            Surface.valueOf(parts[0]) to parts[1].toInt()
+                        } catch (_: Exception) {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                }
+                .toMap()
+        }
     }
 
 }

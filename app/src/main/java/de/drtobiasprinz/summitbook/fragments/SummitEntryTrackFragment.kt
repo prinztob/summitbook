@@ -213,11 +213,11 @@ class SummitEntryTrackFragment : Fragment() {
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
                     startActivity(intent)
-                } catch (e: IOException) {
+                } catch (_: IOException) {
                     Toast.makeText(
                         requireContext(), getString(R.string.gpx_file_not_copied), Toast.LENGTH_LONG
                     ).show()
-                } catch (e: ActivityNotFoundException) {
+                } catch (_: ActivityNotFoundException) {
                     Toast.makeText(
                         requireContext(),
                         getString(R.string.gpx_viewer_not_installed),
@@ -254,13 +254,13 @@ class SummitEntryTrackFragment : Fragment() {
                         )
                     )
                     startActivity(intentShareFile)
-                } catch (e: IOException) {
+                } catch (_: IOException) {
                     Toast.makeText(
                         requireContext(),
                         getString(R.string.no_email_program_installed),
                         Toast.LENGTH_LONG
                     ).show()
-                } catch (e: ActivityNotFoundException) {
+                } catch (_: ActivityNotFoundException) {
                     Toast.makeText(
                         requireContext(),
                         getString(R.string.no_email_program_installed),

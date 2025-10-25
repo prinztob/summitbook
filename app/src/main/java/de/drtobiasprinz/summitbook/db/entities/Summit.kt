@@ -2,15 +2,21 @@ package de.drtobiasprinz.summitbook.db.entities
 
 import android.content.Context
 import android.content.res.Resources
-import androidx.room.*
+import androidx.room.ColumnInfo
+import androidx.room.Embedded
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
 import com.google.gson.JsonNull.INSTANCE
 import com.google.gson.JsonObject
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.db.entities.SportType.Companion.getSportTypeFromGarminId
+import de.drtobiasprinz.summitbook.db.entities.SportType.Other
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.convertMeterToKm
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.parseSportType
 import de.drtobiasprinz.summitbook.models.GpsTrack
+import de.drtobiasprinz.summitbook.models.RoadType
+import de.drtobiasprinz.summitbook.models.Surface
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getJsonObjectEntryNotNull
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.roundToTwoDigits
 import de.drtobiasprinz.summitbook.ui.MainActivity
@@ -37,7 +43,9 @@ import java.nio.file.StandardCopyOption
 import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import java.util.Objects
 import kotlin.io.path.name
 import kotlin.math.roundToInt
 
@@ -46,7 +54,7 @@ import kotlin.math.roundToInt
 class Summit(
     var date: Date = Date(),
     var name: String = "",
-    var sportType: SportType = SportType.Other,
+    var sportType: SportType = Other,
     var places: List<String> = mutableListOf(),
     var countries: List<String> = mutableListOf(),
     var comments: String = "",
@@ -67,6 +75,8 @@ class Summit(
     @ColumnInfo(defaultValue = "false") var isBookmark: Boolean = false,
     @ColumnInfo(defaultValue = "false") var hasTrack: Boolean = false,
     @ColumnInfo(defaultValue = "false") var ignoreSimplifyingTrack: Boolean = false,
+    @ColumnInfo(defaultValue = "") var distancePerRoadType: Map<RoadType, Int> = mapOf(),
+    @ColumnInfo(defaultValue = "") var distancePerSurface: Map<Surface, Int> = mapOf(),
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0
@@ -88,15 +98,13 @@ class Summit(
 
     fun getImagePath(imageId: Int): Path {
         return Paths.get(
-            getRootDirectoryImages().toString(),
-            String.format(Locale.ENGLISH, "%s.jpg", imageId)
+            getRootDirectoryImages().toString(), String.format(Locale.ENGLISH, "%s.jpg", imageId)
         )
     }
 
     fun getImageUrl(imageId: Int): String {
         return "file://" + Paths.get(
-            getRootDirectoryImages().toString(),
-            String.format(Locale.ENGLISH, "%s.jpg", imageId)
+            getRootDirectoryImages().toString(), String.format(Locale.ENGLISH, "%s.jpg", imageId)
         ).toString()
     }
 
@@ -154,9 +162,7 @@ class Summit(
         val fileName = "id_${activityId}_gpxpy.json"
         return if (isBookmark) {
             Paths.get(
-                MainActivity.storage.toString(),
-                subDirForGpsTracksBookmarkExtensions,
-                fileName
+                MainActivity.storage.toString(), subDirForGpsTracksBookmarkExtensions, fileName
             )
         } else {
             Paths.get(MainActivity.storage.toString(), subDirForGpsTrackExtensions, fileName)
@@ -166,14 +172,11 @@ class Summit(
     @Throws(IOException::class)
     fun copyGpsTrackToTempFile(cacheDir: File?): File? {
         val tempFile = File(
-            cacheDir,
-            String.format(Locale.ENGLISH, "Summit_%s.gpx", name)
+            cacheDir, String.format(Locale.ENGLISH, "Summit_%s.gpx", name)
         )
         if (hasGpsTrack(true)) {
             Files.copy(
-                getGpsTrackPath(true),
-                tempFile.toPath(),
-                StandardCopyOption.REPLACE_EXISTING
+                getGpsTrackPath(true), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING
             )
             return tempFile
         } else if (hasGpsTrack()) {
@@ -192,8 +195,7 @@ class Summit(
 
     fun getExportImageFolderPath(): String {
         return Paths.get(
-            subDirForImages,
-            "${getDateAsString()}_${name.replace(" ".toRegex(), "_")}"
+            subDirForImages, "${getDateAsString()}_${name.replace(" ".toRegex(), "_")}"
         ).toString()
     }
 
@@ -203,8 +205,7 @@ class Summit(
 
     fun getExportTrackPath(): String {
         return Paths.get(
-            subDirForGpsTracks,
-            String.format(
+            subDirForGpsTracks, String.format(
                 "%s_%s.gpx",
                 getDateAsString(),
                 name.replace(" ".toRegex(), "_").replace("/".toRegex(), "_")
@@ -257,12 +258,11 @@ class Summit(
     ) {
         if (hasGpsTrack()) {
             if (gpsTrack == null || updateTrack) {
-                gpsTrack =
-                    GpsTrack(
-                        getGpsTrackPath(),
-                        getGpsTrackPath(simplified = useSimplifiedTrack),
-                        getYamlExtensionsFile()
-                    )
+                gpsTrack = GpsTrack(
+                    getGpsTrackPath(),
+                    getGpsTrackPath(simplified = useSimplifiedTrack),
+                    getYamlExtensionsFile()
+                )
             }
             if (gpsTrack?.hasNoTrackPoints() == true) {
                 gpsTrack?.parseTrack(useSimplifiedIfExists = useSimplifiedTrack)
@@ -279,19 +279,15 @@ class Summit(
     }
 
     fun getImageDescription(resources: Resources, index: Int): String {
-        return "${getDateAsString()}\n$name\n" +
-                (if (elevationData.maxElevation != 0) "${elevationData.maxElevation} ${
-                    resources.getString(
-                        R.string.masl
-                    )
-                }\n" else "") +
-                (if (elevationData.elevationGain != 0) "${elevationData.elevationGain} ${
-                    resources.getString(
-                        R.string.hm
-                    )
-                }\n" else "") +
-                (if (kilometers != 0.0) "$kilometers ${resources.getString(R.string.km)}\n" else "") +
-                "#${index + 1}\n"
+        return "${getDateAsString()}\n$name\n" + (if (elevationData.maxElevation != 0) "${elevationData.maxElevation} ${
+            resources.getString(
+                R.string.masl
+            )
+        }\n" else "") + (if (elevationData.elevationGain != 0) "${elevationData.elevationGain} ${
+            resources.getString(
+                R.string.hm
+            )
+        }\n" else "") + (if (kilometers != 0.0) "$kilometers ${resources.getString(R.string.km)}\n" else "") + "#${index + 1}\n"
     }
 
     override fun toString(): String {
@@ -299,24 +295,12 @@ class Summit(
     }
 
     fun getStringRepresentation(): String {
-        return getDateAsString() + ';' +
-                name + ';' +
-                sportType + ';' +
-                activityId + ';' +
-                kilometers + ';' +
-                duration + ';' +
-                elevationData.elevationGain + ';' +
-                elevationData.maxElevation + ';' +
-                velocityData.maxVelocity + ';' +
-                (if (lat != null && lat != 0.0) lat else "") + ';' +
-                (if (lng != null && lng != 0.0) lng else "") + ';' +
-                (if (isFavorite) "1" else "0") + ';' +
-                (if (isPeak) "1" else "0") + ';' +
-                comments.replace(";", ",").replace("\n", ",") + ';' +
-                participants.joinToString(",") + ';' +
-                equipments.joinToString(",") + ';' +
-                places.joinToString(",") + ';' +
-                countries.joinToString(",") + '\n'
+        return getDateAsString() + ';' + name + ';' + sportType + ';' + activityId + ';' + kilometers + ';' + duration + ';' + elevationData.elevationGain + ';' + elevationData.maxElevation + ';' + velocityData.maxVelocity + ';' + (if (lat != null && lat != 0.0) lat else "") + ';' + (if (lng != null && lng != 0.0) lng else "") + ';' + (if (isFavorite) "1" else "0") + ';' + (if (isPeak) "1" else "0") + ';' + comments.replace(
+            ";",
+            ","
+        ).replace("\n", ",") + ';' + participants.joinToString(",") + ';' + equipments.joinToString(
+            ","
+        ) + ';' + places.joinToString(",") + ';' + countries.joinToString(",") + '\n'
     }
 
     fun toReadableString(context: Context): String {
@@ -324,8 +308,7 @@ class Summit(
             context.getString(
                 R.string.name
             )
-        }: ${name}, " +
-                "${context.getString(R.string.type)}: $sportType, ${elevationData.elevationGain} hm, $kilometers km"
+        }: ${name}, " + "${context.getString(R.string.type)}: $sportType, ${elevationData.elevationGain} hm, $kilometers km"
     }
 
     fun getConnectedEntryString(context: Context): String {
@@ -417,8 +400,7 @@ class Summit(
         return if (latLngLocal != null && hasGpsTrack()) {
             boundingBox.contains(
                 GeoPoint(
-                    latLngLocal.latitude,
-                    latLngLocal.longitude
+                    latLngLocal.latitude, latLngLocal.longitude
                 )
             ) || trackBoundingBox?.intersects(boundingBox) == true
         } else {
@@ -427,21 +409,20 @@ class Summit(
     }
 
     fun updateSegmentInfo(segments: List<Segment>) {
-        val segmentsForSummit =
-            segments.filter { summit ->
-                summit.segmentEntries
-                    .any { entry -> entry.activityId == this.activityId }
-            }
+        val segmentsForSummit = segments.filter { summit ->
+            summit.segmentEntries.any { entry -> entry.activityId == this.activityId }
+        }
         if (segmentsForSummit.isNotEmpty()) {
             val list = mutableListOf<Triple<SegmentEntry, SegmentDetails, Int>>()
             segmentsForSummit.forEach { segment ->
                 segment.segmentEntries.sortBy { entry -> entry.duration }
-                val relevantEntries = segment.segmentEntries
-                    .filter { entry -> entry.activityId == this.activityId }
+                val relevantEntries =
+                    segment.segmentEntries.filter { entry -> entry.activityId == this.activityId }
                 relevantEntries.forEach { segmentEntry ->
                     list.add(
                         Triple(
-                            segmentEntry, segment.segmentDetails,
+                            segmentEntry,
+                            segment.segmentDetails,
                             segment.segmentEntries.indexOf(segmentEntry) + 1
                         )
                     )
@@ -460,13 +441,7 @@ class Summit(
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
         val that = other as Summit
-        return that.kilometers == kilometers &&
-                that.getDateAsString() == getDateAsString() &&
-                name == that.name &&
-                sportType == that.sportType &&
-                velocityData.maxVelocity == that.velocityData.maxVelocity &&
-                elevationData.elevationGain == that.elevationData.elevationGain &&
-                elevationData.maxElevation == that.elevationData.maxElevation
+        return that.kilometers == kilometers && that.getDateAsString() == getDateAsString() && name == that.name && sportType == that.sportType && velocityData.maxVelocity == that.velocityData.maxVelocity && elevationData.elevationGain == that.elevationData.elevationGain && elevationData.maxElevation == that.elevationData.maxElevation
     }
 
     override fun equals(other: Any?): Boolean {
@@ -558,32 +533,25 @@ class Summit(
             val elevation = if (splitLine[10].trim() != "") splitLine[10].toInt() else 0
             val elevationData = ElevationData.parse(splitLine[6].split(","), elevation)
             val sportType = splitLine[2].let { SportType.valueOf(it) }
-            val km: Double =
-                (if (splitLine[7].trim() != "") splitLine[7].toDouble() else 0.0)
-            val topSpeed: Double =
-                (if (splitLine[9].trim() != "") splitLine[9].toDouble() else 0.0)
+            val km: Double = (if (splitLine[7].trim() != "") splitLine[7].toDouble() else 0.0)
+            val topSpeed: Double = (if (splitLine[9].trim() != "") splitLine[9].toDouble() else 0.0)
             val countries = splitLine[3].split(",")
             val places = splitLine[4].split(",")
             val participantsAndEquipments = splitLine[13].split(",")
             val activityId =
                 if (splitLine[14].trim() != "") splitLine[14].toLong() else System.currentTimeMillis()
             val garminData = getGarminData(splitLine)
-            val latLng =
-                if (splitLine[11].trim() != "" && splitLine[12].trim() != "") {
-                    TrackPoint
-                        .Builder()
-                        .setLatitude(splitLine[11].toDouble())
-                        .setLongitude(splitLine[12].toDouble())
-                        .build()
-                } else null
-            val isFavoriteAndOrPeak =
-                (if (splitLine.size == NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY) {
-                    splitLine[27]
-                } else (if (splitLine.size == NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY) {
-                    splitLine[15]
-                } else {
-                    splitLine[29]
-                })).split(",")
+            val latLng = if (splitLine[11].trim() != "" && splitLine[12].trim() != "") {
+                TrackPoint.Builder().setLatitude(splitLine[11].toDouble())
+                    .setLongitude(splitLine[12].toDouble()).build()
+            } else null
+            val isFavoriteAndOrPeak = (if (splitLine.size == NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY) {
+                splitLine[27]
+            } else (if (splitLine.size == NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY) {
+                splitLine[15]
+            } else {
+                splitLine[29]
+            })).split(",")
             val isFavorite =
                 if (isFavoriteAndOrPeak.isEmpty()) false else isFavoriteAndOrPeak[0] == "1"
             val isPeak = if (isFavoriteAndOrPeak.size < 2) false else isFavoriteAndOrPeak[1] == "1"
@@ -600,7 +568,8 @@ class Summit(
                 elevationData,
                 km,
                 VelocityData.parse(splitLine[8].split(","), topSpeed),
-                latLng?.latitude, latLng?.longitude,
+                latLng?.latitude,
+                latLng?.longitude,
                 isFavorite = isFavorite,
                 isPeak = isPeak,
                 garminData = garminData,
@@ -630,7 +599,9 @@ class Summit(
                 if (splitLine.size == 30) {
                     return GarminData(
                         splitLine[15].split(",") as MutableList<String>,
-                        splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
+                        splitLine[16].toFloat(),
+                        splitLine[17].toFloat(),
+                        splitLine[18].toFloat(),
                         PowerData(
                             splitLine[19].toFloat(),
                             splitLine[20].toFloat(),
@@ -651,18 +622,28 @@ class Summit(
                             0,
                             0
                         ),
-                        0, 0f,
-                        splitLine[24].toFloat(), splitLine[25].toFloat(),
-                        splitLine[26].toFloat(), splitLine[27].toFloat(), splitLine[28].toFloat()
+                        0,
+                        0f,
+                        splitLine[24].toFloat(),
+                        splitLine[25].toFloat(),
+                        splitLine[26].toFloat(),
+                        splitLine[27].toFloat(),
+                        splitLine[28].toFloat()
                     )
                 } else {
                     return GarminData(
                         splitLine[15].split(",") as MutableList<String>,
-                        splitLine[16].toFloat(), splitLine[17].toFloat(), splitLine[18].toFloat(),
+                        splitLine[16].toFloat(),
+                        splitLine[17].toFloat(),
+                        splitLine[18].toFloat(),
                         PowerData.parse(splitLine[19].split(",")),
-                        splitLine[20].toInt(), splitLine[21].toFloat(),
-                        splitLine[22].toFloat(), splitLine[23].toFloat(),
-                        splitLine[24].toFloat(), splitLine[25].toFloat(), splitLine[26].toFloat()
+                        splitLine[20].toInt(),
+                        splitLine[21].toFloat(),
+                        splitLine[22].toFloat(),
+                        splitLine[23].toFloat(),
+                        splitLine[24].toFloat(),
+                        splitLine[25].toFloat(),
+                        splitLine[26].toFloat()
                     )
                 }
             }
@@ -672,9 +653,7 @@ class Summit(
         private fun checkValidNumberOfElements(splitLine: Array<String>) {
             if (splitLine.size != NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY && splitLine.size != 30 && splitLine.size != NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY) {
                 throw Exception(
-                    "Line ${splitLine.contentToString()} has ${splitLine.size} number " +
-                            "of elements. Expected are $NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY or if no " +
-                            "third party data was added $NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY"
+                    "Line ${splitLine.contentToString()} has ${splitLine.size} number " + "of elements. Expected are $NUMBER_OF_ELEMENTS_WITH_THIRD_PARTY or if no " + "third party data was added $NUMBER_OF_ELEMENTS_WITHOUT_THIRD_PARTY"
                 )
             }
         }
@@ -684,7 +663,7 @@ class Summit(
             val date = splitLine[0]
             try {
                 parseDate(date)
-            } catch (e: ParseException) {
+            } catch (_: ParseException) {
                 throw Exception("Line " + splitLine.contentToString() + " has invalid date " + date)
             }
         }
@@ -699,10 +678,9 @@ class Summit(
         @Throws(Exception::class)
         private fun areNumbersValid(splitLine: Array<String>) {
             try {
-                val elevation =
-                    if (splitLine[10].trim() != "") splitLine[10].toInt() else 0
+                val elevation = if (splitLine[10].trim() != "") splitLine[10].toInt() else 0
                 ElevationData.parse(splitLine[6].split(","), elevation)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 throw Exception("Line " + splitLine.contentToString() + " has no valid value for required parameter height meter.")
             }
         }
@@ -712,7 +690,7 @@ class Summit(
             val sportType = splitLine[2]
             try {
                 SportType.valueOf(sportType)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 throw Exception("Line " + splitLine.contentToString() + " has no valid sport type " + sportType)
             }
         }
@@ -722,47 +700,59 @@ class Summit(
         }
 
         fun getCsvHeadline(resources: Resources): String {
-            return ("${resources.getString(R.string.tour_date)}; " +
-                    "${resources.getString(R.string.name)}; " +
-                    "${resources.getString(R.string.sport_type)}; " +
-                    "${resources.getString(R.string.place_hint)}; " +
-                    "${resources.getString(R.string.country_hint)}; " +
-                    "${resources.getString(R.string.comment_hint)}; " +
-                    "${resources.getString(R.string.elevationGain)}; " +
-                    "${resources.getString(R.string.kilometers_hint)} (${resources.getString(R.string.km)}); " +
-                    "${resources.getString(R.string.duration)} (${resources.getString(R.string.sec)}); " +
-                    "${resources.getString(R.string.top_speed)} (${resources.getString(R.string.kmh)}); " +
-                    "${resources.getString(R.string.top_elevation_hint)} (${resources.getString(R.string.hm)}); " +
-                    "${resources.getString(R.string.latitude)}; " +
-                    "${resources.getString(R.string.longitude)}; " +
-                    "${resources.getString(R.string.participants)}; " +
-                    "activityId; " +
-                    "isFavorite").trimIndent() + "\n"
+            return ("${resources.getString(R.string.tour_date)}; " + "${resources.getString(R.string.name)}; " + "${
+                resources.getString(
+                    R.string.sport_type
+                )
+            }; " + "${resources.getString(R.string.place_hint)}; " + "${resources.getString(R.string.country_hint)}; " + "${
+                resources.getString(
+                    R.string.comment_hint
+                )
+            }; " + "${resources.getString(R.string.elevationGain)}; " + "${resources.getString(R.string.kilometers_hint)} (${
+                resources.getString(
+                    R.string.km
+                )
+            }); " + "${resources.getString(R.string.duration)} (${resources.getString(R.string.sec)}); " + "${
+                resources.getString(
+                    R.string.top_speed
+                )
+            } (${resources.getString(R.string.kmh)}); " + "${resources.getString(R.string.top_elevation_hint)} (${
+                resources.getString(
+                    R.string.hm
+                )
+            }); " + "${resources.getString(R.string.latitude)}; " + "${resources.getString(R.string.longitude)}; " + "${
+                resources.getString(
+                    R.string.participants
+                )
+            }; " + "activityId; " + "isFavorite").trimIndent() + "\n"
         }
 
         fun getCsvDescription(resources: Resources): String {
-            return ("${resources.getString(R.string.required)}; " +
-                    "${resources.getString(R.string.required)}; " +
-                    "${resources.getString(R.string.optional)}; " +
-                    "${resources.getString(R.string.optional)}; " +
-                    "${resources.getString(R.string.optional)}; " +
-                    "${resources.getString(R.string.optional)}; " +
-                    "${resources.getString(R.string.required)}; " +
-                    "${resources.getString(R.string.required)}; " +
-                    "${resources.getString(R.string.optional)}; " +
-                    "${resources.getString(R.string.optional)}; " +
-                    "${resources.getString(R.string.optional)}; " +
-                    "${resources.getString(R.string.optional)}; " +
-                    "${resources.getString(R.string.optional)}; " +
-                    "${resources.getString(R.string.optional)}; " +
-                    "${resources.getString(R.string.optional)}; " +
-                    "${resources.getString(R.string.required)}; ").trimIndent() + "\n"
+            return ("${resources.getString(R.string.required)}; " + "${resources.getString(R.string.required)}; " + "${
+                resources.getString(
+                    R.string.optional
+                )
+            }; " + "${resources.getString(R.string.optional)}; " + "${resources.getString(R.string.optional)}; " + "${
+                resources.getString(
+                    R.string.optional
+                )
+            }; " + "${resources.getString(R.string.required)}; " + "${resources.getString(R.string.required)}; " + "${
+                resources.getString(
+                    R.string.optional
+                )
+            }; " + "${resources.getString(R.string.optional)}; " + "${resources.getString(R.string.optional)}; " + "${
+                resources.getString(
+                    R.string.optional
+                )
+            }; " + "${resources.getString(R.string.optional)}; " + "${resources.getString(R.string.optional)}; " + "${
+                resources.getString(
+                    R.string.optional
+                )
+            }; " + "${resources.getString(R.string.required)}; ").trimIndent() + "\n"
         }
 
         fun parseCalculatedDataFromCsvFileLineAndSave(
-            line: String,
-            summits: MutableList<Summit>,
-            saveSummit: (Boolean, Summit) -> Unit
+            line: String, summits: MutableList<Summit>, saveSummit: (Boolean, Summit) -> Unit
         ): Boolean {
             val activityId = line.split(";").first().toLong()
             val summit = summits.find { it.activityId == activityId }
@@ -789,10 +779,7 @@ class Summit(
             val summit = Summit()
             SummitEntityParser.entries.forEach {
                 it.updateSummit(
-                    summit,
-                    jsonObject,
-                    parentJsonObject,
-                    jsonObjectForActivityId
+                    summit, jsonObject, parentJsonObject, jsonObjectForActivityId
                 )
             }
             return summit
@@ -816,27 +803,23 @@ enum class SummitEntityParser(
     Date({ summit, json, _, _ ->
         val date = try {
             SimpleDateFormat(
-                DATETIME_FORMAT_SIMPLE,
-                Locale.ENGLISH
+                DATETIME_FORMAT_SIMPLE, Locale.ENGLISH
             ).parse(json.getAsJsonPrimitive("startTimeLocal").asString)
         } catch (_: ParseException) {
             SimpleDateFormat(
-                DATETIME_FORMAT_COMPLEX,
-                Locale.ENGLISH
+                DATETIME_FORMAT_COMPLEX, Locale.ENGLISH
             ).parse(json.getAsJsonPrimitive("startTimeLocal").asString)
         }
         summit.date = date ?: Date()
     }),
     SportType({ summit, json, _, jsonObjectForActivityId ->
-        summit.sportType =
-            (if (json.has("activityType")) {
-                parseSportType(json["activityType"].asJsonObject)
-            } else if (jsonObjectForActivityId != null) {
-                parseSportType(jsonObjectForActivityId["activityTypeDTO"].asJsonObject)
-            } else {
-                de.drtobiasprinz.summitbook.db.entities.SportType.Other
-            }
-                    )
+        summit.sportType = (if (json.has("activityType")) {
+            parseSportType(json["activityType"].asJsonObject)
+        } else if (jsonObjectForActivityId != null) {
+            parseSportType(jsonObjectForActivityId["activityTypeDTO"].asJsonObject)
+        } else {
+            Other
+        })
     }),
     ActivityName({ summit, json, _, _ ->
         summit.name = if (json.has("activityName")) json["activityName"].asString else ""
@@ -848,19 +831,17 @@ enum class SummitEntityParser(
         summit.velocityData = VelocityData.parseFromGarminJson(json)
     }),
     GarminAdditionalData({ summit, json, parentJsonObject, jsonObjectForActivityId ->
-        val activityIds: MutableList<String> =
-            mutableListOf(
-                if (jsonObjectForActivityId != null && jsonObjectForActivityId.has("activityId")) {
-                    jsonObjectForActivityId["activityId"].asString
-                } else {
-                    json["activityId"].asString
-                }
-            )
+        val activityIds: MutableList<String> = mutableListOf(
+            if (jsonObjectForActivityId != null && jsonObjectForActivityId.has("activityId")) {
+                jsonObjectForActivityId["activityId"].asString
+            } else {
+                json["activityId"].asString
+            }
+        )
         if (json.has("childIds")) {
             activityIds.addAll(json["childIds"].asJsonArray.map { it.asString })
         }
-        val exerciseSet =
-            File(activitiesDir, "activity_${activityIds[0]}_exercise_set.json")
+        val exerciseSet = File(activitiesDir, "activity_${activityIds[0]}_exercise_set.json")
         val gsonExerciseSet = if (exerciseSet.exists()) {
             com.google.gson.JsonParser.parseString(exerciseSet.readText()) as JsonObject
         } else {
@@ -871,14 +852,13 @@ enum class SummitEntityParser(
         summit.garminData = garminData
     }),
     Distance({ summit, json, _, _ ->
-        summit.kilometers =
-            roundToTwoDigits(
-                convertMeterToKm(
-                    getJsonObjectEntryNotNull(
-                        json, "distance"
-                    ).toDouble()
-                )
+        summit.kilometers = roundToTwoDigits(
+            convertMeterToKm(
+                getJsonObjectEntryNotNull(
+                    json, "distance"
+                ).toDouble()
             )
+        )
     }),
     Duration({ summit, json, _, _ ->
         summit.duration =

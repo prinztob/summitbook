@@ -21,7 +21,7 @@ class GpsUtils {
             return location1.distanceTo(location2)
         }
 
-        private fun getLocationFromTrackPoint(trackPoint: TrackPoint): Location {
+        fun getLocationFromTrackPoint(trackPoint: TrackPoint): Location {
             val location = Location(trackPoint.name)
             location.latitude = trackPoint.latitude
             location.longitude = trackPoint.longitude

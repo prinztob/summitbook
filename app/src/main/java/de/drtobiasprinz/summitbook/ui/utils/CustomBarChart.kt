@@ -14,7 +14,11 @@ open class CustomBarChart : CombinedChart {
 
     constructor(context: Context?) : super(context)
     constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
-    constructor(context: Context?, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle)
+    constructor(context: Context?, attrs: AttributeSet?, defStyle: Int) : super(
+        context,
+        attrs,
+        defStyle
+    )
 
     override fun init() {
         super.init()
@@ -27,13 +31,17 @@ open class CustomBarChart : CombinedChart {
 
     override fun onDraw(canvas: Canvas) {
         val limitLines = mAxisLeft.limitLines
-        if (limitLines == null || limitLines.size != 1) {
-            super.onDraw(canvas)
-        } else {
-            val l1 = limitLines[0]
-            drawRect(lowerYAxisSafeZonePaint, 0f, l1.limit, canvas)
-            drawRect(upperYAxisSafeZonePaint, l1.limit, l1.limit * 50, canvas)
-            super.onDraw(canvas)
+        try {
+            if (limitLines == null || limitLines.size != 1) {
+                super.onDraw(canvas)
+            } else {
+                val l1 = limitLines[0]
+                drawRect(lowerYAxisSafeZonePaint, 0f, l1.limit, canvas)
+                drawRect(upperYAxisSafeZonePaint, l1.limit, l1.limit * 50, canvas)
+                super.onDraw(canvas)
+            }
+        } catch (_: ArrayIndexOutOfBoundsException) {
+            //DO NOTHING
         }
     }
 
@@ -42,7 +50,15 @@ open class CustomBarChart : CombinedChart {
         pts[1] = lowerLimit
         pts[3] = upperLimit
         mLeftAxisTransformer.pointValuesToPixel(pts)
-        paint?.let { canvas.drawRect(mViewPortHandler.contentLeft(), pts[1], mViewPortHandler.contentRight(), pts[3], it) }
+        paint?.let {
+            canvas.drawRect(
+                mViewPortHandler.contentLeft(),
+                pts[1],
+                mViewPortHandler.contentRight(),
+                pts[3],
+                it
+            )
+        }
     }
 
     fun setSafeZoneColor(lowerColor: Int, upperColor: Int) {

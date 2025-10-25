@@ -2,7 +2,6 @@ package de.drtobiasprinz.summitbook.models
 
 import android.content.Context
 import android.graphics.*
-import android.graphics.drawable.BitmapDrawable
 import android.util.Log
 import android.view.View
 import android.widget.TextView
@@ -39,9 +38,15 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToLong
 import kotlin.system.measureTimeMillis
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.graphics.createBitmap
 
 
-class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPath: Path? = null, private val yamlExtensionsFile: File? = null) {
+class GpsTrack(
+    private val gpsTrackPath: Path,
+    private val simplifiedGpsTrackPath: Path? = null,
+    private val yamlExtensionsFile: File? = null
+) {
     var osMapRoute: Polyline? = null
     var isShownOnMap: Boolean = false
     var trackGeoPoints: MutableList<GeoPoint> = mutableListOf()
@@ -53,8 +58,11 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     private var maxForColorCoding = 0f
 
     fun addGpsTrack(
-        mMapView: MapView?, selectedCustomizeTrackItem: TrackColor = TrackColor.None,
-        color: Int = COLOR_POLYLINE_STATIC, rootView: View? = null, summit: Summit? = null
+        mMapView: MapView?,
+        selectedCustomizeTrackItem: TrackColor = TrackColor.None,
+        color: Int = COLOR_POLYLINE_STATIC,
+        rootView: View? = null,
+        summit: Summit? = null
     ) {
         try {
             if (osMapRoute != null) {
@@ -81,10 +89,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                             textView.visibility = View.GONE
                         } else {
                             setTextForDouble(
-                                trackPoint,
-                                textView,
-                                selectedCustomizeTrackItem,
-                                rootView.context
+                                trackPoint, textView, selectedCustomizeTrackItem, rootView.context
                             )
                         }
                     } else {
@@ -92,7 +97,8 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                     }
                 } else if (mMapView != null && summit != null) {
                     Toast.makeText(
-                        mMapView.context, "${summit.getDateAsString()} ${summit.name}",
+                        mMapView.context,
+                        "${summit.getDateAsString()} ${summit.name}",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -135,13 +141,11 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
 
     private fun setUsedPoints(f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?) {
         usedTrackPoints = trackPoints.filter { f(it) != null }.toMutableList()
-        usedTrackGeoPoints =
-            usedTrackPoints.map {
-                GeoPoint(
-                    it.first.latitude,
-                    it.first.longitude
-                )
-            } as MutableList<GeoPoint>
+        usedTrackGeoPoints = usedTrackPoints.map {
+            GeoPoint(
+                it.first.latitude, it.first.longitude
+            )
+        } as MutableList<GeoPoint>
     }
 
 
@@ -162,16 +166,11 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             textView.text =
                 String.format(Locale.US, "%.${trackColor.digits}f %s", value, trackColor.unit)
             val fraction = (value - minForColorCoding) / (maxForColorCoding - minForColorCoding)
-            val rectangle = BitmapDrawable(
-                context.resources,
-                drawRectangle(
-                    interpolateColor(
-                        trackColor.minColor,
-                        trackColor.maxColor,
-                        fraction.toFloat()
-                    )
+            val rectangle = drawRectangle(
+                interpolateColor(
+                    trackColor.minColor, trackColor.maxColor, fraction.toFloat()
                 )
-            )
+            ).toDrawable(context.resources)
             textView.setCompoundDrawablesRelativeWithIntrinsicBounds(rectangle, null, null, null)
         } else {
             textView.visibility = View.GONE
@@ -180,11 +179,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
 
     private fun drawRectangle(color: Int): Bitmap {
         val radius = 25f
-        val bitmap = Bitmap.createBitmap(
-            (radius * 2).toInt(),
-            (radius * 2).toInt(),
-            Bitmap.Config.ARGB_8888
-        )
+        val bitmap = createBitmap((radius * 2).toInt(), (radius * 2).toInt())
         val canvas = Canvas(bitmap)
         val paint = Paint().apply {
             strokeWidth = 3f
@@ -212,9 +207,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             )
             osMapRoute?.outlinePaintLists?.add(
                 PolychromaticPaintList(
-                    paintBorder,
-                    attributeColorList,
-                    false
+                    paintBorder, attributeColorList, false
                 )
             )
         }
@@ -241,8 +234,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         val textPaint1: Paint = getTextPaint()
         val borderPaint = getStrokePaint(COLOR_BACKGROUND, 2f)
         return MilestoneManager(
-            MilestoneMeterDistanceLister(1000.0),
-            object : MilestoneDisplayer(0.0, false) {
+            MilestoneMeterDistanceLister(1000.0), object : MilestoneDisplayer(0.0, false) {
                 override fun draw(pCanvas: Canvas, pParameter: Any) {
                     val meters = pParameter as Double
                     val kilometers = (meters / 1000).roundToLong().toInt()
@@ -259,8 +251,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                     )
                     pCanvas.drawCircle(0f, 0f, backgroundRadius + 1, borderPaint)
                 }
-            }
-        )
+            })
     }
 
     private fun getHalfKilometerManager(): MilestoneManager {
@@ -280,8 +271,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                     }
                     super.draw(pCanvas, pParameter)
                 }
-            }
-        )
+            })
     }
 
     private fun getStrokePaint(pColor: Int, pWidth: Float): Paint {
@@ -317,17 +307,14 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         Log.i("GpxTrack", "Parsing took $time")
         trackGeoPoints = calculateGeoPoints()
 
-        val isDistancesIncorrect =
-            trackPoints.isEmpty() || trackPoints.mapIndexed { i, e ->
-                if (i == 0) {
-                    false
-                } else {
-                    (trackPoints[i - 1].second.distance ?: 0.0) - (e.second.distance ?: 0.0) > 0
-                }
-            }.contains(true)
-        if (trackPoints.isNotEmpty() &&
-            (trackPoints.first().second.distance == null || isDistancesIncorrect)
-        ) {
+        val isDistancesIncorrect = trackPoints.isEmpty() || trackPoints.mapIndexed { i, e ->
+            if (i == 0) {
+                false
+            } else {
+                (trackPoints[i - 1].second.distance ?: 0.0) - (e.second.distance ?: 0.0) > 0
+            }
+        }.contains(true)
+        if (trackPoints.isNotEmpty() && (trackPoints.first().second.distance == null || isDistancesIncorrect)) {
             setDistance()
         }
         if (trackPoints.isEmpty() && deleteEmptyTrack) {
@@ -350,8 +337,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
                 if (extensions.size == trackPoints.size) {
                     return trackPoints.mapIndexed { index, trackPoint ->
                         Pair(
-                            trackPoint,
-                            extensions[index]
+                            trackPoint, extensions[index]
                         )
                     }
                 }
@@ -364,9 +350,7 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
     private fun calculateGeoPoints(): MutableList<GeoPoint> {
         return trackPoints.map {
             GeoPoint(
-                it.first.latitude,
-                it.first.longitude,
-                it.first.elevation ?: 0.0
+                it.first.latitude, it.first.longitude, it.first.elevation ?: 0.0
             )
         } as MutableList<GeoPoint>
     }
@@ -377,19 +361,20 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
         if (yamlExtensionsFile?.exists() == true) {
             try {
                 val timeYaml = measureTimeMillis {
-                    pointExtensionFromYaml =
-                        yamlDefault.decodeFromString(
-                            ExtensionsFromYaml.serializer(),
-                            yamlExtensionsFile.readText()
-                        )
+                    pointExtensionFromYaml = yamlDefault.decodeFromString(
+                        ExtensionsFromYaml.serializer(), yamlExtensionsFile.readText()
+                    )
                 }
                 Log.i(
                     "YAML",
-                    "Successful loaded in $timeYaml with ${pointExtensionFromYaml.extensions.size} points."
+                    "Successful loaded in $timeYaml ms with ${pointExtensionFromYaml.extensions.size} points."
                 )
             } catch (ex: YamlDecodingException) {
                 yamlExtensionsFile.delete()
-                Log.w("YAML", "Could not load $yamlExtensionsFile because an error occurred: ${ex.message}")
+                Log.w(
+                    "YAML",
+                    "Could not load $yamlExtensionsFile because an error occurred: ${ex.message}"
+                )
             }
 
         }
@@ -408,13 +393,11 @@ class GpsTrack(private val gpsTrackPath: Path, private val simplifiedGpsTrackPat
             } else {
                 val distance = trackPoints[i - 1].second.distance
                 if (distance != null) {
-                    trackPoint.second.distance =
-                        distance + abs(
-                            getDistance(
-                                trackPoint.first,
-                                trackPoints[i - 1].first
-                            )
-                        ).toDouble()
+                    trackPoint.second.distance = distance + abs(
+                        getDistance(
+                            trackPoint.first, trackPoints[i - 1].first
+                        )
+                    ).toDouble()
                 }
             }
         }
@@ -555,5 +538,7 @@ data class ExtensionFromYaml(
     val cadence: Int? = 0,
     val slope: Double? = 0.0,
     val speed: Double? = 0.0,
-    val verticalVelocity: Double? = 0.0
+    val verticalVelocity: Double? = 0.0,
+    var surface: Surface = Surface.UNKNOWN,
+    var roadType: RoadType = RoadType.UNKNOWN
 )

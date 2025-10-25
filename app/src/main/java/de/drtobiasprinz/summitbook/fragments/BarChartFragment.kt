@@ -60,7 +60,7 @@ class BarChartFragment : Fragment() {
 
     private var selectedXAxisSpinnerEntry: BarChartXAxisSelector = BarChartXAxisSelector.DateByMonth
     private var selectedYAxisSpinnerEntry: BarChartYAxisSelector = BarChartYAxisSelector.TotalActivities
-    private var selectedZAxisSpinnerEntry: BarChartZAxisSelector = BarChartZAxisSelector.SportGroup
+    private var selectedZAxisSpinnerEntry: BarChartZAxisSelector = BarChartZAxisSelector.PerSportGroup
     private var indoorHeightMeterPercent = 0
     private var selectedXAxisSpinnerMonth: Int = 0
     private var barChartEntries: MutableList<BarEntry?> = mutableListOf()
@@ -79,16 +79,19 @@ class BarChartFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentBarChartBinding.inflate(layoutInflater, container, false)
+        binding.loading.visibility = View.VISIBLE
+        binding.barChart.visibility = View.GONE
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
         fillDateSpinner()
         binding.apply {
             viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
-                binding.loading.visibility = View.VISIBLE
-                binding.barChart.visibility = View.GONE
                 itData.data?.let { summits ->
                     if (summits.isNotEmpty()) {
                         update(summits)
+                    } else {
+                        binding.loading.visibility = View.GONE
+                        binding.barChart.visibility = View.GONE
                     }
                 }
             }

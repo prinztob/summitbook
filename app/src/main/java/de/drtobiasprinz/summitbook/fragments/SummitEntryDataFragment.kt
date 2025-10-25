@@ -59,8 +59,7 @@ class SummitEntryDataFragment : Fragment() {
                     setBaseData(summitToView)
                     pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
                         summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(
-                            summitsListData,
-                            summitToView
+                            summitsListData, summitToView
                         )
                         summitsListData.data.let { summits ->
                             if (summits != null) {
@@ -71,25 +70,23 @@ class SummitEntryDataFragment : Fragment() {
                                         binding.summitNameToCompare.visibility = View.GONE
                                     } else {
                                         prepareCompareAutoComplete(
-                                            summitToView,
-                                            summitToCompare.data
+                                            summitToView, summitToCompare.data
                                         )
                                     }
                                     setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
-                                        summitToView,
-                                        summitToCompare.data
+                                        summitToView, summitToCompare.data
                                     )
                                     setCircleBeforeTextForAllTextFields(summitToView, extrema)
                                     setAdditionalSpeedData(
-                                        summitToView,
-                                        extrema,
-                                        summitToCompare.data
+                                        summitToView, extrema, summitToCompare.data
+                                    )
+                                    setDistancesPerSurfacesAndRoadType(
+                                        summitToView, summitToCompare.data
                                     )
                                     setChipsText(
                                         R.id.places,
                                         summitToView.getPlacesWithConnectedEntryString(
-                                            requireContext(),
-                                            summits
+                                            requireContext(), summits
                                         ),
                                         R.drawable.outline_landscape_2_off_24,
                                         R.drawable.outline_landscape_2_24,
@@ -102,6 +99,76 @@ class SummitEntryDataFragment : Fragment() {
             }
         }
         return binding.root
+    }
+
+    private fun setDistancesPerSurfacesAndRoadType(summitToView: Summit, summitToCompare: Summit?) {
+        TextField.entries.filter { it.group == TextFieldGroup.DistancePerSurface }.forEach {
+            setTextOnlyForCurrentSummit(it, summitToView, View.GONE)
+        }
+        if (summitToView.distancePerSurface.isNotEmpty() && summitToView.distancePerSurface.map { it.value }
+                .toSet() != setOf(0)) {
+            binding.expandSurface.visibility = View.VISIBLE
+            binding.expandSurface.setOnClickListener {
+                if (binding.expandSurface.text == getString(R.string.road_surface)) {
+                    binding.expandSurface.text = getString(R.string.road_surface_close)
+                    binding.expandSurface.setCompoundDrawablesWithIntrinsicBounds(
+                        R.drawable.ic_baseline_expand_less_24, 0, 0, 0
+                    )
+                    setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                        summitToView,
+                        summitToCompare,
+                        textFieldGroup = TextFieldGroup.DistancePerSurface
+                    )
+                } else {
+                    binding.expandSurface.text = getString(R.string.road_surface)
+                    binding.expandSurface.setCompoundDrawablesWithIntrinsicBounds(
+                        R.drawable.ic_baseline_expand_more_24, 0, 0, 0
+                    )
+                    setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                        summitToView,
+                        summitToCompare,
+                        textFieldGroup = TextFieldGroup.DistancePerSurface,
+                        visibility = View.GONE
+                    )
+                }
+            }
+        } else {
+            binding.expandSurface.visibility = View.GONE
+        }
+
+        TextField.entries.filter { it.group == TextFieldGroup.DistancePerRoadType }.forEach {
+            setTextOnlyForCurrentSummit(it, summitToView, View.GONE)
+        }
+        if (summitToView.distancePerRoadType.isNotEmpty() && summitToView.distancePerRoadType.map { it.value }
+                .toSet() != setOf(0)) {
+            binding.expandRoadType.visibility = View.VISIBLE
+            binding.expandRoadType.setOnClickListener {
+                if (binding.expandRoadType.text == getString(R.string.road_type)) {
+                    binding.expandRoadType.text = getString(R.string.road_type_close)
+                    binding.expandRoadType.setCompoundDrawablesWithIntrinsicBounds(
+                        R.drawable.ic_baseline_expand_less_24, 0, 0, 0
+                    )
+                    setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                        summitToView,
+                        summitToCompare,
+                        textFieldGroup = TextFieldGroup.DistancePerRoadType
+                    )
+                } else {
+                    binding.expandRoadType.text = getString(R.string.road_type)
+                    binding.expandRoadType.setCompoundDrawablesWithIntrinsicBounds(
+                        R.drawable.ic_baseline_expand_more_24, 0, 0, 0
+                    )
+                    setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
+                        summitToView,
+                        summitToCompare,
+                        textFieldGroup = TextFieldGroup.DistancePerRoadType,
+                        visibility = View.GONE
+                    )
+                }
+            }
+        } else {
+            binding.expandRoadType.visibility = View.GONE
+        }
     }
 
     private fun setBaseData(
@@ -134,10 +201,7 @@ class SummitEntryDataFragment : Fragment() {
     ) {
         TextField.entries.filter { it.group == textFieldGroup }.forEach {
             setTextForCurrentSummitAndCompareWithSummit(
-                it,
-                summitToView,
-                summitToCompare,
-                visibility
+                it, summitToView, summitToCompare, visibility
             )
         }
     }
@@ -153,24 +217,18 @@ class SummitEntryDataFragment : Fragment() {
     }
 
     private fun setAdditionalSpeedData(
-        summitToView: Summit,
-        extrema: ExtremaValuesSummits?,
-        summitToCompare: Summit?
+        summitToView: Summit, extrema: ExtremaValuesSummits?, summitToCompare: Summit?
     ) {
-        TextField.entries.filter { it.group == TextFieldGroup.AdditionalSpeedData }
-            .forEach {
-                setTextOnlyForCurrentSummit(it, summitToView, View.GONE)
-            }
+        TextField.entries.filter { it.group == TextFieldGroup.AdditionalSpeedData }.forEach {
+            setTextOnlyForCurrentSummit(it, summitToView, View.GONE)
+        }
         if (summitToView.velocityData.hasAdditionalData()) {
             binding.expandMoreSpeedData.visibility = View.VISIBLE
             binding.expandMoreSpeedData.setOnClickListener {
                 if (binding.expandMoreSpeedData.text == getString(R.string.more_speed)) {
                     binding.expandMoreSpeedData.text = getString(R.string.less_speed)
                     binding.expandMoreSpeedData.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.ic_baseline_expand_less_24,
-                        0,
-                        0,
-                        0
+                        R.drawable.ic_baseline_expand_less_24, 0, 0, 0
                     )
                     setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
                         summitToView,
@@ -178,17 +236,12 @@ class SummitEntryDataFragment : Fragment() {
                         textFieldGroup = TextFieldGroup.AdditionalSpeedData
                     )
                     setCircleBeforeTextForAllTextFields(
-                        summitToView,
-                        extrema,
-                        textFieldGroup = TextFieldGroup.AdditionalSpeedData
+                        summitToView, extrema, textFieldGroup = TextFieldGroup.AdditionalSpeedData
                     )
                 } else {
                     binding.expandMoreSpeedData.text = getString(R.string.more_speed)
                     binding.expandMoreSpeedData.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.ic_baseline_expand_more_24,
-                        0,
-                        0,
-                        0
+                        R.drawable.ic_baseline_expand_more_24, 0, 0, 0
                     )
                     setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
                         summitToView,
@@ -217,10 +270,7 @@ class SummitEntryDataFragment : Fragment() {
         binding.summitNameToCompare.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
-                    adapterView: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long
+                    adapterView: AdapterView<*>?, view: View?, position: Int, id: Long
                 ) {
                     if (items[position] == getString(R.string.none)) {
                         pageViewModel?.setSummitToCompareToNull()
@@ -246,8 +296,7 @@ class SummitEntryDataFragment : Fragment() {
     private fun getSummitsSuggestions(summit: Summit): List<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
         val summitsWithoutSimilarName =
-            summitsToCompare.filter { it.name != summit.name }
-                .sortedByDescending { it.date }
+            summitsToCompare.filter { it.name != summit.name }.sortedByDescending { it.date }
         val summitsWithSimilarName =
             summitsToCompare.filter { it.name == summit.name && it != summit }
                 .sortedByDescending { it.date }
@@ -270,9 +319,7 @@ class SummitEntryDataFragment : Fragment() {
     }
 
     private fun setTextOnlyForCurrentSummit(
-        textField: TextField,
-        summit: Summit,
-        visibility: Int = View.VISIBLE
+        textField: TextField, summit: Summit, visibility: Int = View.VISIBLE
     ) {
         val value =
             textField.getValue(summit) ?: (if (textField.getValue(summit) is Int) 0 else 0.0)
@@ -323,12 +370,12 @@ class SummitEntryDataFragment : Fragment() {
             textField.valueTextView(binding).visibility = visibility
             if (textField.toHHms) {
                 val valueInMs = (value.toDouble() * 1000.0).toLong()
-                val valueInMsCompareSummit = ((valueToCompare?.toDouble()
-                    ?: 0.0) * 1000.0).toLong()
+                val valueInMsCompareSummit = ((valueToCompare?.toDouble() ?: 0.0) * 1000.0).toLong()
                 if (valueInMsCompareSummit > 0) {
                     textField.valueTextView(binding).text = String.format(
                         Locale.getDefault(),
-                        "%02d:%02d (%02d:%02d)", TimeUnit.MILLISECONDS.toHours(valueInMs),
+                        "%02d:%02d (%02d:%02d)",
+                        TimeUnit.MILLISECONDS.toHours(valueInMs),
                         TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
                         TimeUnit.MILLISECONDS.toHours(valueInMsCompareSummit),
                         TimeUnit.MILLISECONDS.toMinutes(valueInMsCompareSummit) % TimeUnit.HOURS.toMinutes(
@@ -347,9 +394,11 @@ class SummitEntryDataFragment : Fragment() {
                 numberFormat.maximumFractionDigits = textField.digits
                 textField.valueTextView(binding).text =
                     if (valueToCompare != null && valueToCompare.toInt() != 0) {
-                        "${numberFormat.format(value.toDouble() * textField.factor)} " +
-                                "(${numberFormat.format(valueToCompare.toDouble() * textField.factor)}) " +
-                                textField.unit
+                        "${numberFormat.format(value.toDouble() * textField.factor)} " + "(${
+                            numberFormat.format(
+                                valueToCompare.toDouble() * textField.factor
+                            )
+                        }) " + textField.unit
                     } else {
                         "${numberFormat.format(value.toDouble() * textField.factor)} ${textField.unit}"
                     }
@@ -358,9 +407,7 @@ class SummitEntryDataFragment : Fragment() {
     }
 
     private fun setCircleBeforeText(
-        textField: TextField,
-        summit: Summit,
-        extrema: ExtremaValuesSummits?
+        textField: TextField, summit: Summit, extrema: ExtremaValuesSummits?
     ) {
         val minSummit = textField.getMinMaxSummit(extrema)?.first
         val maxSummit = textField.getMinMaxSummit(extrema)?.second
@@ -369,8 +416,7 @@ class SummitEntryDataFragment : Fragment() {
         if (abs(value.toDouble() * textField.factor) > 0.01) {
             drawCircleWithIndication(
                 textField.valueTextView(binding),
-                minSummit?.let { textField.getValue(it)?.toDouble() }
-                    ?: 0.0,
+                minSummit?.let { textField.getValue(it)?.toDouble() } ?: 0.0,
                 maxSummit?.let { textField.getValue(it)?.toDouble() },
                 value.toDouble(),
                 textField.reverse
@@ -380,18 +426,12 @@ class SummitEntryDataFragment : Fragment() {
 
 
     private fun drawCircleWithIndication(
-        textView: TextView,
-        min: Double?,
-        max: Double?,
-        value: Double,
-        reverse: Boolean
+        textView: TextView, min: Double?, max: Double?, value: Double, reverse: Boolean
     ) {
         textView.compoundDrawablePadding = 20
         var drawable = R.drawable.filled_circle_white
         if (min != null && max != null) {
-            val percent =
-                if (reverse) (max.toDouble() - value) / (max.toDouble() - min.toDouble()) else
-                    (value - min.toDouble()) / (max.toDouble() - min.toDouble())
+            val percent = if (reverse) (max - value) / (max - min) else (value - min) / (max - min)
             drawable = when (percent) {
                 in 0.0..0.2 -> R.drawable.filled_circle_red
                 in 0.2..0.4 -> R.drawable.filled_circle_orange
@@ -491,27 +531,22 @@ class SummitEntryDataFragment : Fragment() {
         chip.chipIcon =
             if (imageIdActivated != null && entry in MainActivity.peaks.map { it.name }) {
                 ResourcesCompat.getDrawable(
-                    resources,
-                    imageIdActivated,
-                    null
+                    resources, imageIdActivated, null
                 )
             } else {
                 ResourcesCompat.getDrawable(resources, imageIdDefault, null)
             }
         when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
             Configuration.UI_MODE_NIGHT_YES -> {
-                chip.chipIconTint =
-                    ContextCompat.getColorStateList(requireContext(), R.color.white)
+                chip.chipIconTint = ContextCompat.getColorStateList(requireContext(), R.color.white)
             }
 
             Configuration.UI_MODE_NIGHT_NO -> {
-                chip.chipIconTint =
-                    ContextCompat.getColorStateList(requireContext(), R.color.black)
+                chip.chipIconTint = ContextCompat.getColorStateList(requireContext(), R.color.black)
             }
 
             Configuration.UI_MODE_NIGHT_UNDEFINED -> {
-                chip.chipIconTint =
-                    ContextCompat.getColorStateList(requireContext(), R.color.black)
+                chip.chipIconTint = ContextCompat.getColorStateList(requireContext(), R.color.black)
             }
         }
         return chip

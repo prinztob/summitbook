@@ -19,9 +19,11 @@ import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
 import de.drtobiasprinz.summitbook.databinding.FragmentStatisticsBinding
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.models.RoadType
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.models.StatisticEntryDefinitions
+import de.drtobiasprinz.summitbook.models.Surface
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
@@ -126,6 +128,7 @@ class StatisticsFragment : Fragment() {
     ) {
         if (statisticEntry.getTotalActivities() > 0) {
             setSummary(forecasts, summits)
+            setRoadSummary()
             if (extremaValuesSummits != null) {
                 StatisticEntryDefinitions.entries.forEach {
                     setTextViewData(extremaValuesSummits, it)
@@ -140,6 +143,58 @@ class StatisticsFragment : Fragment() {
             )
             setVisibilityForHorizontalScrollViews(extremaValuesSummits)
         }
+    }
+
+    private fun setRoadSummary() {
+        binding.textSurfaceAsphalt.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadSurfaceMeter[Surface.ASPHALT] ?: 0) / 1000)
+        )
+        binding.textSurfaceStonePavement.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadSurfaceMeter[Surface.STONE_PAVEMENT] ?: 0) / 1000)
+        )
+        binding.textSurfaceCompacted.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadSurfaceMeter[Surface.COMPACTED] ?: 0) / 1000)
+        )
+        binding.textSurfaceLoseGround.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadSurfaceMeter[Surface.LOSE_GROUND] ?: 0) / 1000)
+        )
+        binding.textSurfacePath.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadSurfaceMeter[Surface.PATH] ?: 0) / 1000)
+        )
+        binding.textSurfaceUnknown.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadSurfaceMeter[Surface.UNKNOWN] ?: 0) / 1000)
+        )
+
+        binding.textRoadTypeWay.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadTypeMeter[RoadType.WAY] ?: 0) / 1000)
+        )
+        binding.textRoadTypeSideStreet.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadTypeMeter[RoadType.SIDE_STREET] ?: 0) / 1000)
+        )
+        binding.textRoadTypeCountryRoad.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadTypeMeter[RoadType.COUNTRY_ROAD] ?: 0) / 1000)
+        )
+        binding.textRoadTypeCycleWay.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadTypeMeter[RoadType.CYCLE_WAY] ?: 0) / 1000)
+        )
+        binding.textRoadTypeRoad.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadTypeMeter[RoadType.ROAD] ?: 0) / 1000)
+        )
+        binding.textRoadTypeUnknown.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadTypeMeter[RoadType.UNKNOWN] ?: 0) / 1000)
+        )
     }
 
     private fun setSummary(

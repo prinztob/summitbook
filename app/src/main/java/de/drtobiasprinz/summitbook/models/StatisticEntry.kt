@@ -16,6 +16,8 @@ import kotlin.math.roundToInt
 class StatisticEntry {
     private var totalActivities = 0
     private var totalSummits = 0
+    var totalRoadSurfaceMeter: Map<Surface, Int> = emptyMap()
+    var totalRoadTypeMeter: Map<RoadType, Int> = emptyMap()
     private var visitedCountries = 0
     var totalHm = 0
     var totalKm = 0.0
@@ -62,6 +64,16 @@ class StatisticEntry {
                     .filter { it in peaks.map { peak -> peak.name } }
                     .size
                 )
+        totalRoadSurfaceMeter = Surface.entries.associateWith { surface ->
+            filteredSummitEntries.sumOf {
+                it.distancePerSurface[surface] ?: 0
+            }
+        }
+        totalRoadTypeMeter = RoadType.entries.associateWith { roadType ->
+            filteredSummitEntries.sumOf {
+                it.distancePerRoadType[roadType] ?: 0
+            }
+        }
         visitedCountries =
             filteredSummitEntries.flatMap { it.countries }.toSet().filter { it != "" }.size
         totalHm = filteredSummitEntries.sumOf {

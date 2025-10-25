@@ -22,6 +22,12 @@ enum class TrackColor(
     Mileage(R.string.mileage, 1, "km", R.string.mileage, f = { e ->
         e.second.distance
     }),
+    RoadSurface(R.string.road_surface, 9, "", R.string.road_surface, f = { e ->
+        e.second.surface.number
+    }),
+    RoadType(R.string.road_type, 10, "", R.string.road_type, f = { e ->
+        e.second.roadType.number
+    }),
     Elevation(R.string.height_meter_hint,
         2,
         "hm",

@@ -35,7 +35,8 @@ enum class StatisticEntryDefinitions(
         { b -> b.textLongestDurationInfo },
         R.string.value_with_h,
         { e -> e.duration / 3600.0 },
-        1, toHHms = true
+        1,
+        toHHms = true
     ),
     MaxSlope(
         { e -> e.topSlopeMinMax?.second },
@@ -57,7 +58,6 @@ enum class StatisticEntryDefinitions(
         digits = 0
     ),
     MaxVerticalVelocity10Min(
-
         { e -> e.topVerticalVelocity10MinMinMax?.second },
         { b -> b.layoutMaxVerticalVelocity10Min },
         { b -> b.textMaxVerticalVelocity10Min },
@@ -182,24 +182,21 @@ enum class StatisticEntryDefinitions(
         { b -> b.textMostHeightMeter },
         { b -> b.textMostHeightMeterInfo },
         R.string.value_with_m,
-        { e -> e.elevationData.elevationGain.toDouble() }
-    ),
+        { e -> e.elevationData.elevationGain.toDouble() }),
     TopElevation(
         { e -> e.topElevationMinMax?.second },
         { b -> b.layoutHighestPeak },
         { b -> b.textHighestPeak },
         { b -> b.textHighestPeakInfo },
         R.string.value_with_masl,
-        { e -> e.elevationData.maxElevation.toDouble() }
-    ),
+        { e -> e.elevationData.maxElevation.toDouble() }),
     NormPower(
         { e -> e.normPowerMinMax?.second },
         { b -> b.layoutHighestPower },
         { b -> b.textHeighestPower },
         { b -> b.textHeighestPowerInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.normPower?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.normPower?.toDouble() ?: 0.0 }),
     Vo2Max(
         { e -> e.vo2maxMinMax?.second },
         { b -> b.layoutHighestVO2MAX },
@@ -224,144 +221,126 @@ enum class StatisticEntryDefinitions(
         { b -> b.textHeighestPower1sec },
         { b -> b.textHeighestPower1secInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.oneSec?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.oneSec?.toDouble() ?: 0.0 }),
     Power2sec(
         { e -> e.power2sMinMax?.second },
         { b -> b.layoutHighestPower2sec },
         { b -> b.textHeighestPower2sec },
         { b -> b.textHeighestPower2secInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.twoSec?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.twoSec?.toDouble() ?: 0.0 }),
     Power5sec(
         { e -> e.power5sMinMax?.second },
         { b -> b.layoutHighestPower5sec },
         { b -> b.textHeighestPower5sec },
         { b -> b.textHeighestPower5secInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.fiveSec?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.fiveSec?.toDouble() ?: 0.0 }),
     Power10sec(
         { e -> e.power10sMinMax?.second },
         { b -> b.layoutHighestPower10sec },
         { b -> b.textHeighestPower10sec },
         { b -> b.textHeighestPower10secInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.tenSec?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.tenSec?.toDouble() ?: 0.0 }),
     Power20sec(
         { e -> e.power20sMinMax?.second },
         { b -> b.layoutHighestPower20sec },
         { b -> b.textHeighestPower20sec },
         { b -> b.textHeighestPower20secInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.twentySec?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.twentySec?.toDouble() ?: 0.0 }),
     Power30sec(
         { e -> e.power30sMinMax?.second },
         { b -> b.layoutHighestPower30sec },
         { b -> b.textHeighestPower30sec },
         { b -> b.textHeighestPower30secInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.thirtySec?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.thirtySec?.toDouble() ?: 0.0 }),
     Power1min(
         { e -> e.power1minMinMax?.second },
         { b -> b.layoutHighestPower1min },
         { b -> b.textHeighestPower1min },
         { b -> b.textHeighestPower1minInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.oneMin?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.oneMin?.toDouble() ?: 0.0 }),
     Power2min(
         { e -> e.power2minMinMax?.second },
         { b -> b.layoutHighestPower2min },
         { b -> b.textHeighestPower2min },
         { b -> b.textHeighestPower2minInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.twoMin?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.twoMin?.toDouble() ?: 0.0 }),
     Power5min(
         { e -> e.power5minMinMax?.second },
         { b -> b.layoutHighestPower5min },
         { b -> b.textHeighestPower5min },
         { b -> b.textHeighestPower5minInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.fiveMin?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.fiveMin?.toDouble() ?: 0.0 }),
     Power10min(
         { e -> e.power10minMinMax?.second },
         { b -> b.layoutHighestPower10min },
         { b -> b.textHeighestPower10min },
         { b -> b.textHeighestPower10minInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.tenMin?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.tenMin?.toDouble() ?: 0.0 }),
     Power20min(
         { e -> e.power20minMinMax?.second },
         { b -> b.layoutHighestPower20min },
         { b -> b.textHeighestPower20min },
         { b -> b.textHeighestPower20minInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.twentyMin?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.twentyMin?.toDouble() ?: 0.0 }),
     Power30min(
         { e -> e.power30minMinMax?.second },
         { b -> b.layoutHighestPower30min },
         { b -> b.textHeighestPower30min },
         { b -> b.textHeighestPower30minInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.thirtyMin?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.thirtyMin?.toDouble() ?: 0.0 }),
     Power1h(
         { e -> e.power1hMinMax?.second },
         { b -> b.layoutHighestPower1h },
         { b -> b.textHeighestPower1h },
         { b -> b.textHeighestPower1hInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.oneHour?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.oneHour?.toDouble() ?: 0.0 }),
     Power2h(
         { e -> e.power2hMinMax?.second },
         { b -> b.layoutHighestPower2h },
         { b -> b.textHeighestPower2h },
         { b -> b.textHeighestPower2hInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.twoHours?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.twoHours?.toDouble() ?: 0.0 }),
     Power3h(
         { e -> e.power3hMinMax?.second },
         { b -> b.layoutHighestPower3h },
         { b -> b.textHeighestPower3h },
         { b -> b.textHeighestPower3hInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.threeHours?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.threeHours?.toDouble() ?: 0.0 }),
     Power4h(
         { e -> e.power4hMinMax?.second },
         { b -> b.layoutHighestPower4h },
         { b -> b.textHeighestPower4h },
         { b -> b.textHeighestPower4hInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.fourHours?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.fourHours?.toDouble() ?: 0.0 }),
     Power5h(
         { e -> e.power5hMinMax?.second },
         { b -> b.layoutHighestPower5h },
         { b -> b.textHeighestPower5h },
         { b -> b.textHeighestPower5hInfo },
         R.string.value_with_watt,
-        { e -> e.garminData?.power?.fiveHours?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.power?.fiveHours?.toDouble() ?: 0.0 }),
     AverageHR(
         { e -> e.averageHRMinMax?.second },
         { b -> b.layoutHighestAverageHR },
         { b -> b.textHeighestAverageHR },
         { b -> b.textHeighestAverageHRInfo },
         R.string.value_with_bpm,
-        { e -> e.garminData?.averageHR?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.averageHR?.toDouble() ?: 0.0 }),
     Flow(
         { e -> e.flowMinMax?.second },
         { b -> b.layoutHighestFlow },
@@ -378,22 +357,19 @@ enum class StatisticEntryDefinitions(
         { b -> b.textHeighestGrit },
         { b -> b.textHeighestGritInfo },
         R.string.value_only,
-        { e -> e.garminData?.grit?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.grit?.toDouble() ?: 0.0 }),
     TrainingsLoad(
         { e -> e.trainingsLoadMinMax?.second },
         { b -> b.layoutHighestTrainingLoad },
         { b -> b.textHeighestTrainingLoad },
         { b -> b.textHeighestTrainingLoadInfo },
         R.string.value_only,
-        { e -> e.garminData?.trainingLoad?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.trainingLoad?.toDouble() ?: 0.0 }),
     FTP(
         { e -> e.ftpMinMax?.second },
         { b -> b.layoutHighestFTP },
         { b -> b.textHeighestFTP },
         { b -> b.textHeighestFTPInfo },
         R.string.value_only,
-        { e -> e.garminData?.ftp?.toDouble() ?: 0.0 }
-    ),
+        { e -> e.garminData?.ftp?.toDouble() ?: 0.0 }),
 }

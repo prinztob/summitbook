@@ -990,6 +990,398 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/equipmentsHorizontalScrollView" />
 
+                <TextView
+                    android:id="@+id/expand_surface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:clickable="true"
+                    android:padding="1dp"
+                    android:text="@string/road_surface"
+                    android:visibility="gone"
+                    app:drawableStartCompat="@drawable/ic_baseline_expand_more_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/comments" />
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/constraintLayoutSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/expand_surface"
+                    tools:layout_constraintStart_creator="1">
+
+                    <TextView
+                        android:id="@+id/road_surface_asphalt_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_surface_asphalt"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/road_surface_stone_paved_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_surface_stone_paved"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_surface_asphalt_text" />
+
+                    <TextView
+                        android:id="@+id/road_surface_compact_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_surface_compact"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_surface_stone_paved_text" />
+
+                    <TextView
+                        android:id="@+id/road_surface_lose_ground_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_surface_lose_ground"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_surface_compact_text" />
+
+                    <TextView
+                        android:id="@+id/road_surface_path_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_surface_path"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_surface_lose_ground_text" />
+
+                    <TextView
+                        android:id="@+id/road_surface_unknown_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_unknown"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_surface_path_text" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintBottom_toBottomOf="@+id/constraintLayoutSurface"
+                    app:layout_constraintStart_toEndOf="@+id/constraintLayoutSurface"
+                    app:layout_constraintTop_toTopOf="@+id/constraintLayoutSurface"
+                    tools:layout_constraintEnd_creator="1">
+
+                    <TextView
+                        android:id="@+id/road_surface_asphalt"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/road_surface_stone_paved"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_surface_asphalt" />
+
+                    <TextView
+                        android:id="@+id/road_surface_compact"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_surface_stone_paved" />
+
+                    <TextView
+                        android:id="@+id/road_surface_lose_ground"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_surface_compact" />
+
+                    <TextView
+                        android:id="@+id/road_surface_path"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_surface_lose_ground" />
+
+                    <TextView
+                        android:id="@+id/road_surface_unknown"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_surface_path" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+                <TextView
+                    android:id="@+id/expand_road_type"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="20dp"
+                    android:clickable="true"
+                    android:padding="1dp"
+                    android:text="@string/road_type"
+                    android:visibility="gone"
+                    app:drawableStartCompat="@drawable/ic_baseline_expand_more_24"
+                    app:drawableTint="?android:attr/colorControlNormal"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/constraintLayoutSurface" />
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/constraintLayoutRoadType"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/expand_road_type"
+                    tools:layout_constraintStart_creator="1">
+
+                    <TextView
+                        android:id="@+id/road_type_way_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_type_way"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/road_type_side_street_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_type_side_street"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_way_text" />
+
+                    <TextView
+                        android:id="@+id/road_type_country_road_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_type_country_road"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_side_street_text" />
+
+                    <TextView
+                        android:id="@+id/road_type_cycle_way_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_type_cycle_way"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_country_road_text" />
+
+                    <TextView
+                        android:id="@+id/road_type_road_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_type_road"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_cycle_way_text" />
+
+                    <TextView
+                        android:id="@+id/road_type_unknown_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_unknown"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_road_text" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintBottom_toBottomOf="@+id/constraintLayoutRoadType"
+                    app:layout_constraintStart_toEndOf="@+id/constraintLayoutRoadType"
+                    app:layout_constraintTop_toTopOf="@+id/constraintLayoutRoadType"
+                    tools:layout_constraintEnd_creator="1">
+
+                    <TextView
+                        android:id="@+id/road_type_way"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/road_type_side_street"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_way" />
+
+                    <TextView
+                        android:id="@+id/road_type_country_road"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_side_street" />
+
+                    <TextView
+                        android:id="@+id/road_type_cycle_way"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_country_road" />
+
+                    <TextView
+                        android:id="@+id/road_type_road"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_cycle_way" />
+
+                    <TextView
+                        android:id="@+id/road_type_unknown"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_road" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>

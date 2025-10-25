@@ -412,10 +412,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             allSummits.ifEmpty { summitViewFragment.summitsAdapter.differ.currentList }
         fragment.save = { summits, isMerge ->
             binding.loading.visibility = View.VISIBLE
-            binding.loading.tooltipText =
-                getString(
-                    R.string.tool_tip_progress_new_garmin_activities,
-                    summits.joinToString(", ") { it.name })
+            binding.loading.tooltipText = getString(
+                R.string.tool_tip_progress_new_garmin_activities,
+                summits.joinToString(", ") { it.name })
             if (isMerge) {
                 executeDownload(summits)
             } else {
