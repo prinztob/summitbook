@@ -12,23 +12,16 @@ enum class TrackColor(
     val digits: Int = 0,
     val minColor: Int = Color.BLUE,
     val maxColor: Int = Color.RED,
+    val discreteInput: Boolean = false,
     var f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?
 ) {
-    None(R.string.none,
-        0,
-        "",
-        R.string.none,
-        f = { e -> e.first.latitude + e.first.longitude }),
+    None(
+        R.string.none, 0, "", R.string.none, f = { e -> e.first.latitude + e.first.longitude }),
     Mileage(R.string.mileage, 1, "km", R.string.mileage, f = { e ->
         e.second.distance
     }),
-    RoadSurface(R.string.road_surface, 9, "", R.string.road_surface, f = { e ->
-        e.second.surface.number
-    }),
-    RoadType(R.string.road_type, 10, "", R.string.road_type, f = { e ->
-        e.second.roadType.number
-    }),
-    Elevation(R.string.height_meter_hint,
+    Elevation(
+        R.string.height_meter_hint,
         2,
         "hm",
         R.string.height_meter_hint,
@@ -52,23 +45,23 @@ enum class TrackColor(
         e.second.slope
     }),
     VerticalSpeedUp(
-        R.string.vertical_speed_up,
-        8,
-        "m/min",
-        R.string.vertical_speed_profile_label,
-        f = { e ->
+        R.string.vertical_speed_up, 8, "m/min", R.string.vertical_speed_profile_label, f = { e ->
             val v = e.second.verticalVelocity ?: 0.0
             if (v > 0) v.times(60) else 0.0
         }),
     VerticalSpeeddDown(
-        R.string.vertical_speed_down,
-        8,
-        "m/min",
-        R.string.vertical_speed_profile_label,
-        f = { e ->
+        R.string.vertical_speed_down, 8, "m/min", R.string.vertical_speed_profile_label, f = { e ->
             val v = e.second.verticalVelocity ?: 0.0
             if (v < 0) v.times(60) else 0.0
-        });
+        }),
+
+    RoadSurface(
+        R.string.road_surface, 9, "", R.string.road_surface, discreteInput = true, f = { e ->
+            e.second.surface.number
+        }),
+    RoadType(R.string.road_type, 10, "", R.string.road_type, discreteInput = true, f = { e ->
+        e.second.roadType.number
+    });
 
 
     override fun toString(): String {

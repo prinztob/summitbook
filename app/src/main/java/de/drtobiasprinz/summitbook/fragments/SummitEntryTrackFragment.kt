@@ -23,6 +23,9 @@ import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.LegendEntry
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.YAxis
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
@@ -40,6 +43,8 @@ import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryTrackBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
+import de.drtobiasprinz.summitbook.models.RoadType
+import de.drtobiasprinz.summitbook.models.Surface
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
@@ -133,15 +138,31 @@ class SummitEntryTrackFragment : Fragment() {
                                 setGpsTrack(summitToView, useSimplifiedTrack = true)
                             }
                             binding.loadingPanel.visibility = View.GONE
-                            binding.lineChart.visibility = View.VISIBLE
-                            drawChart(summitToView)
-                            updateMap(summitToView, summitToCompare, allSummits)
+                            if (selectedCustomizeTrackItem.discreteInput) {
+                                binding.lineChart.visibility = View.GONE
+                                binding.barChart.visibility = View.VISIBLE
+                                drawBarChart(summitToView)
+                            } else {
+                                binding.lineChart.visibility = View.VISIBLE
+                                binding.barChart.visibility = View.GONE
+                                drawLineChart(summitToView)
+                            }
+                            updateMap(summitToView, summitToCompare, summitsListData.data)
                             lifecycleScope.launch {
                                 withContext(Dispatchers.IO) {
                                     setGpsTrack(summitToView, forceUpdate = true)
                                 }
-                                drawChart(summitToView)
-                                updateMap(summitToView, summitToCompare, allSummits, false)
+                                if (selectedCustomizeTrackItem.discreteInput) {
+                                    drawBarChart(summitToView)
+                                } else {
+                                    drawLineChart(summitToView)
+                                }
+                                updateMap(
+                                    summitToView,
+                                    summitToCompare,
+                                    summitsListData.data,
+                                    false
+                                )
                                 setButtons(summitToView)
                             }
                         }
@@ -349,7 +370,89 @@ class SummitEntryTrackFragment : Fragment() {
         }
     }
 
-    private fun drawChart(summitToView: Summit) {
+    private fun drawBarChart(summitToView: Summit) {
+        if (summitToView.hasGpsTrack()) {
+            val localGpsTrack = gpsTrack
+            if (localGpsTrack != null) {
+                val barChart = binding.barChart
+                val params = barChart.layoutParams
+                params.height = (Resources.getSystem().displayMetrics.heightPixels * 0.2).toInt()
+                barChart.layoutParams = params
+
+                // Calculate distances for each discrete value
+                val trackColor = selectedCustomizeTrackItem
+                val distancesByValue =
+                    summitToView.distancePerSurface.map { (key, value) -> key.number to value / 1000.0 }
+                        .toMap()
+
+                val entries = mutableListOf<BarEntry>()
+                val labels = mutableListOf<String>()
+                val colors = mutableListOf<Int>()
+                var i = 0
+                if (trackColor == TrackColor.RoadType) {
+                    RoadType.entries.forEach { enumEntry ->
+                        val distance = distancesByValue[enumEntry.number] ?: 0.0
+                        if (distance > 0.05) {
+                            entries.add(BarEntry(i.toFloat(), distance.toFloat()))
+                            labels.add(getString(enumEntry.nameId))
+                            colors.add(enumEntry.color)
+                            i += 1
+                        }
+                    }
+                } else if (trackColor == TrackColor.RoadSurface) {
+                    Surface.entries.forEach { enumEntry ->
+                        val distance = distancesByValue[enumEntry.number] ?: 0.0
+                        if (distance > 0.0) {
+                            entries.add(BarEntry(i.toFloat(), distance.toFloat()))
+                            labels.add(getString(enumEntry.nameId))
+                            colors.add(enumEntry.color)
+                            i += 1
+                        }
+                    }
+                }
+
+                if (entries.isNotEmpty()) {
+                    val dataSet = BarDataSet(entries, getString(trackColor.labelId))
+                    dataSet.colors = colors
+                    dataSet.valueTextSize = 12f
+                    dataSet.valueFormatter = object : ValueFormatter() {
+                        override fun getFormattedValue(value: Float): String {
+                            return String.format(
+                                requireContext().resources.configuration.locales[0],
+                                "%.1f km",
+                                value
+                            )
+                        }
+                    }
+
+                    val barData = BarData(dataSet)
+                    barChart.data = barData
+
+                    barChart.axisLeft.isEnabled = false
+                    // Configure X-axis (distance axis)
+                    val xAxis = barChart.xAxis
+                    xAxis.position = XAxis.XAxisPosition.BOTTOM
+                    xAxis.valueFormatter = object : ValueFormatter() {
+                        override fun getFormattedValue(value: Float): String {
+                            val index = value.toInt()
+                            return if (index >= 0 && index < labels.size) labels[index] else ""
+                        }
+                    }
+
+                    barChart.axisRight.isEnabled = false
+                    barChart.description.isEnabled = false
+                    barChart.legend.isEnabled = false
+                    barChart.setFitBars(true)
+                    barChart.invalidate()
+                } else {
+                    barChart.clear()
+                    barChart.setNoDataText(getString(R.string.no_data_available))
+                }
+            }
+        }
+    }
+
+    private fun drawLineChart(summitToView: Summit) {
         if (summitToView.hasGpsTrack()) {
             val localGpsTrack = gpsTrack
             if (localGpsTrack != null) {
@@ -571,7 +674,15 @@ class SummitEntryTrackFragment : Fragment() {
                 summits,
                 calculateBondingBox = !alreadyZoomedOnTrack
             )
-            drawChart(summitToView)
+            if (selectedCustomizeTrackItem.discreteInput) {
+                binding.lineChart.visibility = View.GONE
+                binding.barChart.visibility = View.VISIBLE
+                drawBarChart(summitToView)
+            } else {
+                binding.lineChart.visibility = View.VISIBLE
+                binding.barChart.visibility = View.GONE
+                drawLineChart(summitToView)
+            }
             dialog.dismiss()
         }
 

@@ -476,6 +476,7 @@
     <string name="update_done">Update done and NO new summits found.</string>
     <string name="update_done_new_summits">Update done and new summits found.</string>
     <string name="no_summit">There is no summit for this criteria</string>
+    <string name="no_data_available">No data available</string>
     <string name="floors_climbed">Climbed Floors\n</string>
     <string name="steps">Steps</string>
     <string name="sleep_hours">Sleep Hours</string>

@@ -511,7 +511,7 @@ class SegmentEntryDetailsFragment : Fragment() {
         val maxForColorCoding = (values.maxOrNull() ?: 0.0).toFloat()
         val pointsExists = usedTrackPoints.any { trackColor.f(it) != 0.0 }
         if (pointsExists) {
-            val attributeColorList = GpsTrack.AttitudeColorList(
+            val attributeColorList = GpsTrack.AttitudeColorListContinuos(
                 usedTrackPoints,
                 minForColorCoding,
                 maxForColorCoding,

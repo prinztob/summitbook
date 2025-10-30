@@ -197,14 +197,21 @@ class GpsTrack(
         maxForColorCoding = (values.maxOrNull() ?: 0.0).toFloat()
         val pointsExists = usedTrackPoints.any { trackColor.f(it) != 0.0 }
         if (pointsExists) {
-            val attributeColorList = AttitudeColorList(
-                usedTrackPoints,
-                minForColorCoding,
-                maxForColorCoding,
-                trackColor.minColor,
-                trackColor.maxColor,
-                trackColor.f
-            )
+            val attributeColorList = if (trackColor.discreteInput) {
+                AttitudeColorListDiscrete(
+                    usedTrackPoints,
+                    trackColor,
+                )
+            } else {
+                AttitudeColorListContinuos(
+                    usedTrackPoints,
+                    minForColorCoding,
+                    maxForColorCoding,
+                    trackColor.minColor,
+                    trackColor.maxColor,
+                    trackColor.f
+                )
+            }
             osMapRoute?.outlinePaintLists?.add(
                 PolychromaticPaintList(
                     paintBorder, attributeColorList, false
@@ -404,7 +411,7 @@ class GpsTrack(
     }
 
 
-    fun getTrackGraph(f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?): MutableList<Entry> {
+    fun getTrackGraph(f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?, discreteInput: Boolean = false): MutableList<Entry> {
         if (trackPoints.lastOrNull()?.second?.distance == 0.0) {
             setDistance()
         }
@@ -412,7 +419,7 @@ class GpsTrack(
         return if (filterTrackPoints.isNotEmpty()) {
             val graph = mutableListOf<Entry>()
             for (trackPoint in filterTrackPoints) {
-                val value = f(trackPoint)?.toFloat()
+                val value = if (discreteInput) 1f else f(trackPoint)?.toFloat()
                 val distance = trackPoint.second.distance?.toFloat()
                 if (value != null && distance != null) {
                     graph.add(Entry(distance, value, trackPoint))
@@ -502,7 +509,7 @@ class GpsTrack(
     }
 
 
-    internal class AttitudeColorList(
+    internal class AttitudeColorListContinuos(
         private val points: List<Pair<TrackPoint, ExtensionFromYaml>>,
         private val trackMin: Float,
         private val trackMax: Float,
@@ -515,6 +522,23 @@ class GpsTrack(
                 val value = f(points[pSegmentIndex])
                 val fraction = ((value ?: 0.0) - trackMin) / (trackMax - trackMin)
                 interpolateColor(startColor, endColor, fraction.toFloat())
+            } else {
+                Color.BLACK
+            }
+        }
+    }
+
+    internal class AttitudeColorListDiscrete(
+        private val points: List<Pair<TrackPoint, ExtensionFromYaml>>,
+        private val trackColor: TrackColor
+    ) : ColorMapping {
+        override fun getColorForIndex(pSegmentIndex: Int): Int {
+            return if (pSegmentIndex < points.size) {
+                if (trackColor == TrackColor.RoadType) {
+                    points[pSegmentIndex].second.roadType.color
+                } else {
+                    points[pSegmentIndex].second.surface.color
+                }
             } else {
                 Color.BLACK
             }

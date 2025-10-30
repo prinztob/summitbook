@@ -478,6 +478,7 @@
     <string name="update_done">Update durchgeführt, aber KEINE neuen Gipfel gefunden.</string>
     <string name="update_done_new_summits">Update durchgeführt und neue Gipfel gefunden.</string>
     <string name="no_summit">Es gibt keinen Gipfel für diese Kriterien</string>
+    <string name="no_data_available">Keine Daten verfügbar</string>
     <string name="floors_climbed">Hochgestiegene Stockwerke\n</string>
     <string name="steps">Schritte</string>
     <string name="sleep_hours">Schlaf in Std.</string>
