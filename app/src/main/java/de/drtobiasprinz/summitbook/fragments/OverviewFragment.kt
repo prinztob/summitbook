@@ -67,13 +67,8 @@ class OverviewFragment : Fragment() {
     private var currentYear: Int = 0
     private var selectedYear: Int = 0
 
-    var chartEntries: List<Entry> = emptyList()
-    var chartEntriesForecast: List<Entry> = emptyList()
-    var minMax: Pair<List<Entry>, List<Entry>> = Pair(emptyList(), emptyList())
-
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentOverviewBinding.inflate(layoutInflater, container, false)
         binding.overviewDropDown.setImageResource(R.drawable.baseline_arrow_drop_down_24)
@@ -97,8 +92,7 @@ class OverviewFragment : Fragment() {
 
 
     private fun setOverviewChart(
-        summits: List<Summit>,
-        forecasts: List<Forecast>
+        summits: List<Summit>, forecasts: List<Forecast>
     ) {
         performanceGraphProvider =
             PerformanceGraphProvider(summits, forecasts, indoorHeightMeterPercent)
@@ -120,14 +114,9 @@ class OverviewFragment : Fragment() {
             binding.lineChartYear.fitScreen()
         }
         binding.zoomIn.setOnClickListener {
-            if (lastChartEntry.x != 0f || lastChartEntry.y != 0f)
-                binding.lineChartYear.zoom(
-                    4f,
-                    4f,
-                    lastChartEntry.x,
-                    lastChartEntry.y,
-                    YAxis.AxisDependency.LEFT
-                )
+            if (lastChartEntry.x != 0f || lastChartEntry.y != 0f) binding.lineChartYear.zoom(
+                4f, 4f, lastChartEntry.x, lastChartEntry.y, YAxis.AxisDependency.LEFT
+            )
         }
         binding.overviewLayout.setOnClickListener {
             if (!graphIsVisible) {
@@ -278,40 +267,30 @@ class OverviewFragment : Fragment() {
         year: String,
         month: String? = null
     ) {
+        var chartEntries = emptyList<Entry>()
+        var chartEntriesForecast = emptyList<Entry>()
+        var minMax: Pair<List<Entry>, List<Entry>> = Pair(emptyList(), emptyList())
         lifecycleScope.launch {
             withContext(Dispatchers.Default) {
                 chartEntries = performanceGraphProvider.getActualGraphForSummits(
                     graphType,
                     year,
                     month,
-                    if (
-                        year == (Calendar.getInstance())[Calendar.YEAR].toString()
-                        && (month == null || (month.toInt() == (Calendar.getInstance())[Calendar.MONTH] + 1))
-                    ) {
+                    if (year == (Calendar.getInstance())[Calendar.YEAR].toString() && (month == null || (month.toInt() == (Calendar.getInstance())[Calendar.MONTH] + 1))) {
                         Date()
                     } else {
                         null
                     }
                 )
-                chartEntriesForecast =
-                    performanceGraphProvider.getForecastGraphForSummits(
-                        graphType,
-                        year,
-                        month,
-                        allDays = true
-                    )
+                chartEntriesForecast = performanceGraphProvider.getForecastGraphForSummits(
+                    graphType, year, month, allDays = true
+                )
                 minMax =
                     performanceGraphProvider.getActualGraphMinMaxForSummits(graphType, year, month)
             }
             if (chartEntries.isNotEmpty()) {
                 updateLineChart(
-                    month,
-                    chartEntries,
-                    lineChart,
-                    graphType,
-                    year,
-                    minMax,
-                    chartEntriesForecast
+                    month, chartEntries, lineChart, graphType, year, minMax, chartEntriesForecast
                 )
             } else {
                 lineChart.visibility = View.GONE
@@ -360,15 +339,11 @@ class OverviewFragment : Fragment() {
             if (graphType.filterZeroValues) chartEntries1.filter { it.y > 0f } else chartEntries1
         val dataSet = LineDataSet(entries, getString(R.string.actually))
         setGraphView(
-            dataSet,
-            false,
-            lineWidth = 5f,
-            colors = entries.map { e ->
+            dataSet, false, lineWidth = 5f, colors = entries.map { e ->
                 if (e.y > (minMax.second.firstOrNull { it.x == e.x }?.y ?: 0f)) {
                     Color.rgb(255, 215, 0)
-                } else if (
-                    graphType.hasForecast &&
-                    e.y > (chartEntriesForecast.firstOrNull { it.x == e.x }?.y ?: 0f)
+                } else if (graphType.hasForecast && e.y > (chartEntriesForecast.firstOrNull { it.x == e.x }?.y
+                        ?: 0f)
                 ) {
                     Color.GREEN
                 } else {
@@ -399,8 +374,7 @@ class OverviewFragment : Fragment() {
             dataSets.add(dataSetMaximalValues)
         }
         if (graphType.hasForecast) {
-            val dataSetForecast =
-                LineDataSet(chartEntriesForecast, getString(R.string.forecast))
+            val dataSetForecast = LineDataSet(chartEntriesForecast, getString(R.string.forecast))
             setGraphView(dataSetForecast, false, color = Color.rgb(255, 0, 0))
             dataSets.add(dataSetForecast)
         }
@@ -449,28 +423,13 @@ class OverviewFragment : Fragment() {
             Color.rgb(255, 215, 0)
         )
         val l2 = LegendEntry(
-            getString(R.string.better_then),
-            Legend.LegendForm.CIRCLE,
-            9f,
-            5f,
-            null,
-            Color.GREEN
+            getString(R.string.better_then), Legend.LegendForm.CIRCLE, 9f, 5f, null, Color.GREEN
         )
         val l3 = LegendEntry(
-            getString(R.string.forecast),
-            Legend.LegendForm.CIRCLE,
-            9f,
-            5f,
-            null,
-            Color.RED
+            getString(R.string.forecast), Legend.LegendForm.CIRCLE, 9f, 5f, null, Color.RED
         )
         val l4 = LegendEntry(
-            getString(R.string.min_max_5_yrs),
-            Legend.LegendForm.CIRCLE,
-            9f,
-            5f,
-            null,
-            Color.BLUE
+            getString(R.string.min_max_5_yrs), Legend.LegendForm.CIRCLE, 9f, 5f, null, Color.BLUE
         )
         l.setCustom(arrayOf(l1, l2, l3, l4))
         l.isEnabled = true
