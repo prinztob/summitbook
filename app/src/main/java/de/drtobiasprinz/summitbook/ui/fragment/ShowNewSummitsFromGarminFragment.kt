@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -87,16 +88,11 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
                         val startDateForSync = (current.minusDays(1)).format(formatter)
                         binding.loadingPanel.visibility = View.VISIBLE
                         asyncDownloadActivities(
-                            summits,
-                            pythonExecutor,
-                            startDate,
-                            endDate,
-                            startDateForSync
+                            summits, pythonExecutor, startDate, endDate, startDateForSync
                         )
                     } else {
                         Toast.makeText(
-                            context,
-                            getString(R.string.set_user_pwd), Toast.LENGTH_LONG
+                            context, getString(R.string.set_user_pwd), Toast.LENGTH_LONG
                         ).show()
                     }
                 }
@@ -108,8 +104,7 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
                     }
                     showAllButtonEnabled = !showAllButtonEnabled
                     updateEntriesWithoutIgnored(
-                        summits,
-                        showAllButtonEnabled
+                        summits, showAllButtonEnabled
                     )
                     addNewSummitsAdapter.differ.submitList(entriesWithoutIgnored)
                 }
@@ -117,8 +112,7 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
                 binding.save.setOnClickListener {
                     if (areEntriesChecked()) {
                         save(
-                            entriesWithoutIgnored.filter { summit -> summit.isSelected },
-                            false
+                            entriesWithoutIgnored.filter { summit -> summit.isSelected }, false
                         )
                         back(R.string.garmin_add_successful)
                     }
@@ -127,8 +121,7 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
                 binding.addSummitMerge.setOnClickListener {
                     if (canSelectedSummitsBeMerged()) {
                         save(
-                            entriesWithoutIgnored.filter { summit -> summit.isSelected },
-                            true
+                            entriesWithoutIgnored.filter { summit -> summit.isSelected }, true
                         )
                         back(R.string.garmin_add_successful)
                     }
@@ -176,11 +169,9 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
             if (activitiesDir?.exists() == true && activitiesDir?.isDirectory == true) {
                 val files = activitiesDir?.listFiles()
                 if (files?.isNotEmpty() == true) {
-                    val edit =
-                        PreferenceManager.getDefaultSharedPreferences(requireContext())
-                            .edit()
-                    edit.putString(Keys.PREF_THIRD_PARTY_START_DATE, startDateForSync)
-                    edit.apply()
+                    PreferenceManager.getDefaultSharedPreferences(requireContext()).edit {
+                            putString(Keys.PREF_THIRD_PARTY_START_DATE, startDateForSync)
+                        }
                 }
             }
             summits?.let { updateEntriesWithoutIgnored(it) }
@@ -190,13 +181,10 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
     }
 
     private fun getAllActivitiesFromThirdParty(
-        activityIdsInSummitBook: List<String>,
-        activitiesIdIgnored: List<String> = emptyList()
+        activityIdsInSummitBook: List<String>, activitiesIdIgnored: List<String> = emptyList()
     ): MutableList<Summit> {
         return GarminPythonExecutor.getAllDownloadedSummitsFromGarmin(
-            activitiesDir,
-            activityIdsInSummitBook,
-            activitiesIdIgnored
+            activitiesDir, activityIdsInSummitBook, activitiesIdIgnored
         )
     }
 
@@ -204,15 +192,13 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
         activitiesIdIgnored = ignoredActivities.map {
             it.activityId
         }
-        val activityIdsInSummitBook =
-            summits.filter { !it.garminData?.activityIds.isNullOrEmpty() }
-                .map { it.garminData?.activityIds as List<String> }.flatten()
+        val activityIdsInSummitBook = summits.filter { !it.garminData?.activityIds.isNullOrEmpty() }
+            .map { it.garminData?.activityIds as List<String> }.flatten()
         entriesWithoutIgnored = if (showAll) {
             getAllActivitiesFromThirdParty(activityIdsInSummitBook)
         } else {
             getAllActivitiesFromThirdParty(
-                activityIdsInSummitBook,
-                activitiesIdIgnored
+                activityIdsInSummitBook, activitiesIdIgnored
             )
         }
         Log.i("ShowNewSummits", "showing ${entriesWithoutIgnored.size} entries")
@@ -232,9 +218,11 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
         ft.replace(R.id.content_frame, SummitViewFragment())
         ft.commit()
         Toast.makeText(
-            activity, getString(messageId,
-                entriesWithoutIgnored.firstOrNull { summit -> summit.isSelected }?.name ?: "'new summit'"),
-            Toast.LENGTH_LONG
+            activity, getString(
+                messageId,
+                entriesWithoutIgnored.firstOrNull { summit -> summit.isSelected }?.name
+                    ?: "'new summit'"
+            ), Toast.LENGTH_LONG
         ).show()
     }
 

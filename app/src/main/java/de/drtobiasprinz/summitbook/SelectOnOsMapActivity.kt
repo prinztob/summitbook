@@ -1,12 +1,12 @@
 package de.drtobiasprinz.summitbook
 
-import android.app.Activity
 import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.location.Address
 import android.os.Bundle
 import android.os.StrictMode
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.Toast
@@ -14,10 +14,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.ActivitySelectOnOsmapBinding
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
@@ -28,9 +31,14 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addTrackAndMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.drawBoundingBox
+import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
+import de.drtobiasprinz.summitbook.utils.RoadSurfaceAnalyzer
 import de.drtobiasprinz.summitbook.utils.Utils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import io.ticofab.androidgpxparser.parser.GPXParser
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.osmdroid.bonuspack.location.GeocoderNominatim
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
@@ -51,9 +59,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import javax.inject.Inject
-import androidx.core.view.isVisible
-import de.drtobiasprinz.summitbook.db.entities.SportType
-import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 
 @AndroidEntryPoint
 class SelectOnOsMapActivity : FragmentActivity() {
@@ -93,7 +98,9 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     binding.osmap.setTileSource(TileSourceFactory.MAPNIK)
                     Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
                     summitEntry = entry
-                    OpenStreetMapUtils.setTileProviderDependingOnSummitSportType(binding.osmap, this, entry?.sportType ?: SportType.Other)
+                    OpenStreetMapUtils.setTileProviderDependingOnSummitSportType(
+                        binding.osmap, this, entry?.sportType ?: SportType.Other
+                    )
                     if (entry != null) {
                         addTrackAndMarker(
                             entry,
@@ -105,8 +112,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                         )
                         entry.trackBoundingBox?.let { boundingBox ->
                             drawBoundingBox(
-                                binding.osmap,
-                                boundingBox
+                                binding.osmap, boundingBox
                             )
                         }
                     }
@@ -143,12 +149,10 @@ class SelectOnOsMapActivity : FragmentActivity() {
                                 viewModel.saveSummit(true, entry)
                                 finish()
                                 Toast.makeText(
-                                    v.context,
-                                    String.format(
+                                    v.context, String.format(
                                         getString(R.string.add_position_to_summit_successful),
                                         entry.name
-                                    ),
-                                    Toast.LENGTH_SHORT
+                                    ), Toast.LENGTH_SHORT
                                 ).show()
                             }
                             val localSelectedPath = selectedGpsPath
@@ -166,6 +170,27 @@ class SelectOnOsMapActivity : FragmentActivity() {
                             }
                             entry.setBoundingBoxFromTrack()
                             viewModel.saveSummit(true, entry)
+                        }
+                    }
+                    binding.refreshRoadInfo.setOnClickListener { v: View ->
+                        if (entry != null) {
+                            Log.i(
+                                "SelectOnMapActivity",
+                                "updateTracks - setDistancePerSurfacesAndRoadType for summit ${entry.getDateAsString()}_${entry.name}."
+                            )
+                            binding.loadingPanel.visibility = View.VISIBLE
+                            lifecycleScope.launch {
+                                withContext(Dispatchers.IO) {
+                                    val updated = RoadSurfaceAnalyzer.setDistancePerSurfacesAndRoadType(
+                                        this@SelectOnOsMapActivity, entry
+                                    )
+                                    if (updated) {
+                                        viewModel.saveSummit(true, entry)
+                                    }
+                                }
+                                binding.loadingPanel.visibility = View.GONE
+                            }
+
                         }
                     }
                     binding.addPositionCancel.setOnClickListener { v: View ->
@@ -193,15 +218,11 @@ class SelectOnOsMapActivity : FragmentActivity() {
                                     viewModel.saveSummit(true, entry)
                                     finish()
                                     Toast.makeText(
-                                        v.context,
-                                        v.context.getString(
-                                            R.string.delete_gps,
-                                            entry.name
-                                        ),
-                                        Toast.LENGTH_SHORT
+                                        v.context, v.context.getString(
+                                            R.string.delete_gps, entry.name
+                                        ), Toast.LENGTH_SHORT
                                     ).show()
-                                }
-                                .setNegativeButton(
+                                }.setNegativeButton(
                                     android.R.string.cancel
                                 ) { _: DialogInterface?, _: Int ->
                                     Toast.makeText(
@@ -209,9 +230,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                                         getString(R.string.delete_cancel),
                                         Toast.LENGTH_SHORT
                                     ).show()
-                                }
-                                .setIcon(android.R.drawable.ic_dialog_alert)
-                                .show()
+                                }.setIcon(android.R.drawable.ic_dialog_alert).show()
                         }
                     }
                     binding.addGpsTrack.setOnClickListener {
@@ -224,7 +243,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
 
                     val data = Intent()
                     data.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry?.id)
-                    setResult(Activity.RESULT_OK, data)
+                    setResult(RESULT_OK, data)
                 }
 
             }
@@ -235,8 +254,13 @@ class SelectOnOsMapActivity : FragmentActivity() {
         val geoCoder = GeocoderNominatim(BuildConfig.APPLICATION_ID)
         val viewBox: BoundingBox = binding.osmap.boundingBox
         val foundAddresses: List<Address> = geoCoder.getFromLocationName(
-            locationAddress, 1,
-            viewBox.latSouth, viewBox.lonEast, viewBox.latNorth, viewBox.lonWest, false
+            locationAddress,
+            1,
+            viewBox.latSouth,
+            viewBox.lonEast,
+            viewBox.latNorth,
+            viewBox.lonWest,
+            false
         )
         if (foundAddresses.isNotEmpty()) {
             Toast.makeText(
@@ -246,12 +270,9 @@ class SelectOnOsMapActivity : FragmentActivity() {
             ).show()
             val address = foundAddresses[0]
             val geoPoint = GeoPoint(address.latitude, address.longitude)
-            val poiIcon: Drawable? =
-                ResourcesCompat.getDrawable(
-                    resources,
-                    R.drawable.ic_filled_location_black_48,
-                    null
-                )
+            val poiIcon: Drawable? = ResourcesCompat.getDrawable(
+                resources, R.drawable.ic_filled_location_black_48, null
+            )
             binding.osmap.setExpectedCenter(geoPoint)
             val poiMarker = Marker(binding.osmap)
             poiMarker.title = address.getAddressLine(0)
@@ -287,9 +308,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
     }
 
     private fun addSelectedPositionAndTrack(
-        geoPointSelectedPosition: GeoPoint,
-        gpsTrack: GpsTrack,
-        osMap: MapView
+        geoPointSelectedPosition: GeoPoint, gpsTrack: GpsTrack, osMap: MapView
     ) {
         val entry = summitEntry
         if (entry != null) {
@@ -313,7 +332,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
 
     private val resultLauncherForAddingGpxTrack =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
+            if (result.resultCode == RESULT_OK) {
                 val file = File(MainActivity.cache, "new_gpx_track.gpx")
                 result.data?.data?.also { uri ->
                     contentResolver.openInputStream(uri)?.use { inputStream ->

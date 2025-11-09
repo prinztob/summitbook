@@ -397,3 +397,5 @@ fabric.properties
 
 # End of https://www.toptal.com/developers/gitignore/api/gradle,python,kotlin,android,androidstudio
 /.idea/
+/app/src/*/resources/Bayern_oam.osm.map
+/app/src/test/resources/OAM-World-1-10-J80.sqlitedb

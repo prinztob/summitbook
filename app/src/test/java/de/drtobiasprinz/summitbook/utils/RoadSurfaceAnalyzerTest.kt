@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.utils
 
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
+import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.RoadInfo
 import de.drtobiasprinz.summitbook.models.RoadType
 import de.drtobiasprinz.summitbook.models.Surface
@@ -9,10 +10,88 @@ import org.joda.time.DateTime
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mapsforge.core.model.LatLong
+import org.mapsforge.map.reader.MapFile
 import org.robolectric.RobolectricTestRunner
+import java.io.File
+import java.io.FileInputStream
 
 @RunWith(RobolectricTestRunner::class)
 class RoadSurfaceAnalyzerTest {
+
+    @Test
+    fun testE2EAllTerrain() {
+        val track = this.javaClass.classLoader?.getResource("track_all_terrain.gpx")
+        val extension = this.javaClass.classLoader?.getResource("track_all_terrain_extensions.yaml")
+        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
+        if (track != null && extension != null && map != null) {
+            val gpsTrack = GpsTrack(
+                File(track.path).toPath(),
+                yamlExtensionsFile = File(extension.path)
+            )
+            gpsTrack.parseTrack(false)
+            val mapStream = FileInputStream(File(map.path))
+            val analyzer = RoadSurfaceAnalyzer(listOf(MapFile(mapStream)), 15.0)
+            val result = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints)
+            assertEquals(16029, result.first[Surface.ASPHALT])
+            assertEquals(0, result.first[Surface.STONE_PAVEMENT])
+            assertEquals(5406, result.first[Surface.COMPACTED])
+            assertEquals(21, result.first[Surface.LOSE_GROUND])
+            assertEquals(25, result.first[Surface.PATH])
+            assertEquals(0, result.first[Surface.UNKNOWN])
+            assertEquals(15302, result.second[RoadType.WAY])
+            assertEquals(2270, result.second[RoadType.SIDE_STREET])
+            assertEquals(2780, result.second[RoadType.COUNTRY_ROAD])
+            assertEquals(1129, result.second[RoadType.CYCLE_WAY])
+            assertEquals(0, result.second[RoadType.ROAD])
+            assertEquals(0, result.second[RoadType.UNKNOWN])
+        }
+    }
+
+    @Test
+    fun testE2EOnlyAsphalt() {
+        val track = this.javaClass.classLoader?.getResource("track_asphalt.gpx")
+        val extension = this.javaClass.classLoader?.getResource("track_asphalt_extensions.yaml")
+        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
+        if (track != null && extension != null && map != null) {
+            val gpsTrack = GpsTrack(
+                File(track.path).toPath(),
+                yamlExtensionsFile = File(extension.path)
+            )
+            gpsTrack.parseTrack(false)
+            val mapStream = FileInputStream(File(map.path))
+            val analyzer = RoadSurfaceAnalyzer(listOf(MapFile(mapStream)), 15.0)
+            val result = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints)
+            assertEquals(32049, result.first[Surface.ASPHALT])
+            assertEquals(0, result.first[Surface.STONE_PAVEMENT])
+            assertEquals(221, result.first[Surface.COMPACTED])
+            assertEquals(38, result.first[Surface.LOSE_GROUND])
+            assertEquals(0, result.first[Surface.PATH])
+            assertEquals(0, result.first[Surface.UNKNOWN])
+            assertEquals(2829, result.second[RoadType.WAY])
+            assertEquals(6983, result.second[RoadType.SIDE_STREET])
+            assertEquals(22495, result.second[RoadType.COUNTRY_ROAD])
+            assertEquals(0, result.second[RoadType.CYCLE_WAY])
+            assertEquals(0, result.second[RoadType.ROAD])
+            assertEquals(0, result.second[RoadType.UNKNOWN])
+        }
+    }
+
+    @Test
+    fun getNameOfVillage() {
+        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
+        if (map != null) {
+            val mapStream = FileInputStream(File(map.path))
+            val analyzer = RoadSurfaceAnalyzer(listOf(MapFile(mapStream)), 15.0)
+            val locationInfo = analyzer.getClosestLocationInfo(LatLong(48.002878, 11.79445))
+            assert(locationInfo != null)
+            assertEquals("Egmating", locationInfo?.name)
+            val locationInfoWendelstein =
+                analyzer.getClosestLocationInfo(LatLong(47.7036326, 12.0109743))
+            assert(locationInfo != null)
+            assertEquals("Wendelstein", locationInfoWendelstein?.name)
+        }
+    }
 
     /**
      * Test that short road segments (≤10 points) surrounded by the same road type are filtered out.
@@ -44,8 +123,16 @@ class RoadSurfaceAnalyzerTest {
 
         // Verify that all points now have Road A's properties
         trackPoints.forEach { (_, extension) ->
-            assertEquals("All points should have Road A's surface", Surface.ASPHALT, extension.surface)
-            assertEquals("All points should have Road A's road type", RoadType.COUNTRY_ROAD, extension.roadType)
+            assertEquals(
+                "All points should have Road A's surface",
+                Surface.ASPHALT,
+                extension.surface
+            )
+            assertEquals(
+                "All points should have Road A's road type",
+                RoadType.COUNTRY_ROAD,
+                extension.roadType
+            )
         }
     }
 
@@ -79,8 +166,16 @@ class RoadSurfaceAnalyzerTest {
         // Verify that Road B's points still have their original properties
         val roadBPoints = trackPoints.subList(15, 20)
         roadBPoints.forEach { (_, extension) ->
-            assertEquals("Road B points should keep their surface", Surface.LOSE_GROUND, extension.surface)
-            assertEquals("Road B points should keep their road type", RoadType.WAY, extension.roadType)
+            assertEquals(
+                "Road B points should keep their surface",
+                Surface.LOSE_GROUND,
+                extension.surface
+            )
+            assertEquals(
+                "Road B points should keep their road type",
+                RoadType.WAY,
+                extension.roadType
+            )
         }
     }
 
@@ -113,8 +208,16 @@ class RoadSurfaceAnalyzerTest {
         // Verify that Road B's points still have their original properties
         val roadBPoints = trackPoints.subList(15, 27)
         roadBPoints.forEach { (_, extension) ->
-            assertEquals("Road B points should keep their surface", Surface.LOSE_GROUND, extension.surface)
-            assertEquals("Road B points should keep their road type", RoadType.WAY, extension.roadType)
+            assertEquals(
+                "Road B points should keep their surface",
+                Surface.LOSE_GROUND,
+                extension.surface
+            )
+            assertEquals(
+                "Road B points should keep their road type",
+                RoadType.WAY,
+                extension.roadType
+            )
         }
     }
 
@@ -146,14 +249,30 @@ class RoadSurfaceAnalyzerTest {
 
         // Verify first segment keeps its properties
         trackPoints.subList(0, 3).forEach { (_, extension) ->
-            assertEquals("First segment should keep its surface", Surface.ASPHALT, extension.surface)
-            assertEquals("First segment should keep its road type", RoadType.COUNTRY_ROAD, extension.roadType)
+            assertEquals(
+                "First segment should keep its surface",
+                Surface.ASPHALT,
+                extension.surface
+            )
+            assertEquals(
+                "First segment should keep its road type",
+                RoadType.COUNTRY_ROAD,
+                extension.roadType
+            )
         }
 
         // Verify last segment keeps its properties
         trackPoints.subList(18, 21).forEach { (_, extension) ->
-            assertEquals("Last segment should keep its surface", Surface.STONE_PAVEMENT, extension.surface)
-            assertEquals("Last segment should keep its road type", RoadType.COUNTRY_ROAD, extension.roadType)
+            assertEquals(
+                "Last segment should keep its surface",
+                Surface.STONE_PAVEMENT,
+                extension.surface
+            )
+            assertEquals(
+                "Last segment should keep its road type",
+                RoadType.COUNTRY_ROAD,
+                extension.roadType
+            )
         }
     }
 
@@ -200,19 +319,35 @@ class RoadSurfaceAnalyzerTest {
         // Verify Road B was filtered to Road A
         trackPoints.subList(20, 23).forEach { (_, extension) ->
             assertEquals("Road B should be filtered to Road A", Surface.ASPHALT, extension.surface)
-            assertEquals("Road B should be filtered to Road A", RoadType.COUNTRY_ROAD, extension.roadType)
+            assertEquals(
+                "Road B should be filtered to Road A",
+                RoadType.COUNTRY_ROAD,
+                extension.roadType
+            )
         }
 
         // Verify second Road A segment was filtered to Road A (merged)
         trackPoints.subList(23, 28).forEach { (_, extension) ->
             assertEquals("Second Road A should remain Road A", Surface.ASPHALT, extension.surface)
-            assertEquals("Second Road A should remain Road A", RoadType.COUNTRY_ROAD, extension.roadType)
+            assertEquals(
+                "Second Road A should remain Road A",
+                RoadType.COUNTRY_ROAD,
+                extension.roadType
+            )
         }
 
         // Verify Road C segments keep their properties
         trackPoints.subList(28, 43).forEach { (_, extension) ->
-            assertEquals("Road C should keep its surface", Surface.STONE_PAVEMENT, extension.surface)
-            assertEquals("Road C should keep its road type", RoadType.COUNTRY_ROAD, extension.roadType)
+            assertEquals(
+                "Road C should keep its surface",
+                Surface.STONE_PAVEMENT,
+                extension.surface
+            )
+            assertEquals(
+                "Road C should keep its road type",
+                RoadType.COUNTRY_ROAD,
+                extension.roadType
+            )
         }
     }
 
@@ -247,7 +382,11 @@ class RoadSurfaceAnalyzerTest {
         // Null segments should be treated as empty road info
         trackPoints.subList(10, 15).forEach { (_, extension) ->
             // These should be filtered to Road A since they're surrounded by it
-            assertEquals("Null road should be filtered to surrounding road", Surface.ASPHALT, extension.surface)
+            assertEquals(
+                "Null road should be filtered to surrounding road",
+                Surface.ASPHALT,
+                extension.surface
+            )
         }
     }
 

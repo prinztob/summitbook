@@ -290,7 +290,7 @@ class SummitViewFragment : Fragment() {
         }
 
         val summitsForDistanceCalc = summits.filter { it.hasGpsTrack() && distanceMapsEmpty(it) }
-            .sortedByDescending { it.date }.take(10)
+            .sortedByDescending { it.date }.take(25)
         Log.i(
             TAG,
             "updateTracks - setDistancePerSurfacesAndRoadType for ${summitsForDistanceCalc.size} summits."
@@ -300,8 +300,14 @@ class SummitViewFragment : Fragment() {
                 TAG,
                 "updateTracks - setDistancePerSurfacesAndRoadType for summit ${it.getDateAsString()}_${it.name}."
             )
-            if (RoadSurfaceAnalyzer.setDistancePerSurfacesAndRoadType(requireContext(), it)) {
-                viewModel?.saveSummit(true, it)
+            try {
+                RoadSurfaceAnalyzer.setDistancePerSurfacesAndRoadType(requireContext(), it)
+            } catch (e: Exception) {
+                Log.w(
+                    TAG,
+                    "updateTracks - setDistancePerSurfacesAndRoadType for summit ${it.getDateAsString()}_${it.name} failed with ${e.message}."
+                )
+                false
             }
         }
         Log.i(

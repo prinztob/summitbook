@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.fragments
 
-import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.SharedPreferences
@@ -41,6 +40,7 @@ import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.enableRoadInfoOnMapClick
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.getOsmdroidTilesFolder
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileProvider
@@ -70,6 +70,7 @@ import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.File
 import javax.inject.Inject
+import androidx.core.content.edit
 
 
 @AndroidEntryPoint
@@ -163,18 +164,20 @@ class OpenStreetMapFragment : Fragment() {
         binding.osmap.onResume()
     }
 
-    @SuppressLint("ApplySharedPref")
-    private fun cleanupAndSaveCurrentStatus() {
+    private fun updateSelectedParameters() {
         Log.i(TAG, "Content: ${sharedPreferences.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")}")
-        val boundingBox = binding.osmap.boundingBox
-        val editor = sharedPreferences.edit()
-        editor.putString(
-            Keys.PREF_OS_MAP_BOUNDING_BOX,
-            "${boundingBox.latNorth};${boundingBox.lonEast};${boundingBox.latSouth};${boundingBox.lonWest};${if (showSummits) 1 else 0};${if (showBookmarks) 1 else 0}"
-        )
-        editor.commit()
+        val osMapBoundingBox =
+            sharedPreferences.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")?.split(";")
+                ?: emptyList()
+        if (osMapBoundingBox.size == 6) {
+            sharedPreferences.edit {
+                putString(
+                    Keys.PREF_OS_MAP_BOUNDING_BOX,
+                    "${osMapBoundingBox[0]};${osMapBoundingBox[1]};${osMapBoundingBox[2]};${osMapBoundingBox[3]};${if (showSummits) 1 else 0};${if (showBookmarks) 1 else 0}"
+                )
+            }
+        }
         Log.i(TAG, "Content: ${sharedPreferences.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")}")
-        fullscreen(true)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -188,6 +191,7 @@ class OpenStreetMapFragment : Fragment() {
         ) {
             selectedItem = MapProvider.HIKING
         }
+        binding.osmap.updateBoundingBox = true
         setTileProvider(binding.osmap, requireContext())
         showOverlayIfExist()
 
@@ -309,7 +313,7 @@ class OpenStreetMapFragment : Fragment() {
 
     override fun onDestroyView() {
         Log.d(TAG, "onDestroyView")
-        cleanupAndSaveCurrentStatus()
+        fullscreen(true)
         binding.osmap.onDetach()
         super.onDestroyView()
     }
@@ -334,6 +338,7 @@ class OpenStreetMapFragment : Fragment() {
                 } else {
                     binding.showSummits.alpha = 0.5f
                 }
+                updateSelectedParameters()
                 showSummitsAndBookmarksIfEnabled()
             } else {
                 Toast.makeText(
@@ -351,6 +356,7 @@ class OpenStreetMapFragment : Fragment() {
                 } else {
                     binding.showBookmarks.alpha = 0.5f
                 }
+                updateSelectedParameters()
                 showSummitsAndBookmarksIfEnabled()
             }
         }
@@ -400,6 +406,7 @@ class OpenStreetMapFragment : Fragment() {
     private fun showSummitsAndBookmarksIfEnabled() {
         if (showSummits || showBookmarks) {
             binding.loadingPanel.visibility = View.VISIBLE
+            enableRoadInfoOnMapClick(binding.osmap, requireContext())
             lifecycleScope.launch {
                 var filteredSummits: List<Pair<Summit, GeoPoint>> = listOf()
                 withContext(Dispatchers.IO) {
@@ -604,7 +611,8 @@ class OpenStreetMapFragment : Fragment() {
             binding.fullscreen.setImageResource(R.drawable.baseline_fullscreen_24)
             (requireActivity() as MainActivity).binding.toolbarInclude.toolbar.visibility =
                 View.VISIBLE
-            (requireActivity() as MainActivity).binding.contentFrameOverview.visibility = View.VISIBLE
+            (requireActivity() as MainActivity).binding.contentFrameOverview.visibility =
+                View.VISIBLE
         } else {
             requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             binding.fullscreen.setImageResource(R.drawable.baseline_fullscreen_exit_24)

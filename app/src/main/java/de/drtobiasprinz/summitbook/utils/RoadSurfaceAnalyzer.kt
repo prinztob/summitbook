@@ -5,6 +5,7 @@ import android.util.Log
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.ExtensionsFromYaml
+import de.drtobiasprinz.summitbook.models.LocationInfo
 import de.drtobiasprinz.summitbook.models.RoadInfo
 import de.drtobiasprinz.summitbook.models.RoadType
 import de.drtobiasprinz.summitbook.models.Surface
@@ -39,38 +40,44 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
                 val roadInfos = extractRoadInfos(trackPointsWithExtension)
                 filterWronglySelectedRoadTypes(roadInfos, trackPointsWithExtension)
                 setDistances(trackPointsWithExtension, distancePerSurface, distancePerRoadTypes)
-                Log.i(
-                    TAG,
-                    "distancePerRoadType: $distancePerRoadTypes and distancePerSurface: $distancePerSurface"
-                )
             }
             Log.i(TAG, "getRoadTypeAtPosition took $time")
         }
-        return Pair(
-            distancePerSurface.map { it.key to it.value.roundToInt() }.toMap(),
-            distancePerRoadTypes.map { it.key to it.value.roundToInt() }.toMap()
+        val surfaceSummary = distancePerSurface.map { it.key to it.value.roundToInt() }.toMap()
+        val roadTypeSummary = distancePerRoadTypes.map { it.key to it.value.roundToInt() }.toMap()
+        Log.i(
+            TAG, "distancePerSurface: $surfaceSummary and distancePerRoadType: $roadTypeSummary"
         )
+        return Pair(surfaceSummary, roadTypeSummary)
     }
 
     private fun extractRoadInfos(
         trackPointsWithExtension: List<Pair<TrackPoint, ExtensionFromYaml>>,
     ): MutableList<RoadInfo?> {
-        val roadInfos: MutableList<RoadInfo?> = mutableListOf()
+        if (mapFiles.isEmpty()) {
+            Log.w(TAG, "No map files available to extract road infos.")
+            return MutableList(trackPointsWithExtension.size) { null }
+        }
+
+        val roadInfos: MutableList<RoadInfo?> = MutableList(trackPointsWithExtension.size) { null }
         try {
-            for (mapFile in mapFiles) {
-                trackPointsWithExtension.map {
-                    roadInfos.add(
-                        getRoadInfoForLatLong(
-                            LatLong(
-                                it.first.latitude, it.first.longitude
-                            ), mapFile
-                        )
-                    )
-                }
-                mapFile.close()
+            for ((index, trackPointPair) in trackPointsWithExtension.withIndex()) {
+                val latLong = LatLong(trackPointPair.first.latitude, trackPointPair.first.longitude)
+                val bestRoadInfoForPoint = mapFiles.mapNotNull { mapFile ->
+                    getRoadInfoForLatLong(latLong, mapFile)
+                }.minByOrNull { it.minDistance }
+                roadInfos[index] = bestRoadInfoForPoint
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error reading road type at position", e)
+        } finally {
+            mapFiles.forEach {
+                try {
+                    it.close()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error closing map file", e)
+                }
+            }
         }
         return roadInfos
     }
@@ -112,7 +119,13 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
             if (i == 0) {
                 roadInfoIndexed.add(Triple(e ?: RoadInfo(""), i, i))
             } else {
-                if (e == null || roadInfoIndexed.last().first.name == e.name) {
+                if (e == null || (
+                            roadInfoIndexed.last().first.name == e.name &&
+                                    e.roadType != "" && e.surface != null &&
+                                    roadInfoIndexed.last().first.roadType == e.roadType &&
+                                    roadInfoIndexed.last().first.surface == e.surface
+                            )
+                ) {
                     roadInfoIndexed[roadInfoIndexed.size - 1] = Triple(
                         roadInfoIndexed.last().first, roadInfoIndexed.last().second, i
                     )
@@ -126,17 +139,25 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
             if (i == 0 || i == roadInfoIndexed.size - 1) {
                 filtered.add(e)
             } else {
-                if (e.third - e.second > 10 && roadInfoIndexed[i - 1].first.name != roadInfoIndexed[i + 1].first.name) {
+                if (e.third - e.second > 10 || roadInfoIndexed[i - 1].first.name != roadInfoIndexed[i + 1].first.name) {
                     filtered.add(e)
                 } else {
-                    filtered[filtered.size - 1] = Triple(filtered[filtered.size - 1].first, filtered[filtered.size - 1].second, e.third)
+                    filtered[filtered.size - 1] = Triple(
+                        filtered[filtered.size - 1].first,
+                        filtered[filtered.size - 1].second,
+                        e.third
+                    )
                 }
             }
         }
         filtered.forEach {
             (it.second..it.third).forEach { index ->
-                trackPointsWithExtension[index].second.surface = Surface.mapFromRoadInfo(it.first)
-                trackPointsWithExtension[index].second.roadType = RoadType.mapFromRoadInfo(it.first)
+                if (index < trackPointsWithExtension.size) {
+                    trackPointsWithExtension[index].second.surface =
+                        Surface.mapFromRoadInfo(it.first)
+                    trackPointsWithExtension[index].second.roadType =
+                        RoadType.mapFromRoadInfo(it.first)
+                }
             }
         }
     }
@@ -169,9 +190,128 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
             if (roadInfo != null && roadInfo.minDistance < searchRadiusMeters) {
                 return roadInfo
             }
-            Log.d(TAG, "Unknown type for road $roadInfo")
         }
         return null
+    }
+
+    /**
+     * Get the closest village/city/mountain peak and its country for a given location
+     * @param latLong The location to search from
+     * @param mapFile The map file to search in (defaults to first available map file)
+     * @return LocationInfo containing the closest place name, country, and type, or null if none found
+     */
+    fun getClosestLocationInfo(
+        latLong: LatLong, mapFile: MapFile? = mapFiles.firstOrNull()
+    ): LocationInfo? {
+        if (mapFile == null) {
+            Log.w(TAG, "No map file available to get location info.")
+            return null
+        }
+
+        val zoomLevel: Byte = 16 // Lower zoom level for larger area coverage
+        val tile = Tile(
+            latLongToTileX(latLong.longitude, zoomLevel.toInt()),
+            latLongToTileY(latLong.latitude, zoomLevel.toInt()),
+            zoomLevel,
+            256
+        )
+
+        try {
+            val mapReadResult: MapReadResult = mapFile.readMapData(tile)
+            val locationInfo = processPointsOfInterest(
+                mapReadResult.pointOfInterests, latLong
+            )
+
+            if (locationInfo != null) {
+                Log.i(
+                    TAG,
+                    "Found location: ${locationInfo.name} (${locationInfo.placeType}) in ${locationInfo.country ?: "unknown country"}, distance: ${locationInfo.minDistance}m"
+                )
+                return locationInfo
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading location info at position", e)
+        }
+
+        return null
+    }
+
+    /**
+     * Process points of interest to find the closest village/city/mountain peak
+     */
+    private fun processPointsOfInterest(
+        pointsOfInterest: List<org.mapsforge.map.datastore.PointOfInterest>, latLong: LatLong
+    ): LocationInfo? {
+        val locationInfoList: MutableList<LocationInfo> = mutableListOf()
+
+        val placeTypePriority = mapOf(
+            "peak" to 7,
+            "mountain_pass" to 6,
+            "saddle" to 5,
+            "city" to 4,
+            "town" to 3,
+            "village" to 2,
+            "hamlet" to 1,
+            "suburb" to 1,
+            "neighbourhood" to 0
+        )
+
+        for (poi in pointsOfInterest) {
+            val tags = poi.tags
+            val placeTag = tags.firstOrNull { it.key == "place" }
+            val naturalTag = tags.firstOrNull { it.key == "natural" }
+
+            // Check for place tags (cities, towns, villages, etc.)
+            if (placeTag != null && placeTypePriority.containsKey(placeTag.value)) {
+                val nameTag = tags.firstOrNull { it.key == "name" }?.value
+                val countryTag = tags.firstOrNull { it.key == "addr:country" }?.value
+                    ?: tags.firstOrNull { it.key == "is_in:country" }?.value
+                    ?: tags.firstOrNull { it.key == "country_code" }?.value
+
+                if (nameTag != null) {
+                    val distance = latLong.distance(poi.position)
+
+                    if (distance <= 5000) {
+                        val locationInfo = LocationInfo(
+                            name = nameTag,
+                            country = countryTag,
+                            placeType = placeTag.value,
+                            minDistance = distance.roundToInt(),
+                            additionalTags = tags.associate { it.key to it.value })
+                        locationInfoList.add(locationInfo)
+                    }
+                }
+            }
+
+            // Check for mountain peaks
+            if (naturalTag != null && (naturalTag.value == "peak" || naturalTag.value == "mountain_pass" || naturalTag.value == "saddle")) {
+                val nameTag = tags.firstOrNull { it.key == "name" }?.value
+                val countryTag = tags.firstOrNull { it.key == "addr:country" }?.value
+                    ?: tags.firstOrNull { it.key == "is_in:country" }?.value
+                    ?: tags.firstOrNull { it.key == "country_code" }?.value
+
+                if (nameTag != null) {
+                    val distance = latLong.distance(poi.position)
+
+                    if (distance <= 100) {
+                        val locationInfo = LocationInfo(
+                            name = nameTag,
+                            country = countryTag,
+                            placeType = naturalTag.value,
+                            minDistance = distance.roundToInt(),
+                            additionalTags = tags.associate { it.key to it.value })
+                        locationInfoList.add(locationInfo)
+                    }
+                }
+            }
+        }
+
+        // Sort by priority first (higher priority = better), then by distance (closer = better)
+        return locationInfoList.sortedWith(
+            compareBy(
+                { -(placeTypePriority[it.placeType] ?: 0) },
+                { it.minDistance })
+        ).firstOrNull()
     }
 
     private fun getMinimalDistance(way: Way, latLong: LatLong): Int {
@@ -283,7 +423,7 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
 
     companion object {
         const val TAG = "RoadSurfaceAnalyzer"
-        fun from(context: Context, searchRadiusMeters: Double = 25.0): RoadSurfaceAnalyzer {
+        fun from(context: Context, searchRadiusMeters: Double = 15.0): RoadSurfaceAnalyzer {
             val mapFiles = FileHelper.getOnDeviceMapFiles(context)
             return RoadSurfaceAnalyzer(
                 FileHelper.getOnDeviceMapFileInputStreams(context, mapFiles).map { MapFile(it) },

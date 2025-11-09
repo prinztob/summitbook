@@ -192,13 +192,10 @@ class GarminPythonExecutor(
                                 }
                                 if (entry.garminData?.activityId !in activityIdsInSummitBook && entry.garminData?.activityId !in activitiesIdIgnored) {
                                     entries.add(entry)
-                                    if (entries.size > 20) {
-                                        return entries
-                                    }
                                 }
-                            } catch (ex: IllegalArgumentException) {
+                            } catch (_: IllegalArgumentException) {
                                 Log.i(TAG, "Could not parse file ${it.absolutePath}")
-                            } catch (ex: NullPointerException) {
+                            } catch (_: NullPointerException) {
                                 Log.i(TAG, "Could not parse file ${it.absolutePath}")
                             }
                         }

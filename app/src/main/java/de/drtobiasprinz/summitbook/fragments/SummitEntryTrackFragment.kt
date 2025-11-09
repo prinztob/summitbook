@@ -48,6 +48,7 @@ import de.drtobiasprinz.summitbook.models.Surface
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
+import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.enableRoadInfoOnMapClick
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.getSportTypeForMapProviders
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.utils.FileHelper
@@ -214,6 +215,7 @@ class SummitEntryTrackFragment : Fragment() {
             doCleanUp = doCleanUp,
             calculateBondingBox = !alreadyZoomedOnTrack
         )
+        enableRoadInfoOnMapClick(binding.osmap, requireContext())
     }
 
     private fun setButtons(summitToView: Summit) {
@@ -381,18 +383,14 @@ class SummitEntryTrackFragment : Fragment() {
 
                 // Calculate distances for each discrete value
                 val trackColor = selectedCustomizeTrackItem
-                val distancesByValue =
-                    summitToView.distancePerSurface.map { (key, value) -> key.number to value / 1000.0 }
-                        .toMap()
-
                 val entries = mutableListOf<BarEntry>()
                 val labels = mutableListOf<String>()
                 val colors = mutableListOf<Int>()
                 var i = 0
                 if (trackColor == TrackColor.RoadType) {
                     RoadType.entries.forEach { enumEntry ->
-                        val distance = distancesByValue[enumEntry.number] ?: 0.0
-                        if (distance > 0.05) {
+                        val distance = (summitToView.distancePerRoadType[enumEntry] ?: 0) / 1000.0
+                        if (distance > 0.0) {
                             entries.add(BarEntry(i.toFloat(), distance.toFloat()))
                             labels.add(getString(enumEntry.nameId))
                             colors.add(enumEntry.color)
@@ -401,7 +399,7 @@ class SummitEntryTrackFragment : Fragment() {
                     }
                 } else if (trackColor == TrackColor.RoadSurface) {
                     Surface.entries.forEach { enumEntry ->
-                        val distance = distancesByValue[enumEntry.number] ?: 0.0
+                        val distance = (summitToView.distancePerSurface[enumEntry] ?: 0) / 1000.0
                         if (distance > 0.0) {
                             entries.add(BarEntry(i.toFloat(), distance.toFloat()))
                             labels.add(getString(enumEntry.nameId))
@@ -427,11 +425,10 @@ class SummitEntryTrackFragment : Fragment() {
 
                     val barData = BarData(dataSet)
                     barChart.data = barData
-
                     barChart.axisLeft.isEnabled = false
-                    // Configure X-axis (distance axis)
                     val xAxis = barChart.xAxis
                     xAxis.position = XAxis.XAxisPosition.BOTTOM
+                    xAxis.setLabelCount(labels.size, false)
                     xAxis.valueFormatter = object : ValueFormatter() {
                         override fun getFormattedValue(value: Float): String {
                             val index = value.toInt()
@@ -443,6 +440,7 @@ class SummitEntryTrackFragment : Fragment() {
                     barChart.description.isEnabled = false
                     barChart.legend.isEnabled = false
                     barChart.setFitBars(true)
+                    setBarChartColors()
                     barChart.invalidate()
                 } else {
                     barChart.clear()
@@ -524,6 +522,35 @@ class SummitEntryTrackFragment : Fragment() {
         )
         l.setCustom(arrayOf(l1, l2))
         l.isEnabled = true
+    }
+
+    private fun setBarChartColors() {
+
+        when (requireContext().resources?.configuration?.uiMode?.and(android.content.res.Configuration.UI_MODE_NIGHT_MASK)) {
+            android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
+                binding.barChart.xAxis.textColor = Color.WHITE
+                binding.barChart.axisRight.textColor = Color.WHITE
+                binding.barChart.axisLeft.textColor = Color.WHITE
+                binding.barChart.legend?.textColor = Color.WHITE
+                binding.barChart.data.setValueTextColor(Color.WHITE)
+            }
+
+            android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
+                binding.barChart.xAxis.textColor = Color.BLACK
+                binding.barChart.axisRight.textColor = Color.BLACK
+                binding.barChart.axisLeft.textColor = Color.BLACK
+                binding.barChart.legend?.textColor = Color.BLACK
+                binding.barChart.data.setValueTextColor(Color.BLACK)
+            }
+
+            android.content.res.Configuration.UI_MODE_NIGHT_UNDEFINED -> {
+                binding.barChart.xAxis.textColor = Color.BLACK
+                binding.barChart.axisRight.textColor = Color.BLACK
+                binding.barChart.axisLeft.textColor = Color.BLACK
+                binding.barChart.legend?.textColor = Color.BLACK
+                binding.barChart.data.setValueTextColor(Color.BLACK)
+            }
+        }
     }
 
     private fun setColors(

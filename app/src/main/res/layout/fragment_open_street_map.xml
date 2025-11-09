@@ -457,7 +457,7 @@
         </LinearLayout>
     </HorizontalScrollView>
 
-    <org.osmdroid.views.MapView
+    <de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
         android:id="@+id/osmap"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

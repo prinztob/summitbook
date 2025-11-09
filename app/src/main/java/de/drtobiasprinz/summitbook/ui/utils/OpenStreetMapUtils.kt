@@ -16,6 +16,7 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
 import de.drtobiasprinz.summitbook.models.GpsTrack
+import de.drtobiasprinz.summitbook.models.LocationInfo
 import de.drtobiasprinz.summitbook.models.RoadInfo
 import de.drtobiasprinz.summitbook.models.RoadType
 import de.drtobiasprinz.summitbook.models.Surface
@@ -318,15 +319,21 @@ object OpenStreetMapUtils {
         scope.launch {
             try {
                 var roadInfo: RoadInfo? = null
+                var locationInfo: LocationInfo? = null
                 val mapFileInputStreams =
                     FileHelper.getOnDeviceMapFileInputStreams(context, mapFiles)
                 withContext(Dispatchers.IO) {
                     for (inputStream in mapFileInputStreams) {
                         val mapFile = MapFile(inputStream)
-                        roadInfo = RoadSurfaceAnalyzer.from(context).getRoadInfoForLatLong(
+                        val analyzer = RoadSurfaceAnalyzer.from(context)
+                        roadInfo = analyzer.getRoadInfoForLatLong(
                             LatLong(
-                                geoPoint.latitude,
-                                geoPoint.longitude
+                                geoPoint.latitude, geoPoint.longitude
+                            ), mapFile
+                        )
+                        locationInfo = analyzer.getClosestLocationInfo(
+                            LatLong(
+                                geoPoint.latitude, geoPoint.longitude
                             ), mapFile
                         )
                     }
@@ -334,22 +341,21 @@ object OpenStreetMapUtils {
 
                 // Show result on main thread
                 withContext(Dispatchers.Main) {
-                    if (roadInfo != null) {
-                        AlertDialog.Builder(context)
-                            .setTitle("Road Information")
-                            .setMessage(
-                                "roadType ${roadInfo.roadType} \n" +
-                                        "name ${roadInfo.name}\n" +
-                                        "surface ${roadInfo.surface}\n" +
-                                        "minDistance ${roadInfo.minDistance} m\n" +
-                                        "trackType: ${roadInfo.trackType}\n" +
-                                        "mapped Surface: ${Surface.mapFromRoadInfo(roadInfo)}\n" +
-                                        "mapped RoadType: ${RoadType.mapFromRoadInfo(roadInfo)}\n" +
-                                        "additionalTags: ${roadInfo.additionalTags}"
-                            )
-                            .setPositiveButton("OK", null)
-                            .show()
-                    }
+                    AlertDialog.Builder(context).setTitle("Road and location Information")
+                        .setMessage("roadType ${roadInfo?.roadType}, " + "name ${roadInfo?.name}\n" + "minDistance ${roadInfo?.minDistance} m\n" + "surface ${roadInfo?.surface}, " + "trackType: ${roadInfo?.trackType}\n" + roadInfo?.let {
+                            "mapped Surface: ${
+                                Surface.mapFromRoadInfo(
+                                    it
+                                )
+                            }, "
+                        } + roadInfo?.let {
+                            "mapped RoadType: ${
+                                RoadType.mapFromRoadInfo(
+                                    it
+                                )
+                            }\n"
+                        } + "additionalTags: ${roadInfo?.additionalTags}\n\n" + "locationInfo ${locationInfo?.name}, " + "minDistance ${locationInfo?.minDistance}\n" + "placeType ${locationInfo?.placeType}\n" + "country ${locationInfo?.country}\n" + "additionalTags ${locationInfo?.additionalTags}")
+                        .setPositiveButton("OK", null).show()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error querying road info", e)

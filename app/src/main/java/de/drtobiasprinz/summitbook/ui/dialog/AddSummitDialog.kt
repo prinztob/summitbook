@@ -67,10 +67,12 @@ import de.drtobiasprinz.summitbook.utils.Constants.BUNDLE_ID
 import de.drtobiasprinz.summitbook.utils.Constants.CONNECTED_ACTIVITY_PREFIX
 import de.drtobiasprinz.summitbook.utils.Constants.EDIT
 import de.drtobiasprinz.summitbook.utils.Constants.NEW
+import de.drtobiasprinz.summitbook.utils.RoadSurfaceAnalyzer
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.mapsforge.core.model.LatLong
 import org.osmdroid.util.GeoPoint
 import org.xmlpull.v1.XmlPullParserException
 import java.io.File
@@ -232,6 +234,17 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 }
                 resultLauncher.launch(intent)
             }
+
+            updateName.setOnClickListener {
+                loadingPanel.visibility = View.VISIBLE
+                lifecycleScope.launch {
+                    withContext(Dispatchers.IO) {
+                        val latLng = if (latlngHighestPoint != null) latlngHighestPoint else entity.latLng
+                        latLng?.let { latlngHighestPointLocal -> setLocationInfo(latlngHighestPointLocal, entity) }
+                    }
+                    loadingPanel.visibility = View.GONE
+                }
+            }
             if (isBookmark) {
                 tourDate.visibility = View.GONE
                 addTrackFromGarmin.visibility = View.GONE
@@ -263,6 +276,36 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     }
                 }
                 setExpandMoreButtons()
+            }
+        }
+    }
+
+    private fun setLocationInfo(latlngHighestPointLocal: GeoPoint, summit: Summit) {
+        val localContext = context
+        if (localContext != null) {
+            val info = RoadSurfaceAnalyzer.from(localContext).getClosestLocationInfo(
+                LatLong(
+                    latlngHighestPointLocal.latitude,
+                    latlngHighestPointLocal.longitude
+                )
+            )
+            Log.i("AddSummitDialog", "Found LocationInfo $info")
+            if (info != null) {
+                entity.name = info.name
+                binding.summitName.setText(info.name)
+                if (info.placeType == "peak") {
+                    summit.isPeak = true
+                    try {
+                        val elevation = info.additionalTags?.get("ele")
+                        if (elevation != null) {
+                            val elevationAsInt = Integer.valueOf(elevation)
+                            entity.elevationData.maxElevation = elevationAsInt
+                            binding.topElevation.setText(elevationAsInt)
+                        }
+                    } catch (_: Exception) {
+                        // DO NOTHING
+                    }
+                }
             }
         }
     }
@@ -882,7 +925,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                         entry.setGpsTrack()
                         highestElevation = entry.gpsTrack?.getHighestElevation()
                         entry.gpsTrack?.setDistance()
-
                     } else {
                         Log.i(
                             "asyncAnalyzeGpsTracks",
@@ -909,6 +951,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     gpsTrack.parseTrack(useSimplifiedIfExists = false)
                 }
             }
+            highestElevation?.let { setLocationInfo(it, entry) }
             val gpxPyJsonFile = entry.getGpxPyPath().toFile()
             if (gpxPyJsonFile.exists()) {
                 val gpxPyJson =
