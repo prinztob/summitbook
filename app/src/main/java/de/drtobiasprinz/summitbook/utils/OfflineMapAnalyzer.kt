@@ -17,6 +17,7 @@ import org.mapsforge.core.model.Tile
 import org.mapsforge.map.datastore.MapReadResult
 import org.mapsforge.map.datastore.Way
 import org.mapsforge.map.reader.MapFile
+import org.osmdroid.util.GeoPoint
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.ln
@@ -26,7 +27,7 @@ import kotlin.math.tan
 import kotlin.time.measureTime
 
 
-class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Double) {
+class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Double) {
 
     fun getRoadTypeSummaryFromTrackPoints(
         trackPointsWithExtension: List<Pair<TrackPoint, ExtensionFromYaml>>?,
@@ -49,6 +50,27 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
             TAG, "distancePerSurface: $surfaceSummary and distancePerRoadType: $roadTypeSummary"
         )
         return Pair(surfaceSummary, roadTypeSummary)
+    }
+
+    fun getInfosForLocation(
+        geoPoint: GeoPoint,
+    ): Pair<RoadInfo?, LocationInfo?> {
+        for (mapFile in mapFiles) {
+            val roadInfo = getRoadInfoForLatLong(
+                LatLong(
+                    geoPoint.latitude, geoPoint.longitude
+                ), mapFile
+            )
+            val locationInfo = getClosestLocationInfo(
+                LatLong(
+                    geoPoint.latitude, geoPoint.longitude
+                ), mapFile
+            )
+            if (roadInfo != null || locationInfo != null) {
+                return Pair(roadInfo, locationInfo)
+            }
+        }
+        return Pair(null, null)
     }
 
     private fun extractRoadInfos(
@@ -119,13 +141,7 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
             if (i == 0) {
                 roadInfoIndexed.add(Triple(e ?: RoadInfo(""), i, i))
             } else {
-                if (e == null || (
-                            roadInfoIndexed.last().first.name == e.name &&
-                                    e.roadType != "" && e.surface != null &&
-                                    roadInfoIndexed.last().first.roadType == e.roadType &&
-                                    roadInfoIndexed.last().first.surface == e.surface
-                            )
-                ) {
+                if (e == null || (roadInfoIndexed.last().first.name == e.name && e.roadType != "" && e.surface != null && roadInfoIndexed.last().first.roadType == e.roadType && roadInfoIndexed.last().first.surface == e.surface)) {
                     roadInfoIndexed[roadInfoIndexed.size - 1] = Triple(
                         roadInfoIndexed.last().first, roadInfoIndexed.last().second, i
                     )
@@ -208,7 +224,7 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
             return null
         }
 
-        val zoomLevel: Byte = 16 // Lower zoom level for larger area coverage
+        val zoomLevel: Byte = 14 // Lower zoom level for larger area coverage
         val tile = Tile(
             latLongToTileX(latLong.longitude, zoomLevel.toInt()),
             latLongToTileY(latLong.latitude, zoomLevel.toInt()),
@@ -223,10 +239,6 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
             )
 
             if (locationInfo != null) {
-                Log.i(
-                    TAG,
-                    "Found location: ${locationInfo.name} (${locationInfo.placeType}) in ${locationInfo.country ?: "unknown country"}, distance: ${locationInfo.minDistance}m"
-                )
                 return locationInfo
             }
         } catch (e: Exception) {
@@ -243,38 +255,36 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
         pointsOfInterest: List<org.mapsforge.map.datastore.PointOfInterest>, latLong: LatLong
     ): LocationInfo? {
         val locationInfoList: MutableList<LocationInfo> = mutableListOf()
-
+        val hutTags = listOf("alpine_hut", "wilderness_hut", "basic_hut")
         val placeTypePriority = mapOf(
-            "peak" to 7,
-            "mountain_pass" to 6,
-            "saddle" to 5,
-            "city" to 4,
-            "town" to 3,
-            "village" to 2,
-            "hamlet" to 1,
-            "suburb" to 1,
-            "neighbourhood" to 0
+            "peak" to 80,
+            "mountain_pass" to 70,
+            "saddle" to 60,
+            "hut" to 50,
+            "city" to 40,
+            "town" to 30,
+            "village" to 20,
+            "hamlet" to 11,
+            "suburb" to 10,
+            "neighbourhood" to 5,
+            "isolated_dwelling" to 0
         )
-
         for (poi in pointsOfInterest) {
             val tags = poi.tags
             val placeTag = tags.firstOrNull { it.key == "place" }
             val naturalTag = tags.firstOrNull { it.key == "natural" }
-
+            val tourismTag =
+                tags.firstOrNull { it.key == "tourism" || it.key == "shelter_type" || it.key == "winter_room" }
             // Check for place tags (cities, towns, villages, etc.)
             if (placeTag != null && placeTypePriority.containsKey(placeTag.value)) {
                 val nameTag = tags.firstOrNull { it.key == "name" }?.value
-                val countryTag = tags.firstOrNull { it.key == "addr:country" }?.value
-                    ?: tags.firstOrNull { it.key == "is_in:country" }?.value
-                    ?: tags.firstOrNull { it.key == "country_code" }?.value
 
                 if (nameTag != null) {
-                    val distance = latLong.distance(poi.position)
+                    val distance = latLong.vincentyDistance(poi.position)
 
                     if (distance <= 5000) {
                         val locationInfo = LocationInfo(
                             name = nameTag,
-                            country = countryTag,
                             placeType = placeTag.value,
                             minDistance = distance.roundToInt(),
                             additionalTags = tags.associate { it.key to it.value })
@@ -286,18 +296,26 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
             // Check for mountain peaks
             if (naturalTag != null && (naturalTag.value == "peak" || naturalTag.value == "mountain_pass" || naturalTag.value == "saddle")) {
                 val nameTag = tags.firstOrNull { it.key == "name" }?.value
-                val countryTag = tags.firstOrNull { it.key == "addr:country" }?.value
-                    ?: tags.firstOrNull { it.key == "is_in:country" }?.value
-                    ?: tags.firstOrNull { it.key == "country_code" }?.value
-
                 if (nameTag != null) {
-                    val distance = latLong.distance(poi.position)
-
-                    if (distance <= 100) {
+                    val distance = latLong.vincentyDistance(poi.position)
+                    if (distance <= 250) {
                         val locationInfo = LocationInfo(
                             name = nameTag,
-                            country = countryTag,
                             placeType = naturalTag.value,
+                            minDistance = distance.roundToInt(),
+                            additionalTags = tags.associate { it.key to it.value })
+                        locationInfoList.add(locationInfo)
+                    }
+                }
+            }
+            if (tourismTag != null && tourismTag.value in hutTags) {
+                val nameTag = tags.firstOrNull { it.key == "name" }?.value
+                if (nameTag != null) {
+                    val distance = latLong.vincentyDistance(poi.position)
+                    if (distance <= 250) {
+                        val locationInfo = LocationInfo(
+                            name = nameTag,
+                            placeType = "hut",
                             minDistance = distance.roundToInt(),
                             additionalTags = tags.associate { it.key to it.value })
                         locationInfoList.add(locationInfo)
@@ -308,9 +326,7 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
 
         // Sort by priority first (higher priority = better), then by distance (closer = better)
         return locationInfoList.sortedWith(
-            compareBy(
-                { -(placeTypePriority[it.placeType] ?: 0) },
-                { it.minDistance })
+            compareBy({ -(placeTypePriority[it.placeType] ?: 0) }, { it.minDistance })
         ).firstOrNull()
     }
 
@@ -423,9 +439,9 @@ class RoadSurfaceAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: D
 
     companion object {
         const val TAG = "RoadSurfaceAnalyzer"
-        fun from(context: Context, searchRadiusMeters: Double = 15.0): RoadSurfaceAnalyzer {
+        fun from(context: Context, searchRadiusMeters: Double = 15.0): OfflineMapAnalyzer {
             val mapFiles = FileHelper.getOnDeviceMapFiles(context)
-            return RoadSurfaceAnalyzer(
+            return OfflineMapAnalyzer(
                 FileHelper.getOnDeviceMapFileInputStreams(context, mapFiles).map { MapFile(it) },
                 searchRadiusMeters
             )

@@ -32,7 +32,7 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addTrackAndMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.drawBoundingBox
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
-import de.drtobiasprinz.summitbook.utils.RoadSurfaceAnalyzer
+import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.utils.Utils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import io.ticofab.androidgpxparser.parser.GPXParser
@@ -181,7 +181,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                             binding.loadingPanel.visibility = View.VISIBLE
                             lifecycleScope.launch {
                                 withContext(Dispatchers.IO) {
-                                    val updated = RoadSurfaceAnalyzer.setDistancePerSurfacesAndRoadType(
+                                    val updated = OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(
                                         this@SelectOnOsMapActivity, entry
                                     )
                                     if (updated) {

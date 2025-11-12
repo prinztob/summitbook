@@ -67,7 +67,8 @@ import de.drtobiasprinz.summitbook.utils.Constants.BUNDLE_ID
 import de.drtobiasprinz.summitbook.utils.Constants.CONNECTED_ACTIVITY_PREFIX
 import de.drtobiasprinz.summitbook.utils.Constants.EDIT
 import de.drtobiasprinz.summitbook.utils.Constants.NEW
-import de.drtobiasprinz.summitbook.utils.RoadSurfaceAnalyzer
+import de.drtobiasprinz.summitbook.utils.FileHelper
+import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -234,13 +235,21 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 }
                 resultLauncher.launch(intent)
             }
-
+            if (FileHelper.getOnDeviceMapFiles(requireContext()).isEmpty()) {
+                updateName.visibility = View.GONE
+            }
             updateName.setOnClickListener {
                 loadingPanel.visibility = View.VISIBLE
                 lifecycleScope.launch {
                     withContext(Dispatchers.IO) {
-                        val latLng = if (latlngHighestPoint != null) latlngHighestPoint else entity.latLng
-                        latLng?.let { latlngHighestPointLocal -> setLocationInfo(latlngHighestPointLocal, entity) }
+                        val latLng =
+                            if (latlngHighestPoint != null) latlngHighestPoint else entity.latLng
+                        latLng?.let { latlngHighestPointLocal ->
+                            setLocationInfo(
+                                latlngHighestPointLocal,
+                                entity
+                            )
+                        }
                     }
                     loadingPanel.visibility = View.GONE
                 }
@@ -283,7 +292,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
     private fun setLocationInfo(latlngHighestPointLocal: GeoPoint, summit: Summit) {
         val localContext = context
         if (localContext != null) {
-            val info = RoadSurfaceAnalyzer.from(localContext).getClosestLocationInfo(
+            val info = OfflineMapAnalyzer.from(localContext).getClosestLocationInfo(
                 LatLong(
                     latlngHighestPointLocal.latitude,
                     latlngHighestPointLocal.longitude

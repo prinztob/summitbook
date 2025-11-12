@@ -17,7 +17,7 @@ import java.io.File
 import java.io.FileInputStream
 
 @RunWith(RobolectricTestRunner::class)
-class RoadSurfaceAnalyzerTest {
+class OfflineMapAnalyzerTest {
 
     @Test
     fun testE2EAllTerrain() {
@@ -31,7 +31,7 @@ class RoadSurfaceAnalyzerTest {
             )
             gpsTrack.parseTrack(false)
             val mapStream = FileInputStream(File(map.path))
-            val analyzer = RoadSurfaceAnalyzer(listOf(MapFile(mapStream)), 15.0)
+            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
             val result = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints)
             assertEquals(16029, result.first[Surface.ASPHALT])
             assertEquals(0, result.first[Surface.STONE_PAVEMENT])
@@ -60,7 +60,7 @@ class RoadSurfaceAnalyzerTest {
             )
             gpsTrack.parseTrack(false)
             val mapStream = FileInputStream(File(map.path))
-            val analyzer = RoadSurfaceAnalyzer(listOf(MapFile(mapStream)), 15.0)
+            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
             val result = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints)
             assertEquals(32049, result.first[Surface.ASPHALT])
             assertEquals(0, result.first[Surface.STONE_PAVEMENT])
@@ -78,18 +78,35 @@ class RoadSurfaceAnalyzerTest {
     }
 
     @Test
-    fun getNameOfVillage() {
+    fun getNameOfPoi() {
         val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
         if (map != null) {
             val mapStream = FileInputStream(File(map.path))
-            val analyzer = RoadSurfaceAnalyzer(listOf(MapFile(mapStream)), 15.0)
-            val locationInfo = analyzer.getClosestLocationInfo(LatLong(48.002878, 11.79445))
-            assert(locationInfo != null)
-            assertEquals("Egmating", locationInfo?.name)
-            val locationInfoWendelstein =
+            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
+
+//            val locationInfoHut =
+//                analyzer.getClosestLocationInfo(LatLong(47.63978, 11.6795541271))
+//            assert(locationInfoHut != null)
+//            assertEquals("Buchsteinhütte", locationInfoHut?.name)
+
+            val locationInfoHut2 =
+                analyzer.getClosestLocationInfo(LatLong(47.655, 11.8866671053))
+            assert(locationInfoHut2 != null)
+            assertEquals("Albert-Link-Hütte", locationInfoHut2?.name)
+
+            val locationInfoVillage = analyzer.getClosestLocationInfo(LatLong(48.002878, 11.79445))
+            assert(locationInfoVillage != null)
+            assertEquals("Egmating", locationInfoVillage?.name)
+
+            val locationInfoPeak =
                 analyzer.getClosestLocationInfo(LatLong(47.7036326, 12.0109743))
-            assert(locationInfo != null)
-            assertEquals("Wendelstein", locationInfoWendelstein?.name)
+            assert(locationInfoPeak != null)
+            assertEquals("Wendelstein", locationInfoPeak?.name)
+
+            val locationInfoPass =
+                analyzer.getClosestLocationInfo(LatLong(47.6722222,11.8863889))
+            assert(locationInfoPass != null)
+            assertEquals("Spitzingsattel", locationInfoPass?.name)
         }
     }
 
@@ -118,7 +135,7 @@ class RoadSurfaceAnalyzerTest {
         )
 
         // Apply the filter
-        val analyzer = RoadSurfaceAnalyzer(emptyList(), 25.0)
+        val analyzer = OfflineMapAnalyzer(emptyList(), 25.0)
         analyzer.filterWronglySelectedRoadTypes(roadInfos, trackPoints)
 
         // Verify that all points now have Road A's properties
@@ -160,7 +177,7 @@ class RoadSurfaceAnalyzerTest {
             )
         )
 
-        val analyzer = RoadSurfaceAnalyzer(emptyList(), 25.0)
+        val analyzer = OfflineMapAnalyzer(emptyList(), 25.0)
         analyzer.filterWronglySelectedRoadTypes(roadInfos, trackPoints)
 
         // Verify that Road B's points still have their original properties
@@ -202,7 +219,7 @@ class RoadSurfaceAnalyzerTest {
             )
         )
 
-        val analyzer = RoadSurfaceAnalyzer(emptyList(), 25.0)
+        val analyzer = OfflineMapAnalyzer(emptyList(), 25.0)
         analyzer.filterWronglySelectedRoadTypes(roadInfos, trackPoints)
 
         // Verify that Road B's points still have their original properties
@@ -244,7 +261,7 @@ class RoadSurfaceAnalyzerTest {
             )
         )
 
-        val analyzer = RoadSurfaceAnalyzer(emptyList(), 25.0)
+        val analyzer = OfflineMapAnalyzer(emptyList(), 25.0)
         analyzer.filterWronglySelectedRoadTypes(roadInfos, trackPoints)
 
         // Verify first segment keeps its properties
@@ -307,7 +324,7 @@ class RoadSurfaceAnalyzerTest {
             )
         )
 
-        val analyzer = RoadSurfaceAnalyzer(emptyList(), 25.0)
+        val analyzer = OfflineMapAnalyzer(emptyList(), 25.0)
         val filterMethod = analyzer.javaClass.getDeclaredMethod(
             "filterWronglySelectedRoadTypes",
             MutableList::class.java,
@@ -369,7 +386,7 @@ class RoadSurfaceAnalyzerTest {
         roadInfos.addAll(List(5) { null })
         roadInfos.addAll(List(10) { RoadInfo("primary", "Road A", "asphalt") })
 
-        val analyzer = RoadSurfaceAnalyzer(emptyList(), 25.0)
+        val analyzer = OfflineMapAnalyzer(emptyList(), 25.0)
         val filterMethod = analyzer.javaClass.getDeclaredMethod(
             "filterWronglySelectedRoadTypes",
             MutableList::class.java,

@@ -36,7 +36,7 @@ import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.observeOnce
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.utils.DataStatus
-import de.drtobiasprinz.summitbook.utils.RoadSurfaceAnalyzer
+import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.utils.isVisible
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
@@ -301,7 +301,7 @@ class SummitViewFragment : Fragment() {
                 "updateTracks - setDistancePerSurfacesAndRoadType for summit ${it.getDateAsString()}_${it.name}."
             )
             try {
-                RoadSurfaceAnalyzer.setDistancePerSurfacesAndRoadType(requireContext(), it)
+                OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(requireContext(), it)
             } catch (e: Exception) {
                 Log.w(
                     TAG,

@@ -26,14 +26,12 @@ import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.storage
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.MapHelper
+import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
-import de.drtobiasprinz.summitbook.utils.RoadSurfaceAnalyzer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.mapsforge.core.model.LatLong
-import org.mapsforge.map.reader.MapFile
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -188,16 +186,13 @@ object OpenStreetMapUtils {
             marker.position = startPoint
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
             marker.title = entry.id.toString()
-            val iconId = useIconId
-                ?: if (entry.hasGpsTrack()) {
-                    entry.sportType.markerIdWithGpx
-                } else {
-                    entry.sportType.markerIdWithoutGpx
-                }
+            val iconId = useIconId ?: if (entry.hasGpsTrack()) {
+                entry.sportType.markerIdWithGpx
+            } else {
+                entry.sportType.markerIdWithoutGpx
+            }
             marker.icon = ResourcesCompat.getDrawable(
-                context.resources,
-                iconId,
-                null
+                context.resources, iconId, null
             )
             marker.infoWindow = MapCustomInfoBubble(mMapView, entry, context, alwaysShowTrackOnMap)
             marker.setOnMarkerClickListener { marker1, _ ->
@@ -238,8 +233,7 @@ object OpenStreetMapUtils {
 
     @JvmStatic
     fun addDefaultSettings(
-        mMapView: MapView,
-        fragmentActivity: FragmentActivity
+        mMapView: MapView, fragmentActivity: FragmentActivity
     ) {
 
         val mScaleBarOverlay = ScaleBarOverlay(mMapView)
@@ -273,14 +267,12 @@ object OpenStreetMapUtils {
      */
     @JvmStatic
     fun enableRoadInfoOnMapClick(
-        mapView: MapView,
-        context: Context,
-        scope: CoroutineScope? = null
+        mapView: MapView, context: Context, scope: CoroutineScope? = null
     ) {
         val coroutineScope = scope ?: CoroutineScope(Dispatchers.Main)
         val mapEventsReceiver = object : org.osmdroid.events.MapEventsReceiver {
             override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
-                Log.i("MAP", "singleTapConfirmedHelper: position: $p")
+                Log.i("MAP", "singleTapConfirmedHelper: position: $p, ${mapView.zoomLevelDouble}")
                 if (p != null) {
                     showRoadInfoAtPosition(context, p, coroutineScope)
                 }
@@ -301,61 +293,22 @@ object OpenStreetMapUtils {
      * Show road information at a specific position in a toast
      */
     fun showRoadInfoAtPosition(
-        context: Context,
-        geoPoint: GeoPoint,
-        scope: CoroutineScope
+        context: Context, geoPoint: GeoPoint, scope: CoroutineScope
     ) {
-        val mapFiles = FileHelper.getOnDeviceMapFiles(context)
-
-        if (mapFiles.isEmpty()) {
-            Toast.makeText(context, "No offline map files available", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // Show loading toast
         Toast.makeText(context, "Querying road info...", Toast.LENGTH_SHORT).show()
-
-        // Query road info in background thread
         scope.launch {
             try {
-                var roadInfo: RoadInfo? = null
-                var locationInfo: LocationInfo? = null
-                val mapFileInputStreams =
-                    FileHelper.getOnDeviceMapFileInputStreams(context, mapFiles)
+                var info: Pair<RoadInfo?, LocationInfo?>? = null
                 withContext(Dispatchers.IO) {
-                    for (inputStream in mapFileInputStreams) {
-                        val mapFile = MapFile(inputStream)
-                        val analyzer = RoadSurfaceAnalyzer.from(context)
-                        roadInfo = analyzer.getRoadInfoForLatLong(
-                            LatLong(
-                                geoPoint.latitude, geoPoint.longitude
-                            ), mapFile
-                        )
-                        locationInfo = analyzer.getClosestLocationInfo(
-                            LatLong(
-                                geoPoint.latitude, geoPoint.longitude
-                            ), mapFile
-                        )
-                    }
+                    val analyzer = OfflineMapAnalyzer.from(context)
+                    info = analyzer.getInfosForLocation(geoPoint)
                 }
 
                 // Show result on main thread
-                withContext(Dispatchers.Main) {
-                    AlertDialog.Builder(context).setTitle("Road and location Information")
-                        .setMessage("roadType ${roadInfo?.roadType}, " + "name ${roadInfo?.name}\n" + "minDistance ${roadInfo?.minDistance} m\n" + "surface ${roadInfo?.surface}, " + "trackType: ${roadInfo?.trackType}\n" + roadInfo?.let {
-                            "mapped Surface: ${
-                                Surface.mapFromRoadInfo(
-                                    it
-                                )
-                            }, "
-                        } + roadInfo?.let {
-                            "mapped RoadType: ${
-                                RoadType.mapFromRoadInfo(
-                                    it
-                                )
-                            }\n"
-                        } + "additionalTags: ${roadInfo?.additionalTags}\n\n" + "locationInfo ${locationInfo?.name}, " + "minDistance ${locationInfo?.minDistance}\n" + "placeType ${locationInfo?.placeType}\n" + "country ${locationInfo?.country}\n" + "additionalTags ${locationInfo?.additionalTags}")
-                        .setPositiveButton("OK", null).show()
+                if (info != null) {
+                    withContext(Dispatchers.Main) {
+                        showMapPointInfo(context, geoPoint, info)
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error querying road info", e)
@@ -366,6 +319,25 @@ object OpenStreetMapUtils {
         }
     }
 
+    fun showMapPointInfo(
+        context: Context, geoPoint: GeoPoint, info: Pair<RoadInfo?, LocationInfo?>
+    ) {
+        AlertDialog.Builder(context).setTitle("Road and location Information")
+            .setMessage("lat: ${geoPoint.latitude}, long: ${geoPoint.longitude}\n\nroadType ${info.first?.roadType}, name ${info.first?.name}\n minDistance ${info.first?.minDistance} m\n surface ${info.first?.surface}, trackType: ${info.first?.trackType}\n" + info.first?.let {
+                "mapped Surface: ${
+                    Surface.mapFromRoadInfo(
+                        it
+                    )
+                }, "
+            } + info.first?.let {
+                "mapped RoadType: ${
+                    RoadType.mapFromRoadInfo(
+                        it
+                    )
+                }\n"
+            } + "additionalTags: ${info.first?.additionalTags}\n\n locationInfo ${info.second?.name},  minDistance ${info.second?.minDistance}\n placeType ${info.second?.placeType}\n additionalTags ${info.second?.additionalTags}")
+            .setPositiveButton("OK", null).show()
+    }
 
     @JvmStatic
     fun showMapTypeSelectorDialog(context: Context, mapView: MapView, onSelected: () -> Unit = {}) {
@@ -389,12 +361,10 @@ object OpenStreetMapUtils {
     }
 
     fun setTileProviderDependingOnSummitSportType(
-        mapView: MapView,
-        context: Context,
-        sportType: SportType
+        mapView: MapView, context: Context, sportType: SportType
     ) {
-        if (PreferencesHelper.loadOnDeviceMaps() &&
-            FileHelper.getOnDeviceMapFiles(context).isNotEmpty()
+        if (PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
+                .isNotEmpty()
         ) {
             selectedItem = getSportTypeForMapProviders(sportType, context)
         } else if (FileHelper.getOnDeviceMbtilesFiles(context).isNotEmpty()) {
@@ -443,8 +413,8 @@ object OpenStreetMapUtils {
     fun getSportTypeForMapProviders(sportType: SportType, context: Context): MapProvider {
         return MapProvider.entries.find {
             it.relevantSportTypes.contains(sportType)
-        } ?: if (PreferencesHelper.loadOnDeviceMaps() &&
-            FileHelper.getOnDeviceMapFiles(context).isNotEmpty()
+        } ?: if (PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
+                .isNotEmpty()
         ) {
             MapProvider.HIKING
         } else if (FileHelper.getOnDeviceMbtilesFiles(context).isNotEmpty()) {
@@ -466,14 +436,10 @@ enum class MapProvider(
     var relevantSportTypes: List<SportType> = listOf()
 ) {
     OPENTOPO(
-        R.string.open_topo_map_type,
-        TileSourceFactory.OpenTopo,
-        null
+        R.string.open_topo_map_type, TileSourceFactory.OpenTopo, null
     ),
     MAPNIK(
-        R.string.mapnik_map_type,
-        TileSourceFactory.MAPNIK,
-        null
+        R.string.mapnik_map_type, TileSourceFactory.MAPNIK, null
     ),
     MBTILES(
         R.string.generic_offline_map_type,
@@ -483,52 +449,29 @@ enum class MapProvider(
         { context -> FileHelper.getOnDeviceMbtilesFiles(context).isNotEmpty() },
     ),
     HIKING(
-        R.string.hiking_map_type,
-        null,
-        "elv-hiking",
-        true,
-        { context ->
+        R.string.hiking_map_type, null, "elv-hiking", true, { context ->
             PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
                 .isNotEmpty()
-        },
-        relevantSportTypes = listOf(
-            SportType.Hike,
-            SportType.Climb,
-            SportType.BikeAndHike,
-            SportType.Skitour
+        }, relevantSportTypes = listOf(
+            SportType.Hike, SportType.Climb, SportType.BikeAndHike, SportType.Skitour
         )
     ),
     CITY(
-        R.string.city_map_type,
-        null,
-        "elv-city",
-        true,
-        { context ->
+        R.string.city_map_type, null, "elv-city", true, { context ->
             PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
                 .isNotEmpty()
-        },
-        relevantSportTypes = listOf(SportType.Other, SportType.IndoorTrainer, SportType.Running)
+        }, relevantSportTypes = listOf(SportType.Other, SportType.IndoorTrainer, SportType.Running)
     ),
     CYCLING(
-        R.string.cycling_map_type,
-        null,
-        "elv-cycling",
-        true,
-        { context ->
+        R.string.cycling_map_type, null, "elv-cycling", true, { context ->
             PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
                 .isNotEmpty()
-        },
-        relevantSportTypes = listOf(SportType.Bicycle, SportType.Racer)
+        }, relevantSportTypes = listOf(SportType.Bicycle, SportType.Racer)
     ),
     MTB(
-        R.string.mtb_map_type,
-        null,
-        "elv-mtb",
-        true,
-        { context ->
+        R.string.mtb_map_type, null, "elv-mtb", true, { context ->
             PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
                 .isNotEmpty()
-        },
-        relevantSportTypes = listOf(SportType.Mountainbike)
+        }, relevantSportTypes = listOf(SportType.Mountainbike)
     )
 }
