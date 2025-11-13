@@ -224,16 +224,16 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
             return null
         }
 
-        val zoomLevel: Byte = 14 // Lower zoom level for larger area coverage
+        val zoomLevel: Byte = 16
         val tile = Tile(
             latLongToTileX(latLong.longitude, zoomLevel.toInt()),
             latLongToTileY(latLong.latitude, zoomLevel.toInt()),
             zoomLevel,
-            256
+            mapFile.mapFileInfo.tilePixelSize
         )
 
         try {
-            val mapReadResult: MapReadResult = mapFile.readMapData(tile)
+            val mapReadResult: MapReadResult = mapFile.readPoiData(tile)
             val locationInfo = processPointsOfInterest(
                 mapReadResult.pointOfInterests, latLong
             )
