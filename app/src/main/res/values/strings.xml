@@ -397,7 +397,8 @@
     <string name="road_type_close">Close Road Type</string>
     <string name="road_type_way">Way</string>
     <string name="road_type_side_street">Side street</string>
-    <string name="road_type_country_road">Country road</string>
+    <string name="road_type_minor_road">Minor road</string>
+    <string name="road_type_major_road">Major road</string>
     <string name="road_type_cycle_way">Cycleway</string>
     <string name="road_type_road">Road</string>
     <string name="road_unknown">Unknown</string>

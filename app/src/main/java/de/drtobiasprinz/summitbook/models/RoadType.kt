@@ -1,38 +1,72 @@
 package de.drtobiasprinz.summitbook.models
 
 import android.graphics.Color
+import androidx.annotation.ColorInt
+import androidx.annotation.StringRes
 import de.drtobiasprinz.summitbook.R
 
 enum class RoadType(
-    var number: Double, var nameId: Int, var color: Int, var highwayTags: List<String>
+    val number: Double,
+    @StringRes val nameId: Int,
+    @ColorInt val color: Int,
+    val highwayTags: List<String>
 ) {
-
     WAY(
         10.0,
         R.string.road_type_way,
         Color.rgb(165, 42, 42),
-        listOf("path", "footway", "track", "bridleway", "pedestrian"),
+        listOf("path", "footway", "track", "bridleway", "pedestrian", "steps", "hiking", "trail"),
     ),
     SIDE_STREET(
         20.0,
         R.string.road_type_side_street,
         Color.YELLOW,
-        listOf("residential", "living_street", "service"),
-    ),
-    COUNTRY_ROAD(
-        30.0,
-        R.string.road_type_country_road,
-        Color.rgb(255, 165, 0),
-        listOf("unclassified", "tertiary", "secondary", "primary", "trunk", "motorway"),
+        listOf(
+            "unclassified",
+            "residential",
+            "living_street",
+            "service",
+            "service_link",
+            "alley",
+            "driveway"
+        ),
     ),
     CYCLE_WAY(
-        40.0,
+        25.0, // Moved to a more logical position
         R.string.road_type_cycle_way,
         Color.BLUE,
-        listOf("cycleway"),
+        listOf(
+            "cycleway",
+            "cycleway:left",
+            "cycleway:right",
+            "cycleway:both",
+            "bicycle",
+            "cycle_path"
+        ),
+    ),
+    MINOR_ROAD(
+        30.0,
+        R.string.road_type_minor_road,
+        Color.rgb(255, 195, 0),
+        listOf("tertiary", "tertiary_link"),
+    ),
+    MAJOR_ROAD(
+        40.0,
+        R.string.road_type_major_road,
+        Color.rgb(255, 165, 0),
+        listOf(
+            "secondary",
+            "primary",
+            "secondary_link",
+            "primary_link",
+            "motorway",
+            "trunk",
+            "motorway_link",
+            "trunk_link"
+        ),
     ),
     ROAD(
-        50.0,
+        70.0,
         R.string.road_type_road,
         Color.RED,
         listOf("road"),
@@ -41,12 +75,23 @@ enum class RoadType(
         0.0,
         R.string.road_unknown,
         Color.WHITE,
-        listOf(),
+        emptyList(),
     );
 
     companion object {
+        private val roadTypeMap by lazy {
+            entries.flatMap { roadType ->
+                roadType.highwayTags.map { tag -> tag to roadType }
+            }.toMap()
+        }
+
+        fun fromHighwayTag(tag: String?): RoadType {
+            // Using .lowercase() makes the matching case-insensitive, which is more robust
+            return roadTypeMap[tag?.lowercase()] ?: UNKNOWN
+        }
+
         fun mapFromRoadInfo(roadInfo: RoadInfo): RoadType {
-            return entries.firstOrNull { roadInfo.roadType in it.highwayTags } ?: UNKNOWN
+            return fromHighwayTag(roadInfo.roadType)
         }
     }
 }

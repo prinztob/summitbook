@@ -280,13 +280,22 @@ enum class TextField(
             if (RoadType.SIDE_STREET in e.distancePerRoadType) e.distancePerRoadType[RoadType.SIDE_STREET] else 0
         },
         { e -> null }),
-    RoadTypeCountryRoad(
+    RoadTypeMinorRoad(
         TextFieldGroup.DistancePerRoadType,
-        { b -> b.roadTypeCountryRoadText },
-        { b -> b.roadTypeCountryRoad },
+        { b -> b.roadTypeMinorRoadText },
+        { b -> b.roadTypeMinorRoad },
         "m",
         { e ->
-            if (RoadType.COUNTRY_ROAD in e.distancePerRoadType) e.distancePerRoadType[RoadType.COUNTRY_ROAD] else 0
+            if (RoadType.MINOR_ROAD in e.distancePerRoadType) e.distancePerRoadType[RoadType.MINOR_ROAD] else 0
+        },
+        { e -> null }),
+    RoadTypeMajorRoad(
+        TextFieldGroup.DistancePerRoadType,
+        { b -> b.roadTypeMajorRoadText },
+        { b -> b.roadTypeMajorRoad },
+        "m",
+        { e ->
+            if (RoadType.MAJOR_ROAD in e.distancePerRoadType) e.distancePerRoadType[RoadType.MAJOR_ROAD] else 0
         },
         { e -> null }),
     RoadTypeCycleWay(

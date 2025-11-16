@@ -245,10 +245,14 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                         val latLng =
                             if (latlngHighestPoint != null) latlngHighestPoint else entity.latLng
                         latLng?.let { latlngHighestPointLocal ->
-                            setLocationInfo(
-                                latlngHighestPointLocal,
-                                entity
-                            )
+                            try {
+                                setLocationInfo(
+                                    latlngHighestPointLocal,
+                                    entity
+                                )
+                            } catch (_: Exception) {
+                                // DO NOTHING
+                            }
                         }
                     }
                     loadingPanel.visibility = View.GONE

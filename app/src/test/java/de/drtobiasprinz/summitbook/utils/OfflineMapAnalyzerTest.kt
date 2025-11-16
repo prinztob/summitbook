@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.utils
 
+import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.RoadInfo
@@ -8,6 +9,8 @@ import de.drtobiasprinz.summitbook.models.Surface
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import org.joda.time.DateTime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mapsforge.core.model.LatLong
@@ -40,8 +43,9 @@ class OfflineMapAnalyzerTest {
             assertEquals(25, result.first[Surface.PATH])
             assertEquals(0, result.first[Surface.UNKNOWN])
             assertEquals(15302, result.second[RoadType.WAY])
-            assertEquals(2270, result.second[RoadType.SIDE_STREET])
-            assertEquals(2780, result.second[RoadType.COUNTRY_ROAD])
+            assertEquals(4355, result.second[RoadType.SIDE_STREET])
+            assertEquals(695, result.second[RoadType.MINOR_ROAD])
+            assertEquals(0, result.second[RoadType.MAJOR_ROAD])
             assertEquals(1129, result.second[RoadType.CYCLE_WAY])
             assertEquals(0, result.second[RoadType.ROAD])
             assertEquals(0, result.second[RoadType.UNKNOWN])
@@ -70,7 +74,8 @@ class OfflineMapAnalyzerTest {
             assertEquals(0, result.first[Surface.UNKNOWN])
             assertEquals(2829, result.second[RoadType.WAY])
             assertEquals(6983, result.second[RoadType.SIDE_STREET])
-            assertEquals(22495, result.second[RoadType.COUNTRY_ROAD])
+            assertEquals(22495, result.second[RoadType.MINOR_ROAD])
+            assertEquals(22495, result.second[RoadType.MAJOR_ROAD])
             assertEquals(0, result.second[RoadType.CYCLE_WAY])
             assertEquals(0, result.second[RoadType.ROAD])
             assertEquals(0, result.second[RoadType.UNKNOWN])
@@ -84,15 +89,10 @@ class OfflineMapAnalyzerTest {
             val mapStream = FileInputStream(File(map.path))
             val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
 
-//            val locationInfoHut =
-//                analyzer.getClosestLocationInfo(LatLong(47.63978, 11.6795541271))
-//            assert(locationInfoHut != null)
-//            assertEquals("Buchsteinhütte", locationInfoHut?.name)
-
-            val locationInfoHut2 =
-                analyzer.getClosestLocationInfo(LatLong(47.655, 11.8866671053))
-            assert(locationInfoHut2 != null)
-            assertEquals("Albert-Link-Hütte", locationInfoHut2?.name)
+            val locationInfoHut =
+                analyzer.getClosestLocationInfo(LatLong(47.63978, 11.6795541271))
+            assert(locationInfoHut != null)
+            assertEquals("Buchsteinhütte", locationInfoHut?.name)
 
             val locationInfoVillage = analyzer.getClosestLocationInfo(LatLong(48.002878, 11.79445))
             assert(locationInfoVillage != null)
@@ -147,7 +147,7 @@ class OfflineMapAnalyzerTest {
             )
             assertEquals(
                 "All points should have Road A's road type",
-                RoadType.COUNTRY_ROAD,
+                RoadType.MAJOR_ROAD,
                 extension.roadType
             )
         }
@@ -273,7 +273,7 @@ class OfflineMapAnalyzerTest {
             )
             assertEquals(
                 "First segment should keep its road type",
-                RoadType.COUNTRY_ROAD,
+                RoadType.MAJOR_ROAD,
                 extension.roadType
             )
         }
@@ -287,7 +287,7 @@ class OfflineMapAnalyzerTest {
             )
             assertEquals(
                 "Last segment should keep its road type",
-                RoadType.COUNTRY_ROAD,
+                RoadType.MAJOR_ROAD,
                 extension.roadType
             )
         }
@@ -338,7 +338,7 @@ class OfflineMapAnalyzerTest {
             assertEquals("Road B should be filtered to Road A", Surface.ASPHALT, extension.surface)
             assertEquals(
                 "Road B should be filtered to Road A",
-                RoadType.COUNTRY_ROAD,
+                RoadType.MAJOR_ROAD,
                 extension.roadType
             )
         }
@@ -348,7 +348,7 @@ class OfflineMapAnalyzerTest {
             assertEquals("Second Road A should remain Road A", Surface.ASPHALT, extension.surface)
             assertEquals(
                 "Second Road A should remain Road A",
-                RoadType.COUNTRY_ROAD,
+                RoadType.MAJOR_ROAD,
                 extension.roadType
             )
         }
@@ -362,7 +362,7 @@ class OfflineMapAnalyzerTest {
             )
             assertEquals(
                 "Road C should keep its road type",
-                RoadType.COUNTRY_ROAD,
+                RoadType.MAJOR_ROAD,
                 extension.roadType
             )
         }
@@ -439,7 +439,7 @@ class OfflineMapAnalyzerTest {
                         else -> Surface.UNKNOWN
                     },
                     roadType = when (segment.roadType) {
-                        "primary", "secondary" -> RoadType.COUNTRY_ROAD
+                        "primary", "secondary" -> RoadType.MINOR_ROAD
                         "track" -> RoadType.WAY
                         else -> RoadType.UNKNOWN
                     }
@@ -476,5 +476,141 @@ class OfflineMapAnalyzerTest {
         }
 
         return roadInfos
+    }
+
+    /**
+     * Test that hasMapCoverageForBoundingBox returns true when track overlaps with map
+     */
+    @Test
+    fun testHasMapCoverageForBoundingBox_WithOverlap() {
+        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
+        if (map != null) {
+            val mapStream = FileInputStream(File(map.path))
+            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
+            
+            // Create a bounding box that overlaps with Bayern map
+            // Bayern map covers approximately: lat 47.27-50.56, lon 8.98-13.84
+            val trackBoundingBox = TrackBoundingBox(
+                latNorth = 48.5,
+                latSouth = 47.5,
+                lonWest = 11.0,
+                lonEast = 12.0
+            )
+            
+            assertTrue(
+                "Track bounding box should overlap with Bayern map",
+                analyzer.hasMapCoverageForBoundingBox(trackBoundingBox)
+            )
+        }
+    }
+
+    /**
+     * Test that hasMapCoverageForBoundingBox returns false when track doesn't overlap with map
+     */
+    @Test
+    fun testHasMapCoverageForBoundingBox_WithoutOverlap() {
+        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
+        if (map != null) {
+            val mapStream = FileInputStream(File(map.path))
+            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
+            
+            // Create a bounding box that doesn't overlap with Bayern map
+            // This is somewhere in northern Germany, far from Bayern
+            val trackBoundingBox = TrackBoundingBox(
+                latNorth = 54.0,
+                latSouth = 53.0,
+                lonWest = 9.0,
+                lonEast = 10.0
+            )
+            
+            assertFalse(
+                "Track bounding box should not overlap with Bayern map",
+                analyzer.hasMapCoverageForBoundingBox(trackBoundingBox)
+            )
+        }
+    }
+
+    /**
+     * Test that hasMapCoverageForBoundingBox returns false when no map files are available
+     */
+    @Test
+    fun testHasMapCoverageForBoundingBox_NoMapFiles() {
+        val analyzer = OfflineMapAnalyzer(emptyList(), 15.0)
+        
+        val trackBoundingBox = TrackBoundingBox(
+            latNorth = 48.5,
+            latSouth = 47.5,
+            lonWest = 11.0,
+            lonEast = 12.0
+        )
+        
+        assertFalse(
+            "Should return false when no map files are available",
+            analyzer.hasMapCoverageForBoundingBox(trackBoundingBox)
+        )
+    }
+
+    /**
+     * Test that getRoadTypeSummaryFromTrackPoints returns empty results when track doesn't overlap with map
+     */
+    @Test
+    fun testGetRoadTypeSummaryFromTrackPoints_NoOverlap() {
+        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
+        if (map != null) {
+            val mapStream = FileInputStream(File(map.path))
+            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
+            
+            // Create track points in an area not covered by the map
+            val trackPoints = createTrackPointsWithRoads(
+                listOf(RoadSegment("Road A", "asphalt", "primary", 10))
+            )
+            
+            // Create bounding box that doesn't overlap with Bayern map
+            val trackBoundingBox = TrackBoundingBox(
+                latNorth = 54.0,
+                latSouth = 53.0,
+                lonWest = 9.0,
+                lonEast = 10.0
+            )
+            
+            val result = analyzer.getRoadTypeSummaryFromTrackPoints(trackPoints, trackBoundingBox)
+            
+            // All values should be 0 since there's no overlap
+            assertEquals(emptyMap<RoadType, Int>(), result.first)
+            assertEquals(emptyMap<Surface, Int>(), result.second)
+        }
+    }
+
+    /**
+     * Test that getRoadTypeSummaryFromTrackPoints works normally when track overlaps with map
+     */
+    @Test
+    fun testGetRoadTypeSummaryFromTrackPoints_WithOverlap() {
+        val track = this.javaClass.classLoader?.getResource("track_asphalt.gpx")
+        val extension = this.javaClass.classLoader?.getResource("track_asphalt_extensions.yaml")
+        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
+        if (track != null && extension != null && map != null) {
+            val gpsTrack = GpsTrack(
+                File(track.path).toPath(),
+                yamlExtensionsFile = File(extension.path)
+            )
+            gpsTrack.parseTrack(false)
+            val mapStream = FileInputStream(File(map.path))
+            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
+            
+            // Create bounding box that overlaps with Bayern map
+            val trackBoundingBox = TrackBoundingBox(
+                latNorth = 48.5,
+                latSouth = 47.5,
+                lonWest = 11.0,
+                lonEast = 12.0
+            )
+            
+            val result = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints, trackBoundingBox)
+            
+            // Should have non-zero values since there's overlap
+            assertTrue("Should have asphalt distance", result.first[Surface.ASPHALT]!! > 0)
+            assertTrue("Should have road type distance", result.second[RoadType.MINOR_ROAD]!! > 0)
+        }
     }
 }

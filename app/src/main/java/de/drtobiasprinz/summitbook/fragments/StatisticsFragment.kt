@@ -179,13 +179,17 @@ class StatisticsFragment : Fragment() {
             resources.getString(R.string.value_with_km),
             numberFormat.format((statisticEntry.totalRoadTypeMeter[RoadType.SIDE_STREET] ?: 0) / 1000)
         )
-        binding.textRoadTypeCountryRoad.text = String.format(
-            resources.getString(R.string.value_with_km),
-            numberFormat.format((statisticEntry.totalRoadTypeMeter[RoadType.COUNTRY_ROAD] ?: 0) / 1000)
-        )
         binding.textRoadTypeCycleWay.text = String.format(
             resources.getString(R.string.value_with_km),
             numberFormat.format((statisticEntry.totalRoadTypeMeter[RoadType.CYCLE_WAY] ?: 0) / 1000)
+        )
+        binding.textRoadTypeMinorRoad.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadTypeMeter[RoadType.MINOR_ROAD] ?: 0) / 1000)
+        )
+        binding.textRoadTypeMajorRoad.text = String.format(
+            resources.getString(R.string.value_with_km),
+            numberFormat.format((statisticEntry.totalRoadTypeMeter[RoadType.MAJOR_ROAD] ?: 0) / 1000)
         )
         binding.textRoadTypeRoad.text = String.format(
             resources.getString(R.string.value_with_km),

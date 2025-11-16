@@ -368,7 +368,7 @@
 
 
                     <LinearLayout
-                        android:id="@+id/layoutRoadTypeCountryRoad"
+                        android:id="@+id/layoutRoadTypeMinorRoad"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="5dp"
@@ -382,13 +382,13 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
-                            android:text="@string/road_type_country_road"
+                            android:text="@string/road_type_minor_road"
                             android:textAppearance="?android:attr/textAppearanceMedium"
                             android:textColor="?android:attr/textColorSecondary" />
 
 
                         <TextView
-                            android:id="@+id/textRoadTypeCountryRoad"
+                            android:id="@+id/textRoadTypeMinorRoad"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
@@ -398,6 +398,36 @@
 
                     </LinearLayout>
 
+                    <LinearLayout
+                        android:id="@+id/layoutRoadTypeMajorRoad"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginRight="5dp"
+                        android:background="@drawable/selector_box"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/road_type_major_road"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="?android:attr/textColorSecondary" />
+
+
+                        <TextView
+                            android:id="@+id/textRoadTypeMajorRoad"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="?android:attr/textColorPrimary"
+                            android:textSize="35sp" />
+
+
+                    </LinearLayout>
 
                     <LinearLayout
                         android:id="@+id/layoutRoadTypeCycleWay"

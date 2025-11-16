@@ -396,7 +396,8 @@
     <string name="road_surface_path">Pfad</string>
     <string name="road_type_way">Weg</string>
     <string name="road_type_side_street">Nebenstraße</string>
-    <string name="road_type_country_road">Landstraße</string>
+    <string name="road_type_minor_road">Minor road</string>
+    <string name="road_type_major_road">Major road</string>
     <string name="road_type_cycle_way">Fahrradweg</string>
     <string name="road_type_road">Straße</string>
     <string name="road_unknown">Unbekannt</string>

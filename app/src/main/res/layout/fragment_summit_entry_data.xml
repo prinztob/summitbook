@@ -1240,19 +1240,35 @@
                         app:layout_constraintTop_toBottomOf="@+id/road_type_way_text" />
 
                     <TextView
-                        android:id="@+id/road_type_country_road_text"
+                        android:id="@+id/road_type_minor_road_text"
                         android:layout_width="wrap_content"
                         android:layout_height="27dp"
                         android:layout_gravity="start"
                         android:layout_marginStart="20dp"
                         android:drawablePadding="5dp"
                         android:padding="1dp"
-                        android:text="@string/road_type_country_road"
+                        android:text="@string/road_type_minor_road"
                         android:textAppearance="?android:attr/textAppearanceSmall"
                         app:drawableStartCompat="@drawable/baseline_add_road_24"
                         app:drawableTint="?android:attr/colorControlNormal"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/road_type_side_street_text" />
+
+
+                    <TextView
+                        android:id="@+id/road_type_major_road_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="20dp"
+                        android:drawablePadding="5dp"
+                        android:padding="1dp"
+                        android:text="@string/road_type_major_road"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:drawableStartCompat="@drawable/baseline_add_road_24"
+                        app:drawableTint="?android:attr/colorControlNormal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_minor_road_text" />
 
                     <TextView
                         android:id="@+id/road_type_cycle_way_text"
@@ -1267,7 +1283,7 @@
                         app:drawableStartCompat="@drawable/baseline_add_road_24"
                         app:drawableTint="?android:attr/colorControlNormal"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/road_type_country_road_text" />
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_major_road_text" />
 
                     <TextView
                         android:id="@+id/road_type_road_text"
@@ -1334,7 +1350,7 @@
                         app:layout_constraintTop_toBottomOf="@+id/road_type_way" />
 
                     <TextView
-                        android:id="@+id/road_type_country_road"
+                        android:id="@+id/road_type_minor_road"
                         android:layout_width="wrap_content"
                         android:layout_height="27dp"
                         android:layout_gravity="start"
@@ -1344,6 +1360,19 @@
                         android:textAppearance="?android:attr/textAppearanceSmall"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/road_type_side_street" />
+
+
+                    <TextView
+                        android:id="@+id/road_type_major_road"
+                        android:layout_width="wrap_content"
+                        android:layout_height="27dp"
+                        android:layout_gravity="start"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="5dp"
+                        android:padding="3.5dp"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_minor_road" />
 
                     <TextView
                         android:id="@+id/road_type_cycle_way"
@@ -1355,7 +1384,7 @@
                         android:padding="3.5dp"
                         android:textAppearance="?android:attr/textAppearanceSmall"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/road_type_country_road" />
+                        app:layout_constraintTop_toBottomOf="@+id/road_type_major_road" />
 
                     <TextView
                         android:id="@+id/road_type_road"

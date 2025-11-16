@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.utils
 import android.content.Context
 import android.util.Log
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.ExtensionsFromYaml
 import de.drtobiasprinz.summitbook.models.LocationInfo
@@ -31,7 +32,12 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
 
     fun getRoadTypeSummaryFromTrackPoints(
         trackPointsWithExtension: List<Pair<TrackPoint, ExtensionFromYaml>>?,
+        trackBoundingBox: TrackBoundingBox? = null
     ): Pair<Map<Surface, Int>, Map<RoadType, Int>> {
+        if (trackBoundingBox != null && !hasMapCoverageForBoundingBox(trackBoundingBox)) {
+            Log.w(TAG, "Track does not overlap with any available map files. Skipping road type analysis.")
+            return Pair(emptyMap(), emptyMap())
+        }
         val distancePerSurface: MutableMap<Surface, Double> =
             Surface.entries.associateWith { 0.0 }.toMutableMap()
         val distancePerRoadTypes: MutableMap<RoadType, Double> =
@@ -71,6 +77,41 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
             }
         }
         return Pair(null, null)
+    }
+
+    /**
+     * Check if a given TrackBoundingBox overlaps with any of the available map files
+     * @param trackBoundingBox The bounding box to check
+     * @return true if the bounding box overlaps with at least one map file, false otherwise
+     */
+    fun hasMapCoverageForBoundingBox(trackBoundingBox: TrackBoundingBox): Boolean {
+        if (mapFiles.isEmpty()) {
+            Log.w(TAG, "No map files available to check coverage.")
+            return false
+        }
+
+        for (mapFile in mapFiles) {
+            try {
+                val mapBoundingBox = mapFile.mapFileInfo.boundingBox
+                
+                val osmBoundingBox = org.osmdroid.util.BoundingBox(
+                    mapBoundingBox.maxLatitude,
+                    mapBoundingBox.maxLongitude,
+                    mapBoundingBox.minLatitude,
+                    mapBoundingBox.minLongitude
+                )
+                
+                if (trackBoundingBox.intersects(osmBoundingBox)) {
+                    Log.d(TAG, "Track bounding box overlaps with map file: ${mapFile.mapFileInfo.fileVersion}")
+                    return true
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking map coverage", e)
+            }
+        }
+        
+        Log.w(TAG, "Track bounding box does not overlap with any available map files.")
+        return false
     }
 
     private fun extractRoadInfos(
