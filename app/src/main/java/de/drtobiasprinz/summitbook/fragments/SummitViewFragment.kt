@@ -295,7 +295,7 @@ class SummitViewFragment : Fragment() {
             TAG,
             "updateTracks - setDistancePerSurfacesAndRoadType for ${summitsForDistanceCalc.size} summits."
         )
-        summitsForDistanceCalc.map {
+        val summitsToUpdate = summitsForDistanceCalc.filter {
             Log.i(
                 TAG,
                 "updateTracks - setDistancePerSurfacesAndRoadType for summit ${it.getDateAsString()}_${it.name}."
@@ -310,6 +310,7 @@ class SummitViewFragment : Fragment() {
                 false
             }
         }
+        viewModel?.updateSummitDistanceDataBatch(summitsToUpdate)
         Log.i(
             TAG, "updateTracks - setDistancePerSurfacesAndRoadType done."
         )
@@ -379,7 +380,7 @@ class SummitViewFragment : Fragment() {
                         "asyncSimplifyGpsTracks - Error in simplify track for ${e.getDateAsString()}_${e.name}: ${ex.message}"
                     )
                     e.ignoreSimplifyingTrack = true
-                    viewModel?.saveSummit(true, e)
+                    viewModel?.updateIgnoreSimplifyingTrack(e.id, true)
                 }
             }
         } else if (summitsWithoutAdditionalData.isNotEmpty()) {
@@ -400,7 +401,7 @@ class SummitViewFragment : Fragment() {
                         "asyncSimplifyGpsTracks - Error in simplify track for ${e.getDateAsString()}_${e.name}: ${ex.message}"
                     )
                     e.ignoreSimplifyingTrack = true
-                    viewModel?.saveSummit(true, e)
+                    viewModel?.updateIgnoreSimplifyingTrack(e.id, true)
                 }
             }
         } else {

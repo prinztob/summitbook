@@ -2,6 +2,8 @@ package de.drtobiasprinz.summitbook.repository
 
 import de.drtobiasprinz.summitbook.db.dao.*
 import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.models.RoadType
+import de.drtobiasprinz.summitbook.models.Surface
 import javax.inject.Inject
 
 class DatabaseRepository @Inject constructor(
@@ -17,6 +19,10 @@ class DatabaseRepository @Inject constructor(
     suspend fun saveSummits(entities: List<Summit>) = summitsDao.insertAll(entities)
     suspend fun deleteAll() = summitsDao.deleteAll()
     suspend fun updateSummit(entity: Summit) = summitsDao.updateSummit(entity)
+    suspend fun updateIgnoreSimplifyingTrack(summitId: Long, ignoreSimplifyingTrack: Boolean) =
+        summitsDao.updateIgnoreSimplifyingTrack(summitId, ignoreSimplifyingTrack)
+    suspend fun updateDistanceData(summitId: Long, distancePerSurface: Map<Surface, Int>, distancePerRoadType: Map<RoadType, Int>) =
+        summitsDao.updateDistanceData(summitId, distancePerSurface, distancePerRoadType)
     suspend fun deleteSummit(entity: Summit) = summitsDao.deleteSummit(entity)
     fun getDetailsSummit(id: Long) = summitsDao.getSummit(id)
     fun getAllSummits() = summitsDao.getAllSummits()

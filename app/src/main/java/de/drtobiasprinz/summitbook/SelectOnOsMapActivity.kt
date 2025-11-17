@@ -185,7 +185,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                                         this@SelectOnOsMapActivity, entry
                                     )
                                     if (updated) {
-                                        viewModel.saveSummit(true, entry)
+                                        viewModel.updateSummitDistanceDataBatch(listOf(entry))
                                     }
                                 }
                                 binding.loadingPanel.visibility = View.GONE

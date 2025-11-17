@@ -32,12 +32,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
 
     fun getRoadTypeSummaryFromTrackPoints(
         trackPointsWithExtension: List<Pair<TrackPoint, ExtensionFromYaml>>?,
-        trackBoundingBox: TrackBoundingBox? = null
     ): Pair<Map<Surface, Int>, Map<RoadType, Int>> {
-        if (trackBoundingBox != null && !hasMapCoverageForBoundingBox(trackBoundingBox)) {
-            Log.w(TAG, "Track does not overlap with any available map files. Skipping road type analysis.")
-            return Pair(emptyMap(), emptyMap())
-        }
         val distancePerSurface: MutableMap<Surface, Double> =
             Surface.entries.associateWith { 0.0 }.toMutableMap()
         val distancePerRoadTypes: MutableMap<RoadType, Double> =
@@ -93,14 +88,14 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
         for (mapFile in mapFiles) {
             try {
                 val mapBoundingBox = mapFile.mapFileInfo.boundingBox
-                
+
                 val osmBoundingBox = org.osmdroid.util.BoundingBox(
                     mapBoundingBox.maxLatitude,
                     mapBoundingBox.maxLongitude,
                     mapBoundingBox.minLatitude,
                     mapBoundingBox.minLongitude
                 )
-                
+
                 if (trackBoundingBox.intersects(osmBoundingBox)) {
                     Log.d(TAG, "Track bounding box overlaps with map file: ${mapFile.mapFileInfo.fileVersion}")
                     return true
@@ -109,7 +104,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
                 Log.e(TAG, "Error checking map coverage", e)
             }
         }
-        
+
         Log.w(TAG, "Track bounding box does not overlap with any available map files.")
         return false
     }
@@ -493,7 +488,13 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
             context: Context, summit: Summit
         ): Boolean {
             summit.setGpsTrack(useSimplifiedTrack = false, updateTrack = true)
-            val distancePerSurfacesAndRoadType = from(context).getRoadTypeSummaryFromTrackPoints(
+            val analyzer = from(context)
+            val boundingBox = summit.trackBoundingBox
+            if (boundingBox != null && !analyzer.hasMapCoverageForBoundingBox(boundingBox)) {
+                Log.w(TAG, "Track does not overlap with any available map files. Skipping road type analysis.")
+                return false
+            }
+            val distancePerSurfacesAndRoadType = analyzer.getRoadTypeSummaryFromTrackPoints(
                 summit.gpsTrack?.trackPoints
             )
             if (valuesAreNotEmpty(distancePerSurfacesAndRoadType)) {

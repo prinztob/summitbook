@@ -3,6 +3,8 @@ package de.drtobiasprinz.summitbook.db.dao
 import androidx.lifecycle.LiveData
 import androidx.room.*
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.models.RoadType
+import de.drtobiasprinz.summitbook.models.Surface
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMITS_TABLE
 import kotlinx.coroutines.flow.Flow
 
@@ -16,6 +18,12 @@ interface SummitsDao {
 
     @Update
     suspend fun updateSummit(entity: Summit)
+
+    @Query("UPDATE $SUMMITS_TABLE SET ignoreSimplifyingTrack = :ignoreSimplifyingTrack WHERE id = :summitId")
+    suspend fun updateIgnoreSimplifyingTrack(summitId: Long, ignoreSimplifyingTrack: Boolean)
+
+    @Query("UPDATE $SUMMITS_TABLE SET distancePerSurface = :distancePerSurface, distancePerRoadType = :distancePerRoadType WHERE id = :summitId")
+    suspend fun updateDistanceData(summitId: Long, distancePerSurface: Map<Surface, Int>, distancePerRoadType: Map<RoadType, Int>)
 
     @Query("DELETE FROM $SUMMITS_TABLE")
     suspend fun deleteAll()

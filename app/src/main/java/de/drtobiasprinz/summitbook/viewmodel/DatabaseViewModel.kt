@@ -82,6 +82,14 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     fun saveSummits(entities: List<Summit>) = viewModelScope.launch {
         repository.saveSummits(entities)
     }
+    fun updateSummitDistanceDataBatch(entities: List<Summit>) = viewModelScope.launch {
+        entities.forEach { repository.updateDistanceData(it.id, it.distancePerSurface, it.distancePerRoadType) }
+    }
+
+    fun updateIgnoreSimplifyingTrack(summitId: Long, ignoreSimplifyingTrack: Boolean) = viewModelScope.launch {
+        repository.updateIgnoreSimplifyingTrack(summitId, ignoreSimplifyingTrack)
+    }
+
     fun deleteSummits() = viewModelScope.launch {
         repository.deleteAll()
     }
