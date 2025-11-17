@@ -322,21 +322,28 @@ object OpenStreetMapUtils {
     fun showMapPointInfo(
         context: Context, geoPoint: GeoPoint, info: Pair<RoadInfo?, LocationInfo?>
     ) {
-        AlertDialog.Builder(context).setTitle("Road and location Information")
-            .setMessage("lat: ${geoPoint.latitude}, long: ${geoPoint.longitude}\n\nroadType ${info.first?.roadType}, name ${info.first?.name}\n minDistance ${info.first?.minDistance} m\n surface ${info.first?.surface}, trackType: ${info.first?.trackType}\n" + info.first?.let {
-                "mapped Surface: ${
-                    Surface.mapFromRoadInfo(
-                        it
-                    )
-                }, "
-            } + info.first?.let {
-                "mapped RoadType: ${
-                    RoadType.mapFromRoadInfo(
-                        it
-                    )
-                }\n"
-            } + "additionalTags: ${info.first?.additionalTags}\n\n locationInfo ${info.second?.name},  minDistance ${info.second?.minDistance}\n placeType ${info.second?.placeType}\n additionalTags ${info.second?.additionalTags}")
-            .setPositiveButton("OK", null).show()
+        val message = buildString {
+            append("lat: ${geoPoint.latitude}, long: ${geoPoint.longitude}\n\n")
+            
+            info.first?.let { roadInfo ->
+                append("Road Info:\n")
+                append(roadInfo.toString())
+                append("\n\n")
+                append("Mapped Surface: ${Surface.mapFromRoadInfo(roadInfo)}\n")
+                append("Mapped RoadType: ${RoadType.mapFromRoadInfo(roadInfo)}\n\n")
+            }
+            
+            info.second?.let { locationInfo ->
+                append("Location Info:\n")
+                append(locationInfo.toString())
+            }
+        }
+        
+        AlertDialog.Builder(context)
+            .setTitle("Road and location Information")
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     @JvmStatic

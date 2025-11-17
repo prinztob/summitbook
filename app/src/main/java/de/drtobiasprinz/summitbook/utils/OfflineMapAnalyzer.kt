@@ -2,6 +2,8 @@ package de.drtobiasprinz.summitbook.utils
 
 import android.content.Context
 import android.util.Log
+import de.drtobiasprinz.summitbook.db.entities.SportGroup
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
@@ -32,6 +34,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
 
     fun getRoadTypeSummaryFromTrackPoints(
         trackPointsWithExtension: List<Pair<TrackPoint, ExtensionFromYaml>>?,
+        sportType: SportType? = null
     ): Pair<Map<Surface, Int>, Map<RoadType, Int>> {
         val distancePerSurface: MutableMap<Surface, Double> =
             Surface.entries.associateWith { 0.0 }.toMutableMap()
@@ -39,7 +42,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
             RoadType.entries.associateWith { 0.0 }.toMutableMap()
         if (trackPointsWithExtension != null) {
             val time = measureTime {
-                val roadInfos = extractRoadInfos(trackPointsWithExtension)
+                val roadInfos = extractRoadInfos(trackPointsWithExtension, sportType)
                 filterWronglySelectedRoadTypes(roadInfos, trackPointsWithExtension)
                 setDistances(trackPointsWithExtension, distancePerSurface, distancePerRoadTypes)
             }
@@ -61,7 +64,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
                 LatLong(
                     geoPoint.latitude, geoPoint.longitude
                 ), mapFile
-            )
+            )?.minByOrNull { it.minDistance}
             val locationInfo = getClosestLocationInfo(
                 LatLong(
                     geoPoint.latitude, geoPoint.longitude
@@ -97,7 +100,10 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
                 )
 
                 if (trackBoundingBox.intersects(osmBoundingBox)) {
-                    Log.d(TAG, "Track bounding box overlaps with map file: ${mapFile.mapFileInfo.fileVersion}")
+                    Log.d(
+                        TAG,
+                        "Track bounding box overlaps with map file: ${mapFile.mapFileInfo.fileVersion}"
+                    )
                     return true
                 }
             } catch (e: Exception) {
@@ -111,6 +117,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
 
     private fun extractRoadInfos(
         trackPointsWithExtension: List<Pair<TrackPoint, ExtensionFromYaml>>,
+        sportType: SportType? = null
     ): MutableList<RoadInfo?> {
         if (mapFiles.isEmpty()) {
             Log.w(TAG, "No map files available to extract road infos.")
@@ -121,9 +128,17 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
         try {
             for ((index, trackPointPair) in trackPointsWithExtension.withIndex()) {
                 val latLong = LatLong(trackPointPair.first.latitude, trackPointPair.first.longitude)
-                val bestRoadInfoForPoint = mapFiles.mapNotNull { mapFile ->
+                val bestRoadInfoForPoints = mapFiles.mapNotNull { mapFile ->
                     getRoadInfoForLatLong(latLong, mapFile)
-                }.minByOrNull { it.minDistance }
+                }.flatten()
+                val bestRoadInfoForPoint =
+                    if (sportType != null && sportType in SportGroup.OnABicycle.sportTypes) {
+                        bestRoadInfoForPoints.filter {
+                            !(it.additionalTags?.keys?.contains("highway") == true && it.additionalTags["highway"] == "footway")
+                        }.minByOrNull { it.minDistance }
+                    } else {
+                        bestRoadInfoForPoints.minByOrNull { it.minDistance }
+                    }
                 roadInfos[index] = bestRoadInfoForPoint
             }
         } catch (e: Exception) {
@@ -228,7 +243,8 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
 
     fun getRoadInfoForLatLong(
         latLong: LatLong, mapFile: MapFile? = mapFiles.firstOrNull()
-    ): RoadInfo? {
+    ): List<RoadInfo>? {
+        val roadInfos: MutableList<RoadInfo> = mutableListOf()
         if (mapFile != null) {
             val tile = Tile(
                 latLongToTileX(latLong.longitude),
@@ -240,10 +256,10 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
             val mapReadResult: MapReadResult = mapFile.readMapData(tile)
             val roadInfo = processWays(mapReadResult.ways, latLong)
             if (roadInfo != null && roadInfo.minDistance < searchRadiusMeters) {
-                return roadInfo
+                roadInfos.add(roadInfo)
             }
         }
-        return null
+        return roadInfos
     }
 
     /**
@@ -491,11 +507,15 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
             val analyzer = from(context)
             val boundingBox = summit.trackBoundingBox
             if (boundingBox != null && !analyzer.hasMapCoverageForBoundingBox(boundingBox)) {
-                Log.w(TAG, "Track does not overlap with any available map files. Skipping road type analysis.")
+                Log.w(
+                    TAG,
+                    "Track does not overlap with any available map files. Skipping road type analysis."
+                )
                 return false
             }
             val distancePerSurfacesAndRoadType = analyzer.getRoadTypeSummaryFromTrackPoints(
-                summit.gpsTrack?.trackPoints
+                summit.gpsTrack?.trackPoints,
+                summit.sportType
             )
             if (valuesAreNotEmpty(distancePerSurfacesAndRoadType)) {
                 val extensions = summit.gpsTrack?.trackPoints?.map { it.second }

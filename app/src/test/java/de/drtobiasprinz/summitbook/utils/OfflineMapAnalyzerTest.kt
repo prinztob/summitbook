@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.utils
 
+import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.GpsTrack
@@ -23,6 +24,46 @@ import java.io.FileInputStream
 class OfflineMapAnalyzerTest {
 
     @Test
+    fun testE2EClimb() {
+        val track = this.javaClass.classLoader?.getResource("track3.gpx")
+        val extension = this.javaClass.classLoader?.getResource("track3_extensions.yaml")
+        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
+        if (track != null && extension != null && map != null) {
+            val gpsTrack = GpsTrack(
+                File(track.path).toPath(),
+                yamlExtensionsFile = File(extension.path)
+            )
+            gpsTrack.parseTrack(false)
+            val mapStream = FileInputStream(File(map.path))
+            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
+            val resultClimb = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints, SportType.Climb)
+            assertEquals(447, resultClimb.first[Surface.UNKNOWN])
+            assertEquals(0, resultClimb.second[RoadType.UNKNOWN])
+            assertTrue(resultClimb.second[RoadType.CYCLE_WAY] == 6003)
+        }
+    }
+
+    @Test
+    fun testE2ERacer() {
+        val track = this.javaClass.classLoader?.getResource("track3.gpx")
+        val extension = this.javaClass.classLoader?.getResource("track3_extensions.yaml")
+        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
+        if (track != null && extension != null && map != null) {
+            val gpsTrack = GpsTrack(
+                File(track.path).toPath(),
+                yamlExtensionsFile = File(extension.path)
+            )
+            gpsTrack.parseTrack(false)
+            val mapStream = FileInputStream(File(map.path))
+            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
+            val resultRacer = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints, SportType.Racer)
+            assertEquals(0, resultRacer.first[Surface.UNKNOWN])
+            assertEquals(0, resultRacer.second[RoadType.UNKNOWN])
+            assertEquals(6008, resultRacer.second[RoadType.CYCLE_WAY])
+        }
+    }
+
+    @Test
     fun testE2EAllTerrain() {
         val track = this.javaClass.classLoader?.getResource("track_all_terrain.gpx")
         val extension = this.javaClass.classLoader?.getResource("track_all_terrain_extensions.yaml")
@@ -42,11 +83,11 @@ class OfflineMapAnalyzerTest {
             assertEquals(21, result.first[Surface.LOSE_GROUND])
             assertEquals(25, result.first[Surface.PATH])
             assertEquals(0, result.first[Surface.UNKNOWN])
-            assertEquals(15302, result.second[RoadType.WAY])
+            assertEquals(10882, result.second[RoadType.WAY])
             assertEquals(4355, result.second[RoadType.SIDE_STREET])
             assertEquals(695, result.second[RoadType.MINOR_ROAD])
             assertEquals(0, result.second[RoadType.MAJOR_ROAD])
-            assertEquals(1129, result.second[RoadType.CYCLE_WAY])
+            assertEquals(5549, result.second[RoadType.CYCLE_WAY])
             assertEquals(0, result.second[RoadType.ROAD])
             assertEquals(0, result.second[RoadType.UNKNOWN])
         }
@@ -72,10 +113,10 @@ class OfflineMapAnalyzerTest {
             assertEquals(38, result.first[Surface.LOSE_GROUND])
             assertEquals(0, result.first[Surface.PATH])
             assertEquals(0, result.first[Surface.UNKNOWN])
-            assertEquals(2829, result.second[RoadType.WAY])
+            assertEquals(2737, result.second[RoadType.WAY])
             assertEquals(27811, result.second[RoadType.SIDE_STREET])
             assertEquals(1108, result.second[RoadType.MINOR_ROAD])
-            assertEquals(22495, result.second[RoadType.MAJOR_ROAD])
+            assertEquals(559, result.second[RoadType.MAJOR_ROAD])
             assertEquals(0, result.second[RoadType.CYCLE_WAY])
             assertEquals(0, result.second[RoadType.ROAD])
             assertEquals(0, result.second[RoadType.UNKNOWN])

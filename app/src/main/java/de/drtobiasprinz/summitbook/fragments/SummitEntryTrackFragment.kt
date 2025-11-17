@@ -93,25 +93,33 @@ class SummitEntryTrackFragment : Fragment() {
     ): View {
         binding = FragmentSummitEntryTrackBinding.inflate(layoutInflater, container, false)
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-        summitToView = (requireActivity() as SummitEntryDetailsActivity).summitEntry
-        mLocationOverlay =
-            MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
-        mLocationOverlay.enableMyLocation()
-        binding.osmap.overlays.add(mLocationOverlay)
-        binding.loadingPanel.visibility = View.VISIBLE
-        binding.lineChart.visibility = View.GONE
-        OpenStreetMapUtils.addDefaultSettings(
-            binding.osmap,
-            requireActivity()
-        )
-        if (PreferencesHelper.loadOnDeviceMaps() &&
-            FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
-        ) {
-            selectedItem = getSportTypeForMapProviders(summitToView.sportType, requireContext())
-        } else if (FileHelper.getOnDeviceMbtilesFiles(requireContext()).isNotEmpty()) {
-            selectedItem = MapProvider.MBTILES
+        pageViewModel?.summitToView?.observe(viewLifecycleOwner) {
+            it.data.let { summitToView ->
+                if (summitToView != null) {
+                    this.summitToView = summitToView
+                    mLocationOverlay =
+                        MyLocationNewOverlay(GpsMyLocationProvider(context), binding.osmap)
+                    mLocationOverlay.enableMyLocation()
+                    binding.osmap.overlays.add(mLocationOverlay)
+                    binding.loadingPanel.visibility = View.VISIBLE
+                    binding.lineChart.visibility = View.GONE
+                    OpenStreetMapUtils.addDefaultSettings(
+                        binding.osmap,
+                        requireActivity()
+                    )
+                    if (PreferencesHelper.loadOnDeviceMaps() &&
+                        FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
+                    ) {
+                        selectedItem =
+                            getSportTypeForMapProviders(summitToView.sportType, requireContext())
+                    } else if (FileHelper.getOnDeviceMbtilesFiles(requireContext()).isNotEmpty()) {
+                        selectedItem = MapProvider.MBTILES
+                    }
+                    OpenStreetMapUtils.setTileProvider(binding.osmap, requireContext())
+                }
+            }
         }
-        OpenStreetMapUtils.setTileProvider(binding.osmap, requireContext())
+
         return binding.root
     }
 

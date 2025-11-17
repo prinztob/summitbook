@@ -200,7 +200,7 @@ class GpsTrack(
             val attributeColorList = if (trackColor.discreteInput) {
                 AttitudeColorListDiscrete(
                     usedTrackPoints,
-                    trackColor,
+                    trackColor
                 )
             } else {
                 AttitudeColorListContinuos(
@@ -532,12 +532,32 @@ class GpsTrack(
         private val points: List<Pair<TrackPoint, ExtensionFromYaml>>,
         private val trackColor: TrackColor
     ) : ColorMapping {
+        
+        // For checkered pattern: alternate between primary color and a contrasting color
+        private val checkeredAlternateColor = Color.BLACK
+        
         override fun getColorForIndex(pSegmentIndex: Int): Int {
             return if (pSegmentIndex < points.size) {
+                val baseColor: Int
+                val useCheckered: Boolean
+                
                 if (trackColor == TrackColor.RoadType) {
-                    points[pSegmentIndex].second.roadType.color
+                    val roadType = points[pSegmentIndex].second.roadType
+                    baseColor = roadType.color
+                    useCheckered = roadType.useCheckeredPattern
                 } else {
-                    points[pSegmentIndex].second.surface.color
+                    baseColor = points[pSegmentIndex].second.surface.color
+                    useCheckered = false
+                }
+                
+                // Apply checkered pattern by alternating colors every few segments
+                if (useCheckered) {
+                    // Create checkered effect by alternating between base color and black
+                    // Use groups of 3 segments to create visible checker pattern
+                    val groupIndex = pSegmentIndex
+                    if (groupIndex % 2 == 0) baseColor else checkeredAlternateColor
+                } else {
+                    baseColor
                 }
             } else {
                 Color.BLACK

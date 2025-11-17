@@ -9,7 +9,9 @@ enum class RoadType(
     val number: Double,
     @StringRes val nameId: Int,
     @ColorInt val color: Int,
-    val highwayTags: List<String>
+    val highwayTags: List<String>,
+    val additionalTags: Map<String, String> = emptyMap(),
+    val useCheckeredPattern: Boolean = false
 ) {
     WAY(
         10.0,
@@ -43,17 +45,18 @@ enum class RoadType(
             "bicycle",
             "cycle_path"
         ),
+        mapOf("bicycle" to "bic_designated")
     ),
     MINOR_ROAD(
         30.0,
         R.string.road_type_minor_road,
-        Color.rgb(255, 195, 0),
+        Color.rgb(255, 215, 0),
         listOf("tertiary", "tertiary_link"),
     ),
     MAJOR_ROAD(
         40.0,
         R.string.road_type_major_road,
-        Color.rgb(255, 165, 0),
+        Color.rgb(255, 100, 0),
         listOf(
             "secondary",
             "primary",
@@ -85,13 +88,22 @@ enum class RoadType(
             }.toMap()
         }
 
-        fun fromHighwayTag(tag: String?): RoadType {
-            // Using .lowercase() makes the matching case-insensitive, which is more robust
+        fun fromHighwayTag(tag: String?, additionalTags: Map<String, String>?): RoadType {
+            if (additionalTags != null) {
+                val roadTypeFromTags = entries.firstOrNull { roadType ->
+                    roadType.additionalTags.isNotEmpty() && roadType.additionalTags.any { (key, value) ->
+                        additionalTags[key] == value
+                    }
+                }
+                if (roadTypeFromTags != null) {
+                    return roadTypeFromTags
+                }
+            }
             return roadTypeMap[tag?.lowercase()] ?: UNKNOWN
         }
 
         fun mapFromRoadInfo(roadInfo: RoadInfo): RoadType {
-            return fromHighwayTag(roadInfo.roadType)
+            return fromHighwayTag(roadInfo.roadType, roadInfo.additionalTags)
         }
     }
 }
