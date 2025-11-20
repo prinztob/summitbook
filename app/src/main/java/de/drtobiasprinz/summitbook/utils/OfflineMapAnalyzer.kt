@@ -499,20 +499,34 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
             )
         }
 
+        fun isDistancePerSurfacesAndRoadTypePossible(analyzer: OfflineMapAnalyzer, summit: Summit): Boolean {
+            val boundingBox = summit.trackBoundingBox
+            if (!summit.hasGpsTrack()) {
+                return false
+            }
+            if (distanceMapsEmpty(summit) && boundingBox != null && analyzer.hasMapCoverageForBoundingBox(boundingBox)) {
+                return true
+            }
+            Log.w(
+                TAG,
+                "Track does not overlap with any available map files. Skipping road type analysis."
+            )
+            return false
+        }
+
+        private fun distanceMapsEmpty(summit: Summit): Boolean {
+            val surfaceEntries = summit.distancePerSurface.map { kv -> kv.value }
+            val roadTypeEntries = summit.distancePerSurface.map { kv -> kv.value }
+            return surfaceEntries.isEmpty() || surfaceEntries.toSet() == setOf(0) || roadTypeEntries.isEmpty() || roadTypeEntries.toSet() == setOf(
+                0
+            )
+        }
 
         fun setDistancePerSurfacesAndRoadType(
             context: Context, summit: Summit
         ): Boolean {
             summit.setGpsTrack(useSimplifiedTrack = false, updateTrack = true)
             val analyzer = from(context)
-            val boundingBox = summit.trackBoundingBox
-            if (boundingBox != null && !analyzer.hasMapCoverageForBoundingBox(boundingBox)) {
-                Log.w(
-                    TAG,
-                    "Track does not overlap with any available map files. Skipping road type analysis."
-                )
-                return false
-            }
             val distancePerSurfacesAndRoadType = analyzer.getRoadTypeSummaryFromTrackPoints(
                 summit.gpsTrack?.trackPoints,
                 summit.sportType

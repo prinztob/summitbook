@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.ui.fragment
 
+import android.app.DatePickerDialog
 import android.content.Context
 import android.content.res.Resources
 import android.os.Bundle
@@ -7,6 +8,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.DatePicker
 import android.widget.Toast
 import androidx.core.content.edit
 import androidx.fragment.app.Fragment
@@ -23,14 +25,19 @@ import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @AndroidEntryPoint
 class ShowNewSummitsFromGarminFragment : Fragment() {
@@ -43,7 +50,11 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
     private var ignoredActivities: List<IgnoredActivity> = emptyList()
     var save: (List<Summit>, Boolean) -> Unit = { _, _ -> }
     var summits: List<Summit> = emptyList()
+    var selectedDate: Date? = null
     private lateinit var addNewSummitsAdapter: AddNewSummitsAdapter
+    private var startDate: Date = getDefaultStartDate()
+    private var endDate: Date = getDefaultEndDate()
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -57,10 +68,14 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
         currentContext = requireContext()
         val sharedPreferences = context?.let { PreferenceManager.getDefaultSharedPreferences(it) }
 
+        // Setup date pickers
+        setupDatePickers()
+
         viewModel.ignoredActivityList.observe(viewLifecycleOwner) {
             it.data.let { entries ->
                 ignoredActivities = entries ?: emptyList()
                 updateEntriesWithoutIgnored(summits)
+                updateEmptyState()
                 val width = Resources.getSystem().displayMetrics.widthPixels
                 addNewSummitsAdapter = AddNewSummitsAdapter()
                 addNewSummitsAdapter.differ.submitList(
@@ -107,6 +122,7 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
                         summits, showAllButtonEnabled
                     )
                     addNewSummitsAdapter.differ.submitList(entriesWithoutIgnored)
+                    updateEmptyState()
                 }
                 binding.save.isEnabled = false
                 binding.save.setOnClickListener {
@@ -124,6 +140,12 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
                             entriesWithoutIgnored.filter { summit -> summit.isSelected }, true
                         )
                         back(R.string.garmin_add_successful)
+                    }
+                }
+                binding.recalculate.setOnClickListener {
+                    val activity = requireActivity()
+                    if (activity is MainActivity) {
+                        activity.updateThirdPartyData()
                     }
                 }
                 binding.ignore.isEnabled = false
@@ -170,12 +192,13 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
                 val files = activitiesDir?.listFiles()
                 if (files?.isNotEmpty() == true) {
                     PreferenceManager.getDefaultSharedPreferences(requireContext()).edit {
-                            putString(Keys.PREF_THIRD_PARTY_START_DATE, startDateForSync)
-                        }
+                        putString(Keys.PREF_THIRD_PARTY_START_DATE, startDateForSync)
+                    }
                 }
             }
             summits?.let { updateEntriesWithoutIgnored(it) }
             addNewSummitsAdapter.differ.submitList(entriesWithoutIgnored)
+            updateEmptyState()
             binding.loadingPanel.visibility = View.GONE
         }
     }
@@ -194,14 +217,23 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
         }
         val activityIdsInSummitBook = summits.filter { !it.garminData?.activityIds.isNullOrEmpty() }
             .map { it.garminData?.activityIds as List<String> }.flatten()
-        entriesWithoutIgnored = if (showAll) {
+        val allEntries = if (showAll) {
             getAllActivitiesFromThirdParty(activityIdsInSummitBook)
         } else {
             getAllActivitiesFromThirdParty(
                 activityIdsInSummitBook, activitiesIdIgnored
             )
         }
-        Log.i("ShowNewSummits", "showing ${entriesWithoutIgnored.size} entries")
+
+        // Apply date filtering
+        entriesWithoutIgnored = allEntries.filter { summit ->
+            summit.date.time >= startDate.time && summit.date.time <= endDate.time
+        }.toMutableList()
+
+        Log.i(
+            "ShowNewSummits",
+            "showing ${entriesWithoutIgnored.size} entries (filtered by date range)"
+        )
     }
 
     private fun canSelectedSummitsBeMerged() =
@@ -224,6 +256,102 @@ class ShowNewSummitsFromGarminFragment : Fragment() {
                     ?: "'new summit'"
             ), Toast.LENGTH_LONG
         ).show()
+    }
+
+    private fun setupDatePickers() {
+        // If a selected date is provided, use it to set the date range
+        selectedDate?.let { date ->
+            // Set start date to the selected date
+            val calendar = Calendar.getInstance()
+            calendar.time = date
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+            startDate = calendar.time
+
+            // Set end date to the selected date
+            calendar.set(Calendar.HOUR_OF_DAY, 23)
+            calendar.set(Calendar.MINUTE, 59)
+            calendar.set(Calendar.SECOND, 59)
+            calendar.set(Calendar.MILLISECOND, 999)
+            endDate = calendar.time
+        }
+
+        // Set initial date values
+        binding.startDate.setText(dateFormat.format(startDate))
+        binding.endDate.setText(dateFormat.format(endDate))
+
+        binding.startDate.setOnClickListener {
+            showDatePickerDialog(startDate) { selectedDate ->
+                startDate = selectedDate
+                binding.startDate.setText(dateFormat.format(startDate))
+                updateEntriesWithoutIgnored(summits, showAllButtonEnabled)
+                addNewSummitsAdapter.differ.submitList(entriesWithoutIgnored)
+                updateEmptyState()
+            }
+        }
+
+        binding.endDate.setOnClickListener {
+            showDatePickerDialog(endDate) { selectedDate ->
+                endDate = selectedDate
+                binding.endDate.setText(dateFormat.format(endDate))
+                updateEntriesWithoutIgnored(summits, showAllButtonEnabled)
+                addNewSummitsAdapter.differ.submitList(entriesWithoutIgnored)
+                updateEmptyState()
+            }
+        }
+    }
+
+    private fun showDatePickerDialog(currentDate: Date, onDateSelected: (Date) -> Unit) {
+        val calendar = Calendar.getInstance()
+        calendar.time = currentDate
+
+        val datePickerDialog = DatePickerDialog(
+            requireContext(),
+            R.style.CustomDatePickerDialogTheme,
+            { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
+                val selectedCalendar = Calendar.getInstance()
+                selectedCalendar.set(year, month, dayOfMonth, 0, 0, 0)
+                selectedCalendar.set(Calendar.MILLISECOND, 0)
+                onDateSelected(selectedCalendar.time)
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+        datePickerDialog.show()
+    }
+
+    private fun updateEmptyState() {
+        if (entriesWithoutIgnored.isEmpty()) {
+            binding.emptyBody.visibility = View.VISIBLE
+            binding.recyclerView.visibility = View.GONE
+        } else {
+            binding.emptyBody.visibility = View.GONE
+            binding.recyclerView.visibility = View.VISIBLE
+        }
+    }
+
+    companion object {
+        private fun getDefaultStartDate(): Date {
+            val calendar = Calendar.getInstance()
+            calendar.add(Calendar.MONTH, -1) // One month ago
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+            return calendar.time
+        }
+
+        private fun getDefaultEndDate(): Date {
+            val calendar = Calendar.getInstance()
+            calendar.set(Calendar.HOUR_OF_DAY, 23)
+            calendar.set(Calendar.MINUTE, 59)
+            calendar.set(Calendar.SECOND, 59)
+            calendar.set(Calendar.MILLISECOND, 999)
+            return calendar.time
+        }
     }
 
 }

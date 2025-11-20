@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.Drawable
@@ -24,7 +23,6 @@ import android.widget.AutoCompleteTextView
 import android.widget.DatePicker
 import android.widget.EditText
 import android.widget.ProgressBar
-import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -34,7 +32,6 @@ import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.google.android.material.chip.Chip
@@ -42,7 +39,6 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.DialogAddSummitBinding
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
@@ -52,13 +48,9 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
-import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
-import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getAllDownloadedSummitsFromGarmin
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.peaks
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
@@ -82,8 +74,6 @@ import java.io.InputStream
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -192,7 +182,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 if (summitToEdit != null) {
                     entity = summitToEdit.clone()
                     updateBaseBindings(view, summits)
-                    updateDialogFields(true)
+                    updateDialogFields()
                     btnSave.text = getString(R.string.update)
                     isBookmark = entity.isBookmark
                 }
@@ -247,8 +237,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                         latLng?.let { latlngHighestPointLocal ->
                             try {
                                 setLocationInfo(
-                                    latlngHighestPointLocal,
-                                    entity
+                                    latlngHighestPointLocal, entity
                                 )
                             } catch (_: Exception) {
                                 // DO NOTHING
@@ -266,27 +255,22 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 expandMorePerformance.visibility = View.GONE
             } else {
                 addTrackFromGarmin.setOnClickListener {
-                    val dateAsString = binding.tourDate.text.toString()
-                    val contextLocal = context
-                    if (dateAsString != "" && contextLocal != null) {
-                        val executor = pythonExecutor
-                        if (executor != null) {
-                            binding.loadingPanel.visibility = View.VISIBLE
-                            pythonExecutor?.let { it1 ->
-                                downloadJsonViaPython(
-                                    dateAsString, it1
-                                )
+                    val activity = requireActivity()
+                    if (activity is MainActivity) {
+                        // Parse the date from the tourDate field if it's set
+                        val dateString = binding.tourDate.text.toString()
+                        val selectedDate = if (dateString.isNotEmpty()) {
+                            try {
+                                Summit.parseDate(dateString)
+                            } catch (_: Exception) {
+                                null
                             }
                         } else {
-                            Toast.makeText(
-                                context, getString(R.string.set_user_pwd), Toast.LENGTH_LONG
-                            ).show()
+                            null
                         }
-                    } else {
-                        Toast.makeText(
-                            context, getString(R.string.date_garmin_connect), Toast.LENGTH_LONG
-                        ).show()
+                        activity.showNewSummitsDialog(selectedDate)
                     }
+                    dismiss()
                 }
                 setExpandMoreButtons()
             }
@@ -298,8 +282,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         if (localContext != null) {
             val info = OfflineMapAnalyzer.from(localContext).getClosestLocationInfo(
                 LatLong(
-                    latlngHighestPointLocal.latitude,
-                    latlngHighestPointLocal.longitude
+                    latlngHighestPointLocal.latitude, latlngHighestPointLocal.longitude
                 )
             )
             Log.i("AddSummitDialog", "Found LocationInfo $info")
@@ -321,51 +304,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 }
             }
         }
-    }
-
-    private fun downloadJsonViaPython(dateAsString: String, pythonExecutor: GarminPythonExecutor) {
-        var entries: List<Summit> = emptyList()
-        var powerData: JsonObject? = null
-        lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                try {
-                    val allKnownEntries = getAllDownloadedSummitsFromGarmin(activitiesDir)
-                    val firstDate =
-                        allKnownEntries.minByOrNull { it.getDateAsFloat() }?.getDateAsString()
-                    val lastDate =
-                        allKnownEntries.maxByOrNull { it.getDateAsFloat() }?.getDateAsString()
-                    val knownEntriesOnDate =
-                        allKnownEntries.filter { it.getDateAsString() == dateAsString }
-                    entries =
-                        if (dateAsString != firstDate && dateAsString != lastDate && knownEntriesOnDate.isNotEmpty()) {
-                            knownEntriesOnDate
-                        } else {
-                            pythonExecutor.getActivityJsonAtDate(dateAsString)
-                        }
-                    powerData = getPowerDataFromEntries(entries, pythonExecutor, dateAsString)
-                } catch (e: RuntimeException) {
-                    Log.e("AsyncDownloadJsonViaPython", e.message ?: "")
-                }
-            }
-            if (entries.isNotEmpty()) {
-                showSummitsDialog(
-                    pythonExecutor, entries, binding.loadingPanel, powerData
-                )
-            } else {
-                binding.loadingPanel.visibility = View.GONE
-            }
-        }
-    }
-
-    private fun getPowerDataFromEntries(
-        entries: List<Summit>, pythonExecutor: GarminPythonExecutor, dateAsString: String
-    ): JsonObject? {
-        for (entry in entries) {
-            if (entry.sportType == SportType.BikeAndHike) {
-                return pythonExecutor.getMultiSportPowerData(dateAsString)
-            }
-        }
-        return null
     }
 
     private fun DialogAddSummitBinding.setExpandMoreButtons() {
@@ -451,88 +389,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         binding.imagePlaces.imageTintList =
             ContextCompat.getColorStateList(requireContext(), R.color.black)
 
-    }
-
-
-    private fun showSummitsDialog(
-        pythonExecutor: GarminPythonExecutor,
-        entries: List<Summit>,
-        progressBar: RelativeLayout,
-        powerData: JsonObject? = null
-    ) {
-        val sharedPreferences = context?.let { PreferenceManager.getDefaultSharedPreferences(it) }
-        val useTcx = sharedPreferences?.getBoolean(Keys.PREF_DOWNLOAD_TCX, false) ?: false
-
-        val mBuilder = AlertDialog.Builder(requireContext())
-        mBuilder.setTitle(requireContext().getString(R.string.choose_item))
-        val listItems = arrayOfNulls<String>(entries.size)
-        val listItemsChecked = BooleanArray(entries.size)
-        listItemsGpsDownloadSuccessful = BooleanArray(entries.size)
-        for (i in entries.indices) {
-            listItems[i] = entries[i].toReadableString(requireContext())
-            listItemsChecked[i] = false
-            listItemsGpsDownloadSuccessful?.set(i, true)
-        }
-        mBuilder.setMultiChoiceItems(
-            listItems, listItemsChecked
-        ) { _: DialogInterface, which: Int, isChecked: Boolean ->
-            val entry = entries[which]
-            listItemsGpsDownloadSuccessful?.set(which, false)
-            listItemsChecked[which] = isChecked
-            mDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled =
-                listItemsGpsDownloadSuccessful?.contains(false) == false
-            if (isChecked) {
-                downloadGpxForSummit(entry, which, useTcx, powerData)
-            }
-        }.setPositiveButton(R.string.saveButtonText) { _: DialogInterface?, _: Int ->
-            val selectedEntries: MutableList<Summit> = mutableListOf()
-            for (i in entries.indices) {
-                if (listItemsChecked[i]) {
-                    selectedEntries.add(entries[i])
-                }
-            }
-
-            val downloader = GarminTrackAndDataDownloader(selectedEntries, pythonExecutor, useTcx)
-            lifecycleScope.launch {
-                withContext(Dispatchers.Default) {
-                    downloader.downloadTracks(true)
-                    downloader.extractFinalSummit()
-                    val entry = downloader.finalEntry
-                    if (entry != null) {
-                        entry.activityId = entity.activityId
-                        entry.id = entity.id
-                        entry.imageIds = entity.imageIds
-                        entry.velocityData = entity.velocityData
-                        entity = entry
-                        temporaryGpxFile = getTempGpsFilePath(entry.date).toFile()
-                        downloader.composeFinalTrack(temporaryGpxFile)
-                    }
-                }
-                val entry = downloader.finalEntry
-                if (entry != null) {
-                    val point = entry.latLng
-                    if (point != null) {
-                        latlngHighestPoint = point
-                        updateDialogFields(!isEdit)
-                    }
-                    Toast.makeText(
-                        context,
-                        context?.getString(R.string.garmin_add_successful, entry.name),
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-                progressBar.visibility = View.GONE
-            }
-        }.setNegativeButton(R.string.cancelButtonText) { _: DialogInterface?, _: Int ->
-            Toast.makeText(
-                context, context?.getString(R.string.garmin_add_cancel), Toast.LENGTH_SHORT
-            ).show()
-            progressBar.visibility = View.GONE
-        }
-
-        mDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = false
-        mDialog = mBuilder.create()
-        mDialog?.show()
     }
 
 
@@ -705,10 +561,8 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         return null
     }
 
-    private fun updateDialogFields(updateSpinner: Boolean) {
-        if (updateSpinner) {
-            binding.activities.setSelection(SportType.entries.indexOf(entity.sportType))
-        }
+    private fun updateDialogFields() {
+        binding.activities.setSelection(SportType.entries.indexOf(entity.sportType))
         entity.getDateAsString()?.let { setTextIfNotAlreadySet(binding.tourDate, it) }
         setTextIfNotAlreadySet(binding.summitName, entity.name)
         setTextIfNotAlreadySet(binding.comments, entity.comments)
@@ -867,49 +721,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
         }
     }
 
-
-    private fun downloadGpxForSummit(
-        entry: Summit, index: Int, useTcx: Boolean, powerData: JsonObject? = null
-    ) {
-        try {
-            val downloader = GarminTrackAndDataDownloader(
-                listOf(entry), pythonExecutor, useTcx
-            )
-            lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    downloader.setAdditionalActivityIds(entry, powerData)
-                    downloader.downloadTracks()
-                    val activityId = downloader.finalEntry?.garminData?.activityId
-                    if (activityId != null) {
-                        downloader.composeFinalTrack(
-                            GarminTrackAndDataDownloader.getTempGpsFilePath(activityId).toFile()
-                        )
-                    }
-                }
-                if (index != -1) {
-                    listItemsGpsDownloadSuccessful?.set(
-                        index, downloader.downloadedTracks.none { !it.exists() })
-                    mDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled =
-                        listItemsGpsDownloadSuccessful?.contains(false) == false
-                }
-                binding.loadingPanel.visibility = View.GONE
-                binding.loadingPanel.tooltipText = ""
-            }
-        } catch (e: RuntimeException) {
-            Log.e("AsyncDownloadActivities", e.message ?: "")
-        }
-    }
-
-
-    private fun getTempGpsFilePath(date: Date): Path {
-        val tag = SimpleDateFormat("yyyy_MM_dd_HHmmss", Locale.US).format(date)
-        val fileName = String.format(
-            requireContext().resources.configuration.locales[0], "track_from_%s.gpx", tag
-        )
-        return Paths.get(MainActivity.cache.toString(), fileName)
-    }
-
-
     private fun getSuggestionCountries(): List<String> {
         val locales = Locale.getAvailableLocales()
         val countries = mutableListOf<String>()
@@ -1067,13 +878,6 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                 editText.setText(setValue)
             }
         }
-
-        fun getJsonObjectEntryNotNone(jsonObject: JsonObject): Float {
-            return if (jsonObject["power"].toString().lowercase(Locale.ROOT)
-                    .contains("none")
-            ) 0.0f else jsonObject["power"].asFloat
-        }
-
 
     }
 

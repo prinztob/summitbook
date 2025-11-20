@@ -3,15 +3,12 @@ package de.drtobiasprinz.summitbook.ui
 import android.util.Log
 import com.chaquo.python.PyObject
 import com.chaquo.python.Python
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import java.io.File
-import java.text.ParseException
 import kotlin.math.roundToInt
 import kotlin.system.measureTimeMillis
 
@@ -43,16 +40,6 @@ class GarminPythonExecutor(
             }
         }
         Log.i(TAG, "Login took $time")
-    }
-
-    fun getActivityJsonAtDate(dateAsString: String): List<Summit> {
-        if (client == null) {
-            login()
-        }
-        val result = pythonModule?.callAttr("get_activity_json_for_date", client, dateAsString)
-        checkOutput(result)
-        val jsonResponse = JsonParser.parseString(result.toString()) as JsonArray
-        return getSummitsAtDate(jsonResponse)
     }
 
     fun getVo2MaxAtDate(dateAsString: String): Float {
@@ -107,29 +94,6 @@ class GarminPythonExecutor(
         checkOutput(result)
     }
 
-    fun getExerciseSet(activityId: String): JsonObject {
-        if (client == null) {
-            login()
-        }
-        val result = pythonModule?.callAttr(
-            "get_exercise_set",
-            client,
-            activityId,
-            activitiesDir?.absolutePath
-        )
-        checkOutput(result)
-        return JsonParser.parseString(result.toString()) as JsonObject
-    }
-
-    fun getMultiSportPowerData(dateAsString: String): JsonObject {
-        if (client == null) {
-            login()
-        }
-        val result = pythonModule?.callAttr("get_power_data", client, dateAsString)
-        checkOutput(result)
-        return JsonParser.parseString(result.toString()) as JsonObject
-    }
-
     private fun checkOutput(result: PyObject?) {
         if (result == null || result.toString() == "") {
             throw RuntimeException("Execution failed")
@@ -142,21 +106,6 @@ class GarminPythonExecutor(
     companion object {
 
         const val TAG = "GarminPythonExecutor"
-
-        fun getSummitsAtDate(activities: JsonArray): List<Summit> {
-            val entries = ArrayList<Summit>()
-            for (i in 0 until activities.size()) {
-                val row = activities[i] as JsonObject
-                try {
-                    entries.add(parseJsonObjectFromParentActivity(row))
-                } catch (e: ParseException) {
-                    e.printStackTrace()
-                } catch (e: NullPointerException) {
-                    e.printStackTrace()
-                }
-            }
-            return entries
-        }
 
         fun getAllDownloadedSummitsFromGarmin(
             directory: File?,

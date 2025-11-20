@@ -142,36 +142,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     }
 
                     R.id.action_update -> {
-                        val executor = pythonExecutor
-                        if (executor != null) {
-                            binding.loading.visibility = View.VISIBLE
-                            viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
-                                summitsListDataStatus.data.let { summits ->
-                                    val updater = GarminDataUpdater(
-                                        sharedPreferences,
-                                        executor,
-                                    )
-
-                                    lifecycleScope.launch {
-                                        withContext(Dispatchers.IO) {
-                                            updater.update()
-                                            if (summits != null) {
-                                                updateTracksAndBoundingBox(summits)
-                                            }
-                                        }
-                                        updater.onFinish(
-                                            binding.loading, this@MainActivity
-                                        ) { showNewSummitsDialog() }
-                                    }
-                                }
-                            }
-                        } else {
-                            Toast.makeText(
-                                this@MainActivity,
-                                getString(R.string.set_user_pwd),
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
+                        updateThirdPartyData()
                         return@setOnMenuItemClickListener true
                     }
 
@@ -181,6 +152,38 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
             }
 
+        }
+    }
+
+    fun updateThirdPartyData() {
+        val executor = pythonExecutor
+        if (executor != null) {
+            binding.loading.visibility = View.VISIBLE
+            viewModel.summitsList.observeOnce(this@MainActivity) { summitsListDataStatus ->
+                summitsListDataStatus.data.let { summits ->
+                    val updater = GarminDataUpdater(
+                        sharedPreferences,
+                        executor,
+                    )
+                    lifecycleScope.launch {
+                        withContext(Dispatchers.IO) {
+                            updater.update()
+                            if (summits != null) {
+                                updateTracksAndBoundingBox(summits)
+                            }
+                        }
+                        updater.onFinish(
+                            binding.loading, this@MainActivity
+                        ) { showNewSummitsDialog() }
+                    }
+                }
+            }
+        } else {
+            Toast.makeText(
+                this@MainActivity,
+                getString(R.string.set_user_pwd),
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -406,10 +409,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         binding.drawerLayout.closeDrawer(GravityCompat.START)
     }
 
-    private fun showNewSummitsDialog() {
+    fun showNewSummitsDialog(selectedDate: Date? = null) {
         val fragment = ShowNewSummitsFromGarminFragment()
         fragment.summits =
             allSummits.ifEmpty { summitViewFragment.summitsAdapter.differ.currentList }
+        fragment.selectedDate = selectedDate
         fragment.save = { summits, isMerge ->
             binding.loading.visibility = View.VISIBLE
             binding.loading.tooltipText = getString(

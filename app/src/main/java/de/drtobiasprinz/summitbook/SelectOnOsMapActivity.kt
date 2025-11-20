@@ -180,13 +180,16 @@ class SelectOnOsMapActivity : FragmentActivity() {
                             )
                             binding.loadingPanel.visibility = View.VISIBLE
                             lifecycleScope.launch {
-                                val updated = withContext(Dispatchers.IO) {
-                                    OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(
-                                        this@SelectOnOsMapActivity, entry
-                                    )
-                                }
-                                if (updated) {
-                                    viewModel.saveSummit(true, entry)
+                                val analyzer = OfflineMapAnalyzer.from(this@SelectOnOsMapActivity)
+                                if (OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(analyzer, entry)) {
+                                    val updated = withContext(Dispatchers.IO) {
+                                        OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(
+                                            this@SelectOnOsMapActivity, entry
+                                        )
+                                    }
+                                    if (updated) {
+                                        viewModel.saveSummit(true, entry)
+                                    }
                                 }
                                 binding.loadingPanel.visibility = View.GONE
                             }

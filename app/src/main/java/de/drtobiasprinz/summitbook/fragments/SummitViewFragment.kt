@@ -288,9 +288,10 @@ class SummitViewFragment : Fragment() {
                 )
             }
         }
-
-        val summitsForDistanceCalc = summits.filter { it.hasGpsTrack() && distanceMapsEmpty(it) }
-            .sortedByDescending { it.date }.take(25)
+        val analyzer = OfflineMapAnalyzer.from(requireContext())
+        val summitsForDistanceCalc = summits.filter {
+            OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(analyzer, it)
+        }.sortedByDescending { it.date }.take(25)
         Log.i(
             TAG,
             "updateTracks - setDistancePerSurfacesAndRoadType for ${summitsForDistanceCalc.size} summits."
@@ -313,14 +314,6 @@ class SummitViewFragment : Fragment() {
         viewModel?.updateSummitDistanceDataBatch(summitsToUpdate)
         Log.i(
             TAG, "updateTracks - setDistancePerSurfacesAndRoadType done."
-        )
-    }
-
-    private fun distanceMapsEmpty(summit: Summit): Boolean {
-        val surfaceEntries = summit.distancePerSurface.map { kv -> kv.value }
-        val roadTypeEntries = summit.distancePerSurface.map { kv -> kv.value }
-        return surfaceEntries.isEmpty() || surfaceEntries.toSet() == setOf(0) || roadTypeEntries.isEmpty() || roadTypeEntries.toSet() == setOf(
-            0
         )
     }
 

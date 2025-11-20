@@ -7,37 +7,74 @@
     android:layout_height="match_parent"
     tools:context=".ui.fragment.ShowNewSummitsFromGarminFragment">
 
+    <EditText
+        android:id="@+id/start_date"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:layout_marginEnd="5dp"
+        android:autofillHints=""
+        android:drawableStart="@drawable/baseline_today_black_24dp"
+        android:drawablePadding="5dp"
+        android:focusable="false"
+        android:hint="@string/from"
+        android:inputType="none"
+        android:minHeight="48dp"
+        app:layout_constraintEnd_toStartOf="@id/end_date"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="LabelFor,TextFields" />
+
+    <EditText
+        android:id="@+id/end_date"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="5dp"
+        android:autofillHints=""
+        android:drawableStart="@drawable/baseline_today_black_24dp"
+        android:drawablePadding="5dp"
+        android:focusable="false"
+        android:hint="@string/until"
+        android:inputType="none"
+        android:minHeight="48dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/start_date"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="LabelFor,TextFields" />
+
     <ImageButton
         android:id="@+id/save"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:backgroundTint="@color/green_500"
         android:contentDescription="@string/saveButtonText"
         android:src="@drawable/baseline_save_black_24dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/start_date" />
 
     <ImageButton
         android:id="@+id/ignore"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:backgroundTint="@color/orange_600"
         android:contentDescription="@string/ignore"
         android:src="@drawable/baseline_do_not_disturb_on_total_silence_24"
         app:layout_constraintStart_toEndOf="@id/save"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/start_date" />
 
 
     <ImageButton
         android:id="@+id/recalculate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:backgroundTint="@color/grey_500"
         android:contentDescription="@string/update"
         android:src="@drawable/baseline_refresh_24"
-        app:layout_constraintBottom_toBottomOf="@id/ignore"
         app:layout_constraintStart_toEndOf="@id/ignore"
-        app:layout_constraintTop_toTopOf="@id/ignore" />
+        app:layout_constraintTop_toBottomOf="@id/start_date" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/add_summit_merge"
@@ -54,27 +91,33 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="5dp"
+        android:alpha="0.5"
         android:text="@string/show_all"
-
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/save" />
 
-    <ScrollView
-        android:id="@+id/scrollView"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/add_summit_merge">
+        app:layout_constraintTop_toBottomOf="@id/add_summit_merge" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-    </ScrollView>
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/emptyBody"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="5dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <include layout="@layout/empty_list" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <RelativeLayout
         android:id="@+id/loadingPanel"
@@ -84,7 +127,7 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/scrollView">
+        app:layout_constraintTop_toTopOf="parent">
 
         <ProgressBar
             android:id="@+id/progress_bar"

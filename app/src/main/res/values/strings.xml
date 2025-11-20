@@ -1,4 +1,5 @@
 <resources>
+    <string name="no_new_summits">No new summits found</string>
     <string name="app_name">Summit Book</string>
     <string name="required">required</string>
     <string name="optional">optional</string>
@@ -476,7 +477,7 @@
     <string name="whole_day">Complete day</string>
     <string name="update_done">Update done and NO new summits found.</string>
     <string name="update_done_new_summits">Update done and new summits found.</string>
-    <string name="no_summit">There is no summit for this criteria</string>
+    <string name="no_summit">No summit found</string>
     <string name="no_data_available">No data available</string>
     <string name="floors_climbed">Climbed Floors\n</string>
     <string name="steps">Steps</string>

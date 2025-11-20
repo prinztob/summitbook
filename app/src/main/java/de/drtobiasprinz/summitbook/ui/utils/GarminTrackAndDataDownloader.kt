@@ -1,13 +1,10 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import android.util.Log
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.db.entities.CyclingDynamicsData
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.db.entities.GarminData
 import de.drtobiasprinz.summitbook.db.entities.PowerData
-import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.models.GpsTrack
@@ -16,7 +13,6 @@ import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
-import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import org.osmdroid.util.GeoPoint
@@ -61,67 +57,6 @@ class GarminTrackAndDataDownloader(
                 }
             } catch (e: RuntimeException) {
                 Log.e("AsyncDownloadActivities", e.message ?: "")
-            }
-        }
-    }
-
-    fun setAdditionalActivityIds(entry: Summit, powerData: JsonObject?) {
-        if (entry.sportType == SportType.BikeAndHike) {
-            val power = entry.garminData?.power
-            if (powerData != null && power != null) {
-                updatePower(powerData, power)
-            }
-            if (garminPythonExecutor != null) {
-                updateMultiSpotActivityIds(garminPythonExecutor, entry)
-            }
-        }
-    }
-
-    private fun updatePower(powerData: JsonObject, power: PowerData) {
-        powerData["entries"].asJsonArray.forEach {
-            val element = it.asJsonObject
-            when (element["duration"].asString) {
-                "1" -> power.oneSec = AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-                "2" -> power.twoSec = AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-                "5" -> power.fiveSec = AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-                "10" -> power.tenSec = AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-                "20" -> power.twentySec = AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-                "30" -> power.thirtySec = AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-                "60" -> power.oneMin = AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-                "120" -> power.twoMin = AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-                "300" -> power.fiveMin = AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-                "600" -> power.tenMin = AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-                "1200" -> power.twentyMin =
-                    AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-
-                "1800" -> power.thirtyMin =
-                    AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-
-                "3600" -> power.oneHour = AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-                "7200" -> power.twoHours =
-                    AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-
-                "18000" -> power.fiveHours =
-                    AddSummitDialog.getJsonObjectEntryNotNone(element).toInt()
-            }
-        }
-    }
-
-    private fun updateMultiSpotActivityIds(pythonExecutor: GarminPythonExecutor, entry: Summit) {
-        val activityId = entry.garminData?.activityId
-        if (activityId != null) {
-            val activityJsonFile = File(MainActivity.activitiesDir, "activity_${activityId}.json")
-            if (activityJsonFile.exists()) {
-                val gson = JsonParser.parseString(activityJsonFile.readText()) as JsonObject
-                val parsedEntry = GarminPythonExecutor.parseJsonObjectFromParentActivity(gson)
-                val ids = parsedEntry.garminData?.activityIds
-                if (ids != null) {
-                    entry.garminData?.activityIds = ids
-                }
-            } else {
-                val gson = pythonExecutor.getExerciseSet(activityId)
-                val ids = gson.get("metadataDTO").asJsonObject.get("childIds").asJsonArray
-                entry.garminData?.activityIds?.addAll(ids.map { it.asString })
             }
         }
     }
