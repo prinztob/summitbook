@@ -5,7 +5,6 @@ import com.chaquo.python.PyObject
 import com.chaquo.python.Python
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import java.io.File
@@ -63,18 +62,20 @@ class GarminPythonExecutor(
     fun downloadTcxFile(
         garminActivityId: String,
         downloadPathTcx: String,
-        downloadPathGpx: String
+        downloadPathGpx: String,
+        downloadPathYaml: String
     ) {
         val time = measureTimeMillis {
             if (client == null) {
                 login()
             }
             val result = pythonModule?.callAttr(
-                Keys.PREF_DOWNLOAD_TCX,
+                "download_gpx_and_transfer_tcx_to_extension",
                 client,
                 garminActivityId,
-                downloadPathTcx,
-                downloadPathGpx
+                downloadPathGpx,
+                downloadPathYaml,
+                downloadPathTcx
             )
             checkOutput(result)
         }

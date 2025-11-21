@@ -30,6 +30,7 @@ class GarminTrackAndDataDownloader(
 ) {
 
     val downloadedTracks: MutableList<File> = mutableListOf()
+    val downloadedYamlExtensions: MutableList<File> = mutableListOf()
     var finalEntry: Summit? = null
 
     fun downloadTracks(isAlreadyDownloaded: Boolean = false) {
@@ -41,18 +42,21 @@ class GarminTrackAndDataDownloader(
                     val idsWithoutParentId = getIds(garminData)
                     for (activityId in idsWithoutParentId) {
                         val file = getTempGpsFilePath(activityId).toFile()
+                        val yamlExtensionsPath = getTempGpsFilePath(activityId, "_extensions.yaml")
                         if (!(isAlreadyDownloaded || file.exists())) {
                             if (useTcx) {
                                 garminPythonExecutor?.downloadTcxFile(
                                     activityId,
-                                    getTempGpsFilePath(activityId, true).absolutePathString(),
+                                    getTempGpsFilePath(activityId, ".tcx").absolutePathString(),
                                     file.absolutePath,
+                                    yamlExtensionsPath.absolutePathString(),
                                 )
                             } else {
                                 garminPythonExecutor?.downloadGpxFile(activityId, file.absolutePath)
                             }
                         }
                         downloadedTracks.add(file)
+                        downloadedYamlExtensions.add(yamlExtensionsPath.toFile())
                     }
                 }
             } catch (e: RuntimeException) {
@@ -77,18 +81,21 @@ class GarminTrackAndDataDownloader(
         }
     }
 
-    fun composeFinalTrack(fileDestination: File? = null) {
+    fun composeFinalTrack() {
         val finalEntryLocal = finalEntry
         if (finalEntryLocal != null) {
             try {
                 val name =
                     "${finalEntryLocal.getDateAsString()}_${finalEntryLocal.name.replace(" ", "_")}"
-                val gpxTrackFile = fileDestination ?: finalEntryLocal.getGpsTrackPath().toFile()
+                val gpxTrackFile = finalEntryLocal.getGpsTrackPath().toFile()
+                val yamlExtensionsFile = finalEntryLocal.getYamlExtensionsFile()
                 pythonInstance?.let {
                     GpxPyExecutor(it).mergeGpxTracks(
                         downloadedTracks,
+                        downloadedYamlExtensions,
                         gpxTrackFile,
-                        name
+                        name,
+                        yamlExtensionsFile
                     )
                 }
                 val gpsTrack = GpsTrack(gpxTrackFile.toPath())
@@ -334,10 +341,9 @@ class GarminTrackAndDataDownloader(
 
     companion object {
         const val TAG = "GarminTrackAndDataDownloader"
-        fun getTempGpsFilePath(activityId: String, useTcx: Boolean = false): Path {
-            val fileEnding = if (useTcx) "tcx" else "gpx"
+        fun getTempGpsFilePath(activityId: String, fileEnding: String = ".gpx"): Path {
             val fileName =
-                String.format(Locale.ENGLISH, "id_${activityId}.${fileEnding}", activityId)
+                String.format(Locale.ENGLISH, "id_${activityId}${fileEnding}", activityId)
             return Paths.get(MainActivity.cache.toString(), fileName)
         }
     }

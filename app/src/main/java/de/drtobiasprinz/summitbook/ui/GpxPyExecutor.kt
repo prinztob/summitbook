@@ -31,6 +31,7 @@ class GpxPyExecutor(private var pythonInstance: Python) {
             pythonModule.callAttr(
                 "analyze_gpx_track",
                 summit.getGpsTrackPath().toFile().absolutePath,
+                summit.getYamlExtensionsFile().absolutePath,
                 targetFolder.absolutePath,
                 splitFiles.toTypedArray()
             )
@@ -52,13 +53,15 @@ class GpxPyExecutor(private var pythonInstance: Python) {
         checkOutput(result)
     }
 
-    fun mergeGpxTracks(tracksToMerge: List<File>, output: File, name: String) {
+    fun mergeGpxTracks(tracksToMerge: List<File>, yamlExtensionsToMerge: List<File>, gpxFile: File, name: String, yamlExtensionsFile: File?) {
         pythonModule = pythonInstance.getModule("entry_point")
         val result = pythonModule.callAttr(
             "merge_tracks",
             tracksToMerge.map { it.absolutePath }.toTypedArray(),
-            output.absolutePath,
-            name
+            yamlExtensionsToMerge.map { it.absolutePath }.toTypedArray(),
+            gpxFile.absolutePath,
+            name,
+            yamlExtensionsFile?.absolutePath
         )
         checkOutput(result)
     }
