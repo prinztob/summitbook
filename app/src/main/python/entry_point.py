@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 from datetime import datetime
+from pathlib import Path
 from typing import Any, cast, Tuple
 
 import garth
@@ -17,7 +18,7 @@ from garminconnect import (  # type: ignore[import-untyped]
 from garth.exc import GarthHTTPError
 from gpxpy.gpx import GPX, GPXTrackPoint
 
-from utils import get_number_of_track_points
+from utils import get_number_of_track_points, parse_track
 from tcx_to_gpx import convert_tcx_to_gpx
 from Extension import Extension
 from gpx_track_analyzer import TrackAnalyzer
@@ -199,7 +200,7 @@ def download_tcx(
         )
         with open(output_file_tcx, "wb") as fb:
             fb.write(gpx_data)
-        convert_tcx_to_gpx(output_file_tcx, output_file_gpx)
+        convert_tcx_to_gpx(Path(output_file_tcx), Path(output_file_gpx))
         return "return code: 0"
     except (
             GarminConnectConnectionError,
@@ -229,9 +230,9 @@ def download_gpx_and_transfer_tcx_to_extension(
         with open(output_file_path_tcx, "wb") as fb:
             fb.write(tcx_data)
         convert_tcx_to_gpx(
-            output_file_path_tcx,
-            output_file_path_gpx,
-            yaml_extension_file_path=out_file_path_yaml,
+            Path(output_file_path_tcx),
+            Path(output_file_path_gpx),
+            yaml_extension_file_path=Path(out_file_path_yaml),
         )
         return "return code: 0"
     except (
@@ -481,13 +482,23 @@ def get_power_element_at(entries: list[dict[str, str]], index: int) -> str:
 
 
 def analyze_gpx_track(
-        gpx_path: str, yaml_extensions_path: str, additional_data_folder: str, split_files: list[str]
+        gpx_path: str,
+        yaml_extensions_path: str,
+        additional_data_folder: str,
+        split_files: list[str],
 ) -> str:
     try:
         start_time = datetime.now()
-        analyzer = TrackAnalyzer(gpx_path, additional_data_folder, split_files)
+        analyzer = TrackAnalyzer(
+            Path(gpx_path), Path(additional_data_folder), [Path(f) for f in split_files]
+        )
         if not analyzer.analyze():
-            analyzer = TrackAnalyzer(gpx_path, additional_data_folder, split_files, yaml_file=yaml_extensions_path)
+            analyzer = TrackAnalyzer(
+                Path(gpx_path),
+                Path(additional_data_folder),
+                [Path(f) for f in split_files],
+                yaml_file=Path(yaml_extensions_path),
+            )
             analyzer.analyze()
         analyzer.write_data_and_extension_to_file()
         print(
@@ -501,7 +512,7 @@ def analyze_gpx_track(
 def simplify_gpx_track(gpx_path: str, additional_data_folder: str) -> str:
     try:
         start_time = datetime.now()
-        analyzer = TrackAnalyzer(gpx_path, additional_data_folder)
+        analyzer = TrackAnalyzer(Path(gpx_path), Path(additional_data_folder))
         analyzer.write_simplified_track_to_file()
         print(
             f"Simplifying of {gpx_path} took {(datetime.now() - start_time).total_seconds()}"
@@ -518,59 +529,99 @@ def merge_tracks(
         name: str,
         extensions_yaml_file: str | None = None,
 ) -> str:
-    #    try:
-    print(f"Trying to merge the following tracks: {gpx_track_files_to_merge} with yaml extensions {extension_yaml_files_to_merge}")
-    gpx_files = list(gpx_track_files_to_merge)
-    extension_yaml_files = list(extension_yaml_files_to_merge)
-    analyzer_for_all_tracks: TrackAnalyzer | None = None
-    gpx_track_analyzers = []
-    for i, file in enumerate(gpx_files):
-        analyzer = TrackAnalyzer(file, yaml_file=extension_yaml_files[i])
-        analyzer.set_all_points_with_distance()
-        gpx_track_analyzers.append(analyzer)
-
-    for analyzer in sorted(gpx_track_analyzers, key=lambda a: get_time(a.gpx)):
-        if analyzer_for_all_tracks is None:
-            analyzer_for_all_tracks = analyzer
-        else:
-            if analyzer_for_all_tracks.gpx is not None and analyzer.gpx is not None:
-                update_distance(
-                    analyzer_for_all_tracks.all_points_with_extension,
-                    analyzer.all_points_with_extension,
-                )
-                analyzer_for_all_tracks.gpx.tracks.extend(analyzer.gpx.tracks)
-                analyzer_for_all_tracks.all_points_with_extension.extend(
-                    analyzer.all_points_with_extension
-                )
-    if analyzer_for_all_tracks is not None and analyzer_for_all_tracks.gpx is not None:
-        if get_number_of_track_points(analyzer_for_all_tracks.gpx) != len(
-                analyzer_for_all_tracks.all_points_with_extension
-        ):
-            raise Exception("Extension points do not match gpx tracks")
-        analyzer_for_all_tracks.gpx.name = name
-        with open(output_file, "w") as f:
-            f.write(analyzer_for_all_tracks.gpx.to_xml())
-        output_file_yaml = extensions_yaml_file if extensions_yaml_file else os.path.join(
-            os.path.dirname(output_file),
-            os.path.basename(output_file.replace(".gpx", "_extensions.yaml")),
+    try:
+        print(
+            f"Trying to merge the following tracks: {gpx_track_files_to_merge} with yaml extensions {extension_yaml_files_to_merge}"
         )
-        with open(output_file_yaml, "w") as f:
-            yaml.dump(
-                {
-                    "extensions": [
-                        e[1].to_dict()
-                        for e in analyzer_for_all_tracks.all_points_with_extension
-                    ]
-                },
-                f,
-                default_flow_style=False,
+        gpx_files = list(gpx_track_files_to_merge)
+        extension_yaml_files = list(extension_yaml_files_to_merge)
+        analyzer_for_all_tracks: TrackAnalyzer | None = None
+        gpx_track_analyzers = []
+        for i, file in enumerate(gpx_files):
+            analyzer = TrackAnalyzer(
+                Path(file), yaml_file=Path(extension_yaml_files[i])
             )
-        print(f"Wrote gpx to file {output_file} and extensions to {output_file_yaml}")
-    return "return code: 0Merging of tracks successful"
+            analyzer.set_all_points_with_distance()
+            gpx_track_analyzers.append(analyzer)
+
+        for analyzer in sorted(gpx_track_analyzers, key=lambda a: get_time(a.gpx)):
+            if analyzer_for_all_tracks is None:
+                analyzer_for_all_tracks = analyzer
+            else:
+                if analyzer_for_all_tracks.gpx is not None and analyzer.gpx is not None:
+                    update_distance(
+                        analyzer_for_all_tracks.all_points_with_extension,
+                        analyzer.all_points_with_extension,
+                    )
+                    for track in analyzer.gpx.tracks:
+                        analyzer_for_all_tracks.gpx.tracks[0].segments.extend(
+                            track.segments
+                        )
+                    analyzer_for_all_tracks.all_points_with_extension.extend(
+                        analyzer.all_points_with_extension
+                    )
+        if (
+                analyzer_for_all_tracks is not None
+                and analyzer_for_all_tracks.gpx is not None
+        ):
+            if get_number_of_track_points(analyzer_for_all_tracks.gpx) != len(
+                    analyzer_for_all_tracks.all_points_with_extension
+            ):
+                raise Exception("Extension points do not match gpx tracks")
+            analyzer_for_all_tracks.gpx.name = name
+            with open(output_file, "w") as f:
+                f.write(analyzer_for_all_tracks.gpx.to_xml())
+            output_file_yaml = (
+                extensions_yaml_file
+                if extensions_yaml_file
+                else os.path.join(
+                    os.path.dirname(output_file),
+                    os.path.basename(output_file.replace(".gpx", "_extensions.yaml")),
+                )
+            )
+            with open(output_file_yaml, "w") as f:
+                yaml.dump(
+                    {
+                        "extensions": [
+                            e[1].to_dict()
+                            for e in analyzer_for_all_tracks.all_points_with_extension
+                        ]
+                    },
+                    f,
+                    default_flow_style=False,
+                )
+            print(
+                f"Wrote gpx to file {output_file} and extensions to {output_file_yaml}"
+            )
+        return "return code: 0Merging of tracks successful"
+    except Exception as err:
+        return "return code: 1Unknown error occurred during merging of tracks: %s" % err
 
 
-#    except Exception as err:
-#        return "return code: 1Unknown error occurred during merging of tracks: %s" % err
+def remove_extensions_from_gpx_track(
+        input_gpx_track_file: str,
+        output_gpx_track_file: str | None = None,
+) -> str:
+    try:
+        parse_track_and_remove_extensions(
+            Path(input_gpx_track_file),
+            Path(output_gpx_track_file) if output_gpx_track_file else None,
+        )
+        return "return code: 0Removing of extensions from track successful"
+    except Exception as err:
+        return (
+                "return code: 1Unknown error occurred during removing of extensions from tracks: %s"
+                % err
+        )
+
+
+def parse_track_and_remove_extensions(
+        input_gpx_track_file: Path, output_gpx_track_file: Path | None
+) -> None:
+    if output_gpx_track_file is None:
+        output_gpx_track_file = input_gpx_track_file
+    gpx = parse_track(input_gpx_track_file, True)
+    open(output_gpx_track_file, "w").write(gpx.to_xml())
 
 
 def update_distance(

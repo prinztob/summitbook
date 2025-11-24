@@ -806,7 +806,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
                     0.0
                 }
                 if (distance == 0.0 && gpsTrack != null) {
-                    distance = 0.0//(gpsTrack.trackPoints.lastOrNull()?.pointExtension?.distance
+                    distance = 0.0//TODO (gpsTrack.trackPoints.lastOrNull()?.pointExtension?.distance
 //                        ?: 0.0) / 1000
                 }
                 entry.kilometers = distance

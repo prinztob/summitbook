@@ -16,7 +16,10 @@ class GpxPyExecutor(private var pythonInstance: Python) {
     private lateinit var pythonModule: PyObject
 
     fun analyzeGpxTrackAndCreateGpxPyDataFile(summit: Summit) {
-        val targetFolder = File(storage, if (!summit.isBookmark) subDirForGpsTrackExtensions else subDirForGpsTracksBookmarkExtensions)
+        val targetFolder = File(
+            storage,
+            if (!summit.isBookmark) subDirForGpsTrackExtensions else subDirForGpsTracksBookmarkExtensions
+        )
         if (!targetFolder.exists()) {
             targetFolder.mkdirs()
         }
@@ -53,7 +56,13 @@ class GpxPyExecutor(private var pythonInstance: Python) {
         checkOutput(result)
     }
 
-    fun mergeGpxTracks(tracksToMerge: List<File>, yamlExtensionsToMerge: List<File>, gpxFile: File, name: String, yamlExtensionsFile: File?) {
+    fun mergeGpxTracks(
+        tracksToMerge: List<File>,
+        yamlExtensionsToMerge: List<File>,
+        gpxFile: File,
+        name: String,
+        yamlExtensionsFile: File?
+    ) {
         pythonModule = pythonInstance.getModule("entry_point")
         val result = pythonModule.callAttr(
             "merge_tracks",
@@ -62,6 +71,16 @@ class GpxPyExecutor(private var pythonInstance: Python) {
             gpxFile.absolutePath,
             name,
             yamlExtensionsFile?.absolutePath
+        )
+        checkOutput(result)
+    }
+
+    fun removeExtensionsFromGpxTracks(inputGpxTrackFile: File, outputGpxTrackFile: File) {
+        pythonModule = pythonInstance.getModule("entry_point")
+        val result = pythonModule.callAttr(
+            "remove_extensions_from_gpx_track",
+            inputGpxTrackFile.absolutePath,
+            outputGpxTrackFile.absolutePath
         )
         checkOutput(result)
     }

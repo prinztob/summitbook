@@ -6,7 +6,6 @@ import android.graphics.drawable.Drawable
 import android.location.Address
 import android.os.Bundle
 import android.os.StrictMode
-import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.Toast
@@ -25,6 +24,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.dialog.FileInfoDialog
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
@@ -32,13 +32,9 @@ import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addTrackAndMarker
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.drawBoundingBox
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
-import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.utils.Utils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import io.ticofab.androidgpxparser.parser.GPXParser
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.osmdroid.bonuspack.location.GeocoderNominatim
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
@@ -174,26 +170,15 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     }
                     binding.refreshRoadInfo.setOnClickListener { v: View ->
                         if (entry != null) {
-                            Log.i(
-                                "SelectOnMapActivity",
-                                "updateTracks - setDistancePerSurfacesAndRoadType for summit ${entry.getDateAsString()}_${entry.name}."
-                            )
-                            binding.loadingPanel.visibility = View.VISIBLE
-                            lifecycleScope.launch {
-                                val analyzer = OfflineMapAnalyzer.from(this@SelectOnOsMapActivity)
-                                if (OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(analyzer, entry)) {
-                                    val updated = withContext(Dispatchers.IO) {
-                                        OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(
-                                            this@SelectOnOsMapActivity, entry
-                                        )
-                                    }
-                                    if (updated) {
-                                        viewModel.saveSummit(true, entry)
-                                    }
-                                }
-                                binding.loadingPanel.visibility = View.GONE
+                            val fileInfoDialog = FileInfoDialog(
+                                entry,
+                                this@SelectOnOsMapActivity,
+                                lifecycleScope,
+                                viewModel
+                            ) { isLoading ->
+                                binding.loadingPanel.visibility = if (isLoading) View.VISIBLE else View.GONE
                             }
-
+                            fileInfoDialog.show()
                         }
                     }
                     binding.addPositionCancel.setOnClickListener { v: View ->
@@ -295,7 +280,6 @@ class SelectOnOsMapActivity : FragmentActivity() {
             ).show()
         }
     }
-
 
     private fun addGpxTrack(file: File, mParser: GPXParser, osMap: MapView) {
         val inputStream: InputStream = FileInputStream(file)

@@ -1,5 +1,6 @@
 <resources>
     <string name="no_new_summits">Keine neuen Gipfel gefunden</string>
+    <string name="revert">Zurücksetzen</string>
     <string name="app_name">Gipfelbuch</string>
     <string name="required">Erforderlich</string>
     <string name="optional">Optional</string>
@@ -558,4 +559,14 @@
     <string name="add_new_event_cancel">"Das Hinzufügen eines neuen Events wurde abgebrochen"</string>
     <string name="event_date">Event Datum</string>
     <string name="event_description">Event Beschreibung</string>
+    <string name="file_info_title">Dateiinformationen</string>
+    <string name="file_name">Dateiname</string>
+    <string name="exists">Existiert</string>
+    <string name="file_size">Größe</string>
+    <string name="update_done_roadinfo">Update von Straßeninformationen durchgeführt.</string>
+    <string name="failed_to_backup_file">Fehler beim Sichern der Datei: %1$s</string>
+    <string name="no_backup_found">Keine Sicherung gefunden für %1$s</string>
+    <string name="reverted_file">%1$s wiederhergestellt</string>
+    <string name="failed_to_restore_file">Fehler beim Wiederherstellen der Datei: %1$s</string>
+
 </resources>

@@ -427,6 +427,7 @@
     <string name="color_code_selection">Select value used for color code</string>
     <string name="entry">Entry</string>
     <string name="update">Update</string>
+    <string name="revert">Revert</string>
     <string name="update_3rd_part">Update third party data</string>
     <string name="unit">Unit</string>
     <string name="current">Current</string>
@@ -557,4 +558,13 @@
     <string name="add_new_event_cancel">"Adding a new event was canceled."</string>
     <string name="event_date">Event date</string>
     <string name="event_description">Event Description</string>
+    <string name="file_info_title">File Information</string>
+    <string name="file_name">File Name</string>
+    <string name="exists">Exists</string>
+    <string name="file_size">Size</string>
+    <string name="update_done_roadinfo">Update of road infos done.</string>
+    <string name="failed_to_backup_file">Failed to backup file: %1$s</string>
+    <string name="no_backup_found">No backup found for %1$s</string>
+    <string name="reverted_file">Reverted %1$s</string>
+    <string name="failed_to_restore_file">Failed to restore file: %1$s</string>
 </resources>

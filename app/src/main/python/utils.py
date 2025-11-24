@@ -1,7 +1,12 @@
+import datetime
 import math
+import re
+from pathlib import Path
 from typing import Tuple, List
 
+import gpxpy
 import yaml
+from dateutil import parser
 from gpxpy.gpx import GPXTrackPoint, GPX
 
 from Extension import Extension
@@ -175,13 +180,12 @@ def prefix_filename(fn: str) -> str:
         return fn.replace(".gpx", SUFFIX + ".gpx")
 
 
-def write_extensions_to_yaml(extensions: List[Extension], yaml_file: str) -> None:
-    with open(yaml_file, "w", encoding="utf-8") as file:
-        yaml.dump(
-            {"extensions": [e.to_dict() for e in extensions]},
-            file,
-            default_flow_style=False,
-        )
+def write_extensions_to_yaml(extensions: List[Extension], yaml_file: Path) -> None:
+    yaml.dump(
+        {"extensions": [e.to_dict() for e in extensions]},
+        yaml_file.open("w", encoding="utf-8"),
+        default_flow_style=False,
+    )
     print(f"Written extensions to {yaml_file}")
 
 
@@ -191,3 +195,45 @@ def get_points(gpx: GPX) -> list[GPXTrackPoint]:
 
 def get_number_of_track_points(gpx: GPX) -> int:
     return len(get_points(gpx))
+
+
+def correct_time(point: GPXTrackPoint, last_point: GPXTrackPoint) -> GPXTrackPoint:
+    try:
+        parser.parse(str(point.time))
+        return point
+    except Exception:
+        if last_point.time:
+            point.time = last_point.time + datetime.timedelta(seconds=1)
+        return point
+
+
+def parse_track(gpx_file: Path, should_remove_extensions: bool = False) -> GPX:
+    with open(gpx_file, "r") as f:
+        search_result = re.search(r"<\?xml(.|\n)*?(\<\/gpx\>)", f.read())
+        if search_result:
+            gpx = gpxpy.parse(search_result.group(0))
+        else:
+            gpx = gpxpy.parse(f)
+    # remove points with wrong location
+    for track in gpx.tracks:
+        for segment in track.segments:
+            segment.points = [
+                remove_extensions(point, segment.points[i - 1])
+                if should_remove_extensions
+                else correct_time(point, segment.points[i - 1])
+                for i, point in enumerate(segment.points)
+                if point.longitude != 0 and point.latitude != 0
+            ]
+    # merge tracks
+    if len(gpx.tracks) > 1:
+        for i, track in enumerate(gpx.tracks):
+            if i > 0:
+                gpx.tracks[0].segments.extend(track.segments)
+        gpx.tracks = [gpx.tracks[0]]
+    return gpx
+
+
+def remove_extensions(point: GPXTrackPoint, last_point: GPXTrackPoint) -> GPXTrackPoint:
+    point.extensions = []
+    correct_time(point, last_point)
+    return point

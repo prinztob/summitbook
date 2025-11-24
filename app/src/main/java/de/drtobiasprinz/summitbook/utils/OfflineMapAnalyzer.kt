@@ -64,7 +64,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
                 LatLong(
                     geoPoint.latitude, geoPoint.longitude
                 ), mapFile
-            )?.minByOrNull { it.minDistance}
+            )?.minByOrNull { it.minDistance }
             val locationInfo = getClosestLocationInfo(
                 LatLong(
                     geoPoint.latitude, geoPoint.longitude
@@ -499,19 +499,26 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
             )
         }
 
-        fun isDistancePerSurfacesAndRoadTypePossible(analyzer: OfflineMapAnalyzer, summit: Summit): Boolean {
+        fun isDistancePerSurfacesAndRoadTypePossible(
+            analyzer: OfflineMapAnalyzer, summit: Summit
+        ): Boolean {
             val boundingBox = summit.trackBoundingBox
             if (!summit.hasGpsTrack()) {
                 return false
             }
-            if (distanceMapsEmpty(summit) && boundingBox != null && analyzer.hasMapCoverageForBoundingBox(boundingBox)) {
-                return true
+            if (distanceMapsEmpty(summit)) {
+                if (boundingBox != null && analyzer.hasMapCoverageForBoundingBox(boundingBox)) {
+                    return true
+                } else {
+                    Log.w(
+                        TAG,
+                        "Track for ${summit.getDateAsString()}_${summit.name} does not overlap with any available map files. Skipping road type analysis."
+                    )
+                    return false
+                }
+            } else {
+                return false
             }
-            Log.w(
-                TAG,
-                "Track does not overlap with any available map files. Skipping road type analysis."
-            )
-            return false
         }
 
         private fun distanceMapsEmpty(summit: Summit): Boolean {
@@ -528,8 +535,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
             summit.setGpsTrack(useSimplifiedTrack = false, updateTrack = true)
             val analyzer = from(context)
             val distancePerSurfacesAndRoadType = analyzer.getRoadTypeSummaryFromTrackPoints(
-                summit.gpsTrack?.trackPoints,
-                summit.sportType
+                summit.gpsTrack?.trackPoints, summit.sportType
             )
             if (valuesAreNotEmpty(distancePerSurfacesAndRoadType)) {
                 val extensions = summit.gpsTrack?.trackPoints?.map { it.second }
@@ -555,7 +561,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
             }
         }
 
-        private fun valuesAreNotEmpty(distancePerSurfacesAndRoadType: Pair<Map<Surface, Int>, Map<RoadType, Int>>): Boolean =
+        fun valuesAreNotEmpty(distancePerSurfacesAndRoadType: Pair<Map<Surface, Int>, Map<RoadType, Int>>): Boolean =
             distancePerSurfacesAndRoadType.first.map { it.value }
                 .toSet() != setOf(0) && distancePerSurfacesAndRoadType.second.map { it.value }
                 .toSet() != setOf(0)

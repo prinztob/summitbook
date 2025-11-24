@@ -1,11 +1,9 @@
 import datetime
 import json
-import os.path
-import re
+from pathlib import Path
 from typing import Any, Tuple
 
 import geopy.distance  # type: ignore[import-untyped]
-import gpxpy.gpx
 import numpy as np
 import yaml
 from gpxpy.gpx import GPXTrackPoint, GPX
@@ -13,7 +11,7 @@ from gpxpy.gpx import GPXTrackPoint, GPX
 from Extension import Extension
 from elevation_track_analyzer import ElevationTrackAnalyzer
 from power_track_analyzer import PowerTrackAnalyzer
-from utils import get_points, prefix_filename, write_extensions_to_yaml
+from utils import prefix_filename, write_extensions_to_yaml, get_points, parse_track
 from velocity_track_analyzer import VelocityTrackAnalyzer
 
 GPXTrackPoint.extensions_calculated = Extension()  # type: ignore[attr-defined]
@@ -26,28 +24,27 @@ class TrackAnalyzer(object):
 
     def __init__(
             self,
-            file: str,
-            additional_data_folder: str | None = None,
-            split_files: list[str] | None = None,
-            yaml_file: str | None = None,
+            file: Path,
+            additional_data_folder: Path | None = None,
+            split_files: list[Path] | None = None,
+            yaml_file: Path | None = None,
     ) -> None:
         self.file = file
         if not additional_data_folder:
-            additional_data_folder = os.path.dirname(file)
-        self.yaml_file = yaml_file if yaml_file else os.path.join(additional_data_folder,
-                                                                  os.path.basename(file.replace(".gpx", "_extensions.yaml")),
-                                                                  )
-        self.gpx_file_simplified = os.path.join(
-            additional_data_folder, prefix_filename(os.path.basename(file))
+            additional_data_folder = self.file.parent
+        self.yaml_file = (
+            yaml_file
+            if yaml_file
+            else additional_data_folder
+                 / self.file.name.replace(".gpx", "_extensions.yaml")
         )
-        self.gpx_file_gpxpy = os.path.join(
-            additional_data_folder,
-            os.path.basename(file).replace(".gpx", "_gpxpy.json"),
+        self.gpx_file_simplified = additional_data_folder / prefix_filename(
+            self.file.name
         )
-        with open(file, "r") as f:
-            search_result = re.search(r"<\?xml(.|\n)*?(\<\/gpx\>)", f.read())
-            if search_result:
-                self.gpx_file = search_result.group(0)
+        self.gpx_file_gpxpy = additional_data_folder / self.file.name.replace(
+            ".gpx", "_gpxpy.json"
+        )
+        self.gpx_file = Path(file)
         self.data: dict[str, Any] = {}
         self.all_points_with_extension: list[Tuple[GPXTrackPoint, Extension]] = []
         self.gpx: GPX | None = None
@@ -55,26 +52,32 @@ class TrackAnalyzer(object):
         self.split_files = split_files
 
     def write_simplified_track_to_file(
-            self, gpx_file_simplified: str | None = None
+            self, gpx_file_simplified: Path | None = None
     ) -> None:
         if self.gpx_file:
             if self.gpx is None:
-                self.parse_track()
+                self.gpx = parse_track(self.gpx_file)
         if self.gpx:
             if not gpx_file_simplified:
                 gpx_file_simplified = self.gpx_file_simplified
+            else:
+                gpx_file_simplified = Path(gpx_file_simplified)
             self.gpx.simplify()
             with open(gpx_file_simplified, "w") as f:
                 f.write(self.gpx.to_xml())
             print(f"Written simplified track to {gpx_file_simplified}")
 
     def write_data_and_extension_to_file(
-            self, gpx_file_gpxpy: str | None = None, yaml_file: str | None = None
+            self, gpx_file_gpxpy: Path | None = None, yaml_file: Path | None = None
     ) -> None:
         if not yaml_file:
             yaml_file = self.yaml_file
+        else:
+            yaml_file = Path(yaml_file)
         if not gpx_file_gpxpy:
             gpx_file_gpxpy = self.gpx_file_gpxpy
+        else:
+            gpx_file_gpxpy = Path(gpx_file_gpxpy)
         if yaml_file:
             write_extensions_to_yaml(
                 [p[1] for p in self.all_points_with_extension],
@@ -143,31 +146,17 @@ class TrackAnalyzer(object):
                 }
             )
 
-    def parse_track(self) -> None:
-        with open(self.file, "r") as f:
-            search_result = re.search(r"<\?xml(.|\n)*?(\<\/gpx\>)", f.read())
-            if search_result:
-                self.gpx = gpxpy.parse(search_result.group(0))
-            else:
-                self.gpx = gpxpy.parse(f)
-            # remove points with wrong location
-            for track in self.gpx.tracks:
-                for segment in track.segments:
-                    segment.points = [
-                        point
-                        for point in segment.points
-                        if point.longitude != 0 and point.latitude != 0
-                    ]
-
     def get_extensions(self, all_points: list[GPXTrackPoint]) -> list[Extension]:
-        if os.path.exists(self.yaml_file):
-            print("Getting extensions from yaml file " + self.yaml_file)
+        if self.yaml_file.exists():
+            print(f"Getting extensions from yaml file {self.yaml_file}")
             extensions = yaml.safe_load(open(self.yaml_file, "r"))
             extension_points = [
                 Extension.parse_from_yaml(e) for e in extensions["extensions"]
             ]
         else:
-            print(f"Getting extensions from gpx file, because {self.yaml_file}.")
+            print(
+                f"Getting extensions from gpx file, because {self.yaml_file} does not exist."
+            )
             extension_points = (
                 [Extension.parse(p.extensions) for p in get_points(self.gpx)]
                 if self.gpx
@@ -186,7 +175,7 @@ class TrackAnalyzer(object):
         print(f"Read and add distance to track file {self.file} and {self.yaml_file}")
         if self.gpx_file:
             if self.gpx is None:
-                self.parse_track()
+                self.gpx = parse_track(self.gpx_file)
             distance = 0.0
             if not self.track_points_monotonic():
                 self.recalculate_distances(distance)

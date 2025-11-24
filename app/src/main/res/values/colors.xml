@@ -39,4 +39,7 @@
 
     <color name="console_error">#b53f3f</color>
     <color name="console_meta">#304ffe</color>
+    
+    <color name="table_header_background">#E0E0E0</color>
+    <color name="table_row_alternate">#F5F5F5</color>
 </resources>

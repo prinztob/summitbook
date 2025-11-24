@@ -623,14 +623,14 @@ class OfflineMapAnalyzerTest {
         if (track != null && extension != null && map != null) {
             val mapStream = FileInputStream(File(map.path))
             val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
-            
+
             val trackBoundingBox = TrackBoundingBox(
                 latNorth = 48.5,
                 latSouth = 47.5,
                 lonWest = 11.0,
                 lonEast = 12.0
             )
-            
+
             assertTrue(analyzer.hasMapCoverageForBoundingBox(trackBoundingBox))
         }
     }
