@@ -117,7 +117,7 @@ class OfflineMapAnalyzerTest {
             assertEquals(27811, result.second[RoadType.SIDE_STREET])
             assertEquals(1108, result.second[RoadType.MINOR_ROAD])
             assertEquals(559, result.second[RoadType.MAJOR_ROAD])
-            assertEquals(0, result.second[RoadType.CYCLE_WAY])
+            assertEquals(93, result.second[RoadType.CYCLE_WAY])
             assertEquals(0, result.second[RoadType.ROAD])
             assertEquals(0, result.second[RoadType.UNKNOWN])
         }

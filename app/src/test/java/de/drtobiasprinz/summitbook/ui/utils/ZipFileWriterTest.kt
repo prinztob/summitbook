@@ -160,6 +160,8 @@ class ZipFileWriterTest {
     @Test
     fun testExportAndImportFromZipFile() = runTest {
         // given
+        // Note: This test covers backup/restore of summits, segments, forecasts, entity events,
+        // and extensions YAML files (if they exist on disk)
         val entries = listOf(entry1, entry2, entry3, entry4)
         entries.forEach {
             db.summitsDao().addSummit(it)

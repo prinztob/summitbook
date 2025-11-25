@@ -93,6 +93,10 @@ class ZipFileWriter(
                         addFileToZip(file, summit.getExportTrackPath(), out)
                         withGpsFile += 1
                     }
+                    if (summit.getYamlExtensionsFile().exists()) {
+                        val file = summit.getYamlExtensionsFile()
+                        addFileToZip(file, summit.getExportExtensionsPath(), out)
+                    }
                     if (summit.hasImagePath()) {
                         for ((i, imageId) in summit.imageIds.withIndex()) {
                             val file = summit.getImagePath(imageId).toFile()

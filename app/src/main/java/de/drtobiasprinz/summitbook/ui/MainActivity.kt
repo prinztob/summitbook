@@ -550,6 +550,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                         reader.saveSegmentEntry = { entry ->
                                             viewModel.saveSegmentEntry(false, entry)
                                         }
+                                        reader.saveEntityEvent = { entry ->
+                                            viewModel.saveEntityEvent(false, entry)
+                                        }
                                         contentResolver.openInputStream(uri)?.use { inputStream ->
                                             reader.extractAndImport(inputStream)
                                         }

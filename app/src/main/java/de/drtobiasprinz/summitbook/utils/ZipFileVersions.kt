@@ -8,6 +8,7 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.parseFromCsvFileLine
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
+import de.drtobiasprinz.summitbook.utils.ZipFileVersionsUtils.Companion.getGarminDataV1AndV2
 import de.drtobiasprinz.summitbook.utils.ZipFileVersionsUtils.Companion.getSummitDataV0AndV1
 
 enum class ZipFileVersions(
@@ -44,36 +45,7 @@ enum class ZipFileVersions(
     V1(
         "v1",
         { line -> getSummitDataV0AndV1(line) },
-        { line ->
-            val regex =
-                """(?<activityId>(\d+));(?<garminIds>([\d,]+));(?<cal>([\d.]+));(?<averageHR>([\d.]+));(?<maxHR>([\d.]+));(?<power>([\d,.]+));(?<ftp>(\d+));(?<vo2max>([\d.]+));(?<aerobicTrainingEffect>([\d.]+));(?<anaerobicTrainingEffect>([\d.]+));(?<grit>([\d.]+));(?<flow>([\d.]+));(?<trainingLoad>([\d.]+));(?<waterEstimated>([\d.]+));(?<gainSolarActivityTime>([\d.]+));(?<avgSolarChargePercent>([\d.]+));(?<surfaceTypeUnpavedPercentage>([\d.]+));(?<cyclingDynamic>([\d,.]+))""".toRegex()
-            val matchResult = regex.find(line.replace("\n", ""))
-            if (matchResult != null) {
-                GarminData(
-                    matchResult.groups["garminIds"]!!.value.split(",") as MutableList<String>,
-                    matchResult.groups["cal"]!!.value.toFloat(),
-                    matchResult.groups["averageHR"]!!.value.toFloat(),
-                    matchResult.groups["maxHR"]!!.value.toFloat(),
-                    PowerData.parse(matchResult.groups["power"]!!.value.split(",")),
-                    matchResult.groups["ftp"]!!.value.toInt(),
-                    matchResult.groups["vo2max"]!!.value.toFloat(),
-                    matchResult.groups["aerobicTrainingEffect"]!!.value.toFloat(),
-                    matchResult.groups["anaerobicTrainingEffect"]!!.value.toFloat(),
-                    matchResult.groups["grit"]!!.value.toFloat(),
-                    matchResult.groups["flow"]!!.value.toFloat(),
-                    matchResult.groups["trainingLoad"]!!.value.toFloat(),
-                    matchResult.groups["waterEstimated"]!!.value.toInt(),
-                    matchResult.groups["gainSolarActivityTime"]!!.value.toInt(),
-                    matchResult.groups["avgSolarChargePercent"]!!.value.toInt(),
-                    matchResult.groups["surfaceTypeUnpavedPercentage"]!!.value.toFloat(),
-                    CyclingDynamicsData.parse(
-                        matchResult.groups["cyclingDynamic"]!!.value.split(",")
-                    ),
-                )
-            } else {
-                null
-            }
-        }
+        { line -> getGarminDataV1AndV2(line) }
     )
 }
 
@@ -91,7 +63,7 @@ class ZipFileVersionsUtils {
                     matchResult.groups["name"]!!.value,
                     try {
                         SportType.valueOf(matchResult.groups["sportType"]!!.value)
-                    } catch (e: IllegalArgumentException) {
+                    } catch (_: IllegalArgumentException) {
                         SportType.Other
                     },
                     if (matchResult.groups["places"]!!.value != "") matchResult.groups["places"]!!.value.split(
@@ -122,6 +94,37 @@ class ZipFileVersionsUtils {
                 )
             } else {
                 return parseFromCsvFileLine(line)
+            }
+        }
+
+        fun getGarminDataV1AndV2(line: String): GarminData? {
+            val regex =
+                """(?<activityId>(\d+));(?<garminIds>([\d,]+));(?<cal>([\d.]+));(?<averageHR>([\d.]+));(?<maxHR>([\d.]+));(?<power>([\d,.]+));(?<ftp>(\d+));(?<vo2max>([\d.]+));(?<aerobicTrainingEffect>([\d.]+));(?<anaerobicTrainingEffect>([\d.]+));(?<grit>([\d.]+));(?<flow>([\d.]+));(?<trainingLoad>([\d.]+));(?<waterEstimated>([\d.]+));(?<gainSolarActivityTime>([\d.]+));(?<avgSolarChargePercent>([\d.]+));(?<surfaceTypeUnpavedPercentage>([\d.]+));(?<cyclingDynamic>([\d,.]+))""".toRegex()
+            val matchResult = regex.find(line.replace("\n", ""))
+            if (matchResult != null) {
+                return GarminData(
+                    matchResult.groups["garminIds"]!!.value.split(",") as MutableList<String>,
+                    matchResult.groups["cal"]!!.value.toFloat(),
+                    matchResult.groups["averageHR"]!!.value.toFloat(),
+                    matchResult.groups["maxHR"]!!.value.toFloat(),
+                    PowerData.parse(matchResult.groups["power"]!!.value.split(",")),
+                    matchResult.groups["ftp"]!!.value.toInt(),
+                    matchResult.groups["vo2max"]!!.value.toFloat(),
+                    matchResult.groups["aerobicTrainingEffect"]!!.value.toFloat(),
+                    matchResult.groups["anaerobicTrainingEffect"]!!.value.toFloat(),
+                    matchResult.groups["grit"]!!.value.toFloat(),
+                    matchResult.groups["flow"]!!.value.toFloat(),
+                    matchResult.groups["trainingLoad"]!!.value.toFloat(),
+                    matchResult.groups["waterEstimated"]!!.value.toInt(),
+                    matchResult.groups["gainSolarActivityTime"]!!.value.toInt(),
+                    matchResult.groups["avgSolarChargePercent"]!!.value.toInt(),
+                    matchResult.groups["surfaceTypeUnpavedPercentage"]!!.value.toFloat(),
+                    CyclingDynamicsData.parse(
+                        matchResult.groups["cyclingDynamic"]!!.value.split(",")
+                    ),
+                )
+            } else {
+                return null
             }
         }
     }

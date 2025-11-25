@@ -213,6 +213,16 @@ class Summit(
         ).toString()
     }
 
+    fun getExportExtensionsPath(): String {
+        return Paths.get(
+            subDirForGpsTrackExtensions, String.format(
+                "%s_%s_extensions.yaml",
+                getDateAsString(),
+                name.replace(" ".toRegex(), "_").replace("/".toRegex(), "_")
+            )
+        ).toString()
+    }
+
     fun hasImagePath(): Boolean {
         return imageIds.isNotEmpty()
     }
@@ -302,15 +312,6 @@ class Summit(
             ","
         ) + ';' + places.joinToString(",") + ';' + countries.joinToString(",") + '\n'
     }
-
-    fun toReadableString(context: Context): String {
-        return "${context.getString(R.string.tour_date)}: ${getDateAsString()}, ${
-            context.getString(
-                R.string.name
-            )
-        }: ${name}, " + "${context.getString(R.string.type)}: $sportType, ${elevationData.elevationGain} hm, $kilometers km"
-    }
-
     fun getConnectedEntryString(context: Context): String {
         return "${context.getString(R.string.end_of)} $name"
     }

@@ -43,6 +43,7 @@ class ZipFileReader(
         readFromCache()
         newSummits.forEachIndexed { _, it ->
             readGpxFile(it)
+            readExtensionsFile(it)
             readImageFile(it)
             saveSummit(false, it)
         }
@@ -353,6 +354,21 @@ class ZipFileReader(
                 StandardCopyOption.REPLACE_EXISTING
             )
             entry.hasTrack = true
+        }
+    }
+
+    @Throws(IOException::class)
+    fun readExtensionsFile(entry: Summit) {
+        val extensionsFile = File(baseDirectory, entry.getExportExtensionsPath())
+        if (extensionsFile.exists()) {
+            val targetFile = entry.getYamlExtensionsFile()
+            // Ensure parent directory exists
+            targetFile.parentFile?.mkdirs()
+            Files.copy(
+                extensionsFile.toPath(),
+                targetFile.toPath(),
+                StandardCopyOption.REPLACE_EXISTING
+            )
         }
     }
 
