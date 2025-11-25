@@ -507,6 +507,9 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
                 return false
             }
             if (distanceMapsEmpty(summit)) {
+                if (boundingBox == null) {
+                    summit.setBoundingBoxFromTrack()
+                }
                 if (boundingBox != null && analyzer.hasMapCoverageForBoundingBox(boundingBox)) {
                     return true
                 } else {

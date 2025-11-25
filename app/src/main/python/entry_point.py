@@ -621,7 +621,8 @@ def parse_track_and_remove_extensions(
     if output_gpx_track_file is None:
         output_gpx_track_file = input_gpx_track_file
     gpx = parse_track(input_gpx_track_file, True)
-    open(output_gpx_track_file, "w").write(gpx.to_xml())
+    with open(output_gpx_track_file, "w") as f:
+        f.write(gpx.to_xml())
 
 
 def update_distance(

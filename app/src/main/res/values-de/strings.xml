@@ -569,4 +569,19 @@
     <string name="reverted_file">%1$s wiederhergestellt</string>
     <string name="failed_to_restore_file">Fehler beim Wiederherstellen der Datei: %1$s</string>
 
+    <!-- Bulk File Management -->
+    <string name="pref_bulk_file_management_title">Massen-Dateiverwaltung</string>
+    <string name="bulk_update_gpx_tracks">Alle GPX-Tracks aktualisieren</string>
+    <string name="bulk_update_gpx_simplified">Alle vereinfachten GPX-Tracks aktualisieren</string>
+    <string name="bulk_update_yaml_extensions">Alle YAML-Erweiterungen aktualisieren</string>
+    <string name="bulk_update_gpxpy_json">Alle GPXPy-JSON-Dateien aktualisieren</string>
+    <string name="bulk_update_file_count">%d Dateien zu aktualisieren</string>
+    <string name="no_files_to_update">Keine Dateien zu aktualisieren</string>
+    <string name="bulk_update_confirm_title">Massenaktualisierung bestätigen</string>
+    <string name="bulk_update_confirm_message">Möchten Sie wirklich %1$d Dateien vom Typ %2$s aktualisieren? Dieser Vorgang kann nicht einfach rückgängig gemacht werden.</string>
+    <string name="bulk_update_progress_title">Dateien werden aktualisiert</string>
+    <string name="bulk_update_progress_message">Verarbeite %1$d von %2$d Dateien…</string>
+    <string name="bulk_update_complete">Massenaktualisierung abgeschlossen: %1$d erfolgreich, %2$d fehlgeschlagen</string>
+    <string name="road_type_country_road">not used anymore</string>
 </resources>
+

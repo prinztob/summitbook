@@ -567,4 +567,19 @@
     <string name="no_backup_found">No backup found for %1$s</string>
     <string name="reverted_file">Reverted %1$s</string>
     <string name="failed_to_restore_file">Failed to restore file: %1$s</string>
+
+    <!-- Bulk File Management -->
+    <string name="pref_bulk_file_management_title">Bulk File Management</string>
+    <string name="bulk_update_gpx_tracks">Update All GPX Tracks</string>
+    <string name="bulk_update_gpx_simplified">Update All Simplified GPX Tracks</string>
+    <string name="bulk_update_yaml_extensions">Update All YAML Extensions</string>
+    <string name="bulk_update_gpxpy_json">Update All GPXPy JSON Files</string>
+    <string name="bulk_update_file_count">%d files to update</string>
+    <string name="no_files_to_update">No files to update</string>
+    <string name="bulk_update_confirm_title">Confirm Bulk Update</string>
+    <string name="bulk_update_confirm_message">Are you sure you want to update %1$d files of type %2$s? This operation cannot be undone easily.</string>
+    <string name="bulk_update_progress_title">Updating Files</string>
+    <string name="bulk_update_progress_message">Processing %1$d of %2$d files…</string>
+    <string name="bulk_update_complete">Bulk update complete: %1$d successful, %2$d failed</string>
+    <string name="road_type_country_road">not used anymore</string>
 </resources>

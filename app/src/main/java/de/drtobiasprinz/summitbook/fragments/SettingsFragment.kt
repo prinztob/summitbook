@@ -14,6 +14,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.EditTextPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
@@ -22,20 +24,33 @@ import androidx.preference.SeekBarPreference
 import androidx.preference.SwitchPreferenceCompat
 import androidx.preference.contains
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.storage
+import de.drtobiasprinz.summitbook.ui.dialog.FileRowType
 import de.drtobiasprinz.summitbook.ui.utils.DatePreference
 import de.drtobiasprinz.summitbook.ui.utils.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.PasswordPreference
 import de.drtobiasprinz.summitbook.utils.FileHelper
+import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.nio.file.Files
 
 
+@AndroidEntryPoint
 class SettingsFragment : PreferenceFragmentCompat() {
+
+    private val viewModel: DatabaseViewModel by viewModels()
 
     private lateinit var preferenceCurrentYearSwitch: SwitchPreferenceCompat
     private lateinit var preferenceAnnualTargetActivities: EditTextPreference
@@ -293,6 +308,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceCategoryExport.contains(preferenceExportCalculatedData)
         preferenceCategoryExport.contains(preferenceDisableStartUpTasks)
 
+        val preferenceCategoryBulkFileManagement = PreferenceCategory(requireContext())
+        preferenceCategoryBulkFileManagement.title = getString(R.string.pref_bulk_file_management_title)
 
         screen.addPreference(preferenceCategoryGeneral)
         screen.addPreference(preferenceCurrentYearSwitch)
@@ -320,6 +337,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         screen.addPreference(preferenceExportThirdPartyData)
         screen.addPreference(preferenceExportCalculatedData)
         screen.addPreference(preferenceDisableStartUpTasks)
+
+        screen.addPreference(preferenceCategoryBulkFileManagement)
+        addBulkFileManagementPreferences(screen)
 
         updateOnDeviceMapsPreferencesState()
 
@@ -401,6 +421,146 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 .setAction("Dismiss") { }
                 .setAnchorView(anchorView)
                 .show()
+        }
+    }
+
+    private fun addBulkFileManagementPreferences(screen: androidx.preference.PreferenceScreen) {
+        viewModel.summitsList.observe(this) { summitsDataStatus ->
+            summitsDataStatus.data?.let { summits ->
+                FileRowType.entries.forEach { fileRowType ->
+                    val preference = Preference(requireContext())
+                    val fileCount = countFilesToUpdate(summits, fileRowType)
+                    
+                    preference.title = when (fileRowType) {
+                        FileRowType.GPX_TRACK -> getString(R.string.bulk_update_gpx_tracks)
+                        FileRowType.GPX_SIMPLIFIED -> getString(R.string.bulk_update_gpx_simplified)
+                        FileRowType.YAML_EXTENSIONS -> getString(R.string.bulk_update_yaml_extensions)
+                        FileRowType.GPXPY_JSON -> getString(R.string.bulk_update_gpxpy_json)
+                    }
+                    
+                    preference.summary = getString(R.string.bulk_update_file_count, fileCount)
+                    preference.setIcon(R.drawable.baseline_refresh_24)
+                    preference.isEnabled = fileCount > 0
+                    
+                    preference.setOnPreferenceClickListener {
+                        performBulkUpdate(summits, fileRowType)
+                        true
+                    }
+                    
+                    screen.addPreference(preference)
+                }
+            }
+        }
+    }
+
+    private fun countFilesToUpdate(summits: List<Summit>, fileRowType: FileRowType): Int {
+        val cacheDir = File(MainActivity.cache, "file_backups")
+        return summits.count { summit ->
+            val file = fileRowType.getFile(summit)
+            val backupFile = File(cacheDir, file.name)
+            // Only count files that exist and don't already have a backup
+            file.exists() && !backupFile.exists()
+        }
+    }
+
+    private fun performBulkUpdate(summits: List<Summit>, fileRowType: FileRowType) {
+        val cacheDir = File(MainActivity.cache, "file_backups")
+        val summitsToUpdate = summits.filter { summit ->
+            val file = fileRowType.getFile(summit)
+            val backupFile = File(cacheDir, file.name)
+            // Only include files that exist and don't already have a backup
+            file.exists() && !backupFile.exists()
+        }
+
+        if (summitsToUpdate.isEmpty()) {
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.no_files_to_update),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle(getString(R.string.bulk_update_confirm_title))
+            .setMessage(getString(R.string.bulk_update_confirm_message, summitsToUpdate.size, fileRowType.name))
+            .setPositiveButton(R.string.yes) { _, _ ->
+                executeBulkUpdate(summitsToUpdate, fileRowType)
+            }
+            .setNegativeButton(R.string.no, null)
+            .show()
+    }
+
+    private fun executeBulkUpdate(summits: List<Summit>, fileRowType: FileRowType) {
+        val progressDialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle(getString(R.string.bulk_update_progress_title))
+            .setMessage(getString(R.string.bulk_update_progress_message, 0, summits.size))
+            .setCancelable(false)
+            .create()
+        
+        progressDialog.show()
+
+        lifecycleScope.launch {
+            var successCount = 0
+            var failCount = 0
+
+            summits.forEachIndexed { index, summit ->
+                try {
+                    if (fileRowType.checkAction(summit)) {
+                        withContext(Dispatchers.IO) {
+                            val file = fileRowType.getFile(summit)
+                            val cacheDir = File(MainActivity.cache, "file_backups")
+                            if (!cacheDir.exists()) {
+                                cacheDir.mkdirs()
+                            }
+                            val backupFile = File(cacheDir, file.name)
+
+                            if (file.exists()) {
+                                Files.move(
+                                    file.toPath(),
+                                    backupFile.toPath(),
+                                    java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                                )
+                            }
+
+                            fileRowType.updateAction.invoke(summit, backupFile)
+
+                            if (fileRowType.shouldUpdateRoadInfos) {
+                                val analyzer = OfflineMapAnalyzer.from(requireContext())
+                                if (OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(analyzer, summit)) {
+                                    val updated = OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(
+                                        requireContext(), summit
+                                    )
+                                    if (updated) {
+                                        viewModel.saveSummit(true, summit)
+                                    }
+                                }
+                            }
+                        }
+                        Log.d(TAG, "Update for ${summit.getDateAsString()}_${summit.name} done.")
+                    } else {
+                        Log.d(TAG, "Skip update for ${summit.getDateAsString()}_${summit.name} as the precondition is not fulfilled.")
+                    }
+                    successCount++
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to update file for summit ${summit.name}: ${e.message}")
+                    failCount++
+                }
+
+                withContext(Dispatchers.Main) {
+                    progressDialog.setMessage(
+                        getString(R.string.bulk_update_progress_message, index + 1, summits.size)
+                    )
+                }
+            }
+
+            progressDialog.dismiss()
+            
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.bulk_update_complete, successCount, failCount),
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 

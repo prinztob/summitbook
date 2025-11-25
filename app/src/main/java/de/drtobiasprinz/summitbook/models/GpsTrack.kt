@@ -377,7 +377,6 @@ class GpsTrack(
                     "Successful loaded in $timeYaml ms with ${pointExtensionFromYaml.extensions.size} points."
                 )
             } catch (ex: YamlDecodingException) {
-                yamlExtensionsFile.delete()
                 Log.w(
                     "YAML",
                     "Could not load $yamlExtensionsFile because an error occurred: ${ex.message}"

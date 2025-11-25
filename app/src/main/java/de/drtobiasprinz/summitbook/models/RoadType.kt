@@ -19,6 +19,12 @@ enum class RoadType(
         Color.rgb(165, 42, 42),
         listOf("path", "footway", "track", "bridleway", "pedestrian", "steps", "hiking", "trail"),
     ),
+    COUNTRY_ROAD(
+        30.0,
+        R.string.road_type_country_road,
+        Color.rgb(255, 165, 0),
+        listOf(),
+    ),
     SIDE_STREET(
         20.0,
         R.string.road_type_side_street,

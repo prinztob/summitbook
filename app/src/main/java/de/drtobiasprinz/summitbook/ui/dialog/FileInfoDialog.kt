@@ -205,6 +205,7 @@ enum class FileRowType(
     val updateButton: (DialogFileInfoTableBinding) -> ImageButton,
     val revertButton: (DialogFileInfoTableBinding) -> ImageButton,
     val shouldUpdateRoadInfos: Boolean = false,
+    val checkAction: (Summit) -> Boolean = { _ -> true },
     val updateAction: (Summit, File) -> Unit = { _, _ -> }
 ) {
     GPX_TRACK(
@@ -215,12 +216,19 @@ enum class FileRowType(
         { b -> b.btnUpdateGpx },
         { b -> b.btnRevertGpx },
         shouldUpdateRoadInfos = true,
+        checkAction = { s ->
+            s.getGpsTrackPath().toFile().readText().contains(":TrackPointExtension>")
+        },
         updateAction = { summit, backupFile ->
             pythonInstance?.let { python ->
                 GpxPyExecutor(python).removeExtensionsFromGpxTracks(
                     backupFile, summit.getGpsTrackPath().toFile()
                 )
             }
+            Log.i(
+                "FileRowType",
+                "Successfully removeExtensionsFromGpxTracks for ${summit.getDateAsString()}_${summit.name}."
+            )
         }),
     GPX_SIMPLIFIED(
         { it.getGpsTrackPath(simplified = true).toFile() },
@@ -240,12 +248,19 @@ enum class FileRowType(
         { b -> b.btnUpdateYaml },
         { b -> b.btnRevertYaml },
         shouldUpdateRoadInfos = true,
+        checkAction = { s ->
+            s.getGpsTrackPath().toFile().readText().contains(":TrackPointExtension>")
+        },
         updateAction = { summit, backupFile ->
             pythonInstance?.let { python ->
                 GpxPyExecutor(python).removeExtensionsFromGpxTracks(
                     backupFile, summit.getGpsTrackPath().toFile()
                 )
             }
+            Log.i(
+                "FileRowType",
+                "Successfully removeExtensionsFromGpxTracks for ${summit.getDateAsString()}_${summit.name}."
+            )
         }),
     GPXPY_JSON(
         { it.getGpxPyPath().toFile() },

@@ -64,7 +64,7 @@ class TrackUtilsTest {
                     .setLatitude(54.9328621088893)
                     .setLongitude(9.860624216140083)
                     .setElevation(0.0)
-                    .setTime(DateTime(1505900660000)) .build() as TrackPoint,
+                    .setTime(DateTime(1505900660000)).build() as TrackPoint,
                 ExtensionFromYaml(distance = 0.0)
             ),
             Pair(
@@ -73,7 +73,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86092208681491)
                     .setElevation(1.0)
                     .setTime(DateTime(1505900670000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 10.1)
             ),
             Pair(
@@ -82,7 +82,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86187816543752)
                     .setElevation(2.0)
                     .setTime(DateTime(1505900680000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 20.1)
             ),
             Pair(
@@ -91,7 +91,7 @@ class TrackUtilsTest {
                     .setLongitude(9.862439849679859)
                     .setElevation(3.0)
                     .setTime(DateTime(1505900690000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 30.1)
             ),
             Pair(
@@ -100,7 +100,7 @@ class TrackUtilsTest {
                     .setLongitude(9.860624216140083)
                     .setElevation(2.0)
                     .setTime(DateTime(1505900700000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 40.1)
             ),
             Pair(
@@ -109,7 +109,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86092208681491)
                     .setElevation(3.0)
                     .setTime(DateTime(1505900710000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 50.1)
             ),
             Pair(
@@ -118,7 +118,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86187816543752)
                     .setElevation(4.0)
                     .setTime(DateTime(1505900720000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 60.2)
             ),
             Pair(
@@ -127,7 +127,7 @@ class TrackUtilsTest {
                     .setLongitude(9.862439849679859)
                     .setElevation(5.0)
                     .setTime(DateTime(1505900730000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 70.2)
             ),
             Pair(
@@ -136,7 +136,7 @@ class TrackUtilsTest {
                     .setLongitude(9.860624216140083)
                     .setElevation(6.0)
                     .setTime(DateTime(1505900740000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 80.2)
             ),
             Pair(
@@ -145,7 +145,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86092208681491)
                     .setElevation(7.0)
                     .setTime(DateTime(1505900750000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 90.2)
             ),
             Pair(
@@ -154,7 +154,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86187816543752)
                     .setElevation(8.0)
                     .setTime(DateTime(1505900760000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 100.3)
             ),
             Pair(
@@ -163,7 +163,7 @@ class TrackUtilsTest {
                     .setLongitude(9.862439849679859)
                     .setElevation(8.0)
                     .setTime(DateTime(1505900770000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 110.3)
             ),
             Pair(
@@ -172,7 +172,7 @@ class TrackUtilsTest {
                     .setLongitude(9.860624216140083)
                     .setElevation(8.0)
                     .setTime(DateTime(1505900780000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 120.3)
             ),
             Pair(
@@ -181,7 +181,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86092208681491)
                     .setElevation(8.0)
                     .setTime(DateTime(1505900790000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 130.3)
             ),
             Pair(
@@ -190,7 +190,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86187816543752)
                     .setElevation(8.0)
                     .setTime(DateTime(1505900800000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 140.3)
             ),
             Pair(
@@ -199,7 +199,7 @@ class TrackUtilsTest {
                     .setLongitude(9.862439849679859)
                     .setElevation(8.0)
                     .setTime(DateTime(1505900810000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 150.4)
             ),
             Pair(
@@ -208,7 +208,7 @@ class TrackUtilsTest {
                     .setLongitude(9.860624216140083)
                     .setElevation(8.0)
                     .setTime(DateTime(1505900820000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 160.5)
             ),
             Pair(
@@ -217,7 +217,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86092208681491)
                     .setElevation(9.0)
                     .setTime(DateTime(1505900830000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 170.5)
             ),
             Pair(
@@ -226,7 +226,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86187816543752)
                     .setElevation(10.0)
                     .setTime(DateTime(1505900840000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 180.5)
             ),
             Pair(
@@ -235,7 +235,7 @@ class TrackUtilsTest {
                     .setLongitude(9.862439849679859)
                     .setElevation(11.0)
                     .setTime(DateTime(1505900850000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 190.5)
             ),
             Pair(
@@ -244,7 +244,7 @@ class TrackUtilsTest {
                     .setLongitude(9.860624216140083)
                     .setElevation(12.0)
                     .setTime(DateTime(1505900860000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 200.6)
             ),
             Pair(
@@ -253,7 +253,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86092208681491)
                     .setElevation(11.0)
                     .setTime(DateTime(1505900870000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 210.6)
             ),
             Pair(
@@ -262,7 +262,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86187816543752)
                     .setElevation(10.0)
                     .setTime(DateTime(1505900880000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 220.6)
             ),
             Pair(
@@ -271,7 +271,7 @@ class TrackUtilsTest {
                     .setLongitude(9.862439849679859)
                     .setElevation(9.0)
                     .setTime(DateTime(1505900890000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 230.6)
             ),
             Pair(
@@ -280,7 +280,7 @@ class TrackUtilsTest {
                     .setLongitude(9.860624216140083)
                     .setElevation(8.0)
                     .setTime(DateTime(1505900900000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 240.6)
             ),
             Pair(
@@ -289,7 +289,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86092208681491)
                     .setElevation(7.0)
                     .setTime(DateTime(1505900910000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 250.7)
             ),
             Pair(
@@ -298,7 +298,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86187816543752)
                     .setElevation(8.0)
                     .setTime(DateTime(1505900920000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 260.7)
             ),
             Pair(
@@ -307,7 +307,7 @@ class TrackUtilsTest {
                     .setLongitude(9.862439849679859)
                     .setElevation(9.0)
                     .setTime(DateTime(1505900930000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 270.7)
             ),
             Pair(
@@ -316,7 +316,7 @@ class TrackUtilsTest {
                     .setLongitude(9.860624216140083)
                     .setElevation(10.0)
                     .setTime(DateTime(1505900940000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 280.7)
             ),
             Pair(
@@ -325,7 +325,7 @@ class TrackUtilsTest {
                     .setLongitude(9.86092208681491)
                     .setElevation(13.0)
                     .setTime(DateTime(1505900950000))
-                     .build() as TrackPoint,
+                    .build() as TrackPoint,
                 ExtensionFromYaml(distance = 290.7)
             ),
             Pair(
