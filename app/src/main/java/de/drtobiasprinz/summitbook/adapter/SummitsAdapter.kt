@@ -13,13 +13,11 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import dagger.hilt.android.internal.managers.FragmentComponentManager
 import de.drtobiasprinz.summitbook.AddImagesActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
@@ -31,6 +29,7 @@ import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResour
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
+import de.drtobiasprinz.summitbook.utils.findActivity
 import java.util.Locale
 import javax.inject.Singleton
 
@@ -100,10 +99,9 @@ class SummitsAdapter :
                     bundle.putLong(Constants.BUNDLE_ID, entity.id)
                     addSummitDialog.arguments = bundle
                     addSummitDialog.isBookmark = isBookmark
-                    addSummitDialog.show(
-                        (FragmentComponentManager.findActivity(v?.context) as FragmentActivity).supportFragmentManager,
-                        AddSummitDialog().tag
-                    )
+                    v?.context?.findActivity()?.supportFragmentManager?.let { fragmentManager ->
+                        addSummitDialog.show(fragmentManager, AddSummitDialog().tag)
+                    }
                 }
                 if (entity.latLng == null) {
                     entryAddCoordinate.setImageResource(R.drawable.baseline_add_location_black_24dp)
@@ -140,11 +138,10 @@ class SummitsAdapter :
                 entryAddVelocityData.visibility = View.GONE
             }
             entryAddVelocityData.setOnClickListener { v: View? ->
-                AddAdditionalDataFromExternalResourcesDialog.getInstance(entity)
-                    .show(
-                        (FragmentComponentManager.findActivity(v?.context) as FragmentActivity).supportFragmentManager,
-                        "Show addition data"
-                    )
+                v?.context?.findActivity()?.supportFragmentManager?.let { fragmentManager ->
+                    AddAdditionalDataFromExternalResourcesDialog.getInstance(entity)
+                        .show(fragmentManager, "Show addition data")
+                }
             }
         }
 

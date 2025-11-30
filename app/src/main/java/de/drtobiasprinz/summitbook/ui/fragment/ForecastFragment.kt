@@ -33,6 +33,7 @@ import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.util.Calendar
 import java.util.Date
+import kotlin.math.ceil
 import kotlin.math.round
 
 @AndroidEntryPoint
@@ -54,8 +55,7 @@ class ForecastFragment : Fragment() {
     private var forecastsUpdated: Boolean = false
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentForecastBinding.inflate(layoutInflater, container, false)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
@@ -72,8 +72,7 @@ class ForecastFragment : Fragment() {
         annualTargetHm = sharedPreferences.getString(PREF_ANNUAL_TARGET, "50000") ?: "50000"
         val range: Date = Summit.parseDate("${currentYear}-01-01")
         viewModel.summitsList.observe(
-            viewLifecycleOwner,
-            object : Observer<DataStatus<List<Summit>>> {
+            viewLifecycleOwner, object : Observer<DataStatus<List<Summit>>> {
                 override fun onChanged(value: DataStatus<List<Summit>>) {
                     value.data.let { summits ->
                         val summitsForSelectedYear =
@@ -97,8 +96,7 @@ class ForecastFragment : Fragment() {
                                         view
                                     )
                                     setOverview(
-                                        forecasts,
-                                        yearsWithForecasts[selectedSegmentedYear]
+                                        forecasts, yearsWithForecasts[selectedSegmentedYear]
                                     )
                                 }
 
@@ -111,8 +109,7 @@ class ForecastFragment : Fragment() {
                                             true
                                         )
                                         setOverview(
-                                            forecasts,
-                                            yearsWithForecasts[selectedSegmentedYear]
+                                            forecasts, yearsWithForecasts[selectedSegmentedYear]
                                         )
                                         setForecastsInDialog(
                                             forecasts,
@@ -138,8 +135,7 @@ class ForecastFragment : Fragment() {
                                             }
                                         }
                                         val job = viewModel.saveForecasts(
-                                            true,
-                                            forecastsWithChanges
+                                            true, forecastsWithChanges
                                         )
                                         job.invokeOnCompletion {
                                             back(R.string.forecast_successfully_saved)
@@ -150,8 +146,7 @@ class ForecastFragment : Fragment() {
                                     if (isChecked && forecasts != null) {
                                         selectedSegmentedForecastProperty = checkedId
                                         setOverview(
-                                            forecasts,
-                                            yearsWithForecasts[selectedSegmentedYear]
+                                            forecasts, yearsWithForecasts[selectedSegmentedYear]
                                         )
                                         setForecastsInDialog(
                                             forecasts,
@@ -166,8 +161,7 @@ class ForecastFragment : Fragment() {
                                         selectedSegmentedYear =
                                             if (checkedId == binding.buttonCurrentYear.id) 0 else 1
                                         setOverview(
-                                            forecasts,
-                                            yearsWithForecasts[selectedSegmentedYear]
+                                            forecasts, yearsWithForecasts[selectedSegmentedYear]
                                         )
                                         setForecastsInDialog(
                                             forecasts,
@@ -189,15 +183,12 @@ class ForecastFragment : Fragment() {
         ft.replace(R.id.content_frame, SummitViewFragment())
         ft.commit()
         Toast.makeText(
-            activity, getString(messageId),
-            Toast.LENGTH_LONG
+            activity, getString(messageId), Toast.LENGTH_LONG
         ).show()
     }
 
     private fun setMissingForecasts(
-        years: List<Int>,
-        forecasts: List<Forecast>?,
-        summits: List<Summit>
+        years: List<Int>, forecasts: List<Forecast>?, summits: List<Summit>
     ) {
         for (year in years) {
             updateForecastsForYear(forecasts, year, summits)
@@ -266,20 +257,13 @@ class ForecastFragment : Fragment() {
             }
         }
         val sum = getSumForYear(
-            year,
-            forecasts,
-            id,
-            currentYear,
-            currentMonth
+            year, forecasts, id, currentYear, currentMonth
         )
         val annualTarget: Int
         when (selectedSegmentedForecastProperty) {
             binding.buttonKilometers.id -> {
                 binding.overview.text = requireContext().getString(
-                    R.string.forecast_info_km,
-                    year.toString(),
-                    sum.toString(),
-                    annualTargetKm
+                    R.string.forecast_info_km, year.toString(), sum.toString(), annualTargetKm
                 )
                 annualTarget = annualTargetKm.toInt()
             }
@@ -296,10 +280,7 @@ class ForecastFragment : Fragment() {
 
             else -> {
                 binding.overview.text = requireContext().getString(
-                    R.string.forecast_info_hm,
-                    year.toString(),
-                    sum.toString(),
-                    annualTargetHm
+                    R.string.forecast_info_hm, year.toString(), sum.toString(), annualTargetHm
                 )
                 annualTarget = annualTargetHm.toInt()
             }
@@ -310,40 +291,44 @@ class ForecastFragment : Fragment() {
     }
 
     @SuppressLint("DiscouragedApi")
-    private fun setForecastsInDialog(forecasts: List<Forecast>, summits: List<Summit>?, year: Int, view: View) {
+    private fun setForecastsInDialog(
+        forecasts: List<Forecast>, summits: List<Summit>?, year: Int, view: View
+    ) {
         forecasts.forEach {
             if (it.year == year) {
                 val resourceIdSlider = resources.getIdentifier(
-                    "range_slider_forecast_month${it.month}",
-                    "id",
-                    requireContext().packageName
+                    "range_slider_forecast_month${it.month}", "id", requireContext().packageName
                 )
                 if (resourceIdSlider > 0) {
                     val slider: Slider = view.findViewById(resourceIdSlider)
                     slider.valueFrom = 0F
                     when (selectedSegmentedForecastProperty) {
                         binding.buttonKilometers.id -> {
+                            val valueTo =
+                                (ceil(it.forecastDistance * 1.2 / STEP_SIZE_KM) * STEP_SIZE_KM).toFloat()
                             slider.value = it.forecastDistance.toFloat()
-                            slider.valueTo = 500F
+                            slider.valueTo = if (valueTo < 750) 750f else valueTo
                             slider.stepSize = STEP_SIZE_KM.toFloat()
                         }
 
                         binding.buttonActivity.id -> {
+                            val valueTo =
+                                (ceil(it.forecastNumberActivities * 1.2 / STEP_SIZE_ACTIVITY) * STEP_SIZE_ACTIVITY).toFloat()
                             slider.value = it.forecastNumberActivities.toFloat()
-                            slider.valueTo = 20F
+                            slider.valueTo = if (valueTo < 25) 25f else valueTo
                             slider.stepSize = STEP_SIZE_ACTIVITY.toFloat()
                         }
 
                         else -> {
+                            val valueTo =
+                                (ceil(it.forecastHeightMeter * 1.2 / STEP_SIZE_HM) * STEP_SIZE_HM).toFloat()
                             slider.value = it.forecastHeightMeter.toFloat()
-                            slider.valueTo = 15000F
+                            slider.valueTo = if (valueTo < 15000) 15000f else valueTo
                             slider.stepSize = STEP_SIZE_HM.toFloat()
                         }
                     }
                     val recalculateDataMonthId = resources.getIdentifier(
-                        "recalculateDataMonth${it.month}",
-                        "id",
-                        requireContext().packageName
+                        "recalculateDataMonth${it.month}", "id", requireContext().packageName
                     )
                     val button: AppCompatImageButton = view.findViewById(recalculateDataMonthId)
                     if (it.year == currentYear && it.month < currentMonth) {
@@ -357,14 +342,10 @@ class ForecastFragment : Fragment() {
                         button.setOnClickListener { _ ->
                             updateForecastForMonthAndYear(it.month, year, summits, forecasts, true)
                             setOverview(
-                                forecasts,
-                                yearsWithForecasts[selectedSegmentedYear]
+                                forecasts, yearsWithForecasts[selectedSegmentedYear]
                             )
                             setForecastsInDialog(
-                                forecasts,
-                                summits,
-                                yearsWithForecasts[selectedSegmentedYear],
-                                view
+                                forecasts, summits, yearsWithForecasts[selectedSegmentedYear], view
                             )
                         }
                     }
@@ -389,9 +370,7 @@ class ForecastFragment : Fragment() {
     @SuppressLint("DiscouragedApi", "SetTextI18n")
     private fun setForecastText(forecast: Forecast, view: View, slider: Slider) {
         val resourceIdText = resources.getIdentifier(
-            "fulfilled_forecast_month${forecast.month}",
-            "id",
-            requireContext().packageName
+            "fulfilled_forecast_month${forecast.month}", "id", requireContext().packageName
         )
         val textView: TextView = view.findViewById(resourceIdText)
         when (requireContext().resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)) {
@@ -405,10 +384,7 @@ class ForecastFragment : Fragment() {
         }
         if (forecast.year == currentYear && forecast.month <= currentMonth) {
             textView.setCompoundDrawablesWithIntrinsicBounds(
-                R.drawable.ic_baseline_edit_12,
-                0,
-                0,
-                0
+                R.drawable.ic_baseline_edit_12, 0, 0, 0
             )
             textView.setOnClickListener {
                 slider.isEnabled = !slider.isEnabled
@@ -417,18 +393,15 @@ class ForecastFragment : Fragment() {
             textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
         }
         when (selectedSegmentedForecastProperty) {
-            binding.buttonKilometers.id -> textView.text =
-                String.format(
-                    resources.getString(R.string.value_with_km),
-                    forecast.forecastDistance.toString()
-                )
+            binding.buttonKilometers.id -> textView.text = String.format(
+                resources.getString(R.string.value_with_km), forecast.forecastDistance.toString()
+            )
 
             binding.buttonActivity.id -> textView.text =
                 forecast.forecastNumberActivities.toString()
 
             else -> textView.text = String.format(
-                resources.getString(R.string.value_with_hm),
-                forecast.forecastHeightMeter.toString()
+                resources.getString(R.string.value_with_hm), forecast.forecastHeightMeter.toString()
             )
         }
     }
@@ -436,9 +409,7 @@ class ForecastFragment : Fragment() {
     @SuppressLint("DiscouragedApi")
     private fun setAchievementText(forecast: Forecast, view: View, slider: Slider) {
         val resourceIdText = resources.getIdentifier(
-            "fulfilled_forecast_month${forecast.month}",
-            "id",
-            requireContext().packageName
+            "fulfilled_forecast_month${forecast.month}", "id", requireContext().packageName
         )
         val textView: TextView = view.findViewById(resourceIdText)
         textView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_baseline_edit_12, 0, 0, 0)
@@ -454,10 +425,7 @@ class ForecastFragment : Fragment() {
             )
 
             binding.buttonActivity.id -> setTextAndColor(
-                forecast.actualNumberActivities,
-                forecast.forecastNumberActivities,
-                "",
-                textView
+                forecast.actualNumberActivities, forecast.forecastNumberActivities, "", textView
             )
 
             else -> setTextAndColor(

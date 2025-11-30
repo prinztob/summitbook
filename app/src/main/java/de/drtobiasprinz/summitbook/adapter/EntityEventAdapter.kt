@@ -9,13 +9,13 @@ import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewbinding.ViewBinding
-import dagger.hilt.android.internal.managers.FragmentComponentManager
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.CardEntityEventBinding
 import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SummitEntitySummary
 import de.drtobiasprinz.summitbook.ui.dialog.AddEntityEventDialog
+import de.drtobiasprinz.summitbook.utils.findActivity
 import java.text.NumberFormat
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
@@ -82,12 +82,9 @@ class EntityEventAdapter(
             )
         )
         binding.entryEdit.setOnClickListener { view: View? ->
-            AddEntityEventDialog.getInstance(
-                event, summitEntitySummary
-            ).show(
-                (FragmentComponentManager.findActivity(view?.context) as FragmentActivity).supportFragmentManager.beginTransaction(),
-                "Update entity event"
-            )
+            view?.context?.findActivity()?.supportFragmentManager?.beginTransaction()?.let { transaction ->
+                AddEntityEventDialog.getInstance(event, summitEntitySummary).show(transaction, "Update entity event")
+            }
         }
         binding.entryDelete.setOnClickListener {
             onClickDeleteEvent(event)

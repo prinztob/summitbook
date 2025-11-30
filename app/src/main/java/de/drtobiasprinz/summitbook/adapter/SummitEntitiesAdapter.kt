@@ -4,12 +4,10 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import dagger.hilt.android.internal.managers.FragmentComponentManager
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.CardSummitEntitiesBinding
 import de.drtobiasprinz.summitbook.db.entities.EntityEvent
@@ -17,6 +15,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SummitEntitySummary
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.dialog.AddEntityEventDialog
+import de.drtobiasprinz.summitbook.utils.findActivity
 import java.util.Locale
 import javax.inject.Singleton
 import kotlin.math.round
@@ -80,12 +79,9 @@ class SummitEntitiesAdapter :
                     context.getString(R.string.hm)
                 )
                 addEvent.setOnClickListener {
-                    AddEntityEventDialog.getInstance(
-                        null, entity
-                    ).show(
-                        (FragmentComponentManager.findActivity(binding.root.context) as FragmentActivity).supportFragmentManager.beginTransaction(),
-                        "Add Event"
-                    )
+                    binding.root.context.findActivity()?.supportFragmentManager?.beginTransaction()?.let { transaction ->
+                        AddEntityEventDialog.getInstance(null, entity).show(transaction, "Add Event")
+                    }
                 }
                 entryEdit.setOnClickListener {
                     entityName.visibility = View.GONE

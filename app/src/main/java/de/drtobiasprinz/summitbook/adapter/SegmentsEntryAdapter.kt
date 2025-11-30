@@ -11,17 +11,16 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewbinding.ViewBinding
-import dagger.hilt.android.internal.managers.FragmentComponentManager
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.CardSegmentEntryBinding
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.fragments.AddSegmentEntryFragment
+import de.drtobiasprinz.summitbook.utils.findActivity
 import kotlin.math.floor
 import kotlin.math.round
 
@@ -125,8 +124,8 @@ class SegmentsEntryAdapter(
             val fragment: Fragment = AddSegmentEntryFragment.getInstance(
                 segmentDetails.segmentDetailsId, null, segmentEntry.entryId
             )
-            (FragmentComponentManager.findActivity(view?.context) as FragmentActivity).supportFragmentManager.beginTransaction()
-                .replace(R.id.content_frame, fragment).addToBackStack(null).commit()
+            view?.context?.findActivity()?.supportFragmentManager?.beginTransaction()
+                ?.replace(R.id.content_frame, fragment)?.addToBackStack(null)?.commit()
         }
     }
 

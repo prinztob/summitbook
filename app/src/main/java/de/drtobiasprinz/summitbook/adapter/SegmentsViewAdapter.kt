@@ -9,12 +9,10 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewbinding.ViewBinding
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import dagger.hilt.android.internal.managers.FragmentComponentManager
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SegmentEntryDetailsFragment
 import de.drtobiasprinz.summitbook.databinding.CardAddSegmentDetailsBinding
@@ -22,6 +20,7 @@ import de.drtobiasprinz.summitbook.databinding.CardSegmentBinding
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.fragments.AddSegmentEntryFragment
 import de.drtobiasprinz.summitbook.ui.dialog.AddSegmentDetailsDialog
+import de.drtobiasprinz.summitbook.utils.findActivity
 import java.util.Locale
 
 
@@ -70,12 +69,9 @@ class SegmentsViewAdapter(var segments: List<Segment>) :
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         if (holder.binding is CardAddSegmentDetailsBinding) {
             holder.binding.addSegmentDetail.setOnClickListener {
-                AddSegmentDetailsDialog.getInstance(
-                    null,
-                ).show(
-                    (FragmentComponentManager.findActivity(context) as FragmentActivity).supportFragmentManager.beginTransaction(),
-                    "Add Segment Details"
-                )
+                context.findActivity()?.supportFragmentManager?.beginTransaction()?.let { transaction ->
+                    AddSegmentDetailsDialog.getInstance(null).show(transaction, "Add Segment Details")
+                }
             }
         } else {
             val entry = segments[position]
@@ -126,20 +122,16 @@ class SegmentsViewAdapter(var segments: List<Segment>) :
             }
         }
         binding.entryEdit.setOnClickListener { view: View? ->
-            AddSegmentDetailsDialog.getInstance(
-                segment.segmentDetails,
-            ).show(
-                (FragmentComponentManager.findActivity(view?.context) as FragmentActivity).supportFragmentManager.beginTransaction(),
-                "Add Segment Details"
-            )
-
+            view?.context?.findActivity()?.supportFragmentManager?.beginTransaction()?.let { transaction ->
+                AddSegmentDetailsDialog.getInstance(segment.segmentDetails).show(transaction, "Add Segment Details")
+            }
         }
         binding.root.setOnClickListener {
             val fragment = SegmentEntryDetailsFragment()
             fragment.segmentDetailsId = segment.segmentDetails.segmentDetailsId
-            (FragmentComponentManager.findActivity(it?.context) as FragmentActivity).supportFragmentManager.beginTransaction()
-                .replace(R.id.content_frame, fragment, "SegmentEntryDetailsFragment")
-                .addToBackStack(null).commit()
+            it?.context?.findActivity()?.supportFragmentManager?.beginTransaction()
+                ?.replace(R.id.content_frame, fragment, "SegmentEntryDetailsFragment")
+                ?.addToBackStack(null)?.commit()
         }
 
         binding.addSegmentEntry.setOnClickListener { view: View? ->
@@ -148,8 +140,8 @@ class SegmentsViewAdapter(var segments: List<Segment>) :
                 this,
                 null
             )
-            (FragmentComponentManager.findActivity(view?.context) as FragmentActivity).supportFragmentManager.beginTransaction()
-                .replace(R.id.content_frame, fragment).addToBackStack(null).commit()
+            view?.context?.findActivity()?.supportFragmentManager?.beginTransaction()
+                ?.replace(R.id.content_frame, fragment)?.addToBackStack(null)?.commit()
         }
     }
 
