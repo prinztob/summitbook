@@ -192,8 +192,8 @@ class OpenStreetMapFragment : Fragment() {
             selectedItem = MapProvider.HIKING
         }
         binding.osmap.updateBoundingBox = true
-        setTileProvider(binding.osmap, requireContext())
         showOverlayIfExist()
+        setTileProvider(binding.osmap, requireContext())
 
         setSlidersForOverlayMaps()
         val context: Context? = this@OpenStreetMapFragment.activity

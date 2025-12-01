@@ -3,6 +3,7 @@
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_summits"
+            android:checked="true"
             android:icon="@drawable/baseline_landscape_black_24dp"
             android:title="@string/nav_summits" />
         <item
@@ -11,7 +12,6 @@
             android:title="@string/nav_osmap" />
         <item
             android:id="@+id/nav_bookmarks"
-            android:checked="true"
             android:icon="@drawable/ic_baseline_bookmarks_24"
             android:title="@string/bookmarks" />
         <item

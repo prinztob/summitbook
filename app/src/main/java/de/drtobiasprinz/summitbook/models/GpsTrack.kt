@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.models
 import android.content.Context
 import android.graphics.*
 import android.util.Log
+import android.util.LruCache
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
@@ -29,10 +30,10 @@ import org.osmdroid.views.overlay.milestones.MilestoneMeterDistanceLister
 import org.osmdroid.views.overlay.milestones.MilestoneMeterDistanceSliceLister
 import org.osmdroid.views.overlay.milestones.MilestonePathDisplayer
 import org.xmlpull.v1.XmlPullParserException
+import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
-import java.io.InputStream
 import java.nio.file.Path
 import java.util.Locale
 import kotlin.math.abs
@@ -49,7 +50,14 @@ class GpsTrack(
 ) {
     var osMapRoute: Polyline? = null
     var isShownOnMap: Boolean = false
-    var trackGeoPoints: MutableList<GeoPoint> = mutableListOf()
+    private var _trackGeoPoints: MutableList<GeoPoint>? = null
+    val trackGeoPoints: MutableList<GeoPoint>
+        get() {
+            if (_trackGeoPoints == null) {
+                _trackGeoPoints = calculateGeoPoints()
+            }
+            return _trackGeoPoints!!
+        }
     private var usedTrackGeoPoints: MutableList<GeoPoint> = mutableListOf()
     var trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>> = mutableListOf()
     private var usedTrackPoints: MutableList<Pair<TrackPoint, ExtensionFromYaml>> = mutableListOf()
@@ -312,15 +320,15 @@ class GpsTrack(
         }
         trackPoints = calculateTrackPoints(useOriginalTrack)
         Log.i("GpxTrack", "Parsing took $time")
-        trackGeoPoints = calculateGeoPoints()
 
-        val isDistancesIncorrect = trackPoints.isEmpty() || trackPoints.mapIndexed { i, e ->
-            if (i == 0) {
-                false
-            } else {
-                (trackPoints[i - 1].second.distance ?: 0.0) - (e.second.distance ?: 0.0) > 0
+        val isDistancesIncorrect = trackPoints.isEmpty() || run {
+            for (i in 1 until trackPoints.size) {
+                if ((trackPoints[i - 1].second.distance ?: 0.0) > (trackPoints[i].second.distance ?: 0.0)) {
+                    return@run true
+                }
             }
-        }.contains(true)
+            false
+        }
         if (trackPoints.isNotEmpty() && (trackPoints.first().second.distance == null || isDistancesIncorrect)) {
             setDistance()
         }
@@ -330,28 +338,34 @@ class GpsTrack(
     }
 
     private fun calculateTrackPoints(useOriginalTrack: Boolean): List<Pair<TrackPoint, ExtensionFromYaml>> {
-        val trackPoints = mutableListOf<TrackPoint>()
-        val tracks = gpxTrack?.tracks
-        if (tracks != null) {
-            for (track in tracks) {
-                for (segment in track.trackSegments) {
-                    val points = segment.trackPoints
-                    trackPoints.addAll(points.filter { it.latitude != 0.0 && it.longitude != 0.0 })
-                }
+        val tracks = gpxTrack?.tracks ?: return emptyList()
+        
+        // Pre-calculate size to avoid list resizing
+        val estimatedSize = tracks.sumOf { track ->
+            track.trackSegments.sumOf { it.trackPoints.size }
+        }
+        val trackPoints = ArrayList<TrackPoint>(estimatedSize)
+        
+        for (track in tracks) {
+            for (segment in track.trackSegments) {
+                trackPoints.addAll(segment.trackPoints.filter {
+                    it.latitude != 0.0 && it.longitude != 0.0
+                })
             }
-            if (useOriginalTrack) {
-                val extensions = getExtensionFromYaml()
-                if (extensions.size == trackPoints.size) {
-                    return trackPoints.mapIndexed { index, trackPoint ->
-                        Pair(
-                            trackPoint, extensions[index]
-                        )
-                    }
+        }
+        
+        if (useOriginalTrack) {
+            val extensions = getExtensionFromYaml()
+            if (extensions.size == trackPoints.size) {
+                return List(trackPoints.size) { index ->
+                    Pair(trackPoints[index], extensions[index])
                 }
             }
         }
-        return trackPoints.map { trackPoint -> Pair(trackPoint, ExtensionFromYaml()) }
-
+        
+        return List(trackPoints.size) { index ->
+            Pair(trackPoints[index], ExtensionFromYaml())
+        }
     }
 
     private fun calculateGeoPoints(): MutableList<GeoPoint> {
@@ -368,9 +382,11 @@ class GpsTrack(
         if (yamlExtensionsFile?.exists() == true) {
             try {
                 val timeYaml = measureTimeMillis {
-                    pointExtensionFromYaml = yamlDefault.decodeFromString(
-                        ExtensionsFromYaml.serializer(), yamlExtensionsFile.readText()
-                    )
+                    yamlExtensionsFile.inputStream().bufferedReader().use { reader ->
+                        pointExtensionFromYaml = yamlDefault.decodeFromString(
+                            ExtensionsFromYaml.serializer(), reader.readText()
+                        )
+                    }
                 }
                 Log.i(
                     "YAML",
@@ -464,12 +480,22 @@ class GpsTrack(
         const val LINE_WIDTH_BIG = 16f
         private const val TEXT_SIZE = 20f
         private const val TAG = "GpsTrack"
+        
+        // LRU cache for parsed GPX tracks (cache last 10 tracks)
+        private val trackCache = LruCache<String, Gpx>(10)
 
         private fun getTrack(fileToUse: File, fileInCaseOfException: File? = null): Gpx? {
+            // Check cache first
+            val cacheKey = fileToUse.absolutePath
+            trackCache.get(cacheKey)?.let { return it }
+            
             val mParser = GPXParser()
             try {
-                val inputStream: InputStream = FileInputStream(fileToUse)
-                return mParser.parse(inputStream)
+                BufferedInputStream(FileInputStream(fileToUse)).use { inputStream ->
+                    val gpx = mParser.parse(inputStream)
+                    gpx?.let { trackCache.put(cacheKey, it) }
+                    return gpx
+                }
             } catch (e: IOException) {
                 e.printStackTrace()
             } catch (e: org.joda.time.IllegalFieldValueException) {
