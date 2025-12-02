@@ -137,4 +137,6 @@ dependencies {
     implementation 'org.mapsforge:mapsforge-map:0.21.0'
     //noinspection NewerVersionAvailable -> does not work with osmdroid-mapsforge:6.1.20
     implementation 'org.mapsforge:mapsforge-themes:0.21.0'
+    //noinspection NewerVersionAvailable -> does not work with osmdroid-mapsforge:6.1.20
+    implementation 'org.mapsforge:mapsforge-map-reader:0.21.0'
 }

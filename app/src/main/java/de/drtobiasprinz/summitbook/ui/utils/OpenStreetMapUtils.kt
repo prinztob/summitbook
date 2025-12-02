@@ -393,7 +393,11 @@ object OpenStreetMapUtils {
             } else {
                 setOsmConfForTiles(true)
             }
-            val provider = MapHelper.getOfflineMapProvider(context, mapFiles, selectedItem)
+            val provider = MapHelper.getOfflineMapProviderWithHillShading(
+                context,
+                mapFiles,
+                selectedItem
+            )
             if (provider != null) {
                 Log.i(TAG, "Use offline map")
                 mapView.setTileProvider(provider)
