@@ -7,21 +7,19 @@
     android:orientation="vertical">
 
 
-    <com.chivorn.smartmaterialspinner.SmartMaterialSpinner
-        android:id="@+id/summit_name_to_use"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/summit_name_to_use_layout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/summit_name_hint"
-        app:smsp_enableErrorLabel="false"
-        app:smsp_enableFloatingLabel="false"
-        app:smsp_hint="@string/select_summit"
-        app:smsp_isSearchable="true"
-        app:smsp_itemColor="#512DA8"
-        app:smsp_itemListColor="#7C4DFF"
-        app:smsp_itemListHintBackgroundColor="#808080"
-        app:smsp_searchHeaderText="@string/select_item"
-        app:smsp_searchHint="@string/extract_summit"
-        app:smsp_selectedItemListColor="#FF5252" />
+        android:hint="@string/select_summit">
+
+        <AutoCompleteTextView
+            android:id="@+id/summit_name_to_use"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none" />
+    </com.google.android.material.textfield.TextInputLayout>
 
 
     <GridLayout

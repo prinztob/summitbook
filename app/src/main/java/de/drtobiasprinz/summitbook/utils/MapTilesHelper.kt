@@ -3,8 +3,8 @@ package de.drtobiasprinz.summitbook.utils
 import android.content.Context
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
-import de.drtobiasprinz.summitbook.ui.utils.MapProvider
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.getOsmdroidTilesFolder
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.getOsmdroidTilesFolder
+import de.drtobiasprinz.summitbook.ui.MapProvider
 import org.mapsforge.core.graphics.GraphicFactory
 import org.mapsforge.map.android.graphics.AndroidGraphicFactory
 import org.mapsforge.map.android.rendertheme.AssetsRenderTheme
@@ -28,8 +28,8 @@ import java.io.File
 import java.io.FileInputStream
 
 
-object MapHelper {
-    const val TAG = "MapHelper"
+object MapTilesHelper {
+    const val TAG = "MapTilesHelper"
     fun getOnlineMapProvider(tileSource: ITileSource, context: Context): MapTileProviderArray {
         val tileWriter = TileWriter()
         val registerReceiver = SimpleRegisterReceiver(context)

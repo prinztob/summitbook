@@ -52,30 +52,28 @@
                 app:layout_constraintStart_toEndOf="@+id/sport_type_image"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <com.chivorn.smartmaterialspinner.SmartMaterialSpinner
-                android:id="@+id/summit_name_to_compare"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/summit_name_to_compare_layout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/summit_name_compare_hint"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/sport_type_image"
-                app:smsp_enableErrorLabel="false"
-                app:smsp_enableFloatingLabel="false"
-                app:smsp_hint="@string/summit_name_compare_hint"
-                app:smsp_isSearchable="true"
-                app:smsp_itemColor="#512DA8"
-                app:smsp_itemListColor="#7C4DFF"
-                app:smsp_itemListHintBackgroundColor="#808080"
-                app:smsp_searchHeaderText="@string/select_item"
-                app:smsp_searchHint="@string/summit_name_compare_hint"
-                app:smsp_selectedItemListColor="#FF5252" />
+                app:layout_constraintTop_toBottomOf="@+id/sport_type_image">
+
+                <AutoCompleteTextView
+                    android:id="@+id/summit_name_to_compare"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/constraintLayout"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/summit_name_to_compare"
+                app:layout_constraintTop_toBottomOf="@+id/summit_name_to_compare_layout"
                 tools:layout_constraintStart_creator="1">
 
                 <TextView

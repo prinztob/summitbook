@@ -33,8 +33,8 @@ import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.storage
 import de.drtobiasprinz.summitbook.ui.dialog.FileRowType
 import de.drtobiasprinz.summitbook.ui.utils.DatePreference
-import de.drtobiasprinz.summitbook.ui.utils.MapProvider
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
+import de.drtobiasprinz.summitbook.ui.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.PasswordPreference
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
@@ -349,7 +349,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     @Suppress("DEPRECATION")
     override fun onDisplayPreferenceDialog(preference: Preference) {
         if (preference is DatePreference) {
-            val f: DialogFragment = DatePreferenceDialogFragment.newInstance(preference.getKey())
+            val f: DialogFragment = DatePreferenceDialogFragment.newInstance(preference.key)
             f.setTargetFragment(this, 0)
             f.show(parentFragmentManager, null)
         } else {

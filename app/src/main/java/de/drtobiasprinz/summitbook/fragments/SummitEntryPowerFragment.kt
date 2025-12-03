@@ -186,39 +186,29 @@ class SummitEntryPowerFragment : Fragment() {
 
     private fun prepareCompareAutoComplete(summitToView: Summit, summitToCompare: Summit?) {
         val items = getSummitsSuggestions(summitToView)
-        binding.summitNameToCompare.item = items
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, items)
+        binding.summitNameToCompare.setAdapter(adapter)
         var selectedPosition = -1
         if (summitToCompare != null) {
             selectedPosition =
                 items.indexOfFirst { "${summitToCompare.getDateAsString()} ${summitToCompare.name}" == it }
             if (selectedPosition > -1) {
-                binding.summitNameToCompare.setSelection(selectedPosition)
+                binding.summitNameToCompare.setText(items[selectedPosition], false)
             }
         }
-        binding.summitNameToCompare.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    adapterView: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long
-                ) {
-                    if (items[position] == getString(R.string.none)) {
-                        pageViewModel?.setSummitToCompareToNull()
-                    } else if (view != null && selectedPosition != position) {
-                        selectedPosition = position
-                        val text = items[position]
-                        if (text != "") {
-                            val newSummitToCompare = summitsToCompare.find {
-                                "${it.getDateAsString()} ${it.name}" == text
-                            }
-                            newSummitToCompare?.id?.let { pageViewModel?.getSummitToCompare(it) }
-                        }
-                    }
-                }
-
-                override fun onNothingSelected(adapterView: AdapterView<*>?) {
+        binding.summitNameToCompare.onItemClickListener =
+            AdapterView.OnItemClickListener { adapterView, view, position, id ->
+                if (items[position] == getString(R.string.none)) {
                     pageViewModel?.setSummitToCompareToNull()
+                } else if (selectedPosition != position) {
+                    selectedPosition = position
+                    val text = items[position]
+                    if (text != "") {
+                        val newSummitToCompare = summitsToCompare.find {
+                            "${it.getDateAsString()} ${it.name}" == text
+                        }
+                        newSummitToCompare?.id?.let { pageViewModel?.getSummitToCompare(it) }
+                    }
                 }
             }
     }

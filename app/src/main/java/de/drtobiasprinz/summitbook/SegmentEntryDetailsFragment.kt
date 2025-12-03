@@ -43,9 +43,8 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.getSportTypeForMapProviders
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.getSportTypeForMapProviders
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
@@ -65,6 +64,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
+import androidx.core.graphics.createBitmap
 
 
 @AndroidEntryPoint
@@ -142,9 +142,7 @@ class SegmentEntryDetailsFragment : Fragment() {
 
     private fun takeScreenshot(view: View) {
         try {
-            val bitmap = Bitmap.createBitmap(
-                view.width, view.height, Bitmap.Config.ARGB_8888
-            )
+            val bitmap = createBitmap(view.width, view.height)
             val canvas = Canvas(bitmap)
             view.draw(canvas)
             val outputStream = FileOutputStream(getMapScreenshotFile(segmentDetailsId))
@@ -152,9 +150,7 @@ class SegmentEntryDetailsFragment : Fragment() {
             outputStream.flush()
             outputStream.close()
             Toast.makeText(
-                requireContext(),
-                getString(R.string.screenshot_taken),
-                Toast.LENGTH_SHORT
+                requireContext(), getString(R.string.screenshot_taken), Toast.LENGTH_SHORT
             ).show()
         } catch (io: FileNotFoundException) {
             io.printStackTrace()
@@ -164,8 +160,7 @@ class SegmentEntryDetailsFragment : Fragment() {
     }
 
     private fun update(
-        segmentEntryToShow: SegmentEntry?,
-        segmentToUse: Segment?
+        segmentEntryToShow: SegmentEntry?, segmentToUse: Segment?
     ) {
         if (segmentEntryToShow != null && summitShown != null && segmentToUse != null) {
             binding.segmentName.text = segmentToUse.segmentDetails.getDisplayNameWithLineBreak()
@@ -198,16 +193,12 @@ class SegmentEntryDetailsFragment : Fragment() {
             binding.spinnerSorting.adapter = ArrayAdapter(
                 requireContext(),
                 android.R.layout.simple_spinner_item,
-                SegmentSortOptions.entries.map { resources.getString(it.stringId) }
-                    .toTypedArray()
+                SegmentSortOptions.entries.map { resources.getString(it.stringId) }.toTypedArray()
             )
             binding.spinnerSorting.onItemSelectedListener =
                 object : AdapterView.OnItemSelectedListener {
                     override fun onItemSelected(
-                        adapterView: AdapterView<*>?,
-                        view: View?,
-                        position: Int,
-                        id: Long
+                        adapterView: AdapterView<*>?, view: View?, position: Int, id: Long
                     ) {
                         if (view != null) {
                             selectedSegmentEntrySorter = SegmentSortOptions.entries[position]
@@ -230,8 +221,7 @@ class SegmentEntryDetailsFragment : Fragment() {
 
     private fun takeScreenshotWhenTilesAreLoaded(timeout: Long = TIMEOUT_TILES_LOADED) {
         Handler(Looper.getMainLooper()).postDelayed({
-            val tileStates: TileStates =
-                binding.osMap.overlayManager.tilesOverlay.tileStates
+            val tileStates: TileStates = binding.osMap.overlayManager.tilesOverlay.tileStates
             if (timeout > 0 && tileStates.total != tileStates.upToDate) {
                 Log.d(
                     TAG,
@@ -275,17 +265,13 @@ class SegmentEntryDetailsFragment : Fragment() {
         selectedItem = getSportTypeForMapProviders(SportType.Other, requireContext())
         binding.changeMapType.setImageResource(R.drawable.baseline_more_vert_black_24dp)
         binding.changeMapType.setOnClickListener {
-            OpenStreetMapUtils.showMapTypeSelectorDialog(
-                requireContext(), binding.osMap
-            )
+            binding.osMap.showMapTypeSelectorDialog()
         }
         binding.updateSnapshot.setOnClickListener {
             takeScreenshotWhenTilesAreLoaded()
         }
-        OpenStreetMapUtils.setTileProvider(binding.osMap, requireContext())
-        OpenStreetMapUtils.addDefaultSettings(
-            binding.osMap, requireActivity()
-        )
+        binding.osMap.setTileProvider()
+        binding.osMap.addDefaultSettings()
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
     }
 
@@ -426,9 +412,9 @@ class SegmentEntryDetailsFragment : Fragment() {
 
             val duration =
                 (endTrackPoint.first.time.millis - startTrackPoint.first.time.millis).toDouble() / 60000.0
-            val distance = ((endTrackPoint.second.distance
-                ?: 0.0) - (startTrackPoint.second.distance
-                ?: 0.0)) / 1000.0
+            val distance =
+                ((endTrackPoint.second.distance ?: 0.0) - (startTrackPoint.second.distance
+                    ?: 0.0)) / 1000.0
 
             binding.duration.text = String.format(
                 resources.configuration.locales[0], "%.1f %s", duration, getString(R.string.min)
@@ -557,14 +543,17 @@ class SegmentEntryDetailsFragment : Fragment() {
     }
 
     enum class SegmentSortOptions(
-        val stringId: Int,
-        val sorter: (List<SegmentEntry>) -> List<SegmentEntry>
+        val stringId: Int, val sorter: (List<SegmentEntry>) -> List<SegmentEntry>
     ) {
         AverageVelocity(
             R.string.pace_hint,
             { it.sortedBy { entry -> entry.kilometers / entry.duration }.reversed() }),
-        Date(R.string.date, { it.sortedBy { entry -> entry.getDateAsString() }.reversed() }),
-        AverageHeartRate(R.string.bpm, { it.sortedBy { entry -> entry.averageHeartRate } }),
+        Date(
+            R.string.date,
+            { it.sortedBy { entry -> entry.getDateAsString() }.reversed() }),
+        AverageHeartRate(
+            R.string.bpm,
+            { it.sortedBy { entry -> entry.averageHeartRate } }),
         Power(R.string.power, { it.sortedBy { entry -> entry.averagePower }.reversed() }),
     }
 }

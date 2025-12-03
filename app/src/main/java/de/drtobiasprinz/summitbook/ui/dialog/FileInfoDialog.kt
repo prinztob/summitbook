@@ -220,15 +220,23 @@ enum class FileRowType(
             s.getGpsTrackPath().toFile().readText().contains(":TrackPointExtension>")
         },
         updateAction = { summit, backupFile ->
-            pythonInstance?.let { python ->
-                GpxPyExecutor(python).removeExtensionsFromGpxTracks(
-                    backupFile, summit.getGpsTrackPath().toFile()
+            try {
+                pythonInstance?.let { python ->
+                    GpxPyExecutor(python).removeExtensionsFromGpxTracks(
+                        backupFile, summit.getGpsTrackPath().toFile()
+                    )
+                }
+                Log.i(
+                    "FileRowType",
+                    "Successfully removeExtensionsFromGpxTracks for ${summit.getDateAsString()}_${summit.name}."
+                )
+            } catch (e: RuntimeException) {
+                Log.e(
+                    "FileRowType",
+                    "RemoveExtensionsFromGpxTracks failed for ${summit.getDateAsString()}_${summit.name}.",
+                    e
                 )
             }
-            Log.i(
-                "FileRowType",
-                "Successfully removeExtensionsFromGpxTracks for ${summit.getDateAsString()}_${summit.name}."
-            )
         }),
     GPX_SIMPLIFIED(
         { it.getGpsTrackPath(simplified = true).toFile() },
@@ -252,15 +260,23 @@ enum class FileRowType(
             s.getGpsTrackPath().toFile().readText().contains(":TrackPointExtension>")
         },
         updateAction = { summit, backupFile ->
-            pythonInstance?.let { python ->
-                GpxPyExecutor(python).removeExtensionsFromGpxTracks(
-                    backupFile, summit.getGpsTrackPath().toFile()
+            try {
+                pythonInstance?.let { python ->
+                    GpxPyExecutor(python).removeExtensionsFromGpxTracks(
+                        backupFile, summit.getGpsTrackPath().toFile()
+                    )
+                }
+                Log.i(
+                    "FileRowType",
+                    "Successfully removeExtensionsFromGpxTracks for ${summit.getDateAsString()}_${summit.name}."
+                )
+            } catch (e: RuntimeException) {
+                Log.e(
+                    "FileRowType",
+                    "RemoveExtensionsFromGpxTracks failed for ${summit.getDateAsString()}_${summit.name}.",
+                    e
                 )
             }
-            Log.i(
-                "FileRowType",
-                "Successfully removeExtensionsFromGpxTracks for ${summit.getDateAsString()}_${summit.name}."
-            )
         }),
     GPXPY_JSON(
         { it.getGpxPyPath().toFile() },

@@ -12,7 +12,6 @@ import de.drtobiasprinz.summitbook.databinding.ActivityReceiverBinding
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
 import de.drtobiasprinz.summitbook.utils.Utils
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -38,7 +37,7 @@ class ReceiverActivity : AppCompatActivity() {
         binding.osmap.setTileSource(TileSourceFactory.OpenTopo)
 
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-        OpenStreetMapUtils.addDefaultSettings(binding.osmap, this)
+        binding.osmap.addDefaultSettings()
 
         binding.addToSummits.setOnClickListener {
             if (gpxTrackUri != null) {
@@ -99,8 +98,7 @@ class ReceiverActivity : AppCompatActivity() {
                 }
                 if (gpsTrack != null) {
                     binding.osmap.post {
-                        OpenStreetMapUtils.calculateBoundingBox(
-                            binding.osmap,
+                        binding.osmap.calculateBoundingBox(
                             gpsTrack.trackGeoPoints
                         )
                     }

@@ -37,12 +37,10 @@
                 app:layout_constraintStart_toEndOf="@+id/sport_type_image"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <org.imaginativeworld.whynotimagecarousel.ImageCarousel
+            <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/carousel"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                app:imageScaleType="centerCrop"
-                app:infiniteCarousel="false"
                 android:visibility="gone"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/sport_type_image" />

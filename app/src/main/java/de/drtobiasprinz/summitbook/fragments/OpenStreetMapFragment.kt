@@ -18,6 +18,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
+import androidx.core.content.edit
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.fragment.app.Fragment
@@ -33,18 +34,13 @@ import de.drtobiasprinz.summitbook.databinding.FragmentOpenStreetMapBinding
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.getOsmdroidTilesFolder
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.allSummits
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
-import de.drtobiasprinz.summitbook.ui.utils.MapProvider
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.enableRoadInfoOnMapClick
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.getOsmdroidTilesFolder
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileProvider
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
+import de.drtobiasprinz.summitbook.ui.MapProvider
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
@@ -70,7 +66,6 @@ import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.File
 import javax.inject.Inject
-import androidx.core.content.edit
 
 
 @AndroidEntryPoint
@@ -108,7 +103,7 @@ class OpenStreetMapFragment : Fragment() {
                 ?: maxPointsToShow.toString()).toInt()
         Configuration.getInstance()
             .load(context, PreferenceManager.getDefaultSharedPreferences(context))
-        OpenStreetMapUtils.setOsmConfForTiles()
+        CustomMapViewToAllowScrolling.setOsmConfForTiles()
     }
 
     override fun onCreateView(
@@ -193,14 +188,14 @@ class OpenStreetMapFragment : Fragment() {
         }
         binding.osmap.updateBoundingBox = true
         showOverlayIfExist()
-        setTileProvider(binding.osmap, requireContext())
+        binding.osmap.setTileProvider()
 
         setSlidersForOverlayMaps()
         val context: Context? = this@OpenStreetMapFragment.activity
         addFollowTrack(context)
         mLocationOverlay.enableMyLocation()
         showMyLocation()
-        addDefaultSettings(binding.osmap, requireActivity())
+        binding.osmap.addDefaultSettings()
         viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
             itData.data?.let { summits ->
                 allSummits = summits
@@ -361,9 +356,7 @@ class OpenStreetMapFragment : Fragment() {
             }
         }
         binding.changeMap.setOnClickListener {
-            showMapTypeSelectorDialog(
-                requireContext(),
-                binding.osmap,
+            binding.osmap.showMapTypeSelectorDialog(
                 onSelected = {
                     onMapTypeSelected()
                 }
@@ -374,7 +367,7 @@ class OpenStreetMapFragment : Fragment() {
             showAllTracksOfSummitInBoundingBox()
         }
         binding.centerOnSummits.setOnClickListener {
-            binding.osmap.post { calculateBoundingBox(binding.osmap, mGeoPoints) }
+            binding.osmap.post { binding.osmap.calculateBoundingBox(mGeoPoints) }
         }
         binding.centerOnLocation.setOnClickListener {
             showMyLocation(true)
@@ -406,7 +399,7 @@ class OpenStreetMapFragment : Fragment() {
     private fun showSummitsAndBookmarksIfEnabled() {
         if (showSummits || showBookmarks) {
             binding.loadingPanel.visibility = View.VISIBLE
-            enableRoadInfoOnMapClick(binding.osmap, requireContext())
+            binding.osmap.enableRoadInfoOnMapClick()
             lifecycleScope.launch {
                 var filteredSummits: List<Pair<Summit, GeoPoint>> = listOf()
                 withContext(Dispatchers.IO) {

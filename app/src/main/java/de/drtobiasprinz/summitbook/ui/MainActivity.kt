@@ -22,12 +22,9 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.google.android.material.navigation.NavigationView
-import com.stfalcon.imageviewer.StfalconImageViewer
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.PythonActivity
@@ -55,7 +52,6 @@ import de.drtobiasprinz.summitbook.ui.fragment.ForecastFragment
 import de.drtobiasprinz.summitbook.ui.fragment.ShowNewSummitsFromGarminFragment
 import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
-import de.drtobiasprinz.summitbook.ui.utils.PosterOverlayView
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileWriter
 import de.drtobiasprinz.summitbook.utils.Utils
@@ -81,11 +77,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     @Inject
     lateinit var sortFilterValues: SortFilterValues
-    private var currentPosition: Int = 0
-    private var overlayView: PosterOverlayView? = null
-    private var viewer: StfalconImageViewer<Poster>? = null
-    private var isDialogShown = false
-
+    
+    private var fullscreenImageViewer: FullscreenImageViewer? = null
     private var useFilteredSummits: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -642,37 +635,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             dataStatusSummits.data.let { summits ->
                 val sortFilterSummits =
                     summits?.let { it1 -> sortFilterValues.apply(it1, sharedPreferences) }
-                var allImages = getAllImages(sortFilterSummits)
-                var usePositionAfterTransition = -1
-                if (allImages.size < currentPosition) {
-                    usePositionAfterTransition = currentPosition
-                    currentPosition = 0
+                val allImages = getAllImages(sortFilterSummits)
+                
+                if (fullscreenImageViewer == null) {
+                    fullscreenImageViewer = FullscreenImageViewer(this, resources)
                 }
+                
+                val currentPosition = fullscreenImageViewer?.currentPosition ?: 0
+                val adjustedPosition = if (allImages.size <= currentPosition) 0 else currentPosition
+                
                 if (allImages.isNotEmpty()) {
-                    overlayView = PosterOverlayView(this@MainActivity).apply {
-                        update(allImages[currentPosition])
-                    }
-                    viewer = StfalconImageViewer.Builder(
-                        this@MainActivity, allImages
-                    ) { view, poster ->
-                        Glide.with(this@MainActivity).load(poster.url).fitCenter()
-                            .diskCacheStrategy(DiskCacheStrategy.NONE).skipMemoryCache(true)
-                            .into(view)
-                    }.withStartPosition(currentPosition).withImageChangeListener { position ->
-                        currentPosition = position
-                        val sizeBefore = allImages.size
-                        allImages = getAllImages(sortFilterSummits)
-                        val sizeAfter = allImages.size
-                        if (sizeAfter != sizeBefore) {
-                            viewer?.updateImages(allImages)
-                            if (usePositionAfterTransition >= 0) {
-                                viewer?.setCurrentPosition(usePositionAfterTransition)
-                            }
-                        }
-                        overlayView?.update(allImages[position])
-                    }.withOverlayView(overlayView).withDismissListener { isDialogShown = false }
-                        .show(!isDialogShown)
-                    isDialogShown = true
+                    Log.i("MainActivity", "showFullscreenImageViewer")
+                    fullscreenImageViewer?.show(allImages, adjustedPosition, sortFilterSummits)
                 } else {
                     Toast.makeText(
                         this@MainActivity, getString(R.string.no_image_selected), Toast.LENGTH_SHORT
@@ -685,18 +659,22 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putBoolean(KEY_IS_DIALOG_SHOWN, isDialogShown)
-        outState.putInt(KEY_CURRENT_POSITION, currentPosition)
+        outState.putBoolean(KEY_IS_DIALOG_SHOWN, fullscreenImageViewer?.isShowing() ?: false)
+        outState.putInt(KEY_CURRENT_POSITION, fullscreenImageViewer?.currentPosition ?: 0)
     }
-
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        isDialogShown = savedInstanceState.getBoolean(KEY_IS_DIALOG_SHOWN)
-        currentPosition = savedInstanceState.getInt(KEY_CURRENT_POSITION)
+        val isDialogShown = savedInstanceState.getBoolean(KEY_IS_DIALOG_SHOWN)
         if (isDialogShown) {
             openViewer()
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        fullscreenImageViewer?.dismiss()
+        fullscreenImageViewer = null
     }
 
     override fun onSharedPreferenceChanged(preferences: SharedPreferences?, key: String?) {

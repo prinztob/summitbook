@@ -21,7 +21,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.Utils
@@ -42,7 +42,7 @@ class SummitEntryDetailsActivity : AppCompatActivity() {
         pageViewModel = ViewModelProvider(this)[PageViewModel::class.java]
         setContentView(R.layout.activity_summit_entry_details)
         setActionBar()
-        OpenStreetMapUtils.setOsmConfForTiles()
+        CustomMapViewToAllowScrolling.setOsmConfForTiles()
         Utils.fixEdgeToEdge(findViewById(R.id.layout    ))
         val bundle = intent.extras
         if (bundle != null) {

@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
@@ -38,13 +39,10 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.TrackColor.Elevation
 import de.drtobiasprinz.summitbook.models.TrackColor.None
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
+import de.drtobiasprinz.summitbook.ui.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils
-import de.drtobiasprinz.summitbook.ui.utils.MapProvider
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.setTileProvider
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.showMapTypeSelectorDialog
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.FileHelper
@@ -91,7 +89,7 @@ class AddSegmentEntryFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentAddSegmentEntryBinding.inflate(layoutInflater, container, false)
-        OpenStreetMapUtils.setOsmConfForTiles()
+        CustomMapViewToAllowScrolling.setOsmConfForTiles()
         if (PreferencesHelper.loadOnDeviceMaps() &&
             FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
         ) {
@@ -99,7 +97,7 @@ class AddSegmentEntryFragment : Fragment() {
         } else if (FileHelper.getOnDeviceMbtilesFiles(requireContext()).isNotEmpty()) {
             selectedItem = MapProvider.MBTILES
         }
-        setTileProvider(binding.osmap, requireContext())
+        binding.osmap.setTileProvider()
         viewModel.segmentsList.observe(viewLifecycleOwner, object :
             Observer<DataStatus<List<Segment>>> {
             override fun onChanged(value: DataStatus<List<Segment>>) {
@@ -177,35 +175,28 @@ class AddSegmentEntryFragment : Fragment() {
         segment: Segment?
     ) {
         val items = getSummitsSuggestions(summits, segment)
-        binding.summitNameToUse.item = items
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, items)
+        binding.summitNameToUse.setAdapter(adapter)
         val position =
             items.indexOf("${summitToCompare?.getDateAsString()} ${summitToCompare?.name}")
         if (position >= 0) {
-            binding.summitNameToUse.setSelection(position)
+            binding.summitNameToUse.setText(items[position], false)
         }
-        binding.summitNameToUse.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    adapterView: AdapterView<*>?, view: View?, position: Int, id: Long
-                ) {
-                    if (view != null) {
-                        val text = items[position]
-                        if (text != "" && text != "None") {
-                            val newlySelectedSummit =
-                                summitsToCompare.find { text.startsWith("${it.getDateAsString()} ${it.name}") }
-                            if (segment != null && newlySelectedSummit != null && newlySelectedSummit != summitToCompare) {
-                                summitToCompare = newlySelectedSummit
-                                setGpsTrack()
-                                setOpenStreetMap(segment, newlySelectedSummit)
-                                drawChart(newlySelectedSummit)
-                                setTextView(newlySelectedSummit)
-                                guessStartAndEndPoint(newlySelectedSummit)
-                            }
-                        }
+        binding.summitNameToUse.onItemClickListener =
+            AdapterView.OnItemClickListener { adapterView, view, position, id ->
+                val text = items[position]
+                if (text != "" && text != "None") {
+                    val newlySelectedSummit =
+                        summitsToCompare.find { text.startsWith("${it.getDateAsString()} ${it.name}") }
+                    if (segment != null && newlySelectedSummit != null && newlySelectedSummit != summitToCompare) {
+                        summitToCompare = newlySelectedSummit
+                        setGpsTrack()
+                        setOpenStreetMap(segment, newlySelectedSummit)
+                        drawChart(newlySelectedSummit)
+                        setTextView(newlySelectedSummit)
+                        guessStartAndEndPoint(newlySelectedSummit)
                     }
                 }
-
-                override fun onNothingSelected(adapterView: AdapterView<*>?) {}
             }
     }
 
@@ -476,11 +467,9 @@ class AddSegmentEntryFragment : Fragment() {
             binding.osmap.overlayManager?.clear()
             binding.changeMapType.setImageResource(R.drawable.baseline_more_vert_black_24dp)
             binding.changeMapType.setOnClickListener {
-                showMapTypeSelectorDialog(
-                    requireContext(), binding.osmap
-                )
+                binding.osmap.showMapTypeSelectorDialog()
             }
-            addDefaultSettings(binding.osmap, requireActivity())
+            binding.osmap.addDefaultSettings()
             Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
 
             val hasPoints =
@@ -494,8 +483,8 @@ class AddSegmentEntryFragment : Fragment() {
                 showSinglePoints(summit)
                 binding.osmap.post {
                     summit.gpsTrack?.let {
-                        OpenStreetMapUtils.calculateBoundingBox(
-                            binding.osmap, it.trackGeoPoints
+                        binding.osmap.calculateBoundingBox(
+                            it.trackGeoPoints
                         )
                     }
                 }

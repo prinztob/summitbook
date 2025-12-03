@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook
 
-import android.app.Activity
 import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.drawable.BitmapDrawable
@@ -9,6 +8,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,7 +19,6 @@ import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.github.chrisbanes.photoview.PhotoView
 import com.yalantis.ucrop.UCrop
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
@@ -69,7 +68,7 @@ class AddImagesActivity : AppCompatActivity() {
 
                         val data = Intent()
                         data.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
-                        setResult(Activity.RESULT_OK, data)
+                        setResult(RESULT_OK, data)
                     }
                 }
             }
@@ -97,7 +96,7 @@ class AddImagesActivity : AppCompatActivity() {
         id: Int,
         position: Int
     ): Int {
-        val localSummitImage = PhotoView(this)
+        val localSummitImage = ImageView(this)
         val isVerticalImageOnNextPosition =
             (position == 0 && localSummit.imageIds.size > 1 && canImageBeOnFirstPosition?.get(
                 localSummit.imageIds[1]
@@ -205,7 +204,7 @@ class AddImagesActivity : AppCompatActivity() {
     }
 
     private fun addAdditionalImage(id: Int, layout: RelativeLayout) {
-        val localSummitImage = PhotoView(this)
+        val localSummitImage = ImageView(this)
         localSummitImage.visibility = View.VISIBLE
         val lp = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT
@@ -241,7 +240,7 @@ class AddImagesActivity : AppCompatActivity() {
 
     private fun addImageOnClickListener(
         layout: RelativeLayout, button: ImageButton,
-        localSummitImage: PhotoView, crop: Pair<Float, Float>, idOtherButton: Int = 0
+        localSummitImage: ImageView, crop: Pair<Float, Float>, idOtherButton: Int = 0
     ) {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
@@ -263,7 +262,7 @@ class AddImagesActivity : AppCompatActivity() {
 
     private val resultLauncherForAddingImage =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
+            if (result.resultCode == RESULT_OK) {
                 result.data?.data?.also { sourceUri ->
                     val localSummit = summitEntry
                     if (localSummit != null) {
@@ -279,7 +278,7 @@ class AddImagesActivity : AppCompatActivity() {
     private val resultLauncherCroppedImageDone =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val localSummit = summitEntry
-            if (localSummit != null && result.resultCode == Activity.RESULT_OK) {
+            if (localSummit != null && result.resultCode == RESULT_OK) {
                 localSummit.getNextImagePath(true)
                 updateAdapterAndDatabase(localSummit)
                 binding.images.removeAllViewsInLayout()

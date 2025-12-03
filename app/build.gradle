@@ -90,7 +90,7 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.10.0'
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.10.0'
-    implementation 'androidx.activity:activity-ktx:1.12.0'
+    implementation 'androidx.activity:activity-ktx:1.12.1'
     implementation 'androidx.fragment:fragment-ktx:1.8.9'
     //Dagger Hilt
     implementation "com.google.dagger:hilt-android:2.57.2"
@@ -103,15 +103,9 @@ dependencies {
     implementation("net.mamoe.yamlkt:yamlkt:0.13.0")
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
 
-    implementation 'org.imaginativeworld.whynotimagecarousel:whynotimagecarousel:2.1.1'
-    implementation 'com.github.stfalcon-studio:StfalconImageViewer:1.0.1'
-
     implementation 'com.github.yalantis:ucrop:2.2.11'
 
     implementation 'com.github.bumptech.glide:glide:5.0.5'
-    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
-    //noinspection NewerVersionAvailable -> no importation about 2.0.0
-    implementation 'com.github.chivorns:smartmaterialspinner:1.5.0'
 
     implementation 'org.osmdroid:osmdroid-android:6.1.20'
     implementation 'com.github.MKergall:osmbonuspack:6.9.0'
@@ -125,7 +119,6 @@ dependencies {
     testImplementation "org.robolectric:robolectric:4.16"
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2"
     androidTestImplementation 'androidx.test.espresso:espresso-contrib:3.7.0'
-    androidTestImplementation "androidx.test.uiautomator:uiautomator:2.4.0-alpha06"
 
     implementation 'com.github.ticofab:android-gpx-parser:2.3.1'
 

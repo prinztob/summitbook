@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import dagger.hilt.android.AndroidEntryPoint
@@ -59,8 +60,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
                     setThirdPartyData(summitToView)
                     pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
                         summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(
-                            summitsListData,
-                            summitToView
+                            summitsListData, summitToView
                         )
                         summitsListData.data.let { summits ->
                             if (summits != null) {
@@ -74,8 +74,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
                                         binding.summitNameToCompare.visibility = View.GONE
                                     } else {
                                         prepareCompareAutoComplete(
-                                            summitToView,
-                                            summitToCompare.data
+                                            summitToView, summitToCompare.data
                                         )
                                     }
 
@@ -99,10 +98,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
     ) {
         TextFieldThirdParty.entries.filter { it.group == textFieldGroup }.forEach {
             setTextForCurrentSummitAndCompareWithSummit(
-                it,
-                summitToView,
-                summitToCompare,
-                visibility
+                it, summitToView, summitToCompare, visibility
             )
         }
     }
@@ -135,13 +131,12 @@ class SummitEntryThirdPartyFragment : Fragment() {
                     setTextOnlyForCurrentSummit(it, summitToView)
                 }
 
-            TextFieldThirdParty.entries
-                .filter { it.group == TextFieldGroupThirdParty.ThirdPartyAdditionalData }
+            TextFieldThirdParty.entries.filter { it.group == TextFieldGroupThirdParty.ThirdPartyAdditionalData }
                 .forEach {
                     setTextOnlyForCurrentSummit(it, summitToView, View.GONE)
                 }
-            if (summitToView.garminData?.power?.oneSec != null &&
-                (summitToView.garminData?.power?.oneSec ?: 0) > 0
+            if (summitToView.garminData?.power?.oneSec != null && (summitToView.garminData?.power?.oneSec
+                    ?: 0) > 0
             ) {
                 binding.expandMorePowerData.visibility = View.VISIBLE
             } else {
@@ -154,14 +149,12 @@ class SummitEntryThirdPartyFragment : Fragment() {
     }
 
     private fun setThirdPartyData(
-        summitToView: Summit,
-        summitToCompare: Summit? = null,
-        extrema: ExtremaValuesSummits? = null
+        summitToView: Summit, summitToCompare: Summit? = null, extrema: ExtremaValuesSummits? = null
     ) {
         val garminData = summitToView.garminData
         if (garminData != null) {
-            if (summitToView.garminData?.power?.oneSec != null &&
-                (summitToView.garminData?.power?.oneSec ?: 0) > 0
+            if (summitToView.garminData?.power?.oneSec != null && (summitToView.garminData?.power?.oneSec
+                    ?: 0) > 0
             ) {
                 setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
                     summitToView,
@@ -169,18 +162,13 @@ class SummitEntryThirdPartyFragment : Fragment() {
                     textFieldGroup = TextFieldGroupThirdParty.ThirdParty
                 )
                 setCircleBeforeTextForAllTextFields(
-                    summitToView,
-                    extrema,
-                    TextFieldGroupThirdParty.ThirdParty
+                    summitToView, extrema, TextFieldGroupThirdParty.ThirdParty
                 )
                 binding.expandMorePowerData.setOnClickListener {
                     if (binding.expandMorePowerData.text == getString(R.string.more_cycling_dynamics)) {
                         binding.expandMorePowerData.text = getString(R.string.less_cycling_dynamics)
                         binding.expandMorePowerData.setCompoundDrawablesWithIntrinsicBounds(
-                            R.drawable.ic_baseline_expand_less_24,
-                            0,
-                            0,
-                            0
+                            R.drawable.ic_baseline_expand_less_24, 0, 0, 0
                         )
                         setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
                             summitToView,
@@ -188,17 +176,12 @@ class SummitEntryThirdPartyFragment : Fragment() {
                             textFieldGroup = TextFieldGroupThirdParty.ThirdPartyAdditionalData
                         )
                         setCircleBeforeTextForAllTextFields(
-                            summitToView,
-                            extrema,
-                            TextFieldGroupThirdParty.ThirdPartyAdditionalData
+                            summitToView, extrema, TextFieldGroupThirdParty.ThirdPartyAdditionalData
                         )
                     } else {
                         binding.expandMorePowerData.text = getString(R.string.more_cycling_dynamics)
                         binding.expandMorePowerData.setCompoundDrawablesWithIntrinsicBounds(
-                            R.drawable.ic_baseline_expand_more_24,
-                            0,
-                            0,
-                            0
+                            R.drawable.ic_baseline_expand_more_24, 0, 0, 0
                         )
                         setAllTextFieldsWithCurrentSummitAndCompareWithSummitData(
                             summitToView,
@@ -219,39 +202,30 @@ class SummitEntryThirdPartyFragment : Fragment() {
 
     private fun prepareCompareAutoComplete(summitToView: Summit, summitToCompare: Summit?) {
         val items = getSummitsSuggestions(summitToView)
-        binding.summitNameToCompare.item = items
+        val adapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, items)
+        binding.summitNameToCompare.setAdapter(adapter)
         var selectedPosition = -1
         if (summitToCompare != null) {
             selectedPosition =
                 items.indexOfFirst { "${summitToCompare.getDateAsString()} ${summitToCompare.name}" == it }
             if (selectedPosition > -1) {
-                binding.summitNameToCompare.setSelection(selectedPosition)
+                binding.summitNameToCompare.setText(items[selectedPosition], false)
             }
         }
-        binding.summitNameToCompare.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    adapterView: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long
-                ) {
-                    if (items[position] == getString(R.string.none)) {
-                        pageViewModel?.setSummitToCompareToNull()
-                    } else if (view != null && selectedPosition != position) {
-                        selectedPosition = position
-                        val text = items[position]
-                        if (text != "") {
-                            val newSummitToCompare = summitsToCompare.find {
-                                "${it.getDateAsString()} ${it.name}" == text
-                            }
-                            newSummitToCompare?.id?.let { pageViewModel?.getSummitToCompare(it) }
-                        }
-                    }
-                }
-
-                override fun onNothingSelected(adapterView: AdapterView<*>?) {
+        binding.summitNameToCompare.onItemClickListener =
+            AdapterView.OnItemClickListener { adapterView, view, position, id ->
+                if (items[position] == getString(R.string.none)) {
                     pageViewModel?.setSummitToCompareToNull()
+                } else if (selectedPosition != position) {
+                    selectedPosition = position
+                    val text = items[position]
+                    if (text != "") {
+                        val newSummitToCompare = summitsToCompare.find {
+                            "${it.getDateAsString()} ${it.name}" == text
+                        }
+                        newSummitToCompare?.id?.let { pageViewModel?.getSummitToCompare(it) }
+                    }
                 }
             }
     }
@@ -260,8 +234,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
     private fun getSummitsSuggestions(summit: Summit): List<String> {
         val suggestions: MutableList<String> = mutableListOf(getString(R.string.none))
         val summitsWithoutSimilarName =
-            summitsToCompare.filter { it.name != summit.name }
-                .sortedByDescending { it.date }
+            summitsToCompare.filter { it.name != summit.name }.sortedByDescending { it.date }
         val summitsWithSimilarName =
             summitsToCompare.filter { it.name == summit.name && it != summit }
                 .sortedByDescending { it.date }
@@ -274,9 +247,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
 
 
     private fun setTextOnlyForCurrentSummit(
-        textField: TextFieldThirdParty,
-        summit: Summit,
-        visibility: Int = View.VISIBLE
+        textField: TextFieldThirdParty, summit: Summit, visibility: Int = View.VISIBLE
     ) {
         val value =
             textField.getValue(summit) ?: (if (textField.getValue(summit) is Int) 0 else 0.0)
@@ -292,24 +263,23 @@ class SummitEntryThirdPartyFragment : Fragment() {
                 val valueInMs = (value.toDouble() * 3600000.0).toLong()
                 textField.valueTextView(binding).text = String.format(
                     Locale.getDefault(),
-                    "%02d:%02d", TimeUnit.MILLISECONDS.toHours(valueInMs),
+                    "%02d:%02d",
+                    TimeUnit.MILLISECONDS.toHours(valueInMs),
                     TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1)
                 )
             } else {
                 numberFormat.maximumFractionDigits = textField.digits
-                textField.valueTextView(binding).text =
-                    String.format(
-                        getString(textField.unitWithPlaceHolder),
-                        numberFormat.format(value.toDouble() * textField.factor)
-                    )
+                textField.valueTextView(binding).text = String.format(
+                    getString(textField.unitWithPlaceHolder),
+                    numberFormat.format(value.toDouble() * textField.factor)
+                )
             }
             val rangeValue = textField.getValueRange(summit)
             if (rangeValue != null) {
-                textField.valueTextViewRange(binding)?.text =
-                    String.format(
-                        getString(textField.unitWithPlaceHolder),
-                        "- ${numberFormat.format(rangeValue.toDouble() * textField.factor)}"
-                    )
+                textField.valueTextViewRange(binding)?.text = String.format(
+                    getString(textField.unitWithPlaceHolder),
+                    "- ${numberFormat.format(rangeValue.toDouble() * textField.factor)}"
+                )
             } else {
                 textField.valueTextViewRange(binding)?.visibility = View.GONE
             }
@@ -339,8 +309,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
             textField.valueTextViewRange(binding)?.visibility = visibility
             if (textField.toMinSec) {
                 val valueInSec = (value.toDouble()).toLong()
-                val valueInSecCompareSummit = (valueToCompare?.toDouble()
-                    ?: 0.0).toLong()
+                val valueInSecCompareSummit = (valueToCompare?.toDouble() ?: 0.0).toLong()
                 if (valueInSecCompareSummit > 0) {
                     textField.valueTextView(binding).text = String.format(
                         Locale.getDefault(),
@@ -364,8 +333,9 @@ class SummitEntryThirdPartyFragment : Fragment() {
                     if (valueToCompare != null && valueToCompare.toInt() != 0) {
                         String.format(
                             getString(textField.unitWithPlaceHolder),
-                            "${numberFormat.format(value.toDouble() * textField.factor)} " +
-                                    "(${numberFormat.format(valueToCompare.toDouble() * textField.factor)}) "
+                            "${numberFormat.format(value.toDouble() * textField.factor)} " + "(${
+                                numberFormat.format(valueToCompare.toDouble() * textField.factor)
+                            }) "
                         )
                     } else {
                         String.format(
@@ -378,9 +348,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
     }
 
     private fun setCircleBeforeText(
-        textField: TextFieldThirdParty,
-        summit: Summit,
-        extrema: ExtremaValuesSummits?
+        textField: TextFieldThirdParty, summit: Summit, extrema: ExtremaValuesSummits?
     ) {
         val minSummit = textField.getMinMaxSummit(extrema)?.first
         val maxSummit = textField.getMinMaxSummit(extrema)?.second
@@ -389,8 +357,7 @@ class SummitEntryThirdPartyFragment : Fragment() {
         if (abs(value.toDouble() * textField.factor) > 0.01) {
             drawCircleWithIndication(
                 textField.valueTextView(binding),
-                minSummit?.let { textField.getValue(it)?.toDouble() }
-                    ?: 0.0,
+                minSummit?.let { textField.getValue(it)?.toDouble() } ?: 0.0,
                 maxSummit?.let { textField.getValue(it)?.toDouble() },
                 value.toDouble(),
                 textField.reverse,
@@ -411,42 +378,26 @@ class SummitEntryThirdPartyFragment : Fragment() {
             textView.compoundDrawablePadding = 20
             if (min != null && max != null) {
                 val percent =
-                    if (reverse) (max.toDouble() - value) / (max.toDouble() - min.toDouble()) else
-                        (value - min.toDouble()) / (max.toDouble() - min.toDouble())
+                    if (reverse) (max - value) / (max - min) else (value - min) / (max - min)
                 when (percent) {
                     in 0.0..0.2 -> textView.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.filled_circle_red,
-                        0,
-                        0,
-                        0
+                        R.drawable.filled_circle_red, 0, 0, 0
                     )
 
                     in 0.2..0.4 -> textView.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.filled_circle_orange,
-                        0,
-                        0,
-                        0
+                        R.drawable.filled_circle_orange, 0, 0, 0
                     )
 
                     in 0.4..0.6 -> textView.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.filled_circle_yellow,
-                        0,
-                        0,
-                        0
+                        R.drawable.filled_circle_yellow, 0, 0, 0
                     )
 
                     in 0.6..0.8 -> textView.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.filled_circle_blue,
-                        0,
-                        0,
-                        0
+                        R.drawable.filled_circle_blue, 0, 0, 0
                     )
 
                     in 0.8..1.0 -> textView.setCompoundDrawablesWithIntrinsicBounds(
-                        R.drawable.filled_circle_green,
-                        0,
-                        0,
-                        0
+                        R.drawable.filled_circle_green, 0, 0, 0
                     )
 
                     else -> textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)

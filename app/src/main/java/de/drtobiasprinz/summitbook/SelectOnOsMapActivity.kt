@@ -25,12 +25,6 @@ import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.dialog.FileInfoDialog
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addDefaultSettings
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addMarker
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.addTrackAndMarker
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.calculateBoundingBox
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.drawBoundingBox
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.utils.Utils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
@@ -94,31 +88,27 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     binding.osmap.setTileSource(TileSourceFactory.MAPNIK)
                     Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
                     summitEntry = entry
-                    OpenStreetMapUtils.setTileProviderDependingOnSummitSportType(
-                        binding.osmap, this, entry?.sportType ?: SportType.Other
+                    binding.osmap.setTileProviderDependingOnSummitSportType(
+                        entry?.sportType ?: SportType.Other
                     )
                     if (entry != null) {
-                        addTrackAndMarker(
+                        binding.osmap.addTrackAndMarker(
                             entry,
-                            binding.osmap,
-                            this,
                             false,
                             TrackColor.None,
                             alwaysShowTrackOnMap = false
                         )
                         entry.trackBoundingBox?.let { boundingBox ->
-                            drawBoundingBox(
-                                binding.osmap, boundingBox
-                            )
+                            binding.osmap.drawBoundingBox(boundingBox)
                         }
                     }
-                    addDefaultSettings(binding.osmap, this)
+                    binding.osmap.addDefaultSettings()
                     val mReceive: MapEventsReceiver = object : MapEventsReceiver {
                         override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
                             if (entry != null) {
                                 updateSavePositionButton(true)
                                 latLngSelectedPosition = GeoPoint(p.latitude, p.longitude)
-                                addMarker(binding.osmap, applicationContext, p, entry)
+                                binding.osmap.addMarker( p, entry)
                                 binding.osmap.zoomController.activate()
                             }
                             return false
@@ -171,12 +161,10 @@ class SelectOnOsMapActivity : FragmentActivity() {
                     binding.refreshRoadInfo.setOnClickListener { v: View ->
                         if (entry != null) {
                             val fileInfoDialog = FileInfoDialog(
-                                entry,
-                                this@SelectOnOsMapActivity,
-                                lifecycleScope,
-                                viewModel
+                                entry, this@SelectOnOsMapActivity, lifecycleScope, viewModel
                             ) { isLoading ->
-                                binding.loadingPanel.visibility = if (isLoading) View.VISIBLE else View.GONE
+                                binding.loadingPanel.visibility =
+                                    if (isLoading) View.VISIBLE else View.GONE
                             }
                             fileInfoDialog.show()
                         }
@@ -299,10 +287,10 @@ class SelectOnOsMapActivity : FragmentActivity() {
     ) {
         val entry = summitEntry
         if (entry != null) {
-            addMarker(osMap, this, geoPointSelectedPosition, entry)
+            binding.osmap.addMarker( geoPointSelectedPosition, entry)
             gpsTrack.addGpsTrack(osMap, TrackColor.None)
             if (!wasBoundingBoxCalculated) {
-                calculateBoundingBox(osMap, gpsTrack, geoPointSelectedPosition)
+                binding.osmap.calculateBoundingBox(gpsTrack, geoPointSelectedPosition)
                 wasBoundingBoxCalculated = true
             }
         }

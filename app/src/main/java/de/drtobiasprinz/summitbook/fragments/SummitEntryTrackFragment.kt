@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -46,11 +47,9 @@ import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.RoadType
 import de.drtobiasprinz.summitbook.models.Surface
 import de.drtobiasprinz.summitbook.models.TrackColor
-import de.drtobiasprinz.summitbook.ui.utils.MapProvider
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.enableRoadInfoOnMapClick
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.getSportTypeForMapProviders
-import de.drtobiasprinz.summitbook.ui.utils.OpenStreetMapUtils.selectedItem
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.getSportTypeForMapProviders
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
+import de.drtobiasprinz.summitbook.ui.MapProvider
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
@@ -103,19 +102,17 @@ class SummitEntryTrackFragment : Fragment() {
                     binding.osmap.overlays.add(mLocationOverlay)
                     binding.loadingPanel.visibility = View.VISIBLE
                     binding.lineChart.visibility = View.GONE
-                    OpenStreetMapUtils.addDefaultSettings(
-                        binding.osmap,
-                        requireActivity()
-                    )
-                    if (PreferencesHelper.loadOnDeviceMaps() &&
-                        FileHelper.getOnDeviceMapFiles(requireContext()).isNotEmpty()
+                    binding.osmap.addDefaultSettings()
+                    if (PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(
+                            requireContext()
+                        ).isNotEmpty()
                     ) {
                         selectedItem =
                             getSportTypeForMapProviders(summitToView.sportType, requireContext())
                     } else if (FileHelper.getOnDeviceMbtilesFiles(requireContext()).isNotEmpty()) {
                         selectedItem = MapProvider.MBTILES
                     }
-                    OpenStreetMapUtils.setTileProvider(binding.osmap, requireContext())
+                    binding.osmap.setTileProvider()
                 }
             }
         }
@@ -128,12 +125,9 @@ class SummitEntryTrackFragment : Fragment() {
             itData.data.let { summitToCompare ->
                 pageViewModel?.summitsList?.observe(viewLifecycleOwner) { summitsListData ->
                     summitsListData.data.let { allSummits ->
-                        summitsToCompare =
-                            SummitEntryDetailsActivity.getSummitsToCompare(
-                                summitsListData,
-                                summitToView,
-                                onlyWithPowerData = true
-                            )
+                        summitsToCompare = SummitEntryDetailsActivity.getSummitsToCompare(
+                            summitsListData, summitToView, onlyWithPowerData = true
+                        )
                         if (summitToView.isBookmark) {
                             binding.summitNameToCompare.visibility = View.GONE
                         } else {
@@ -167,25 +161,18 @@ class SummitEntryTrackFragment : Fragment() {
                                     drawLineChart(summitToView)
                                 }
                                 updateMap(
-                                    summitToView,
-                                    summitToCompare,
-                                    summitsListData.data,
-                                    false
+                                    summitToView, summitToCompare, summitsListData.data, false
                                 )
                                 setButtons(summitToView)
                             }
                         }
                         val numberOfPointsToShow =
                             PreferenceManager.getDefaultSharedPreferences(requireContext())
-                                .getString(Keys.PREF_MAX_NUMBER_POINT, "10000")?.toInt()
-                                ?: 10000
+                                .getString(Keys.PREF_MAX_NUMBER_POINT, "10000")?.toInt() ?: 10000
                         binding.showAllTracks.setOnClickListener { _: View? ->
                             summitsListData.data?.let { summits ->
                                 showAllTracksOfSummitInBoundingBox(
-                                    summitToView,
-                                    summitToCompare,
-                                    summits,
-                                    numberOfPointsToShow
+                                    summitToView, summitToCompare, summits, numberOfPointsToShow
                                 )
                             }
                         }
@@ -223,7 +210,7 @@ class SummitEntryTrackFragment : Fragment() {
             doCleanUp = doCleanUp,
             calculateBondingBox = !alreadyZoomedOnTrack
         )
-        enableRoadInfoOnMapClick(binding.osmap, requireContext())
+        binding.osmap.enableRoadInfoOnMapClick()
     }
 
     private fun setButtons(summitToView: Summit) {
@@ -234,9 +221,7 @@ class SummitEntryTrackFragment : Fragment() {
                         summitToView.copyGpsTrackToTempFile(requireActivity().externalCacheDir)
                             ?.let {
                                 FileProvider.getUriForFile(
-                                    requireContext(),
-                                    BuildConfig.APPLICATION_ID + ".provider",
-                                    it
+                                    requireContext(), BuildConfig.APPLICATION_ID + ".provider", it
                                 )
                             }
                     val intent = Intent(Intent.ACTION_VIEW)
@@ -264,9 +249,7 @@ class SummitEntryTrackFragment : Fragment() {
                         summitToView.copyGpsTrackToTempFile(requireActivity().externalCacheDir)
                             ?.let {
                                 FileProvider.getUriForFile(
-                                    requireContext(),
-                                    BuildConfig.APPLICATION_ID + ".provider",
-                                    it
+                                    requireContext(), BuildConfig.APPLICATION_ID + ".provider", it
                                 )
                             }
                     val intentShareFile = Intent(Intent.ACTION_SEND)
@@ -304,40 +287,28 @@ class SummitEntryTrackFragment : Fragment() {
 
     private fun prepareCompareAutoComplete(summitToView: Summit, summitToCompare: Summit?) {
         val items = getSummitsSuggestions(summitToView)
-        binding.summitNameToCompare.item = items
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, items)
+        binding.summitNameToCompare.setAdapter(adapter)
         var selectedPosition = -1
         if (summitToCompare != null) {
             selectedPosition =
                 items.indexOfFirst { "${summitToCompare.getDateAsString()} ${summitToCompare.name}" == it }
             if (selectedPosition > -1) {
-                binding.summitNameToCompare.setSelection(selectedPosition)
+                binding.summitNameToCompare.setText(items[selectedPosition], false)
             }
         }
-        binding.summitNameToCompare.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    adapterView: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long
-                ) {
-                    if (items[position] == getString(R.string.none)) {
-                        pageViewModel?.setSummitToCompareToNull()
-                    } else if (view != null && selectedPosition != position) {
-                        selectedPosition = position
-                        val text = items[position]
-                        if (text != "") {
-                            val newSummitToCompare = summitsToCompare.find {
-                                "${it.getDateAsString()} ${it.name}" == text
-                            }
-                            newSummitToCompare?.id?.let { pageViewModel?.getSummitToCompare(it) }
+        binding.summitNameToCompare.onItemClickListener =
+            AdapterView.OnItemClickListener { adapterView, view, position, id ->
+                if (items[position] == getString(R.string.none)) {
+                    pageViewModel?.setSummitToCompareToNull()
+                } else if (selectedPosition != position) {
+                    selectedPosition = position
+                    val text = items[position]
+                    if (text != "") {
+                        val newSummitToCompare = summitsToCompare.find {
+                            "${it.getDateAsString()} ${it.name}" == text
                         }
-                    }
-                }
-
-                override fun onNothingSelected(adapterView: AdapterView<*>?) {
-                    if (summitToCompare != null) {
-                        pageViewModel?.setSummitToCompareToNull()
+                        newSummitToCompare?.id?.let { pageViewModel?.getSummitToCompare(it) }
                     }
                 }
             }
@@ -360,9 +331,7 @@ class SummitEntryTrackFragment : Fragment() {
     }
 
     private fun setGpsTrack(
-        localSummit: Summit,
-        useSimplifiedTrack: Boolean = false,
-        forceUpdate: Boolean = false
+        localSummit: Summit, useSimplifiedTrack: Boolean = false, forceUpdate: Boolean = false
     ) {
         if (localSummit.hasGpsTrack(useSimplifiedTrack)) {
             localSummit.setGpsTrack(useSimplifiedTrack = useSimplifiedTrack)
@@ -488,12 +457,8 @@ class SummitEntryTrackFragment : Fragment() {
                             val trackPoint = (e.data as Pair<*, *>).first as TrackPoint
                             binding.osmap.overlays.remove(marker)
                             val point = GeoPoint(trackPoint.latitude, trackPoint.longitude)
-                            marker = OpenStreetMapUtils.addMarker(
-                                binding.osmap,
-                                requireContext(),
-                                point,
-                                summitToView,
-                                useIconId = R.drawable.outline_home_pin_24
+                            marker = binding.osmap.addMarker(
+                                point, summitToView, useIconId = R.drawable.outline_home_pin_24
                             )
                             binding.osmap.setExpectedCenter(point)
                             binding.osmap.invalidate()
@@ -562,9 +527,7 @@ class SummitEntryTrackFragment : Fragment() {
     }
 
     private fun setColors(
-        lineChartEntries: MutableList<Entry>,
-        dataSet: LineDataSet,
-        summitToView: Summit
+        lineChartEntries: MutableList<Entry>, dataSet: LineDataSet, summitToView: Summit
     ) {
 
         when (requireContext().resources?.configuration?.uiMode?.and(android.content.res.Configuration.UI_MODE_NIGHT_MASK)) {
@@ -631,9 +594,7 @@ class SummitEntryTrackFragment : Fragment() {
         val hasPoints = gpsTrack?.hasOnlyZeroCoordinates() == false || summitToView.latLng != null
         binding.changeMapType.setImageResource(R.drawable.baseline_more_vert_black_24dp)
         binding.changeMapType.setOnClickListener {
-            OpenStreetMapUtils.showMapTypeSelectorDialog(
-                requireContext(), binding.osmap
-            )
+            binding.osmap.showMapTypeSelectorDialog()
         }
         val height = if (hasPoints) 0.55 else 0.0
         val params = binding.osmap.layoutParams
@@ -643,31 +604,23 @@ class SummitEntryTrackFragment : Fragment() {
             if (doCleanUp) {
                 binding.osmap.overlays.clear()
                 binding.osmap.overlays.add(mLocationOverlay)
-                OpenStreetMapUtils.addDefaultSettings(
-                    binding.osmap,
-                    requireActivity()
-                )
+                binding.osmap.addDefaultSettings()
             }
             if (summitToCompare != null) {
-                OpenStreetMapUtils.drawTrack(
-                    summitToCompare,
-                    true,
-                    binding.osmap,
-                    TrackColor.None,
-                    color = Color.BLACK
+                binding.osmap.drawTrack(
+                    summitToCompare, true, TrackColor.None, color = Color.BLACK
                 )
             } else {
                 val connectedEntries = summitToView.getConnectedEntries(summits)
                 for (entry in connectedEntries) {
-                    OpenStreetMapUtils.drawTrack(
-                        entry, true, binding.osmap, TrackColor.None, color = Color.BLACK
+
+                    binding.osmap.drawTrack(
+                        entry, true, TrackColor.None, color = Color.BLACK
                     )
                 }
             }
-            marker = OpenStreetMapUtils.addTrackAndMarker(
+            marker = binding.osmap.addTrackAndMarker(
                 summitToView,
-                binding.osmap,
-                requireContext(),
                 true,
                 selectedCustomizeTrackItem,
                 true,
@@ -691,9 +644,7 @@ class SummitEntryTrackFragment : Fragment() {
     }
 
     private fun customizeColorOfTrackDialog(
-        summitToView: Summit,
-        summitToCompare: Summit?,
-        summits: List<Summit>?
+        summitToView: Summit, summitToCompare: Summit?, summits: List<Summit>?
     ) {
         val fDialogTitle = getString(R.string.color_code_selection)
         val builder = AlertDialog.Builder(requireContext())
@@ -704,10 +655,7 @@ class SummitEntryTrackFragment : Fragment() {
         ) { dialog: DialogInterface, item: Int ->
             selectedCustomizeTrackItem = usedItemsForColorCode[item]
             setOpenStreetMap(
-                summitToView,
-                summitToCompare,
-                summits,
-                calculateBondingBox = !alreadyZoomedOnTrack
+                summitToView, summitToCompare, summits, calculateBondingBox = !alreadyZoomedOnTrack
             )
             if (selectedCustomizeTrackItem.discreteInput) {
                 binding.lineChart.visibility = View.GONE
@@ -774,10 +722,7 @@ class SummitEntryTrackFragment : Fragment() {
     }
 
     private fun showAllTracksOfSummitInBoundingBox(
-        summitToView: Summit,
-        summitToCompare: Summit?,
-        summits: List<Summit>,
-        maxPointsToShow: Int
+        summitToView: Summit, summitToCompare: Summit?, summits: List<Summit>, maxPointsToShow: Int
     ) {
         binding.osmap.overlays.clear()
 
@@ -822,15 +767,11 @@ class SummitEntryTrackFragment : Fragment() {
         if (pointsShown > maxPointsToShow) {
             if (context != null) {
                 Toast.makeText(
-                    context,
-                    String.format(
+                    context, String.format(
                         requireContext().resources.getString(
                             R.string.summits_shown
-                        ),
-                        summitsShown.toString(),
-                        summitsWithSameBoundingBox.size.toString()
-                    ),
-                    Toast.LENGTH_LONG
+                        ), summitsShown.toString(), summitsWithSameBoundingBox.size.toString()
+                    ), Toast.LENGTH_LONG
                 ).show()
             }
         }
