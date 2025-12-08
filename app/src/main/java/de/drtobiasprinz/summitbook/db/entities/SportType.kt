@@ -92,6 +92,24 @@ enum class SportType(
         R.color.blue_400,
         listOf(165, 169, 203)
     ),
+    Bouldern(
+        R.string.bouldern,
+        R.drawable.ic_baseline_accessibility_24_black,
+        R.drawable.ic_baseline_accessibility_24_white,
+        R.drawable.ic_filled_location_black_48,
+        R.drawable.ic_outline_location_black_48,
+        R.color.teal_200,
+        listOf(174)
+    ),
+    IndoorCardio(
+        R.string.cardio,
+        R.drawable.ic_baseline_accessibility_24_black,
+        R.drawable.ic_baseline_accessibility_24_white,
+        R.drawable.ic_filled_location_black_48,
+        R.drawable.ic_outline_location_black_48,
+        R.color.teal_700,
+        listOf(11)
+    ),
     Other(
         R.string.other,
         R.drawable.ic_baseline_accessibility_24_black,
@@ -115,6 +133,7 @@ enum class SportType(
             }
             return Other
         }
+
     }
 }
 
@@ -138,12 +157,12 @@ enum class SportGroup(
         R.color.brown_700,
     ),
     Indoor(
-        listOf(SportType.IndoorTrainer),
+        listOf(SportType.IndoorTrainer, SportType.IndoorCardio),
         R.string.indoor,
         R.color.green_800,
     ),
     Other(
-        listOf(SportType.BikeAndHike, SportType.Other),
+        listOf(SportType.BikeAndHike, SportType.Other, SportType.Bouldern),
         R.string.other,
         R.color.grey_500,
     )

@@ -18,7 +18,7 @@ from garminconnect import (  # type: ignore[import-untyped]
 from garth.exc import GarthHTTPError
 from gpxpy.gpx import GPX, GPXTrackPoint
 
-from utils import get_number_of_track_points, parse_track
+from utils import get_number_of_track_points, parse_track, get_base_information_of_activities
 from tcx_to_gpx import convert_tcx_to_gpx
 from Extension import Extension
 from gpx_track_analyzer import TrackAnalyzer
@@ -384,9 +384,7 @@ def download_activities_by_date(
                 write_index += 1
             download_splits(api, activity_id, folder)
             get_exercise_set(api, activity_id, folder)
-        return "return code: 0\nDownloaded {} activities, wrote {} to file".format(
-            len(activities), write_index
-        )
+        return get_base_information_of_activities(activities)
     except (
             GarminConnectConnectionError,
             GarminConnectAuthenticationError,
@@ -410,11 +408,11 @@ def get_precise_vo2max(
                 and "vo2MaxPreciseValue" in data["cycling"]
         ):
             vo2_max_precise_value = data["cycling"]["vo2MaxPreciseValue"]
-            print(f"Found cycling vo2MaxPreciseValue {vo2_max_precise_value}.")
+            print(f"Found cycling vo2MaxPreciseValue {vo2_max_precise_value} on {selected_date}.")
             return str(vo2_max_precise_value)
         elif data["generic"] and "vo2MaxPreciseValue" in data["generic"]:
             vo2_max_precise_value = data["generic"]["vo2MaxPreciseValue"]
-            print(f"Found generic vo2MaxPreciseValue {vo2_max_precise_value}.")
+            print(f"Found generic vo2MaxPreciseValue {vo2_max_precise_value} on {selected_date}.")
             return str(vo2_max_precise_value)
     return "0"
 

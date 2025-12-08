@@ -259,6 +259,8 @@
     <string name="indoor_trainer">Indoor Trainer</string>
     <string name="running">Laufen</string>
     <string name="other">Andere</string>
+    <string name="bouldern">Bouldern</string>
+    <string name="cardio">Indoor Cardio</string>
     <string name="of">von</string>
     <string name="show_all_tracks">Show all tracks</string>
     <string name="info">Info</string>
@@ -475,7 +477,8 @@
     <string name="weeks">Wochen</string>
     <string name="twelf_weeks">letzten 12W</string>
     <string name="months">Monate</string>
-    <string name="daily_report_data">Täglicher Report</string>
+    <string name="daily_activity_summary_data">Täglicher Aktivitätsbericht</string>
+    <string name="include_not_persisted_activities">Zeige nicht persisierte Aktivitäten</string>
     <string name="part_day">Nicht vollständig</string>
     <string name="whole_day">Ganzer Tag</string>
     <string name="update_done">Update durchgeführt, aber KEINE neuen Gipfel gefunden.</string>

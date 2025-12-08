@@ -86,11 +86,18 @@
         app:layout_constraintStart_toEndOf="@+id/Z"
         app:layout_constraintTop_toBottomOf="@+id/barChartSpinnerYAxis" />
 
+    <CheckBox
+        android:id="@+id/includeFilteredDailyActivitySummaries"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/include_not_persisted_activities"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/barChartSpinnerZAxis" />
+
     <de.drtobiasprinz.summitbook.ui.utils.CustomBarChart
         android:id="@+id/barChart"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintBaseline_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/imageView"
-        app:layout_constraintTop_toBottomOf="@+id/barChartSpinnerZAxis" />
+        app:layout_constraintTop_toBottomOf="@+id/includeFilteredDailyActivitySummaries" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -50,6 +50,10 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideDailyActivitySummaryDao(db: AppDatabase) = db.dailyActivitySummaryDao()
+
+    @Provides
+    @Singleton
     fun provideSortFilterValues() = SortFilterValues()
 
     @Provides

@@ -1,0 +1,1570 @@
+[
+  {
+    "activityId": 21209895708,
+    "date": "2025-12-09",
+    "distance": 32219,
+    "duration": 4564,
+    "elevationGain": 515,
+    "sportType": 2
+  },
+  {
+    "activityId": 21205402899,
+    "date": "2025-12-08",
+    "distance": 0,
+    "duration": 7036,
+    "elevationGain": 0,
+    "sportType": 31
+  },
+  {
+    "activityId": 21166299955,
+    "date": "2025-12-04",
+    "distance": 10851,
+    "duration": 1801,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 21149425475,
+    "date": "2025-12-02",
+    "distance": 30318,
+    "duration": 3970,
+    "elevationGain": 156,
+    "sportType": 2
+  },
+  {
+    "activityId": 21143166358,
+    "date": "2025-12-01",
+    "distance": 0,
+    "duration": 6824,
+    "elevationGain": 0,
+    "sportType": 31
+  },
+  {
+    "activityId": 21085956751,
+    "date": "2025-11-25",
+    "distance": 12907,
+    "duration": 2881,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 21079069715,
+    "date": "2025-11-24",
+    "distance": 6615,
+    "duration": 1629,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 21059902241,
+    "date": "2025-11-22",
+    "distance": 24733,
+    "duration": 3709,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 21041927976,
+    "date": "2025-11-20",
+    "distance": 18757,
+    "duration": 3161,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 21018708865,
+    "date": "2025-11-17",
+    "distance": 49607,
+    "duration": 7480,
+    "elevationGain": 322,
+    "sportType": 2
+  },
+  {
+    "activityId": 21006256520,
+    "date": "2025-11-16",
+    "distance": 32245,
+    "duration": 4539,
+    "elevationGain": 498,
+    "sportType": 2
+  },
+  {
+    "activityId": 20994111516,
+    "date": "2025-11-14",
+    "distance": 55284,
+    "duration": 8138,
+    "elevationGain": 160,
+    "sportType": 2
+  },
+  {
+    "activityId": 21005353558,
+    "date": "2025-11-14",
+    "distance": 1975,
+    "duration": 322,
+    "elevationGain": 6,
+    "sportType": 2
+  },
+  {
+    "activityId": 20928764826,
+    "date": "2025-11-08",
+    "distance": 56538,
+    "duration": 8398,
+    "elevationGain": 1001,
+    "sportType": 2
+  },
+  {
+    "activityId": 20890733328,
+    "date": "2025-11-04",
+    "distance": 32223,
+    "duration": 4445,
+    "elevationGain": 517,
+    "sportType": 2
+  },
+  {
+    "activityId": 20888085821,
+    "date": "2025-11-04",
+    "distance": 2781,
+    "duration": 5105,
+    "elevationGain": 160,
+    "sportType": 17
+  },
+  {
+    "activityId": 20869336240,
+    "date": "2025-11-02",
+    "distance": 5341,
+    "duration": 6989,
+    "elevationGain": 79,
+    "sportType": 17
+  },
+  {
+    "activityId": 20857950381,
+    "date": "2025-11-01",
+    "distance": 8378,
+    "duration": 7864,
+    "elevationGain": 1285,
+    "sportType": 16
+  },
+  {
+    "activityId": 20820429162,
+    "date": "2025-10-28",
+    "distance": 23267,
+    "duration": 3142,
+    "elevationGain": 267,
+    "sportType": 2
+  },
+  {
+    "activityId": 20785635287,
+    "date": "2025-10-24",
+    "distance": 17295,
+    "duration": 2840,
+    "elevationGain": 89,
+    "sportType": 2
+  },
+  {
+    "activityId": 20785180346,
+    "date": "2025-10-24",
+    "distance": 45796,
+    "duration": 7265,
+    "elevationGain": 145,
+    "sportType": 2
+  },
+  {
+    "activityId": 20777964994,
+    "date": "2025-10-23",
+    "distance": 54989,
+    "duration": 8905,
+    "elevationGain": 299,
+    "sportType": 2
+  },
+  {
+    "activityId": 20749277606,
+    "date": "2025-10-20",
+    "distance": 41620,
+    "duration": 6485,
+    "elevationGain": 246,
+    "sportType": 2
+  },
+  {
+    "activityId": 20738643200,
+    "date": "2025-10-19",
+    "distance": 2405,
+    "duration": 4874,
+    "elevationGain": 33,
+    "sportType": 11
+  },
+  {
+    "activityId": 20726069459,
+    "date": "2025-10-18",
+    "distance": 29403,
+    "duration": 4770,
+    "elevationGain": 409,
+    "sportType": 2
+  },
+  {
+    "activityId": 20666213957,
+    "date": "2025-10-12",
+    "distance": 0,
+    "duration": 8858,
+    "elevationGain": 0,
+    "sportType": 31
+  },
+  {
+    "activityId": 20656254175,
+    "date": "2025-10-11",
+    "distance": 7760,
+    "duration": 3522,
+    "elevationGain": 38,
+    "sportType": 2
+  },
+  {
+    "activityId": 20646533516,
+    "date": "2025-10-10",
+    "distance": 35555,
+    "duration": 5118,
+    "elevationGain": 256,
+    "sportType": 2
+  },
+  {
+    "activityId": 20568658294,
+    "date": "2025-10-02",
+    "distance": 33517,
+    "duration": 3747,
+    "elevationGain": 182,
+    "sportType": 2
+  },
+  {
+    "activityId": 20544901739,
+    "date": "2025-09-30",
+    "distance": 31001,
+    "duration": 3623,
+    "elevationGain": 179,
+    "sportType": 2
+  },
+  {
+    "activityId": 20522321290,
+    "date": "2025-09-28",
+    "distance": 8346,
+    "duration": 2820,
+    "elevationGain": 15,
+    "sportType": 1
+  },
+  {
+    "activityId": 20509044843,
+    "date": "2025-09-26",
+    "distance": 27346,
+    "duration": 4037,
+    "elevationGain": 129,
+    "sportType": 2
+  },
+  {
+    "activityId": 20506875824,
+    "date": "2025-09-26",
+    "distance": 9686,
+    "duration": 3420,
+    "elevationGain": 32,
+    "sportType": 1
+  },
+  {
+    "activityId": 20508856197,
+    "date": "2025-09-26",
+    "distance": 26559,
+    "duration": 3539,
+    "elevationGain": 28,
+    "sportType": 2
+  },
+  {
+    "activityId": 20474562147,
+    "date": "2025-09-23",
+    "distance": 15650,
+    "duration": 3268,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 20455843615,
+    "date": "2025-09-21",
+    "distance": 110053,
+    "duration": 20072,
+    "elevationGain": 1804,
+    "sportType": 2
+  },
+  {
+    "activityId": 20451565041,
+    "date": "2025-09-21",
+    "distance": 14324,
+    "duration": 2057,
+    "elevationGain": 131,
+    "sportType": 2
+  },
+  {
+    "activityId": 20445062967,
+    "date": "2025-09-20",
+    "distance": 5647,
+    "duration": 8256,
+    "elevationGain": 466,
+    "sportType": 17
+  },
+  {
+    "activityId": 20436049890,
+    "date": "2025-09-19",
+    "distance": 33744,
+    "duration": 4215,
+    "elevationGain": 260,
+    "sportType": 2
+  },
+  {
+    "activityId": 20416168978,
+    "date": "2025-09-17",
+    "distance": 28189,
+    "duration": 3846,
+    "elevationGain": 89,
+    "sportType": 2
+  },
+  {
+    "activityId": 20384607141,
+    "date": "2025-09-14",
+    "distance": 10008,
+    "duration": 3292,
+    "elevationGain": 69,
+    "sportType": 1
+  },
+  {
+    "activityId": 20365910948,
+    "date": "2025-09-12",
+    "distance": 0,
+    "duration": 6789,
+    "elevationGain": 0,
+    "sportType": 31
+  },
+  {
+    "activityId": 20360451869,
+    "date": "2025-09-12",
+    "distance": 2253,
+    "duration": 2519,
+    "elevationGain": 262,
+    "sportType": 16
+  },
+  {
+    "activityId": 20361343837,
+    "date": "2025-09-12",
+    "distance": 97284,
+    "duration": 14826,
+    "elevationGain": 1317,
+    "sportType": 2
+  },
+  {
+    "activityId": 20329381047,
+    "date": "2025-09-09",
+    "distance": 32227,
+    "duration": 4382,
+    "elevationGain": 561,
+    "sportType": 2
+  },
+  {
+    "activityId": 20306214404,
+    "date": "2025-09-07",
+    "distance": 8319,
+    "duration": 2902,
+    "elevationGain": 24,
+    "sportType": 1
+  },
+  {
+    "activityId": 20285801013,
+    "date": "2025-09-05",
+    "distance": 39356,
+    "duration": 6908,
+    "elevationGain": 622,
+    "sportType": 2
+  },
+  {
+    "activityId": 20253521882,
+    "date": "2025-09-02",
+    "distance": 44955,
+    "duration": 9195,
+    "elevationGain": 1163,
+    "sportType": 2
+  },
+  {
+    "activityId": 20217143038,
+    "date": "2025-08-29",
+    "distance": 5697,
+    "duration": 6706,
+    "elevationGain": 25,
+    "sportType": 17
+  },
+  {
+    "activityId": 20203405018,
+    "date": "2025-08-28",
+    "distance": 26460,
+    "duration": 20699,
+    "elevationGain": 1360,
+    "sportType": 16
+  },
+  {
+    "activityId": 20183824015,
+    "date": "2025-08-26",
+    "distance": 5088,
+    "duration": 6456,
+    "elevationGain": 20,
+    "sportType": 17
+  },
+  {
+    "activityId": 20172307126,
+    "date": "2025-08-25",
+    "distance": 4787,
+    "duration": 7261,
+    "elevationGain": 258,
+    "sportType": 17
+  },
+  {
+    "activityId": 20169651342,
+    "date": "2025-08-25",
+    "distance": 10197,
+    "duration": 14749,
+    "elevationGain": 1390,
+    "sportType": 16
+  },
+  {
+    "activityId": 20165528887,
+    "date": "2025-08-24",
+    "distance": 2765,
+    "duration": 3984,
+    "elevationGain": 54,
+    "sportType": 17
+  },
+  {
+    "activityId": 20147201774,
+    "date": "2025-08-22",
+    "distance": 2634,
+    "duration": 5079,
+    "elevationGain": 80,
+    "sportType": 17
+  },
+  {
+    "activityId": 20108516299,
+    "date": "2025-08-19",
+    "distance": 8728,
+    "duration": 12681,
+    "elevationGain": 629,
+    "sportType": 17
+  },
+  {
+    "activityId": 20096549762,
+    "date": "2025-08-18",
+    "distance": 4258,
+    "duration": 8330,
+    "elevationGain": 200,
+    "sportType": 17
+  },
+  {
+    "activityId": 20063906752,
+    "date": "2025-08-15",
+    "distance": 40038,
+    "duration": 4744,
+    "elevationGain": 133,
+    "sportType": 2
+  },
+  {
+    "activityId": 20063234187,
+    "date": "2025-08-15",
+    "distance": 973,
+    "duration": 1005,
+    "elevationGain": 85,
+    "sportType": 2
+  },
+  {
+    "activityId": 20063105683,
+    "date": "2025-08-15",
+    "distance": 39941,
+    "duration": 6553,
+    "elevationGain": 800,
+    "sportType": 2
+  },
+  {
+    "activityId": 20041746314,
+    "date": "2025-08-13",
+    "distance": 9543,
+    "duration": 3670,
+    "elevationGain": 61,
+    "sportType": 1
+  },
+  {
+    "activityId": 20022432247,
+    "date": "2025-08-11",
+    "distance": 59332,
+    "duration": 18934,
+    "elevationGain": 1542,
+    "sportType": 2
+  },
+  {
+    "activityId": 20016907395,
+    "date": "2025-08-10",
+    "distance": 2485,
+    "duration": 4901,
+    "elevationGain": 249,
+    "sportType": 17
+  },
+  {
+    "activityId": 20016832554,
+    "date": "2025-08-10",
+    "distance": 4682,
+    "duration": 5105,
+    "elevationGain": 644,
+    "sportType": 2
+  },
+  {
+    "activityId": 20016820072,
+    "date": "2025-08-10",
+    "distance": 395,
+    "duration": 546,
+    "elevationGain": 42,
+    "sportType": 17
+  },
+  {
+    "activityId": 20016893296,
+    "date": "2025-08-10",
+    "distance": 23525,
+    "duration": 10893,
+    "elevationGain": 1656,
+    "sportType": 2
+  },
+  {
+    "activityId": 20001981397,
+    "date": "2025-08-09",
+    "distance": 60278,
+    "duration": 12848,
+    "elevationGain": 614,
+    "sportType": 2
+  },
+  {
+    "activityId": 19992864842,
+    "date": "2025-08-08",
+    "distance": 27142,
+    "duration": 15862,
+    "elevationGain": 1840,
+    "sportType": 2
+  },
+  {
+    "activityId": 20001219283,
+    "date": "2025-08-08",
+    "distance": 10361,
+    "duration": 1490,
+    "elevationGain": 50,
+    "sportType": 2
+  },
+  {
+    "activityId": 19957364618,
+    "date": "2025-08-05",
+    "distance": 26445,
+    "duration": 4256,
+    "elevationGain": 303,
+    "sportType": 2
+  },
+  {
+    "activityId": 19932339266,
+    "date": "2025-08-03",
+    "distance": 8772,
+    "duration": 3126,
+    "elevationGain": 22,
+    "sportType": 1
+  },
+  {
+    "activityId": 19904387819,
+    "date": "2025-07-31",
+    "distance": 32239,
+    "duration": 4345,
+    "elevationGain": 564,
+    "sportType": 2
+  },
+  {
+    "activityId": 19896407218,
+    "date": "2025-07-30",
+    "distance": 25006,
+    "duration": 3350,
+    "elevationGain": 96,
+    "sportType": 2
+  },
+  {
+    "activityId": 19882742330,
+    "date": "2025-07-29",
+    "distance": 32260,
+    "duration": 4254,
+    "elevationGain": 562,
+    "sportType": 2
+  },
+  {
+    "activityId": 19862785399,
+    "date": "2025-07-27",
+    "distance": 21110,
+    "duration": 6964,
+    "elevationGain": 75,
+    "sportType": 1
+  },
+  {
+    "activityId": 19832949745,
+    "date": "2025-07-24",
+    "distance": 40887,
+    "duration": 5649,
+    "elevationGain": 487,
+    "sportType": 2
+  },
+  {
+    "activityId": 19795131502,
+    "date": "2025-07-20",
+    "distance": 65642,
+    "duration": 8541,
+    "elevationGain": 438,
+    "sportType": 2
+  },
+  {
+    "activityId": 19775888552,
+    "date": "2025-07-18",
+    "distance": 32452,
+    "duration": 5090,
+    "elevationGain": 151,
+    "sportType": 2
+  },
+  {
+    "activityId": 19768811245,
+    "date": "2025-07-18",
+    "distance": 26591,
+    "duration": 3442,
+    "elevationGain": 59,
+    "sportType": 2
+  },
+  {
+    "activityId": 19760659060,
+    "date": "2025-07-17",
+    "distance": 32258,
+    "duration": 4139,
+    "elevationGain": 545,
+    "sportType": 2
+  },
+  {
+    "activityId": 19739262949,
+    "date": "2025-07-15",
+    "distance": 32330,
+    "duration": 4278,
+    "elevationGain": 559,
+    "sportType": 2
+  },
+  {
+    "activityId": 19708607585,
+    "date": "2025-07-12",
+    "distance": 106209,
+    "duration": 14737,
+    "elevationGain": 1204,
+    "sportType": 2
+  },
+  {
+    "activityId": 19702461024,
+    "date": "2025-07-11",
+    "distance": 27060,
+    "duration": 3869,
+    "elevationGain": 150,
+    "sportType": 2
+  },
+  {
+    "activityId": 19697090793,
+    "date": "2025-07-11",
+    "distance": 27288,
+    "duration": 3559,
+    "elevationGain": 69,
+    "sportType": 2
+  },
+  {
+    "activityId": 19694246666,
+    "date": "2025-07-10",
+    "distance": 49810,
+    "duration": 7355,
+    "elevationGain": 177,
+    "sportType": 2
+  },
+  {
+    "activityId": 19671953961,
+    "date": "2025-07-08",
+    "distance": 0,
+    "duration": 7885,
+    "elevationGain": 0,
+    "sportType": 31
+  },
+  {
+    "activityId": 19667373662,
+    "date": "2025-07-08",
+    "distance": 33377,
+    "duration": 4153,
+    "elevationGain": 126,
+    "sportType": 2
+  },
+  {
+    "activityId": 19645561719,
+    "date": "2025-07-06",
+    "distance": 8795,
+    "duration": 3084,
+    "elevationGain": 25,
+    "sportType": 1
+  },
+  {
+    "activityId": 19637548081,
+    "date": "2025-07-05",
+    "distance": 55282,
+    "duration": 7821,
+    "elevationGain": 868,
+    "sportType": 2
+  },
+  {
+    "activityId": 19618464792,
+    "date": "2025-07-03",
+    "distance": 32225,
+    "duration": 4283,
+    "elevationGain": 496,
+    "sportType": 2
+  },
+  {
+    "activityId": 19601432674,
+    "date": "2025-07-01",
+    "distance": 16907,
+    "duration": 5345,
+    "elevationGain": 164,
+    "sportType": 2
+  },
+  {
+    "activityId": 19598181932,
+    "date": "2025-07-01",
+    "distance": 32237,
+    "duration": 4385,
+    "elevationGain": 486,
+    "sportType": 2
+  },
+  {
+    "activityId": 19579959306,
+    "date": "2025-06-29",
+    "distance": 10370,
+    "duration": 1450,
+    "elevationGain": 39,
+    "sportType": 2
+  },
+  {
+    "activityId": 19578783506,
+    "date": "2025-06-29",
+    "distance": 11460,
+    "duration": 15847,
+    "elevationGain": 1292,
+    "sportType": 16
+  },
+  {
+    "activityId": 19578750098,
+    "date": "2025-06-29",
+    "distance": 10310,
+    "duration": 1527,
+    "elevationGain": 52,
+    "sportType": 2
+  },
+  {
+    "activityId": 19558456203,
+    "date": "2025-06-27",
+    "distance": 75001,
+    "duration": 10416,
+    "elevationGain": 820,
+    "sportType": 2
+  },
+  {
+    "activityId": 19538441520,
+    "date": "2025-06-25",
+    "distance": 44163,
+    "duration": 5961,
+    "elevationGain": 231,
+    "sportType": 2
+  },
+  {
+    "activityId": 19532435573,
+    "date": "2025-06-24",
+    "distance": 8920,
+    "duration": 5549,
+    "elevationGain": 144,
+    "sportType": 2
+  },
+  {
+    "activityId": 19529417527,
+    "date": "2025-06-24",
+    "distance": 32296,
+    "duration": 4779,
+    "elevationGain": 633,
+    "sportType": 2
+  },
+  {
+    "activityId": 19513361040,
+    "date": "2025-06-22",
+    "distance": 39924,
+    "duration": 5452,
+    "elevationGain": 175,
+    "sportType": 2
+  },
+  {
+    "activityId": 19472247941,
+    "date": "2025-06-18",
+    "distance": 33098,
+    "duration": 4077,
+    "elevationGain": 464,
+    "sportType": 2
+  },
+  {
+    "activityId": 19458141112,
+    "date": "2025-06-17",
+    "distance": 33099,
+    "duration": 4206,
+    "elevationGain": 451,
+    "sportType": 2
+  },
+  {
+    "activityId": 19419842629,
+    "date": "2025-06-13",
+    "distance": 38795,
+    "duration": 7191,
+    "elevationGain": 290,
+    "sportType": 2
+  },
+  {
+    "activityId": 19418700048,
+    "date": "2025-06-13",
+    "distance": 3383,
+    "duration": 4554,
+    "elevationGain": 383,
+    "sportType": 16
+  },
+  {
+    "activityId": 19418695857,
+    "date": "2025-06-13",
+    "distance": 50453,
+    "duration": 10414,
+    "elevationGain": 1148,
+    "sportType": 2
+  },
+  {
+    "activityId": 19410417257,
+    "date": "2025-06-12",
+    "distance": 18822,
+    "duration": 2569,
+    "elevationGain": 199,
+    "sportType": 2
+  },
+  {
+    "activityId": 19388018185,
+    "date": "2025-06-10",
+    "distance": 26029,
+    "duration": 3528,
+    "elevationGain": 321,
+    "sportType": 2
+  },
+  {
+    "activityId": 19380626927,
+    "date": "2025-06-09",
+    "distance": 8912,
+    "duration": 12792,
+    "elevationGain": 278,
+    "sportType": 17
+  },
+  {
+    "activityId": 19370550814,
+    "date": "2025-06-08",
+    "distance": 39083,
+    "duration": 5324,
+    "elevationGain": 534,
+    "sportType": 2
+  },
+  {
+    "activityId": 19319272699,
+    "date": "2025-06-03",
+    "distance": 24613,
+    "duration": 3530,
+    "elevationGain": 265,
+    "sportType": 2
+  },
+  {
+    "activityId": 19293095355,
+    "date": "2025-05-31",
+    "distance": 48232,
+    "duration": 14934,
+    "elevationGain": 245,
+    "sportType": 2
+  },
+  {
+    "activityId": 19271134675,
+    "date": "2025-05-29",
+    "distance": 35027,
+    "duration": 13414,
+    "elevationGain": 259,
+    "sportType": 2
+  },
+  {
+    "activityId": 19267546485,
+    "date": "2025-05-29",
+    "distance": 11769,
+    "duration": 5275,
+    "elevationGain": 66,
+    "sportType": 2
+  },
+  {
+    "activityId": 19249436943,
+    "date": "2025-05-27",
+    "distance": 7714,
+    "duration": 2890,
+    "elevationGain": 19,
+    "sportType": 1
+  },
+  {
+    "activityId": 19249315837,
+    "date": "2025-05-26",
+    "distance": 9975,
+    "duration": 1929,
+    "elevationGain": 62,
+    "sportType": 2
+  },
+  {
+    "activityId": 19209877241,
+    "date": "2025-05-23",
+    "distance": 56393,
+    "duration": 7540,
+    "elevationGain": 608,
+    "sportType": 2
+  },
+  {
+    "activityId": 19193108842,
+    "date": "2025-05-21",
+    "distance": 40597,
+    "duration": 5223,
+    "elevationGain": 605,
+    "sportType": 2
+  },
+  {
+    "activityId": 19180769115,
+    "date": "2025-05-20",
+    "distance": 7314,
+    "duration": 8909,
+    "elevationGain": 507,
+    "sportType": 17
+  },
+  {
+    "activityId": 19172760563,
+    "date": "2025-05-19",
+    "distance": 6535,
+    "duration": 9943,
+    "elevationGain": 290,
+    "sportType": 17
+  },
+  {
+    "activityId": 19168087213,
+    "date": "2025-05-19",
+    "distance": 11865,
+    "duration": 8434,
+    "elevationGain": 791,
+    "sportType": 16
+  },
+  {
+    "activityId": 19164920856,
+    "date": "2025-05-18",
+    "distance": 6944,
+    "duration": 13246,
+    "elevationGain": 534,
+    "sportType": 16
+  },
+  {
+    "activityId": 19153015376,
+    "date": "2025-05-17",
+    "distance": 5347,
+    "duration": 9641,
+    "elevationGain": 382,
+    "sportType": 17
+  },
+  {
+    "activityId": 19143114087,
+    "date": "2025-05-16",
+    "distance": 3093,
+    "duration": 5214,
+    "elevationGain": 273,
+    "sportType": 17
+  },
+  {
+    "activityId": 19129552783,
+    "date": "2025-05-15",
+    "distance": 10123,
+    "duration": 1486,
+    "elevationGain": 49,
+    "sportType": 2
+  },
+  {
+    "activityId": 19110904177,
+    "date": "2025-05-13",
+    "distance": 33138,
+    "duration": 4088,
+    "elevationGain": 482,
+    "sportType": 2
+  },
+  {
+    "activityId": 19092206071,
+    "date": "2025-05-11",
+    "distance": 19299,
+    "duration": 8716,
+    "elevationGain": 75,
+    "sportType": 2
+  },
+  {
+    "activityId": 19080562225,
+    "date": "2025-05-10",
+    "distance": 106744,
+    "duration": 14738,
+    "elevationGain": 876,
+    "sportType": 2
+  },
+  {
+    "activityId": 19064633125,
+    "date": "2025-05-08",
+    "distance": 12032,
+    "duration": 1632,
+    "elevationGain": 62,
+    "sportType": 2
+  },
+  {
+    "activityId": 19064627131,
+    "date": "2025-05-08",
+    "distance": 0,
+    "duration": 5256,
+    "elevationGain": 0,
+    "sportType": 31
+  },
+  {
+    "activityId": 19064624805,
+    "date": "2025-05-08",
+    "distance": 11985,
+    "duration": 1466,
+    "elevationGain": 49,
+    "sportType": 2
+  },
+  {
+    "activityId": 19050389290,
+    "date": "2025-05-07",
+    "distance": 33120,
+    "duration": 4394,
+    "elevationGain": 456,
+    "sportType": 2
+  },
+  {
+    "activityId": 19040935157,
+    "date": "2025-05-05",
+    "distance": 10118,
+    "duration": 2007,
+    "elevationGain": 54,
+    "sportType": 2
+  },
+  {
+    "activityId": 19013013363,
+    "date": "2025-05-03",
+    "distance": 6880,
+    "duration": 8304,
+    "elevationGain": 159,
+    "sportType": 17
+  },
+  {
+    "activityId": 19001907389,
+    "date": "2025-05-02",
+    "distance": 4581,
+    "duration": 6212,
+    "elevationGain": 270,
+    "sportType": 17
+  },
+  {
+    "activityId": 18992069048,
+    "date": "2025-05-01",
+    "distance": 10057,
+    "duration": 2778,
+    "elevationGain": 34,
+    "sportType": 2
+  },
+  {
+    "activityId": 18981160403,
+    "date": "2025-04-30",
+    "distance": 33492,
+    "duration": 22028,
+    "elevationGain": 1762,
+    "sportType": 18
+  },
+  {
+    "activityId": 18931345736,
+    "date": "2025-04-25",
+    "distance": 53224,
+    "duration": 7509,
+    "elevationGain": 206,
+    "sportType": 2
+  },
+  {
+    "activityId": 18910879645,
+    "date": "2025-04-23",
+    "distance": 33124,
+    "duration": 4383,
+    "elevationGain": 494,
+    "sportType": 2
+  },
+  {
+    "activityId": 18893761927,
+    "date": "2025-04-21",
+    "distance": 40758,
+    "duration": 5403,
+    "elevationGain": 570,
+    "sportType": 2
+  },
+  {
+    "activityId": 18861684741,
+    "date": "2025-04-18",
+    "distance": 69277,
+    "duration": 9635,
+    "elevationGain": 732,
+    "sportType": 2
+  },
+  {
+    "activityId": 18833788179,
+    "date": "2025-04-15",
+    "distance": 33346,
+    "duration": 3647,
+    "elevationGain": 167,
+    "sportType": 2
+  },
+  {
+    "activityId": 18812667733,
+    "date": "2025-04-13",
+    "distance": 8639,
+    "duration": 3001,
+    "elevationGain": 30,
+    "sportType": 1
+  },
+  {
+    "activityId": 18806511372,
+    "date": "2025-04-12",
+    "distance": 33297,
+    "duration": 4632,
+    "elevationGain": 437,
+    "sportType": 2
+  },
+  {
+    "activityId": 18785912271,
+    "date": "2025-04-10",
+    "distance": 33272,
+    "duration": 4208,
+    "elevationGain": 477,
+    "sportType": 2
+  },
+  {
+    "activityId": 18780201368,
+    "date": "2025-04-09",
+    "distance": 8401,
+    "duration": 2914,
+    "elevationGain": 22,
+    "sportType": 1
+  },
+  {
+    "activityId": 18765962215,
+    "date": "2025-04-08",
+    "distance": 33272,
+    "duration": 4274,
+    "elevationGain": 453,
+    "sportType": 2
+  },
+  {
+    "activityId": 18747128382,
+    "date": "2025-04-06",
+    "distance": 41359,
+    "duration": 5644,
+    "elevationGain": 200,
+    "sportType": 2
+  },
+  {
+    "activityId": 18729059441,
+    "date": "2025-04-04",
+    "distance": 23750,
+    "duration": 22499,
+    "elevationGain": 1623,
+    "sportType": 13
+  },
+  {
+    "activityId": 18708063085,
+    "date": "2025-04-02",
+    "distance": 34509,
+    "duration": 4631,
+    "elevationGain": 470,
+    "sportType": 2
+  },
+  {
+    "activityId": 18680155475,
+    "date": "2025-03-30",
+    "distance": 33085,
+    "duration": 4508,
+    "elevationGain": 471,
+    "sportType": 2
+  },
+  {
+    "activityId": 18661206899,
+    "date": "2025-03-28",
+    "distance": 81058,
+    "duration": 14168,
+    "elevationGain": 1133,
+    "sportType": 18
+  },
+  {
+    "activityId": 18624759913,
+    "date": "2025-03-24",
+    "distance": 29381,
+    "duration": 3894,
+    "elevationGain": 390,
+    "sportType": 2
+  },
+  {
+    "activityId": 18602336146,
+    "date": "2025-03-22",
+    "distance": 44695,
+    "duration": 6495,
+    "elevationGain": 690,
+    "sportType": 2
+  },
+  {
+    "activityId": 18583531335,
+    "date": "2025-03-20",
+    "distance": 27604,
+    "duration": 4324,
+    "elevationGain": 93,
+    "sportType": 2
+  },
+  {
+    "activityId": 18484071220,
+    "date": "2025-03-09",
+    "distance": 8449,
+    "duration": 3236,
+    "elevationGain": 19,
+    "sportType": 2
+  },
+  {
+    "activityId": 18479519546,
+    "date": "2025-03-09",
+    "distance": 9302,
+    "duration": 3281,
+    "elevationGain": 63,
+    "sportType": 1
+  },
+  {
+    "activityId": 18474757693,
+    "date": "2025-03-08",
+    "distance": 4030,
+    "duration": 6636,
+    "elevationGain": 49,
+    "sportType": 17
+  },
+  {
+    "activityId": 18466042081,
+    "date": "2025-03-07",
+    "distance": 9547,
+    "duration": 3622,
+    "elevationGain": 65,
+    "sportType": 1
+  },
+  {
+    "activityId": 18454382150,
+    "date": "2025-03-06",
+    "distance": 29417,
+    "duration": 3675,
+    "elevationGain": 400,
+    "sportType": 2
+  },
+  {
+    "activityId": 18447058208,
+    "date": "2025-03-05",
+    "distance": 10020,
+    "duration": 1859,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18437452222,
+    "date": "2025-03-04",
+    "distance": 14216,
+    "duration": 2028,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18425351497,
+    "date": "2025-03-03",
+    "distance": 44985,
+    "duration": 9582,
+    "elevationGain": 1124,
+    "sportType": 2
+  },
+  {
+    "activityId": 18393058104,
+    "date": "2025-02-27",
+    "distance": 24960,
+    "duration": 3993,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18372337264,
+    "date": "2025-02-25",
+    "distance": 26120,
+    "duration": 3097,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18356712276,
+    "date": "2025-02-23",
+    "distance": 20038,
+    "duration": 23833,
+    "elevationGain": 1237,
+    "sportType": 13
+  },
+  {
+    "activityId": 18356665947,
+    "date": "2025-02-22",
+    "distance": 14868,
+    "duration": 19689,
+    "elevationGain": 1233,
+    "sportType": 13
+  },
+  {
+    "activityId": 18356663771,
+    "date": "2025-02-21",
+    "distance": 10642,
+    "duration": 16584,
+    "elevationGain": 1450,
+    "sportType": 13
+  },
+  {
+    "activityId": 18321323481,
+    "date": "2025-02-19",
+    "distance": 16954,
+    "duration": 1848,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18273554630,
+    "date": "2025-02-14",
+    "distance": 41603,
+    "duration": 4416,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18267911127,
+    "date": "2025-02-13",
+    "distance": 21509,
+    "duration": 2441,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18249939549,
+    "date": "2025-02-11",
+    "distance": 30252,
+    "duration": 4464,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18242600859,
+    "date": "2025-02-10",
+    "distance": 25465,
+    "duration": 3612,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18222430634,
+    "date": "2025-02-08",
+    "distance": 31589,
+    "duration": 4841,
+    "elevationGain": 527,
+    "sportType": 2
+  },
+  {
+    "activityId": 18206738399,
+    "date": "2025-02-06",
+    "distance": 34376,
+    "duration": 3604,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18186620834,
+    "date": "2025-02-04",
+    "distance": 29008,
+    "duration": 3608,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18164891320,
+    "date": "2025-02-02",
+    "distance": 10929,
+    "duration": 3815,
+    "elevationGain": 62,
+    "sportType": 1
+  },
+  {
+    "activityId": 18161099966,
+    "date": "2025-02-01",
+    "distance": 40081,
+    "duration": 4180,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18159600997,
+    "date": "2025-02-01",
+    "distance": 10668,
+    "duration": 4343,
+    "elevationGain": 22,
+    "sportType": 2
+  },
+  {
+    "activityId": 18153787088,
+    "date": "2025-01-31",
+    "distance": 20117,
+    "duration": 2666,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18144324688,
+    "date": "2025-01-30",
+    "distance": 0,
+    "duration": 4380,
+    "elevationGain": 0,
+    "sportType": 31
+  },
+  {
+    "activityId": 18122603095,
+    "date": "2025-01-28",
+    "distance": 26547,
+    "duration": 3090,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18107358241,
+    "date": "2025-01-26",
+    "distance": 11382,
+    "duration": 11688,
+    "elevationGain": 1364,
+    "sportType": 13
+  },
+  {
+    "activityId": 18098677265,
+    "date": "2025-01-25",
+    "distance": 20093,
+    "duration": 21604,
+    "elevationGain": 1832,
+    "sportType": 13
+  },
+  {
+    "activityId": 18090914354,
+    "date": "2025-01-24",
+    "distance": 14207,
+    "duration": 13813,
+    "elevationGain": 1274,
+    "sportType": 13
+  },
+  {
+    "activityId": 18073304877,
+    "date": "2025-01-22",
+    "distance": 13348,
+    "duration": 2424,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 18046031335,
+    "date": "2025-01-19",
+    "distance": 18923,
+    "duration": 18581,
+    "elevationGain": 1394,
+    "sportType": 13
+  },
+  {
+    "activityId": 18031077381,
+    "date": "2025-01-17",
+    "distance": 20011,
+    "duration": 2946,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 17999951486,
+    "date": "2025-01-14",
+    "distance": 32093,
+    "duration": 3501,
+    "elevationGain": 0,
+    "sportType": 2
+  },
+  {
+    "activityId": 17983808386,
+    "date": "2025-01-12",
+    "distance": 12190,
+    "duration": 11010,
+    "elevationGain": 439,
+    "sportType": 17
+  },
+  {
+    "activityId": 17965574085,
+    "date": "2025-01-10",
+    "distance": 11845,
+    "duration": 16360,
+    "elevationGain": 1025,
+    "sportType": 13
+  },
+  {
+    "activityId": 17949355444,
+    "date": "2025-01-08",
+    "distance": 0,
+    "duration": 2003,
+    "elevationGain": 0,
+    "sportType": 4
+  },
+  {
+    "activityId": 17922867642,
+    "date": "2025-01-05",
+    "distance": 10005,
+    "duration": 3595,
+    "elevationGain": 20,
+    "sportType": 1
+  },
+  {
+    "activityId": 17911387088,
+    "date": "2025-01-04",
+    "distance": 1540,
+    "duration": 1885,
+    "elevationGain": 75,
+    "sportType": 17
+  },
+  {
+    "activityId": 17905566066,
+    "date": "2025-01-03",
+    "distance": 0,
+    "duration": 2439,
+    "elevationGain": 0,
+    "sportType": 31
+  },
+  {
+    "activityId": 17904352100,
+    "date": "2025-01-03",
+    "distance": 1516,
+    "duration": 1650,
+    "elevationGain": 86,
+    "sportType": 17
+  },
+  {
+    "activityId": 17889332320,
+    "date": "2025-01-01",
+    "distance": 9558,
+    "duration": 3298,
+    "elevationGain": 65,
+    "sportType": 1
+  }
+]

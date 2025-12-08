@@ -82,7 +82,7 @@ class GarminPythonExecutor(
         Log.i(TAG, "downloadTcxFile took $time")
     }
 
-    fun downloadActivitiesByDate(activitiesDir: File, startDate: String, endDate: String) {
+    fun downloadActivitiesByDate(activitiesDir: File, startDate: String, endDate: String): String {
         if (client == null) {
             login()
         }
@@ -93,6 +93,7 @@ class GarminPythonExecutor(
             "download_activities_by_date", client, activitiesDir.absolutePath, startDate, endDate
         )
         checkOutput(result)
+        return result?.toString() ?: ""
     }
 
     private fun checkOutput(result: PyObject?) {

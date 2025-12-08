@@ -29,4 +29,5 @@ object Utils {
             windowInsets
         }
     }
+
 }

@@ -48,6 +48,7 @@ import de.drtobiasprinz.summitbook.fragments.SummitEntitiesFragment
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.SortFilterValues
+import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.fragment.ForecastFragment
 import de.drtobiasprinz.summitbook.ui.fragment.ShowNewSummitsFromGarminFragment
 import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
@@ -76,8 +77,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     val viewModel: DatabaseViewModel by viewModels()
 
     @Inject
+    lateinit var repository: DatabaseRepository
+
+    @Inject
     lateinit var sortFilterValues: SortFilterValues
-    
+
     private var fullscreenImageViewer: FullscreenImageViewer? = null
     private var useFilteredSummits: Boolean = false
 
@@ -157,6 +161,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     val updater = GarminDataUpdater(
                         sharedPreferences,
                         executor,
+                        repository,
+                        viewModel
                     )
                     lifecycleScope.launch {
                         withContext(Dispatchers.IO) {
@@ -636,14 +642,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 val sortFilterSummits =
                     summits?.let { it1 -> sortFilterValues.apply(it1, sharedPreferences) }
                 val allImages = getAllImages(sortFilterSummits)
-                
+
                 if (fullscreenImageViewer == null) {
                     fullscreenImageViewer = FullscreenImageViewer(this, resources)
                 }
-                
+
                 val currentPosition = fullscreenImageViewer?.currentPosition ?: 0
                 val adjustedPosition = if (allImages.size <= currentPosition) 0 else currentPosition
-                
+
                 if (allImages.isNotEmpty()) {
                     Log.i("MainActivity", "showFullscreenImageViewer")
                     fullscreenImageViewer?.show(allImages, adjustedPosition, sortFilterSummits)

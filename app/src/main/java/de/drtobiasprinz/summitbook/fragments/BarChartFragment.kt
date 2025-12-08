@@ -7,7 +7,10 @@ import android.content.res.Resources
 import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
-import android.view.*
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.ArrayAdapter
@@ -22,7 +25,13 @@ import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.components.MarkerView
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.YAxis
-import com.github.mikephil.charting.data.*
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.data.CombinedData
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
@@ -30,6 +39,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.FragmentBarChartBinding
+import de.drtobiasprinz.summitbook.db.entities.DailyActivityHelper.findDailyActivitySummariesWhichWasNotAddedToSummits
+import de.drtobiasprinz.summitbook.db.entities.DailyActivityHelper.parseAsSummit
+import de.drtobiasprinz.summitbook.db.entities.DailyActivitySummary
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.BarChartXAxisSelector
 import de.drtobiasprinz.summitbook.models.BarChartYAxisSelector
@@ -43,11 +55,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.DateFormatSymbols
 import java.text.ParseException
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.GregorianCalendar
+import java.util.TimeZone
 import java.util.function.Supplier
 import java.util.stream.Stream
 import javax.inject.Inject
 import kotlin.math.floor
+import kotlin.system.measureTimeMillis
 
 @AndroidEntryPoint
 class BarChartFragment : Fragment() {
@@ -59,8 +75,10 @@ class BarChartFragment : Fragment() {
     lateinit var sortFilterValues: SortFilterValues
 
     private var selectedXAxisSpinnerEntry: BarChartXAxisSelector = BarChartXAxisSelector.DateByMonth
-    private var selectedYAxisSpinnerEntry: BarChartYAxisSelector = BarChartYAxisSelector.TotalActivities
-    private var selectedZAxisSpinnerEntry: BarChartZAxisSelector = BarChartZAxisSelector.PerSportGroup
+    private var selectedYAxisSpinnerEntry: BarChartYAxisSelector =
+        BarChartYAxisSelector.TotalActivities
+    private var selectedZAxisSpinnerEntry: BarChartZAxisSelector =
+        BarChartZAxisSelector.PerSportGroup
     private var indoorHeightMeterPercent = 0
     private var selectedXAxisSpinnerMonth: Int = 0
     private var barChartEntries: MutableList<BarEntry?> = mutableListOf()
@@ -71,6 +89,7 @@ class BarChartFragment : Fragment() {
     private var minDate: Date = Date()
     private var xValuesForecast: List<Float> = mutableListOf()
     private var yValuesForecast: List<Int> = mutableListOf()
+    private var filteredDailyActivitySummaries: List<DailyActivitySummary> = mutableListOf()
 
     private lateinit var sharedPreferences: SharedPreferences
 
@@ -85,13 +104,33 @@ class BarChartFragment : Fragment() {
         indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
         fillDateSpinner()
         binding.apply {
-            viewModel.summitsList.observe(viewLifecycleOwner) { itData ->
-                itData.data?.let { summits ->
-                    if (summits.isNotEmpty()) {
-                        update(summits)
-                    } else {
-                        binding.loading.visibility = View.GONE
-                        binding.barChart.visibility = View.GONE
+            viewModel.summitsList.value?.data?.let { summits ->
+                viewModel.dailyActivitySummary.value?.data?.let { dailyActivitySummary ->
+                    includeFilteredDailyActivitySummaries.text =
+                        getString(R.string.include_not_persisted_activities)
+                    includeFilteredDailyActivitySummaries.setOnCheckedChangeListener { _, isChecked ->
+                        if (summits.isNotEmpty()) {
+                            update(summits, isChecked, dailyActivitySummary)
+                        }
+                    }
+                }
+            }
+
+            viewModel.dailyActivitySummary.observe(viewLifecycleOwner) { dailyActivitySummariesListData ->
+                dailyActivitySummariesListData.data?.let { dailyActivitySummaries ->
+                    viewModel.summitsList.observe(viewLifecycleOwner) { summitsListData ->
+                        summitsListData.data?.let { summits ->
+                            if (summits.isNotEmpty()) {
+                                update(
+                                    summits,
+                                    includeFilteredDailyActivitySummaries.isChecked,
+                                    dailyActivitySummaries
+                                )
+                            } else {
+                                binding.loading.visibility = View.GONE
+                                binding.barChart.visibility = View.GONE
+                            }
+                        }
                     }
                 }
             }
@@ -219,10 +258,32 @@ class BarChartFragment : Fragment() {
         }
     }
 
-    fun update(summits: List<Summit>) {
+    fun update(
+        summits: List<Summit>,
+        isChecked: Boolean,
+        dailyActivitySummaries: List<DailyActivitySummary>
+    ) {
         lifecycleScope.launch {
             val filteredSummits = withContext(Dispatchers.IO) {
-                sortFilterValues.apply(summits, sharedPreferences)
+                val filteredSummits = sortFilterValues.apply(summits, sharedPreferences)
+                val summitsToDisplay = if (isChecked) {
+                    val time = measureTimeMillis {
+                        filteredDailyActivitySummaries =
+                            findDailyActivitySummariesWhichWasNotAddedToSummits(
+                                dailyActivitySummaries,
+                                filteredSummits
+                            )
+                    }
+                    Log.i("BarChartFragment", "filteredDailyActivitySummaries took $time")
+                    filteredSummits + sortFilterValues.apply(
+                        parseAsSummit(
+                            filteredDailyActivitySummaries
+                        ), sharedPreferences
+                    )
+                } else {
+                    filteredSummits
+                }
+                summitsToDisplay
             }
             binding.loading.visibility = View.GONE
             binding.barChart.visibility = View.VISIBLE
@@ -249,11 +310,11 @@ class BarChartFragment : Fragment() {
         dataSet.stackLabels = selectedZAxisSpinnerEntry.getStackLabels(requireContext())
     }
 
-    private fun setGraphViewLineChart(dataSet: LineDataSet) {
+    private fun setGraphViewLineChart(dataSet: LineDataSet, color: Int = Color.DKGRAY) {
         dataSet.setDrawValues(false)
         dataSet.setDrawCircles(false)
         dataSet.isHighlightEnabled = false
-        dataSet.color = Color.DKGRAY
+        dataSet.color = color
         dataSet.circleHoleColor = Color.RED
         dataSet.highLightColor = Color.RED
         dataSet.lineWidth = 2f
@@ -327,7 +388,11 @@ class BarChartFragment : Fragment() {
                 )
             }
             val xValue = annotation[i]
-            val yValues = selectedZAxisSpinnerEntry.getValueForEntry(streamSupplier, selectedYAxisSpinnerEntry, indoorHeightMeterPercent)
+            val yValues = selectedZAxisSpinnerEntry.getValueForEntry(
+                streamSupplier,
+                selectedYAxisSpinnerEntry,
+                indoorHeightMeterPercent
+            )
             barChartEntries.add(BarEntry(xValue, yValues))
         }
     }
@@ -352,7 +417,7 @@ class BarChartFragment : Fragment() {
                             val shouldAddThisMonth =
                                 selectedXAxisSpinnerEntry != BarChartXAxisSelector.DateByYear || selectedXAxisSpinnerMonth == 0 || selectedXAxisSpinnerMonth == forecast.month
                             if (date != null && date in range && shouldAddThisMonth) {
-                                selectedYAxisSpinnerEntry.getForecastValue(forecast)?.toInt()?: 0
+                                selectedYAxisSpinnerEntry.getForecastValue(forecast)?.toInt() ?: 0
                             } else {
                                 0
                             }
@@ -520,7 +585,7 @@ class BarChartFragment : Fragment() {
                             ) {
                                 String.format(
                                     "%s%s\n%s\n%s: %s%s",
-                                    e.getY().toInt(),
+                                    e.y.toInt(),
                                     unitString,
                                     value,
                                     getString(R.string.forecast_abbr),
@@ -528,13 +593,13 @@ class BarChartFragment : Fragment() {
                                     unitString
                                 )
                             } else {
-                                String.format("%s%s\n%s", e.getY().toInt(), unitString, value)
+                                String.format("%s%s\n%s", e.y.toInt(), unitString, value)
                             }
                     } else {
                         tvContent?.text = String.format(
                             "%s/%s%s\n%s\n%s",
                             selectedValue,
-                            e.getY().toInt(),
+                            e.y.toInt(),
                             unitString,
                             value,
                             getString(

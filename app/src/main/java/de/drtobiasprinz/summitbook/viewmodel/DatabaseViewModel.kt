@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.drtobiasprinz.summitbook.db.entities.DailyActivitySummary
 import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
@@ -56,6 +57,10 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val entityEvents: LiveData<List<EntityEvent>>
         get() = _entityEvents
 
+    private val _dailyActivitySummaryList = MutableLiveData<DataStatus<List<DailyActivitySummary>>>()
+    val dailyActivitySummary: LiveData<DataStatus<List<DailyActivitySummary>>>
+        get() = _dailyActivitySummaryList
+
     init {
         getAllSummits()
         getAllBookmarks()
@@ -64,6 +69,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         getAllIgnoredActivities()
         getPeaks()
         getAllEntityEvent()
+        getAllDailyActivitySummaries()
     }
 
     fun refresh() {
@@ -212,6 +218,17 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         repository.getEntityEvents().collect {
             _entityEvents.postValue(it)
         }
+    }
+
+    fun getAllDailyActivitySummaries() = viewModelScope.launch {
+        _dailyActivitySummaryList.postValue(DataStatus.loading())
+        repository.getAllDailyActivitySummary()
+            .catch { _dailyActivitySummaryList.postValue(DataStatus.error(it.message.toString())) }
+            .collect { _dailyActivitySummaryList.postValue(DataStatus.success(it, it.isEmpty())) }
+    }
+
+    fun saveActivitySummary(entity: DailyActivitySummary) = viewModelScope.launch {
+        repository.saveDailyActivitySummary(entity)
     }
 
 }

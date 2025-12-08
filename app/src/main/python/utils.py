@@ -2,7 +2,7 @@ import datetime
 import math
 import re
 from pathlib import Path
-from typing import Tuple, List
+from typing import Tuple, List, Any
 
 import gpxpy
 import yaml
@@ -237,3 +237,14 @@ def remove_extensions(point: GPXTrackPoint, last_point: GPXTrackPoint) -> GPXTra
     point.extensions = []
     correct_time(point, last_point)
     return point
+
+
+def get_base_information_of_activities(activities: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [{
+        "date": entry["startTimeLocal"][0:10] if "startTimeLocal" in entry and len(entry["startTimeLocal"]) > 10 else "-",
+        "activityId": entry["activityId"] if "activityId" in entry else "-",
+        "sportType": entry["activityType"]["typeId"] if "activityType" in entry and "typeId" in entry["activityType"] else 0,
+        "duration": round(entry["duration"]) if "duration" in entry else 0,
+        "distance": round(entry["distance"]) if "distance" in entry else 0,
+        "elevationGain": round(entry["elevationGain"]) if "elevationGain" in entry else 0,
+    } for entry in activities]

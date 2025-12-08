@@ -45,7 +45,8 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
             dao.forecastDao(),
             dao.ignoredActivityDao(),
             dao.entityEventDao(),
-            dao.peakDao()
+            dao.peakDao(),
+            dao.dailyActivitySummaryDao()
         )
         repository.getAllSummitsLiveData().observeForever { summits ->
             updateAllWidgets(
