@@ -205,6 +205,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     "Connecting to third party provider failed. Please try again later. Error: ${e.message}",
                     Toast.LENGTH_LONG
                 ).show()
+                Log.e("MainActivity", "Connecting to third party provider failed. Please try again later. Error: ${e.message}", e)
             }
             downloader.updateFinalEntry(viewModel)
             binding.loading.visibility = View.GONE

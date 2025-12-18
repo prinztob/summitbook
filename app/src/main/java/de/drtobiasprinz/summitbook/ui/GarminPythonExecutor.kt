@@ -48,7 +48,11 @@ class GarminPythonExecutor(
         val result = pythonModule?.callAttr("get_vo2max", client, dateAsString)
         Log.i(TAG, "vo2max result $result")
         checkOutput(result)
-        return result?.toFloat() ?: 0f
+        return try {
+            result?.toFloat() ?: 0f
+        } catch (_: Exception) {
+            0f
+        }
     }
 
     fun downloadGpxFile(garminActivityId: String, downloadPath: String) {
