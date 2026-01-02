@@ -288,7 +288,7 @@ class OverviewFragment : Fragment() {
                 minMax =
                     performanceGraphProvider.getActualGraphMinMaxForSummits(graphType, year, month)
             }
-            if (chartEntries.isNotEmpty()) {
+            if (chartEntries.isNotEmpty() || chartEntriesForecast.isNotEmpty()) {
                 updateLineChart(
                     month, chartEntries, lineChart, graphType, year, minMax, chartEntriesForecast
                 )
@@ -308,7 +308,7 @@ class OverviewFragment : Fragment() {
         chartEntriesForecast: List<Entry>
     ) {
         var chartEntries1 = chartEntries
-        if (month == null) {
+        if (month == null && chartEntries1.isNotEmpty()) {
             lastChartEntry = chartEntries1.last()
         }
         lineChart.invalidate()
