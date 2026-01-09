@@ -75,12 +75,12 @@ class GpxPyExecutor(private var pythonInstance: Python) {
         checkOutput(result)
     }
 
-    fun removeExtensionsFromGpxTracks(inputGpxTrackFile: File, outputGpxTrackFile: File) {
+    fun removeExtensionsFromGpxTracks(gpxTrackFile: File) {
         pythonModule = pythonInstance.getModule("entry_point")
         val result = pythonModule.callAttr(
             "remove_extensions_from_gpx_track",
-            inputGpxTrackFile.absolutePath,
-            outputGpxTrackFile.absolutePath
+            gpxTrackFile.absolutePath,
+            gpxTrackFile.absolutePath
         )
         checkOutput(result)
     }
