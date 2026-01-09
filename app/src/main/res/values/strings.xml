@@ -146,10 +146,11 @@
         <item>Custom</item>
     </string-array>
 
-    <string name="tab_text_0">Data</string>
-    <string name="tab_text_1">Thirdparty Data</string>
+    <string name="tab_text_0">Base Data</string>
+    <string name="tab_text_1">External Data</string>
     <string name="tab_text_2">Images</string>
-    <string name="tab_text_3">Map and height profile</string>
+    <string name="tab_text_3">Map</string>
+    <string name="tab_text_4">Power</string>
 
     <string name="bar_charts">Bar Charts</string>
     <string name="summit_image">Summit image</string>
@@ -329,13 +330,12 @@
     <string name="vigorous_intensity_minutes">vigorous intensity minutes</string>
     <string name="vo2Max">Vo2Max</string>
     <string name="ftp">FTP</string>
-    <string name="tab_text_4">Power meter profile</string>
     <string name="more_cycling_dynamics">More Cycling Dynamics</string>
-    <string name="less_cycling_dynamics">Less Cycling Dynamics</string>
+    <string name="less_cycling_dynamics">Close Cycling Dynamics</string>
     <string name="more_speed">More Speed Data</string>
-    <string name="less_speed">Less Speed Data</string>
+    <string name="less_speed">Close Speed Data</string>
     <string name="more">More Data Fields</string>
-    <string name="less">Less Data Fields</string>
+    <string name="less">Close Data Fields</string>
     <string name="more_performance">Update Performance data</string>
     <string name="less_performance">Close Performance Data</string>
     <string name="watt">W</string>
@@ -585,4 +585,5 @@
     <string name="bulk_update_progress_message">Processing %1$d of %2$d files…</string>
     <string name="bulk_update_complete">Bulk update complete: %1$d successful, %2$d failed</string>
     <string name="road_type_country_road">not used anymore</string>
+    <string name="time_interval">Interval</string>
 </resources>

@@ -44,7 +44,7 @@
         </activity>
 
         <activity android:name=".AddImagesActivity" />
-        <activity android:name=".SummitEntryDetailsActivity" />
+        <activity android:name=".SummitEntryDetailsComposeActivity" />
         <activity android:name=".SelectOnOsMapActivity" />
         <activity android:name=".PythonActivity" />
 
@@ -57,16 +57,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths" />
         </provider>
-
-
-        <activity
-            android:name=".SettingsActivity"
-            android:label="@string/action_settings"
-            android:parentActivityName=".ui.MainActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value=".ui.MainActivity" />
-        </activity>
 
         <activity
             android:name=".ReceiverActivity"

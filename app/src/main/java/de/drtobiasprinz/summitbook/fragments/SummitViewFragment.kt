@@ -34,6 +34,7 @@ import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.updateOfTracksStarted
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.ui.observeOnce
+import de.drtobiasprinz.summitbook.ui.utils.TimeIntervalPower
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer

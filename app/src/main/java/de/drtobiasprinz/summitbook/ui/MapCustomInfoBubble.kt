@@ -5,7 +5,7 @@ import android.content.Intent
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
+import de.drtobiasprinz.summitbook.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
@@ -69,10 +69,10 @@ class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Con
 
     private fun startIntent() {
         try {
-            val intent = Intent(context, SummitEntryDetailsActivity::class.java)
+            val intent = Intent(context, SummitEntryDetailsComposeActivity::class.java)
             intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, entry.id)
             context.startActivity(intent)
-        } catch (e: NullPointerException) {
+        } catch (_: NullPointerException) {
             // DO NOTHING
         }
     }

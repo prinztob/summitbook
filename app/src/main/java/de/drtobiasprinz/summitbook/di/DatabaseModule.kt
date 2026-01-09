@@ -1,6 +1,8 @@
 package de.drtobiasprinz.summitbook.di
 
 import android.content.Context
+import android.content.SharedPreferences
+import androidx.preference.PreferenceManager
 import androidx.room.Room
 import dagger.Module
 import dagger.Provides
@@ -62,5 +64,11 @@ object DatabaseModule {
 
     @Provides
     fun provideEntity() = Summit()
+
+    @Provides
+    @Singleton
+    fun provideSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+    }
 
 }

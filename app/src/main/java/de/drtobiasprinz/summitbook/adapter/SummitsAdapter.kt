@@ -21,7 +21,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import de.drtobiasprinz.summitbook.AddImagesActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
-import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
+import de.drtobiasprinz.summitbook.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.databinding.CardSummitBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.MainActivity
@@ -118,7 +118,7 @@ class SummitsAdapter :
                 }
                 root.setOnClickListener { v: View? ->
                     val context = v?.context
-                    val intent = Intent(context, SummitEntryDetailsActivity::class.java)
+                    val intent = Intent(context, SummitEntryDetailsComposeActivity::class.java)
                     intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, entity.id)
                     v?.context?.startActivity(intent)
                 }
