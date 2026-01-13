@@ -150,10 +150,11 @@
         <item>Benutzerdefiniert</item>
     </string-array>
 
-    <string name="tab_text_0">Daten</string>
-    <string name="tab_text_1">Drittanbieter Daten</string>
+    <string name="tab_text_0">Basics</string>
+    <string name="tab_text_1">Mehr</string>
     <string name="tab_text_2">Bilder</string>
-    <string name="tab_text_3">Karte und Höhenprofil</string>
+    <string name="tab_text_3">Karte</string>
+    <string name="tab_text_4">Leistung</string>
 
     <string name="bar_charts">Balkendiagramm</string>
     <string name="summit_image">Gipfelbild</string>
@@ -331,13 +332,12 @@
     <string name="vigorous_intensity_minutes">Hohe Intensitätsminuten</string>
     <string name="vo2Max">Vo2max</string>
     <string name="ftp">FTP</string>
-    <string name="tab_text_4">Leistungsprofil</string>
     <string name="more">Mehr Datenfelder</string>
-    <string name="less">Weniger Datenfelder</string>
+    <string name="less">Datenfelder schließen</string>
     <string name="more_cycling_dynamics">Mehr Cycling Dynamics</string>
-    <string name="less_cycling_dynamics">Weniger Cycling Dynamics</string>
+    <string name="less_cycling_dynamics">Cycling Dynamics schließen</string>
     <string name="more_speed">Mehr Geschw.daten</string>
-    <string name="less_speed">Weniger Geschw.daten</string>
+    <string name="less_speed">Geschw.daten schließen</string>
     <string name="more_performance">Leistunsgdaten öffnen</string>
     <string name="less_performance">Leistunsgdaten schließen</string>
     <string name="watt">W</string>
@@ -586,5 +586,6 @@
     <string name="bulk_update_progress_message">Verarbeite %1$d von %2$d Dateien…</string>
     <string name="bulk_update_complete">Massenaktualisierung abgeschlossen: %1$d erfolgreich, %2$d fehlgeschlagen</string>
     <string name="road_type_country_road">not used anymore</string>
+    <string name="time_interval">Interval</string>
 </resources>
 

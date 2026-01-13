@@ -43,7 +43,6 @@ import de.drtobiasprinz.summitbook.fragments.OverviewFragment
 import de.drtobiasprinz.summitbook.fragments.SegmentsViewFragment
 import de.drtobiasprinz.summitbook.fragments.SettingsFragment
 import de.drtobiasprinz.summitbook.fragments.SortAndFilterFragment
-import de.drtobiasprinz.summitbook.fragments.StatisticsFragment
 import de.drtobiasprinz.summitbook.fragments.SummitEntitiesFragment
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.Poster
@@ -355,7 +354,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             R.id.nav_statistics -> {
-                commitFragment(StatisticsFragment())
+                commitFragment(de.drtobiasprinz.summitbook.fragments.StatisticsComposeFragment())
             }
 
             R.id.nav_diagrams -> {
