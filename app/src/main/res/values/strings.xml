@@ -338,6 +338,13 @@
     <string name="less">Close Data Fields</string>
     <string name="more_performance">Update Performance data</string>
     <string name="less_performance">Close Performance Data</string>
+    <string name="elevation_and_speed">Elevation and Speed</string>
+    <string name="comments">Comments</string>
+    <string name="general_metrics">General Metrics</string>
+    <string name="power_metrics">Power Metrics</string>
+    <string name="short_intervals">Short Intervals (1s-30s)</string>
+    <string name="medium_intervals">Medium Intervals (1min-10min)</string>
+    <string name="long_intervals">Long Intervals (20min-5h)</string>
     <string name="watt">W</string>
     <string name="degree">°</string>
     <string name="value_with_watt">%1$s W</string>

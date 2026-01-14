@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.fragments
 
+import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import android.icu.util.Calendar
 import android.os.Bundle
@@ -8,20 +9,39 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.chaquo.python.Python
-import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
-import de.drtobiasprinz.summitbook.databinding.FragmentSummitViewBinding
 import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -32,24 +52,23 @@ import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.allSummits
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.peaks
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.updateOfTracksStarted
-import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
+import de.drtobiasprinz.summitbook.ui.compose.AddSummitDialogCompose
+import de.drtobiasprinz.summitbook.ui.compose.SummitsListScreen
 import de.drtobiasprinz.summitbook.ui.observeOnce
-import de.drtobiasprinz.summitbook.utils.Constants
+import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
-import de.drtobiasprinz.summitbook.utils.isVisible
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class SummitViewFragment : Fragment() {
-
-    @Inject
-    lateinit var summitsAdapter: SummitsAdapter
-    private lateinit var binding: FragmentSummitViewBinding
 
     @Inject
     lateinit var sortFilterValues: SortFilterValues
@@ -59,12 +78,120 @@ class SummitViewFragment : Fragment() {
 
     var showBookmarksOnly = false
 
+    // State flows for Compose UI
+    private val _summitsState = MutableStateFlow<List<Summit>>(emptyList())
+    private val summitsState: StateFlow<List<Summit>> = _summitsState.asStateFlow()
+
+    private val _isLoadingState = MutableStateFlow(false)
+    private val isLoadingState: StateFlow<Boolean> = _isLoadingState.asStateFlow()
+
+    private val _isEmptyState = MutableStateFlow(false)
+    private val isEmptyState: StateFlow<Boolean> = _isEmptyState.asStateFlow()
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        binding = FragmentSummitViewBinding.inflate(layoutInflater, container, false)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        return binding.root
+
+        return ComposeView(requireContext()).apply {
+            setContent {
+                SummitBookTheme {
+                    SummitViewScreen()
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun SummitViewScreen() {
+        val summits by summitsState.collectAsState()
+        val isLoading by isLoadingState.collectAsState()
+        val isEmpty by isEmptyState.collectAsState()
+        val snackbarHostState = remember { SnackbarHostState() }
+        val coroutineScope = rememberCoroutineScope()
+        var showAddDialog by remember { mutableStateOf(false) }
+
+        @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+        Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { showAddDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            id = if (showBookmarksOnly) {
+                                R.drawable.baseline_bookmark_add_black_24dp
+                            } else {
+                                R.drawable.baseline_add_photo_alternate_black_24dp
+                            }
+                        ),
+                        contentDescription = stringResource(R.string.add_new_summit),
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            },
+            contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
+        ) { padding ->
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when {
+                    isLoading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(150.dp)
+                                .align(Alignment.Center)
+                        )
+                    }
+
+                    isEmpty -> {
+                        EmptyListView(
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+
+                    else -> {
+                        SummitsListScreen(
+                            summits = summits,
+                            isBookmark = showBookmarksOnly,
+                            onUpdateIsFavorite = { summit ->
+                                adapterOnClickUpdateIsFavorite(summit)
+                            },
+                            onUpdateIsPeak = { summit ->
+                                adapterOnClickUpdateIsPeak(summit)
+                            },
+                            onDelete = { summit ->
+                                adapterOnClickDelete(summit, snackbarHostState, coroutineScope)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        
+        // Add Summit Dialog
+        if (showAddDialog) {
+            AddSummitDialogCompose(
+                summitId = 0L,
+                isBookmark = showBookmarksOnly,
+                onDismiss = { showAddDialog = false }
+            )
+        }
+    }
+
+    @Composable
+    private fun EmptyListView(modifier: Modifier = Modifier) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(R.string.empty),
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
     }
 
     private fun adapterOnClickUpdateIsFavorite(summit: Summit) {
@@ -83,128 +210,87 @@ class SummitViewFragment : Fragment() {
         }
     }
 
-    private fun adapterOnClickDelete(summit: Summit) {
+    private fun adapterOnClickDelete(
+        summit: Summit,
+        snackbarHostState: SnackbarHostState,
+        coroutineScope: kotlinx.coroutines.CoroutineScope
+    ) {
         viewModel?.deleteSummit(summit)
-        Snackbar.make(
-            binding.root,
-            String.format(getString(R.string.delete_entry_done), summit.name),
-            Snackbar.LENGTH_LONG
-        ).apply {
-            setAction(getString(R.string.delete_undo)) {
+        coroutineScope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = String.format(getString(R.string.delete_entry_done), summit.name),
+                actionLabel = getString(R.string.delete_undo)
+            )
+            if (result == SnackbarResult.ActionPerformed) {
                 viewModel?.saveSummit(false, summit)
             }
-        }.show()
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.apply {
-            if (showBookmarksOnly) {
-                btnShowDialog.setImageResource(R.drawable.baseline_bookmark_add_black_24dp)
-            } else {
-                btnShowDialog.setImageResource(R.drawable.baseline_add_photo_alternate_black_24dp)
-            }
-            btnShowDialog.setOnClickListener {
-                startAddSummitDialog(null)
-            }
-            recyclerView.apply {
-                layoutManager = LinearLayoutManager(requireContext())
-                adapter = summitsAdapter
-                summitsAdapter.onClickDelete = { e -> adapterOnClickDelete(e) }
-                summitsAdapter.onClickUpdateIsFavorite = { e -> adapterOnClickUpdateIsFavorite(e) }
-                summitsAdapter.onClickUpdateIsPeak = { e -> adapterOnClickUpdateIsPeak(e) }
-                summitsAdapter.isBookmark = showBookmarksOnly
-            }
-            if (showBookmarksOnly) {
-                viewModel?.getAllBookmarks()
-                viewModel?.bookmarksList?.observe(viewLifecycleOwner) {
-                    when (it.status) {
-                        DataStatus.Status.LOADING -> {
-                            loading.isVisible(true, recyclerView)
-                            emptyBody.isVisible(false, recyclerView)
-                        }
+        observeSummitsData()
+    }
 
-                        DataStatus.Status.SUCCESS -> {
-                            it.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
-                            loading.isVisible(false, recyclerView)
-                            val data = sortFilterValues.applyForBookmarks(it.data ?: emptyList())
-                            summitsAdapter.differ.submitList(data)
-                        }
+    private fun observeSummitsData() {
+        if (showBookmarksOnly) {
+            viewModel?.getAllBookmarks()
+            viewModel?.bookmarksList?.observe(viewLifecycleOwner) {
+                when (it.status) {
+                    DataStatus.Status.LOADING -> {
+                        _isLoadingState.value = true
+                        _isEmptyState.value = false
+                    }
 
-                        DataStatus.Status.ERROR -> {
-                            loading.isVisible(false, recyclerView)
-                            Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
-                        }
+                    DataStatus.Status.SUCCESS -> {
+                        _isLoadingState.value = false
+                        _isEmptyState.value = it.isEmpty ?: false
+                        val data = sortFilterValues.applyForBookmarks(it.data ?: emptyList())
+                        _summitsState.value = data
+                    }
+
+                    DataStatus.Status.ERROR -> {
+                        _isLoadingState.value = false
+                        Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
                     }
                 }
-            } else {
-                viewModel?.summitsList?.observe(viewLifecycleOwner) { summitsStatus ->
-                    when (summitsStatus.status) {
-                        DataStatus.Status.LOADING -> {
-                            loading.isVisible(true, recyclerView)
-                            emptyBody.isVisible(false, recyclerView)
-                        }
+            }
+        } else {
+            viewModel?.summitsList?.observe(viewLifecycleOwner) { summitsStatus ->
+                when (summitsStatus.status) {
+                    DataStatus.Status.LOADING -> {
+                        _isLoadingState.value = true
+                        _isEmptyState.value = false
+                    }
 
-                        DataStatus.Status.SUCCESS -> {
-                            summitsStatus.isEmpty?.let { isEmpty -> showEmpty(isEmpty) }
-                            loading.isVisible(false, recyclerView)
-                            allSummits = summitsStatus.data ?: emptyList()
-                            val data = sortFilterValues.apply(
-                                summitsStatus.data ?: emptyList(), sharedPreferences
-                            )
-                            summitsAdapter.differ.submitList(data)
-                            if (!sharedPreferences.getBoolean(Keys.PREF_DEBUG, false)) {
-                                setRecordsOnce(summitsStatus.data ?: emptyList(), data)
-                                if (!updateOfTracksStarted && summitsStatus.data != null) {
-                                    lifecycleScope.launch {
-                                        withContext(Dispatchers.IO) {
-                                            updateTracks(summitsStatus.data)
-                                        }
+                    DataStatus.Status.SUCCESS -> {
+                        _isLoadingState.value = false
+                        _isEmptyState.value = summitsStatus.isEmpty ?: false
+                        allSummits = summitsStatus.data ?: emptyList()
+                        val data = sortFilterValues.apply(
+                            summitsStatus.data ?: emptyList(), sharedPreferences
+                        )
+                        _summitsState.value = data
+                        if (!sharedPreferences.getBoolean(Keys.PREF_DEBUG, false)) {
+                            setRecordsOnce(summitsStatus.data ?: emptyList(), data)
+                            if (!updateOfTracksStarted && summitsStatus.data != null) {
+                                lifecycleScope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        updateTracks(summitsStatus.data)
                                     }
                                 }
                             }
-                            convertPeaks(summitsStatus.data)
                         }
+                        convertPeaks(summitsStatus.data)
+                    }
 
-                        DataStatus.Status.ERROR -> {
-                            loading.isVisible(false, recyclerView)
-                            Toast.makeText(context, summitsStatus.message, Toast.LENGTH_SHORT)
-                                .show()
-                        }
+                    DataStatus.Status.ERROR -> {
+                        _isLoadingState.value = false
+                        Toast.makeText(context, summitsStatus.message, Toast.LENGTH_SHORT)
+                            .show()
                     }
                 }
             }
-
-
-            val swipeCallback = object :
-                ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
-                override fun onMove(
-                    recyclerView: RecyclerView,
-                    viewHolder: RecyclerView.ViewHolder,
-                    target: RecyclerView.ViewHolder
-                ): Boolean {
-                    return false
-                }
-
-                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                    val position = viewHolder.absoluteAdapterPosition
-                    val summit = summitsAdapter.differ.currentList[position]
-                    when (direction) {
-                        ItemTouchHelper.LEFT -> {
-                            startAddSummitDialog(summit)
-                        }
-
-                        ItemTouchHelper.RIGHT -> {
-                            startAddSummitDialog(summit)
-                        }
-                    }
-                }
-
-            }
-
-            val itemTouchHelper = ItemTouchHelper(swipeCallback)
-            itemTouchHelper.attachToRecyclerView(recyclerView)
-
         }
     }
 
@@ -399,32 +485,6 @@ class SummitViewFragment : Fragment() {
             }
         } else {
             Log.i(TAG, "asyncSimplifyGpsTracks - No more gpx tracks to simplify.")
-        }
-    }
-
-    private fun startAddSummitDialog(summit: Summit?) {
-        val addSummitDialog = AddSummitDialog()
-        if (summit != null) {
-            val bundle = Bundle()
-            bundle.putLong(Constants.BUNDLE_ID, summit.id)
-            addSummitDialog.arguments = bundle
-        }
-        addSummitDialog.isBookmark = showBookmarksOnly
-        addSummitDialog.show(
-            requireActivity().supportFragmentManager, AddSummitDialog().tag
-        )
-    }
-
-
-    private fun showEmpty(isShown: Boolean) {
-        binding.apply {
-            if (isShown) {
-                emptyBody.visibility = View.VISIBLE
-                recyclerView.visibility = View.GONE
-            } else {
-                emptyBody.visibility = View.GONE
-                recyclerView.visibility = View.VISIBLE
-            }
         }
     }
 

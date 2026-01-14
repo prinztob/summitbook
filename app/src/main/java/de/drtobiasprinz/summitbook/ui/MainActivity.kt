@@ -411,7 +411,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     fun showNewSummitsDialog(selectedDate: Date? = null) {
         val fragment = ShowNewSummitsFromGarminFragment()
         fragment.summits =
-            allSummits.ifEmpty { summitViewFragment.summitsAdapter.differ.currentList }
+            allSummits
         fragment.selectedDate = selectedDate
         fragment.save = { summits, isMerge ->
             binding.loading.visibility = View.VISIBLE

@@ -340,6 +340,13 @@
     <string name="less_speed">Geschw.daten schließen</string>
     <string name="more_performance">Leistunsgdaten öffnen</string>
     <string name="less_performance">Leistunsgdaten schließen</string>
+    <string name="elevation_and_speed">Höhe und Geschwindigkeit</string>
+    <string name="comments">Kommentare</string>
+    <string name="general_metrics">Generelle Metriken</string>
+    <string name="power_metrics">Powermetriken</string>
+    <string name="short_intervals">Kurze Intervalle (1s-30s)</string>
+    <string name="medium_intervals">Mittlere Intervalle (1min-10min)</string>
+    <string name="long_intervals">Lange Intervalle (20min-5h)</string>
     <string name="watt">W</string>
     <string name="degree">°</string>
     <string name="value_with_watt">%1$s W</string>

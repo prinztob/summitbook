@@ -21,7 +21,6 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.yalantis.ucrop.UCrop
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.ActivityAddImagesBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
@@ -30,15 +29,12 @@ import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class AddImagesActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAddImagesBinding
 
-    @Inject
-    lateinit var summitsAdapter: SummitsAdapter
     private val viewModel: DatabaseViewModel by viewModels()
 
     private var summitEntry: Summit? = null
@@ -326,6 +322,7 @@ class AddImagesActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         return true
     }
+
     companion object {
         val HORIZONTAL = Pair(16f, 9f)
         val VERTICAL = Pair(9f, 16f)

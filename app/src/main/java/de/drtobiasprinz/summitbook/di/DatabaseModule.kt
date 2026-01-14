@@ -9,7 +9,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
@@ -57,10 +56,6 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideSortFilterValues() = SortFilterValues()
-
-    @Provides
-    @Singleton
-    fun provideSummitsAdapter() = SummitsAdapter()
 
     @Provides
     fun provideEntity() = Summit()

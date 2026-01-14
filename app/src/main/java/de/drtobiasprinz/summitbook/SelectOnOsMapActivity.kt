@@ -17,7 +17,6 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.ActivitySelectOnOsmapBinding
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -48,15 +47,12 @@ import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class SelectOnOsMapActivity : FragmentActivity() {
 
     private lateinit var binding: ActivitySelectOnOsmapBinding
 
-    @Inject
-    lateinit var summitsAdapter: SummitsAdapter
     private val viewModel: DatabaseViewModel by viewModels()
     private var latLngSelectedPosition: GeoPoint? = null
     private var summitEntry: Summit? = null
@@ -108,7 +104,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
                             if (entry != null) {
                                 updateSavePositionButton(true)
                                 latLngSelectedPosition = GeoPoint(p.latitude, p.longitude)
-                                binding.osmap.addMarker( p, entry)
+                                binding.osmap.addMarker(p, entry)
                                 binding.osmap.zoomController.activate()
                             }
                             return false
@@ -287,7 +283,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
     ) {
         val entry = summitEntry
         if (entry != null) {
-            binding.osmap.addMarker( geoPointSelectedPosition, entry)
+            binding.osmap.addMarker(geoPointSelectedPosition, entry)
             gpsTrack.addGpsTrack(osMap, TrackColor.None)
             if (!wasBoundingBoxCalculated) {
                 binding.osmap.calculateBoundingBox(gpsTrack, geoPointSelectedPosition)

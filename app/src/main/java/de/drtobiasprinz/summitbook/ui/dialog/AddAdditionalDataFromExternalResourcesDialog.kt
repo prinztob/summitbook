@@ -14,7 +14,6 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.adapter.AddAdditionalDataAdapter
-import de.drtobiasprinz.summitbook.adapter.SummitsAdapter
 import de.drtobiasprinz.summitbook.databinding.DialogAddAdditionalDataFromExternalResourcesBinding
 import de.drtobiasprinz.summitbook.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -29,7 +28,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -37,8 +35,6 @@ import kotlin.math.roundToInt
 class AddAdditionalDataFromExternalResourcesDialog : DialogFragment() {
     private val viewModel: DatabaseViewModel by activityViewModels()
 
-    @Inject
-    lateinit var summitsAdapter: SummitsAdapter
     private lateinit var binding: DialogAddAdditionalDataFromExternalResourcesBinding
 
     private lateinit var currentContext: Context
