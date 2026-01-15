@@ -42,7 +42,7 @@ import de.drtobiasprinz.summitbook.fragments.OpenStreetMapFragment
 import de.drtobiasprinz.summitbook.fragments.OverviewFragment
 import de.drtobiasprinz.summitbook.fragments.SegmentsViewFragment
 import de.drtobiasprinz.summitbook.fragments.SettingsFragment
-import de.drtobiasprinz.summitbook.fragments.SortAndFilterFragment
+import de.drtobiasprinz.summitbook.ui.compose.SortAndFilterDialogFragment
 import de.drtobiasprinz.summitbook.fragments.SummitEntitiesFragment
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.Poster
@@ -256,12 +256,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
     private fun filter() {
-        val sortAndFilterFragment = SortAndFilterFragment()
+        val sortAndFilterFragment = SortAndFilterDialogFragment()
         sortAndFilterFragment.apply = {
             viewModel.refresh()
         }
         sortAndFilterFragment.show(
-            supportFragmentManager, SortAndFilterFragment().tag
+            supportFragmentManager, SortAndFilterDialogFragment().tag
         )
     }
 

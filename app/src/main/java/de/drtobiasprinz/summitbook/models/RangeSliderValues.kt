@@ -7,7 +7,8 @@ class RangeSliderValues(
     var totalMin: Float = 0f,
     var selectedMin: Float = 0f,
     var selectedMax: Float = 0f,
-    var totalMax: Float = 0f
+    var totalMax: Float = 0f,
+    var stepSize: Float = 5f
 ) {
     fun filter(summit: Summit): Boolean {
         return if (selectedMin in (totalMin + 0.001f)..(totalMax - 0.001f) || selectedMax in (totalMin + 0.001f)..(totalMax - 0.001f)) {

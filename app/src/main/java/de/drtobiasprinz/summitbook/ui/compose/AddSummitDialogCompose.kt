@@ -98,8 +98,6 @@ import kotlin.math.roundToInt
 fun AddSummitDialogCompose(
     summitId: Long = 0L,
     isBookmark: Boolean = false,
-    fromReceiverActivity: Boolean = false,
-    gpxTrackUri: Uri? = null,
     onDismiss: () -> Unit,
     viewModel: DatabaseViewModel = hiltViewModel()
 ) {

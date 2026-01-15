@@ -592,7 +592,9 @@
     <string name="bulk_update_progress_title">Dateien werden aktualisiert</string>
     <string name="bulk_update_progress_message">Verarbeite %1$d von %2$d Dateien…</string>
     <string name="bulk_update_complete">Massenaktualisierung abgeschlossen: %1$d erfolgreich, %2$d fehlgeschlagen</string>
-    <string name="road_type_country_road">not used anymore</string>
+    <string name="road_type_country_road">Nicht ehr benützt</string>
     <string name="time_interval">Interval</string>
+    <string name="filter_options">Filter Optione</string>
+    <string name="range_filters">Filter Bereiche</string>
 </resources>
 
