@@ -1,8 +1,6 @@
 package de.drtobiasprinz.summitbook.models
 
-import android.widget.TextView
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.databinding.FragmentSummitEntryThirdPartyBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 
@@ -13,8 +11,6 @@ enum class TextFieldGroupThirdParty {
 
 enum class TextFieldThirdParty(
     val group: TextFieldGroupThirdParty,
-    val descriptionTextView: (FragmentSummitEntryThirdPartyBinding) -> TextView,
-    val valueTextView: (FragmentSummitEntryThirdPartyBinding) -> TextView,
     val unitWithPlaceHolder: Int,
     val getValue: (Summit) -> Number?,
     val getMinMaxSummit: (ExtremaValuesSummits?) -> Pair<Summit, Summit>? = { _ -> null },
@@ -22,13 +18,10 @@ enum class TextFieldThirdParty(
     val toMinSec: Boolean = false,
     val digits: Int = 1,
     val factor: Int = 1,
-    val valueTextViewRange: (FragmentSummitEntryThirdPartyBinding) -> TextView? = { _ -> null },
     val getValueRange: (Summit) -> Number? = { _ -> null },
 ) {
     AverageHr(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.averageHrText },
-        { b -> b.averageHr },
         R.string.value_with_bpm,
         { e -> e.garminData?.averageHR },
         { e -> e?.averageHRMinMax },
@@ -37,8 +30,6 @@ enum class TextFieldThirdParty(
     ),
     MaxHr(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.maxHrText },
-        { b -> b.maxHr },
         R.string.value_with_bpm,
         { e -> e.garminData?.maxHR },
         { e -> e?.maxHRMinMax },
@@ -47,8 +38,6 @@ enum class TextFieldThirdParty(
     ),
     Calories(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.caloriesText },
-        { b -> b.calories },
         R.string.value_with_kcal,
         { e -> e.garminData?.calories },
         { e -> e?.caloriesMinMax },
@@ -56,8 +45,6 @@ enum class TextFieldThirdParty(
     ),
     PartPaved(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.surfaceTypeUnpavedPercentageText },
-        { b -> b.surfaceTypeUnpavedPercentage },
         R.string.value_with_per_cent,
         { e -> e.garminData?.surfaceTypeUnpavedPercentage },
         { e -> e?.surfaceTypeUnpavedPercentageMinMax },
@@ -65,48 +52,36 @@ enum class TextFieldThirdParty(
     ),
     AerobicTrainingEffect(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.aerobicTrainingEffectText },
-        { b -> b.aerobicTrainingEffect },
         R.string.value_only,
         { e -> e.garminData?.aerobicTrainingEffect },
         { e -> e?.aerobicTrainingEffectMinMax },
     ),
     AnaerobicTrainingEffect(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.anaerobicTrainingEffectText },
-        { b -> b.anaerobicTrainingEffect },
         R.string.value_only,
         { e -> e.garminData?.anaerobicTrainingEffect },
         { e -> e?.anaerobicTrainingEffectMinMax },
     ),
     Grit(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.gritText },
-        { b -> b.grit },
         R.string.value_only,
         { e -> e.garminData?.grit },
         { e -> e?.gritMinMax },
     ),
     Flow(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.flowText },
-        { b -> b.flow },
         R.string.value_only,
         { e -> e.garminData?.flow },
         { e -> e?.flowMinMax },
     ),
     TrainingsLoad(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.trainingLoadText },
-        { b -> b.trainingLoad },
         R.string.value_only,
         { e -> e.garminData?.trainingLoad },
         { e -> e?.trainingsLoadMinMax },
     ),
     Vo2Max(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.vo2MaxText },
-        { b -> b.vo2Max },
         R.string.value_only,
         { e -> e.garminData?.vo2max },
         { e -> e?.vo2maxMinMax },
@@ -114,8 +89,6 @@ enum class TextFieldThirdParty(
     ),
     Strokes(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.strokesText },
-        { b -> b.strokes },
         R.string.value_only,
         { e -> e.garminData?.cyclingDynamics?.totalNumberOfStrokes },
         { e -> e?.strokesMinMax },
@@ -123,8 +96,6 @@ enum class TextFieldThirdParty(
     ),
     StandingTime(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.standingTimeText },
-        { b -> b.standingTime },
         R.string.value_only,
         { e -> e.garminData?.cyclingDynamics?.standingTime },
         { e -> e?.standingTimeMinMax },
@@ -133,8 +104,6 @@ enum class TextFieldThirdParty(
     ),
     StandingAvgPower(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.standingAvgPowerText },
-        { b -> b.standingAvgPower },
         R.string.value_only,
         { e -> e.garminData?.cyclingDynamics?.averageStandingPower },
         { e -> e?.standingAvgPowerMinMax },
@@ -142,8 +111,6 @@ enum class TextFieldThirdParty(
     ),
     StandingMaxPower(
         TextFieldGroupThirdParty.ThirdParty,
-        { b -> b.standingMaxPowerText },
-        { b -> b.standingMaxPower },
         R.string.value_only,
         { e -> e.garminData?.cyclingDynamics?.maxStandingPower },
         { e -> e?.standingMaxPowerMinMax },
@@ -151,82 +118,58 @@ enum class TextFieldThirdParty(
     ),
     PedalSmoothness(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
-        { b -> b.pedalSmoothnessText },
-        { b -> b.pedalSmoothnessLeft },
         R.string.value_with_per_cent,
         { e -> e.garminData?.cyclingDynamics?.leftPedalSmoothness },
         digits = 1,
-        valueTextViewRange = { b -> b.pedalSmoothnessRight },
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPedalSmoothness },
     ),
     Balance(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
-        { b -> b.balanceText },
-        { b -> b.balanceLeft },
         R.string.value_with_per_cent,
         { e -> e.garminData?.cyclingDynamics?.leftBalance },
         digits = 1,
-        valueTextViewRange = { b -> b.balanceRight },
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightBalance },
     ),
     TorqueEffectiveness(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
-        { b -> b.torqueEffectivenessText },
-        { b -> b.torqueEffectivenessLeft },
         R.string.value_with_per_cent,
         { e -> e.garminData?.cyclingDynamics?.leftTorqueEffectiveness },
         digits = 1,
-        valueTextViewRange = { b -> b.torqueEffectivenessRight },
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightTorqueEffectiveness },
     ),
     LeftPowerPhase(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
-        { b -> b.cyclingDynamicsLeftPowerPhaseText },
-        { b -> b.cyclingDynamicsLeftPowerPhaseStart },
         R.string.value_with_degree,
         { e -> e.garminData?.cyclingDynamics?.leftPowerPhaseStart },
         digits = 1,
-        valueTextViewRange = { b -> b.cyclingDynamicsLeftPowerPhaseEnd },
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.leftPowerPhaseEnd },
     ),
     RightPowerPhase(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
-        { b -> b.cyclingDynamicsRightPowerPhaseText },
-        { b -> b.cyclingDynamicsRightPowerPhaseStart },
         R.string.value_with_degree,
         { e -> e.garminData?.cyclingDynamics?.rightPowerPhaseStart },
         digits = 1,
-        valueTextViewRange = { b -> b.cyclingDynamicsRightPowerPhaseEnd },
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPowerPhaseEnd },
     ),
     LeftPeakPowerPhase(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
-        { b -> b.cyclingDynamicsLeftPeakPowerPhaseText },
-        { b -> b.cyclingDynamicsLeftPeakPowerPhaseStart },
         R.string.value_with_degree,
         { e -> e.garminData?.cyclingDynamics?.leftPowerPhasePeakStart },
         digits = 1,
-        valueTextViewRange = { b -> b.cyclingDynamicsLeftPeakPowerPhaseEnd },
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.leftPowerPhasePeakEnd },
     ),
     RightPeakPowerPhase(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
-        { b -> b.cyclingDynamicsRightPeakPowerPhaseText },
-        { b -> b.cyclingDynamicsRightPeakPowerPhaseStart },
         R.string.value_with_degree,
         { e -> e.garminData?.cyclingDynamics?.rightPowerPhasePeakStart },
         digits = 1,
-        valueTextViewRange = { b -> b.cyclingDynamicsRightPeakPowerPhaseEnd },
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPowerPhasePeakEnd },
     ),
     PlatformCenterOffset(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
-        { b -> b.cyclingDynamicsPCOText },
-        { b -> b.cyclingDynamicsPCOLeft },
         R.string.value_with_millimeter,
         { e -> e.garminData?.cyclingDynamics?.leftPlatformCenterOffset },
         digits = 1,
-        valueTextViewRange = { b -> b.cyclingDynamicsPCORight },
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPlatformCenterOffset },
     ),
 }

@@ -1,14 +1,10 @@
 package de.drtobiasprinz.summitbook.models
 
-import android.content.Context
 import android.graphics.*
 import android.util.Log
 import android.util.LruCache
-import android.view.View
-import android.widget.TextView
 import android.widget.Toast
 import com.github.mikephil.charting.data.Entry
-import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.getDistance
 import io.ticofab.androidgpxparser.parser.GPXParser
@@ -35,12 +31,9 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import java.nio.file.Path
-import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToLong
 import kotlin.system.measureTimeMillis
-import androidx.core.graphics.drawable.toDrawable
-import androidx.core.graphics.createBitmap
 
 
 class GpsTrack(
@@ -69,7 +62,6 @@ class GpsTrack(
         mMapView: MapView?,
         selectedCustomizeTrackItem: TrackColor = TrackColor.None,
         color: Int = COLOR_POLYLINE_STATIC,
-        rootView: View? = null,
         summit: Summit? = null
     ) {
         try {
@@ -78,32 +70,8 @@ class GpsTrack(
             }
             osMapRoute = Polyline(mMapView)
 
-            val textView: TextView? = rootView?.findViewById(R.id.track_value)
-            val defaultText = "${trackPoints.size} ${rootView?.resources?.getString(R.string.pts)}"
-            textView?.visibility = View.VISIBLE
-            textView?.text = defaultText
             osMapRoute?.setOnClickListener { _, _, eventPos ->
-                if (textView != null) {
-                    textView.visibility = View.VISIBLE
-                    val trackPoint = usedTrackPoints.minByOrNull {
-                        getDistance(
-                            it.first,
-                            TrackPoint.Builder().setLatitude(eventPos.latitude)
-                                .setLongitude(eventPos.longitude).build() as TrackPoint
-                        )
-                    }
-                    if (trackPoint != null && (minForColorCoding != 0f || maxForColorCoding != 0f)) {
-                        if (selectedCustomizeTrackItem == TrackColor.None) {
-                            textView.visibility = View.GONE
-                        } else {
-                            setTextForDouble(
-                                trackPoint, textView, selectedCustomizeTrackItem, rootView.context
-                            )
-                        }
-                    } else {
-                        textView.visibility = View.GONE
-                    }
-                } else if (mMapView != null && summit != null) {
+                if (mMapView != null && summit != null) {
                     Toast.makeText(
                         mMapView.context,
                         "${summit.getDateAsString()} ${summit.name}",
@@ -162,42 +130,6 @@ class GpsTrack(
         usedTrackGeoPoints = trackGeoPoints
     }
 
-
-    private fun setTextForDouble(
-        trackPoint: Pair<TrackPoint, ExtensionFromYaml>,
-        textView: TextView,
-        trackColor: TrackColor,
-        context: Context
-    ) {
-        val value = trackColor.f(trackPoint)
-        if (value != null) {
-            textView.text =
-                String.format(Locale.US, "%.${trackColor.digits}f %s", value, trackColor.unit)
-            val fraction = (value - minForColorCoding) / (maxForColorCoding - minForColorCoding)
-            val rectangle = drawRectangle(
-                interpolateColor(
-                    trackColor.minColor, trackColor.maxColor, fraction.toFloat()
-                )
-            ).toDrawable(context.resources)
-            textView.setCompoundDrawablesRelativeWithIntrinsicBounds(rectangle, null, null, null)
-        } else {
-            textView.visibility = View.GONE
-        }
-    }
-
-    private fun drawRectangle(color: Int): Bitmap {
-        val radius = 25f
-        val bitmap = createBitmap((radius * 2).toInt(), (radius * 2).toInt())
-        val canvas = Canvas(bitmap)
-        val paint = Paint().apply {
-            strokeWidth = 3f
-            style = Paint.Style.FILL
-            isAntiAlias = true
-        }
-        paint.color = color
-        canvas.drawRect(0f, 0f, 100f, 100f, paint)
-        return bitmap
-    }
 
     private fun addColorToTrack(paintBorder: Paint, trackColor: TrackColor) {
         val values = usedTrackPoints.mapNotNull(trackColor.f)
@@ -323,7 +255,9 @@ class GpsTrack(
 
         val isDistancesIncorrect = trackPoints.isEmpty() || run {
             for (i in 1 until trackPoints.size) {
-                if ((trackPoints[i - 1].second.distance ?: 0.0) > (trackPoints[i].second.distance ?: 0.0)) {
+                if ((trackPoints[i - 1].second.distance ?: 0.0) > (trackPoints[i].second.distance
+                        ?: 0.0)
+                ) {
                     return@run true
                 }
             }
@@ -339,13 +273,13 @@ class GpsTrack(
 
     private fun calculateTrackPoints(useOriginalTrack: Boolean): List<Pair<TrackPoint, ExtensionFromYaml>> {
         val tracks = gpxTrack?.tracks ?: return emptyList()
-        
+
         // Pre-calculate size to avoid list resizing
         val estimatedSize = tracks.sumOf { track ->
             track.trackSegments.sumOf { it.trackPoints.size }
         }
         val trackPoints = ArrayList<TrackPoint>(estimatedSize)
-        
+
         for (track in tracks) {
             for (segment in track.trackSegments) {
                 trackPoints.addAll(segment.trackPoints.filter {
@@ -353,7 +287,7 @@ class GpsTrack(
                 })
             }
         }
-        
+
         if (useOriginalTrack) {
             val extensions = getExtensionFromYaml()
             if (extensions.size == trackPoints.size) {
@@ -362,7 +296,7 @@ class GpsTrack(
                 }
             }
         }
-        
+
         return List(trackPoints.size) { index ->
             Pair(trackPoints[index], ExtensionFromYaml())
         }
@@ -426,7 +360,10 @@ class GpsTrack(
     }
 
 
-    fun getTrackGraph(f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?, discreteInput: Boolean = false): MutableList<Entry> {
+    fun getTrackGraph(
+        f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?,
+        discreteInput: Boolean = false
+    ): MutableList<Entry> {
         if (trackPoints.lastOrNull()?.second?.distance == 0.0) {
             setDistance()
         }
@@ -480,7 +417,7 @@ class GpsTrack(
         const val LINE_WIDTH_BIG = 16f
         private const val TEXT_SIZE = 20f
         private const val TAG = "GpsTrack"
-        
+
         // LRU cache for parsed GPX tracks (cache last 10 tracks)
         private val trackCache = LruCache<String, Gpx>(10)
 
@@ -488,7 +425,7 @@ class GpsTrack(
             // Check cache first
             val cacheKey = fileToUse.absolutePath
             trackCache.get(cacheKey)?.let { return it }
-            
+
             val mParser = GPXParser()
             try {
                 BufferedInputStream(FileInputStream(fileToUse)).use { inputStream ->
@@ -557,15 +494,15 @@ class GpsTrack(
         private val points: List<Pair<TrackPoint, ExtensionFromYaml>>,
         private val trackColor: TrackColor
     ) : ColorMapping {
-        
+
         // For checkered pattern: alternate between primary color and a contrasting color
         private val checkeredAlternateColor = Color.BLACK
-        
+
         override fun getColorForIndex(pSegmentIndex: Int): Int {
             return if (pSegmentIndex < points.size) {
                 val baseColor: Int
                 val useCheckered: Boolean
-                
+
                 if (trackColor == TrackColor.RoadType) {
                     val roadType = points[pSegmentIndex].second.roadType
                     baseColor = roadType.color
@@ -574,7 +511,7 @@ class GpsTrack(
                     baseColor = points[pSegmentIndex].second.surface.color
                     useCheckered = false
                 }
-                
+
                 // Apply checkered pattern by alternating colors every few segments
                 if (useCheckered) {
                     // Create checkered effect by alternating between base color and black

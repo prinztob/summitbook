@@ -56,6 +56,7 @@ import de.drtobiasprinz.summitbook.ui.compose.AddSummitDialogCompose
 import de.drtobiasprinz.summitbook.ui.compose.SummitsListScreen
 import de.drtobiasprinz.summitbook.ui.observeOnce
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
+import de.drtobiasprinz.summitbook.ui.utils.TimeIntervalPower
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel

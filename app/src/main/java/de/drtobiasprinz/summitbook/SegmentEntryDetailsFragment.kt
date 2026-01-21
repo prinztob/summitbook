@@ -248,7 +248,7 @@ class SegmentEntryDetailsFragment : Fragment() {
                     val hasPoints = !gpsTrack.hasOnlyZeroCoordinates() || localSummit.latLng != null
                     if (hasPoints) {
                         gpsTrack.addGpsTrack(
-                            binding.osMap, rootView = binding.root
+                            binding.osMap
                         )
                         putGpxTrackOnMap(gpsTrack, segmentEntry)
                     }

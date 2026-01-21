@@ -9,7 +9,9 @@ import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
+import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.utils.DataStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -33,6 +35,10 @@ class PageViewModel @Inject constructor(private val repository: DatabaseReposito
     val summitToCompare: LiveData<DataStatus<Summit?>>
         get() = _summitToCompare
 
+    private val _extremaValuesSummits = MutableLiveData<ExtremaValuesSummits?>()
+    val extremaValuesSummits: LiveData<ExtremaValuesSummits?>
+        get() = _extremaValuesSummits
+
     init {
         getAllSummits()
         getAllSegments()
@@ -43,7 +49,22 @@ class PageViewModel @Inject constructor(private val repository: DatabaseReposito
         _summitsList.postValue(DataStatus.loading())
         repository.getAllSummits()
             .catch { _summitsList.postValue(DataStatus.error(it.message.toString())) }
-            .collect { _summitsList.postValue(DataStatus.success(it, it.isEmpty())) }
+            .collect { summits ->
+                _summitsList.postValue(DataStatus.success(summits, summits.isEmpty()))
+                // Calculate extrema values on background thread asynchronously
+                calculateExtremaValues(summits)
+            }
+    }
+
+    private fun calculateExtremaValues(summits: List<Summit>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val extrema = if (summits.isNotEmpty()) {
+                ExtremaValuesSummits(summits)
+            } else {
+                null
+            }
+            _extremaValuesSummits.postValue(extrema)
+        }
     }
 
     fun getSummitToView(id: Long) = viewModelScope.launch {

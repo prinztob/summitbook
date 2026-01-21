@@ -477,7 +477,7 @@ class AddSegmentEntryFragment : Fragment() {
             if (hasPoints) {
                 if (summit.gpsTrack?.osMapRoute == null) {
                     summit.gpsTrack?.addGpsTrack(
-                        binding.osmap, selectedCustomizeTrackItem, rootView = binding.root
+                        binding.osmap, selectedCustomizeTrackItem
                     )
                 }
                 showSinglePoints(summit)

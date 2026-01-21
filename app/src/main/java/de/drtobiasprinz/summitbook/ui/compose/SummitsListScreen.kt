@@ -49,7 +49,7 @@ import coil.request.ImageRequest
 import de.drtobiasprinz.summitbook.AddImagesActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
-import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
+import de.drtobiasprinz.summitbook.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.MainActivity
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
@@ -561,7 +561,7 @@ fun DeleteConfirmationDialog(
 
 // Navigation helper functions
 private fun navigateToSummitDetails(context: Context, summitId: Long) {
-    val intent = Intent(context, SummitEntryDetailsActivity::class.java)
+    val intent = Intent(context, SummitEntryDetailsComposeActivity::class.java)
     intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, summitId)
     context.startActivity(intent)
 }

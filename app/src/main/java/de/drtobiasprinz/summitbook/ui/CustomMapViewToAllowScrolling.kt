@@ -8,7 +8,6 @@ import android.os.Environment
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
-import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.edit
@@ -62,7 +61,6 @@ class CustomMapViewToAllowScrolling : MapView {
      * @param forceAddTrack Force redrawing the track even if already shown
      * @param selectedCustomizeTrackItem Track color customization option
      * @param alwaysShowTrackOnMap Whether to always show the track on map
-     * @param rootView Optional root view for track interaction UI
      * @param calculateBondingBox Whether to calculate and zoom to bounding box
      * @return The created marker, or null if no location is available
      */
@@ -71,7 +69,6 @@ class CustomMapViewToAllowScrolling : MapView {
         forceAddTrack: Boolean,
         selectedCustomizeTrackItem: TrackColor,
         alwaysShowTrackOnMap: Boolean,
-        rootView: View? = null,
         calculateBondingBox: Boolean = true
     ): Marker? {
         val geoPoints = ArrayList<GeoPoint>()
@@ -101,7 +98,7 @@ class CustomMapViewToAllowScrolling : MapView {
             selectedCustomizeTrackItem = selectedCustomizeTrackItem,
             calculateBondingBox = calculateBondingBox,
             mGeoPoints = geoPoints,
-            rootView = rootView
+            forceParseTrack = forceAddTrack,  // Force re-parsing when forcing track addition
         )
         
         // Add marker to overlays after track to ensure it's drawn on top
@@ -128,7 +125,7 @@ class CustomMapViewToAllowScrolling : MapView {
         calculateBondingBox: Boolean = false,
         mGeoPoints: ArrayList<GeoPoint> = arrayListOf(),
         color: Int = Color.BLUE,
-        rootView: View? = null
+        forceParseTrack: Boolean = false
     ) {
         if (summitEntry.hasGpsTrack()) {
             if (summitEntry.gpsTrack == null) {
@@ -136,11 +133,11 @@ class CustomMapViewToAllowScrolling : MapView {
             }
             val gpsTrack: GpsTrack? = summitEntry.gpsTrack
             if (gpsTrack != null) {
-                if (gpsTrack.hasNoTrackPoints()) {
+                if (gpsTrack.hasNoTrackPoints() || forceParseTrack) {
                     gpsTrack.parseTrack()
                 }
                 if (gpsTrack.osMapRoute == null || forceAddTrack) {
-                    gpsTrack.addGpsTrack(this, selectedCustomizeTrackItem, color, rootView)
+                    gpsTrack.addGpsTrack(this, selectedCustomizeTrackItem, color)
                     gpsTrack.isShownOnMap = true
                 }
                 mGeoPoints.addAll(getTrackPointsFrom(gpsTrack))

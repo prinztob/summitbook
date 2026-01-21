@@ -9,7 +9,7 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
+import de.drtobiasprinz.summitbook.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.OrderBySpinnerEntry
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
@@ -47,10 +47,10 @@ class CustomMarkerView(
 
     fun startIntent() {
         try {
-            val intent = Intent(context, SummitEntryDetailsActivity::class.java)
+            val intent = Intent(context, SummitEntryDetailsComposeActivity::class.java)
             intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
             context.startActivity(intent)
-        } catch (e: NullPointerException) {
+        } catch (_: NullPointerException) {
             // DO NOTHING
         }
     }

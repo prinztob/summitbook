@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.summitbook.SummitEntryDetailsActivity
+import de.drtobiasprinz.summitbook.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.ui.compose.StatisticsScreen
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
@@ -26,7 +26,8 @@ class StatisticsComposeFragment : Fragment() {
                 SummitBookTheme {
                     StatisticsScreen(
                         onNavigateToSummitDetails = { summitId ->
-                            val intent = Intent(requireActivity(), SummitEntryDetailsActivity::class.java)
+                            val intent = Intent(requireActivity(),
+                                SummitEntryDetailsComposeActivity::class.java)
                             intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, summitId)
                             requireActivity().startActivity(intent)
                         }
