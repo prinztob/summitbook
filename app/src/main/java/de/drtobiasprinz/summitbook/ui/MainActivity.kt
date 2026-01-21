@@ -40,7 +40,7 @@ import de.drtobiasprinz.summitbook.fragments.BarChartFragment
 import de.drtobiasprinz.summitbook.fragments.LineChartFragment
 import de.drtobiasprinz.summitbook.fragments.OpenStreetMapFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.OverviewFragmentCompose
-import de.drtobiasprinz.summitbook.fragments.SegmentsViewFragment
+import de.drtobiasprinz.summitbook.fragments.SegmentsViewFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.SettingsFragment
 import de.drtobiasprinz.summitbook.ui.compose.SortAndFilterDialogFragment
 import de.drtobiasprinz.summitbook.fragments.SummitEntitiesFragment
@@ -350,7 +350,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             R.id.nav_routes -> {
-                commitFragment(SegmentsViewFragment())
+                commitFragment(SegmentsViewFragmentCompose())
             }
 
             R.id.nav_statistics -> {

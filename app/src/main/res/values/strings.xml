@@ -595,4 +595,10 @@
     <string name="time_interval">Interval</string>
     <string name="filter_options">Filter Option</string>
     <string name="range_filters">Filter Range</string>
+    <string name="hide_map">Hide map</string>
+    <string name="show_map">Show map</string>
+    <string name="map_screenshot">Create screenshot</string>
+    <string name="customize_track">Customize track</string>
+    <string name="track_color">Track color</string>
+    <string name="segment_entries">Segment entries</string>
 </resources>
