@@ -39,7 +39,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.fragments.BarChartFragment
 import de.drtobiasprinz.summitbook.fragments.LineChartFragment
 import de.drtobiasprinz.summitbook.fragments.OpenStreetMapFragment
-import de.drtobiasprinz.summitbook.fragments.OverviewFragment
+import de.drtobiasprinz.summitbook.fragments.OverviewFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.SegmentsViewFragment
 import de.drtobiasprinz.summitbook.fragments.SettingsFragment
 import de.drtobiasprinz.summitbook.ui.compose.SortAndFilterDialogFragment
@@ -128,7 +128,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         // configure some of the MapsForge settings first (used for on-device maps)
         MapsForgeTileSource.createInstance(this.application)
-        commitFragment(OverviewFragment(), R.id.content_frame_overview)
+        commitFragment(OverviewFragmentCompose(), R.id.content_frame_overview)
         binding.apply {
             toolbarInclude.toolbar.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
