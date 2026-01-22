@@ -38,6 +38,7 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.fragments.BarChartFragment
 import de.drtobiasprinz.summitbook.fragments.LineChartFragment
+import de.drtobiasprinz.summitbook.fragments.LineChartFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.OpenStreetMapFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.OverviewFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.SegmentsViewFragmentCompose
@@ -358,7 +359,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             R.id.nav_diagrams -> {
-                commitFragment(LineChartFragment())
+                commitFragment(LineChartFragmentCompose())
             }
 
             R.id.nav_barChart -> {
