@@ -601,4 +601,5 @@
     <string name="customize_track">Customize track</string>
     <string name="track_color">Track color</string>
     <string name="segment_entries">Segment entries</string>
+    <string name="total">Total</string>
 </resources>
