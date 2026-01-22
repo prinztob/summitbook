@@ -45,11 +45,11 @@ import de.drtobiasprinz.summitbook.fragments.SettingsFragment
 import de.drtobiasprinz.summitbook.ui.compose.SortAndFilterDialogFragment
 import de.drtobiasprinz.summitbook.fragments.SummitEntitiesFragment
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
+import de.drtobiasprinz.summitbook.fragments.ShowNewSummitsFromGarminFragmentCompose
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.fragment.ForecastFragment
-import de.drtobiasprinz.summitbook.ui.fragment.ShowNewSummitsFromGarminFragment
 import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
@@ -409,11 +409,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     fun showNewSummitsDialog(selectedDate: Date? = null) {
-        val fragment = ShowNewSummitsFromGarminFragment()
+        val fragment = ShowNewSummitsFromGarminFragmentCompose()
         fragment.summits =
             allSummits
         fragment.selectedDate = selectedDate
         fragment.save = { summits, isMerge ->
+            Log.i("Show", "selectedEntries: $summits")
             binding.loading.visibility = View.VISIBLE
             binding.loading.tooltipText = getString(
                 R.string.tool_tip_progress_new_garmin_activities,
