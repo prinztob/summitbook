@@ -366,6 +366,7 @@
     <string name="back">Zurück</string>
     <string name="revert_ignored_summits">Lösche ignorierte Gipfel</string>
     <string name="delete">Löschen</string>
+    <string name="edit">Bearbeiten</string>
     <string name="ok">OK</string>
     <string name="will_be_updated_soon">Wird gleich geupdated</string>
     <string name="duration">Dauer</string>
@@ -603,5 +604,8 @@
     <string name="track_color">Track color</string>
     <string name="segment_entries">Segment entries</string>
     <string name="total">Total</string>
+    <string name="number_activities">Number of activities</string>
+    <string name="collapse">Collapse</string>
+    <string name="expand">Expand</string>
 </resources>
 

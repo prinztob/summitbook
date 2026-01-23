@@ -44,7 +44,7 @@ import de.drtobiasprinz.summitbook.fragments.OverviewFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.SegmentsViewFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.SettingsFragment
 import de.drtobiasprinz.summitbook.fragments.ShowNewSummitsFromGarminFragmentCompose
-import de.drtobiasprinz.summitbook.fragments.SummitEntitiesFragment
+import de.drtobiasprinz.summitbook.fragments.SummitEntitiesFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.SortFilterValues
@@ -382,7 +382,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             R.id.nav_additional_summit_data -> {
-                commitFragment(SummitEntitiesFragment())
+                commitFragment(SummitEntitiesFragmentCompose())
             }
 
             R.id.nav_diashow -> {
