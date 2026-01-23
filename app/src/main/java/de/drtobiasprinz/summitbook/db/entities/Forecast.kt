@@ -3,7 +3,7 @@ package de.drtobiasprinz.summitbook.db.entities
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
-import de.drtobiasprinz.summitbook.ui.fragment.ForecastFragment
+import de.drtobiasprinz.summitbook.utils.ForecastConstants
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -144,9 +144,9 @@ data class Forecast(
             } else annualTargetActivity.toInt() / 12.0
             val forecast = Forecast(
                 year, month,
-                (floor((hmForecast) / ForecastFragment.STEP_SIZE_HM) * ForecastFragment.STEP_SIZE_HM).toInt(),
-                (floor((kmForecast) / ForecastFragment.STEP_SIZE_KM) * ForecastFragment.STEP_SIZE_KM).toInt(),
-                (floor((numberActivitiesForecast) / ForecastFragment.STEP_SIZE_ACTIVITY) * ForecastFragment.STEP_SIZE_ACTIVITY).toInt()
+                (floor((hmForecast) / ForecastConstants.STEP_SIZE_HM) * ForecastConstants.STEP_SIZE_HM).toInt(),
+                (floor((kmForecast) / ForecastConstants.STEP_SIZE_KM) * ForecastConstants.STEP_SIZE_KM).toInt(),
+                (floor((numberActivitiesForecast) / ForecastConstants.STEP_SIZE_ACTIVITY) * ForecastConstants.STEP_SIZE_ACTIVITY).toInt()
             )
             return forecast
         }

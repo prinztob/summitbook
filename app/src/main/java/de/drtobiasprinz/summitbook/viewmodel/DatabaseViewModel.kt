@@ -154,7 +154,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         }
     }
 
-    private fun getAllForecasts() = viewModelScope.launch {
+    fun getAllForecasts() = viewModelScope.launch {
         repository.getAllForecasts().collect {
             _forecastsList.postValue(DataStatus.success(it, false))
         }

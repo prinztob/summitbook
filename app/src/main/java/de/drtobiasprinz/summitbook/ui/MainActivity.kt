@@ -37,19 +37,19 @@ import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.fragments.BarChartFragmentCompose
+import de.drtobiasprinz.summitbook.fragments.ForecastFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.LineChartFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.OpenStreetMapFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.OverviewFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.SegmentsViewFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.SettingsFragment
-import de.drtobiasprinz.summitbook.ui.compose.SortAndFilterDialogFragment
+import de.drtobiasprinz.summitbook.fragments.ShowNewSummitsFromGarminFragmentCompose
 import de.drtobiasprinz.summitbook.fragments.SummitEntitiesFragment
 import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
-import de.drtobiasprinz.summitbook.fragments.ShowNewSummitsFromGarminFragmentCompose
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
-import de.drtobiasprinz.summitbook.ui.fragment.ForecastFragment
+import de.drtobiasprinz.summitbook.ui.compose.SortAndFilterDialogFragment
 import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
@@ -204,7 +204,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     "Connecting to third party provider failed. Please try again later. Error: ${e.message}",
                     Toast.LENGTH_LONG
                 ).show()
-                Log.e("MainActivity", "Connecting to third party provider failed. Please try again later. Error: ${e.message}", e)
+                Log.e(
+                    "MainActivity",
+                    "Connecting to third party provider failed. Please try again later. Error: ${e.message}",
+                    e
+                )
             }
             downloader.updateFinalEntry(viewModel)
             binding.loading.visibility = View.GONE
@@ -370,7 +374,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
             R.id.nav_forecast -> {
-                commitFragment(ForecastFragment())
+                commitFragment(ForecastFragmentCompose())
             }
 
             R.id.nav_new_summits -> {
