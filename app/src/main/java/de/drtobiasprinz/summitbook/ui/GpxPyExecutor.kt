@@ -7,8 +7,8 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.subDirForGpsTrackExtensions
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.subDirForGpsTracksBookmarkExtensions
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.subDirForGpsTracksSimplified
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.storage
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.activitiesDir
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.storage
 import java.io.File
 import java.nio.file.Path
 

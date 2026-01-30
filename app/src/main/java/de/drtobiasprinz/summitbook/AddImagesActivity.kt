@@ -122,8 +122,8 @@ class AddImagesActivity : AppCompatActivity() {
         removeButton.setImageResource(R.drawable.baseline_delete_black_24dp)
         removeButton.setOnClickListener { v: View ->
 
-            lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
+            lifecycleScope.launch(Dispatchers.Main.immediate) {
+               withContext(Dispatchers.IO) {
                     Glide.get(applicationContext)
                 }
             }

@@ -6,7 +6,7 @@ import com.chaquo.python.Python
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonInstance
 import java.io.File
 import kotlin.math.roundToInt
 import kotlin.system.measureTimeMillis
@@ -19,7 +19,7 @@ class GarminPythonExecutor(
 
     private fun login() {
         val time = measureTimeMillis {
-            val storage = MainActivity.storage
+            val storage = MainActivityCompose.storage
             if (client == null) {
                 if (Python.isStarted()) {
                     pythonModule = pythonInstance?.getModule("entry_point")

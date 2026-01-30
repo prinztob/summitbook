@@ -15,7 +15,7 @@ import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
-import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -53,8 +53,8 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val summitDetails: LiveData<DataStatus<Summit>>
         get() = _summitDetails
 
-    private var _entityEvents = MutableLiveData<List<EntityEvent>>()
-    val entityEvents: LiveData<List<EntityEvent>>
+    private var _entityEvents = MutableLiveData<DataStatus<List<EntityEvent>>>()
+    val entityEvents: LiveData<DataStatus<List<EntityEvent>>>
         get() = _entityEvents
 
     private val _dailyActivitySummaryList = MutableLiveData<DataStatus<List<DailyActivitySummary>>>()
@@ -190,7 +190,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     private fun getPeaks() = viewModelScope.launch {
         repository.getPeaks().collect {
             _peaks.postValue(DataStatus.success(it, false))
-            MainActivity.peaks = it.toMutableList()
+            MainActivityCompose.peaks = it.toMutableList()
         }
     }
 
@@ -215,9 +215,10 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     }
 
     private fun getAllEntityEvent() = viewModelScope.launch {
-        repository.getEntityEvents().collect {
-            _entityEvents.postValue(it)
-        }
+        _entityEvents.postValue(DataStatus.loading())
+        repository.getEntityEvents()
+            .catch { _entityEvents.postValue(DataStatus.error(it.message.toString())) }
+            .collect { _entityEvents.postValue(DataStatus.success(it, it.isEmpty())) }
     }
 
     fun getAllDailyActivitySummaries() = viewModelScope.launch {

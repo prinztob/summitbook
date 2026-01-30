@@ -17,7 +17,7 @@ import androidx.fragment.app.activityViewModels
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.compose.ShowNewSummitsFromGarminScreen
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
@@ -57,7 +57,7 @@ class ShowNewSummitsFromGarminFragmentCompose : Fragment() {
                             },
                             onRefresh = {
                                 activity?.let {
-                                    if (it is MainActivity) {
+                                    if (it is MainActivityCompose) {
                                         it.updateThirdPartyData()
                                     }
                                 }
@@ -70,14 +70,14 @@ class ShowNewSummitsFromGarminFragmentCompose : Fragment() {
     }
 
     private fun back(summitName: String?) {
-        val ft = parentFragmentManager.beginTransaction()
-        ft.replace(R.id.content_frame, SummitViewFragment())
-        ft.commit()
+        //TODO: val ft = parentFragmentManager.beginTransaction()
+        //ft.replace(R.id.content_frame, SummitViewFragment())
+        //ft.commit()
 
-        val message = getString(
-            R.string.garmin_add_successful,
-            summitName ?: "'new summit'"
-        )
-        Toast.makeText(activity, message, Toast.LENGTH_LONG).show()
+        //val message = getString(
+        //    R.string.garmin_add_successful,
+//            summitName ?: "'new summit'"
+        //      )
+        //Toast.makeText(activity, message, Toast.LENGTH_LONG).show()
     }
 }

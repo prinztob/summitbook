@@ -46,6 +46,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.fragments.AddSegmentEntryFragment
 import de.drtobiasprinz.summitbook.fragments.SegmentEntryDetailsFragmentCompose
 import de.drtobiasprinz.summitbook.ui.dialog.AddSegmentDetailsDialog
@@ -60,7 +61,8 @@ import java.util.Locale
 fun SegmentsListScreen(
     segments: List<Segment>,
     modifier: Modifier = Modifier,
-    onDelete: (Segment) -> Unit = {}
+    onDeleteSegment: (Segment) -> Unit = {},
+    onDeleteSegmentEntry: (SegmentEntry) -> Unit = {}
 ) {
     LazyColumn(
         modifier = modifier
@@ -74,7 +76,7 @@ fun SegmentsListScreen(
         ) { segment ->
             SegmentCard(
                 segment = segment,
-                onDelete = onDelete
+                onDelete = onDeleteSegment
             )
         }
         
@@ -403,9 +405,9 @@ fun SegmentDeleteConfirmationDialog(
 // Navigation helper functions
 private fun navigateToSegmentDetails(context: Context, segmentDetailsId: Long) {
     val fragment = SegmentEntryDetailsFragmentCompose.getInstance(segmentDetailsId)
-    context.findActivity()?.supportFragmentManager?.beginTransaction()
-        ?.replace(R.id.content_frame, fragment, "SegmentEntryDetailsFragment")
-        ?.addToBackStack(null)?.commit()
+//TODO:    context.findActivity()?.supportFragmentManager?.beginTransaction()
+//        ?.replace(R.id.content_frame, fragment, "SegmentEntryDetailsFragment")
+//        ?.addToBackStack(null)?.commit()
 }
 
 private fun navigateToAddSegmentEntry(context: Context, segmentDetailsId: Long) {
@@ -414,8 +416,8 @@ private fun navigateToAddSegmentEntry(context: Context, segmentDetailsId: Long) 
         null,
         null
     )
-    context.findActivity()?.supportFragmentManager?.beginTransaction()
-        ?.replace(R.id.content_frame, fragment)?.addToBackStack(null)?.commit()
+    //TODO: context.findActivity()?.supportFragmentManager?.beginTransaction()
+        //?.replace(R.id.content_frame, fragment)?.addToBackStack(null)?.commit()
 }
 
 private fun showAddSegmentDetailsDialog(context: Context) {

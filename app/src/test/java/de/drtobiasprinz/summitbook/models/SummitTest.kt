@@ -2,7 +2,7 @@ package de.drtobiasprinz.summitbook.models
 
 import de.drtobiasprinz.summitbook.db.entities.*
 import de.drtobiasprinz.summitbook.db.entities.Summit.Companion.parseFromCsvFileLine
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_VERSION
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_VERSION
 import org.joda.time.DateTimeZone
 import org.joda.time.tz.UTCProvider
 import org.junit.Assert

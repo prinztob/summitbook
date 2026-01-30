@@ -54,19 +54,15 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.edit
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.toBitmap
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.asFlow
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
+import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.TAG
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
 import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.ui.MapProvider
-import de.drtobiasprinz.summitbook.utils.DataStatus
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -93,9 +89,8 @@ import java.io.File
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OpenStreetMapScreen(
-    viewModel: DatabaseViewModel = hiltViewModel(),
-    sortFilterValues: SortFilterValues,
-    onFullscreenChange: ((Boolean) -> Unit)? = null,
+    filteredSummits: List<Summit>,
+    bookmarks: List<Summit>,
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -122,16 +117,8 @@ fun OpenStreetMapScreen(
     var mLocationOverlay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
     var mapView by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
     var polyline by remember { mutableStateOf<Polyline?>(null) }
+    var osMapBoundingBox by remember { mutableStateOf<List<String>>(emptyList()) }
 
-    // Data
-    val summitsList by viewModel.summitsList.asFlow()
-        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
-    val bookmarksList by viewModel.bookmarksList.asFlow()
-        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
-    val summits = summitsList.data ?: emptyList()
-    val bookmarks = bookmarksList.data ?: emptyList()
-
-    // Initialize shared preferences and default map type
     LaunchedEffect(Unit) {
         sharedPreferences =
             androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
@@ -143,7 +130,7 @@ fun OpenStreetMapScreen(
             androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
         )
         CustomMapViewToAllowScrolling.setOsmConfForTiles()
-        
+
         // Set default map type to offline map if available
         val availableProviders = MapProvider.entries.filter { it.exists(context) }
         val offlineProvider = availableProviders.firstOrNull { it.isOffline }
@@ -152,7 +139,7 @@ fun OpenStreetMapScreen(
         }
 
         // Load saved bounding box
-        val osMapBoundingBox =
+        osMapBoundingBox =
             sharedPreferences?.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")?.split(";")
                 ?: emptyList()
         if (osMapBoundingBox.size == 6) {
@@ -180,18 +167,16 @@ fun OpenStreetMapScreen(
             }
         }
     }
-    
+
     // Show summits and bookmarks when they are enabled and map is ready
-    LaunchedEffect(showSummits, showBookmarks, mapView, summits, bookmarks) {
+    LaunchedEffect(showSummits, showBookmarks, mapView, filteredSummits, bookmarks) {
         if (mapView != null && (showSummits || showBookmarks)) {
             showSummitsAndBookmarksIfEnabled(
                 mapView,
                 showSummits,
                 showBookmarks,
-                summits,
+                filteredSummits,
                 bookmarks,
-                sortFilterValues,
-                sharedPreferences,
                 mGeoPoints,
                 mMarkers,
                 context,
@@ -235,7 +220,6 @@ fun OpenStreetMapScreen(
                 Box(modifier = Modifier.weight(1f)) {
                     MapViewComposable(
                         context = context,
-                        sharedPreferences = sharedPreferences,
                         followLocationEnabled = followLocationEnabled,
                         onMapReady = { map ->
                             mapView = map
@@ -246,7 +230,8 @@ fun OpenStreetMapScreen(
                         onLocationOverlayCreated = { overlay ->
                             mLocationOverlay = overlay
                         },
-                        layers = layers
+                        layers = layers,
+                        osMapBoundingBox = osMapBoundingBox
                     )
                 }
             }
@@ -257,7 +242,6 @@ fun OpenStreetMapScreen(
                 fullscreenEnabled = fullscreenEnabled,
                 onFullscreenToggle = {
                     fullscreenEnabled = !fullscreenEnabled
-                    onFullscreenChange?.invoke(fullscreenEnabled)
                 },
                 onShowAllTracks = {
                     showAllTracksOfSummitInBoundingBox(
@@ -285,7 +269,6 @@ fun OpenStreetMapScreen(
                     if (!followLocationEnabled) {
                         showBookmarks = !showBookmarks
                         updateSelectedParameters(
-                            sharedPreferences,
                             showSummits,
                             showBookmarks
                         )
@@ -293,10 +276,8 @@ fun OpenStreetMapScreen(
                             mapView,
                             showSummits,
                             showBookmarks,
-                            summits,
+                            filteredSummits,
                             bookmarks,
-                            sortFilterValues,
-                            sharedPreferences,
                             mGeoPoints,
                             mMarkers,
                             context,
@@ -309,7 +290,6 @@ fun OpenStreetMapScreen(
                     if (!followLocationEnabled) {
                         showSummits = !showSummits
                         updateSelectedParameters(
-                            sharedPreferences,
                             showSummits,
                             showBookmarks
                         )
@@ -317,17 +297,15 @@ fun OpenStreetMapScreen(
                             mapView,
                             showSummits,
                             showBookmarks,
-                            summits,
+                            filteredSummits,
                             bookmarks,
-                            sortFilterValues,
-                            sharedPreferences,
                             mGeoPoints,
                             mMarkers,
                             context,
                             coroutineScope
                         )
                     } else {
-                        coroutineScope.launch {
+                        coroutineScope.launch(Dispatchers.Main.immediate) {
                             snackbarHostState.showSnackbar(showSummitDisabledMessage)
                         }
                     }
@@ -362,12 +340,12 @@ fun OpenStreetMapScreen(
 @Composable
 fun MapViewComposable(
     context: Context,
-    sharedPreferences: SharedPreferences?,
     followLocationEnabled: Boolean,
     onMapReady: (CustomMapViewToAllowScrolling) -> Unit,
     onPolylineCreated: (Polyline) -> Unit,
     onLocationOverlayCreated: (MyLocationNewOverlay) -> Unit,
-    layers: SnapshotStateList<Pair<String, TilesOverlay>>
+    layers: SnapshotStateList<Pair<String, TilesOverlay>>,
+    osMapBoundingBox: List<String>
 ) {
     AndroidView(
         factory = { ctx ->
@@ -405,30 +383,6 @@ fun MapViewComposable(
 
                 // Enable road info on map click
                 enableRoadInfoOnMapClick()
-
-                // Load saved bounding box
-                val osMapBoundingBox =
-                    sharedPreferences?.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")?.split(";")
-                        ?: emptyList()
-                if (osMapBoundingBox.size == 6) {
-                    try {
-                        val boundingBox = BoundingBox()
-                        boundingBox.set(
-                            osMapBoundingBox[0].toDouble(),
-                            osMapBoundingBox[1].toDouble(),
-                            osMapBoundingBox[2].toDouble(),
-                            osMapBoundingBox[3].toDouble()
-                        )
-                        post {
-                            zoomToBoundingBox(boundingBox, false, 30)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(
-                            "MapViewComposable",
-                            "Getting bounding box from shared preference failed. ${e.message}"
-                        )
-                    }
-                }
             }
 
             onMapReady(mapView)
@@ -438,6 +392,30 @@ fun MapViewComposable(
             // Update map when state changes
             mapView.updateBoundingBox = true
 
+            Log.e(TAG, "Updated $osMapBoundingBox")
+            if (osMapBoundingBox.size == 6) {
+                try {
+                    val boundingBox = BoundingBox()
+                    boundingBox.set(
+                        osMapBoundingBox[0].toDouble(),
+                        osMapBoundingBox[1].toDouble(),
+                        osMapBoundingBox[2].toDouble(),
+                        osMapBoundingBox[3].toDouble()
+                    )
+                    mapView.post {
+                        Log.d("OpenStreetMapScreen", "Attempting to zoom to bounding box: " +
+                                "north=${boundingBox.latNorth}, east=${boundingBox.lonEast}, " +
+                                "south=${boundingBox.latSouth}, west=${boundingBox.lonWest}")
+                        mapView.zoomToBoundingBox(boundingBox, false, 30)
+                        Log.d("OpenStreetMapScreen", "Zoom operation completed")
+                    }
+                } catch (e: Exception) {
+                    Log.e(
+                        "MapViewComposable",
+                        "Getting bounding box from shared preference failed. ${e.message}"
+                    )
+                }
+            }
             // Show overlay maps if exist
             showOverlayIfExist(mapView, context, layers)
 
@@ -584,22 +562,21 @@ private fun setAlphaForLayer(layer: TilesOverlay, alpha: Float = 0f) {
 }
 
 private fun updateSelectedParameters(
-    sharedPreferences: SharedPreferences?,
     showSummits: Boolean,
     showBookmarks: Boolean
 ) {
-    sharedPreferences?.let { prefs ->
-        val osMapBoundingBox = prefs.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")?.split(";")
+    val osMapBoundingBox =
+        sharedPreferences.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")?.split(";")
             ?: emptyList()
-        if (osMapBoundingBox.size == 6) {
-            prefs.edit {
-                putString(
-                    Keys.PREF_OS_MAP_BOUNDING_BOX,
-                    "${osMapBoundingBox[0]};${osMapBoundingBox[1]};${osMapBoundingBox[2]};${osMapBoundingBox[3]};${if (showSummits) 1 else 0};${if (showBookmarks) 1 else 0}"
-                )
-            }
+    if (osMapBoundingBox.size == 6) {
+        sharedPreferences.edit {
+            putString(
+                Keys.PREF_OS_MAP_BOUNDING_BOX,
+                "${osMapBoundingBox[0]};${osMapBoundingBox[1]};${osMapBoundingBox[2]};${osMapBoundingBox[3]};${if (showSummits) 1 else 0};${if (showBookmarks) 1 else 0}"
+            )
         }
     }
+    Log.d(TAG, "Content: ${sharedPreferences.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")}")
 }
 
 private fun showSummitsAndBookmarksIfEnabled(
@@ -608,8 +585,6 @@ private fun showSummitsAndBookmarksIfEnabled(
     showBookmarks: Boolean,
     summits: List<Summit>,
     bookmarks: List<Summit>,
-    sortFilterValues: SortFilterValues,
-    sharedPreferences: SharedPreferences?,
     mGeoPoints: SnapshotStateList<GeoPoint?>,
     mMarkers: SnapshotStateList<Marker?>,
     context: Context,
@@ -618,15 +593,11 @@ private fun showSummitsAndBookmarksIfEnabled(
     if (showSummits || showBookmarks) {
         // In a real implementation, we would set isLoading = true here
         mapView?.enableRoadInfoOnMapClick(coroutineScope)
-        coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.Main.immediate) {
             var filteredSummits: List<Pair<Summit, GeoPoint>> = listOf()
             withContext(Dispatchers.IO) {
-                val relevantSummits = if (showSummits) sortFilterValues.apply(
-                    summits,
-                    sharedPreferences!!
-                ) else emptyList()
-                val relevantBookmarks =
-                    if (showBookmarks) sortFilterValues.applyForBookmarks(bookmarks) else emptyList()
+                val relevantSummits = if (showSummits) summits else emptyList()
+                val relevantBookmarks = if (showBookmarks) bookmarks else emptyList()
 
                 filteredSummits =
                     (relevantSummits + relevantBookmarks).filter {
@@ -687,7 +658,7 @@ private fun addAllMarkers(
         showMyLocation(
             map,
             map.overlays?.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay)
-        coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.Main.immediate) {
             withContext(Dispatchers.IO) {
                 val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(
                     context,
@@ -794,7 +765,7 @@ private fun showAllTracksOfSummitInBoundingBox(
             val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
             if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
                 if (infoWindow.entry.hasGpsTrack()) {
-                    coroutineScope.launch {
+                    coroutineScope.launch(Dispatchers.Main.immediate) {
                         var show = false
                         withContext(Dispatchers.Default) {
                             if (pointsShown < maxPointsToShow) {

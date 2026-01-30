@@ -12,8 +12,8 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.databinding.DialogFileInfoTableBinding
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivity
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +32,7 @@ class FileInfoDialog(
     private val onLoadingStateChanged: (Boolean) -> Unit,
 ) {
 
-    private val cacheDir = File(MainActivity.cache, "file_backups")
+    private val cacheDir = File(MainActivityCompose.cache, "file_backups")
     private lateinit var binding: DialogFileInfoTableBinding
 
     init {

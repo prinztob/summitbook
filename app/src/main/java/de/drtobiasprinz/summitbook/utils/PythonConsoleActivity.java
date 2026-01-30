@@ -12,7 +12,7 @@ import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
 
 import de.drtobiasprinz.summitbook.R;
-import de.drtobiasprinz.summitbook.ui.MainActivity;
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose;
 
 /**
  * Base class for a console-based activity that will run Python code. sys.stdout and sys.stderr
@@ -54,7 +54,7 @@ public abstract class PythonConsoleActivity extends ConsoleActivity {
 
     public static abstract class Task extends ConsoleActivity.Task {
 
-        protected Python py = MainActivity.Companion.getPythonInstance();
+        protected Python py = MainActivityCompose.Companion.getPythonInstance();
         private final PyObject console = py.getModule("chaquopy.utils.console");
         private final PyObject sys = py.getModule("sys");
         int inputType;

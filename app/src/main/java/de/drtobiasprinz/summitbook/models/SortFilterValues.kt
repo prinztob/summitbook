@@ -6,6 +6,7 @@ import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
 import de.drtobiasprinz.summitbook.utils.Constants.DATETIME_FORMAT_SIMPLE
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -97,7 +98,7 @@ class SortFilterValues(
         return selectedDateSpinner >= 2
     }
 
-    fun apply(summits: List<Summit>, sharedPreferences: SharedPreferences): List<Summit> {
+    fun applyForSummits(summits: List<Summit>): List<Summit> {
         setInitialValues(summits, sharedPreferences)
         val filteredSummits = if (searchString != "" && searchString.length > 1) {
             summits.filter {
@@ -138,7 +139,7 @@ class SortFilterValues(
         return sortByAscOrDesc(filteredSummits)
     }
 
-    fun apply(segments: List<Segment>): List<Segment> {
+    fun applyForSegments(segments: List<Segment>): List<Segment> {
         return if (orderByAscDescButtonGroup == OrderByAscDescButtonGroup.Ascending) {
             segments.sortedBy { orderByValueSpinner.segmentSorting(it) }
         } else {

@@ -29,8 +29,8 @@ import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivity
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.storage
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.storage
 import de.drtobiasprinz.summitbook.ui.dialog.FileRowType
 import de.drtobiasprinz.summitbook.ui.utils.DatePreference
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
@@ -410,16 +410,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
 
     private fun showEmptyFolderError() {
-        val anchorView: View? = activity?.findViewById(R.id.content_frame)
         val contextView: View? = this.view?.rootView
-        if (contextView != null && anchorView != null) {
+        if (contextView != null) {
             Snackbar.make(
                 contextView,
                 "The folder used for on-device maps must contain .map files.",
                 Snackbar.LENGTH_INDEFINITE
             )
                 .setAction("Dismiss") { }
-                .setAnchorView(anchorView)
                 .show()
         }
     }
@@ -454,7 +452,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun countFilesToUpdate(summits: List<Summit>, fileRowType: FileRowType): Int {
-        val cacheDir = File(MainActivity.cache, "file_backups")
+        val cacheDir = File(MainActivityCompose.cache, "file_backups")
         return summits.count { summit ->
             val file = fileRowType.getFile(summit)
             val backupFile = File(cacheDir, file.name)
@@ -464,7 +462,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun performBulkUpdate(summits: List<Summit>, fileRowType: FileRowType) {
-        val cacheDir = File(MainActivity.cache, "file_backups")
+        val cacheDir = File(MainActivityCompose.cache, "file_backups")
         val summitsToUpdate = summits.filter { summit ->
             val file = fileRowType.getFile(summit)
             val backupFile = File(cacheDir, file.name)
@@ -509,7 +507,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     if (fileRowType.checkAction(summit)) {
                         withContext(Dispatchers.IO) {
                             val file = fileRowType.getFile(summit)
-                            val cacheDir = File(MainActivity.cache, "file_backups")
+                            val cacheDir = File(MainActivityCompose.cache, "file_backups")
                             if (!cacheDir.exists()) {
                                 cacheDir.mkdirs()
                             }

@@ -51,10 +51,11 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.utils.findActivity
+import kotlinx.coroutines.Job
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -67,27 +68,53 @@ fun SummitsListScreen(
     summits: List<Summit>,
     modifier: Modifier = Modifier,
     isBookmark: Boolean = false,
+    onSaveSummit: (Boolean, Summit) -> Job,
     onUpdateIsFavorite: (Summit) -> Unit = {},
     onUpdateIsPeak: (Summit) -> Unit = {},
     onDelete: (Summit) -> Unit = {}
 ) {
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-    ) {
-        items(
-            items = summits,
-            key = { summit -> summit.id }
-        ) { summit ->
-            SummitCard(
-                summit = summit,
-                isBookmark = isBookmark,
-                onUpdateIsFavorite = onUpdateIsFavorite,
-                onUpdateIsPeak = onUpdateIsPeak,
-                onDelete = onDelete
+    if (summits.isEmpty()) {
+        // Show app icon and "no summit" message when list is empty
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                contentDescription = null,
+                modifier = Modifier.size(120.dp)
             )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.no_summit),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            items(
+                items = summits,
+                key = { summit -> summit.id }
+            ) { summit ->
+                SummitCard(
+                    summits = summits,
+                    summit = summit,
+                    isBookmark = isBookmark,
+                    onUpdateIsFavorite = onUpdateIsFavorite,
+                    onUpdateIsPeak = onUpdateIsPeak,
+                    onDelete = onDelete,
+                    onSaveSummit = onSaveSummit
+                )
+            }
         }
     }
 }
@@ -97,11 +124,13 @@ fun SummitsListScreen(
  */
 @Composable
 fun SummitCard(
+    summits: List<Summit>,
     summit: Summit,
     isBookmark: Boolean,
     onUpdateIsFavorite: (Summit) -> Unit,
     onUpdateIsPeak: (Summit) -> Unit,
-    onDelete: (Summit) -> Unit
+    onDelete: (Summit) -> Unit,
+    onSaveSummit: (Boolean, Summit) -> Job
 ) {
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -212,7 +241,7 @@ fun SummitCard(
                                 fontWeight = FontWeight.Bold
                             )
                         }
-                        
+
                         // Record badges aligned to the right
                         RecordBadges(summit = summit)
                     }
@@ -425,8 +454,10 @@ fun SummitCard(
     if (showEditDialog) {
         AddSummitDialogCompose(
             summitId = summit.id,
+            summits = summits,
             isBookmark = isBookmark,
-            onDismiss = { showEditDialog = false }
+            onDismiss = { showEditDialog = false },
+            onSaveSummit = onSaveSummit
         )
     }
 }
@@ -481,9 +512,17 @@ fun StatItem(icon: Int, text: String, modifier: Modifier = Modifier) {
 fun RecordBadges(summit: Summit) {
     // Power record badge
     val powerRecordColor = when (summit.activityId) {
-        in MainActivity.activitiesWithPowerRecordsAll -> Color.rgb(255, 215, 0) // Gold
-        in MainActivity.activitiesWithPowerRecordsLast5Years -> Color.rgb(192, 192, 192) // Silver
-        in MainActivity.activitiesWithPowerRecordsFiltered -> Color.rgb(168, 112, 0) // Bronze
+        in MainActivityCompose.activitiesWithPowerRecordsAll -> Color.rgb(255, 215, 0) // Gold
+        in MainActivityCompose.activitiesWithPowerRecordsLast5Years -> Color.rgb(
+            192,
+            192,
+            192
+        ) // Silver
+        in MainActivityCompose.activitiesWithPowerRecordsFiltered -> Color.rgb(
+            168,
+            112,
+            0
+        ) // Bronze
         else -> null
     }
 
@@ -502,7 +541,7 @@ fun RecordBadges(summit: Summit) {
 
     // Segment record badge
     val bestPositionInSegment =
-        MainActivity.activitiesWithSegmentsRecord.firstOrNull { it.first == summit.activityId }
+        MainActivityCompose.activitiesWithSegmentsRecord.firstOrNull { it.first == summit.activityId }
 
     if (bestPositionInSegment != null) {
         val segmentColor = when (bestPositionInSegment.second) {

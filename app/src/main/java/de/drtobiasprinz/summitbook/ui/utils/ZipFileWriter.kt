@@ -11,15 +11,15 @@ import de.drtobiasprinz.summitbook.db.entities.GarminData
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
-import de.drtobiasprinz.summitbook.ui.MainActivity
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_CALCULATED_DATA
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_ENTITY_EVENTS
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_FORECASTS
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SEGMENTS
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SUMMITS
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_THIRD_PARTY_DATA
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_VERSION
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_VERSION
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_CALCULATED_DATA
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_ENTITY_EVENTS
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_FORECASTS
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_SEGMENTS
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_SUMMITS
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_THIRD_PARTY_DATA
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_VERSION
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_VERSION
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
@@ -43,7 +43,7 @@ class ZipFileWriter(
     private var entryNumber = 0
     var withImages = 0
     var withGpsFile = 0
-    var dir = MainActivity.cache
+    var dir = MainActivityCompose.cache
 
     fun writeToZipFile(outputStream: OutputStream) {
         val localDir = dir

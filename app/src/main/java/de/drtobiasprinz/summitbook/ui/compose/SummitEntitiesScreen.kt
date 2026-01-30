@@ -1,15 +1,41 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -18,22 +44,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.asFlow
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.models.SummitEntitySummary
 import de.drtobiasprinz.summitbook.models.SummitEntityType
-import de.drtobiasprinz.summitbook.ui.MainActivity
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.sharedPreferences
-import de.drtobiasprinz.summitbook.ui.dialog.AddEntityEventDialog
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.utils.Constants
-import de.drtobiasprinz.summitbook.utils.DataStatus
-import de.drtobiasprinz.summitbook.utils.findActivity
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -46,9 +63,12 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SummitEntitiesScreen(
+    filteredSummits: List<Summit>,
+    entityEvents: List<EntityEvent>,
+    onSaveSummit: (Boolean, Summit) -> Unit,
+    onDeleteEntityEvent: (EntityEvent) -> Unit,
+    onSaveEntityEvent: (Boolean, EntityEvent) -> Unit,
     modifier: Modifier = Modifier,
-    databaseViewModel: DatabaseViewModel = viewModel(),
-    sortFilterValues: SortFilterValues
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabTitles = listOf(
@@ -94,9 +114,12 @@ fun SummitEntitiesScreen(
         // Content for selected tab
         SummitEntitiesList(
             entityType = summitEntityType,
-            databaseViewModel = databaseViewModel,
-            sortFilterValues = sortFilterValues,
-            modifier = Modifier.weight(1f)
+            filteredSummits,
+            entityEvents,
+            modifier = Modifier.weight(1f),
+            onSaveSummit = onSaveSummit,
+            onDeleteEntityEvent = onDeleteEntityEvent,
+            onSaveEntityEvent = onSaveEntityEvent
         )
     }
 }
@@ -107,45 +130,31 @@ fun SummitEntitiesScreen(
 @Composable
 fun SummitEntitiesList(
     entityType: SummitEntityType,
-    databaseViewModel: DatabaseViewModel,
-    sortFilterValues: SortFilterValues,
-    modifier: Modifier = Modifier
+    filteredSummits: List<Summit>,
+    entityEvents: List<EntityEvent>,
+    modifier: Modifier = Modifier,
+    onSaveSummit: (Boolean, Summit) -> Unit,
+    onDeleteEntityEvent: (EntityEvent) -> Unit,
+    onSaveEntityEvent: (Boolean, EntityEvent) -> Unit
 ) {
     val context = LocalContext.current
-    val allSummits by databaseViewModel.summitsList.asFlow()
-        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
-    val entityEvents by databaseViewModel.entityEvents.asFlow()
-        .collectAsStateWithLifecycle(initialValue = emptyList())
 
-    // Show loading state
-    if (allSummits.status == DataStatus.Status.LOADING) {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-        return
-    }
+    // State for entity event dialog
+    var showEntityEventDialog by remember { mutableStateOf(false) }
+    var currentEntityEvent by remember { mutableStateOf<EntityEvent?>(null) }
+    var currentEntity by remember { mutableStateOf<SummitEntitySummary?>(null) }
+    var summits by remember { mutableStateOf<List<Summit>>(filteredSummits) }
 
-    // Show error state
-    if (allSummits.status == DataStatus.Status.ERROR) {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = allSummits.message ?: "Error loading data")
-        }
-        return
-    }
+    // Create a key that changes when any summit is updated
+    val summitsKey = filteredSummits.fold(0L) { acc, summit -> acc + summit.updated }
 
-    val entitySummaries = remember(allSummits, entityEvents, entityType, sortFilterValues) {
+    val entitySummaries = remember(summitsKey, entityEvents, entityType) {
+        Log.d("SummitEntitiesScreen", "Recalculating entitySummaries with key: $summitsKey")
         calculateEntitySummaries(
-            sortFilterValues.apply(allSummits.data ?: emptyList(), sharedPreferences),
+            filteredSummits,
             entityType,
         )
     }
-
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -167,21 +176,41 @@ fun SummitEntitiesList(
                     entity = entity,
                     entityType = entityType,
                     entityEvents = entityEvents,
-                    allSummits = allSummits.data ?: emptyList(),
-                    databaseViewModel = databaseViewModel,
+                    filteredSummits = summits,
                     onUpdateEntity = { oldName, newName ->
                         updateEntityName(
                             context,
                             oldName,
                             newName,
                             entityType,
-                            allSummits.data ?: emptyList(),
-                            databaseViewModel
+                            summits = summits,
+                            onSaveSummit = onSaveSummit,
                         )
+                    },
+                    onDeleteEntityEvent = onDeleteEntityEvent,
+                    onAddEntityEvent = {
+                        currentEntityEvent = null
+                        currentEntity = entity
+                        showEntityEventDialog = true
+                    },
+                    onEditEntityEvent = { event ->
+                        currentEntityEvent = event
+                        currentEntity = entity
+                        showEntityEventDialog = true
                     }
                 )
             }
         }
+    }
+
+    // Entity Event Dialog
+    if (showEntityEventDialog && currentEntity != null) {
+        AddEntityEventDialogCompose(
+            entityEvent = currentEntityEvent,
+            entity = currentEntity!!,
+            onDismiss = { showEntityEventDialog = false },
+            onSaveEntityEvent = onSaveEntityEvent
+        )
     }
 }
 
@@ -192,6 +221,10 @@ private fun calculateEntitySummaries(
     filteredSummits: List<Summit>,
     entityType: SummitEntityType,
 ): List<SummitEntitySummary> {
+    Log.d(
+        "SummitEntitiesScreen",
+        "calculateEntitySummaries called with ${filteredSummits.size} summits"
+    )
 
     val entityNames = filteredSummits.flatMap { entityType.getRelevantValueFromSummit(it) }
         .filter { it.isNotBlank() && !it.startsWith(Constants.CONNECTED_ACTIVITY_PREFIX) }
@@ -221,12 +254,15 @@ private fun updateEntityName(
     newName: String,
     entityType: SummitEntityType,
     summits: List<Summit>,
-    databaseViewModel: DatabaseViewModel
+    onSaveSummit: (Boolean, Summit) -> Unit
 ) {
+    Log.d("SummitEntitiesScreen", "updateEntityName called: $oldName -> $newName")
     summits.forEach { summit ->
         if (oldName in entityType.getRelevantValueFromSummit(summit)) {
+            Log.d("SummitEntitiesScreen", "Updating summit: ${summit.name}")
             entityType.setRelevantValueFromSummit(summit, oldName, newName)
-            databaseViewModel.saveSummit(true, summit)
+            summit.updated++
+            onSaveSummit(true, summit)
         }
     }
     Toast.makeText(context, R.string.update_done, Toast.LENGTH_SHORT).show()
@@ -241,19 +277,21 @@ fun SummitEntityCard(
     entity: SummitEntitySummary,
     entityType: SummitEntityType,
     entityEvents: List<EntityEvent>,
-    allSummits: List<Summit>,
-    databaseViewModel: DatabaseViewModel,
+    filteredSummits: List<Summit>,
     onUpdateEntity: (String, String) -> Unit,
+    onDeleteEntityEvent: (EntityEvent) -> Unit,
+    onAddEntityEvent: () -> Unit,
+    onEditEntityEvent: (EntityEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    Log.d("SummitEntitiesScreen", "SummitEntityCard recomposed: ${entity.name}")
     var isEditing by remember { mutableStateOf(false) }
     var editedName by remember(entity.name) { mutableStateOf(entity.name) }
     var expanded by remember { mutableStateOf(false) }
     val relevantEvents = entityEvents.filter { it.equipmentName == entity.name }
         .sortedByDescending { it.date }
 
-    val isActive = entity.name in MainActivity.peaks.map { it.name }
+    val isActive = entity.name in MainActivityCompose.peaks.map { it.name }
     val imageResourceId = if (isActive && entityType.drawableIdActive != null) {
         entityType.drawableIdActive!!
     } else {
@@ -334,7 +372,7 @@ fun SummitEntityCard(
                         )
                     }
                     IconButton(onClick = {
-                        showAddEntityEventDialog(context, entity)
+                        onAddEntityEvent()
                     }) {
                         Icon(
                             painter = painterResource(R.drawable.baseline_add_black_24dp),
@@ -395,34 +433,15 @@ fun SummitEntityCard(
                             EntityEventItem(
                                 event = event,
                                 summitEntitySummary = entity,
-                                summits = allSummits,
-                                onEditEvent = { showEditEntityEventDialog(context, it, entity) },
-                                onDeleteEvent = { databaseViewModel.deleteEntityEvent(it) }
+                                summits = filteredSummits,
+                                onEditEvent = { onEditEntityEvent(it) },
+                                onDeleteEvent = { onDeleteEntityEvent(it) }
                             )
                         }
                     }
                 }
             }
         }
-    }
-}
-
-/**
- * Show add entity event dialog
- */
-private fun showAddEntityEventDialog(context: Context, entity: SummitEntitySummary) {
-    context.findActivity()?.supportFragmentManager?.let { fragmentManager ->
-        AddEntityEventDialog.getInstance(null, entity).show(fragmentManager, "Add Event")
-    }
-}
-
-private fun showEditEntityEventDialog(
-    context: Context,
-    event: EntityEvent,
-    entity: SummitEntitySummary
-) {
-    context.findActivity()?.supportFragmentManager?.let { fragmentManager ->
-        AddEntityEventDialog.getInstance(event, entity).show(fragmentManager, "Update entity event")
     }
 }
 

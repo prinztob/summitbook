@@ -14,7 +14,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.DailyActivitySummary
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -33,7 +33,7 @@ class GarminDataUpdater(
 
     suspend fun update() {
         startDate = sharedPreferences.getString(Keys.PREF_THIRD_PARTY_START_DATE, null) ?: ""
-        activitiesAtBeginning = MainActivity.activitiesDir?.listFiles()?.size ?: 0
+        activitiesAtBeginning = MainActivityCompose.activitiesDir?.listFiles()?.size ?: 0
         try {
             updateActivities()
         } catch (ex: RuntimeException) {
@@ -95,7 +95,7 @@ class GarminDataUpdater(
         endDate: String,
     ) {
         try {
-            MainActivity.activitiesDir?.let {
+            MainActivityCompose.activitiesDir?.let {
                 val newActivities = pythonExecutor?.downloadActivitiesByDate(
                     it, startDate, endDate
                 )
@@ -116,7 +116,7 @@ class GarminDataUpdater(
             putString(Keys.PREF_THIRD_PARTY_START_DATE, startDateForSync)
         }
         Log.i("AsyncUpdateGarminData", "Done.")
-        activitiesAfterUpdate = MainActivity.activitiesDir?.listFiles()?.size ?: 0
+        activitiesAfterUpdate = MainActivityCompose.activitiesDir?.listFiles()?.size ?: 0
         if (hasUpdates()) {
             Toast.makeText(
                 context,

@@ -5,7 +5,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import java.util.stream.Stream
 
 enum class BarChartYAxisSelector(
@@ -35,7 +35,7 @@ enum class BarChartYAxisSelector(
         { stream, _ ->
             val peaks = mutableListOf<String>()
             stream?.forEach {
-                peaks.addAll(it?.places?.filter { place -> place in MainActivity.peaks.map { peak -> peak.name } }
+                peaks.addAll(it?.places?.filter { place -> place in MainActivityCompose.peaks.map { peak -> peak.name } }
                     ?: emptyList())
                 if (it?.isPeak == true) {
                     peaks.add(it.name)

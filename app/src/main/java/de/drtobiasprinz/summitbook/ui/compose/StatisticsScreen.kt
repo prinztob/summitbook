@@ -21,8 +21,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,32 +34,61 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.models.StatisticEntryDefinitions
 import de.drtobiasprinz.summitbook.models.StatisticGroup
 import de.drtobiasprinz.summitbook.models.StatisticsData
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
-import de.drtobiasprinz.summitbook.viewmodel.StatisticsViewModel
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @Composable
 fun StatisticsScreen(
-    viewModel: StatisticsViewModel = viewModel(),
-    onNavigateToSummitDetails: (Long) -> Unit = { summitId ->
-        // Default implementation - this will be overridden when used in a Fragment
-    }
+    filteredSummits: List<Summit>,
+    forecasts: List<Forecast>,
+    onNavigateToSummitDetails: (Long) -> Unit
 ) {
     val configuration = LocalConfiguration.current
     val numberFormat = NumberFormat.getInstance(configuration.locales[0])
-
-    val statisticsData by viewModel.statisticsData.collectAsState()
-
+    val annualTargetActivity =
+        sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_ACTIVITIES, "52") ?: "52"
+    val annualTargetKm = sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_KM, "1200") ?: "1200"
+    val annualTargetHm = sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET, "50000") ?: "50000"
+    val indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
+    var statisticsData by remember { mutableStateOf(StatisticsData()) }
     LaunchedEffect(Unit) {
-        viewModel.updateStatistics()
+        val statisticEntry = StatisticEntry(
+            filteredSummits,
+            annualTargetActivity.toIntOrNull() ?: 52,
+            annualTargetKm.toIntOrNull() ?: 1200,
+            annualTargetHm.toIntOrNull() ?: 50000,
+            indoorHeightMeterPercent
+        )
+        statisticEntry.calculate()
+
+        val extremaValuesSummits = ExtremaValuesSummits(
+            filteredSummits, shouldIndoorActivityBeExcluded = true
+        )
+
+        statisticsData = StatisticsData(
+            totalActivities = statisticEntry.getTotalActivities(),
+            totalSummits = statisticEntry.getTotalSummits(),
+            totalKm = statisticEntry.totalKm,
+            totalHm = statisticEntry.totalHm,
+            achievement = statisticEntry.getAchievement(),
+            visitedCountries = statisticEntry.getVisitedCountries(),
+            totalRoadSurfaceMeter = statisticEntry.totalRoadSurfaceMeter,
+            totalRoadTypeMeter = statisticEntry.totalRoadTypeMeter,
+            extremaValuesSummits = extremaValuesSummits,
+            forecasts = forecasts,
+            summits = filteredSummits
+        )
     }
 
     LazyColumn(
@@ -114,7 +145,8 @@ fun SummarySection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier
+                .padding(20.dp)
                 .align(Alignment.CenterHorizontally),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -302,7 +334,8 @@ fun ExtremaValuesSection(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
-                modifier = Modifier.padding(20.dp)
+                modifier = Modifier
+                    .padding(20.dp)
                     .align(Alignment.CenterHorizontally),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -314,7 +347,8 @@ fun ExtremaValuesSection(
                 )
 
                 // Velocity section (horizontal scroll)
-                val velocityEntries = StatisticEntryDefinitions.entries.filter { it.group == StatisticGroup.VELOCITY }
+                val velocityEntries =
+                    StatisticEntryDefinitions.entries.filter { it.group == StatisticGroup.VELOCITY }
                 if (velocityEntries.any { entry ->
                         extremaValues.getSummitForEntry(entry) != null
                     }) {
@@ -322,7 +356,8 @@ fun ExtremaValuesSection(
                         text = stringResource(R.string.vertical_speed_up),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .padding(vertical = 8.dp)
                             .align(Alignment.CenterHorizontally)
                     )
                     HorizontalScrollbarContainer {
@@ -362,7 +397,8 @@ fun ExtremaValuesSection(
                 }
 
                 // Speed section (horizontal scroll)
-                val speedEntries = StatisticEntryDefinitions.entries.filter { it.group == StatisticGroup.SPEED }
+                val speedEntries =
+                    StatisticEntryDefinitions.entries.filter { it.group == StatisticGroup.SPEED }
                 if (speedEntries.any { entry ->
                         extremaValues.getSummitForEntry(entry) != null
                     }) {
@@ -409,7 +445,8 @@ fun ExtremaValuesSection(
                 }
 
                 // Power section (horizontal scroll)
-                val powerEntries = StatisticEntryDefinitions.entries.filter { it.group == StatisticGroup.POWER }
+                val powerEntries =
+                    StatisticEntryDefinitions.entries.filter { it.group == StatisticGroup.POWER }
                 if (powerEntries.any { entry ->
                         extremaValues.getSummitForEntry(entry) != null
                     }) {
@@ -492,7 +529,8 @@ fun ExtremaValuesSection(
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                             ) {
                                 Column(
-                                    modifier = Modifier.padding(16.dp)
+                                    modifier = Modifier
+                                        .padding(16.dp)
                                         .align(Alignment.CenterHorizontally),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
@@ -538,7 +576,8 @@ fun RoadTypeSection(statisticsData: StatisticsData) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier
+                .padding(20.dp)
                 .align(Alignment.CenterHorizontally),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -569,7 +608,8 @@ fun HeightMetersSection(statisticsData: StatisticsData) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier
+                .padding(20.dp)
                 .align(Alignment.CenterHorizontally),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -599,7 +639,8 @@ fun AchievementSection(statisticsData: StatisticsData) {
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
-                modifier = Modifier.padding(20.dp)
+                modifier = Modifier
+                    .padding(20.dp)
                     .align(Alignment.CenterHorizontally),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -630,7 +671,8 @@ fun VisitedCountriesSection(statisticsData: StatisticsData, numberFormat: Number
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
-                modifier = Modifier.padding(20.dp)
+                modifier = Modifier
+                    .padding(20.dp)
                     .align(Alignment.CenterHorizontally),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {

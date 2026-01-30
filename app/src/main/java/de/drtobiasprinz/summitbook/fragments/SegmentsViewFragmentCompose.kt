@@ -35,11 +35,11 @@ class SegmentsViewFragmentCompose : Fragment() {
                 SummitBookTheme {
                     val segmentsListState = viewModel.segmentsList.asFlow()
                         .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
-                    val segments = segmentsListState.value.data?.let { sortFilterValues.apply(it) } ?: emptyList()
+                    val segments = segmentsListState.value.data?.let { sortFilterValues.applyForSegments(it) } ?: emptyList()
 
                     SegmentsListScreen(
                         segments = segments,
-                        onDelete = { segment -> viewModel.deleteSegment(segment) }
+                        onDeleteSegment = { segment -> viewModel.deleteSegment(segment) }
                     )
                 }
             }

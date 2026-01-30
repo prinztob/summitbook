@@ -12,7 +12,7 @@ import androidx.core.view.children
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.peaks
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.peaks
 
 
 class CustomAutoCompleteChips(

@@ -570,6 +570,7 @@
     <string name="add_new_event_cancel">"Das Hinzufügen eines neuen Events wurde abgebrochen"</string>
     <string name="event_date">Event Datum</string>
     <string name="event_description">Event Beschreibung</string>
+    <string name="invalid_date">Falsches Datumsformat</string>
     <string name="file_info_title">Dateiinformationen</string>
     <string name="file_name">Dateiname</string>
     <string name="exists">Existiert</string>
@@ -607,5 +608,6 @@
     <string name="number_activities">Number of activities</string>
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>
+    <string name="error">Fehler</string>
 </resources>
 

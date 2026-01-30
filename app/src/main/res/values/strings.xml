@@ -568,6 +568,7 @@
     <string name="update_event_cancel">"Updating an existing event was canceled."</string>
     <string name="add_new_event_cancel">"Adding a new event was canceled."</string>
     <string name="event_date">Event date</string>
+    <string name="invalid_date">Invalid date format</string>
     <string name="event_description">Event Description</string>
     <string name="file_info_title">File Information</string>
     <string name="file_name">File Name</string>
@@ -606,4 +607,5 @@
     <string name="number_activities"># %1$d</string>
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>
+    <string name="error">Error</string>
 </resources>

@@ -46,7 +46,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -642,12 +642,12 @@ private fun updateEntriesWithoutIgnored(
 
     val allEntries = if (showAll) {
         getAllActivitiesFromThirdParty(
-            MainActivity.activitiesDir,
+            MainActivityCompose.activitiesDir,
             activityIdsInSummitBook
         )
     } else {
         getAllActivitiesFromThirdParty(
-            MainActivity.activitiesDir,
+            MainActivityCompose.activitiesDir,
             activityIdsInSummitBook,
             activitiesIdIgnored
         )

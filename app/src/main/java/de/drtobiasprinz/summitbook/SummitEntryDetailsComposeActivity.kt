@@ -41,8 +41,8 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivity
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryDataScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryImagesScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryPowerScreen
@@ -96,8 +96,8 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
                             android.util.Log.i("SummitEntryDetails", "Loading summit: ${summit.id}")
                             hasLoadedSummit = true
                             summitEntry = summit
-                            lifecycleScope.launch {
-                                withContext(Dispatchers.IO) {
+                            lifecycleScope.launch(Dispatchers.Main.immediate) {
+                               withContext(Dispatchers.IO) {
                                     pythonInstance?.let { analyzeAndSimplifyTrack(it, summit) }
                                 }
                             }
@@ -112,7 +112,7 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
         android.util.Log.i("SummitEntryDetails", "Starting track analysis for summit: ${summit.id}")
         
         val useSimplifiedTracks =
-            MainActivity.sharedPreferences.getBoolean("pref_use_simplified_tracks", true)
+            MainActivityCompose.sharedPreferences.getBoolean("pref_use_simplified_tracks", true)
         android.util.Log.i("SummitEntryDetails", "Use simplified tracks: $useSimplifiedTracks")
         
         if (summit.sportType == SportType.IndoorTrainer) {
@@ -129,8 +129,8 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
             summit.sportType != SportType.IndoorTrainer
         ) {
             android.util.Log.i("SummitEntryDetails", "Launching lifecycle scope for simplifying track")
-            lifecycleScope.launch {
-                android.util.Log.i("SummitEntryDetails", "In lifecycle scope launch block")
+            lifecycleScope.launch(Dispatchers.Main.immediate) {
+               android.util.Log.i("SummitEntryDetails", "In lifecycle scope launch block")
                 withContext(Dispatchers.IO) {
                     android.util.Log.i("SummitEntryDetails", "In IO context for simplifying track")
                     try {
@@ -157,8 +157,8 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
             summit.sportType != SportType.IndoorTrainer
         ) {
             android.util.Log.i("SummitEntryDetails", "Launching lifecycle scope for analyzing track")
-            lifecycleScope.launch {
-                android.util.Log.i("SummitEntryDetails", "In lifecycle scope launch block for analysis")
+            lifecycleScope.launch(Dispatchers.Main.immediate) {
+               android.util.Log.i("SummitEntryDetails", "In lifecycle scope launch block for analysis")
                 withContext(Dispatchers.IO) {
                     android.util.Log.i("SummitEntryDetails", "In IO context for analyzing track")
                     try {
@@ -337,7 +337,7 @@ fun SummitEntryDetailsTabs(
                     selected = pagerState.currentPage == index,
                     onClick = {
                         android.util.Log.i("SummitEntryDetails", "Clicking tab $index: ${tab.name}")
-                        coroutineScope.launch {
+                        coroutineScope.launch(Dispatchers.Main.immediate) {
                             pagerState.animateScrollToPage(index)
                         }
                     },

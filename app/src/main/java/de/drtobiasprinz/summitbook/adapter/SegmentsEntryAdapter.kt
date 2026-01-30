@@ -124,8 +124,8 @@ class SegmentsEntryAdapter(
             val fragment: Fragment = AddSegmentEntryFragment.getInstance(
                 segmentDetails.segmentDetailsId, null, segmentEntry.entryId
             )
-            view?.context?.findActivity()?.supportFragmentManager?.beginTransaction()
-                ?.replace(R.id.content_frame, fragment)?.addToBackStack(null)?.commit()
+            //TODO: view?.context?.findActivity()?.supportFragmentManager?.beginTransaction()
+                //?.replace(R.id.content_frame, fragment)?.addToBackStack(null)?.commit()
         }
     }
 

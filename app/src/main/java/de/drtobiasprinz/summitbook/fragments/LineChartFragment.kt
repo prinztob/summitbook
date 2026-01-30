@@ -14,7 +14,6 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.LegendEntry
 import com.github.mikephil.charting.components.XAxis
@@ -66,9 +65,8 @@ class LineChartFragment : Fragment() {
                 itData.data?.let { summits ->
                     lifecycleScope.launch {
                         val filteredSummits = withContext(Dispatchers.IO) {
-                            sortFilterValues.apply(
+                            sortFilterValues.applyForSummits(
                                 summits,
-                                PreferenceManager.getDefaultSharedPreferences(requireContext())
                             )
                         }
                         resizeChart()

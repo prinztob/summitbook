@@ -22,7 +22,7 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
-import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.dialog.FileInfoDialog
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.utils.Utils
@@ -304,7 +304,7 @@ class SelectOnOsMapActivity : FragmentActivity() {
     private val resultLauncherForAddingGpxTrack =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
-                val file = File(MainActivity.cache, "new_gpx_track.gpx")
+                val file = File(MainActivityCompose.cache, "new_gpx_track.gpx")
                 result.data?.data?.also { uri ->
                     contentResolver.openInputStream(uri)?.use { inputStream ->
                         copyGpxFileToCache(inputStream, file)

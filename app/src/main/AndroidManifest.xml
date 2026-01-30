@@ -30,7 +30,7 @@
             android:theme="@style/Theme.MaterialComponents.DayNight.WindowOptOutEdgeToEdge"
             tools:replace="android:theme" />
         <activity
-            android:name="de.drtobiasprinz.summitbook.ui.MainActivity"
+            android:name="de.drtobiasprinz.summitbook.ui.MainActivityCompose"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

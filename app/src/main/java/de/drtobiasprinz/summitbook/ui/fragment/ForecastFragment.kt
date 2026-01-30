@@ -27,7 +27,6 @@ import de.drtobiasprinz.summitbook.databinding.FragmentForecastBinding
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Forecast.Companion.getSumForYear
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.fragments.SummitViewFragment
 import de.drtobiasprinz.summitbook.models.SortFilterValues.Companion.getYear
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
@@ -179,9 +178,9 @@ class ForecastFragment : Fragment() {
     }
 
     private fun back(messageId: Int) {
-        val ft = parentFragmentManager.beginTransaction()
-        ft.replace(R.id.content_frame, SummitViewFragment())
-        ft.commit()
+        //TODO: val ft = parentFragmentManager.beginTransaction()
+        //ft.replace(R.id.content_frame, SummitViewFragment())
+        //ft.commit()
         Toast.makeText(
             activity, getString(messageId), Toast.LENGTH_LONG
         ).show()

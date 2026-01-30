@@ -129,9 +129,9 @@ class SegmentsViewAdapter(var segments: List<Segment>) :
         binding.root.setOnClickListener {
             val fragment = SegmentEntryDetailsFragment()
             fragment.segmentDetailsId = segment.segmentDetails.segmentDetailsId
-            it?.context?.findActivity()?.supportFragmentManager?.beginTransaction()
-                ?.replace(R.id.content_frame, fragment, "SegmentEntryDetailsFragment")
-                ?.addToBackStack(null)?.commit()
+            //TODO: it?.context?.findActivity()?.supportFragmentManager?.beginTransaction()
+//                ?.replace(R.id.content_frame, fragment, "SegmentEntryDetailsFragment")
+//                ?.addToBackStack(null)?.commit()
         }
 
         binding.addSegmentEntry.setOnClickListener { view: View? ->
@@ -140,8 +140,8 @@ class SegmentsViewAdapter(var segments: List<Segment>) :
                 this,
                 null
             )
-            view?.context?.findActivity()?.supportFragmentManager?.beginTransaction()
-                ?.replace(R.id.content_frame, fragment)?.addToBackStack(null)?.commit()
+            //TODO: view?.context?.findActivity()?.supportFragmentManager?.beginTransaction()
+                //?.replace(R.id.content_frame, fragment)?.addToBackStack(null)?.commit()
         }
     }
 

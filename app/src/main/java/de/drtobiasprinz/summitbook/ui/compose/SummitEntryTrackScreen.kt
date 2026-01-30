@@ -73,7 +73,7 @@ import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.getSportTypeForMapProviders
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.sharedPreferences
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
 import de.drtobiasprinz.summitbook.ui.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.SummitUtils
 import de.drtobiasprinz.summitbook.utils.FileHelper
@@ -426,7 +426,7 @@ fun MapControlButtons(
         IconButton(
             onClick = {
                 if (mapView != null && allSummits != null) {
-                    coroutineScope.launch {
+                    coroutineScope.launch(Dispatchers.Main.immediate) {
                         showAllTracksOfSummitInBoundingBox(
                             context = context,
                             mapView = mapView,

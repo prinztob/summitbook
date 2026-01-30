@@ -265,7 +265,7 @@ class BarChartFragment : Fragment() {
     ) {
         lifecycleScope.launch {
             val filteredSummits = withContext(Dispatchers.IO) {
-                val filteredSummits = sortFilterValues.apply(summits, sharedPreferences)
+                val filteredSummits = sortFilterValues.applyForSummits(summits)
                 val summitsToDisplay = if (isChecked) {
                     val time = measureTimeMillis {
                         filteredDailyActivitySummaries =
@@ -275,10 +275,10 @@ class BarChartFragment : Fragment() {
                             )
                     }
                     Log.i("BarChartFragment", "filteredDailyActivitySummaries took $time")
-                    filteredSummits + sortFilterValues.apply(
+                    filteredSummits + sortFilterValues.applyForSummits(
                         parseAsSummit(
                             filteredDailyActivitySummaries
-                        ), sharedPreferences
+                        )
                     )
                 } else {
                     filteredSummits

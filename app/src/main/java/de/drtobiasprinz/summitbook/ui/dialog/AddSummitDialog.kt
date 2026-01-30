@@ -49,9 +49,9 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.ui.CustomAutoCompleteChips
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivity
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.peaks
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.peaks
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.InputFilterMinMax
 import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
@@ -256,7 +256,7 @@ class AddSummitDialog : DialogFragment(), BaseDialog {
             } else {
                 addTrackFromGarmin.setOnClickListener {
                     val activity = requireActivity()
-                    if (activity is MainActivity) {
+                    if (activity is MainActivityCompose) {
                         // Parse the date from the tourDate field if it's set
                         val dateString = binding.tourDate.text.toString()
                         val selectedDate = if (dateString.isNotEmpty()) {

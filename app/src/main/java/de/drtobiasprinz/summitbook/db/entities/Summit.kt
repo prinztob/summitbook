@@ -19,8 +19,8 @@ import de.drtobiasprinz.summitbook.models.RoadType
 import de.drtobiasprinz.summitbook.models.Surface
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.getJsonObjectEntryNotNull
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor.Companion.roundToTwoDigits
-import de.drtobiasprinz.summitbook.ui.MainActivity
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.activitiesDir
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.activitiesDir
 import de.drtobiasprinz.summitbook.utils.Constants
 import de.drtobiasprinz.summitbook.utils.Constants.CONNECTED_ACTIVITY_PREFIX
 import de.drtobiasprinz.summitbook.utils.Constants.DATETIME_FORMAT_COMPLEX
@@ -109,7 +109,7 @@ class Summit(
     }
 
     private fun getRootDirectoryImages(): File {
-        val rootDirectoryImages = File(MainActivity.storage, "$subDirForImages/${activityId}")
+        val rootDirectoryImages = File(MainActivityCompose.storage, "$subDirForImages/${activityId}")
         if (!rootDirectoryImages.exists()) {
             rootDirectoryImages.mkdirs()
         }
@@ -136,12 +136,12 @@ class Summit(
         val fileName = if (simplified) "id_${activityId}_simplified.gpx" else "id_${activityId}.gpx"
         val baseFolder = if (isBookmark) {
             File(
-                MainActivity.storage,
+                MainActivityCompose.storage,
                 if (simplified) subDirForGpsTracksBookmarkSimplified else subDirForGpsTracksBookmark
             )
         } else {
             File(
-                MainActivity.storage,
+                MainActivityCompose.storage,
                 if (simplified) subDirForGpsTracksSimplified else subDirForGpsTracks
             )
         }
@@ -153,7 +153,7 @@ class Summit(
 
     fun getYamlExtensionsFile(): File {
         return File(
-            File(MainActivity.storage, subDirForGpsTrackExtensions),
+            File(MainActivityCompose.storage, subDirForGpsTrackExtensions),
             getGpsTrackPath().name.replace(".gpx", "_extensions.yaml")
         )
     }
@@ -162,10 +162,10 @@ class Summit(
         val fileName = "id_${activityId}_gpxpy.json"
         return if (isBookmark) {
             Paths.get(
-                MainActivity.storage.toString(), subDirForGpsTracksBookmarkExtensions, fileName
+                MainActivityCompose.storage.toString(), subDirForGpsTracksBookmarkExtensions, fileName
             )
         } else {
-            Paths.get(MainActivity.storage.toString(), subDirForGpsTrackExtensions, fileName)
+            Paths.get(MainActivityCompose.storage.toString(), subDirForGpsTrackExtensions, fileName)
         }
     }
 

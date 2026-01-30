@@ -10,9 +10,9 @@ import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivity
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonExecutor
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import org.osmdroid.util.GeoPoint
@@ -344,7 +344,7 @@ class GarminTrackAndDataDownloader(
         fun getTempGpsFilePath(activityId: String, fileEnding: String = ".gpx"): Path {
             val fileName =
                 String.format(Locale.ENGLISH, "id_${activityId}${fileEnding}", activityId)
-            return Paths.get(MainActivity.cache.toString(), fileName)
+            return Paths.get(MainActivityCompose.cache.toString(), fileName)
         }
     }
 

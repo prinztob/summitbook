@@ -20,7 +20,7 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
-import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.utils.Constants.DATABASE
 import java.text.NumberFormat
 import java.util.Calendar
@@ -97,7 +97,7 @@ class SummitBookWidgetProvider : AppWidgetProvider() {
                 } else {
                     setTextFromStatisticEntry(summits, remoteViews, context)
                 }
-                val configIntent = Intent(context, MainActivity::class.java)
+                val configIntent = Intent(context, MainActivityCompose::class.java)
                 val pIntent = PendingIntent.getActivity(
                     context,
                     0,

@@ -24,9 +24,9 @@ import de.drtobiasprinz.summitbook.models.RoadInfo
 import de.drtobiasprinz.summitbook.models.RoadType
 import de.drtobiasprinz.summitbook.models.Surface
 import de.drtobiasprinz.summitbook.models.TrackColor
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.cache
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.sharedPreferences
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.storage
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.cache
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.storage
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.MapTilesHelper
 import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
@@ -392,7 +392,7 @@ class CustomMapViewToAllowScrolling : MapView {
             context: Context, geoPoint: GeoPoint, scope: CoroutineScope
         ) {
             Toast.makeText(context, "Querying road info...", Toast.LENGTH_SHORT).show()
-            scope.launch {
+            scope.launch(Dispatchers.Main.immediate) {
                 try {
                     var info: Pair<RoadInfo?, LocationInfo?>? = null
                     withContext(Dispatchers.IO) {

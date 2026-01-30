@@ -43,7 +43,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -58,7 +57,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.google.gson.JsonObject
@@ -70,13 +68,13 @@ import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.pythonInstance
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.mapsforge.core.model.LatLong
@@ -96,21 +94,16 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun AddSummitDialogCompose(
+    summits: List<Summit>,
     summitId: Long = 0L,
     isBookmark: Boolean = false,
     onDismiss: () -> Unit,
-    viewModel: DatabaseViewModel = hiltViewModel()
+    onSaveSummit: (Boolean, Summit) -> Job,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isEdit = summitId > 0
 
-    // Observe summits list
-    val summitsList by if (isBookmark) {
-        viewModel.bookmarksList.observeAsState()
-    } else {
-        viewModel.summitsList.observeAsState()
-    }
 
     // State management
     var entity by remember { mutableStateOf(createEmptySummit(isBookmark, context)) }
@@ -151,10 +144,10 @@ fun AddSummitDialogCompose(
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let {
-            scope.launch {
+        uri?.let { uriNotNull ->
+            scope.launch(Dispatchers.Main.immediate) {
                 handleGpxTrackUpload(
-                    context, it, entity, isLoading = { isLoading = it },
+                    context, uriNotNull, entity, isLoading = { isLoading = it },
                     onUpdate = { name, km, hm, elev, dur ->
                         summitName = name
                         kilometers = km
@@ -164,36 +157,34 @@ fun AddSummitDialogCompose(
                     },
                     onFileUpdate = { temporaryGpxFile = it },
                     onPointUpdate = { latlngHighestPoint = it },
-                    viewModel
+                    onSaveSummit = onSaveSummit
                 )
             }
         }
     }
 
     // Load existing summit data if editing
-    LaunchedEffect(summitId, summitsList) {
-        if (isEdit && summitsList?.data != null) {
-            summitsList?.data?.firstOrNull { it.id == summitId }?.let { summit ->
-                entity = summit.clone()
-                summitName = entity.name
-                tourDate = entity.getDateAsString() ?: ""
-                selectedSportType = entity.sportType
-                kilometers = if (entity.kilometers > 0.0) entity.kilometers.toString() else ""
-                heightMeter =
-                    if (entity.elevationData.elevationGain > 0) entity.elevationData.elevationGain.toString() else ""
-                topElevation =
-                    if (entity.elevationData.maxElevation > 0) entity.elevationData.maxElevation.toString() else ""
-                duration = if (entity.duration > 0) entity.duration.toString() else ""
-                topSpeed =
-                    if (entity.velocityData.maxVelocity > 0.0) entity.velocityData.maxVelocity.toString() else ""
-                comments = entity.comments
-                participants = entity.participants
-                places = entity.places
-                countries = entity.countries
-                equipments = entity.equipments
-                garminDataFromGarminConnect = entity.garminData
-                performanceState.loadFromGarminData(entity.garminData)
-            }
+    LaunchedEffect(summitId, summits) {
+        summits.firstOrNull { it.id == summitId }?.let { summit ->
+            entity = summit.clone()
+            summitName = entity.name
+            tourDate = entity.getDateAsString() ?: ""
+            selectedSportType = entity.sportType
+            kilometers = if (entity.kilometers > 0.0) entity.kilometers.toString() else ""
+            heightMeter =
+                if (entity.elevationData.elevationGain > 0) entity.elevationData.elevationGain.toString() else ""
+            topElevation =
+                if (entity.elevationData.maxElevation > 0) entity.elevationData.maxElevation.toString() else ""
+            duration = if (entity.duration > 0) entity.duration.toString() else ""
+            topSpeed =
+                if (entity.velocityData.maxVelocity > 0.0) entity.velocityData.maxVelocity.toString() else ""
+            comments = entity.comments
+            participants = entity.participants
+            places = entity.places
+            countries = entity.countries
+            equipments = entity.equipments
+            garminDataFromGarminConnect = entity.garminData
+            performanceState.loadFromGarminData(entity.garminData)
         }
     }
 
@@ -284,7 +275,7 @@ fun AddSummitDialogCompose(
                         if (FileHelper.getOnDeviceMapFiles(context).isNotEmpty()) {
                             IconButton(
                                 onClick = {
-                                    scope.launch {
+                                    scope.launch(Dispatchers.Main.immediate) {
                                         isLoading = true
                                         withContext(Dispatchers.IO) {
                                             (latlngHighestPoint ?: entity.latLng)?.let { point ->
@@ -359,7 +350,7 @@ fun AddSummitDialogCompose(
                             countries, { countries = it },
                             equipments, { equipments = it },
                             comments, { comments = it },
-                            summitsList?.data ?: emptyList(),
+                            summits,
                             elevationAndSpeedExpanded, { elevationAndSpeedExpanded = it },
                             locationDetailsExpanded, { locationDetailsExpanded = it },
                             commentsExpanded, { commentsExpanded = it }
@@ -386,7 +377,7 @@ fun AddSummitDialogCompose(
                             if (isEdit) R.string.update_summit_cancel
                             else R.string.add_new_summit_cancel
                         )
-                        
+
                         Button(
                             onClick = {
                                 onDismiss()
@@ -404,7 +395,7 @@ fun AddSummitDialogCompose(
 
                         Button(
                             onClick = {
-                                scope.launch {
+                                scope.launch(Dispatchers.Main.immediate) {
                                     isLoading = true
                                     saveSummit(
                                         entity, summitName, tourDate, selectedSportType,
@@ -414,7 +405,7 @@ fun AddSummitDialogCompose(
                                         garminDataFromGarminConnect
                                     )
 
-                                    viewModel.saveSummit(isEdit, entity).invokeOnCompletion {
+                                    onSaveSummit(isEdit, entity).invokeOnCompletion {
                                         temporaryGpxFile?.let { tempFile ->
                                             if (tempFile.exists() && entity.sportType != SportType.IndoorTrainer) {
                                                 tempFile.copyTo(
@@ -911,7 +902,12 @@ fun PerformanceDataFields(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    PerformanceField(stringResource(R.string.calories), state.calories, { state.calories = it }, "")
+                    PerformanceField(
+                        stringResource(R.string.calories),
+                        state.calories,
+                        { state.calories = it },
+                        ""
+                    )
                     PerformanceField(
                         stringResource(R.string.average_hr),
                         state.averageHr,
@@ -1140,7 +1136,7 @@ private suspend fun handleGpxTrackUpload(
     onUpdate: (String, String, String, String, String) -> Unit,
     onFileUpdate: (File?) -> Unit,
     onPointUpdate: (GeoPoint?) -> Unit,
-    viewModel: DatabaseViewModel
+    onSaveSummit: (Boolean, Summit) -> Job
 ) {
     isLoading(true)
 
@@ -1181,7 +1177,7 @@ private suspend fun handleGpxTrackUpload(
                 entity.lng = highestElevation?.longitude
                 entity.latLng = highestElevation
 
-                viewModel.saveSummit(true, entity)
+                onSaveSummit(true, entity)
 
                 val gpsTrack = entity.gpsTrack
                 if (gpsTrack != null) {

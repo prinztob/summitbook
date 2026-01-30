@@ -2,7 +2,7 @@ package de.drtobiasprinz.summitbook.models
 
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.peaks
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.peaks
 import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
 import java.text.DateFormat
 import java.text.ParseException

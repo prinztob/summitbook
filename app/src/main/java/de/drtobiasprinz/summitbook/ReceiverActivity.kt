@@ -10,7 +10,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity.Companion.copyGpxFileToCache
 import de.drtobiasprinz.summitbook.databinding.ActivityReceiverBinding
 import de.drtobiasprinz.summitbook.models.TrackColor
-import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
 import de.drtobiasprinz.summitbook.utils.Utils
 import org.osmdroid.config.Configuration
@@ -31,9 +31,9 @@ class ReceiverActivity : AppCompatActivity() {
         Utils.fixEdgeToEdge(binding.root)
 
         Log.i("ReceiverActivity", "onCreate")
-        MainActivity.cache = applicationContext.cacheDir
-        MainActivity.storage = applicationContext.filesDir
-        MainActivity.activitiesDir = File(MainActivity.storage, "activities")
+        MainActivityCompose.cache = applicationContext.cacheDir
+        MainActivityCompose.storage = applicationContext.filesDir
+        MainActivityCompose.activitiesDir = File(MainActivityCompose.storage, "activities")
         binding.osmap.setTileSource(TileSourceFactory.OpenTopo)
 
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
@@ -76,7 +76,7 @@ class ReceiverActivity : AppCompatActivity() {
             "intent was: ${intent.action} , received url ${gpxTrackUri.toString()}"
         )
         if (uri != null) {
-            val file = File(MainActivity.cache, "input_filter_file.gpx")
+            val file = File(MainActivityCompose.cache, "input_filter_file.gpx")
             contentResolver.openInputStream(uri)?.use { inputStream ->
                 copyGpxFileToCache(inputStream, file)
             }

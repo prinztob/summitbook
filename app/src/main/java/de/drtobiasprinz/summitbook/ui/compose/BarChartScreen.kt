@@ -53,10 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
 import androidx.core.content.ContextCompat
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.asFlow
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.DailyActivityHelper.findDailyActivitySummariesWhichWasNotAddedToSummits
@@ -67,10 +63,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.BarChartXAxisSelector
 import de.drtobiasprinz.summitbook.models.BarChartYAxisSelector
 import de.drtobiasprinz.summitbook.models.BarChartZAxisSelector
-import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.utils.IntervalHelper
-import de.drtobiasprinz.summitbook.utils.DataStatus
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.DateFormatSymbols
@@ -82,20 +75,14 @@ import kotlin.math.roundToInt
 
 @Composable
 fun BarChartScreen(
-    viewModel: DatabaseViewModel = hiltViewModel(),
-    sortFilterValues: SortFilterValues
+    filteredSummits: List<Summit>,
+    forecasts: List<Forecast>,
+    dailyActivitySummaryList: List<DailyActivitySummary>,
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val sharedPreferences =
         androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
-
-    val summitsList by viewModel.summitsList.asFlow()
-        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
-    val dailyActivitySummaryList by viewModel.dailyActivitySummary.asFlow()
-        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
-    val forecastList by viewModel.forecastList.asFlow()
-        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
 
     var selectedXAxisSpinnerEntry by remember { mutableStateOf(BarChartXAxisSelector.DateByMonth) }
     var selectedYAxisSpinnerEntry by remember { mutableStateOf(BarChartYAxisSelector.TotalActivities) }
@@ -124,95 +111,81 @@ fun BarChartScreen(
     val xAxisEntries = remember { BarChartXAxisSelector.entries.toList() }
     val yAxisEntries = remember { BarChartYAxisSelector.entries.toList() }
     val zAxisEntries = remember { BarChartZAxisSelector.entries.toList() }
-
+    val nameLabel = stringResource(selectedYAxisSpinnerEntry.nameId)
+    val unitLabel = stringResource(selectedYAxisSpinnerEntry.unitId)
+    val weekLabel = stringResource(R.string.calender_wek_abrv)
+    val allLabel = stringResource(R.string.all)
     val symbols = DateFormatSymbols()
     val monthNames = remember {
-        mutableListOf(context.getString(R.string.all)).apply {
+        mutableListOf(allLabel).apply {
             addAll(symbols.shortMonths.toList())
         }
     }
 
     // Process data when summits or filters change
     LaunchedEffect(
-        summitsList,
+        filteredSummits,
         dailyActivitySummaryList,
-        forecastList,
+        forecasts,
         selectedXAxisSpinnerEntry,
         selectedYAxisSpinnerEntry,
         selectedZAxisSpinnerEntry,
         selectedXAxisSpinnerMonth,
         includeFilteredDailyActivitySummaries,
-        sortFilterValues
     ) {
-        summitsList.data?.let { summits ->
-            dailyActivitySummaryList.data?.let { dailyActivitySummaries ->
-                forecastList.data?.let { forecasts ->
-                    // Get labels before switching to IO context
-                    val nameLabel = context.getString(selectedYAxisSpinnerEntry.nameId)
-                    val unitLabel = context.getString(selectedYAxisSpinnerEntry.unitId)
-                    val weekLabel = context.getString(R.string.calender_wek_abrv)
 
-                    val filteredSummits = sortFilterValues.apply(
-                        summits,
-                        sharedPreferences
+        if (filteredSummits.isNotEmpty()) {
+            val summitsToDisplay = if (includeFilteredDailyActivitySummaries) {
+                val filteredDailyActivities =
+                    findDailyActivitySummariesWhichWasNotAddedToSummits(
+                        dailyActivitySummaryList,
+                        filteredSummits
                     )
-
-                    if (filteredSummits.isNotEmpty()) {
-                        val summitsToDisplay = if (includeFilteredDailyActivitySummaries) {
-                            val filteredDailyActivities =
-                                findDailyActivitySummariesWhichWasNotAddedToSummits(
-                                    dailyActivitySummaries,
-                                    filteredSummits
-                                )
-                            filteredDailyActivitySummaries = filteredDailyActivities
-                            filteredSummits + parseAsSummit(filteredDailyActivities)
-                        } else {
-                            filteredSummits
-                        }
-
-                        minDate = summitsToDisplay.minByOrNull { it.date }?.date ?: Date()
-                        intervalHelper = IntervalHelper(summitsToDisplay)
-
-                        // Move heavy computation to IO thread
-                        val (barEntries, lineEntries) = withContext(Dispatchers.IO) {
-                            // Generate bar chart entries
-                            val barEntries = generateBarChartEntries(
-                                summitsToDisplay,
-                                selectedXAxisSpinnerEntry,
-                                selectedYAxisSpinnerEntry,
-                                selectedZAxisSpinnerEntry,
-                                selectedXAxisSpinnerMonth,
-                                intervalHelper!!,
-                                minDate,
-                                sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0),
-                                weekLabel
-                            )
-
-                            // Generate forecast line entries
-                            val lineEntries = generateForecastLineEntries(
-                                forecasts,
-                                selectedXAxisSpinnerEntry,
-                                selectedYAxisSpinnerEntry,
-                                selectedXAxisSpinnerMonth,
-                                intervalHelper!!,
-                            )
-
-                            Pair(barEntries, lineEntries)
-                        }
-
-                        barChartEntries = barEntries
-                        lineChartEntriesForecast = lineEntries
-                    }
-
-                    // Update labels after background work
-                    label = nameLabel
-                    unit = unitLabel
-                }
+                filteredDailyActivitySummaries = filteredDailyActivities
+                filteredSummits + parseAsSummit(filteredDailyActivities)
+            } else {
+                filteredSummits
             }
+
+            minDate = summitsToDisplay.minByOrNull { it.date }?.date ?: Date()
+            intervalHelper = IntervalHelper(summitsToDisplay)
+
+            // Move heavy computation to IO thread
+            val (barEntries, lineEntries) = withContext(Dispatchers.IO) {
+                // Generate bar chart entries
+                val barEntries = generateBarChartEntries(
+                    summitsToDisplay,
+                    selectedXAxisSpinnerEntry,
+                    selectedYAxisSpinnerEntry,
+                    selectedZAxisSpinnerEntry,
+                    selectedXAxisSpinnerMonth,
+                    intervalHelper!!,
+                    minDate,
+                    sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0),
+                    weekLabel
+                )
+
+                // Generate forecast line entries
+                val lineEntries = generateForecastLineEntries(
+                    forecasts,
+                    selectedXAxisSpinnerEntry,
+                    selectedYAxisSpinnerEntry,
+                    selectedXAxisSpinnerMonth,
+                    intervalHelper!!,
+                )
+
+                Pair(barEntries, lineEntries)
+            }
+
+            barChartEntries = barEntries
+            lineChartEntriesForecast = lineEntries
         }
+
+        // Update labels after background work
+        label = nameLabel
+        unit = unitLabel
     }
 
-    // Determine if dark theme is enabled
     val isDarkTheme = when (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
         Configuration.UI_MODE_NIGHT_YES -> true
         Configuration.UI_MODE_NIGHT_NO -> false
@@ -728,11 +701,14 @@ fun BarChart(
                     for (i in 1 until lineDataPoints.size) {
                         val prevPoint = lineDataPoints[i - 1]
                         val point = lineDataPoints[i]
-                        val prevX = (prevPoint.x - paddedMinX) / (paddedMaxX - paddedMinX) * chartWidth
-                        val prevY = chartHeight - (prevPoint.y - paddedMinY) / (paddedMaxY - paddedMinY) * chartHeight
+                        val prevX =
+                            (prevPoint.x - paddedMinX) / (paddedMaxX - paddedMinX) * chartWidth
+                        val prevY =
+                            chartHeight - (prevPoint.y - paddedMinY) / (paddedMaxY - paddedMinY) * chartHeight
                         val x = (point.x - paddedMinX) / (paddedMaxX - paddedMinX) * chartWidth
-                        val y = chartHeight - (point.y - paddedMinY) / (paddedMaxY - paddedMinY) * chartHeight
-                        
+                        val y =
+                            chartHeight - (point.y - paddedMinY) / (paddedMaxY - paddedMinY) * chartHeight
+
                         // Draw stepped line: horizontal line to current x, then vertical line to current y
                         lineTo(x, prevY)  // Horizontal step
                         lineTo(x, y)      // Vertical step
@@ -897,7 +873,7 @@ fun ChartMarker(
 
     val text = buildString {
         append("${dataPoint.label}\n")
-        
+
         // Display individual sport type values
         dataPoint.yValues.forEachIndexed { index, value ->
             if (index < stackLabels.size) {
@@ -906,11 +882,11 @@ fun ChartMarker(
                 append("Item $index: ${value.roundToInt()} $unit\n")
             }
         }
-        
+
         // Display total
         val total = dataPoint.yValues.sum()
         append("${context.getString(R.string.total)}: ${total.roundToInt()} $unit")
-        
+
         if (forecastValue > 0) {
             append("\n${context.getString(R.string.forecast_abbr)}: ${forecastValue.roundToInt()} $unit")
         }

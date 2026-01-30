@@ -1,9 +1,5 @@
 package de.drtobiasprinz.summitbook.fragments
 
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,64 +41,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.asFlow
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.sharedPreferences
-import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
-import de.drtobiasprinz.summitbook.utils.DataStatus
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
 import de.drtobiasprinz.summitbook.utils.ForecastConstants
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import kotlinx.coroutines.Job
 import java.util.Calendar
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 
-@AndroidEntryPoint
-class ForecastFragmentCompose : Fragment() {
-
-    private val viewModel: DatabaseViewModel by viewModels()
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
-            setContent {
-                SummitBookTheme {
-                    ForecastScreen(
-                        viewModel = viewModel,
-                        onNavigateBack = { navigateBack() }
-                    )
-                }
-            }
-        }
-    }
-
-    private fun navigateBack() {
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.content_frame, SummitViewFragment())
-            .commit()
-    }
-}
-
 @Composable
 fun ForecastScreen(
-    viewModel: DatabaseViewModel,
-    onNavigateBack: () -> Unit
+    summits: List<Summit>,
+    forecasts: MutableList<Forecast>,
+    onNavigateBack: () -> Unit = {},
+    onSaveForecasts: (Boolean, List<Forecast>) -> Job
 ) {
     val context = LocalContext.current
 
@@ -125,46 +85,24 @@ fun ForecastScreen(
     var selectedYear by remember { mutableIntStateOf(0) } // 0 = current year, 1 = next year
     var selectedProperty by remember { mutableIntStateOf(0) } // 0 = height meter, 1 = km, 2 = activities
     var forecastsUpdated by remember { mutableStateOf(false) }
-    var summits by remember { mutableStateOf<List<Summit>?>(null) }
 
-    val summitsList by viewModel.summitsList.asFlow()
-        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
-    val forecastList by viewModel.forecastList.asFlow()
-        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
-
-    LaunchedEffect(Unit) {
-        viewModel.getAllSummits()
-        viewModel.getAllForecasts()
-    }
 
     // Update forecasts if needed
-    LaunchedEffect(summitsList, forecastList) {
-        summitsList.data?.let { newSummits ->
-            summits = newSummits
-            if (!forecastsUpdated && newSummits.isNotEmpty()) {
-                forecastsUpdated = true
-                val yearsWithForecasts = listOf(currentYear, currentYear + 1)
-                val forecasts = forecastList.data ?: emptyList()
-                updateMissingForecasts(yearsWithForecasts, forecasts, newSummits, viewModel)
-            }
+    LaunchedEffect(summits, forecasts) {
+        if (!forecastsUpdated && summits.isNotEmpty()) {
+            forecastsUpdated = true
+            val yearsWithForecasts = listOf(currentYear, currentYear + 1)
+            updateMissingForecasts(yearsWithForecasts, forecasts, summits, onSaveForecasts)
         }
-    }
-
-    // Update actual values for current year
-    LaunchedEffect(forecastList) {
-        forecastList.data?.let { forecasts ->
-            summits?.let { summits ->
-                forecasts.forEach { forecast ->
-                    if (forecast.year == currentYear && forecast.month <= currentMonth) {
-                        forecast.setActual(summits, indoorHeightMeterPercent)
-                    }
-                }
+        forecasts.forEach { forecast ->
+            if (forecast.year == currentYear && forecast.month <= currentMonth) {
+                forecast.setActual(summits, indoorHeightMeterPercent)
             }
         }
     }
 
     when {
-        summitsList.data == null && forecastList.data == null -> {
+        forecasts.isEmpty() && summits.isEmpty() -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -173,7 +111,7 @@ fun ForecastScreen(
             }
         }
 
-        summitsList.data == null || forecastList.data == null -> {
+        forecasts.isEmpty() || summits.isEmpty() -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -187,7 +125,6 @@ fun ForecastScreen(
 
         else -> {
             val year = if (selectedYear == 0) currentYear else currentYear + 1
-            val forecasts = (forecastList.data ?: emptyList()).toMutableList()
 
             val sum = Forecast.getSumForYear(
                 year, forecasts, selectedProperty, currentYear, currentMonth
@@ -243,7 +180,12 @@ fun ForecastScreen(
                         IconButton(
                             onClick = {
                                 if (selectedYear == 1) {
-                                    updateForecastsForYear(forecasts, year, summits, viewModel)
+                                    updateForecastsForYear(
+                                        forecasts,
+                                        year,
+                                        summits,
+                                        onSaveForecasts
+                                    )
                                 } else {
                                     Toast.makeText(context, textForToast, Toast.LENGTH_LONG).show()
                                 }
@@ -262,7 +204,7 @@ fun ForecastScreen(
                             onClick = {
                                 // Save all forecasts for the current selected year
                                 val forecastsToSave = forecasts.filter { it.year == year }
-                                val job = viewModel.saveForecasts(true, forecastsToSave)
+                                val job = onSaveForecasts(true, forecastsToSave)
                                 job.invokeOnCompletion {
                                     Toast.makeText(
                                         context,
@@ -402,10 +344,10 @@ fun ForecastScreen(
                                     year,
                                     summits,
                                     forecasts,
-                                    viewModel
+                                    onSaveForecasts = onSaveForecasts
                                 )
                             },
-                            viewModel = viewModel
+                            onSaveForecasts = onSaveForecasts
                         )
                     }
                 }
@@ -424,7 +366,7 @@ fun ForecastMonthRow(
     selectedProperty: Int,
     onForecastChanged: (Forecast) -> Unit,
     onRecalculate: () -> Unit,
-    viewModel: DatabaseViewModel?
+    onSaveForecasts: (Boolean, List<Forecast>) -> Job
 ) {
     val isCurrentYear = year == currentYear
     val isPastMonth = year == currentYear && month < currentMonth
@@ -589,7 +531,7 @@ fun ForecastMonthRow(
                 valueRange = 0f..maxValue,
                 steps = calculatedSteps,
                 onValueChangeFinished = {
-                    viewModel?.saveForecast(false, forecast)
+                    onSaveForecasts(false, listOf(forecast))
                 },
                 enabled = isSliderEnabled,
                 colors = SliderDefaults.colors(
@@ -654,7 +596,7 @@ private fun updateMissingForecasts(
     years: List<Int>,
     forecasts: List<Forecast>,
     summits: List<Summit>,
-    viewModel: DatabaseViewModel
+    onSaveForecasts: (Boolean, List<Forecast>) -> Job
 ) {
     for (year in years) {
         for (month in 1..12) {
@@ -669,7 +611,7 @@ private fun updateMissingForecasts(
             )
             val existingForecast = forecasts.firstOrNull { it.month == month && it.year == year }
             if (existingForecast == null) {
-                viewModel.saveForecast(false, updatedForecast)
+                onSaveForecasts(false, listOf(updatedForecast))
             }
         }
     }
@@ -679,7 +621,7 @@ private fun updateForecastsForYear(
     forecasts: List<Forecast>,
     year: Int,
     summits: List<Summit>?,
-    viewModel: DatabaseViewModel,
+    onSaveForecasts: (Boolean, List<Forecast>) -> Job
 ) {
     for (month in 1..12) {
         updateForecastForMonthAndYear(
@@ -687,7 +629,7 @@ private fun updateForecastsForYear(
             year,
             summits,
             forecasts,
-            viewModel
+            onSaveForecasts = onSaveForecasts
         )
     }
 }
@@ -697,7 +639,7 @@ private fun updateForecastForMonthAndYear(
     year: Int,
     summits: List<Summit>?,
     forecasts: List<Forecast>,
-    viewModel: DatabaseViewModel
+    onSaveForecasts: (Boolean, List<Forecast>) -> Job
 ) {
     val updatedForecast = Forecast.getNewForecastFrom(
         month,
@@ -710,7 +652,7 @@ private fun updateForecastForMonthAndYear(
     )
     val existingForecast = forecasts.firstOrNull { it.month == month && it.year == year }
     if (existingForecast == null) {
-        viewModel.saveForecast(false, updatedForecast)
+        onSaveForecasts(false, listOf(updatedForecast))
     } else {
         existingForecast.forecastDistance = updatedForecast.forecastDistance
         existingForecast.forecastHeightMeter = updatedForecast.forecastHeightMeter
@@ -755,103 +697,4 @@ fun AlertDialog(
         confirmButton = confirmButton,
         dismissButton = dismissButton
     )
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun ForecastScreenPreview() {
-    SummitBookTheme {
-        // Show a simplified preview with sample data
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            // Sample overview text
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Column(modifier = Modifier.padding(8.dp)) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_refresh_24),
-                        contentDescription = "Recalculate"
-                    )
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_save_black_24dp),
-                        contentDescription = "Save"
-                    )
-                }
-                Text(
-                    text = "2025: 45000 hm / 50000 hm",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(15.dp)
-                        .shadow(4.dp, RoundedCornerShape(4.dp))
-                        .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
-                        .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    textAlign = TextAlign.Center,
-                    color = Color.Red
-                )
-            }
-
-            // Year buttons
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Button(onClick = {}) { Text("Current Year") }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(onClick = {}) { Text("Next Year") }
-            }
-
-            // Property buttons
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Button(onClick = {}) { Text("HM") }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(onClick = {}) { Text("KM") }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(onClick = {}) { Text("Activities") }
-            }
-
-            // Sample month rows
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(3) { index ->
-                    val sampleForecast = Forecast(
-                        year = 2025,
-                        month = index + 1,
-                        forecastHeightMeter = 4000 + index * 500,
-                        forecastDistance = 80 + index * 10,
-                        forecastNumberActivities = 8 + index
-                    )
-                    ForecastMonthRow(
-                        month = index + 1,
-                        year = 2025,
-                        forecasts = listOf(sampleForecast),
-                        currentYear = 2025,
-                        currentMonth = 3,
-                        selectedProperty = 0,
-                        onForecastChanged = {},
-                        onRecalculate = {},
-                        viewModel = null
-                    )
-                }
-            }
-        }
-    }
 }

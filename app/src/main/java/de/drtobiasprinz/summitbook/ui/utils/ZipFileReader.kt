@@ -2,13 +2,13 @@ package de.drtobiasprinz.summitbook.ui.utils
 
 import android.util.Log
 import de.drtobiasprinz.summitbook.db.entities.*
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_CALCULATED_DATA
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_ENTITY_EVENTS
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_FORECASTS
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SEGMENTS
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_SUMMITS
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_THIRD_PARTY_DATA
-import de.drtobiasprinz.summitbook.ui.MainActivity.Companion.CSV_FILE_NAME_VERSION
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_CALCULATED_DATA
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_ENTITY_EVENTS
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_FORECASTS
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_SEGMENTS
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_SUMMITS
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_THIRD_PARTY_DATA
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_VERSION
 import de.drtobiasprinz.summitbook.utils.ZipFileVersions
 import kotlinx.coroutines.Job
 import java.io.*

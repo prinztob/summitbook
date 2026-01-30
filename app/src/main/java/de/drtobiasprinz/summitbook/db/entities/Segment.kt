@@ -2,7 +2,7 @@ package de.drtobiasprinz.summitbook.db.entities
 
 import androidx.room.Embedded
 import androidx.room.Relation
-import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import java.io.File
 
 
@@ -51,7 +51,7 @@ data class Segment(
         }
 
         fun getMapScreenshotFile(segmentDetailsId: Long): File {
-            return File(MainActivity.segmentScreenshotDir, "id_${segmentDetailsId}.jpg")
+            return File(MainActivityCompose.segmentScreenshotDir, "id_${segmentDetailsId}.jpg")
         }
 
         fun parseFromCsvFileLine(

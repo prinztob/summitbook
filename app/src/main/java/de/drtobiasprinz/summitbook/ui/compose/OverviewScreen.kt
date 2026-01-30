@@ -41,9 +41,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.asFlow
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.LegendEntry
@@ -61,13 +58,11 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.ui.GraphType
-import de.drtobiasprinz.summitbook.ui.MainActivity
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.PerformanceGraphProvider
 import de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
 import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
 import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
-import de.drtobiasprinz.summitbook.utils.DataStatus
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -79,7 +74,8 @@ import java.util.Date
 
 @Composable
 fun OverviewScreen(
-    viewModel: DatabaseViewModel = hiltViewModel(),
+    filteredSummits: List<Summit>,
+    forecasts: List<Forecast>,
     sortFilterValues: SortFilterValues
 ) {
     // State variables
@@ -91,31 +87,16 @@ fun OverviewScreen(
     var currentYear by remember { mutableIntStateOf(Calendar.getInstance()[Calendar.YEAR]) }
     var selectedYear by remember { mutableIntStateOf(currentYear) }
 
-    val sharedPreferences = MainActivity.sharedPreferences
+    val sharedPreferences = MainActivityCompose.sharedPreferences
     val indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
     val numberFormat = NumberFormat.getInstance(java.util.Locale.getDefault())
 
-    // Observing data
-    val summitsList = viewModel.summitsList.asFlow()
-        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
-    val forecastsList = viewModel.forecastList.asFlow()
-        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
-
-
     // Calculate statistics when data changes
-    LaunchedEffect(summitsList.value, forecastsList.value) {
-        summitsList.value.data?.let { summits ->
-            val filteredSummits = sortFilterValues.apply(summits, sharedPreferences)
-
+    LaunchedEffect(filteredSummits, forecasts) {
             // Calculate statistics
             numberFormat.maximumFractionDigits = 0
             val statisticEntry = StatisticEntry(filteredSummits, indoorHeightMeterPercent)
             statisticEntry.calculate()
-            // Update charts when data is available
-            forecastsList.value.data?.let { forecasts ->
-                // Chart data will be updated in the chart composable
-            }
-        }
     }
     Column(
         modifier = Modifier
@@ -124,10 +105,8 @@ fun OverviewScreen(
     ) {
         // Overview header section
         OverviewHeader(
-            summitsList = summitsList.value,
-            forecastsList = forecastsList.value,
-            sortFilterValues = sortFilterValues,
-            sharedPreferences = sharedPreferences,
+            filteredSummits = filteredSummits,
+            forecastsList = forecasts,
             indoorHeightMeterPercent = indoorHeightMeterPercent,
             numberFormat = numberFormat,
             showMonths = showMonths,
@@ -138,10 +117,10 @@ fun OverviewScreen(
         )
 
         // Chart section (conditionally visible)
-        if ((showMonths || showYears) && summitsList.value.data != null && forecastsList.value.data != null) {
+        if ((showMonths || showYears) && filteredSummits.isNotEmpty() && forecasts.isNotEmpty()) {
             ChartSection(
-                summits = summitsList.value.data!!,
-                forecasts = forecastsList.value.data!!,
+                summits = filteredSummits,
+                forecasts = forecasts,
                 selectedGraphType = selectedGraphType,
                 onGraphTypeSelected = { selectedGraphType = it },
                 showMonths = showMonths,
@@ -163,10 +142,8 @@ fun OverviewScreen(
 
 @Composable
 fun OverviewHeader(
-    summitsList: DataStatus<List<Summit>>,
-    forecastsList: DataStatus<List<Forecast>>,
-    sortFilterValues: SortFilterValues,
-    sharedPreferences: android.content.SharedPreferences,
+    filteredSummits: List<Summit>,
+    forecastsList: List<Forecast>,
     indoorHeightMeterPercent: Int,
     numberFormat: NumberFormat,
     showMonths: Boolean,
@@ -180,9 +157,8 @@ fun OverviewHeader(
     var summitsText by remember { mutableStateOf("") }
 
     // Update text when data changes
-    LaunchedEffect(summitsList, forecastsList) {
-        summitsList.data?.let { summits ->
-            val filteredSummits = sortFilterValues.apply(summits, sharedPreferences)
+    LaunchedEffect(filteredSummits, forecastsList) {
+
 
             // Calculate statistics
             numberFormat.maximumFractionDigits = 0
@@ -190,7 +166,7 @@ fun OverviewHeader(
             statisticEntry.calculate()
             val peaks = filteredSummits.filter { it.isPeak }
             val numberOfPeaks = peaks.size + filteredSummits.flatMap { it.places }
-                .filter { it in MainActivity.peaks.map { peak -> peak.name } }.size
+                .filter { it in MainActivityCompose.peaks.map { peak -> peak.name } }.size
 
             // Format the text with string resources
             activitiesText = "${
@@ -206,7 +182,6 @@ fun OverviewHeader(
             } km, ${
                 numberFormat.format(peaks.sumOf { it.elevationData.elevationGain })
             } hm"
-        }
     }
 
     Card(
@@ -339,7 +314,6 @@ fun ChartSection(
                 numberFormat = numberFormat,
                 sortFilterValues = sortFilterValues,
                 onToggleYears = onToggleYears,
-                // Increase height when monthly chart is not visible
                 expandedHeight = !showMonths || currentYear != selectedYear
             )
         }

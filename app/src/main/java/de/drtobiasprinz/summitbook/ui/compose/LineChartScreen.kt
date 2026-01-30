@@ -54,17 +54,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
 import androidx.core.content.ContextCompat
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.asFlow
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.OrderBySpinnerEntry
-import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
-import de.drtobiasprinz.summitbook.utils.DataStatus
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -72,15 +66,12 @@ import kotlin.math.abs
 
 @Composable
 fun LineChartScreen(
-    viewModel: DatabaseViewModel = hiltViewModel(),
-    sortFilterValues: SortFilterValues,
+    filteredSummits: List<Summit>,
     onNavigateToSummitDetails: (Long) -> Unit = {}
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val primaryColor = MaterialTheme.colorScheme.primary
-    val summitsList by viewModel.summitsList.asFlow()
-        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
 
     var lineChartSpinnerEntry by remember { mutableStateOf(OrderBySpinnerEntry.HeightMeter) }
     var lineChartEntries by remember { mutableStateOf<List<ChartDataPoint>>(emptyList()) }
@@ -92,51 +83,44 @@ fun LineChartScreen(
     }
 
     // Process data when summits change
-    LaunchedEffect(summitsList, lineChartSpinnerEntry, sortFilterValues) {
-        summitsList.data?.let { summits ->
-            withContext(Dispatchers.IO) {
-                val filteredSummits = sortFilterValues.apply(
-                    summits,
-                    androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
-                )
-
-                // Set line chart entries
-                val useEntries = filteredSummits.filter {
-                    val value = lineChartSpinnerEntry.f(it)
-                    if (value != null) {
-                        if (!lineChartSpinnerEntry.includeIndoorActivities) {
-                            if (it.sportType == SportType.IndoorTrainer) false else value > 0
-                        } else {
-                            value > 0
-                        }
+    LaunchedEffect(filteredSummits, lineChartSpinnerEntry) {
+        withContext(Dispatchers.IO) {
+            // Set line chart entries
+            val useEntries = filteredSummits.filter {
+                val value = lineChartSpinnerEntry.f(it)
+                if (value != null) {
+                    if (!lineChartSpinnerEntry.includeIndoorActivities) {
+                        if (it.sportType == SportType.IndoorTrainer) false else value > 0
                     } else {
-                        false
+                        value > 0
                     }
-                }.sortedBy { it.date }
-
-                var accumulator = 0f
-                val colors = useEntries.map {
-                    val colorRes = ContextCompat.getColor(context, it.sportType.color)
-                    Color(colorRes)
+                } else {
+                    false
                 }
+            }.sortedBy { it.date }
 
-                val entries = useEntries.map {
-                    val value = if (!lineChartSpinnerEntry.accumulate) {
-                        lineChartSpinnerEntry.f(it)
-                    } else {
-                        accumulator += lineChartSpinnerEntry.f(it) ?: 0f
-                        accumulator
-                    }
-                    ChartDataPoint(
-                        x = it.getDateAsFloat(),
-                        y = value ?: 0f,
-                        summit = it,
-                        color = colors.getOrNull(useEntries.indexOf(it)) ?: Color.Black
-                    )
-                }
-
-                lineChartEntries = entries
+            var accumulator = 0f
+            val colors = useEntries.map {
+                val colorRes = ContextCompat.getColor(context, it.sportType.color)
+                Color(colorRes)
             }
+
+            val entries = useEntries.map {
+                val value = if (!lineChartSpinnerEntry.accumulate) {
+                    lineChartSpinnerEntry.f(it)
+                } else {
+                    accumulator += lineChartSpinnerEntry.f(it) ?: 0f
+                    accumulator
+                }
+                ChartDataPoint(
+                    x = it.getDateAsFloat(),
+                    y = value ?: 0f,
+                    summit = it,
+                    color = colors.getOrNull(useEntries.indexOf(it)) ?: Color.Black
+                )
+            }
+
+            lineChartEntries = entries
         }
     }
 
@@ -245,7 +229,7 @@ fun LineChartScreen(
                 }
             }
         }
-        
+
         // Legend section
         Legend(
             lineChartSpinnerEntry = lineChartSpinnerEntry,
@@ -568,7 +552,7 @@ fun Legend(
     val context = LocalContext.current
     val backgroundColor = if (isDarkTheme) Color(0xFF1E1E1E) else Color.White
     val textColor = if (isDarkTheme) Color.White else Color.Black
-    
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -599,7 +583,7 @@ fun Legend(
                     )
                 }
             }
-            
+
             // Sport type legend entries
             items(sportTypes) { sportType ->
                 Row(
