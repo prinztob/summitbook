@@ -613,4 +613,10 @@
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>
     <string name="error">Error</string>
+    <string name="add_additional_data">Add Additional Data</string>
+    <string name="no_additional_data_available">No additional data available</string>
+    <string name="new_value">New Value</string>
+    <string name="old_value">Old Value</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
 </resources>

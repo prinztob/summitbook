@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
 import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -42,15 +43,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.SegmentEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
-import de.drtobiasprinz.summitbook.fragments.AddSegmentEntryFragment
-import de.drtobiasprinz.summitbook.fragments.SegmentEntryDetailsFragmentCompose
-import de.drtobiasprinz.summitbook.ui.dialog.AddSegmentDetailsDialog
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.utils.findActivity
+import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.util.Locale
 
 /**
@@ -60,10 +63,18 @@ import java.util.Locale
 @Composable
 fun SegmentsListScreen(
     segments: List<Segment>,
+    summits: List<Summit>,
     modifier: Modifier = Modifier,
     onDeleteSegment: (Segment) -> Unit = {},
     onDeleteSegmentEntry: (SegmentEntry) -> Unit = {}
 ) {
+    val viewModel: DatabaseViewModel = viewModel()
+    var showAddSegmentEntryDialog by remember { mutableStateOf(false) }
+    var selectedSegmentId by remember { mutableStateOf(0L) }
+    var showAddSegmentDetailsDialog by remember { mutableStateOf(false) }
+    var showEditSegmentDetailsDialog by remember { mutableStateOf(false) }
+    var selectedSegmentDetails by remember { mutableStateOf<SegmentDetails?>(null) }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -76,14 +87,60 @@ fun SegmentsListScreen(
         ) { segment ->
             SegmentCard(
                 segment = segment,
-                onDelete = onDeleteSegment
+                onDelete = onDeleteSegment,
+                onAddSegmentEntry = { segmentId ->
+                    selectedSegmentId = segmentId
+                    showAddSegmentEntryDialog = true
+                },
+                onEditSegmentDetails = { segmentDetails ->
+                    selectedSegmentDetails = segmentDetails
+                    showEditSegmentDetailsDialog = true
+                }
             )
         }
         
         // Add "Add Segment Details" button at the end
         item {
-            AddSegmentDetailsButton()
+            AddSegmentDetailsButton(
+                onClick = { showAddSegmentDetailsDialog = true }
+            )
         }
+    }
+
+    // Show Add Segment Entry Dialog
+    if (showAddSegmentEntryDialog) {
+        AddSegmentEntryDialogCompose(
+            summits = summits,
+            segments = segments,
+            segmentId = selectedSegmentId,
+            segmentEntryId = null,
+            onDismiss = { showAddSegmentEntryDialog = false },
+            onSaveSegmentEntry = { isUpdate, segmentEntry ->
+                viewModel.saveSegmentEntry(isUpdate, segmentEntry)
+            }
+        )
+    }
+
+    // Show Add Segment Details Dialog
+    if (showAddSegmentDetailsDialog) {
+        AddSegmentDetailsDialogCompose(
+            segmentDetails = null,
+            onDismiss = { showAddSegmentDetailsDialog = false },
+            onSaveSegmentDetails = { isUpdate, segmentDetails ->
+                viewModel.saveSegmentDetails(isUpdate, segmentDetails)
+            }
+        )
+    }
+
+    // Show Edit Segment Details Dialog
+    if (showEditSegmentDetailsDialog) {
+        AddSegmentDetailsDialogCompose(
+            segmentDetails = selectedSegmentDetails,
+            onDismiss = { showEditSegmentDetailsDialog = false },
+            onSaveSegmentDetails = { isUpdate, segmentDetails ->
+                viewModel.saveSegmentDetails(isUpdate, segmentDetails)
+            }
+        )
     }
 }
 
@@ -93,7 +150,9 @@ fun SegmentsListScreen(
 @Composable
 fun SegmentCard(
     segment: Segment,
-    onDelete: (Segment) -> Unit
+    onDelete: (Segment) -> Unit,
+    onAddSegmentEntry: (Long) -> Unit = {},
+    onEditSegmentDetails: (SegmentDetails) -> Unit = {}
 ) {
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -255,7 +314,7 @@ fun SegmentCard(
                 // Add segment entry button
                 IconButton(
                     onClick = {
-                        navigateToAddSegmentEntry(context, segment.segmentDetails.segmentDetailsId)
+                        onAddSegmentEntry(segment.segmentDetails.segmentDetailsId)
                     }
                 ) {
                     Icon(
@@ -268,7 +327,7 @@ fun SegmentCard(
                 // Edit button
                 IconButton(
                     onClick = {
-                        showEditSegmentDetailsDialog(context, segment.segmentDetails)
+                        onEditSegmentDetails(segment.segmentDetails)
                     }
                 ) {
                     Icon(
@@ -318,7 +377,7 @@ fun SegmentCard(
  * Add Segment Details button composable
  */
 @Composable
-fun AddSegmentDetailsButton() {
+fun AddSegmentDetailsButton(onClick: () -> Unit) {
     val context = LocalContext.current
     
     Card(
@@ -332,9 +391,7 @@ fun AddSegmentDetailsButton() {
         )
     ) {
         Button(
-            onClick = {
-                showAddSegmentDetailsDialog(context)
-            },
+            onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp)
@@ -404,30 +461,8 @@ fun SegmentDeleteConfirmationDialog(
 
 // Navigation helper functions
 private fun navigateToSegmentDetails(context: Context, segmentDetailsId: Long) {
-    val fragment = SegmentEntryDetailsFragmentCompose.getInstance(segmentDetailsId)
-//TODO:    context.findActivity()?.supportFragmentManager?.beginTransaction()
-//        ?.replace(R.id.content_frame, fragment, "SegmentEntryDetailsFragment")
-//        ?.addToBackStack(null)?.commit()
+    val intent = Intent(context, SegmentEntryDetailsComposeActivity::class.java)
+    intent.putExtra(SegmentDetails.SEGMENT_DETAILS_ID_EXTRA_IDENTIFIER, segmentDetailsId)
+    context.startActivity(intent)
 }
 
-private fun navigateToAddSegmentEntry(context: Context, segmentDetailsId: Long) {
-    val fragment: androidx.fragment.app.Fragment = AddSegmentEntryFragment.getInstance(
-        segmentDetailsId,
-        null,
-        null
-    )
-    //TODO: context.findActivity()?.supportFragmentManager?.beginTransaction()
-        //?.replace(R.id.content_frame, fragment)?.addToBackStack(null)?.commit()
-}
-
-private fun showAddSegmentDetailsDialog(context: Context) {
-    context.findActivity()?.supportFragmentManager?.let { fragmentManager ->
-        AddSegmentDetailsDialog.getInstance(null).show(fragmentManager, "Add Segment Details")
-    }
-}
-
-private fun showEditSegmentDetailsDialog(context: Context, segmentDetails: de.drtobiasprinz.summitbook.db.entities.SegmentDetails) {
-    context.findActivity()?.supportFragmentManager?.let { fragmentManager ->
-        AddSegmentDetailsDialog.getInstance(segmentDetails).show(fragmentManager, "Add Segment Details")
-    }
-}

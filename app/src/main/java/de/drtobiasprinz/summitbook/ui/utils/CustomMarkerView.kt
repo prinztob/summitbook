@@ -8,7 +8,6 @@ import com.github.mikephil.charting.components.MarkerView
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
-import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.OrderBySpinnerEntry
@@ -20,7 +19,7 @@ class CustomMarkerView(
     private val lineChartSpinnerEntry: OrderBySpinnerEntry
 ) : MarkerView(context, layoutResource) {
 
-    private val tvContent: TextView? = findViewById(R.id.tvContent)
+    private val tvContent: TextView? = null
     private lateinit var summit: Summit
 
     var drawingPosX = 0f

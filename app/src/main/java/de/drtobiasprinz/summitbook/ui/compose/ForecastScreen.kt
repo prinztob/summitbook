@@ -1,4 +1,4 @@
-package de.drtobiasprinz.summitbook.fragments
+package de.drtobiasprinz.summitbook.ui.compose
 
 import android.widget.Toast
 import androidx.compose.foundation.background

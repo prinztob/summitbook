@@ -50,9 +50,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
-import de.drtobiasprinz.summitbook.ui.dialog.AddAdditionalDataFromExternalResourcesDialog
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
-import de.drtobiasprinz.summitbook.utils.findActivity
 import kotlinx.coroutines.Job
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -135,6 +133,7 @@ fun SummitCard(
     var showEditDialog by remember { mutableStateOf(false) }
     var showAddImagesDialog by remember { mutableStateOf(false) }
     var showSelectOnMapDialog by remember { mutableStateOf(false) }
+    var showAddAdditionalDataDialog by remember { mutableStateOf(false) }
     val isDarkTheme = isSystemInDarkTheme()
     val deleteCancelMessage = stringResource(R.string.delete_cancel)
 
@@ -326,7 +325,7 @@ fun SummitCard(
                 if (summit.hasGpsTrack() && !summit.isBookmark) {
                     IconButton(
                         onClick = {
-                            showAddVelocityDataDialog(context, summit)
+                            showAddAdditionalDataDialog = true
                         }
                     ) {
                         Icon(
@@ -478,6 +477,15 @@ fun SummitCard(
             onSaveSummit = onSaveSummit
         )
     }
+
+    // Add additional data dialog
+    if (showAddAdditionalDataDialog) {
+        AddAdditionalDataDialogCompose(
+            summit = summit,
+            onDismiss = { showAddAdditionalDataDialog = false },
+            onSaveSummit = onSaveSummit
+        )
+    }
 }
 
 private fun getThirdEntryValues(summit: Summit): Triple<Number, Int, Int> {
@@ -623,13 +631,6 @@ private fun navigateToSummitDetails(context: Context, summitId: Long) {
     context.startActivity(intent)
 }
 
-
-private fun showAddVelocityDataDialog(context: Context, summit: Summit) {
-    context.findActivity()?.supportFragmentManager?.let { fragmentManager ->
-        AddAdditionalDataFromExternalResourcesDialog.getInstance(summit)
-            .show(fragmentManager, "Show addition data")
-    }
-}
 
 private fun deleteEntry(summit: Summit, onDelete: (Summit) -> Unit) {
     onDelete(summit)

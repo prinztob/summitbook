@@ -64,7 +64,7 @@ import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.fragments.ForecastScreen
+import de.drtobiasprinz.summitbook.ui.compose.ForecastScreen
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
@@ -655,6 +655,7 @@ class MainActivityCompose : ComponentActivity(),
                     .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
                 SegmentsListScreen(
                     segments = segmentsList.data ?: emptyList(),
+                    summits = summitFromDatabase,
                     onDeleteSegment = { segment ->
                         viewModel.deleteSegment(segment)
                     },

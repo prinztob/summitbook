@@ -614,5 +614,12 @@
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>
     <string name="error">Fehler</string>
+
+    <string name="add_additional_data">Füge zusätzlichen Daten hinzu</string>
+    <string name="no_additional_data_available">Keine zusätzlichen Date vorhanden</string>
+    <string name="new_value">Neuer Wert</string>
+    <string name="old_value">Alter Wert</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
 </resources>
 
