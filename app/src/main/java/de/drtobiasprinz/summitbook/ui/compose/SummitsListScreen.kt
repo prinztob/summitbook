@@ -46,7 +46,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import de.drtobiasprinz.summitbook.AddImagesActivity
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsComposeActivity
@@ -135,6 +134,7 @@ fun SummitCard(
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
+    var showAddImagesDialog by remember { mutableStateOf(false) }
     val isDarkTheme = isSystemInDarkTheme()
     val deleteCancelMessage = stringResource(R.string.delete_cancel)
 
@@ -305,7 +305,7 @@ fun SummitCard(
                         if (summit.isBookmark) {
                             // Bookmark icon - no action
                         } else {
-                            navigateToAddImages(context, summit.id)
+                            showAddImagesDialog = true
                         }
                     }
                 ) {
@@ -460,6 +460,15 @@ fun SummitCard(
             onSaveSummit = onSaveSummit
         )
     }
+
+    // Add images dialog
+    if (showAddImagesDialog) {
+        AddImagesDialogCompose(
+            summit = summit,
+            onDismiss = { showAddImagesDialog = false },
+            onSaveSummit = onSaveSummit
+        )
+    }
 }
 
 private fun getThirdEntryValues(summit: Summit): Triple<Number, Int, Int> {
@@ -605,11 +614,6 @@ private fun navigateToSummitDetails(context: Context, summitId: Long) {
     context.startActivity(intent)
 }
 
-private fun navigateToAddImages(context: Context, summitId: Long) {
-    val intent = Intent(context, AddImagesActivity::class.java)
-    intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, summitId)
-    context.startActivity(intent)
-}
 
 private fun navigateToSelectOnMap(context: Context, summitId: Long) {
     val intent = Intent(context, SelectOnOsMapActivity::class.java)

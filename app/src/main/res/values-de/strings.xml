@@ -426,6 +426,11 @@
     <string name="pts">Pkt</string>
     <string name="add_image_canceled">Bildauswahl abgebrochen</string>
     <string name="summits_shown">Nur %1$s von %2$s Gipfel werden gezeigt, da das Limit an Trackpunkten überschritten wurde.</string>
+    <string name="close">Schließen</string>
+    <string name="horizontal">Horizontal</string>
+    <string name="vertical">Vertikal</string>
+    <string name="move_up">Nach oben</string>
+    <string name="move_down">Nach unten</string>
     <string name="no_image_selected">Kein Bild ausgewählt</string>
     <string name="gpx_viewer_not_installed">GPX viewer nicht installiert</string>
     <string name="gpx_file_not_copied">GPX Datei konnte nicht kopiert werden</string>

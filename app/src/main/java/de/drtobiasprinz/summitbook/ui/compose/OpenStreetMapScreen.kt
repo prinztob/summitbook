@@ -403,9 +403,11 @@ fun MapViewComposable(
                         osMapBoundingBox[3].toDouble()
                     )
                     mapView.post {
-                        Log.d("OpenStreetMapScreen", "Attempting to zoom to bounding box: " +
-                                "north=${boundingBox.latNorth}, east=${boundingBox.lonEast}, " +
-                                "south=${boundingBox.latSouth}, west=${boundingBox.lonWest}")
+                        Log.d(
+                            "OpenStreetMapScreen", "Attempting to zoom to bounding box: " +
+                                    "north=${boundingBox.latNorth}, east=${boundingBox.lonEast}, " +
+                                    "south=${boundingBox.latSouth}, west=${boundingBox.lonWest}"
+                        )
                         mapView.zoomToBoundingBox(boundingBox, false, 30)
                         Log.d("OpenStreetMapScreen", "Zoom operation completed")
                     }

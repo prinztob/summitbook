@@ -43,7 +43,6 @@
                 android:value="" />
         </activity>
 
-        <activity android:name=".AddImagesActivity" />
         <activity android:name=".SummitEntryDetailsComposeActivity" />
         <activity android:name=".SelectOnOsMapActivity" />
         <activity android:name=".PythonActivity" />

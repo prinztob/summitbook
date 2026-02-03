@@ -424,6 +424,11 @@
     <string name="pts">Pts</string>
     <string name="add_image_canceled">Image picking canceled</string>
     <string name="summits_shown">Only %1$s of %2$s summits are shown, because track points exceeds limit.</string>
+    <string name="close">Close</string>
+    <string name="horizontal">Horizontal</string>
+    <string name="vertical">Vertical</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
     <string name="no_image_selected">No images selected</string>
     <string name="gpx_viewer_not_installed">GPX viewer not installed</string>
     <string name="gpx_file_not_copied">GPX file could not be copied</string>
