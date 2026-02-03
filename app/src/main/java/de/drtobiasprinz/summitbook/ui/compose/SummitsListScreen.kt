@@ -47,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SelectOnOsMapActivity
 import de.drtobiasprinz.summitbook.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
@@ -135,6 +134,7 @@ fun SummitCard(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
     var showAddImagesDialog by remember { mutableStateOf(false) }
+    var showSelectOnMapDialog by remember { mutableStateOf(false) }
     val isDarkTheme = isSystemInDarkTheme()
     val deleteCancelMessage = stringResource(R.string.delete_cancel)
 
@@ -346,7 +346,7 @@ fun SummitCard(
                 // Add coordinate button
                 IconButton(
                     onClick = {
-                        navigateToSelectOnMap(context, summit.id)
+                        showSelectOnMapDialog = true
                     }
                 ) {
                     Icon(
@@ -466,6 +466,15 @@ fun SummitCard(
         AddImagesDialogCompose(
             summit = summit,
             onDismiss = { showAddImagesDialog = false },
+            onSaveSummit = onSaveSummit
+        )
+    }
+
+    // Select on map dialog
+    if (showSelectOnMapDialog) {
+        SelectOnMapDialogCompose(
+            summit = summit,
+            onDismiss = { showSelectOnMapDialog = false },
             onSaveSummit = onSaveSummit
         )
     }
@@ -614,12 +623,6 @@ private fun navigateToSummitDetails(context: Context, summitId: Long) {
     context.startActivity(intent)
 }
 
-
-private fun navigateToSelectOnMap(context: Context, summitId: Long) {
-    val intent = Intent(context, SelectOnOsMapActivity::class.java)
-    intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, summitId)
-    context.startActivity(intent)
-}
 
 private fun showAddVelocityDataDialog(context: Context, summit: Summit) {
     context.findActivity()?.supportFragmentManager?.let { fragmentManager ->

@@ -63,7 +63,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.MapProvider
-import de.drtobiasprinz.summitbook.ui.dialog.FileRowType
+import de.drtobiasprinz.summitbook.ui.utils.FileRowType
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper

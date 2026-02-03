@@ -7,8 +7,9 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.summitbook.SelectOnOsMapActivity.Companion.copyGpxFileToCache
 import de.drtobiasprinz.summitbook.databinding.ActivityReceiverBinding
+import de.drtobiasprinz.summitbook.ui.compose.copyGpxFileToCache
+import de.drtobiasprinz.summitbook.ui.compose.prepareGpxTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.dialog.AddSummitDialog
@@ -81,7 +82,7 @@ class ReceiverActivity : AppCompatActivity() {
                 copyGpxFileToCache(inputStream, file)
             }
             if (file.exists()) {
-                val gpsTrack = SelectOnOsMapActivity.prepareGpxTrack(file.toPath(), null)
+                val gpsTrack = prepareGpxTrack(file.toPath(), null)
                 gpsTrack?.addGpsTrack(binding.osmap, TrackColor.None)
                 val highestTrackPoint = gpsTrack?.getHighestElevation()
                 if (highestTrackPoint != null) {
