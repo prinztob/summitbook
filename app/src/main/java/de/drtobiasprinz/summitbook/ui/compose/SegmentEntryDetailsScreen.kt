@@ -1,10 +1,15 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
+import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.view.View
-import androidx.appcompat.content.res.AppCompatResources
+import android.graphics.Paint
+import android.util.Log
+import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,36 +22,40 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.createBitmap
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.LegendEntry
@@ -58,465 +67,1024 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
-import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Segment
-import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
-import org.osmdroid.config.Configuration
+import io.ticofab.androidgpxparser.parser.domain.TrackPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.advancedpolyline.PolychromaticPaintList
-import java.io.File
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
+import java.io.IOException
 import java.util.Locale
 import kotlin.math.roundToLong
 
 /**
- * Main screen for displaying segment entry details in Jetpack Compose
+ * Main composable screen for displaying segment entry details
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SegmentEntryDetailsScreen(
     segmentDetailsId: Long,
-    viewModel: DatabaseViewModel = hiltViewModel()
+    segmentEntryId: Long = -1L,
+    segments: List<Segment>,
+    summits: List<Summit>,
+    onNavigateBack: () -> Unit,
+    onDeleteEntry: (SegmentEntry) -> Unit,
+    onEditEntry: (SegmentEntry) -> Unit  // Add this parameter
 ) {
-    val segments by viewModel.segmentsList.observeAsState()
-    val summits by viewModel.summitsList.observeAsState()
+    var uiState by remember { mutableStateOf(SegmentEntryDetailsUiState()) }
+    var trackPoints by remember {
+        mutableStateOf<List<Pair<TrackPoint, ExtensionFromYaml>>>(
+            emptyList()
+        )
+    }
+    var showDeleteDialog by remember { mutableStateOf<SegmentEntry?>(null) }
+    val scope = rememberCoroutineScope()
 
-    var selectedSegmentEntrySorter by remember { mutableStateOf(SegmentSortOptions.AverageVelocity) }
-    var selectedCustomizeTrackItem by remember { mutableStateOf(TrackColor.Elevation) }
-    var segmentEntryId by remember { mutableLongStateOf(-1L) }
+    // Process data when it changes
+    LaunchedEffect(
+        segments,
+        summits,
+        segmentDetailsId,
+        segmentEntryId,
+        trackPoints,
+        uiState.selectedSortOption
+    ) {
+        val segmentToUse =
+            segments.firstOrNull { it.segmentDetails.segmentDetailsId == segmentDetailsId }
 
-    LaunchedEffect(segmentDetailsId, segments, summits) {
-        segments?.data?.let { segmentsList ->
-            val segmentToUse =
-                segmentsList.firstOrNull { it.segmentDetails.segmentDetailsId == segmentDetailsId }
-            if (segmentToUse != null) {
-                if (segmentEntryId == -1L) {
-                    val sortedEntries =
-                        selectedSegmentEntrySorter.sorter(segmentToUse.segmentEntries)
-                    segmentEntryId = sortedEntries.firstOrNull()?.entryId ?: -1L
+        if (segmentToUse != null) {
+            val currentEntryId = if (segmentEntryId == -1L) {
+                // Get first entry based on current sorting
+                segmentToUse.segmentEntries.let {
+                    when (uiState.selectedSortOption) {
+                        SegmentSortOptions.AverageVelocity -> it.sortedBy { entry -> entry.kilometers / entry.duration }
+                            .reversed()
+
+                        SegmentSortOptions.Date -> it.sortedBy { entry -> entry.getDateAsString() }
+                            .reversed()
+
+                        SegmentSortOptions.AverageHeartRate -> it.sortedBy { entry -> entry.averageHeartRate }
+                            .reversed()
+
+                        SegmentSortOptions.Power -> it.sortedBy { entry -> entry.averagePower }
+                            .reversed()
+                    }
+                }.firstOrNull()?.entryId ?: -1L
+            } else {
+                segmentEntryId
+            }
+
+            val currentEntry =
+                segmentToUse.segmentEntries.firstOrNull { it.entryId == currentEntryId }
+            val relevantSummits = segmentToUse.segmentEntries.mapNotNull { entry ->
+                summits.firstOrNull { it.activityId == entry.activityId }
+            }
+            val currentSummit =
+                relevantSummits.firstOrNull { it.activityId == currentEntry?.activityId }
+
+            scope.launch {
+                withContext(Dispatchers.IO) {
+                    currentSummit?.setGpsTrack(useSimplifiedTrack = false)
+                    trackPoints = currentSummit?.gpsTrack?.trackPoints ?: emptyList()
                 }
             }
+            uiState = uiState.copy(
+                segment = segmentToUse,
+                currentEntry = currentEntry,
+                relevantSummits = relevantSummits,
+                currentSummit = currentSummit,
+                trackPoints = trackPoints,
+                isLoading = false
+            )
         }
     }
 
-    segments?.data?.let { segmentsList ->
-        val segmentToUse =
-            segmentsList.firstOrNull { it.segmentDetails.segmentDetailsId == segmentDetailsId }
-        if (segmentToUse != null) {
-            summits?.data?.let { summitsList ->
-                val relevantSummits = segmentToUse.segmentEntries.mapNotNull { entry ->
-                    summitsList.firstOrNull { it.activityId == entry.activityId }
-                }
-
-                val segmentEntryToShow = if (segmentEntryId == -1L) {
-                    val sortedEntries =
-                        selectedSegmentEntrySorter.sorter(segmentToUse.segmentEntries)
-                    sortedEntries.firstOrNull()
-                } else {
-                    segmentToUse.segmentEntries.firstOrNull { it.entryId == segmentEntryId }
-                }
-
-                val summitShown =
-                    relevantSummits.firstOrNull { it.activityId == segmentEntryToShow?.activityId }
-
-                if (segmentEntryToShow != null && summitShown != null) {
-                    // Wrap content in a scrollable container
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        SegmentEntryDetailsContent(
-                            segmentToUse = segmentToUse,
-                            segmentEntryToShow = segmentEntryToShow,
-                            summitShown = summitShown,
-                            selectedSegmentEntrySorter = selectedSegmentEntrySorter,
-                            onSorterChanged = { sorter ->
-                                selectedSegmentEntrySorter = sorter
-                            },
-                            selectedCustomizeTrackItem = selectedCustomizeTrackItem,
-                            onTrackColorChanged = { trackColor ->
-                                selectedCustomizeTrackItem = trackColor
-                            },
-                            onSegmentEntrySelected = { entry ->
-                                segmentEntryId = entry.entryId
-                            },
-                            onDeleteSegmentEntry = { entry ->
-                                viewModel.deleteSegmentEntry(entry)
-                            }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = uiState.segment?.segmentDetails?.getDisplayName() ?: "",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_baseline_arrow_back_24),
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
-                }
-            }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
         }
+    ) { paddingValues ->
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            SegmentEntryDetailsContent(
+                uiState = uiState,
+                onDeleteEntry = { entry -> showDeleteDialog = entry },
+                onEditEntry = onEditEntry,  // Pass the edit function
+                onSortOptionSelected = { option ->
+                    uiState = uiState.copy(selectedSortOption = option)
+                },
+                onEntrySelected = { entry ->
+                    uiState = uiState.copy(currentEntry = entry)
+                    val currentSummit =
+                        uiState.relevantSummits.firstOrNull { it.activityId == entry.activityId }
+                    uiState = uiState.copy(currentSummit = currentSummit)
+
+                    scope.launch {
+                        withContext(Dispatchers.IO) {
+                            currentSummit?.setGpsTrack(useSimplifiedTrack = false, updateTrack = true)
+                        }
+                        uiState = uiState.copy(trackPoints = currentSummit?.gpsTrack?.trackPoints ?: emptyList())
+                    }
+                },
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+    }
+
+    // Handle delete confirmation dialog
+    showDeleteDialog?.let { entry ->
+        SegmentEntryDeleteDialog(
+            entry = entry,
+            segmentName = uiState.segment?.segmentDetails?.getDisplayName() ?: "",
+            onConfirm = {
+                // Notify the activity to handle the deletion
+                onDeleteEntry(entry)
+                showDeleteDialog = null
+            },
+            onDismiss = { showDeleteDialog = null }
+        )
     }
 }
 
-
+/**
+ * Main content of the segment entry details screen
+ */
 @Composable
 fun SegmentEntryDetailsContent(
-    segmentToUse: Segment,
-    segmentEntryToShow: SegmentEntry,
-    summitShown: Summit,
-    selectedSegmentEntrySorter: SegmentSortOptions,
-    onSorterChanged: (SegmentSortOptions) -> Unit,
-    selectedCustomizeTrackItem: TrackColor,
-    onTrackColorChanged: (TrackColor) -> Unit,
-    onSegmentEntrySelected: (SegmentEntry) -> Unit,
-    onDeleteSegmentEntry: (SegmentEntry) -> Unit
+    uiState: SegmentEntryDetailsUiState,
+    onDeleteEntry: (SegmentEntry) -> Unit,
+    onEditEntry: (SegmentEntry) -> Unit,  // Add this parameter
+    onSortOptionSelected: (SegmentSortOptions) -> Unit,
+    onEntrySelected: (SegmentEntry) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    var mapScreenshotFile by remember { mutableStateOf(Segment.getMapScreenshotFile(segmentToUse.segmentDetails.segmentDetailsId)) }
-    var hasMapScreenshot by remember { mutableStateOf(mapScreenshotFile.exists()) }
-
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(16.dp)
+            .verticalScroll(rememberScrollState())
     ) {
-        // Header with segment name and basic stats
-        SegmentHeader(
-            segmentDetails = segmentToUse.segmentDetails,
-            segmentEntry = segmentEntryToShow
-        )
 
-        // Map view
+        val summit = uiState.currentSummit
+        val entry = uiState.currentEntry
+        val trackPoints = uiState.trackPoints
+        // Header with statistics
+        if (entry != null) {
+            SegmentHeader(
+                heightMeterUp = entry.heightMetersUp,
+                heightMeterDown = entry.heightMetersDown,
+                kilometers = entry.kilometers,
+                averageHeartRate = entry.averageHeartRate,
+                duration = entry.duration,
+                averagePower = entry.averagePower
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
-        MapSection(
-            segmentToUse = segmentToUse,
-            segmentEntryToShow = segmentEntryToShow,
-            summitShown = summitShown,
-            hasMapScreenshot = hasMapScreenshot,
-            mapScreenshotFile = mapScreenshotFile,
-            selectedCustomizeTrackItem = selectedCustomizeTrackItem,
-            onMapScreenshotTaken = {
-                hasMapScreenshot = true
-                mapScreenshotFile =
-                    Segment.getMapScreenshotFile(segmentToUse.segmentDetails.segmentDetailsId)
+        Log.i("SegmentEntryDetailsScreen", "summit: ${summit?.getDateAsString()}, trackPoints. ${trackPoints.size}")
+        // Map section
+        if (summit != null && entry != null) {
+            SegmentMapSection(
+                summit = summit,
+                segmentEntry = entry,
+                trackPoints = trackPoints,
+                segmentDetailsId = uiState.segment?.segmentDetails?.segmentDetailsId ?: -1L
+            )
+        } else {
+            // Show placeholder or loading indicator
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(250.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (uiState.isLoading) "Loading map..." else "Map not available",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Chart section
+        if (entry != null) {
+            SegmentChartSection(
+                trackPoints = trackPoints,
+                segmentEntry = entry,
+                selectedTrackColor = uiState.selectedTrackColor
+            )
+        } else {
+            // Show placeholder or loading indicator
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (uiState.isLoading) "Loading chart..." else "Chart not available",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Sorting controls
+        SortingControls(
+            sortOptions = SegmentSortOptions.entries.toList(),
+            selectedOption = uiState.selectedSortOption,
+            onSortOptionSelected = onSortOptionSelected
         )
 
-        // Chart
-        Spacer(modifier = Modifier.height(16.dp))
-        ChartSection(
-            summitShown = summitShown,
-            segmentEntry = segmentEntryToShow,
-            selectedCustomizeTrackItem = selectedCustomizeTrackItem,
-            onTrackColorChanged = onTrackColorChanged
-        )
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Segment entries list
-        Spacer(modifier = Modifier.height(8.dp))
-        SegmentEntriesList(
-            segmentEntries = selectedSegmentEntrySorter.sorter(segmentToUse.segmentEntries),
-            selectedEntry = segmentEntryToShow,
-            onSegmentEntrySelected = onSegmentEntrySelected,
-            onDeleteSegmentEntry = onDeleteSegmentEntry,
-            selectedSorter = selectedSegmentEntrySorter,
-            onSorterChanged = onSorterChanged
-        )
+        uiState.segment?.let { segment ->
+            val sortedEntries = when (uiState.selectedSortOption) {
+                SegmentSortOptions.AverageVelocity -> segment.segmentEntries.sortedBy { it.kilometers / it.duration }
+                    .reversed()
+
+                SegmentSortOptions.Date -> segment.segmentEntries.sortedBy { it.getDateAsString() }
+                    .reversed()
+
+                SegmentSortOptions.AverageHeartRate -> segment.segmentEntries.sortedBy { it.averageHeartRate }
+                    .reversed()
+
+                SegmentSortOptions.Power -> segment.segmentEntries.sortedBy { it.averagePower }
+                    .reversed()
+            }
+
+            SegmentEntriesList(
+                segmentEntries = sortedEntries,
+                currentEntry = uiState.currentEntry,
+                onDeleteEntry = onDeleteEntry,
+                onEditEntry = onEditEntry,  // Pass the edit function
+                onEntrySelected = onEntrySelected
+            )
+        }
     }
 }
 
+/**
+ * Header section showing segment statistics
+ */
 @Composable
 fun SegmentHeader(
-    segmentDetails: SegmentDetails,
-    segmentEntry: SegmentEntry
+    heightMeterUp: Int,
+    heightMeterDown: Int,
+    kilometers: Double,
+    averageHeartRate: Int,
+    duration: Double,
+    averagePower: Int,
+    modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = segmentDetails.getDisplayNameWithLineBreak(),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Stats grid
             Column(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    StatItem(
-                        iconRes = R.drawable.baseline_trending_up_black_24dp,
-                        text = "${segmentEntry.heightMetersUp}/${segmentEntry.heightMetersDown} ${
-                            stringResource(
-                                R.string.hm
-                            )
-                        }"
-                    )
-                    StatItem(
-                        iconRes = R.drawable.outline_distance_24,
-                        text = "${
-                            String.format(
-                                Locale.getDefault(),
-                                "%.1f",
-                                segmentEntry.kilometers
-                            )
-                        } ${stringResource(R.string.km)}"
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    StatItem(
-                        iconRes = R.drawable.ic_baseline_monitor_heart_24,
-                        text = "${segmentEntry.averageHeartRate} ${stringResource(R.string.bpm)}"
-                    )
-                    StatItem(
-                        iconRes = R.drawable.ic_baseline_timer_24,
-                        text = "${
-                            String.format(
-                                Locale.getDefault(),
-                                "%.1f",
-                                segmentEntry.duration
-                            )
-                        } ${stringResource(R.string.min)}"
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    StatItem(
-                        iconRes = R.drawable.ic_baseline_power_24,
-                        text = "${segmentEntry.averagePower} ${stringResource(R.string.watt)}"
-                    )
-                    Spacer(modifier = Modifier.width(0.dp)) // Empty spacer to maintain layout
-                }
+                SegmentDetailStatItem(
+                    icon = R.drawable.baseline_trending_up_black_24dp,
+                    text = "$heightMeterUp/$heightMeterDown ${stringResource(R.string.hm)}"
+                )
+
+                SegmentDetailStatItem(
+                    icon = R.drawable.ic_baseline_monitor_heart_24,
+                    text = "$averageHeartRate ${stringResource(R.string.bpm)}"
+                )
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SegmentDetailStatItem(
+                    icon = R.drawable.outline_distance_24,
+                    text = String.format(Locale.getDefault(), "%.1f %s", kilometers, stringResource(R.string.km))
+                )
+
+                SegmentDetailStatItem(
+                    icon = R.drawable.ic_baseline_timer_24,
+                    text = String.format(Locale.getDefault(), "%.1f %s", duration, stringResource(R.string.min))
+                )
+
+                SegmentDetailStatItem(
+                    icon = R.drawable.ic_baseline_power_24,
+                    text = "$averagePower ${stringResource(R.string.watt)}"
+                )
             }
         }
     }
 }
 
+/**
+ * Individual statistic item
+ */
 @Composable
-fun StatItem(iconRes: Int, text: String) {
+fun SegmentDetailStatItem(
+    icon: Int,
+    text: String,
+    modifier: Modifier = Modifier
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .padding(vertical = 4.dp)
+        modifier = modifier.fillMaxWidth()
     ) {
         Icon(
-            painter = painterResource(id = iconRes),
+            painter = painterResource(id = icon),
             contentDescription = null,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(24.dp),
             tint = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium
         )
     }
 }
 
+/**
+ * Map section with custom map view
+ */
 @Composable
-fun MapSection(
-    segmentToUse: Segment,
-    segmentEntryToShow: SegmentEntry,
-    summitShown: Summit,
-    hasMapScreenshot: Boolean,
-    mapScreenshotFile: File,
-    selectedCustomizeTrackItem: TrackColor,
-    onMapScreenshotTaken: () -> Unit
+fun SegmentMapSection(
+    summit: Summit,
+    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+    segmentEntry: SegmentEntry,
+    segmentDetailsId: Long,
+    modifier: Modifier = Modifier
 ) {
-    var mapView by remember { mutableStateOf<MapView?>(null) }
-    var showMap by remember { mutableStateOf(true) } // Always show map instead of screenshot
+    val context = LocalContext.current
+    var mapView: CustomMapViewToAllowScrolling? by remember { mutableStateOf(null) }
+    var isMapReady by remember { mutableStateOf(false) }
 
-    Card(
-        modifier = Modifier
+    Column(
+        modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .clipToBounds()
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
+        // Map container
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(250.dp)
         ) {
-            // Map header with controls
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.map),
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                Row {
-                    // Refresh button
-                    IconButton(onClick = {
-                        mapView?.let {
-                            takeScreenshotWhenTilesAreLoaded(
-                                it,
-                                segmentToUse.segmentDetails.segmentDetailsId,
-                                onMapScreenshotTaken
-                            )
-                        }
-                    }) {
-                        Icon(
-                            painterResource(id = R.drawable.baseline_refresh_24),
-                            contentDescription = stringResource(R.string.update)
-                        )
-                    }
-
-                    // Change map type button (three dots)
-                    IconButton(onClick = {
-                        mapView?.let { map ->
-                            if (map is CustomMapViewToAllowScrolling) {
-                                map.showMapTypeSelectorDialog()
-                            }
-                        }
-                    }) {
-                        Icon(
-                            painterResource(id = R.drawable.baseline_more_vert_black_24dp),
-                            contentDescription = stringResource(R.string.map_type)
-                        )
-                    }
-                }
-            }
-
-            // Always show interactive map
             AndroidView(
                 factory = { ctx ->
-                    val map = CustomMapViewToAllowScrolling(ctx)
-                    mapView = map
-                    prepareMap(map)
-                    drawMarker(map, segmentToUse.segmentEntries)
-                    drawGpxTrackAndItsProfile(
-                        map,
-                        summitShown,
-                        segmentEntryToShow,
-                        selectedCustomizeTrackItem
-                    )
-                    map
+                    CustomMapViewToAllowScrolling(ctx).apply {
+                        mapView = this
+                        // Set up the map
+                        setTileProvider()
+                        addDefaultSettings()
+                        isMapReady = true
+                    }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clipToBounds()
-                    .height(250.dp)
+                update = { view ->
+                    if (isMapReady) {
+                        // Update map with track and markers
+                        updateMapContent(view, summit, trackPoints, segmentEntry)
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
             )
 
-            // Take screenshot if needed
-            LaunchedEffect(Unit) {
-                if (!hasMapScreenshot) {
-                    mapView?.let {
-                        takeScreenshotWhenTilesAreLoaded(
-                            it,
-                            segmentToUse.segmentDetails.segmentDetailsId,
-                            onMapScreenshotTaken
-                        )
-                    }
+            // Map controls
+            MapControls(
+                onMapTypeChange = {
+                    mapView?.showMapTypeSelectorDialog()
+                },
+                onUpdateSnapshot = {
+                    mapView?.let { takeScreenshot(it, segmentDetailsId, context) }
+                },
+                modifier = Modifier.align(Alignment.TopEnd)
+            )
+        }
+    }
+}
+
+/**
+ * Controls for the map (map type selector and snapshot button)
+ */
+@Composable
+fun MapControls(
+    onMapTypeChange: () -> Unit,
+    onUpdateSnapshot: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        IconButton(
+            onClick = onMapTypeChange,
+            modifier = Modifier
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    shape = RoundedCornerShape(50)
+                )
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_more_vert_black_24dp),
+                contentDescription = stringResource(R.string.map_type)
+            )
+        }
+
+        IconButton(
+            onClick = onUpdateSnapshot,
+            modifier = Modifier
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    shape = RoundedCornerShape(50)
+                )
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_refresh_24),
+                contentDescription = stringResource(R.string.update)
+            )
+        }
+    }
+}
+
+/**
+ * Chart section for displaying track profile
+ */
+@Composable
+fun SegmentChartSection(
+    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+    segmentEntry: SegmentEntry,
+    selectedTrackColor: TrackColor,
+    modifier: Modifier = Modifier
+) {
+    AndroidView(
+        factory = { context ->
+            LineChart(context).apply {
+                // Configure chart
+                setupChart(this, trackPoints, segmentEntry, selectedTrackColor)
+            }
+        },
+        update = { chart ->
+            // Update chart when data changes
+            setupChart(chart, trackPoints, segmentEntry, selectedTrackColor)
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .height(150.dp)
+    )
+}
+
+/**
+ * Setup the line chart with data
+ */
+private fun setupChart(
+    lineChart: LineChart,
+    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+    segmentEntry: SegmentEntry,
+    trackColor: TrackColor
+) {
+    if (trackPoints.isNotEmpty()) {
+        lineChart.clear()
+        lineChart.xAxis.removeAllLimitLines()
+        setXAxis(lineChart)
+
+        val dataSets: MutableList<ILineDataSet> = ArrayList()
+        val lineChartEntries = GpsTrack.getTrackGraph(trackPoints, trackColor.f)
+        val label = "Elevation" // TODO: Get proper label from resources
+
+        val leftAxis: YAxis = lineChart.axisLeft
+        leftAxis.textColor = android.graphics.Color.BLACK
+        leftAxis.setDrawGridLines(true)
+        leftAxis.isGranularityEnabled = true
+
+        val dataSet = LineDataSet(lineChartEntries, label)
+        setGraphView(dataSet)
+        setColors(lineChartEntries, dataSet, trackColor)
+        dataSets.add(dataSet)
+        lineChart.data = LineData(dataSets)
+        setLegend(lineChart, trackColor)
+
+        // Add vertical lines for segment start/end
+        if (segmentEntry.startPositionInTrack < trackPoints.size) {
+            trackPoints[segmentEntry.startPositionInTrack].second.distance?.toFloat()
+                ?.let { drawVerticalLine(lineChart, it, android.graphics.Color.GREEN) }
+        }
+        if (segmentEntry.endPositionInTrack < trackPoints.size) {
+            trackPoints[segmentEntry.endPositionInTrack].second.distance?.toFloat()
+                ?.let { drawVerticalLine(lineChart, it, android.graphics.Color.RED) }
+        }
+
+        lineChart.invalidate()
+    }
+}
+
+/**
+ * Draw a vertical line on the chart
+ */
+private fun drawVerticalLine(lineChart: LineChart, distance: Float, color: Int) {
+    val ll = LimitLine(distance)
+    ll.lineColor = color
+    ll.lineWidth = 2f
+    lineChart.xAxis.addLimitLine(ll)
+}
+
+/**
+ * Set up the legend for the chart
+ */
+private fun setLegend(lineChart: LineChart, trackColor: TrackColor) {
+    val l: Legend = lineChart.legend
+    l.yEntrySpace = 10f
+    l.isWordWrapEnabled = true
+    val l1 = LegendEntry(
+        "Min",
+        Legend.LegendForm.CIRCLE,
+        9f,
+        5f,
+        null,
+        trackColor.minColor
+    )
+    val l2 = LegendEntry(
+        "Max",
+        Legend.LegendForm.CIRCLE,
+        9f,
+        5f,
+        null,
+        trackColor.maxColor
+    )
+    l.setCustom(arrayOf(l1, l2))
+    l.isEnabled = true
+}
+
+/**
+ * Set colors for the chart data set
+ */
+private fun setColors(
+    lineChartEntries: MutableList<Entry>,
+    dataSet: LineDataSet,
+    trackColor: TrackColor
+) {
+    val min = lineChartEntries.minByOrNull { it.y }?.y
+    val max = lineChartEntries.maxByOrNull { it.y }?.y
+    if (min != null && max != null) {
+        val colors = lineChartEntries.map {
+            val fraction = (it.y - min) / (max - min)
+            interpolateColor(
+                trackColor.minColor,
+                trackColor.maxColor,
+                fraction
+            )
+        }
+        dataSet.colors = colors
+    }
+}
+
+/**
+ * Interpolate between two colors
+ */
+private fun interpolateColor(colorA: Int, colorB: Int, fraction: Float): Int {
+    val a = (android.graphics.Color.alpha(colorA) +
+            (android.graphics.Color.alpha(colorB) - android.graphics.Color.alpha(colorA)) * fraction).toInt()
+    val r = (android.graphics.Color.red(colorA) +
+            (android.graphics.Color.red(colorB) - android.graphics.Color.red(colorA)) * fraction).toInt()
+    val g = (android.graphics.Color.green(colorA) +
+            (android.graphics.Color.green(colorB) - android.graphics.Color.green(colorA)) * fraction).toInt()
+    val b = (android.graphics.Color.blue(colorA) +
+            (android.graphics.Color.blue(colorB) - android.graphics.Color.blue(colorA)) * fraction).toInt()
+    return android.graphics.Color.argb(a, r, g, b)
+}
+
+/**
+ * Set up the graph view properties
+ */
+private fun setGraphView(set1: LineDataSet?) {
+    set1?.setDrawValues(false)
+    set1?.setDrawFilled(true)
+    set1?.setDrawCircles(false)
+    set1?.axisDependency = YAxis.AxisDependency.LEFT
+    set1?.color = android.graphics.Color.RED
+    set1?.setCircleColor(android.graphics.Color.RED)
+    set1?.lineWidth = 5f
+    set1?.circleRadius = 3f
+    set1?.fillAlpha = 50
+    set1?.fillColor = android.graphics.Color.RED
+    set1?.setDrawCircleHole(false)
+    set1?.highLightColor = android.graphics.Color.rgb(244, 117, 117)
+    set1?.setDrawHorizontalHighlightIndicator(true)
+}
+
+/**
+ * Set up the X axis formatting
+ */
+private fun setXAxis(lineChart: LineChart) {
+    val xAxis = lineChart.xAxis
+    xAxis?.position = XAxis.XAxisPosition.BOTTOM
+    xAxis?.valueFormatter = object : ValueFormatter() {
+        override fun getFormattedValue(value: Float): String {
+            return String.format(Locale.getDefault(),
+                "%.1f km",
+                (value / 100f).roundToLong() / 10f
+            )
+        }
+    }
+}
+
+/**
+ * Sorting controls dropdown
+ */
+@Composable
+fun SortingControls(
+    sortOptions: List<SegmentSortOptions>,
+    selectedOption: SegmentSortOptions,
+    onSortOptionSelected: (SegmentSortOptions) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier) {
+        Text(
+            text = stringResource(R.string.sort_by),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Box {
+            Button(onClick = { expanded = true }) {
+                Text(text = stringResource(selectedOption.stringId))
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                sortOptions.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(option.stringId)) },
+                        onClick = {
+                            onSortOptionSelected(option)
+                            expanded = false
+                        }
+                    )
                 }
             }
         }
     }
 }
 
-private fun prepareMap(mapView: CustomMapViewToAllowScrolling) {
-    mapView.setTileProvider()
-    mapView.addDefaultSettings()
-    Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-}
-
-private fun drawMarker(mMapView: MapView, segmentEntries: List<SegmentEntry>) {
-    try {
-        val startPoint = GeoPoint(
-            segmentEntries.first().startPositionLatitude,
-            segmentEntries.first().startPositionLongitude
-        )
-        val startMarker = Marker(mMapView)
-        startMarker.position = startPoint
-        startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-        startMarker.icon = AppCompatResources.getDrawable(mMapView.context, R.drawable.ic_filled_location_lightbrown_48)
-        mMapView.overlays.add(startMarker)
-
-        val endPoint = GeoPoint(
-            segmentEntries.first().endPositionLatitude,
-            segmentEntries.first().endPositionLongitude
-        )
-        val endMarker = Marker(mMapView)
-        endMarker.position = endPoint
-        endMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-        endMarker.icon = AppCompatResources.getDrawable(mMapView.context, R.drawable.ic_filled_location_darkbrown_48)
-        mMapView.overlays.add(endMarker)
-
-        mMapView.invalidate()
-    } catch (e: Exception) {
-        e.printStackTrace()
+/**
+ * List of segment entries
+ */
+@Composable
+fun SegmentEntriesList(
+    segmentEntries: List<SegmentEntry>,
+    currentEntry: SegmentEntry?,
+    onDeleteEntry: (SegmentEntry) -> Unit,
+    onEditEntry: (SegmentEntry) -> Unit,  // Add this parameter
+    onEntrySelected: (SegmentEntry) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+    ) {
+        segmentEntries.forEach { entry ->
+            SegmentEntryCard(
+                entry = entry,
+                isSelected = entry.entryId == currentEntry?.entryId,
+                onClick = { onEntrySelected(entry) },
+                onEdit = { onEditEntry(entry) },  // Pass the edit function
+                onDelete = { onDeleteEntry(entry) }
+            )
+        }
     }
 }
 
-private fun drawGpxTrackAndItsProfile(
-    mMapView: MapView,
-    localSummit: Summit,
-    segmentEntry: SegmentEntry,
-    trackColor: TrackColor
+/**
+ * Individual segment entry card
+ */
+@Composable
+fun SegmentEntryCard(
+    entry: SegmentEntry,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onEdit: () -> Unit,  // Add this parameter
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    if (localSummit.hasGpsTrack()) {
-        localSummit.setGpsTrack(useSimplifiedTrack = false)
-        val gpsTrack = localSummit.gpsTrack
-        if (gpsTrack != null) {
-            val hasPoints = !gpsTrack.hasOnlyZeroCoordinates() || localSummit.latLng != null
-            if (hasPoints) {
-                gpsTrack.addGpsTrack(mMapView)
-                putGpxTrackOnMap(mMapView, gpsTrack, segmentEntry, trackColor)
+    val backgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Entry details
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = entry.getDateAsString() ?: "",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    SegmentEntryStat(
+                        value = String.format(Locale.getDefault(),
+                            "%d:%02d",
+                            entry.duration.toInt(),
+                            ((entry.duration - entry.duration.toInt()) * 60).toInt()
+                        ),
+                        label = stringResource(R.string.min)
+                    )
+
+                    SegmentEntryStat(
+                        value = String.format(Locale.getDefault(),
+                            "%.1f",
+                            entry.kilometers / entry.duration * 60
+                        ),
+                        label = stringResource(R.string.kmh)
+                    )
+
+                    SegmentEntryStat(
+                        value = entry.averageHeartRate.toString(),
+                        label = stringResource(R.string.bpm)
+                    )
+
+                    SegmentEntryStat(
+                        value = entry.averagePower.toString(),
+                        label = stringResource(R.string.watt)
+                    )
+                }
+            }
+
+            // Action buttons
+            Row {
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_baseline_edit_24),
+                        contentDescription = stringResource(R.string.edit),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_delete_black_24dp),
+                        contentDescription = stringResource(R.string.delete_icon)
+                    )
+                }
             }
         }
     }
 }
 
-private fun putGpxTrackOnMap(
-    mMapView: MapView,
-    gpxTrack: GpsTrack,
-    segmentEntry: SegmentEntry,
-    trackColor: TrackColor
+/**
+ * Individual statistic for a segment entry
+ */
+@Composable
+fun SegmentEntryStat(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/**
+ * Delete confirmation dialog for segment entry
+ */
+@Composable
+fun SegmentEntryDeleteDialog(
+    entry: SegmentEntry,
+    segmentName: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val deleteEntry = stringResource(R.string.delete_entry)
+    val deleteCancel = stringResource(R.string.delete_cancel)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(
+                    R.string.delete_entry,
+                    "$segmentName on ${entry.getDateAsString()}"
+                )
+            )
+        },
+        text = {
+            Text(text = stringResource(R.string.delete_entry_text))
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirm()
+                Toast.makeText(
+                    context,
+                    String.format(deleteEntry, "$segmentName on ${entry.getDateAsString()}"),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }) {
+                Text(text = stringResource(android.R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                onDismiss()
+                Toast.makeText(
+                    context,
+                    deleteCancel,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }) {
+                Text(text = stringResource(android.R.string.cancel))
+            }
+        }
+    )
+}
+
+/**
+ * UI state for the segment entry details screen
+ */
+data class SegmentEntryDetailsUiState(
+    val segment: Segment? = null,
+    val currentEntry: SegmentEntry? = null,
+    val relevantSummits: List<Summit> = emptyList(),
+    val currentSummit: Summit? = null,
+    val trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>> = emptyList(),
+    val isLoading: Boolean = true,
+    val selectedSortOption: SegmentSortOptions = SegmentSortOptions.AverageVelocity,
+    val selectedTrackColor: TrackColor = TrackColor.Elevation
+)
+
+/**
+ * Enum class for segment sorting options
+ */
+enum class SegmentSortOptions(val stringId: Int) {
+    AverageVelocity(R.string.pace_hint),
+    Date(R.string.date),
+    AverageHeartRate(R.string.bpm),
+    Power(R.string.power)
+}
+
+// Helper functions (these would need to be implemented based on the original Fragment logic)
+
+/**
+ * Update map content with track and markers
+ */
+private fun updateMapContent(
+    mapView: MapView,
+    summit: Summit,
+    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+    segmentEntry: SegmentEntry
+) {
+    // Clear existing overlays
+    mapView.overlays?.clear()
+    mapView.overlayManager?.clear()
+
+    // Add start and end markers
+    addMarker(
+        mapView,
+        GeoPoint(
+            segmentEntry.startPositionLatitude,
+            segmentEntry.startPositionLongitude
+        ),
+        R.drawable.ic_filled_location_lightbrown_48,
+        mapView.context
+    )
+
+    addMarker(
+        mapView,
+        GeoPoint(
+            segmentEntry.endPositionLatitude,
+            segmentEntry.endPositionLongitude
+        ),
+        R.drawable.ic_filled_location_darkbrown_48,
+        mapView.context
+    )
+
+    // Draw GPX track if available
+    if (summit.hasGpsTrack()) {
+        drawGpxTrack(mapView, trackPoints, segmentEntry)
+    }
+
+    mapView.invalidate()
+}
+
+/**
+ * Draw GPX track on the map
+ */
+private fun drawGpxTrack(
+    mapView: MapView,
+    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+    segmentEntry: SegmentEntry
 ) {
     try {
-        val osMapRoute = Polyline(mMapView)
-        val paintBorder = android.graphics.Paint()
+        // Add the full GPX track to the map
+        val osMapRoute = Polyline(mapView)
+        val paintBorder = Paint()
         paintBorder.strokeWidth = 20F
-        val geoPoints = gpxTrack.trackGeoPoints.filterIndexed { index, _ ->
+
+        val trackPoints = trackPoints.filterIndexed { index, _ ->
             index in segmentEntry.startPositionInTrack..segmentEntry.endPositionInTrack
         }
-        val trackPoints = gpxTrack.trackPoints.filterIndexed { index, _ ->
-            index in segmentEntry.startPositionInTrack..segmentEntry.endPositionInTrack
-        }
-        if (geoPoints.size > 1) {
-            addColorToTrack(osMapRoute, trackPoints, paintBorder, trackColor)
+
+        if (trackPoints.size > 1) {
+            val geoPoints = trackPoints.map { GeoPoint(it.first.latitude, it.first.longitude) }
+            addColorToTrack(osMapRoute, trackPoints, paintBorder)
             osMapRoute.setPoints(geoPoints)
-            mMapView.overlayManager?.add(osMapRoute)
+            mapView.overlays.add(osMapRoute)
+
+            // Zoom to the bounding box of the track segment
             val boundingBox = BoundingBox.fromGeoPoints(geoPoints)
-            mMapView.post {
-                mMapView.zoomToBoundingBox(boundingBox, false, 50)
+            mapView.post {
+                mapView.zoomToBoundingBox(boundingBox, false, 50)
             }
         }
     } catch (e: Exception) {
@@ -526,9 +1094,9 @@ private fun putGpxTrackOnMap(
 
 private fun addColorToTrack(
     osMapRoute: Polyline,
-    usedTrackPoints: List<Pair<io.ticofab.androidgpxparser.parser.domain.TrackPoint, ExtensionFromYaml>>,
-    paintBorder: android.graphics.Paint,
-    trackColor: TrackColor
+    usedTrackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+    paintBorder: Paint,
+    trackColor: TrackColor = TrackColor.Elevation
 ) {
     val values = usedTrackPoints.mapNotNull(trackColor.f)
     val minForColorCoding = (values.minOrNull() ?: 0.0).toFloat()
@@ -551,440 +1119,58 @@ private fun addColorToTrack(
     }
 }
 
-private fun takeScreenshotWhenTilesAreLoaded(
+/**
+ * Add a marker to the map
+ */
+private fun addMarker(
     mapView: MapView,
-    segmentDetailsId: Long,
-    onScreenshotTaken: () -> Unit,
-    timeout: Long = TIMEOUT_TILES_LOADED
+    point: GeoPoint,
+    iconResId: Int,
+    context: Context
 ) {
-    // In a real implementation, we would check if tiles are loaded
-    // For now, we'll just take the screenshot immediately
-    takeScreenshot(mapView, segmentDetailsId)
-    onScreenshotTaken()
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ChartSection(
-    summitShown: Summit,
-    segmentEntry: SegmentEntry,
-    selectedCustomizeTrackItem: TrackColor,
-    onTrackColorChanged: (TrackColor) -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.chart),
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Track color selector
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.customize_track),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                var expanded by remember { mutableStateOf(false) }
-
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
-                ) {
-                    OutlinedTextField(
-                        readOnly = true,
-                        value = stringResource(selectedCustomizeTrackItem.nameId),
-                        onValueChange = {},
-                        label = { Text(stringResource(R.string.track_color)) },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                        },
-                        modifier = Modifier.menuAnchor()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        TrackColor.entries.forEach { trackColor ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(trackColor.nameId)) },
-                                onClick = {
-                                    onTrackColorChanged(trackColor)
-                                    expanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Chart view
-            AndroidView(
-                factory = { context ->
-                    val chart = LineChart(context)
-                    // Set up chart when it's created
-                    chart
-                },
-                update = { chart ->
-                    // Load GPS track if not already loaded
-                    if (summitShown.hasGpsTrack() && summitShown.gpsTrack == null) {
-                        summitShown.setGpsTrack(useSimplifiedTrack = false)
-                    }
-                    // Update chart when data changes
-                    drawChart(
-                        chart.context,
-                        chart,
-                        summitShown.gpsTrack,
-                        segmentEntry,
-                        selectedCustomizeTrackItem
-                    )
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-            )
-        }
-    }
-}
-
-private fun drawChart(
-    context: android.content.Context,
-    lineChart: LineChart,
-    gpxTrack: GpsTrack?,
-    segmentEntry: SegmentEntry,
-    trackColor: TrackColor
-) {
-    if (gpxTrack != null) {
-        lineChart.clear()
-        lineChart.xAxis.removeAllLimitLines()
-        setXAxis(lineChart)
-        val dataSets: MutableList<ILineDataSet> = ArrayList()
-        val lineChartEntries = gpxTrack.getTrackGraph(trackColor.f)
-
-        val label = context.getString(trackColor.labelId)
-
-        val leftAxis: YAxis = lineChart.axisLeft
-        leftAxis.textColor = android.graphics.Color.BLACK
-        leftAxis.setDrawGridLines(true)
-        leftAxis.isGranularityEnabled = true
-
-        val dataSet = LineDataSet(lineChartEntries, label)
-        setGraphView(dataSet)
-        setColors(lineChartEntries, dataSet, trackColor)
-        dataSets.add(dataSet)
-        lineChart.data = LineData(dataSets)
-        setLegend(context, lineChart, trackColor)
-        if (segmentEntry.startPositionInTrack < gpxTrack.trackPoints.size) {
-            gpxTrack.trackPoints[segmentEntry.startPositionInTrack].second.distance?.toFloat()
-                ?.let { drawVerticalLine(lineChart, it, android.graphics.Color.GREEN) }
-        }
-        if (segmentEntry.endPositionInTrack < gpxTrack.trackPoints.size) {
-            gpxTrack.trackPoints[segmentEntry.endPositionInTrack].second.distance?.toFloat()
-                ?.let { drawVerticalLine(lineChart, it, android.graphics.Color.RED) }
-        }
-
-        // Refresh the chart
-        lineChart.invalidate()
-    }
-}
-
-private fun drawVerticalLine(lineChart: LineChart, distance: Float, color: Int) {
-    val ll = LimitLine(distance)
-    ll.lineColor = color
-    ll.lineWidth = 2f
-    lineChart.xAxis.addLimitLine(ll)
-}
-
-private fun setLegend(
-    context: android.content.Context,
-    lineChart: LineChart,
-    trackColor: TrackColor
-) {
-    val l: Legend = lineChart.legend
-    l.yEntrySpace = 10f
-    l.isWordWrapEnabled = true
-    val l1 = LegendEntry(
-        context.getString(R.string.min),
-        Legend.LegendForm.CIRCLE,
-        9f,
-        5f,
-        null,
-        trackColor.minColor
-    )
-    val l2 = LegendEntry(
-        context.getString(R.string.max),
-        Legend.LegendForm.CIRCLE,
-        9f,
-        5f,
-        null,
-        trackColor.maxColor
-    )
-    l.setCustom(arrayOf(l1, l2))
-    l.isEnabled = true
-}
-
-private fun setColors(
-    lineChartEntries: List<Entry>,
-    dataSet: LineDataSet,
-    trackColor: TrackColor
-) {
-    val min = lineChartEntries.minByOrNull { it.y }?.y
-    val max = lineChartEntries.maxByOrNull { it.y }?.y
-    if (min != null && max != null) {
-        val colors = lineChartEntries.map {
-            val fraction = (it.y - min) / (max - min)
-            GpsTrack.interpolateColor(
-                trackColor.minColor,
-                trackColor.maxColor,
-                fraction
-            )
-        }
-        dataSet.colors = colors
-    }
-}
-
-private fun setXAxis(lineChart: LineChart) {
-    val xAxis = lineChart.xAxis
-    xAxis?.position = XAxis.XAxisPosition.BOTTOM
-    xAxis?.valueFormatter = object : ValueFormatter() {
-        override fun getFormattedValue(value: Float): String {
-            return String.format(
-                Locale.getDefault(),
-                "%.1f km",
-                (value / 100f).roundToLong() / 10f
-            )
-        }
-    }
-}
-
-private fun setGraphView(set1: LineDataSet?) {
-    set1?.setDrawValues(false)
-    set1?.setDrawFilled(true)
-    set1?.setDrawCircles(false)
-    set1?.axisDependency = YAxis.AxisDependency.LEFT
-    set1?.color = android.graphics.Color.RED
-    set1?.setCircleColor(android.graphics.Color.RED)
-    set1?.lineWidth = 5f
-    set1?.circleRadius = 3f
-    set1?.fillAlpha = 50
-    set1?.fillColor = android.graphics.Color.RED
-    set1?.setDrawCircleHole(false)
-    set1?.highLightColor = android.graphics.Color.rgb(244, 117, 117)
-    set1?.setDrawHorizontalHighlightIndicator(true)
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SegmentEntriesList(
-    segmentEntries: List<SegmentEntry>,
-    selectedEntry: SegmentEntry,
-    onSegmentEntrySelected: (SegmentEntry) -> Unit,
-    onDeleteSegmentEntry: (SegmentEntry) -> Unit,
-    selectedSorter: SegmentSortOptions,
-    onSorterChanged: (SegmentSortOptions) -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.segment_entries),
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-            var expanded by remember { mutableStateOf(false) }
-
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
-                OutlinedTextField(
-                    readOnly = true,
-                    value = stringResource(selectedSorter.stringId),
-                    onValueChange = {},
-                    label = { Text(stringResource(R.string.sort_by)) },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    SegmentSortOptions.entries.forEach { sorter ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(sorter.stringId)) },
-                            onClick = {
-                                onSorterChanged(sorter)
-                                expanded = false
-                            }
-                        )
-                    }
-                }
-            }
-            // Display segment entries in a scrollable container with max height
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp) // Fixed height with scrolling
-                    .verticalScroll(rememberScrollState())
-            ) {
-                segmentEntries.forEach { entry ->
-                    SegmentEntryItem(
-                        entry = entry,
-                        isSelected = entry.entryId == selectedEntry.entryId,
-                        onClick = { onSegmentEntrySelected(entry) },
-                        onDelete = { onDeleteSegmentEntry(entry) }
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SegmentEntryItem(
-    entry: SegmentEntry,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    onDelete: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clickable(onClick = onClick),
-        elevation = if (isSelected) CardDefaults.cardElevation(defaultElevation = 8.dp) else CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        ),
-        colors = if (isSelected) {
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-        } else {
-            CardDefaults.cardColors()
-        }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = entry.getDateAsString() ?: "",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "${
-                            String.format(
-                                Locale.getDefault(),
-                                "%.1f",
-                                entry.duration
-                            )
-                        } ${stringResource(R.string.min)}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = "${
-                            String.format(
-                                Locale.getDefault(),
-                                "%.1f",
-                                entry.kilometers / entry.duration * 60
-                            )
-                        } ${stringResource(R.string.kmh)}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = "${entry.averageHeartRate} ${stringResource(R.string.bpm)}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = "${entry.averagePower} ${stringResource(R.string.watt)}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-
-            IconButton(onClick = onDelete) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_delete_black_24dp),
-                    contentDescription = stringResource(R.string.delete)
-                )
-            }
-        }
-    }
-}
-
-// Helper functions
-private fun takeScreenshot(view: View, segmentDetailsId: Long) {
     try {
-        val bitmap = createBitmap(view.width, view.height)
-        val canvas = Canvas(bitmap)
-        view.draw(canvas)
-        val outputStream = FileOutputStream(Segment.getMapScreenshotFile(segmentDetailsId))
-        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 50, outputStream)
-        outputStream.flush()
-        outputStream.close()
+        val marker = org.osmdroid.views.overlay.Marker(mapView)
+        marker.position = point
+        marker.setAnchor(
+            org.osmdroid.views.overlay.Marker.ANCHOR_CENTER,
+            org.osmdroid.views.overlay.Marker.ANCHOR_BOTTOM
+        )
+        marker.icon = androidx.core.content.res.ResourcesCompat.getDrawable(
+            context.resources, iconResId, null
+        )
+        mapView.overlays.add(marker)
+        marker.setOnMarkerClickListener { _, _ ->
+            false
+        }
     } catch (e: Exception) {
         e.printStackTrace()
     }
 }
 
-// Constants
-const val TIMEOUT_TILES_LOADED = 15000L
-const val STEP_TILES_LOADED = 500L
-
-// Segment sort options enum
-enum class SegmentSortOptions(
-    val stringId: Int, val sorter: (List<SegmentEntry>) -> List<SegmentEntry>
+/**
+ * Take a screenshot of the map view
+ */
+private fun takeScreenshot(
+    view: MapView,
+    segmentDetailsId: Long,
+    context: Context
 ) {
-    AverageVelocity(
-        R.string.pace_hint,
-        { it.sortedBy { entry -> entry.kilometers / entry.duration }.reversed() }),
-    Date(
-        R.string.date,
-        { it.sortedBy { entry -> entry.getDateAsString() }.reversed() }),
-    AverageHeartRate(
-        R.string.bpm,
-        { it.sortedBy { entry -> entry.averageHeartRate } }),
-    Power(R.string.power, { it.sortedBy { entry -> entry.averagePower }.reversed() }),
+    try {
+        val bitmap = createBitmap(view.width, view.height)
+        val canvas = Canvas(bitmap)
+        view.draw(canvas)
+
+        val outputStream = FileOutputStream(Segment.getMapScreenshotFile(segmentDetailsId))
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
+        outputStream.flush()
+        outputStream.close()
+
+        Toast.makeText(
+            context, context.getString(R.string.screenshot_taken), Toast.LENGTH_SHORT
+        ).show()
+    } catch (io: FileNotFoundException) {
+        io.printStackTrace()
+    } catch (e: IOException) {
+        e.printStackTrace()
+    }
 }

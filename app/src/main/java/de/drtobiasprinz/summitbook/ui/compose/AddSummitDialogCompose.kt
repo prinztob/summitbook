@@ -145,7 +145,7 @@ fun AddSummitDialogCompose(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { uriNotNull ->
-            scope.launch(Dispatchers.Main.immediate) {
+            scope.launch() {
                 handleGpxTrackUpload(
                     context, uriNotNull, entity, isLoading = { isLoading = it },
                     onUpdate = { name, km, hm, elev, dur ->
@@ -275,7 +275,7 @@ fun AddSummitDialogCompose(
                         if (FileHelper.getOnDeviceMapFiles(context).isNotEmpty()) {
                             IconButton(
                                 onClick = {
-                                    scope.launch(Dispatchers.Main.immediate) {
+                                    scope.launch() {
                                         isLoading = true
                                         withContext(Dispatchers.IO) {
                                             (latlngHighestPoint ?: entity.latLng)?.let { point ->
@@ -395,7 +395,7 @@ fun AddSummitDialogCompose(
 
                         Button(
                             onClick = {
-                                scope.launch(Dispatchers.Main.immediate) {
+                                scope.launch() {
                                     isLoading = true
                                     saveSummit(
                                         entity, summitName, tourDate, selectedSportType,

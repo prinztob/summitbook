@@ -130,14 +130,14 @@ fun SummitEntryTrackScreen(
     LaunchedEffect(summit.id) {
         isLoading = true
         withContext(Dispatchers.IO) {
-            setGpsTrack(summit, useSimplifiedTrack = true) { track, slopeGraph ->
+            setGpsTrack(summit, useSimplifiedTrack = true) { track, _ ->
                 gpsTrack = track
             }
         }
 
         // Load full track in background
         coroutineScope.launch(Dispatchers.IO) {
-            setGpsTrack(summit, forceUpdate = true) { track, slopeGraph ->
+            setGpsTrack(summit, forceUpdate = true) { track, _ ->
                 gpsTrack = track
                 trackVersion++ // Increment to trigger map update
             }
@@ -426,7 +426,7 @@ fun MapControlButtons(
         IconButton(
             onClick = {
                 if (mapView != null && allSummits != null) {
-                    coroutineScope.launch(Dispatchers.Main.immediate) {
+                    coroutineScope.launch() {
                         showAllTracksOfSummitInBoundingBox(
                             context = context,
                             mapView = mapView,

@@ -621,5 +621,8 @@
     <string name="old_value">Alter Wert</string>
     <string name="start">Start</string>
     <string name="stop">Stop</string>
+    <string name="update_segment_entry">Update segment entry</string>
+    <string name="add_segment_entry">Add segment entry</string>
+    <string name="no_summits_in_bounding_box">Keine Gipfel im Begrenzungsrahmen der vorhandenen Segment-Einträge gefunden. Stattdessen werden alle Gipfel mit GPS-Tracks angezeigt.</string>
 </resources>
 

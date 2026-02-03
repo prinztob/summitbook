@@ -45,6 +45,7 @@
 
         <activity android:name=".SummitEntryDetailsComposeActivity" />
         <activity android:name=".SegmentEntryDetailsComposeActivity" />
+        <activity android:name=".AddSegmentEntryComposeActivity" />
         <activity android:name=".PythonActivity" />
 
         <provider

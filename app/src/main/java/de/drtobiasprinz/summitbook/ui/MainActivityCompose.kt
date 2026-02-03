@@ -64,12 +64,12 @@ import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.compose.ForecastScreen
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.compose.AddSummitDialogCompose
 import de.drtobiasprinz.summitbook.ui.compose.BarChartScreen
+import de.drtobiasprinz.summitbook.ui.compose.ForecastScreen
 import de.drtobiasprinz.summitbook.ui.compose.LineChartScreen
 import de.drtobiasprinz.summitbook.ui.compose.OpenStreetMapScreen
 import de.drtobiasprinz.summitbook.ui.compose.OverviewScreen
@@ -88,6 +88,7 @@ import de.drtobiasprinz.summitbook.ui.utils.ZipFileWriter
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -112,6 +113,7 @@ class MainActivityCompose : ComponentActivity(),
 
     private var fullscreenImageViewer: FullscreenImageViewer? = null
     private var useFilteredSummits: Boolean = false
+    private var boundingBoxUpdaterTriggered: Boolean = false
 
     // Navigation state
     private var currentDestination by mutableStateOf(Destination.Summits)
@@ -187,6 +189,7 @@ class MainActivityCompose : ComponentActivity(),
                 filteredSummits = sortFilterValues.applyForSummits(it)
             }
         }
+        updateBoundingBoxInternal(coroutineScope, summitsFromDatabase)
 
         LaunchedEffect(forecastList) {
             forecastList.data?.let {
@@ -276,7 +279,11 @@ class MainActivityCompose : ComponentActivity(),
                             }
 
                             // Update action
-                            IconButton(onClick = { updateThirdPartyData() }) {
+                            IconButton(onClick = {
+                                updateThirdPartyData(
+                                    coroutineScope
+                                )
+                            }) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_baseline_sync_24),
                                     contentDescription = stringResource(R.string.update_3rd_part)
@@ -351,15 +358,15 @@ class MainActivityCompose : ComponentActivity(),
                                 showNewSummitsDialog = false
                                 // Execute download for selected summits
                                 if (isMerge) {
-                                    executeDownload(selectedSummits)
+                                    executeDownload(selectedSummits, coroutineScope)
                                 } else {
                                     selectedSummits.forEach {
-                                        executeDownload(listOf(it))
+                                        executeDownload(listOf(it), coroutineScope)
                                     }
                                 }
                             },
                             onRefresh = {
-                                updateThirdPartyData()
+                                updateThirdPartyData(coroutineScope)
                             }
                         )
                     }
@@ -622,7 +629,7 @@ class MainActivityCompose : ComponentActivity(),
                     }
 
                     SummitsListScreen(
-                        summits = if (showBookmarksOnly) summitFromDatabase.filter{ it.isBookmark } else filteredSummits,
+                        summits = if (showBookmarksOnly) summitFromDatabase.filter { it.isBookmark } else filteredSummits,
                         isBookmark = showBookmarksOnly,
                         onSaveSummit = { isEdit, summit -> viewModel.saveSummit(isEdit, summit) },
                         onUpdateIsFavorite = { summit ->
@@ -730,42 +737,34 @@ class MainActivityCompose : ComponentActivity(),
         showAddSummitDialog = true
     }
 
-    fun updateThirdPartyData() {
-        // In a Compose context, we need to handle this differently
-        // We'll launch a coroutine to collect the data and then proceed
-        lifecycleScope.launch(Dispatchers.Main.immediate) {
-            val summitsListDataStatus = viewModel.summitsList.asFlow().first()
+    fun updateThirdPartyData(scope: CoroutineScope) {
+        scope.launch() {
             val executor = pythonExecutor
             if (executor != null) {
                 loadingState.value = true
                 loadingTooltip.value = getString(R.string.update_3rd_part)
-                summitsListDataStatus.data.let { summits ->
-                    val updater = GarminDataUpdater(
-                        sharedPreferences,
-                        executor,
-                        repository,
-                        viewModel
-                    )
-                    withContext(Dispatchers.IO) {
-                        updater.update()
-                        if (summits != null) {
-                            updateTracksAndBoundingBox(summits)
+                val updater = GarminDataUpdater(
+                    sharedPreferences,
+                    executor,
+                    repository,
+                    viewModel
+                )
+                withContext(Dispatchers.IO) {
+                    updater.update()
+                }
+                updater.onFinish(
+                    object : ProgressBar(this@MainActivityCompose) {
+                        override fun getVisibility(): Int {
+                            return if (loadingState.value) VISIBLE else GONE
                         }
-                    }
-                    updater.onFinish(
-                        object : ProgressBar(this@MainActivityCompose) {
-                            override fun getVisibility(): Int {
-                                return if (loadingState.value) VISIBLE else GONE
-                            }
 
-                            override fun setVisibility(visibility: Int) {
-                                loadingState.value = visibility == VISIBLE
-                            }
-                        },
-                        this@MainActivityCompose
-                    ) {
-                        showNewSummitsDialog()
-                    }
+                        override fun setVisibility(visibility: Int) {
+                            loadingState.value = visibility == VISIBLE
+                        }
+                    },
+                    this@MainActivityCompose
+                ) {
+                    showNewSummitsDialog()
                 }
             } else {
                 Toast.makeText(
@@ -777,49 +776,14 @@ class MainActivityCompose : ComponentActivity(),
         }
     }
 
-    private fun updateThirdPartyDataInternal() {
-        // In a Compose context, we need to handle this differently
-        // We'll launch a coroutine to collect the data and then proceed
-        lifecycleScope.launch(Dispatchers.Main.immediate) {
-            val summitsListDataStatus = viewModel.summitsList.asFlow().first()
-            val executor = pythonExecutor
-            if (executor != null) {
+    private fun updateBoundingBoxInternal(scope: CoroutineScope, summits: List<Summit>) {
+        if (!boundingBoxUpdaterTriggered && summits.isNotEmpty()) {
+            boundingBoxUpdaterTriggered = true
+            scope.launch {
                 loadingState.value = true
-                //loadingTooltip.value = getString(R.string.tool_tip_progress_update_3rd_party)
-                summitsListDataStatus.data.let { summits ->
-                    val updater = GarminDataUpdater(
-                        sharedPreferences,
-                        executor,
-                        repository,
-                        viewModel
-                    )
-                    withContext(Dispatchers.IO) {
-                        updater.update()
-                        if (summits != null) {
-                            updateTracksAndBoundingBox(summits)
-                        }
-                    }
-                    updater.onFinish(
-                        object : ProgressBar(this@MainActivityCompose) {
-                            override fun getVisibility(): Int {
-                                return if (loadingState.value) VISIBLE else GONE
-                            }
-
-                            override fun setVisibility(visibility: Int) {
-                                loadingState.value = visibility == VISIBLE
-                            }
-                        },
-                        this@MainActivityCompose
-                    ) {
-                        showNewSummitsDialog()
-                    }
+                withContext(Dispatchers.IO) {
+                    updateTracksAndBoundingBox(summits)
                 }
-            } else {
-                Toast.makeText(
-                    this@MainActivityCompose,
-                    getString(R.string.set_user_pwd),
-                    Toast.LENGTH_LONG
-                ).show()
             }
         }
     }
@@ -835,34 +799,31 @@ class MainActivityCompose : ComponentActivity(),
             Log.i(
                 "Scheduler", "No more bounding boxes to update."
             )
+            loadingState.value = false
         }
     }
 
     private fun updateBoundingBox(entriesWithoutBoundingBox: List<Summit>) {
         val entriesToCheck = entriesWithoutBoundingBox.take(250)
         entriesToCheck.forEachIndexed { index, entryToCheck ->
-            lifecycleScope.launch(Dispatchers.Main.immediate) {
-                withContext(Dispatchers.Default) {
-                    entryToCheck.setBoundingBoxFromTrack()
-                }
-                if (entryToCheck.trackBoundingBox != null) {
-                    viewModel.saveSummit(true, entryToCheck)
-                    Log.i(
-                        "Scheduler",
-                        "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name}, " + "${entriesWithoutBoundingBox.size - index} remaining."
-                    )
-                } else {
-                    Log.i(
-                        "Scheduler",
-                        "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name} failed, remove it from update list."
-                    )
-                    entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
-                }
+            entryToCheck.setBoundingBoxFromTrack()
+            if (entryToCheck.trackBoundingBox != null) {
+                viewModel.saveSummit(true, entryToCheck)
+                Log.i(
+                    "Scheduler",
+                    "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name}, " + "${entriesWithoutBoundingBox.size - index} remaining."
+                )
+            } else {
+                Log.i(
+                    "Scheduler",
+                    "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name} failed, remove it from update list."
+                )
+                entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
             }
         }
     }
 
-    private fun executeDownload(summits: List<Summit>) {
+    private fun executeDownload(summits: List<Summit>, scope: CoroutineScope) {
         val downloader = GarminTrackAndDataDownloader(
             summits, pythonExecutor, sharedPreferences.getBoolean(Keys.PREF_DOWNLOAD_TCX, false)
         )
@@ -870,7 +831,7 @@ class MainActivityCompose : ComponentActivity(),
         loadingTooltip.value = getString(
             R.string.tool_tip_progress_new_garmin_activities,
             summits.joinToString(", ") { it.name })
-        lifecycleScope.launch(Dispatchers.Main.immediate) {
+        scope.launch {
             try {
                 withContext(Dispatchers.IO) {
                     downloader.extractFinalSummit()
@@ -1188,7 +1149,6 @@ class MainActivityCompose : ComponentActivity(),
         var CSV_FILE_NAME_FORECASTS: String = "de-prinz-summitbook-export-forecasts.csv"
         var CSV_FILE_NAME_ENTITY_EVENTS: String = "de-prinz-summitbook-export-entity-events.csv"
 
-        var updateOfTracksStarted: Boolean = false
         var entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
         var storage: File? = null
         var cache: File? = null

@@ -343,20 +343,7 @@ class GpsTrack(
     }
 
     fun setDistance() {
-        trackPoints.forEachIndexed { i, trackPoint ->
-            if (i == 0) {
-                trackPoint.second.distance = 0.0
-            } else {
-                val distance = trackPoints[i - 1].second.distance
-                if (distance != null) {
-                    trackPoint.second.distance = distance + abs(
-                        getDistance(
-                            trackPoint.first, trackPoints[i - 1].first
-                        )
-                    ).toDouble()
-                }
-            }
-        }
+        setDistance(trackPoints)
     }
 
 
@@ -364,23 +351,7 @@ class GpsTrack(
         f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?,
         discreteInput: Boolean = false
     ): MutableList<Entry> {
-        if (trackPoints.lastOrNull()?.second?.distance == 0.0) {
-            setDistance()
-        }
-        val filterTrackPoints = trackPoints
-        return if (filterTrackPoints.isNotEmpty()) {
-            val graph = mutableListOf<Entry>()
-            for (trackPoint in filterTrackPoints) {
-                val value = if (discreteInput) 1f else f(trackPoint)?.toFloat()
-                val distance = trackPoint.second.distance?.toFloat()
-                if (value != null && distance != null) {
-                    graph.add(Entry(distance, value, trackPoint))
-                }
-            }
-            graph
-        } else {
-            mutableListOf()
-        }
+        return getTrackGraph(trackPoints, f, discreteInput)
     }
 
     fun getTrackSlopeGraph(): MutableList<Entry> {
@@ -467,6 +438,48 @@ class GpsTrack(
             }
             return Color.HSVToColor(hsvb)
         }
+
+
+        fun getTrackGraph(
+            trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+            f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?,
+            discreteInput: Boolean = false
+        ): MutableList<Entry> {
+            if (trackPoints.lastOrNull()?.second?.distance == 0.0) {
+                setDistance(trackPoints)
+            }
+            return if (trackPoints.isNotEmpty()) {
+                val graph = mutableListOf<Entry>()
+                for (trackPoint in trackPoints) {
+                    val value = if (discreteInput) 1f else f(trackPoint)?.toFloat()
+                    val distance = trackPoint.second.distance?.toFloat()
+                    if (value != null && distance != null) {
+                        graph.add(Entry(distance, value, trackPoint))
+                    }
+                }
+                graph
+            } else {
+                mutableListOf()
+            }
+        }
+
+        fun setDistance(trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>?) {
+            trackPoints?.forEachIndexed { i, trackPoint ->
+                if (i == 0) {
+                    trackPoint.second.distance = 0.0
+                } else {
+                    val distance = trackPoints[i - 1].second.distance
+                    if (distance != null) {
+                        trackPoint.second.distance = distance + abs(
+                            getDistance(
+                                trackPoint.first, trackPoints[i - 1].first
+                            )
+                        ).toDouble()
+                    }
+                }
+            }
+        }
+
 
     }
 

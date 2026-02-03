@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -14,8 +15,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -34,15 +35,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import com.chaquo.python.Python
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonInstance
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryDataScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryImagesScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryPowerScreen
@@ -74,126 +74,86 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        android.util.Log.i("SummitEntryDetails", "onCreate called")
 
         pageViewModel = ViewModelProvider(this)[PageViewModel::class.java]
         CustomMapViewToAllowScrolling.setOsmConfForTiles()
 
         val summitEntryId = intent.extras?.getLong(SUMMIT_ID_EXTRA_IDENTIFIER)
-        android.util.Log.i("SummitEntryDetails", "Summit entry ID from intent: $summitEntryId")
+        Log.i("SummitEntryDetails", "Summit entry ID from intent: $summitEntryId")
         if (summitEntryId != null) {
             pageViewModel.getSummitToView(summitEntryId)
         }
-
         setContent {
-            android.util.Log.i("SummitEntryDetails", "setContent called")
+            val coroutineScope = rememberCoroutineScope()
             SummitBookTheme {
                 SummitEntryDetailsScreen(
                     pageViewModel = pageViewModel,
                     onBackPressed = { finish() },
                     onSummitLoaded = { summit ->
                         if (!hasLoadedSummit) {
-                            android.util.Log.i("SummitEntryDetails", "Loading summit: ${summit.id}")
+                            Log.i("SummitEntryDetails", "Loading summit: ${summit.id}")
                             hasLoadedSummit = true
                             summitEntry = summit
-                            lifecycleScope.launch(Dispatchers.Main.immediate) {
-                               withContext(Dispatchers.IO) {
+                            coroutineScope.launch {
+                                withContext(Dispatchers.IO) {
                                     pythonInstance?.let { analyzeAndSimplifyTrack(it, summit) }
                                 }
                             }
                         }
-                    }
-                )
+                    })
             }
         }
     }
 
     private fun analyzeAndSimplifyTrack(pythonInstance: Python, summit: Summit) {
-        android.util.Log.i("SummitEntryDetails", "Starting track analysis for summit: ${summit.id}")
-        
-        val useSimplifiedTracks =
-            MainActivityCompose.sharedPreferences.getBoolean("pref_use_simplified_tracks", true)
-        android.util.Log.i("SummitEntryDetails", "Use simplified tracks: $useSimplifiedTracks")
-        
+        val useSimplifiedTracks = sharedPreferences.getBoolean("pref_use_simplified_tracks", true)
+
         if (summit.sportType == SportType.IndoorTrainer) {
-            android.util.Log.i("SummitEntryDetails", "Skipping track analysis for indoor trainer")
             return
         }
-        
-        android.util.Log.i("SummitEntryDetails", "Summit has GPS track: ${summit.hasGpsTrack()}, simplified: ${summit.hasGpsTrack(simplified = true)}")
-        android.util.Log.i("SummitEntryDetails", "Summit has track data: ${summit.hasTrackData()}")
 
-        if (useSimplifiedTracks &&
-            summit.hasGpsTrack() &&
-            !summit.hasGpsTrack(simplified = true) &&
-            summit.sportType != SportType.IndoorTrainer
-        ) {
-            android.util.Log.i("SummitEntryDetails", "Launching lifecycle scope for simplifying track")
-            lifecycleScope.launch(Dispatchers.Main.immediate) {
-               android.util.Log.i("SummitEntryDetails", "In lifecycle scope launch block")
-                withContext(Dispatchers.IO) {
-                    android.util.Log.i("SummitEntryDetails", "In IO context for simplifying track")
-                    try {
-                        GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
-                            summit.getGpsTrackPath(simplified = false)
-                        )
-                        android.util.Log.i(
-                            "SummitEntryDetails",
-                            "Successfully simplified track for ${summit.getDateAsString()}_${summit.name}."
-                        )
-                    } catch (ex: RuntimeException) {
-                        android.util.Log.e(
-                            "SummitEntryDetails",
-                            "Error in simplify track for ${summit.getDateAsString()}_${summit.name}: ${ex.message}",
-                            ex
-                        )
-                    }
-                }
+        Log.i(
+            "SummitEntryDetails", "Summit has GPS track: ${summit.hasGpsTrack()}, simplified: ${
+                summit.hasGpsTrack(simplified = true)
+            }"
+        )
+
+        if (useSimplifiedTracks && summit.hasGpsTrack() && !summit.hasGpsTrack(simplified = true) && summit.sportType != SportType.IndoorTrainer) {
+            try {
+                GpxPyExecutor(pythonInstance).createSimplifiedGpxTrack(
+                    summit.getGpsTrackPath(simplified = false)
+                )
+                Log.i(
+                    "SummitEntryDetails",
+                    "Successfully simplified track for ${summit.getDateAsString()}_${summit.name}."
+                )
+            } catch (ex: RuntimeException) {
+                Log.e(
+                    "SummitEntryDetails",
+                    "Error in simplify track for ${summit.getDateAsString()}_${summit.name}: ${ex.message}",
+                    ex
+                )
             }
         }
 
-        if (useSimplifiedTracks &&
-            !summit.hasTrackData() &&
-            summit.sportType != SportType.IndoorTrainer
-        ) {
-            android.util.Log.i("SummitEntryDetails", "Launching lifecycle scope for analyzing track")
-            lifecycleScope.launch(Dispatchers.Main.immediate) {
-               android.util.Log.i("SummitEntryDetails", "In lifecycle scope launch block for analysis")
-                withContext(Dispatchers.IO) {
-                    android.util.Log.i("SummitEntryDetails", "In IO context for analyzing track")
-                    try {
-                        GpxPyExecutor(pythonInstance).analyzeGpxTrackAndCreateGpxPyDataFile(summit)
-                        android.util.Log.i(
-                            "SummitEntryDetails",
-                            "Analyzed track for ${summit.getDateAsString()}_${summit.name}."
-                        )
-                    } catch (ex: RuntimeException) {
-                        android.util.Log.e(
-                            "SummitEntryDetails",
-                            "Error in analyze track for ${summit.getDateAsString()}_${summit.name}: ${ex.message}",
-                            ex
-                        )
-                    }
-                }
+        if (useSimplifiedTracks && !summit.hasTrackData() && summit.sportType != SportType.IndoorTrainer) {
+            try {
+                GpxPyExecutor(pythonInstance).analyzeGpxTrackAndCreateGpxPyDataFile(summit)
+                Log.i(
+                    "SummitEntryDetails",
+                    "Analyzed track for ${summit.getDateAsString()}_${summit.name}."
+                )
+            } catch (ex: RuntimeException) {
+                Log.e(
+                    "SummitEntryDetails",
+                    "Error in analyze track for ${summit.getDateAsString()}_${summit.name}: ${ex.message}",
+                    ex
+                )
             }
         }
     }
 
-    override fun onPause() {
-        android.util.Log.i("SummitEntryDetails", "onPause called")
-        super.onPause()
-    }
-    
-    override fun onResume() {
-        android.util.Log.i("SummitEntryDetails", "onResume called")
-        super.onResume()
-    }
-    
-    override fun onDestroy() {
-        android.util.Log.i("SummitEntryDetails", "onDestroy called")
-        super.onDestroy()
-    }
-    
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         summitEntry?.let {
@@ -208,31 +168,30 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
  */
 @Immutable
 data class SummitUiState(
-    val summitId: Long,
-    val summitName: String,
-    val tabs: List<SummitTab>
+    val summitId: Long, val summitName: String, val tabs: List<SummitTab>
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SummitEntryDetailsScreen(
-    pageViewModel: PageViewModel,
-    onBackPressed: () -> Unit,
-    onSummitLoaded: (Summit) -> Unit
+    pageViewModel: PageViewModel, onBackPressed: () -> Unit, onSummitLoaded: (Summit) -> Unit
 ) {
-    android.util.Log.i("SummitEntryDetails", "SummitEntryDetailsScreen recomposing")
+    Log.i("SummitEntryDetails", "SummitEntryDetailsScreen recomposing")
     val summitToView by pageViewModel.summitToView.observeAsState()
-    
+
     // Hoist state: Use stable UI state to prevent recomposition loops
     var summitUiState by remember { mutableStateOf<SummitUiState?>(null) }
     var lastProcessedId by remember { mutableStateOf<Long?>(null) }
-    
+
     // Process summit only when we get a new one with different ID
     LaunchedEffect(summitToView) {
-        android.util.Log.i("SummitEntryDetails", "LaunchedEffect triggered, summitToView: ${summitToView?.data?.id}")
+        Log.i(
+            "SummitEntryDetails",
+            "LaunchedEffect triggered, summitToView: ${summitToView?.data?.id}"
+        )
         val newSummit = summitToView?.data
         if (newSummit != null && newSummit.id != lastProcessedId) {
-            android.util.Log.i("SummitEntryDetails", "Processing new summit: ${newSummit.id}")
+            Log.i("SummitEntryDetails", "Processing new summit: ${newSummit.id}")
             lastProcessedId = newSummit.id
             summitUiState = SummitUiState(
                 summitId = newSummit.id,
@@ -243,29 +202,26 @@ fun SummitEntryDetailsScreen(
         }
     }
 
-    android.util.Log.i("SummitEntryDetails", "Rendering Scaffold with summit: ${summitUiState?.summitId}")
+    Log.i("SummitEntryDetails", "Rendering Scaffold with summit: ${summitUiState?.summitId}")
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(summitUiState?.summitName ?: "") },
-                navigationIcon = {
-                    IconButton(onClick = onBackPressed) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_baseline_arrow_back_24),
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                title = { Text(summitUiState?.summitName ?: "") }, navigationIcon = {
+                IconButton(onClick = onBackPressed) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_baseline_arrow_back_24),
+                        contentDescription = "Back"
+                    )
+                }
+            }, colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
             )
-        }
-    ) { paddingValues ->
+            )
+        }) { paddingValues ->
         if (summitUiState != null) {
-            android.util.Log.i("SummitEntryDetails", "Showing tabs for summit: ${summitUiState!!.summitId}")
+            Log.i("SummitEntryDetails", "Showing tabs for summit: ${summitUiState!!.summitId}")
             SummitEntryDetailsTabs(
                 summitId = summitUiState!!.summitId,
                 tabs = summitUiState!!.tabs,
@@ -273,7 +229,7 @@ fun SummitEntryDetailsScreen(
                 modifier = Modifier.padding(paddingValues)
             )
         } else {
-            android.util.Log.i("SummitEntryDetails", "Showing loading indicator")
+            Log.i("SummitEntryDetails", "Showing loading indicator")
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -293,28 +249,32 @@ fun SummitEntryDetailsTabs(
     pageViewModel: PageViewModel,
     modifier: Modifier = Modifier
 ) {
-    android.util.Log.i("SummitEntryDetails", "SummitEntryDetailsTabs recomposing for summit: $summitId, tabs: ${tabs.size}")
-    
-    val pagerState = rememberPagerState(
-        initialPage = 0,
-        pageCount = { tabs.size }
+    Log.i(
+        "SummitEntryDetails",
+        "SummitEntryDetailsTabs recomposing for summit: $summitId, tabs: ${tabs.size}"
     )
-    android.util.Log.i("SummitEntryDetails", "Pager state with ${tabs.size} pages, current: ${pagerState.currentPage}")
+
+    val pagerState = rememberPagerState(
+        initialPage = 0, pageCount = { tabs.size })
+    Log.i(
+        "SummitEntryDetails",
+        "Pager state with ${tabs.size} pages, current: ${pagerState.currentPage}"
+    )
     val coroutineScope = rememberCoroutineScope()
-    
+
     // Observe state once at this level and extract data to prevent unnecessary recompositions
     val summitToViewData by pageViewModel.summitToView.observeAsState()
     val summitsListData by pageViewModel.summitsList.observeAsState()
     val summitToCompareData by pageViewModel.summitToCompare.observeAsState()
     val segmentsListData by pageViewModel.segmentsList.observeAsState()
     val extremaValuesSummits by pageViewModel.extremaValuesSummits.observeAsState()
-    
+
     // Extract actual data from DataStatus wrappers to create stable state
     val summit = remember(summitToViewData) { summitToViewData?.data }
     val allSummits = remember(summitsListData) { summitsListData?.data }
     val compareSummit = remember(summitToCompareData) { summitToCompareData?.data }
     val segments = remember(segmentsListData) { segmentsListData?.data }
-    
+
     // Create stable callbacks
     val onGetSummitToCompare: (Long) -> Unit = remember {
         { id -> pageViewModel.getSummitToCompare(id) }
@@ -323,31 +283,30 @@ fun SummitEntryDetailsTabs(
         { pageViewModel.setSummitToCompareToNull() }
     }
 
-    android.util.Log.i("SummitEntryDetails", "Rendering Column for tabs with ${tabs.size} tabs")
+    Log.i("SummitEntryDetails", "Rendering Column for tabs with ${tabs.size} tabs")
     Column(modifier = modifier.fillMaxSize()) {
-        android.util.Log.i("SummitEntryDetails", "Rendering PrimaryTabRow with ${tabs.size} tabs, current page: ${pagerState.currentPage}")
+        Log.i(
+            "SummitEntryDetails",
+            "Rendering PrimaryTabRow with ${tabs.size} tabs, current page: ${pagerState.currentPage}"
+        )
         PrimaryTabRow(
             selectedTabIndex = pagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) {
             tabs.forEachIndexed { index, tab ->
-                android.util.Log.i("SummitEntryDetails", "Rendering tab $index: ${tab.name}")
-                Tab(
-                    selected = pagerState.currentPage == index,
-                    onClick = {
-                        android.util.Log.i("SummitEntryDetails", "Clicking tab $index: ${tab.name}")
-                        coroutineScope.launch(Dispatchers.Main.immediate) {
-                            pagerState.animateScrollToPage(index)
-                        }
-                    },
-                    text = {
-                        Text(
-                            text = stringResource(id = tab.titleResId),
-                            style = MaterialTheme.typography.labelSmall
-                        )
+                Log.i("SummitEntryDetails", "Rendering tab $index: ${tab.name}")
+                Tab(selected = pagerState.currentPage == index, onClick = {
+                    Log.i("SummitEntryDetails", "Clicking tab $index: ${tab.name}")
+                    coroutineScope.launch(Dispatchers.Main.immediate) {
+                        pagerState.animateScrollToPage(index)
                     }
-                )
+                }, text = {
+                    Text(
+                        text = stringResource(id = tab.titleResId),
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                })
             }
         }
 
@@ -355,12 +314,11 @@ fun SummitEntryDetailsTabs(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             beyondViewportPageCount = tabs.size, // Keep all pages loaded
-            key = { page -> "${summitId}_${tabs[page].name}_$page" }
-        ) { page ->
-            android.util.Log.i("SummitEntryDetails", "Rendering page $page for summit: $summitId")
+            key = { page -> "${summitId}_${tabs[page].name}_$page" }) { page ->
+            Log.i("SummitEntryDetails", "Rendering page $page for summit: $summitId")
             when (tabs[page]) {
                 SummitTab.DATA -> {
-                    android.util.Log.i("SummitEntryDetails", "Rendering DATA tab for page $page")
+                    Log.i("SummitEntryDetails", "Rendering DATA tab for page $page")
                     SummitEntryDataScreen(
                         summit = summit,
                         allSummits = allSummits,
@@ -371,8 +329,9 @@ fun SummitEntryDetailsTabs(
                         onSetSummitToCompareToNull = onSetSummitToCompareToNull
                     )
                 }
+
                 SummitTab.THIRD_PARTY -> {
-                    android.util.Log.i("SummitEntryDetails", "Rendering THIRD_PARTY tab for page $page")
+                    Log.i("SummitEntryDetails", "Rendering THIRD_PARTY tab for page $page")
                     SummitEntryThirdPartyScreen(
                         summit = summit,
                         allSummits = allSummits,
@@ -382,14 +341,16 @@ fun SummitEntryDetailsTabs(
                         onSetSummitToCompareToNull = onSetSummitToCompareToNull
                     )
                 }
+
                 SummitTab.IMAGES -> {
-                    android.util.Log.i("SummitEntryDetails", "Rendering IMAGES tab for page $page")
+                    Log.i("SummitEntryDetails", "Rendering IMAGES tab for page $page")
                     SummitEntryImagesScreen(
                         summit = summit
                     )
                 }
+
                 SummitTab.TRACK -> {
-                    android.util.Log.i("SummitEntryDetails", "Rendering TRACK tab for page $page")
+                    Log.i("SummitEntryDetails", "Rendering TRACK tab for page $page")
                     SummitEntryTrackScreen(
                         summit = summit,
                         allSummits = allSummits,
@@ -398,8 +359,9 @@ fun SummitEntryDetailsTabs(
                         onSetSummitToCompareToNull = onSetSummitToCompareToNull
                     )
                 }
+
                 SummitTab.POWER -> {
-                    android.util.Log.i("SummitEntryDetails", "Rendering POWER tab for page $page")
+                    Log.i("SummitEntryDetails", "Rendering POWER tab for page $page")
                     SummitEntryPowerScreen(
                         summit = summit,
                         allSummits = allSummits,
@@ -415,15 +377,14 @@ fun SummitEntryDetailsTabs(
 }
 
 enum class SummitTab(val titleResId: Int) {
-    DATA(R.string.tab_text_0),
-    THIRD_PARTY(R.string.tab_text_1),
-    IMAGES(R.string.tab_text_2),
-    TRACK(R.string.tab_text_3),
+    DATA(R.string.tab_text_0), THIRD_PARTY(R.string.tab_text_1), IMAGES(R.string.tab_text_2), TRACK(
+        R.string.tab_text_3
+    ),
     POWER(R.string.tab_text_4)
 }
 
 fun getTabsForSummit(summit: Summit): List<SummitTab> {
-    android.util.Log.i("SummitEntryDetails", "Getting tabs for summit: ${summit.id}")
+    Log.i("SummitEntryDetails", "Getting tabs for summit: ${summit.id}")
     val tabs = mutableListOf(SummitTab.DATA)
 
     if (summit.garminData != null) {

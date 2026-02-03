@@ -392,7 +392,7 @@ class CustomMapViewToAllowScrolling : MapView {
             context: Context, geoPoint: GeoPoint, scope: CoroutineScope
         ) {
             Toast.makeText(context, "Querying road info...", Toast.LENGTH_SHORT).show()
-            scope.launch(Dispatchers.Main.immediate) {
+            scope.launch() {
                 try {
                     var info: Pair<RoadInfo?, LocationInfo?>? = null
                     withContext(Dispatchers.IO) {

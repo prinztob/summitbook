@@ -52,7 +52,6 @@ import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.utils.findActivity
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.util.Locale
 
@@ -109,12 +108,12 @@ fun SegmentsListScreen(
 
     // Show Add Segment Entry Dialog
     if (showAddSegmentEntryDialog) {
-        AddSegmentEntryDialogCompose(
+        AddSegmentEntryScreen(
             summits = summits,
             segments = segments,
             segmentId = selectedSegmentId,
             segmentEntryId = null,
-            onDismiss = { showAddSegmentEntryDialog = false },
+            onCancel = { showAddSegmentEntryDialog = false },
             onSaveSegmentEntry = { isUpdate, segmentEntry ->
                 viewModel.saveSegmentEntry(isUpdate, segmentEntry)
             }
@@ -378,8 +377,6 @@ fun SegmentCard(
  */
 @Composable
 fun AddSegmentDetailsButton(onClick: () -> Unit) {
-    val context = LocalContext.current
-    
     Card(
         modifier = Modifier
             .fillMaxWidth()

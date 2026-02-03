@@ -305,7 +305,7 @@ fun OpenStreetMapScreen(
                             coroutineScope
                         )
                     } else {
-                        coroutineScope.launch(Dispatchers.Main.immediate) {
+                        coroutineScope.launch() {
                             snackbarHostState.showSnackbar(showSummitDisabledMessage)
                         }
                     }
@@ -595,7 +595,7 @@ private fun showSummitsAndBookmarksIfEnabled(
     if (showSummits || showBookmarks) {
         // In a real implementation, we would set isLoading = true here
         mapView?.enableRoadInfoOnMapClick(coroutineScope)
-        coroutineScope.launch(Dispatchers.Main.immediate) {
+        coroutineScope.launch() {
             var filteredSummits: List<Pair<Summit, GeoPoint>> = listOf()
             withContext(Dispatchers.IO) {
                 val relevantSummits = if (showSummits) summits else emptyList()
@@ -660,7 +660,7 @@ private fun addAllMarkers(
         showMyLocation(
             map,
             map.overlays?.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay)
-        coroutineScope.launch(Dispatchers.Main.immediate) {
+        coroutineScope.launch() {
             withContext(Dispatchers.IO) {
                 val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(
                     context,
@@ -767,7 +767,7 @@ private fun showAllTracksOfSummitInBoundingBox(
             val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
             if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
                 if (infoWindow.entry.hasGpsTrack()) {
-                    coroutineScope.launch(Dispatchers.Main.immediate) {
+                    coroutineScope.launch() {
                         var show = false
                         withContext(Dispatchers.Default) {
                             if (pointsShown < maxPointsToShow) {

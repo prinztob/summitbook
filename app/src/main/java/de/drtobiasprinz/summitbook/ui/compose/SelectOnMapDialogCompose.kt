@@ -53,7 +53,6 @@ import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import io.ticofab.androidgpxparser.parser.GPXParser
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.osmdroid.bonuspack.location.GeocoderNominatim
@@ -108,12 +107,12 @@ fun SelectOnMapDialogCompose(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            scope.launch(Dispatchers.Main.immediate) {
+            scope.launch() {
                 val file = File(MainActivityCompose.cache, "new_gpx_track.gpx")
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
                     copyGpxFileToCache(inputStream, file)
                 }
-                addGpxTrack(file, GPXParser(), mapView, summitEntry) { position, track ->
+                addGpxTrack(file, GPXParser(), mapView, summitEntry) { position, _ ->
                     latLngSelectedPosition = position
                     selectedGpsPath = file.toPath()
                     wasBoundingBoxCalculated = true
@@ -310,7 +309,7 @@ fun SelectOnMapDialogCompose(
                                 onDismiss()
                                 Toast.makeText(
                                     context,
-                                    addPositionToSummitCancel.format(summitEntry?.name ?: ""),
+                                    addPositionToSummitCancel.format(summitEntry.name),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             },
@@ -352,36 +351,34 @@ fun SelectOnMapDialogCompose(
                     if (!searchPanelVisible) {
                         IconButton(
                             onClick = {
-                                summitEntry?.let { entry ->
-                                    val position = latLngSelectedPosition
-                                    if (position != null) {
-                                        entry.lat = position.latitude
-                                        entry.lng = position.longitude
-                                        entry.latLng = latLngSelectedPosition
-                                        onSaveSummit(true, entry)
-                                        onDismiss()
-                                        Toast.makeText(
-                                            context,
-                                            addPositionToSummitSuccessful.format(entry.name),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                    val localSelectedPath = selectedGpsPath
-                                    if (localSelectedPath != null) {
-                                        try {
-                                            Files.copy(
-                                                localSelectedPath,
-                                                entry.getGpsTrackPath(),
-                                                StandardCopyOption.REPLACE_EXISTING
-                                            )
-                                            entry.hasTrack = true
-                                        } catch (e: IOException) {
-                                            e.printStackTrace()
-                                        }
-                                    }
-                                    entry.setBoundingBoxFromTrack()
-                                    onSaveSummit(true, entry)
+                                val position = latLngSelectedPosition
+                                if (position != null) {
+                                    summitEntry.lat = position.latitude
+                                    summitEntry.lng = position.longitude
+                                    summitEntry.latLng = latLngSelectedPosition
+                                    onSaveSummit(true, summitEntry)
+                                    onDismiss()
+                                    Toast.makeText(
+                                        context,
+                                        addPositionToSummitSuccessful.format(summitEntry.name),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
+                                val localSelectedPath = selectedGpsPath
+                                if (localSelectedPath != null) {
+                                    try {
+                                        Files.copy(
+                                            localSelectedPath,
+                                            summitEntry.getGpsTrackPath(),
+                                            StandardCopyOption.REPLACE_EXISTING
+                                        )
+                                        summitEntry.hasTrack = true
+                                    } catch (e: IOException) {
+                                        e.printStackTrace()
+                                    }
+                                }
+                                summitEntry.setBoundingBoxFromTrack()
+                                onSaveSummit(true, summitEntry)
                             },
                             enabled = latLngSelectedPosition != null,
                             modifier = Modifier
