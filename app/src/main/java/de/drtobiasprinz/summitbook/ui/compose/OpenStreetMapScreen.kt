@@ -1,10 +1,15 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
+import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
+import android.os.Build
 import android.util.Log
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -86,11 +91,14 @@ import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.File
 
+@Suppress("AssignedValueIsNeverRead")
+@RequiresApi(Build.VERSION_CODES.S)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OpenStreetMapScreen(
     filteredSummits: List<Summit>,
     bookmarks: List<Summit>,
+    onFullscreenChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -166,6 +174,22 @@ fun OpenStreetMapScreen(
                 )
             }
         }
+    }
+
+    // Handle system bar visibility when fullscreen state changes
+    LaunchedEffect(fullscreenEnabled) {
+        val activity = context as? Activity
+        activity?.window?.let { window ->
+            if (fullscreenEnabled) {
+                window.insetsController?.let { controller ->
+                    controller.hide(WindowInsets.Type.systemBars())
+                    controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                }
+            } else {
+                window.insetsController?.show(WindowInsets.Type.systemBars())
+            }
+        }
+        onFullscreenChanged(fullscreenEnabled)
     }
 
     // Show summits and bookmarks when they are enabled and map is ready
@@ -305,7 +329,7 @@ fun OpenStreetMapScreen(
                             coroutineScope
                         )
                     } else {
-                        coroutineScope.launch() {
+                        coroutineScope.launch {
                             snackbarHostState.showSnackbar(showSummitDisabledMessage)
                         }
                     }
@@ -595,7 +619,7 @@ private fun showSummitsAndBookmarksIfEnabled(
     if (showSummits || showBookmarks) {
         // In a real implementation, we would set isLoading = true here
         mapView?.enableRoadInfoOnMapClick(coroutineScope)
-        coroutineScope.launch() {
+        coroutineScope.launch {
             var filteredSummits: List<Pair<Summit, GeoPoint>> = listOf()
             withContext(Dispatchers.IO) {
                 val relevantSummits = if (showSummits) summits else emptyList()
@@ -660,7 +684,7 @@ private fun addAllMarkers(
         showMyLocation(
             map,
             map.overlays?.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay)
-        coroutineScope.launch() {
+        coroutineScope.launch {
             withContext(Dispatchers.IO) {
                 val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(
                     context,
@@ -767,7 +791,7 @@ private fun showAllTracksOfSummitInBoundingBox(
             val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
             if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
                 if (infoWindow.entry.hasGpsTrack()) {
-                    coroutineScope.launch() {
+                    coroutineScope.launch {
                         var show = false
                         withContext(Dispatchers.Default) {
                             if (pointsShown < maxPointsToShow) {

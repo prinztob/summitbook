@@ -7,7 +7,6 @@ import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
-import androidx.lifecycle.asFlow
 import androidx.room.Room
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
@@ -46,7 +45,7 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
                 dao.peakDao(),
                 dao.dailyActivitySummaryDao()
             )
-            val summits = repository.getAllSummitsLiveData().asFlow().first()
+            val summits = repository.getAllSummits().first()
             val forecasts = repository.getAllForecasts().first()
 
 

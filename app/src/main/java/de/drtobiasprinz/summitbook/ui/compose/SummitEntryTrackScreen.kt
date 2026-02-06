@@ -30,7 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -48,25 +47,17 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.github.mikephil.charting.charts.HorizontalBarChart
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.Legend
-import com.github.mikephil.charting.components.LegendEntry
 import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.interpolateColor
 import de.drtobiasprinz.summitbook.models.RoadType
 import de.drtobiasprinz.summitbook.models.Surface
 import de.drtobiasprinz.summitbook.models.TrackColor
@@ -78,15 +69,15 @@ import de.drtobiasprinz.summitbook.ui.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.SummitUtils
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
+import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.osmdroid.config.Configuration
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.IOException
-import kotlin.math.roundToLong
 
+@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SummitEntryTrackScreen(
     summit: Summit?,
@@ -99,7 +90,11 @@ fun SummitEntryTrackScreen(
 
     val coroutineScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(true) }
-    var gpsTrack by remember { mutableStateOf<GpsTrack?>(null) }
+    var trackPoints by remember {
+        mutableStateOf<List<Pair<TrackPoint, ExtensionFromYaml>>>(
+            emptyList()
+        )
+    }
     var selectedCustomizeTrackItem by remember { mutableStateOf(TrackColor.Elevation) }
     var usedItemsForColorCode by remember { mutableStateOf<List<TrackColor>>(emptyList()) }
     var alreadyZoomedOnTrack by remember { mutableStateOf(false) }
@@ -107,7 +102,6 @@ fun SummitEntryTrackScreen(
     var trackInfoText by remember { mutableStateOf<String?>(null) }
     var mapViewRef by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
     var locationOverlayRef by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
-    var trackVersion by remember { mutableIntStateOf(0) }
 
     if (summit == null) {
         Box(
@@ -131,27 +125,26 @@ fun SummitEntryTrackScreen(
         isLoading = true
         withContext(Dispatchers.IO) {
             setGpsTrack(summit, useSimplifiedTrack = true) { track, _ ->
-                gpsTrack = track
+                trackPoints = track?.trackPoints ?: emptyList()
             }
         }
 
         // Load full track in background
         coroutineScope.launch(Dispatchers.IO) {
             setGpsTrack(summit, forceUpdate = true) { track, _ ->
-                gpsTrack = track
-                trackVersion++ // Increment to trigger map update
+                trackPoints = track?.trackPoints ?: emptyList()
             }
         }
         isLoading = false
     }
 
     // Update used items for color code
-    LaunchedEffect(gpsTrack) {
+    LaunchedEffect(trackPoints) {
         usedItemsForColorCode = TrackColor.entries.filter { trackColorEntry ->
-            gpsTrack?.trackPoints?.any {
+            trackPoints.any {
                 val value = trackColorEntry.f(it)
                 value != null && value != 0.0
-            } == true
+            }
         }.mapIndexed { i, entry ->
             entry.spinnerId = i
             entry
@@ -186,7 +179,7 @@ fun SummitEntryTrackScreen(
         }
 
         // Map view
-        if (gpsTrack?.hasOnlyZeroCoordinates() == false || summit.latLng != null) {
+        if (!hasOnlyZeroCoordinates(trackPoints) || summit.latLng != null) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -195,6 +188,7 @@ fun SummitEntryTrackScreen(
             ) {
                 MapView(
                     summit = summit,
+                    trackPoints = trackPoints,
                     summitToCompare = compareSummit,
                     allSummits = allSummits,
                     selectedTrackColor = selectedCustomizeTrackItem,
@@ -206,8 +200,8 @@ fun SummitEntryTrackScreen(
 
                 // Track info display (shows track points count or clicked track point info)
                 val displayText =
-                    trackInfoText ?: if (gpsTrack != null && gpsTrack!!.trackPoints.isNotEmpty()) {
-                        "${gpsTrack!!.trackPoints.size} ${stringResource(R.string.pts)}"
+                    trackInfoText ?: if (trackPoints.isNotEmpty()) {
+                        "${trackPoints.size} ${stringResource(R.string.pts)}"
                     } else {
                         null
                     }
@@ -238,6 +232,7 @@ fun SummitEntryTrackScreen(
                 // Map control buttons
                 MapControlButtons(
                     summit = summit,
+                    trackPoints = trackPoints,
                     allSummits = allSummits,
                     compareSummit = compareSummit,
                     mapView = mapViewRef,
@@ -271,13 +266,12 @@ fun SummitEntryTrackScreen(
                 )
             } else {
                 LineChartView(
-                    summit = summit,
-                    gpsTrack = gpsTrack,
+                    trackPoints = trackPoints,
                     trackColor = selectedCustomizeTrackItem,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clipToBounds()
-                        .height((Resources.getSystem().displayMetrics.heightPixels * 0.2 / Resources.getSystem().displayMetrics.density).dp)
+                        .height((Resources.getSystem().displayMetrics.heightPixels * 0.3 / Resources.getSystem().displayMetrics.density).dp)
                 )
             }
         }
@@ -292,9 +286,14 @@ fun SummitEntryTrackScreen(
     }
 }
 
+private fun hasOnlyZeroCoordinates(trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>): Boolean {
+    return trackPoints.none { it.first.latitude != 0.0 && it.first.longitude != 0.0 }
+}
+
 @Composable
 fun MapView(
     summit: Summit,
+    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
     summitToCompare: Summit?,
     allSummits: List<Summit>?,
     selectedTrackColor: TrackColor,
@@ -307,7 +306,7 @@ fun MapView(
     var mLocationOverlay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
 
     DisposableEffect(Unit) {
-        Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
+        org.osmdroid.config.Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
         onDispose {
             mLocationOverlay?.disableMyLocation()
         }
@@ -365,34 +364,33 @@ fun MapView(
 
             if (summitToCompare != null) {
                 view.drawTrack(
-                    summitToCompare,
+                    summitToCompare.gpsTrack?.trackPoints ?: emptyList(),
                     true,
                     TrackColor.None,
                     color = Color.BLACK,
-                    forceParseTrack = true,
                 )
             } else {
                 val connectedEntries = summit.getConnectedEntries(allSummits)
                 for (entry in connectedEntries) {
                     view.drawTrack(
-                        entry,
+                        entry.gpsTrack?.trackPoints ?: emptyList(),
                         true,
                         TrackColor.None,
                         color = Color.BLACK,
-                        forceParseTrack = true,
                     )
                 }
             }
 
             view.addTrackAndMarker(
                 summit,
+                trackPoints,
                 true,
                 selectedTrackColor,
                 true,
                 calculateBondingBox = calculateBoundingBox
             )
 
-            if (calculateBoundingBox) {
+            if (calculateBoundingBox && trackPoints.isNotEmpty()) {
                 onMapReady()
             }
 
@@ -406,6 +404,7 @@ fun MapView(
 @Composable
 fun MapControlButtons(
     summit: Summit,
+    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
     allSummits: List<Summit>?,
     compareSummit: Summit?,
     mapView: CustomMapViewToAllowScrolling?,
@@ -426,11 +425,12 @@ fun MapControlButtons(
         IconButton(
             onClick = {
                 if (mapView != null && allSummits != null) {
-                    coroutineScope.launch() {
+                    coroutineScope.launch {
                         showAllTracksOfSummitInBoundingBox(
                             context = context,
                             mapView = mapView,
                             summit = summit,
+                            trackPoints = trackPoints,
                             compareSummit = compareSummit,
                             allSummits = allSummits
                         )
@@ -516,115 +516,6 @@ fun MapControlButtons(
             )
         }
     }
-}
-
-@Composable
-fun LineChartView(
-    summit: Summit, gpsTrack: GpsTrack?, trackColor: TrackColor, modifier: Modifier = Modifier
-) {
-    val isDark = isSystemInDarkTheme()
-    val configuration = LocalConfiguration.current
-
-    if (!summit.hasGpsTrack() || gpsTrack == null) return
-
-    val actualTrackColor = if (trackColor == TrackColor.None || trackColor == TrackColor.Mileage) {
-        TrackColor.Elevation
-    } else {
-        trackColor
-    }
-    val label = stringResource(actualTrackColor.labelId)
-    val minLabel = stringResource(R.string.min)
-    val maxLabel = stringResource(R.string.max)
-
-    AndroidView(
-        factory = { ctx ->
-            LineChart(ctx).apply {
-                description.isEnabled = false
-                setDrawGridBackground(false)
-
-                val xAxis = this.xAxis
-                xAxis.position = XAxis.XAxisPosition.BOTTOM
-                xAxis.valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String {
-                        return String.format(
-                            configuration.locales[0], "%.1f km", (value / 100f).roundToLong() / 10f
-                        )
-                    }
-                }
-
-                val leftAxis = this.axisLeft
-                leftAxis.setDrawGridLines(true)
-                leftAxis.isGranularityEnabled = true
-            }
-        }, update = { chart ->
-            val lineChartEntries = gpsTrack.getTrackGraph(actualTrackColor.f)
-
-            val dataSet = LineDataSet(lineChartEntries, label).apply {
-                setDrawValues(false)
-                setDrawFilled(true)
-                setDrawCircles(false)
-                axisDependency = YAxis.AxisDependency.LEFT
-                color = Color.RED
-                setCircleColor(Color.RED)
-                lineWidth = 5f
-                circleRadius = 3f
-                fillAlpha = 50
-                fillColor = Color.RED
-                setDrawCircleHole(false)
-                highLightColor = Color.rgb(244, 117, 117)
-                setDrawHorizontalHighlightIndicator(true)
-
-                // Set colors based on values
-                val min = lineChartEntries.minByOrNull { it.y }?.y
-                val max = lineChartEntries.maxByOrNull { it.y }?.y
-                if (min != null && max != null) {
-                    val colors = lineChartEntries.map {
-                        val fraction = (it.y - min) / (max - min)
-                        interpolateColor(
-                            actualTrackColor.minColor, actualTrackColor.maxColor, fraction
-                        )
-                    }
-                    this.colors = colors
-                }
-            }
-
-            val dataSets: MutableList<ILineDataSet> = ArrayList()
-            dataSets.add(dataSet)
-            chart.data = LineData(dataSets)
-
-            // Set colors based on theme
-            val textColor = if (isDark) Color.WHITE else Color.BLACK
-            chart.xAxis.textColor = textColor
-            chart.axisRight.textColor = textColor
-            chart.axisLeft.textColor = textColor
-            chart.legend?.textColor = textColor
-
-            // Set legend
-            val legend = chart.legend
-            legend.yEntrySpace = 10f
-            legend.isWordWrapEnabled = true
-            val l1 = LegendEntry(
-                "$label $minLabel",
-                Legend.LegendForm.CIRCLE,
-                9f,
-                5f,
-                null,
-                actualTrackColor.minColor
-            )
-            val l2 = LegendEntry(
-                "$label $maxLabel",
-                Legend.LegendForm.CIRCLE,
-                9f,
-                5f,
-                null,
-                actualTrackColor.maxColor
-            )
-            legend.setCustom(arrayOf(l1, l2))
-            legend.isEnabled = true
-
-            chart.invalidate()
-        }, modifier = modifier
-    )
 }
 
 @Composable
@@ -761,7 +652,7 @@ private fun setGpsTrack(
     summit: Summit,
     useSimplifiedTrack: Boolean = false,
     forceUpdate: Boolean = false,
-    onTrackLoaded: (GpsTrack?, MutableList<Entry>) -> Unit
+    onTrackLoaded: (GpsTrack?, MutableList<com.github.mikephil.charting.data.Entry>) -> Unit
 ) {
     if (summit.hasGpsTrack(useSimplifiedTrack)) {
         summit.setGpsTrack(useSimplifiedTrack)
@@ -844,6 +735,7 @@ private suspend fun showAllTracksOfSummitInBoundingBox(
     context: android.content.Context,
     mapView: CustomMapViewToAllowScrolling,
     summit: Summit,
+    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
     compareSummit: Summit?,
     allSummits: List<Summit>
 ) {
@@ -886,16 +778,27 @@ private suspend fun showAllTracksOfSummitInBoundingBox(
 
         // Redraw the main summit track on top
         if (compareSummit != null) {
-            mapView.drawTrack(compareSummit, true, TrackColor.None, color = Color.BLACK)
+            mapView.drawTrack(
+                compareSummit.gpsTrack?.trackPoints ?: emptyList(),
+                true,
+                TrackColor.None,
+                color = Color.BLACK
+            )
         } else {
             val connectedEntries = summit.getConnectedEntries(allSummits)
             for (entry in connectedEntries) {
-                mapView.drawTrack(entry, true, TrackColor.None, color = Color.BLACK)
+                mapView.drawTrack(
+                    entry.gpsTrack?.trackPoints ?: emptyList(),
+                    true,
+                    TrackColor.None,
+                    color = Color.BLACK
+                )
             }
         }
 
         mapView.addTrackAndMarker(
             summit,
+            trackPoints,
             true,
             TrackColor.Elevation,
             true,

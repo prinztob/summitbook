@@ -1,9 +1,12 @@
+@file:Suppress("AssignedValueIsNeverRead")
+
 package de.drtobiasprinz.summitbook.ui
 
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.ProgressBar
@@ -13,6 +16,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -118,6 +122,7 @@ class MainActivityCompose : ComponentActivity(),
     // Navigation state
     private var currentDestination by mutableStateOf(Destination.Summits)
     private var showBookmarksOnly by mutableStateOf(false)
+    private var isMapFullscreen by mutableStateOf(false)
 
     // Dialog states
     private var showSortAndFilterDialog by mutableStateOf(false)
@@ -125,13 +130,11 @@ class MainActivityCompose : ComponentActivity(),
     private var showAddSummitDialog by mutableStateOf(false)
     private var newSummitsSelectedDate by mutableStateOf<Date?>(null)
 
-    // Drawer state
-    private val drawerState = mutableStateOf(false)
-
     // Loading state
     private val loadingState = mutableStateOf(false)
     private val loadingTooltip = mutableStateOf("")
 
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -166,6 +169,7 @@ class MainActivityCompose : ComponentActivity(),
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun MainScreen() {
@@ -196,6 +200,14 @@ class MainActivityCompose : ComponentActivity(),
                 forecasts = it
             }
         }
+
+        // Reset fullscreen state when navigating away from Map
+        LaunchedEffect(currentDestination) {
+            if (currentDestination != Destination.Map) {
+                isMapFullscreen = false
+            }
+        }
+
         // Scaffold with top app bar and navigation drawer
         ModalNavigationDrawer(
             drawerState = drawerState,
@@ -205,6 +217,7 @@ class MainActivityCompose : ComponentActivity(),
                     onDestinationSelected = { destination ->
                         currentDestination = destination
                         showBookmarksOnly = false
+                        isMapFullscreen = false
                         coroutineScope.launch {
                             drawerState.close()
                         }
@@ -219,78 +232,80 @@ class MainActivityCompose : ComponentActivity(),
         ) {
             Scaffold(
                 topBar = {
-                    TopAppBar(
-                        title = { Text(stringResource(R.string.app_name)) },
-                        navigationIcon = {
-                            IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_menu_24),
-                                    contentDescription = "Menu"
-                                )
-                            }
-                        },
-                        actions = {
-                            // Search action
-                            var searchText by remember { mutableStateOf("") }
-                            var isSearching by remember { mutableStateOf(false) }
+                    if (!isMapFullscreen) {
+                        TopAppBar(
+                            title = { Text(stringResource(R.string.app_name)) },
+                            navigationIcon = {
+                                IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.baseline_menu_24),
+                                        contentDescription = "Menu"
+                                    )
+                                }
+                            },
+                            actions = {
+                                // Search action
+                                var searchText by remember { mutableStateOf("") }
+                                var isSearching by remember { mutableStateOf(false) }
 
-                            if (isSearching) {
-                                OutlinedTextField(
-                                    value = searchText,
-                                    onValueChange = {
-                                        searchText = it
-                                        sortFilterValues.searchString = it
-                                        filteredSummits = sortFilterValues.applyForSummits(
-                                            summitsFromDatabase
-                                        )
-                                    },
-                                    placeholder = { Text(stringResource(R.string.search)) },
-                                    trailingIcon = {
-                                        IconButton(onClick = {
-                                            isSearching = false
-                                            searchText = ""
-                                            sortFilterValues.searchString = ""
+                                if (isSearching) {
+                                    OutlinedTextField(
+                                        value = searchText,
+                                        onValueChange = {
+                                            searchText = it
+                                            sortFilterValues.searchString = it
                                             filteredSummits = sortFilterValues.applyForSummits(
                                                 summitsFromDatabase
                                             )
-                                        }) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.baseline_cancel_24),
-                                                contentDescription = "Close search"
-                                            )
+                                        },
+                                        placeholder = { Text(stringResource(R.string.search)) },
+                                        trailingIcon = {
+                                            IconButton(onClick = {
+                                                isSearching = false
+                                                searchText = ""
+                                                sortFilterValues.searchString = ""
+                                                filteredSummits = sortFilterValues.applyForSummits(
+                                                    summitsFromDatabase
+                                                )
+                                            }) {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.baseline_cancel_24),
+                                                    contentDescription = "Close search"
+                                                )
+                                            }
                                         }
+                                    )
+                                } else {
+                                    IconButton(onClick = { isSearching = true }) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_baseline_search_24),
+                                            contentDescription = stringResource(R.string.action_search)
+                                        )
                                     }
-                                )
-                            } else {
-                                IconButton(onClick = { isSearching = true }) {
+                                }
+
+                                // Sort action
+                                IconButton(onClick = { showSortAndFilterDialog() }) {
                                     Icon(
-                                        painter = painterResource(R.drawable.ic_baseline_search_24),
-                                        contentDescription = stringResource(R.string.action_search)
+                                        painter = painterResource(R.drawable.ic_baseline_sort_24),
+                                        contentDescription = stringResource(R.string.sort_entries)
+                                    )
+                                }
+
+                                // Update action
+                                IconButton(onClick = {
+                                    updateThirdPartyData(
+                                        coroutineScope
+                                    )
+                                }) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_baseline_sync_24),
+                                        contentDescription = stringResource(R.string.update_3rd_part)
                                     )
                                 }
                             }
-
-                            // Sort action
-                            IconButton(onClick = { showSortAndFilterDialog() }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_baseline_sort_24),
-                                    contentDescription = stringResource(R.string.sort_entries)
-                                )
-                            }
-
-                            // Update action
-                            IconButton(onClick = {
-                                updateThirdPartyData(
-                                    coroutineScope
-                                )
-                            }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_baseline_sync_24),
-                                    contentDescription = stringResource(R.string.update_3rd_part)
-                                )
-                            }
-                        }
-                    )
+                        )
+                    }
                 },
                 snackbarHost = {
                     SnackbarHost(hostState = snackbarHostState)
@@ -305,7 +320,7 @@ class MainActivityCompose : ComponentActivity(),
                     MainContent(filteredSummits, summitsFromDatabase, forecasts)
 
                     // Floating Action Button for adding a summit (only visible on Summits screen)
-                    if (currentDestination == Destination.Summits && !showBookmarksOnly) {
+                    if (currentDestination == Destination.Summits) {
                         FloatingActionButton(
                             onClick = {
                                 showAddSummitDialog()
@@ -325,6 +340,7 @@ class MainActivityCompose : ComponentActivity(),
                     if (showAddSummitDialog) {
                         AddSummitDialogCompose(
                             summitsFromDatabase,
+                            isBookmark = showBookmarksOnly,
                             onDismiss = { showAddSummitDialog = false },
                             onSaveSummit = { isEdit, summit ->
                                 viewModel.saveSummit(
@@ -608,6 +624,7 @@ class MainActivityCompose : ComponentActivity(),
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     @Composable
     fun MainContent(
         filteredSummits: List<Summit>,
@@ -692,7 +709,13 @@ class MainActivityCompose : ComponentActivity(),
             }
 
             Destination.Map -> {
-                OpenStreetMapScreen(filteredSummits, summitFromDatabase.filter { it.isBookmark })
+                OpenStreetMapScreen(
+                    filteredSummits,
+                    summitFromDatabase.filter { it.isBookmark },
+                    onFullscreenChanged = { isFullscreen ->
+                        isMapFullscreen = isFullscreen
+                    }
+                )
             }
 
             Destination.Forecast -> {

@@ -55,8 +55,6 @@ class GpsTrack(
     var trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>> = mutableListOf()
     private var usedTrackPoints: MutableList<Pair<TrackPoint, ExtensionFromYaml>> = mutableListOf()
     var gpxTrack: Gpx? = null
-    private var minForColorCoding = 0f
-    private var maxForColorCoding = 0f
 
     fun addGpsTrack(
         mMapView: MapView?,
@@ -132,108 +130,7 @@ class GpsTrack(
 
 
     private fun addColorToTrack(paintBorder: Paint, trackColor: TrackColor) {
-        val values = usedTrackPoints.mapNotNull(trackColor.f)
-        minForColorCoding = (values.minOrNull() ?: 0.0).toFloat()
-        maxForColorCoding = (values.maxOrNull() ?: 0.0).toFloat()
-        val pointsExists = usedTrackPoints.any { trackColor.f(it) != 0.0 }
-        if (pointsExists) {
-            val attributeColorList = if (trackColor.discreteInput) {
-                AttitudeColorListDiscrete(
-                    usedTrackPoints,
-                    trackColor
-                )
-            } else {
-                AttitudeColorListContinuos(
-                    usedTrackPoints,
-                    minForColorCoding,
-                    maxForColorCoding,
-                    trackColor.minColor,
-                    trackColor.maxColor,
-                    trackColor.f
-                )
-            }
-            osMapRoute?.outlinePaintLists?.add(
-                PolychromaticPaintList(
-                    paintBorder, attributeColorList, false
-                )
-            )
-        }
-    }
-
-    private fun getFillPaint(): Paint {
-        val paint = Paint()
-        paint.color = COLOR_BACKGROUND
-        paint.style = Paint.Style.FILL_AND_STROKE
-        return paint
-    }
-
-    private fun getTextPaint(): Paint {
-        val paint = Paint()
-        paint.color = COLOR_POLYLINE_STATIC
-        paint.textSize = TEXT_SIZE
-        paint.isAntiAlias = true
-        return paint
-    }
-
-    private fun getKilometerManager(): MilestoneManager {
-        val backgroundRadius = 30f
-        val backgroundPaint1 = getFillPaint()
-        val textPaint1: Paint = getTextPaint()
-        val borderPaint = getStrokePaint(COLOR_BACKGROUND, 2f)
-        return MilestoneManager(
-            MilestoneMeterDistanceLister(1000.0), object : MilestoneDisplayer(0.0, false) {
-                override fun draw(pCanvas: Canvas, pParameter: Any) {
-                    val meters = pParameter as Double
-                    val kilometers = (meters / 1000).roundToLong().toInt()
-                    textPaint1.textSize = 30f
-                    val text = "" + kilometers + "K"
-                    val rect = Rect()
-                    textPaint1.getTextBounds(text, 0, text.length, rect)
-                    pCanvas.drawCircle(0f, 0f, backgroundRadius, backgroundPaint1)
-                    pCanvas.drawText(
-                        text,
-                        -rect.left - rect.width() / 2f,
-                        rect.height() / 2f - rect.bottom,
-                        textPaint1
-                    )
-                    pCanvas.drawCircle(0f, 0f, backgroundRadius + 1, borderPaint)
-                }
-            })
-    }
-
-    private fun getHalfKilometerManager(): MilestoneManager {
-        val arrowPath = Path()
-        arrowPath.moveTo(-5f, -5f)
-        arrowPath.lineTo(5f, 0f)
-        arrowPath.lineTo(-5f, 5f)
-        arrowPath.close()
-        val backgroundPaint = getFillPaint()
-        return MilestoneManager(
-            MilestoneMeterDistanceLister(500.0),
-            object : MilestonePathDisplayer(0.0, true, arrowPath, backgroundPaint) {
-                override fun draw(pCanvas: Canvas, pParameter: Any) {
-                    val halfKilometers = (pParameter as Double / 500).roundToLong().toInt()
-                    if (halfKilometers % 2 == 0) {
-                        return
-                    }
-                    super.draw(pCanvas, pParameter)
-                }
-            })
-    }
-
-    private fun getStrokePaint(pColor: Int, pWidth: Float): Paint {
-        val paint = Paint()
-        paint.strokeWidth = pWidth
-        paint.style = Paint.Style.STROKE
-        paint.isAntiAlias = true
-        paint.color = pColor
-        paint.strokeCap = Paint.Cap.ROUND
-        return paint
-    }
-
-    private fun getAnimatedPathManager(pMilestoneLister: MilestoneLister): MilestoneManager {
-        val slicePaint = getStrokePaint(COLOR_POLYLINE_ANIMATED, LINE_WIDTH_BIG)
-        return MilestoneManager(pMilestoneLister, MilestoneLineDisplayer(slicePaint))
+        addColorToTrack(usedTrackPoints, osMapRoute, paintBorder, trackColor)
     }
 
     fun parseTrack(useSimplifiedIfExists: Boolean = true, deleteEmptyTrack: Boolean = false) {
@@ -375,11 +272,6 @@ class GpsTrack(
         return trackPoints.isEmpty()
     }
 
-    fun hasOnlyZeroCoordinates(): Boolean {
-        return trackPoints.none { it.first.latitude != 0.0 && it.first.longitude != 0.0 }
-    }
-
-
     companion object {
 
         private const val COLOR_POLYLINE_STATIC = Color.BLUE
@@ -480,11 +372,117 @@ class GpsTrack(
             }
         }
 
+        fun addColorToTrack(
+            trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+            osMapRoute: Polyline?, paintBorder: Paint, trackColor: TrackColor
+        ) {
+            val values = trackPoints.mapNotNull(trackColor.f)
+            val minForColorCoding = (values.minOrNull() ?: 0.0).toFloat()
+            val maxForColorCoding = (values.maxOrNull() ?: 0.0).toFloat()
+            val pointsExists = trackPoints.any { trackColor.f(it) != 0.0 }
+            if (pointsExists) {
+                val attributeColorList = if (trackColor.discreteInput) {
+                    AttitudeColorListDiscrete(
+                        trackPoints,
+                        trackColor
+                    )
+                } else {
+                    AttitudeColorListContinuous(
+                        trackPoints,
+                        minForColorCoding,
+                        maxForColorCoding,
+                        trackColor.minColor,
+                        trackColor.maxColor,
+                        trackColor.f
+                    )
+                }
+                osMapRoute?.outlinePaintLists?.add(
+                    PolychromaticPaintList(
+                        paintBorder, attributeColorList, false
+                    )
+                )
+            }
+        }
 
+        fun getAnimatedPathManager(pMilestoneLister: MilestoneLister): MilestoneManager {
+            val slicePaint = getStrokePaint(COLOR_POLYLINE_ANIMATED, LINE_WIDTH_BIG)
+            return MilestoneManager(pMilestoneLister, MilestoneLineDisplayer(slicePaint))
+        }
+
+        fun getStrokePaint(pColor: Int, pWidth: Float): Paint {
+            val paint = Paint()
+            paint.strokeWidth = pWidth
+            paint.style = Paint.Style.STROKE
+            paint.isAntiAlias = true
+            paint.color = pColor
+            paint.strokeCap = Paint.Cap.ROUND
+            return paint
+        }
+
+        fun getHalfKilometerManager(): MilestoneManager {
+            val arrowPath = Path()
+            arrowPath.moveTo(-5f, -5f)
+            arrowPath.lineTo(5f, 0f)
+            arrowPath.lineTo(-5f, 5f)
+            arrowPath.close()
+            val backgroundPaint = getFillPaint()
+            return MilestoneManager(
+                MilestoneMeterDistanceLister(500.0),
+                object : MilestonePathDisplayer(0.0, true, arrowPath, backgroundPaint) {
+                    override fun draw(pCanvas: Canvas, pParameter: Any) {
+                        val halfKilometers = (pParameter as Double / 500).roundToLong().toInt()
+                        if (halfKilometers % 2 == 0) {
+                            return
+                        }
+                        super.draw(pCanvas, pParameter)
+                    }
+                })
+        }
+
+        fun getFillPaint(): Paint {
+            val paint = Paint()
+            paint.color = COLOR_BACKGROUND
+            paint.style = Paint.Style.FILL_AND_STROKE
+            return paint
+        }
+
+        fun getKilometerManager(): MilestoneManager {
+            val backgroundRadius = 30f
+            val backgroundPaint1 = getFillPaint()
+            val textPaint1: Paint = getTextPaint()
+            val borderPaint = getStrokePaint(COLOR_BACKGROUND, 2f)
+            return MilestoneManager(
+                MilestoneMeterDistanceLister(1000.0), object : MilestoneDisplayer(0.0, false) {
+                    override fun draw(pCanvas: Canvas, pParameter: Any) {
+                        val meters = pParameter as Double
+                        val kilometers = (meters / 1000).roundToLong().toInt()
+                        textPaint1.textSize = 30f
+                        val text = "" + kilometers + "K"
+                        val rect = Rect()
+                        textPaint1.getTextBounds(text, 0, text.length, rect)
+                        pCanvas.drawCircle(0f, 0f, backgroundRadius, backgroundPaint1)
+                        pCanvas.drawText(
+                            text,
+                            -rect.left - rect.width() / 2f,
+                            rect.height() / 2f - rect.bottom,
+                            textPaint1
+                        )
+                        pCanvas.drawCircle(0f, 0f, backgroundRadius + 1, borderPaint)
+                    }
+                })
+        }
+
+        private fun getTextPaint(): Paint {
+            val paint = Paint()
+            paint.color = COLOR_POLYLINE_STATIC
+            paint.textSize = TEXT_SIZE
+            paint.isAntiAlias = true
+            return paint
+        }
     }
 
 
-    internal class AttitudeColorListContinuos(
+    internal class AttitudeColorListContinuous(
         private val points: List<Pair<TrackPoint, ExtensionFromYaml>>,
         private val trackMin: Float,
         private val trackMax: Float,

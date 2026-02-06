@@ -41,7 +41,10 @@ class SortFilterValues(
     private var initialized: Boolean = false
 
     private fun setInitialValues(summits: List<Summit>, sharedPreferences: SharedPreferences) {
-        Log.i(TAG, "initialized with ${summits.size} because initialized is $initialized or years ($years) is empty is ${years.isEmpty()}")
+        Log.i(
+            TAG,
+            "initialized with ${summits.size} because initialized is $initialized or years ($years) is empty is ${years.isEmpty()}"
+        )
         if (!initialized || years.isEmpty()) {
             initialized = true
             if (summits.isNotEmpty()) {
@@ -57,7 +60,8 @@ class SortFilterValues(
                 }
             }
             Log.i(TAG, "years $years")
-            val showOnlyCurrentYear = sharedPreferences.getBoolean(Keys.PREF_CURRENT_YEAR_SWITCH, false)
+            val showOnlyCurrentYear =
+                sharedPreferences.getBoolean(Keys.PREF_CURRENT_YEAR_SWITCH, false)
             updateCurrentYearSwitch(showOnlyCurrentYear)
         }
     }
@@ -102,7 +106,8 @@ class SortFilterValues(
         setInitialValues(summits, sharedPreferences)
         val filteredSummits = if (searchString != "" && searchString.length > 1) {
             summits.filter {
-                it.name.contains(searchString, ignoreCase = true) ||
+                !it.isBookmark &&
+                        it.name.contains(searchString, ignoreCase = true) ||
                         it.comments.contains(searchString, ignoreCase = true) ||
                         it.places.joinToString(";").contains(searchString, ignoreCase = true)
             }

@@ -233,6 +233,7 @@ fun SelectOnMapDialogCompose(
 
                         map.addTrackAndMarker(
                             summitEntry,
+                            summitEntry.gpsTrack?.trackPoints ?: emptyList(),
                             false,
                             TrackColor.None,
                             alwaysShowTrackOnMap = false
@@ -575,7 +576,7 @@ private fun addSelectedPositionAndTrack(
     if (summitEntry != null) {
         osMap.addMarker(geoPointSelectedPosition, summitEntry)
         gpsTrack.addGpsTrack(osMap, TrackColor.None)
-        osMap.calculateBoundingBox(gpsTrack, geoPointSelectedPosition)
+        osMap.calculateBoundingBox(gpsTrack.trackPoints, geoPointSelectedPosition)
     }
 }
 

@@ -918,7 +918,7 @@ private fun addColorToTrack(
     val maxForColorCoding = (values.maxOrNull() ?: 0.0).toFloat()
     val pointsExists = usedTrackPoints.any { trackColor.f(it) != 0.0 }
     if (pointsExists) {
-        val attributeColorList = GpsTrack.AttitudeColorListContinuos(
+        val attributeColorList = GpsTrack.AttitudeColorListContinuous(
             usedTrackPoints,
             minForColorCoding,
             maxForColorCoding,

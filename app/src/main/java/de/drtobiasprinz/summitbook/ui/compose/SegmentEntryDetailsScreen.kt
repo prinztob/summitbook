@@ -1,3 +1,5 @@
+@file:Suppress("AssignedValueIsNeverRead")
+
 package de.drtobiasprinz.summitbook.ui.compose
 
 import android.content.Context
@@ -54,19 +56,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.createBitmap
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.Legend
-import com.github.mikephil.charting.components.LegendEntry
-import com.github.mikephil.charting.components.LimitLine
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.components.YAxis
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.formatter.ValueFormatter
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
@@ -88,7 +80,6 @@ import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.Locale
-import kotlin.math.roundToLong
 
 /**
  * Main composable screen for displaying segment entry details
@@ -224,9 +215,14 @@ fun SegmentEntryDetailsScreen(
 
                     scope.launch {
                         withContext(Dispatchers.IO) {
-                            currentSummit?.setGpsTrack(useSimplifiedTrack = false, updateTrack = true)
+                            currentSummit?.setGpsTrack(
+                                useSimplifiedTrack = false,
+                                updateTrack = true
+                            )
                         }
-                        uiState = uiState.copy(trackPoints = currentSummit?.gpsTrack?.trackPoints ?: emptyList())
+                        uiState = uiState.copy(
+                            trackPoints = currentSummit?.gpsTrack?.trackPoints ?: emptyList()
+                        )
                     }
                 },
                 modifier = Modifier.padding(paddingValues)
@@ -284,7 +280,10 @@ fun SegmentEntryDetailsContent(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        Log.i("SegmentEntryDetailsScreen", "summit: ${summit?.getDateAsString()}, trackPoints. ${trackPoints.size}")
+        Log.i(
+            "SegmentEntryDetailsScreen",
+            "summit: ${summit?.getDateAsString()}, trackPoints. ${trackPoints.size}"
+        )
         // Map section
         if (summit != null && entry != null) {
             SegmentMapSection(
@@ -414,12 +413,22 @@ fun SegmentHeader(
             ) {
                 SegmentDetailStatItem(
                     icon = R.drawable.outline_distance_24,
-                    text = String.format(Locale.getDefault(), "%.1f %s", kilometers, stringResource(R.string.km))
+                    text = String.format(
+                        Locale.getDefault(),
+                        "%.1f %s",
+                        kilometers,
+                        stringResource(R.string.km)
+                    )
                 )
 
                 SegmentDetailStatItem(
                     icon = R.drawable.ic_baseline_timer_24,
-                    text = String.format(Locale.getDefault(), "%.1f %s", duration, stringResource(R.string.min))
+                    text = String.format(
+                        Locale.getDefault(),
+                        "%.1f %s",
+                        duration,
+                        stringResource(R.string.min)
+                    )
                 )
 
                 SegmentDetailStatItem(
@@ -571,175 +580,31 @@ fun SegmentChartSection(
     selectedTrackColor: TrackColor,
     modifier: Modifier = Modifier
 ) {
-    AndroidView(
-        factory = { context ->
-            LineChart(context).apply {
-                // Configure chart
-                setupChart(this, trackPoints, segmentEntry, selectedTrackColor)
-            }
-        },
-        update = { chart ->
-            // Update chart when data changes
-            setupChart(chart, trackPoints, segmentEntry, selectedTrackColor)
-        },
-        modifier = modifier
-            .fillMaxWidth()
-            .height(150.dp)
-    )
-}
-
-/**
- * Setup the line chart with data
- */
-private fun setupChart(
-    lineChart: LineChart,
-    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
-    segmentEntry: SegmentEntry,
-    trackColor: TrackColor
-) {
-    if (trackPoints.isNotEmpty()) {
-        lineChart.clear()
-        lineChart.xAxis.removeAllLimitLines()
-        setXAxis(lineChart)
-
-        val dataSets: MutableList<ILineDataSet> = ArrayList()
-        val lineChartEntries = GpsTrack.getTrackGraph(trackPoints, trackColor.f)
-        val label = "Elevation" // TODO: Get proper label from resources
-
-        val leftAxis: YAxis = lineChart.axisLeft
-        leftAxis.textColor = android.graphics.Color.BLACK
-        leftAxis.setDrawGridLines(true)
-        leftAxis.isGranularityEnabled = true
-
-        val dataSet = LineDataSet(lineChartEntries, label)
-        setGraphView(dataSet)
-        setColors(lineChartEntries, dataSet, trackColor)
-        dataSets.add(dataSet)
-        lineChart.data = LineData(dataSets)
-        setLegend(lineChart, trackColor)
-
-        // Add vertical lines for segment start/end
+    // Calculate vertical lines for segment start/end
+    val verticalLines = remember(trackPoints, segmentEntry) {
+        val lines = mutableListOf<Pair<Float, ComposeColor>>()
         if (segmentEntry.startPositionInTrack < trackPoints.size) {
-            trackPoints[segmentEntry.startPositionInTrack].second.distance?.toFloat()
-                ?.let { drawVerticalLine(lineChart, it, android.graphics.Color.GREEN) }
+            trackPoints[segmentEntry.startPositionInTrack].second.distance?.toFloat()?.let { distance ->
+                lines.add(distance to ComposeColor(0xFF00FF00.toInt())) // Green for start
+            }
         }
         if (segmentEntry.endPositionInTrack < trackPoints.size) {
-            trackPoints[segmentEntry.endPositionInTrack].second.distance?.toFloat()
-                ?.let { drawVerticalLine(lineChart, it, android.graphics.Color.RED) }
+            trackPoints[segmentEntry.endPositionInTrack].second.distance?.toFloat()?.let { distance ->
+                lines.add(distance to ComposeColor(0xFFFF0000.toInt())) // Red for end
+            }
         }
-
-        lineChart.invalidate()
+        lines
     }
-}
 
-/**
- * Draw a vertical line on the chart
- */
-private fun drawVerticalLine(lineChart: LineChart, distance: Float, color: Int) {
-    val ll = LimitLine(distance)
-    ll.lineColor = color
-    ll.lineWidth = 2f
-    lineChart.xAxis.addLimitLine(ll)
-}
-
-/**
- * Set up the legend for the chart
- */
-private fun setLegend(lineChart: LineChart, trackColor: TrackColor) {
-    val l: Legend = lineChart.legend
-    l.yEntrySpace = 10f
-    l.isWordWrapEnabled = true
-    val l1 = LegendEntry(
-        "Min",
-        Legend.LegendForm.CIRCLE,
-        9f,
-        5f,
-        null,
-        trackColor.minColor
+    LineChartView(
+        trackPoints = trackPoints,
+        trackColor = selectedTrackColor,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(150.dp),
+        showLegend = true,
+        verticalLines = verticalLines
     )
-    val l2 = LegendEntry(
-        "Max",
-        Legend.LegendForm.CIRCLE,
-        9f,
-        5f,
-        null,
-        trackColor.maxColor
-    )
-    l.setCustom(arrayOf(l1, l2))
-    l.isEnabled = true
-}
-
-/**
- * Set colors for the chart data set
- */
-private fun setColors(
-    lineChartEntries: MutableList<Entry>,
-    dataSet: LineDataSet,
-    trackColor: TrackColor
-) {
-    val min = lineChartEntries.minByOrNull { it.y }?.y
-    val max = lineChartEntries.maxByOrNull { it.y }?.y
-    if (min != null && max != null) {
-        val colors = lineChartEntries.map {
-            val fraction = (it.y - min) / (max - min)
-            interpolateColor(
-                trackColor.minColor,
-                trackColor.maxColor,
-                fraction
-            )
-        }
-        dataSet.colors = colors
-    }
-}
-
-/**
- * Interpolate between two colors
- */
-private fun interpolateColor(colorA: Int, colorB: Int, fraction: Float): Int {
-    val a = (android.graphics.Color.alpha(colorA) +
-            (android.graphics.Color.alpha(colorB) - android.graphics.Color.alpha(colorA)) * fraction).toInt()
-    val r = (android.graphics.Color.red(colorA) +
-            (android.graphics.Color.red(colorB) - android.graphics.Color.red(colorA)) * fraction).toInt()
-    val g = (android.graphics.Color.green(colorA) +
-            (android.graphics.Color.green(colorB) - android.graphics.Color.green(colorA)) * fraction).toInt()
-    val b = (android.graphics.Color.blue(colorA) +
-            (android.graphics.Color.blue(colorB) - android.graphics.Color.blue(colorA)) * fraction).toInt()
-    return android.graphics.Color.argb(a, r, g, b)
-}
-
-/**
- * Set up the graph view properties
- */
-private fun setGraphView(set1: LineDataSet?) {
-    set1?.setDrawValues(false)
-    set1?.setDrawFilled(true)
-    set1?.setDrawCircles(false)
-    set1?.axisDependency = YAxis.AxisDependency.LEFT
-    set1?.color = android.graphics.Color.RED
-    set1?.setCircleColor(android.graphics.Color.RED)
-    set1?.lineWidth = 5f
-    set1?.circleRadius = 3f
-    set1?.fillAlpha = 50
-    set1?.fillColor = android.graphics.Color.RED
-    set1?.setDrawCircleHole(false)
-    set1?.highLightColor = android.graphics.Color.rgb(244, 117, 117)
-    set1?.setDrawHorizontalHighlightIndicator(true)
-}
-
-/**
- * Set up the X axis formatting
- */
-private fun setXAxis(lineChart: LineChart) {
-    val xAxis = lineChart.xAxis
-    xAxis?.position = XAxis.XAxisPosition.BOTTOM
-    xAxis?.valueFormatter = object : ValueFormatter() {
-        override fun getFormattedValue(value: Float): String {
-            return String.format(Locale.getDefault(),
-                "%.1f km",
-                (value / 100f).roundToLong() / 10f
-            )
-        }
-    }
 }
 
 /**
@@ -861,7 +726,8 @@ fun SegmentEntryCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     SegmentEntryStat(
-                        value = String.format(Locale.getDefault(),
+                        value = String.format(
+                            Locale.getDefault(),
                             "%d:%02d",
                             entry.duration.toInt(),
                             ((entry.duration - entry.duration.toInt()) * 60).toInt()
@@ -870,7 +736,8 @@ fun SegmentEntryCard(
                     )
 
                     SegmentEntryStat(
-                        value = String.format(Locale.getDefault(),
+                        value = String.format(
+                            Locale.getDefault(),
                             "%.1f",
                             entry.kilometers / entry.duration * 60
                         ),
@@ -1103,7 +970,7 @@ private fun addColorToTrack(
     val maxForColorCoding = (values.maxOrNull() ?: 0.0).toFloat()
     val pointsExists = usedTrackPoints.any { trackColor.f(it) != 0.0 }
     if (pointsExists) {
-        val attributeColorList = GpsTrack.AttitudeColorListContinuos(
+        val attributeColorList = GpsTrack.AttitudeColorListContinuous(
             usedTrackPoints,
             minForColorCoding,
             maxForColorCoding,

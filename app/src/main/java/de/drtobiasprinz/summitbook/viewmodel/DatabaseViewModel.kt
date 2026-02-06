@@ -29,10 +29,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val summitsList: LiveData<DataStatus<List<Summit>>>
         get() = _summitsList
 
-    private val _bookmarksList = MutableLiveData<DataStatus<List<Summit>>>()
-    val bookmarksList: LiveData<DataStatus<List<Summit>>>
-        get() = _bookmarksList
-
     private val _segmentsList = MutableLiveData<DataStatus<List<Segment>>>()
     val segmentsList: LiveData<DataStatus<List<Segment>>>
         get() = _segmentsList
@@ -49,10 +45,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val peaks: LiveData<DataStatus<List<Peak>>>
         get() = _peaks
 
-    private val _summitDetails = MutableLiveData<DataStatus<Summit>>()
-    val summitDetails: LiveData<DataStatus<Summit>>
-        get() = _summitDetails
-
     private var _entityEvents = MutableLiveData<DataStatus<List<EntityEvent>>>()
     val entityEvents: LiveData<DataStatus<List<EntityEvent>>>
         get() = _entityEvents
@@ -63,7 +55,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
 
     init {
         getAllSummits()
-        getAllBookmarks()
         getAllSegments()
         getAllForecasts()
         getAllIgnoredActivities()
@@ -109,19 +100,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         repository.getAllSummits()
             .catch { _summitsList.postValue(DataStatus.error(it.message.toString())) }
             .collect { _summitsList.postValue(DataStatus.success(it, it.isEmpty())) }
-    }
-
-    fun getAllBookmarks() = viewModelScope.launch {
-        _bookmarksList.postValue(DataStatus.loading())
-        repository.getAllBookmarks()
-            .catch { _bookmarksList.postValue(DataStatus.error(it.message.toString())) }
-            .collect { _bookmarksList.postValue(DataStatus.success(it, it.isEmpty())) }
-    }
-
-    fun getDetailsSummit(id: Long) = viewModelScope.launch {
-        repository.getDetailsSummit(id).collect {
-            _summitDetails.postValue(DataStatus.success(it, false))
-        }
     }
 
     private fun getAllSegments() = viewModelScope.launch {

@@ -34,14 +34,11 @@ interface SummitsDao {
     @Query("SELECT * FROM $SUMMITS_TABLE WHERE id ==:id")
     fun getSummit(id: Long): Flow<Summit>
 
-    @Query("SELECT * FROM $SUMMITS_TABLE where isBookmark = 0")
+    @Query("SELECT * FROM $SUMMITS_TABLE")
     fun getAllSummits(): Flow<MutableList<Summit>>
 
-    @Query("SELECT * FROM $SUMMITS_TABLE where isBookmark = 0")
+    @Query("SELECT * FROM $SUMMITS_TABLE")
     fun getAllSummitsLiveData(): LiveData<MutableList<Summit>>
-
-    @Query("SELECT * FROM $SUMMITS_TABLE where isBookmark = 1")
-    fun getAllBookmarks(): Flow<MutableList<Summit>>
 
     @Query("SELECT * FROM $SUMMITS_TABLE WHERE name LIKE '%' || :name || '%' OR comments LIKE '%' || :name || '%'")
     fun searchSummit(name: String): Flow<MutableList<Summit>>

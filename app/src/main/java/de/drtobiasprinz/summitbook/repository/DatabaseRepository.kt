@@ -27,9 +27,6 @@ class DatabaseRepository @Inject constructor(
     suspend fun deleteSummit(entity: Summit) = summitsDao.deleteSummit(entity)
     fun getDetailsSummit(id: Long) = summitsDao.getSummit(id)
     fun getAllSummits() = summitsDao.getAllSummits()
-    fun getAllSummitsLiveData() = summitsDao.getAllSummitsLiveData()
-    fun getAllBookmarks() = summitsDao.getAllBookmarks()
-
     fun getAllSegments() = segmentsDao.getAllSegments()
     suspend fun deleteSegmentEntry(entity: SegmentEntry) = segmentsDao.deleteSegmentEntry(entity)
     suspend fun deleteSegment(entity: Segment) = segmentsDao.deleteSegment(entity)
@@ -41,7 +38,6 @@ class DatabaseRepository @Inject constructor(
     suspend fun updateSegmentEntry(entity: SegmentEntry) = segmentsDao.updateSegmentEntry(entity)
 
     fun getAllForecasts() = forecastDao.getAllForecasts()
-    fun getAllForecastsLiveData() = forecastDao.getAllForecastsLiveData()
     suspend fun saveForecast(entity: Forecast) = forecastDao.addForecast(entity)
     suspend fun updateForecast(entity: Forecast) = forecastDao.updateForecast(entity)
 

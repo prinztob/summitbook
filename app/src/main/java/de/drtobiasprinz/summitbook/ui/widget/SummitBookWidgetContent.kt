@@ -41,7 +41,7 @@ fun SummitBookWidgetContent(
         modifier = GlanceModifier
             .fillMaxSize()
             .appWidgetBackground()
-            .background(Color.Transparent, Color.Transparent)
+            .background(Color.Transparent.copy(alpha = 0.7f), Color.Transparent.copy(alpha = 0.7f))
             .cornerRadius(16.dp)
             .padding(8.dp)
             .clickable {

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
+import android.graphics.Paint
 import android.os.Environment
 import android.util.AttributeSet
 import android.util.Log
@@ -18,7 +19,11 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
+import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.GpsTrack
+import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.getAnimatedPathManager
+import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.getHalfKilometerManager
+import de.drtobiasprinz.summitbook.models.GpsTrack.Companion.getKilometerManager
 import de.drtobiasprinz.summitbook.models.LocationInfo
 import de.drtobiasprinz.summitbook.models.RoadInfo
 import de.drtobiasprinz.summitbook.models.RoadType
@@ -31,6 +36,7 @@ import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.MapTilesHelper
 import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
+import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,6 +52,8 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.ScaleBarOverlay
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
+import org.osmdroid.views.overlay.milestones.MilestoneManager
+import org.osmdroid.views.overlay.milestones.MilestoneMeterDistanceSliceLister
 import java.io.File
 
 class CustomMapViewToAllowScrolling : MapView {
@@ -53,6 +61,8 @@ class CustomMapViewToAllowScrolling : MapView {
     constructor(context: Context?) : super(context)
 
     var updateBoundingBox = false
+
+    var osMapRoute: Polyline? = null
 
     /**
      * Adds a marker and optional GPS track to the map for a summit entry.
@@ -66,20 +76,22 @@ class CustomMapViewToAllowScrolling : MapView {
      */
     fun addTrackAndMarker(
         summitEntry: Summit,
+        trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
         forceAddTrack: Boolean,
         selectedCustomizeTrackItem: TrackColor,
         alwaysShowTrackOnMap: Boolean,
         calculateBondingBox: Boolean = true
     ): Marker? {
         val geoPoints = ArrayList<GeoPoint>()
-        
+
         // Add marker if location is available
         val marker = summitEntry.latLng?.let { latLng ->
             val point = GeoPoint(latLng.latitude, latLng.longitude)
             geoPoints.add(point)
-            
-            val createdMarker = addMarker(point, summitEntry, addToOverlay = false, alwaysShowTrackOnMap)
-            
+
+            val createdMarker =
+                addMarker(point, summitEntry, addToOverlay = false, alwaysShowTrackOnMap)
+
             // Center map on marker if no GPS track exists
             if (!summitEntry.hasGpsTrack()) {
                 controller.apply {
@@ -87,23 +99,22 @@ class CustomMapViewToAllowScrolling : MapView {
                     setCenter(point)
                 }
             }
-            
+
             createdMarker
         }
-        
+
         // Draw GPS track if available
         drawTrack(
-            summitEntry = summitEntry,
+            trackPoints = trackPoints,
             forceAddTrack = forceAddTrack,
             selectedCustomizeTrackItem = selectedCustomizeTrackItem,
             calculateBondingBox = calculateBondingBox,
             mGeoPoints = geoPoints,
-            forceParseTrack = forceAddTrack,  // Force re-parsing when forcing track addition
         )
-        
+
         // Add marker to overlays after track to ensure it's drawn on top
         marker?.let { overlays.add(it) }
-        
+
         return marker
     }
 
@@ -119,33 +130,98 @@ class CustomMapViewToAllowScrolling : MapView {
     }
 
     fun drawTrack(
-        summitEntry: Summit,
+        trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
         forceAddTrack: Boolean,
         selectedCustomizeTrackItem: TrackColor,
         calculateBondingBox: Boolean = false,
         mGeoPoints: ArrayList<GeoPoint> = arrayListOf(),
-        color: Int = Color.BLUE,
-        forceParseTrack: Boolean = false
+        color: Int = Color.BLUE
     ) {
-        if (summitEntry.hasGpsTrack()) {
-            if (summitEntry.gpsTrack == null) {
-                summitEntry.setGpsTrack()
-            }
-            val gpsTrack: GpsTrack? = summitEntry.gpsTrack
-            if (gpsTrack != null) {
-                if (gpsTrack.hasNoTrackPoints() || forceParseTrack) {
-                    gpsTrack.parseTrack()
-                }
-                if (gpsTrack.osMapRoute == null || forceAddTrack) {
-                    gpsTrack.addGpsTrack(this, selectedCustomizeTrackItem, color)
-                    gpsTrack.isShownOnMap = true
-                }
-                mGeoPoints.addAll(getTrackPointsFrom(gpsTrack))
-            }
-            if (calculateBondingBox) {
-                this.post { calculateBoundingBox(mGeoPoints) }
-            }
+        if (osMapRoute == null || forceAddTrack) {
+            addGpsTrack(this, trackPoints, selectedCustomizeTrackItem, color)
         }
+        mGeoPoints.addAll(getTrackPointsFrom(trackPoints))
+        if (calculateBondingBox) {
+            this.post { calculateBoundingBox(mGeoPoints) }
+        }
+    }
+
+    fun addGpsTrack(
+        mMapView: MapView?,
+        trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+        selectedCustomizeTrackItem: TrackColor = TrackColor.None,
+        color: Int = COLOR_POLYLINE_STATIC,
+        summit: Summit? = null
+    ) {
+        var usedTrackPoints = trackPoints
+        try {
+            if (osMapRoute != null) {
+                mMapView?.overlays?.remove(osMapRoute)
+            }
+            osMapRoute = Polyline(mMapView)
+
+            osMapRoute?.setOnClickListener { _, _, eventPos ->
+                if (mMapView != null && summit != null) {
+                    Toast.makeText(
+                        mMapView.context,
+                        "${summit.getDateAsString()} ${summit.name}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                return@setOnClickListener true
+            }
+            osMapRoute?.outlinePaint?.color = color
+            osMapRoute?.outlinePaint?.strokeWidth = LINE_WIDTH_BIG
+            osMapRoute?.outlinePaint?.strokeCap = Paint.Cap.ROUND
+            val paintBorder = Paint()
+            paintBorder.strokeWidth = 20f
+            when (selectedCustomizeTrackItem) {
+                TrackColor.Mileage -> {
+                    val managers: MutableList<MilestoneManager> = ArrayList()
+                    val slicerForPath = MilestoneMeterDistanceSliceLister()
+                    managers.add(getAnimatedPathManager(slicerForPath))
+                    managers.add(getHalfKilometerManager())
+                    managers.add(getKilometerManager())
+                    osMapRoute?.setMilestoneManagers(managers)
+                }
+
+                TrackColor.None -> {
+
+                    Log.i(
+                        TAG,
+                        "Nothing to do, selectedCustomizeTrackItem is set to 0"
+                    )
+                }
+
+                else -> {
+                    usedTrackPoints = getUsedPoints(trackPoints, selectedCustomizeTrackItem.f)
+                    GpsTrack.addColorToTrack(
+                        trackPoints,
+                        osMapRoute,
+                        paintBorder,
+                        selectedCustomizeTrackItem
+                    )
+                }
+            }
+            osMapRoute?.setPoints(usedTrackPoints.map {
+                GeoPoint(
+                    it.first.latitude,
+                    it.first.longitude,
+                    it.first.elevation
+                )
+            })
+            mMapView?.overlayManager?.add(osMapRoute)
+
+        } catch (e: NullPointerException) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun getUsedPoints(
+        trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+        f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?
+    ): List<Pair<TrackPoint, ExtensionFromYaml>> {
+        return trackPoints.filter { f(it) != null }.toMutableList()
     }
 
     fun addMarker(
@@ -194,12 +270,12 @@ class CustomMapViewToAllowScrolling : MapView {
         }
     }
 
-    fun calculateBoundingBox(gpsTrack: GpsTrack, point: GeoPoint?) {
+    fun calculateBoundingBox(trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>, point: GeoPoint?) {
         val mGeoPoints = ArrayList<GeoPoint>()
         if (point != null) {
             mGeoPoints.add(point)
         }
-        mGeoPoints.addAll(getTrackPointsFrom(gpsTrack))
+        mGeoPoints.addAll(getTrackPointsFrom(trackPoints))
         calculateBoundingBox(mGeoPoints)
     }
 
@@ -349,18 +425,13 @@ class CustomMapViewToAllowScrolling : MapView {
 
     companion object {
         const val TAG = "CustomMapViewToAllowScrolling"
-
+        const val LINE_WIDTH_BIG = 16f
+        const val COLOR_POLYLINE_STATIC = Color.BLUE
         var selectedItem = MapProvider.OPENTOPO
 
-        private fun getTrackPointsFrom(gpsTrack: GpsTrack): List<GeoPoint> {
-            val mGeoPoints: MutableList<GeoPoint> = mutableListOf()
-            val positions = gpsTrack.getTrackPositions()
-            for (entry in positions) {
-                if (entry != null && entry.latitude != 0.0 && entry.longitude != 0.0) {
-                    mGeoPoints.add(GeoPoint(entry.latitude, entry.longitude))
-                }
-            }
-            return mGeoPoints
+        private fun getTrackPointsFrom(trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>): List<GeoPoint> {
+            return trackPoints.filter { it.first.latitude != 0.0 && it.first.longitude != 0.0 }
+                .map { GeoPoint(it.first.latitude, it.first.longitude) }
         }
 
         fun getOsmdroidTilesFolder(): File {
@@ -392,7 +463,7 @@ class CustomMapViewToAllowScrolling : MapView {
             context: Context, geoPoint: GeoPoint, scope: CoroutineScope
         ) {
             Toast.makeText(context, "Querying road info...", Toast.LENGTH_SHORT).show()
-            scope.launch() {
+            scope.launch {
                 try {
                     var info: Pair<RoadInfo?, LocationInfo?>? = null
                     withContext(Dispatchers.IO) {
