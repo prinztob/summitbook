@@ -120,21 +120,10 @@
 
 
         <receiver
-            android:name=".SummitBookWidgetProvider"
+            android:name=".ui.widget.SummitBookWidgetReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.APPWIDGET_ENABLED" />
-                <action android:name="android.appwidget.action.APPWIDGET_DISABLED" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.ACTION_EXTERNAL_APPLICATION_AVAILABLE" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.appwidget.action.ACTION_PACKAGE_REPLACED" />
             </intent-filter>
 
             <meta-data
