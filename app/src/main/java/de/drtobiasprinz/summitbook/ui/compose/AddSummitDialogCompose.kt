@@ -97,13 +97,13 @@ fun AddSummitDialogCompose(
     summits: List<Summit>,
     summitId: Long = 0L,
     isBookmark: Boolean = false,
+    uri: Uri? = null,
     onDismiss: () -> Unit,
     onSaveSummit: (Boolean, Summit) -> Job,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isEdit = summitId > 0
-
 
     // State management
     var entity by remember { mutableStateOf(createEmptySummit(isBookmark, context)) }
@@ -156,8 +156,7 @@ fun AddSummitDialogCompose(
                         duration = dur
                     },
                     onFileUpdate = { temporaryGpxFile = it },
-                    onPointUpdate = { latlngHighestPoint = it },
-                    onSaveSummit = onSaveSummit
+                    onPointUpdate = { latlngHighestPoint = it }
                 )
             }
         }
@@ -186,6 +185,26 @@ fun AddSummitDialogCompose(
             garminDataFromGarminConnect = entity.garminData
             performanceState.loadFromGarminData(entity.garminData)
         }
+    }
+
+    LaunchedEffect(temporaryGpxFile) {
+        if (uri != null) {
+            scope.launch() {
+                handleGpxTrackUpload(
+                    context, uri, entity, isLoading = { isLoading = it },
+                    onUpdate = { name, km, hm, elev, dur ->
+                        summitName = name
+                        kilometers = km
+                        heightMeter = hm
+                        topElevation = elev
+                        duration = dur
+                    },
+                    onFileUpdate = { temporaryGpxFile = it },
+                    onPointUpdate = { latlngHighestPoint = it }
+                )
+            }
+        }
+
     }
 
     // Validation
@@ -1135,8 +1154,7 @@ private suspend fun handleGpxTrackUpload(
     isLoading: (Boolean) -> Unit,
     onUpdate: (String, String, String, String, String) -> Unit,
     onFileUpdate: (File?) -> Unit,
-    onPointUpdate: (GeoPoint?) -> Unit,
-    onSaveSummit: (Boolean, Summit) -> Job
+    onPointUpdate: (GeoPoint?) -> Unit
 ) {
     isLoading(true)
 
@@ -1176,8 +1194,6 @@ private suspend fun handleGpxTrackUpload(
                 entity.lat = highestElevation?.latitude
                 entity.lng = highestElevation?.longitude
                 entity.latLng = highestElevation
-
-                onSaveSummit(true, entity)
 
                 val gpsTrack = entity.gpsTrack
                 if (gpsTrack != null) {

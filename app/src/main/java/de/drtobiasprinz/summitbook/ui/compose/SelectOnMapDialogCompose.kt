@@ -52,6 +52,8 @@ import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.copyGpxFileToCache
+import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.prepareGpxTrack
 import io.ticofab.androidgpxparser.parser.GPXParser
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -66,10 +68,8 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.infowindow.MarkerInfoWindow
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -576,47 +576,6 @@ private fun addSelectedPositionAndTrack(
         osMap.addMarker(geoPointSelectedPosition, summitEntry)
         gpsTrack.addGpsTrack(osMap, TrackColor.None)
         osMap.calculateBoundingBox(gpsTrack, geoPointSelectedPosition)
-    }
-}
-
-/**
- * Prepare a GPX track from a path or summit entry
- */
-fun prepareGpxTrack(path: Path?, entry: Summit?): GpsTrack? {
-    val gpsTrack = if (path != null && path.toFile().exists()) {
-        GpsTrack(path)
-    } else if (entry != null && entry.hasGpsTrack()) {
-        entry.gpsTrack
-    } else {
-        null
-    }
-    if (gpsTrack != null && gpsTrack.hasNoTrackPoints()) {
-        gpsTrack.parseTrack()
-    }
-    return gpsTrack
-}
-
-/**
- * Copy GPX file to cache
- */
-fun copyGpxFileToCache(inputStream: InputStream, file: File) {
-    var out: OutputStream? = null
-    try {
-        out = FileOutputStream(file)
-        val buf = ByteArray(1024)
-        var len: Int
-        while (inputStream.read(buf).also { len = it } > 0) {
-            out.write(buf, 0, len)
-        }
-    } catch (e: Exception) {
-        e.printStackTrace()
-    } finally {
-        try {
-            out?.close()
-            inputStream.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
     }
 }
 

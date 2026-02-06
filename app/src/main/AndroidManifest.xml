@@ -59,7 +59,7 @@
         </provider>
 
         <activity
-            android:name=".ReceiverActivity"
+            android:name=".ReceiverActivityCompose"
             android:exported="true"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">

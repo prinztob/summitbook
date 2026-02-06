@@ -21,10 +21,12 @@ object Utils {
     fun fixEdgeToEdge(view: View) {
         ViewCompat.setOnApplyWindowInsetsListener(view) { v, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                leftMargin = insets.left
-                topMargin = insets.top
-                rightMargin = insets.right
+            v.updateLayoutParams {
+                if (this is ViewGroup.MarginLayoutParams) {
+                    leftMargin = insets.left
+                    topMargin = insets.top
+                    rightMargin = insets.right
+                }
             }
             windowInsets
         }
