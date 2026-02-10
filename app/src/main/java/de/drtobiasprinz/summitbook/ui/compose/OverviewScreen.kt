@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,16 +12,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -93,10 +89,10 @@ fun OverviewScreen(
 
     // Calculate statistics when data changes
     LaunchedEffect(filteredSummits, forecasts) {
-            // Calculate statistics
-            numberFormat.maximumFractionDigits = 0
-            val statisticEntry = StatisticEntry(filteredSummits, indoorHeightMeterPercent)
-            statisticEntry.calculate()
+        // Calculate statistics
+        numberFormat.maximumFractionDigits = 0
+        val statisticEntry = StatisticEntry(filteredSummits, indoorHeightMeterPercent)
+        statisticEntry.calculate()
     }
     Column(
         modifier = Modifier
@@ -111,8 +107,9 @@ fun OverviewScreen(
             numberFormat = numberFormat,
             showMonths = showMonths,
             showYears = showYears,
-            onToggleMonths = { showMonths = !showMonths },
-            onToggleYears = { showYears = !showYears },
+            onToggleMonths = { showMonths = true; showYears = false },
+            onToggleYears = { showYears = true; showMonths = false },
+            onToggleNone = { showMonths = false; showYears = false },
             onToggleGraphVisibility = { graphIsVisible = !graphIsVisible }
         )
 
@@ -125,8 +122,6 @@ fun OverviewScreen(
                 onGraphTypeSelected = { selectedGraphType = it },
                 showMonths = showMonths,
                 showYears = showYears,
-                onToggleMonths = { showMonths = !showMonths },
-                onToggleYears = { showYears = !showYears },
                 currentMonth = currentMonth,
                 currentYear = currentYear,
                 selectedYear = selectedYear,
@@ -150,6 +145,7 @@ fun OverviewHeader(
     showYears: Boolean,
     onToggleMonths: () -> Unit,
     onToggleYears: () -> Unit,
+    onToggleNone: () -> Unit,
     onToggleGraphVisibility: () -> Unit
 ) {
     // Calculate statistics text
@@ -160,28 +156,28 @@ fun OverviewHeader(
     LaunchedEffect(filteredSummits, forecastsList) {
 
 
-            // Calculate statistics
-            numberFormat.maximumFractionDigits = 0
-            val statisticEntry = StatisticEntry(filteredSummits, indoorHeightMeterPercent)
-            statisticEntry.calculate()
-            val peaks = filteredSummits.filter { it.isPeak }
-            val numberOfPeaks = peaks.size + filteredSummits.flatMap { it.places }
-                .filter { it in MainActivityCompose.peaks.map { peak -> peak.name } }.size
+        // Calculate statistics
+        numberFormat.maximumFractionDigits = 0
+        val statisticEntry = StatisticEntry(filteredSummits, indoorHeightMeterPercent)
+        statisticEntry.calculate()
+        val peaks = filteredSummits.filter { it.isPeak }
+        val numberOfPeaks = peaks.size + filteredSummits.flatMap { it.places }
+            .filter { it in MainActivityCompose.peaks.map { peak -> peak.name } }.size
 
-            // Format the text with string resources
-            activitiesText = "${
-                filteredSummits.size
-            } activities, ${
-                numberFormat.format(statisticEntry.totalKm)
-            } km, ${
-                numberFormat.format(statisticEntry.totalHm)
-            } hm"
+        // Format the text with string resources
+        activitiesText = "${
+            filteredSummits.size
+        } activities, ${
+            numberFormat.format(statisticEntry.totalKm)
+        } km, ${
+            numberFormat.format(statisticEntry.totalHm)
+        } hm"
 
-            summitsText = "$numberOfPeaks summits, ${
-                numberFormat.format(peaks.sumOf { it.kilometers })
-            } km, ${
-                numberFormat.format(peaks.sumOf { it.elevationData.elevationGain })
-            } hm"
+        summitsText = "$numberOfPeaks summits, ${
+            numberFormat.format(peaks.sumOf { it.kilometers })
+        } km, ${
+            numberFormat.format(peaks.sumOf { it.elevationData.elevationGain })
+        } hm"
     }
 
     Card(
@@ -238,14 +234,15 @@ fun OverviewHeader(
                 )
             }
 
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Chart controls
             ChartControls(
                 showMonths = showMonths,
                 showYears = showYears,
                 onToggleMonths = onToggleMonths,
-                onToggleYears = onToggleYears
+                onToggleYears = onToggleYears,
+                onToggleNone = onToggleNone
             )
         }
     }
@@ -259,8 +256,6 @@ fun ChartSection(
     onGraphTypeSelected: (GraphType) -> Unit,
     showMonths: Boolean,
     showYears: Boolean,
-    onToggleMonths: () -> Unit,
-    onToggleYears: () -> Unit,
     currentMonth: Int,
     currentYear: Int,
     selectedYear: Int,
@@ -298,7 +293,6 @@ fun ChartSection(
                 selectedYear = selectedYear,
                 onMonthChanged = onMonthChanged,
                 numberFormat = numberFormat,
-                onToggleMonths = onToggleMonths,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -312,9 +306,7 @@ fun ChartSection(
                 selectedYear = selectedYear,
                 onYearChanged = onYearChanged,
                 numberFormat = numberFormat,
-                sortFilterValues = sortFilterValues,
-                onToggleYears = onToggleYears,
-                expandedHeight = !showMonths || currentYear != selectedYear
+                sortFilterValues = sortFilterValues
             )
         }
 
@@ -370,7 +362,6 @@ fun MonthChart(
     selectedYear: Int,
     onMonthChanged: (Int) -> Unit,
     numberFormat: NumberFormat,
-    onToggleMonths: () -> Unit,
 ) {
     if (performanceGraphProvider == null) return
 
@@ -383,14 +374,6 @@ fun MonthChart(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(
-                onClick = onToggleMonths,
-                modifier = Modifier.wrapContentSize(),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(stringResource(R.string.monthly), fontSize = 11.sp)
-            }
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -449,7 +432,7 @@ fun MonthChart(
         ChartView(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(150.dp),
+                .height(250.dp),
             performanceGraphProvider = performanceGraphProvider,
             graphType = graphType,
             year = selectedYear.toString(),
@@ -467,9 +450,7 @@ fun YearChart(
     selectedYear: Int,
     onYearChanged: (Int) -> Unit,
     numberFormat: NumberFormat,
-    sortFilterValues: SortFilterValues,
-    onToggleYears: () -> Unit,
-    expandedHeight: Boolean = false
+    sortFilterValues: SortFilterValues
 ) {
     if (performanceGraphProvider == null) return
 
@@ -483,14 +464,6 @@ fun YearChart(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(
-                onClick = onToggleYears,
-                modifier = Modifier.wrapContentSize(),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(stringResource(R.string.yearly), fontSize = 11.sp)
-            }
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -579,7 +552,7 @@ fun YearChart(
         ChartView(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (expandedHeight) 250.dp else 150.dp),
+                .height(250.dp),
             performanceGraphProvider = performanceGraphProvider,
             graphType = graphType,
             year = selectedYear.toString(),
@@ -604,35 +577,35 @@ fun ChartControls(
     showMonths: Boolean,
     showYears: Boolean,
     onToggleMonths: () -> Unit,
-    onToggleYears: () -> Unit
+    onToggleYears: () -> Unit,
+    onToggleNone: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        OutlinedButton(
+        FilterChip(
+            selected = showMonths,
             onClick = onToggleMonths,
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-        ) {
-            Text(
-                text = if (showMonths) "${stringResource(R.string.monthly)} ✓" else stringResource(R.string.monthly),
-                fontSize = 11.sp
-            )
-        }
+            label = { Text(stringResource(R.string.monthly), fontSize = 11.sp) }
+        )
 
-        Spacer(modifier = Modifier.width(2.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
-        OutlinedButton(
+        FilterChip(
+            selected = !showMonths && !showYears,
+            onClick = onToggleNone,
+            label = { Text(stringResource(R.string.none), fontSize = 11.sp) }
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        FilterChip(
+            selected = showYears,
             onClick = onToggleYears,
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-        ) {
-            Text(
-                text = if (showYears) "${stringResource(R.string.yearly)} ✓" else stringResource(R.string.yearly),
-                fontSize = 11.sp
-            )
-        }
+            label = { Text(stringResource(R.string.yearly), fontSize = 11.sp) }
+        )
+
     }
 }
 

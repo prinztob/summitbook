@@ -57,6 +57,10 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import dagger.hilt.android.AndroidEntryPoint
@@ -89,6 +93,7 @@ import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileWriter
+import de.drtobiasprinz.summitbook.ui.work.SummitUpdateWorker
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
@@ -101,6 +106,7 @@ import org.osmdroid.mapsforge.MapsForgeTileSource
 import java.io.File
 import java.time.LocalDate
 import java.util.Date
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -117,7 +123,6 @@ class MainActivityCompose : ComponentActivity(),
 
     private var fullscreenImageViewer: FullscreenImageViewer? = null
     private var useFilteredSummits: Boolean = false
-    private var boundingBoxUpdaterTriggered: Boolean = false
 
     // Navigation state
     private var currentDestination by mutableStateOf(Destination.Summits)
@@ -161,12 +166,33 @@ class MainActivityCompose : ComponentActivity(),
         // Configure MapsForge settings
         MapsForgeTileSource.createInstance(application)
 
+        // Schedule WorkManager for bounding box updates (every minute)
+        scheduleBoundingBoxUpdateWorker()
+
         // Set the Compose content
         setContent {
             SummitBookTheme {
                 MainScreen()
             }
         }
+    }
+
+    private fun scheduleBoundingBoxUpdateWorker() {
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
+
+        val boundingBoxUpdateRequest = PeriodicWorkRequestBuilder<SummitUpdateWorker>(
+            1, TimeUnit.MINUTES
+        )
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "BoundingBoxUpdateWork",
+            ExistingPeriodicWorkPolicy.KEEP,
+            boundingBoxUpdateRequest
+        )
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -193,7 +219,6 @@ class MainActivityCompose : ComponentActivity(),
                 filteredSummits = sortFilterValues.applyForSummits(it)
             }
         }
-        updateBoundingBoxInternal(coroutineScope, summitsFromDatabase)
 
         LaunchedEffect(forecastList) {
             forecastList.data?.let {
@@ -799,53 +824,6 @@ class MainActivityCompose : ComponentActivity(),
         }
     }
 
-    private fun updateBoundingBoxInternal(scope: CoroutineScope, summits: List<Summit>) {
-        if (!boundingBoxUpdaterTriggered && summits.isNotEmpty()) {
-            boundingBoxUpdaterTriggered = true
-            scope.launch {
-                loadingState.value = true
-                withContext(Dispatchers.IO) {
-                    updateTracksAndBoundingBox(summits)
-                }
-            }
-        }
-    }
-
-    private fun updateTracksAndBoundingBox(summits: List<Summit>) {
-        if (summits.isNotEmpty()) {
-            val entriesWithoutBoundingBox = summits.filter {
-                it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingBoxCalculation
-            }
-            if (entriesWithoutBoundingBox.isNotEmpty()) {
-                updateBoundingBox(entriesWithoutBoundingBox)
-            }
-            Log.i(
-                "Scheduler", "No more bounding boxes to update."
-            )
-            loadingState.value = false
-        }
-    }
-
-    private fun updateBoundingBox(entriesWithoutBoundingBox: List<Summit>) {
-        val entriesToCheck = entriesWithoutBoundingBox.take(250)
-        entriesToCheck.forEachIndexed { index, entryToCheck ->
-            entryToCheck.setBoundingBoxFromTrack()
-            if (entryToCheck.trackBoundingBox != null) {
-                viewModel.saveSummit(true, entryToCheck)
-                Log.i(
-                    "Scheduler",
-                    "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name}, " + "${entriesWithoutBoundingBox.size - index} remaining."
-                )
-            } else {
-                Log.i(
-                    "Scheduler",
-                    "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name} failed, remove it from update list."
-                )
-                entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
-            }
-        }
-    }
-
     private fun executeDownload(summits: List<Summit>, scope: CoroutineScope) {
         val downloader = GarminTrackAndDataDownloader(
             summits, pythonExecutor, sharedPreferences.getBoolean(Keys.PREF_DOWNLOAD_TCX, false)
@@ -1172,7 +1150,6 @@ class MainActivityCompose : ComponentActivity(),
         var CSV_FILE_NAME_FORECASTS: String = "de-prinz-summitbook-export-forecasts.csv"
         var CSV_FILE_NAME_ENTITY_EVENTS: String = "de-prinz-summitbook-export-entity-events.csv"
 
-        var entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
         var storage: File? = null
         var cache: File? = null
         var activitiesDir: File? = null

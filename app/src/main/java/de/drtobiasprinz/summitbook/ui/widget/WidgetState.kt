@@ -9,18 +9,25 @@ data class WidgetData(
 )
 
 @Immutable
+sealed class Stats {
+    abstract val activities: StatItem
+    abstract val heightMeter: StatItem
+    abstract val kilometers: StatItem
+}
+
+@Immutable
 data class YearlyStats(
-    val activities: StatItem = StatItem(),
-    val heightMeter: StatItem = StatItem(),
-    val kilometers: StatItem = StatItem()
-)
+    override val activities: StatItem = StatItem(),
+    override val heightMeter: StatItem = StatItem(),
+    override val kilometers: StatItem = StatItem()
+) : Stats()
 
 @Immutable
 data class MonthlyStats(
-    val activities: StatItem = StatItem(),
-    val heightMeter: StatItem = StatItem(),
-    val kilometers: StatItem = StatItem()
-)
+    override val activities: StatItem = StatItem(),
+    override val heightMeter: StatItem = StatItem(),
+    override val kilometers: StatItem = StatItem()
+) : Stats()
 
 @Immutable
 data class StatItem(

@@ -14,6 +14,7 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.background
 import androidx.glance.appwidget.cornerRadius
+import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -48,91 +49,74 @@ fun SummitBookWidgetContent(
                 openAppAction(context)
             }
     ) {
-        Column(
+        Row(
             modifier = GlanceModifier.fillMaxSize(),
-            horizontalAlignment = Alignment.Start
+            verticalAlignment = Alignment.Top
         ) {
-            // Header for yearly stats
-            Text(
-                text = context.getString(R.string.current_year),
-                style = TextStyle,
+            // Yearly stats column
+            StatsColumn(
+                title = context.getString(R.string.current_year),
+                stats = widgetData.yearlyStats
             )
 
-            Spacer(GlanceModifier.height(4.dp))
+            Spacer(GlanceModifier.width(8.dp))
 
-            // Yearly stats
-            StatRow(
-                statItem = widgetData.yearlyStats.activities,
-                iconRes = if (widgetData.yearlyStats.activities.isAchieved) {
-                    R.drawable.ic_baseline_directions_run_24_green
-                } else {
-                    R.drawable.ic_baseline_directions_run_24_red
-                },
-                label = ""
-            )
-
-            StatRow(
-                statItem = widgetData.yearlyStats.heightMeter,
-                iconRes = if (widgetData.yearlyStats.heightMeter.isAchieved) {
-                    R.drawable.ic_baseline_trending_up_24_green
-                } else {
-                    R.drawable.ic_baseline_trending_up_24_red
-                },
-                label = "hm"
-            )
-
-            StatRow(
-                statItem = widgetData.yearlyStats.kilometers,
-                iconRes = if (widgetData.yearlyStats.kilometers.isAchieved) {
-                    R.drawable.ic_baseline_compare_arrows_24_green
-                } else {
-                    R.drawable.ic_baseline_compare_arrows_24_red
-                },
-                label = "km"
-            )
-
-            // Show monthly stats if available
+            // Monthly stats column
             if (widgetData.monthlyStats != null) {
-                Spacer(GlanceModifier.height(8.dp))
-
-                Text(
-                    text = context.getString(R.string.current_month),
-                    style = TextStyle,
-                )
-
-                Spacer(GlanceModifier.height(4.dp))
-
-                StatRow(
-                    statItem = widgetData.monthlyStats.activities,
-                    iconRes = if (widgetData.monthlyStats.activities.isAchieved) {
-                        R.drawable.ic_baseline_directions_run_24_green
-                    } else {
-                        R.drawable.ic_baseline_directions_run_24_red
-                    },
-                    label = ""
-                )
-
-                StatRow(
-                    statItem = widgetData.monthlyStats.heightMeter,
-                    iconRes = if (widgetData.monthlyStats.heightMeter.isAchieved) {
-                        R.drawable.ic_baseline_trending_up_24_green
-                    } else {
-                        R.drawable.ic_baseline_trending_up_24_red
-                    },
-                    label = "hm"
-                )
-
-                StatRow(
-                    statItem = widgetData.monthlyStats.kilometers,
-                    iconRes = if (widgetData.monthlyStats.kilometers.isAchieved) {
-                        R.drawable.ic_baseline_compare_arrows_24_green
-                    } else {
-                        R.drawable.ic_baseline_compare_arrows_24_red
-                    },
-                    label = "km"
+                StatsColumn(
+                    title = context.getString(R.string.current_month),
+                    stats = widgetData.monthlyStats
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun StatsColumn(
+    title: String,
+    stats: Stats
+) {
+    Column(
+        modifier = GlanceModifier.width(120.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = title,
+            style = TextStyle,
+        )
+
+        Spacer(GlanceModifier.height(4.dp))
+
+        StatRow(
+            statItem = stats.activities,
+            iconRes = if (stats.activities.isAchieved) {
+                R.drawable.ic_baseline_directions_run_24_green
+            } else {
+                R.drawable.ic_baseline_directions_run_24_red
+            },
+            label = ""
+        )
+
+        StatRow(
+            statItem = stats.heightMeter,
+            iconRes = if (stats.heightMeter.isAchieved) {
+                R.drawable.ic_baseline_trending_up_24_green
+            } else {
+                R.drawable.ic_baseline_trending_up_24_red
+            },
+            label = "hm"
+        )
+
+        StatRow(
+            statItem = stats.kilometers,
+            iconRes = if (stats.kilometers.isAchieved) {
+                R.drawable.ic_baseline_compare_arrows_24_green
+            } else {
+                R.drawable.ic_baseline_compare_arrows_24_red
+            },
+            label = "km"
+        )
     }
 }
 
@@ -160,8 +144,7 @@ private fun StatRow(
             } else {
                 "${statItem.actualValue} ${LocalContext.current.getString(R.string.of)} ${statItem.expectedValue} $label"
             },
-            style = TextStyle,
-            modifier = GlanceModifier.defaultWeight()
+            style = TextStyle
         )
     }
 
@@ -171,7 +154,8 @@ private fun StatRow(
 private val TextStyle = androidx.glance.text.TextStyle(
     fontSize = 12.sp,
     fontWeight = FontWeight.Normal,
-    textAlign = TextAlign.Start
+    textAlign = TextAlign.Start,
+    color = ColorProvider(Color.White, Color.White)
 )
 
 private fun openAppAction(context: Context) {

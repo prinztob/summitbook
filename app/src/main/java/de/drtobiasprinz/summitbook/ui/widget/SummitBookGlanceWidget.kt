@@ -204,6 +204,35 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
         statisticEntry.calculate()
         statisticEntry.setExpectedAchievement()
 
+        // Calculate monthly stats
+        val calendar = Calendar.getInstance()
+        val currentMonth: Int = calendar[Calendar.MONTH]
+        val currentYear: Int = calendar[Calendar.YEAR]
+        val currentDay: Int = calendar[Calendar.DAY_OF_MONTH]
+        val dayOfMonthPercentage =
+            currentDay.toDouble() / calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+        val monthlyTargetActivity = (annualTargetActivity / 12.0 * dayOfMonthPercentage).roundToInt()
+        val monthlyTargetKm = (annualTargetKm / 12.0 * dayOfMonthPercentage).roundToInt()
+        val monthlyTargetHm = (annualTargetHm / 12.0 * dayOfMonthPercentage).roundToInt()
+
+        val entriesForCurrentMonth = entries.filter {
+            val calForEntry = Calendar.getInstance()
+            calForEntry.time = it.date
+            calForEntry[Calendar.MONTH] == currentMonth &&
+                    calForEntry[Calendar.YEAR] == currentYear
+        }
+
+        val monthlyActivities = entriesForCurrentMonth.count()
+        val monthlyHm = entriesForCurrentMonth.sumOf {
+            if (it.sportType == de.drtobiasprinz.summitbook.db.entities.SportType.IndoorTrainer) {
+                it.elevationData.elevationGain * indoorHeightMeterPercent / 100
+            } else {
+                it.elevationData.elevationGain
+            }
+        }
+        val monthlyKm = entriesForCurrentMonth.sumOf { it.kilometers }.roundToInt()
+
         return WidgetData(
             yearlyStats = YearlyStats(
                 activities = StatItem(
@@ -222,6 +251,25 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
                     expectedValue = statisticEntry.expectedAchievementKmAbsolute.roundToInt(),
                     unit = "km",
                     isAchieved = statisticEntry.totalKm >= statisticEntry.expectedAchievementKmAbsolute
+                )
+            ),
+            monthlyStats = MonthlyStats(
+                activities = StatItem(
+                    actualValue = monthlyActivities,
+                    expectedValue = monthlyTargetActivity,
+                    isAchieved = monthlyActivities >= monthlyTargetActivity
+                ),
+                heightMeter = StatItem(
+                    actualValue = monthlyHm,
+                    expectedValue = monthlyTargetHm,
+                    unit = "hm",
+                    isAchieved = monthlyHm >= monthlyTargetHm
+                ),
+                kilometers = StatItem(
+                    actualValue = monthlyKm,
+                    expectedValue = monthlyTargetKm,
+                    unit = "km",
+                    isAchieved = monthlyKm >= monthlyTargetKm
                 )
             )
         )
