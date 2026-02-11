@@ -186,6 +186,7 @@ fun ForecastScreen(
                                         summits,
                                         onSaveForecasts
                                     )
+                                    forecastsUpdated = !forecastsUpdated
                                 } else {
                                     Toast.makeText(context, textForToast, Toast.LENGTH_LONG).show()
                                 }
@@ -330,6 +331,7 @@ fun ForecastScreen(
                             currentYear = currentYear,
                             currentMonth = currentMonth,
                             selectedProperty = selectedProperty,
+                            forecastsUpdated = forecastsUpdated,
                             onForecastChanged = { updatedForecast ->
                                 val forecastIndex =
                                     forecasts.indexOfFirst { it.month == month && it.year == year }
@@ -346,8 +348,8 @@ fun ForecastScreen(
                                     forecasts,
                                     onSaveForecasts = onSaveForecasts
                                 )
-                            },
-                            onSaveForecasts = onSaveForecasts
+                                forecastsUpdated = !forecastsUpdated
+                            }
                         )
                     }
                 }
@@ -356,6 +358,7 @@ fun ForecastScreen(
     }
 }
 
+@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun ForecastMonthRow(
     month: Int,
@@ -364,9 +367,9 @@ fun ForecastMonthRow(
     currentYear: Int,
     currentMonth: Int,
     selectedProperty: Int,
+    forecastsUpdated: Boolean,
     onForecastChanged: (Forecast) -> Unit,
-    onRecalculate: () -> Unit,
-    onSaveForecasts: (Boolean, List<Forecast>) -> Job
+    onRecalculate: () -> Unit
 ) {
     val isCurrentYear = year == currentYear
     val isPastMonth = year == currentYear && month < currentMonth
@@ -381,9 +384,22 @@ fun ForecastMonthRow(
 
     val actualDistance = forecast.actualDistance
 
-    var sliderValue by remember { mutableIntStateOf(getForecastValue(forecast, selectedProperty)) }
+    var sliderValue by remember {
+        mutableIntStateOf(getForecastValue(forecast, selectedProperty))
+    }
     var isSliderEnabled by remember { mutableStateOf(!isPastMonth) }
     var showEditDialog by remember { mutableStateOf(false) }
+
+    // Update sliderValue when forecast values change (e.g., after recalculation)
+    LaunchedEffect(
+        selectedProperty,
+        forecast.forecastHeightMeter,
+        forecast.forecastDistance,
+        forecast.forecastNumberActivities,
+        forecastsUpdated
+    ) {
+        sliderValue = getForecastValue(forecast, selectedProperty)
+    }
 
     val stepSize = when (selectedProperty) {
         1 -> ForecastConstants.STEP_SIZE_KM
@@ -530,9 +546,6 @@ fun ForecastMonthRow(
                     .padding(top = 4.dp),
                 valueRange = 0f..maxValue,
                 steps = calculatedSteps,
-                onValueChangeFinished = {
-                    onSaveForecasts(false, listOf(forecast))
-                },
                 enabled = isSliderEnabled,
                 colors = SliderDefaults.colors(
                     thumbColor = MaterialTheme.colorScheme.primary,
@@ -594,7 +607,7 @@ private fun getMonthResource(month: Int): Int {
 
 private fun updateMissingForecasts(
     years: List<Int>,
-    forecasts: List<Forecast>,
+    forecasts: MutableList<Forecast>,
     summits: List<Summit>,
     onSaveForecasts: (Boolean, List<Forecast>) -> Job
 ) {
@@ -618,7 +631,7 @@ private fun updateMissingForecasts(
 }
 
 private fun updateForecastsForYear(
-    forecasts: List<Forecast>,
+    forecasts: MutableList<Forecast>,
     year: Int,
     summits: List<Summit>?,
     onSaveForecasts: (Boolean, List<Forecast>) -> Job
@@ -638,7 +651,7 @@ private fun updateForecastForMonthAndYear(
     month: Int,
     year: Int,
     summits: List<Summit>?,
-    forecasts: List<Forecast>,
+    forecasts: MutableList<Forecast>,
     onSaveForecasts: (Boolean, List<Forecast>) -> Job
 ) {
     val updatedForecast = Forecast.getNewForecastFrom(
@@ -650,13 +663,13 @@ private fun updateForecastForMonthAndYear(
         "1200",
         "50000"
     )
-    val existingForecast = forecasts.firstOrNull { it.month == month && it.year == year }
-    if (existingForecast == null) {
+    val existingForecastIndex = forecasts.indexOfFirst { it.month == month && it.year == year }
+    if (existingForecastIndex == -1) {
         onSaveForecasts(false, listOf(updatedForecast))
     } else {
-        existingForecast.forecastDistance = updatedForecast.forecastDistance
-        existingForecast.forecastHeightMeter = updatedForecast.forecastHeightMeter
-        existingForecast.forecastNumberActivities = updatedForecast.forecastNumberActivities
+        // Replace the forecast object in the list to trigger recomposition
+        updatedForecast.id = forecasts[existingForecastIndex].id
+        forecasts[existingForecastIndex] = updatedForecast
     }
 }
 

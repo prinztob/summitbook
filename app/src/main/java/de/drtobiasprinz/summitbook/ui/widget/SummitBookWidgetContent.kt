@@ -49,24 +49,42 @@ fun SummitBookWidgetContent(
                 openAppAction(context)
             }
     ) {
-        Row(
+        Column(
             modifier = GlanceModifier.fillMaxSize(),
-            verticalAlignment = Alignment.Top
+            horizontalAlignment = Alignment.Start
         ) {
-            // Yearly stats column
-            StatsColumn(
-                title = context.getString(R.string.current_year),
-                stats = widgetData.yearlyStats
-            )
-
-            Spacer(GlanceModifier.width(8.dp))
-
-            // Monthly stats column
-            if (widgetData.monthlyStats != null) {
-                StatsColumn(
-                    title = context.getString(R.string.current_month),
-                    stats = widgetData.monthlyStats
+            // Yearly chart (if available)
+            if (widgetData.yearlyChartBitmap != null) {
+                Image(
+                    provider = ImageProvider(widgetData.yearlyChartBitmap),
+                    contentDescription = "Yearly overview chart",
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .height(175.dp)
                 )
+                Spacer(GlanceModifier.height(4.dp))
+            }
+
+            // Stats row
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                // Yearly stats column
+                StatsColumn(
+                    title = context.getString(R.string.current_year),
+                    stats = widgetData.yearlyStats
+                )
+
+                Spacer(GlanceModifier.width(8.dp))
+
+                // Monthly stats column
+                if (widgetData.monthlyStats != null) {
+                    StatsColumn(
+                        title = context.getString(R.string.current_month),
+                        stats = widgetData.monthlyStats
+                    )
+                }
             }
         }
     }
@@ -78,7 +96,7 @@ private fun StatsColumn(
     stats: Stats
 ) {
     Column(
-        modifier = GlanceModifier.width(120.dp),
+        modifier = GlanceModifier.width(175.dp),
         horizontalAlignment = Alignment.Start
     ) {
         Text(

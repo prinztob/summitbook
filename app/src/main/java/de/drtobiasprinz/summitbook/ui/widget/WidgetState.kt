@@ -1,11 +1,13 @@
 package de.drtobiasprinz.summitbook.ui.widget
 
+import android.graphics.Bitmap
 import androidx.compose.runtime.Immutable
 
 @Immutable
 data class WidgetData(
     val yearlyStats: YearlyStats = YearlyStats(),
-    val monthlyStats: MonthlyStats? = null
+    val monthlyStats: MonthlyStats? = null,
+    val yearlyChartBitmap: Bitmap? = null
 )
 
 @Immutable

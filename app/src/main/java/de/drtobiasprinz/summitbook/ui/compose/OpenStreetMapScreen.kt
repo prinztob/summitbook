@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -40,7 +38,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -101,7 +98,7 @@ fun OpenStreetMapScreen(
     onFullscreenChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackBarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val showSummitDisabledMessage = stringResource(R.string.show_summit_disabled)
 
@@ -114,6 +111,8 @@ fun OpenStreetMapScreen(
     var fullscreenEnabled by rememberSaveable { mutableStateOf(true) }
     var isLoading by remember { mutableStateOf(false) }
     var showMapTypeDialog by remember { mutableStateOf(false) }
+    var showOverlaySliders by remember { mutableStateOf(false) }
+    var overlayAlphas by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
 
     // Lists
     val mGeoPoints = remember { mutableStateListOf<GeoPoint?>() }
@@ -183,7 +182,8 @@ fun OpenStreetMapScreen(
             if (fullscreenEnabled) {
                 window.insetsController?.let { controller ->
                     controller.hide(WindowInsets.Type.systemBars())
-                    controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    controller.systemBarsBehavior =
+                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 }
             } else {
                 window.insetsController?.show(WindowInsets.Type.systemBars())
@@ -221,7 +221,7 @@ fun OpenStreetMapScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackBarHostState) }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -243,7 +243,6 @@ fun OpenStreetMapScreen(
                 // Map view
                 Box(modifier = Modifier.weight(1f)) {
                     MapViewComposable(
-                        context = context,
                         followLocationEnabled = followLocationEnabled,
                         onMapReady = { map ->
                             mapView = map
@@ -254,7 +253,6 @@ fun OpenStreetMapScreen(
                         onLocationOverlayCreated = { overlay ->
                             mLocationOverlay = overlay
                         },
-                        layers = layers,
                         osMapBoundingBox = osMapBoundingBox
                     )
                 }
@@ -330,7 +328,7 @@ fun OpenStreetMapScreen(
                         )
                     } else {
                         coroutineScope.launch {
-                            snackbarHostState.showSnackbar(showSummitDisabledMessage)
+                            snackBarHostState.showSnackbar(showSummitDisabledMessage)
                         }
                     }
                 },
@@ -342,16 +340,29 @@ fun OpenStreetMapScreen(
                         mapView?.overlayManager?.remove(polyline)
                     }
                 },
+                showOverlaySliders = showOverlaySliders,
+                hasOverlayLayers = getLayerFiles().second.isNotEmpty(),
+                onToggleOverlaySliders = {
+                    showOverlaySliders = !showOverlaySliders
+                },
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(16.dp)
             )
 
             // Overlay map sliders
-            if (layers.isNotEmpty()) {
+            if (showOverlaySliders) {
+                val layerFiles = getLayerFiles()
+                if (layerFiles.second.isNotEmpty() && layers.isEmpty()) {
+                    mapView?.let { showOverlayIfExist(it, context, layers, layerFiles) }
+                }
                 OverlaySliders(
                     layers = layers,
                     mapView = mapView,
+                    overlayAlphas = overlayAlphas,
+                    onAlphaChanged = { name, alpha ->
+                        overlayAlphas = overlayAlphas.toMutableMap().apply { put(name, alpha) }
+                    },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(16.dp)
@@ -363,12 +374,10 @@ fun OpenStreetMapScreen(
 
 @Composable
 fun MapViewComposable(
-    context: Context,
     followLocationEnabled: Boolean,
     onMapReady: (CustomMapViewToAllowScrolling) -> Unit,
     onPolylineCreated: (Polyline) -> Unit,
     onLocationOverlayCreated: (MyLocationNewOverlay) -> Unit,
-    layers: SnapshotStateList<Pair<String, TilesOverlay>>,
     osMapBoundingBox: List<String>
 ) {
     AndroidView(
@@ -442,8 +451,6 @@ fun MapViewComposable(
                     )
                 }
             }
-            // Show overlay maps if exist
-            showOverlayIfExist(mapView, context, layers)
 
             // Show my location
             showMyLocation(
@@ -460,24 +467,24 @@ fun MapViewComposable(
 fun OverlaySliders(
     layers: List<Pair<String, TilesOverlay>>,
     mapView: CustomMapViewToAllowScrolling?,
+    overlayAlphas: Map<String, Float>,
+    onAlphaChanged: (String, Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
-            .width(200.dp)
-            .verticalScroll(rememberScrollState()),
+        modifier = modifier.width(200.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         LazyColumn(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(2.dp)
         ) {
             items(layers) { layer ->
-                var alpha by remember { mutableFloatStateOf(0f) }
+                val alpha = overlayAlphas[layer.first] ?: 0f
 
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = 2.dp)
                 ) {
                     Text(
                         text = layer.first,
@@ -487,7 +494,7 @@ fun OverlaySliders(
                     Slider(
                         value = alpha,
                         onValueChange = { newValue ->
-                            alpha = newValue
+                            onAlphaChanged(layer.first, newValue)
                             setAlphaForLayer(layer.second, newValue)
                             mapView?.invalidate()
                         },
@@ -550,27 +557,37 @@ fun MapTypeSelectionDialog(
 private fun showOverlayIfExist(
     mapView: CustomMapViewToAllowScrolling,
     context: Context,
-    layers: SnapshotStateList<Pair<String, TilesOverlay>>
+    layers: SnapshotStateList<Pair<String, TilesOverlay>>,
+    layerFiles: Pair<String, List<Pair<File?, String>>>
 ) {
-    val fileEnding = "mbtiles"
-    val overlayFolder = File(CustomMapViewToAllowScrolling.getOsmdroidTilesFolder(), "overlays")
-    val files = overlayFolder.listFiles()?.filter { it.name.endsWith(".${fileEnding}") }
-    if (ArchiveFileFactory.isFileExtensionRegistered(fileEnding) && files?.isNotEmpty() == true) {
+    val (fileEnding, files) = layerFiles
+    if (ArchiveFileFactory.isFileExtensionRegistered(fileEnding) && files.isNotEmpty()) {
         try {
             files.forEach {
-                val tileProvider = OfflineTileProvider(SimpleRegisterReceiver(context), arrayOf(it))
-                val layer = TilesOverlay(tileProvider, context)
-                layer.loadingBackgroundColor = Color.TRANSPARENT
-                layer.loadingLineColor = Color.TRANSPARENT
-                mapView.overlays.add(layer)
-                layers.add(Pair(it.name.replace(".$fileEnding", ""), layer))
-                setAlphaForLayer(layer)
-                mapView.invalidate()
+                if (!layers.map { layer -> layer.first }.contains(it.second)) {
+                    val tileProvider =
+                        OfflineTileProvider(SimpleRegisterReceiver(context), arrayOf(it.first))
+                    val layer = TilesOverlay(tileProvider, context)
+                    layer.loadingBackgroundColor = Color.TRANSPARENT
+                    layer.loadingLineColor = Color.TRANSPARENT
+                    mapView.overlays.add(layer)
+                    layers.add(Pair(it.second, layer))
+                    setAlphaForLayer(layer)
+                    mapView.invalidate()
+                }
             }
         } catch (ex: Exception) {
             Log.e("OpenStreetMapScreen", Log.getStackTraceString(ex))
         }
     }
+}
+
+private fun getLayerFiles(): Pair<String, List<Pair<File?, String>>> {
+    val fileEnding = "mbtiles"
+    val overlayFolder = File(CustomMapViewToAllowScrolling.getOsmdroidTilesFolder(), "overlays")
+    val files = overlayFolder.listFiles()?.filter { it.name.endsWith(".${fileEnding}") }
+        ?.map { Pair(it, it.name.replace(".$fileEnding", "")) } ?: emptyList()
+    return Pair(fileEnding, files)
 }
 
 private fun setAlphaForLayer(layer: TilesOverlay, alpha: Float = 0f) {
@@ -844,6 +861,9 @@ fun MapControlButtons(
     onShowSummitsToggle: () -> Unit,
     followLocationEnabled: Boolean,
     onFollowLocationToggle: () -> Unit,
+    showOverlaySliders: Boolean,
+    hasOverlayLayers: Boolean,
+    onToggleOverlaySliders: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -864,6 +884,8 @@ fun MapControlButtons(
                 )
             }
         }
+
+
 
         FloatingActionButton(
             onClick = onFullscreenToggle,
@@ -957,7 +979,8 @@ fun MapControlButtons(
         FloatingActionButton(
             onClick = onFollowLocationToggle,
             modifier = Modifier
-                .size(40.dp),
+                .size(40.dp)
+                .padding(bottom = 8.dp),
             containerColor = if (followLocationEnabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondaryContainer
         ) {
             Icon(
@@ -966,6 +989,20 @@ fun MapControlButtons(
                 ),
                 contentDescription = "Follow location"
             )
+        }
+        // Toggle overlay sliders button (only shown if overlay layers exist)
+        if (hasOverlayLayers) {
+            FloatingActionButton(
+                onClick = onToggleOverlaySliders,
+                modifier = Modifier
+                    .size(40.dp),
+                containerColor = if (showOverlaySliders) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_map_black_24dp),
+                    contentDescription = "Toggle overlay sliders"
+                )
+            }
         }
     }
 }

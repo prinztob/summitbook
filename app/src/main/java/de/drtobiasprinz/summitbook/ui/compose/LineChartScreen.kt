@@ -213,8 +213,7 @@ fun LineChartScreen(
                     isDarkTheme = isDarkTheme,
                     gridColor = gridColor,
                     textColor = textColor,
-                    unit = stringResource(lineChartSpinnerEntry.unit),
-                    sportTypes = SportType.entries.toList()
+                    unit = stringResource(lineChartSpinnerEntry.unit)
                 )
             } else {
                 Box(
@@ -243,8 +242,8 @@ fun LineChartScreen(
 data class ChartDataPoint(
     val x: Float,
     val y: Float,
-    val summit: Summit,
-    val color: Color
+    val summit: Summit? = null,
+    val color: Color = Color.Black
 )
 
 @Composable
@@ -257,7 +256,6 @@ fun LineChart(
     gridColor: Color,
     textColor: Color,
     unit: String,
-    sportTypes: List<SportType>,
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -509,12 +507,12 @@ fun ChartMarker(
 ) {
     val format =
         if (lineChartSpinnerEntry == OrderBySpinnerEntry.Vo2Max) "%s\n%s\n%.1f %s" else "%s\n%s\n%.0f %s"
-    val value = lineChartSpinnerEntry.f(dataPoint.summit) ?: 0f
+    val value = dataPoint.summit?.let { lineChartSpinnerEntry.f(it) } ?: 0f
     val unit = stringResource(lineChartSpinnerEntry.unit)
     val text = String.format(
         format,
-        dataPoint.summit.name,
-        dataPoint.summit.getDateAsString(),
+        dataPoint.summit?.name,
+        dataPoint.summit?.getDateAsString(),
         value,
         unit
     )
@@ -525,7 +523,7 @@ fun ChartMarker(
     Surface(
         modifier = modifier
             .padding(16.dp)
-            .clickable { onNavigateToSummitDetails(dataPoint.summit.id) },
+            .clickable { dataPoint.summit?.id?.let { onNavigateToSummitDetails(it) } },
         shape = RoundedCornerShape(8.dp),
         color = backgroundColor
     ) {

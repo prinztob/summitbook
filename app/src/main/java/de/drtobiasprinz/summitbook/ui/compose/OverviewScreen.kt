@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import android.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,43 +35,31 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.Legend
-import com.github.mikephil.charting.components.LegendEntry
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.formatter.ValueFormatter
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.models.StatisticEntry
 import de.drtobiasprinz.summitbook.ui.GraphType
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.PerformanceGraphProvider
-import de.drtobiasprinz.summitbook.ui.utils.CustomLineChartWithMarker
-import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
-import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.DateFormatSymbols
 import java.text.NumberFormat
-import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
+import kotlin.String
+import androidx.compose.ui.graphics.Color as ComposeColor
 
 @Composable
 fun OverviewScreen(
     filteredSummits: List<Summit>,
+    summitsFromDatabase: List<Summit>,
     forecasts: List<Forecast>,
-    sortFilterValues: SortFilterValues
+    years: List<String>
 ) {
     // State variables
     var selectedGraphType by remember { mutableStateOf(GraphType.ElevationGain) }
@@ -116,7 +103,7 @@ fun OverviewScreen(
         // Chart section (conditionally visible)
         if ((showMonths || showYears) && filteredSummits.isNotEmpty() && forecasts.isNotEmpty()) {
             ChartSection(
-                summits = filteredSummits,
+                summits = summitsFromDatabase,
                 forecasts = forecasts,
                 selectedGraphType = selectedGraphType,
                 onGraphTypeSelected = { selectedGraphType = it },
@@ -129,7 +116,7 @@ fun OverviewScreen(
                 onMonthChanged = { currentMonth = it },
                 indoorHeightMeterPercent = indoorHeightMeterPercent,
                 numberFormat = numberFormat,
-                sortFilterValues = sortFilterValues
+                years = years
             )
         }
     }
@@ -263,7 +250,7 @@ fun ChartSection(
     onMonthChanged: (Int) -> Unit,
     indoorHeightMeterPercent: Int,
     numberFormat: NumberFormat,
-    sortFilterValues: SortFilterValues
+    years: List<String>
 ) {
     var performanceGraphProvider by remember(summits, forecasts) {
         mutableStateOf<PerformanceGraphProvider?>(
@@ -306,7 +293,7 @@ fun ChartSection(
                 selectedYear = selectedYear,
                 onYearChanged = onYearChanged,
                 numberFormat = numberFormat,
-                sortFilterValues = sortFilterValues
+                years = years
             )
         }
 
@@ -365,8 +352,6 @@ fun MonthChart(
 ) {
     if (performanceGraphProvider == null) return
 
-    var monthChart by remember { mutableStateOf<CustomLineChartWithMarker?>(null) }
-
     Column {
         // Month navigation
         Row(
@@ -414,31 +399,17 @@ fun MonthChart(
                     )
                 }
             }
-
-            IconButton(
-                onClick = { monthChart?.fitScreen() },
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_refresh_24),
-                    contentDescription = stringResource(R.string.back)
-                )
-            }
         }
 
         Spacer(modifier = Modifier.height(1.dp))
 
         // Chart
-        ChartView(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(250.dp),
+        PerformanceChartView(
             performanceGraphProvider = performanceGraphProvider,
             graphType = graphType,
             year = selectedYear.toString(),
             month = if (currentMonth < 10) "0${currentMonth}" else currentMonth.toString(),
-            numberFormat = numberFormat,
-            onChartReady = { monthChart = it }
+            numberFormat = numberFormat
         )
     }
 }
@@ -450,12 +421,9 @@ fun YearChart(
     selectedYear: Int,
     onYearChanged: (Int) -> Unit,
     numberFormat: NumberFormat,
-    sortFilterValues: SortFilterValues
+    years: List<String>
 ) {
     if (performanceGraphProvider == null) return
-
-    var yearChart by remember { mutableStateOf<CustomLineChartWithMarker?>(null) }
-    var lastChartEntry by remember { mutableStateOf(Entry(0f, 0f)) }
 
     Column {
         // Year navigation
@@ -472,8 +440,7 @@ fun YearChart(
             ) {
                 IconButton(
                     onClick = {
-                        // Get min year from sortFilterValues
-                        val minYear = sortFilterValues.years.minOfOrNull { year -> year.toInt() }
+                        val minYear = years.minOfOrNull { year -> year.toInt() }
                             ?: selectedYear
 
                         if (selectedYear > minYear) {
@@ -496,8 +463,7 @@ fun YearChart(
 
                 IconButton(
                     onClick = {
-                        // Get max year from sortFilterValues
-                        val maxYear = sortFilterValues.years.maxOfOrNull { year -> year.toInt() }
+                        val maxYear = years.maxOfOrNull { year -> year.toInt() }
                             ?: selectedYear
 
                         if (selectedYear < maxYear) {
@@ -512,62 +478,16 @@ fun YearChart(
                     )
                 }
             }
-
-            Row {
-                IconButton(
-                    onClick = { yearChart?.fitScreen() },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_refresh_24),
-                        contentDescription = stringResource(R.string.back)
-                    )
-                }
-
-                IconButton(
-                    onClick = {
-                        if (lastChartEntry.x != 0f || lastChartEntry.y != 0f) {
-                            yearChart?.zoom(
-                                4f,
-                                4f,
-                                lastChartEntry.x,
-                                lastChartEntry.y,
-                                YAxis.AxisDependency.LEFT
-                            )
-                        }
-                    },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_baseline_search_24),
-                        contentDescription = stringResource(R.string.back)
-                    )
-                }
-            }
         }
 
         Spacer(modifier = Modifier.height(1.dp))
 
         // Chart
-        ChartView(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(250.dp),
+        PerformanceChartView(
             performanceGraphProvider = performanceGraphProvider,
             graphType = graphType,
             year = selectedYear.toString(),
-            numberFormat = numberFormat,
-            onChartReady = { chart ->
-                yearChart = chart
-                // Update lastChartEntry when chart data is available
-                chart.data?.let { data ->
-                    data.getDataSetByIndex(0)?.let { dataSet ->
-                        if (dataSet.entryCount > 0) {
-                            lastChartEntry = dataSet.getEntryForIndex(dataSet.entryCount - 1)
-                        }
-                    }
-                }
-            }
+            numberFormat = numberFormat
         )
     }
 }
@@ -610,14 +530,12 @@ fun ChartControls(
 }
 
 @Composable
-fun ChartView(
-    modifier: Modifier = Modifier,
+fun PerformanceChartView(
     performanceGraphProvider: PerformanceGraphProvider,
     graphType: GraphType,
     year: String,
     month: String? = null,
-    numberFormat: NumberFormat,
-    onChartReady: (CustomLineChartWithMarker) -> Unit = {}
+    numberFormat: NumberFormat
 ) {
     val scope = rememberCoroutineScope()
 
@@ -671,241 +589,132 @@ fun ChartView(
         }
     }
 
-    AndroidView(
-        factory = { ctx ->
-            CustomLineChartWithMarker(ctx).apply {
-                // Configure chart properties
-                invalidate()
-                axisRight.setDrawLabels(false)
-
-                // Set Y axis formatter
-                axisLeft.valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String {
-                        numberFormat.maximumFractionDigits = if (value > 99) 0 else 1
-                        val format = "${numberFormat.format(value.toDouble())} ${graphType.unit}"
-                        return format
-                    }
-                }
-
-                // Set X axis formatter
-                xAxis.position = XAxis.XAxisPosition.BOTTOM
-                xAxis.valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String? {
-                        val cal = Calendar.getInstance()
-                        cal.time = PerformanceGraphProvider.parseDate(
-                            String.format("${year}-${month ?: "01"}-01 00:00:00")
-                        )
-                        if (month == null) {
-                            cal.set(Calendar.DAY_OF_YEAR, value.toInt())
-                        } else {
-                            cal.set(Calendar.DAY_OF_MONTH, value.toInt())
-                        }
-                        return SimpleDateFormat(
-                            "dd MMM", java.util.Locale.getDefault()
-                        ).format(cal.time)
-                    }
-                }
-
-                // Configure appearance based on theme
-                when (ctx.resources.configuration?.uiMode?.and(android.content.res.Configuration.UI_MODE_NIGHT_MASK)) {
-                    android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
-                        xAxis.textColor = Color.WHITE
-                        axisRight.textColor = Color.WHITE
-                        axisLeft.textColor = Color.WHITE
-                        legend?.textColor = Color.WHITE
-                    }
-
-                    android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
-                        xAxis.textColor = Color.BLACK
-                        axisRight.textColor = Color.BLACK
-                        axisLeft.textColor = Color.BLACK
-                        legend?.textColor = Color.BLACK
-                    }
-
-                    android.content.res.Configuration.UI_MODE_NIGHT_UNDEFINED -> {
-                        xAxis.textColor = Color.WHITE
-                        axisRight.textColor = Color.WHITE
-                        axisLeft.textColor = Color.WHITE
-                        legend?.textColor = Color.WHITE
-                    }
-                }
-
-                setTouchEnabled(true)
-            }
-        },
-        update = { chart ->
-            // Update chart data when entries change
-            if (chartEntries.isNotEmpty() || chartEntriesForecast.isNotEmpty()) {
-                updateLineChart(
-                    chart = chart,
-                    chartEntries = chartEntries,
-                    graphType = graphType,
-                    minMax = minMax,
-                    chartEntriesForecast = chartEntriesForecast
-                )
-                onChartReady(chart)
-                chart.visibility = android.view.View.VISIBLE
-            } else {
-                chart.visibility = android.view.View.GONE
-            }
-        },
-        modifier = modifier
-    )
-}
-
-fun updateLineChart(
-    chart: CustomLineChartWithMarker,
-    chartEntries: List<Entry>,
-    graphType: GraphType,
-    minMax: Pair<List<Entry>, List<Entry>>,
-    chartEntriesForecast: List<Entry>
-) {
-    var chartEntries1 = chartEntries
-    chart.invalidate()
-    chart.axisRight.setDrawLabels(false)
-
-    if (graphType.cumulative) {
-        chart.axisLeft.axisMinimum = 0f
-        chart.axisRight.axisMinimum = 0f
-    } else {
-        val minLeft = (minMax.second + chartEntries1).filter { it.y > 0 }.minOfOrNull { it.y }
-        if (minLeft != null) {
-            chart.axisLeft.axisMinimum = minLeft
-        }
-        val minRight = (minMax.second + chartEntries1).filter { it.y > 0 }.minOfOrNull { it.y }
-        if (minRight != null) {
-            chart.axisRight.axisMinimum = minRight
-        }
-    }
-
-    val dataSets: MutableList<ILineDataSet?> = ArrayList()
-    if (chartEntries1.isNotEmpty() && chartEntries1[0].x != 1f) {
-        chartEntries1 = listOf(Entry(1f, 0f)) + chartEntries1
-    }
-    val entries =
-        if (graphType.filterZeroValues) chartEntries1.filter { it.y > 0f } else chartEntries1
-    val dataSet = LineDataSet(entries, chart.context.getString(R.string.actually))
-
-    // Set graph view properties
-    setGraphView(
-        dataSet, false, lineWidth = 5f, colors = entries.map { e ->
-            if (e.y > (minMax.second.firstOrNull { it.x == e.x }?.y ?: 0f)) {
-                Color.rgb(255, 215, 0)
-            } else if (graphType.hasForecast && e.y > (chartEntriesForecast.firstOrNull { it.x == e.x }?.y
-                    ?: 0f)
-            ) {
-                Color.GREEN
-            } else {
-                Color.RED
-            }
-        }
-    )
-
-    if (minMax.first.isNotEmpty() && minMax.second.isNotEmpty()) {
-        chart.axisLeft.axisMaximum =
-            (minMax.second + chartEntries1).maxOf { it.y } + graphType.delta
-        chart.axisRight.axisMaximum =
-            (minMax.second + chartEntries1).maxOf { it.y } + graphType.delta
-        val dataSetMaximalValues = LineDataSet(
-            if (graphType.filterZeroValues) minMax.second.filter { it.y > 0f } else minMax.second,
-            chart.context.getString(R.string.max_5_yrs)
+    // Build chart series
+    val series = remember(chartEntries, chartEntriesForecast, minMax, graphType) {
+        buildChartSeries(
+            chartEntries = chartEntries,
+            chartEntriesForecast = chartEntriesForecast,
+            minMax = minMax,
+            graphType = graphType
         )
+    }
+
+    if (series.isNotEmpty()) {
+        PerformanceLineChart(
+            series = series,
+            graphType = graphType,
+            year = year,
+            month = month,
+            numberFormat = numberFormat
+        )
+    }
+}
+
+/**
+ * Build chart series from raw data
+ */
+private fun buildChartSeries(
+    chartEntries: List<Entry>,
+    chartEntriesForecast: List<Entry>,
+    minMax: Pair<List<Entry>, List<Entry>>,
+    graphType: GraphType
+): List<ChartSeries> {
+    val series = mutableListOf<ChartSeries>()
+
+    // Add min/max 5 years series if available
+    if (minMax.first.isNotEmpty() && minMax.second.isNotEmpty()) {
+        val maxData = if (graphType.filterZeroValues) {
+            minMax.second.filter { it.y > 0f }
+        } else {
+            minMax.second
+        }
+        val minData = minMax.first
+
         if (graphType.cumulative) {
-            val dataSetMinimalValues = LineDataSet(
-                minMax.first, chart.context.getString(R.string.min_5_yrs)
+            // For cumulative graphs, fill between min and max
+            series.add(
+                ChartSeries(
+                    name = "Max 5 yrs",
+                    data = convertEntriesToChartDataPoints(maxData),
+                    color = ComposeColor(0xFF0000FF), // Blue
+                    lineWidth = 2f,
+                    filled = true,
+                    fillColor = ComposeColor(0xFF0000FF),
+                    fillAlpha = 0.2f,
+                    fillBetweenSeries = convertEntriesToChartDataPoints(minData)
+                )
             )
-            setGraphView(dataSetMinimalValues)
-            dataSets.add(dataSetMinimalValues)
-            dataSetMaximalValues.fillFormatter = MyFillFormatter(dataSetMinimalValues)
-            chart.renderer = MyLineLegendRenderer(
-                chart, chart.animator, chart.viewPortHandler
+            series.add(
+                ChartSeries(
+                    name = "Min 5 yrs",
+                    data = convertEntriesToChartDataPoints(minData),
+                    color = ComposeColor(0xFF0000FF), // Blue
+                    lineWidth = 2f,
+                    filled = false
+                )
+            )
+        } else {
+            // For non-cumulative graphs, just show max line
+            series.add(
+                ChartSeries(
+                    name = "Max 5 yrs",
+                    data = convertEntriesToChartDataPoints(maxData),
+                    color = ComposeColor(0xFF0000FF), // Blue
+                    lineWidth = 2f,
+                    filled = false
+                )
             )
         }
-        setGraphView(dataSetMaximalValues)
-        dataSets.add(dataSetMaximalValues)
     }
-    if (graphType.hasForecast) {
-        val dataSetForecast =
-            LineDataSet(chartEntriesForecast, chart.context.getString(R.string.forecast))
-        setGraphView(dataSetForecast, false, color = Color.rgb(255, 0, 0))
-        dataSets.add(dataSetForecast)
+
+    // Add forecast series if available
+    if (graphType.hasForecast && chartEntriesForecast.isNotEmpty()) {
+        series.add(
+            ChartSeries(
+                name = "Forecast",
+                data = convertEntriesToChartDataPoints(chartEntriesForecast),
+                color = ComposeColor(0xFFFF0000), // Red
+                lineWidth = 2f,
+                filled = false
+            )
+        )
     }
-    dataSets.add(dataSet)
 
-    chart.data = LineData(dataSets)
-    setLegend(chart)
-}
-
-fun setLegend(lineChart: LineChart) {
-    val l: Legend = lineChart.legend
-    l.yEntrySpace = 10f
-    l.isWordWrapEnabled = true
-    val l1 = LegendEntry(
-        lineChart.context.getString(R.string.new_record),
-        Legend.LegendForm.CIRCLE,
-        9f,
-        5f,
-        null,
-        Color.rgb(255, 215, 0)
-    )
-    val l2 = LegendEntry(
-        lineChart.context.getString(R.string.better_then),
-        Legend.LegendForm.CIRCLE,
-        9f,
-        5f,
-        null,
-        Color.GREEN
-    )
-    val l3 = LegendEntry(
-        lineChart.context.getString(R.string.forecast),
-        Legend.LegendForm.CIRCLE,
-        9f,
-        5f,
-        null,
-        Color.RED
-    )
-    val l4 = LegendEntry(
-        lineChart.context.getString(R.string.min_max_5_yrs),
-        Legend.LegendForm.CIRCLE,
-        9f,
-        5f,
-        null,
-        Color.BLUE
-    )
-    l.setCustom(arrayOf(l1, l2, l3, l4))
-    l.isEnabled = true
-}
-
-fun setGraphView(
-    set1: LineDataSet?,
-    filled: Boolean = true,
-    color: Int = Color.BLUE,
-    lineWidth: Float = 2f,
-    colors: List<Int>? = null
-) {
-    set1?.mode = LineDataSet.Mode.LINEAR
-    set1?.setDrawValues(false)
-    set1?.setDrawCircles(false)
-    if (filled) {
-        set1?.cubicIntensity = 20f
-        if (colors != null && colors.size == set1?.entryCount) {
-            set1.colors = colors
-        } else {
-            set1?.color = color
+    // Add actual data series
+    if (chartEntries.isNotEmpty()) {
+        var actualEntries = chartEntries
+        if (actualEntries[0].x != 1f) {
+            actualEntries = listOf(Entry(1f, 0f)) + actualEntries
         }
-        set1?.highLightColor = Color.rgb(244, 117, 117)
-        set1?.setDrawFilled(true)
-        set1?.fillColor = color
-        set1?.fillAlpha = 100
-    } else {
-        set1?.lineWidth = lineWidth
-        set1?.setCircleColor(Color.BLACK)
-        if (colors != null && colors.size == set1?.entryCount) {
-            set1.colors = colors
+        val filteredEntries = if (graphType.filterZeroValues) {
+            actualEntries.filter { it.y > 0f }
         } else {
-            set1?.color = color
+            actualEntries
         }
-        set1?.setDrawFilled(false)
+
+        // Calculate colors for each point
+        val pointColors = filteredEntries.map { entry ->
+            val minMaxValue = minMax.second.firstOrNull { it.x == entry.x }?.y ?: 0f
+            val forecastValue = chartEntriesForecast.firstOrNull { it.x == entry.x }?.y ?: 0f
+            when {
+                entry.y > minMaxValue -> ComposeColor(0xFFFFD700) // Gold - new record
+                graphType.hasForecast && entry.y > forecastValue -> ComposeColor(0xFF00FF00) // Green
+                else -> ComposeColor(0xFFFF0000) // Red
+            }
+        }
+
+        series.add(
+            ChartSeries(
+                name = "Actual",
+                data = convertEntriesToChartDataPoints(filteredEntries),
+                color = ComposeColor(0xFFFF0000), // Default red
+                lineWidth = 5f,
+                filled = false,
+                drawCircles = false,
+                pointColors = pointColors
+            )
+        )
     }
-    set1?.setDrawHorizontalHighlightIndicator(true)
+
+    return series
 }

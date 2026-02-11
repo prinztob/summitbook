@@ -7,12 +7,13 @@ import androidx.work.WorkerParameters
 import com.chaquo.python.Python
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.MyApp
+import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.peaks
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonInstance
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
 import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -49,6 +50,7 @@ class SummitUpdateWorker(
             updateBoundingBox(summits, 10)
             updateTracks(summits, 10)
             updateDistances(summits, 10)
+            convertPeaks(summits)
             Log.i(TAG, "Update done.")
         }
     }
@@ -80,6 +82,8 @@ class SummitUpdateWorker(
     }
 
     private suspend fun updateTracks(summits: List<Summit>, takeNumberOfSummits: Int) {
+        val sharedPreferences =
+            androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
         val useSimplifiedTracks =
             sharedPreferences.getBoolean(Keys.PREF_USE_SIMPLIFIED_TRACKS, true)
         if (useSimplifiedTracks) {
@@ -166,7 +170,7 @@ class SummitUpdateWorker(
             }
         Log.i(
             TAG,
-            "${entriesWithoutSimplifiedGpxTrack.size} simplified tracks and ${entriesWithoutAdditionalData.size} are missing."
+            "${entriesWithoutSimplifiedGpxTrack.size} simplified tracks and ${entriesWithoutAdditionalData.size} additional data for summits are missing."
         )
         pythonInstance?.let {
             asyncSimplifyGpsTracks(
@@ -174,6 +178,17 @@ class SummitUpdateWorker(
                 entriesWithoutAdditionalData,
                 it
             )
+        }
+    }
+
+
+    private suspend fun convertPeaks(data: List<Summit>?) {
+        data?.forEach {
+            if (it.isPeak && it.name !in peaks.map { peak -> peak.name }) {
+                Log.i(TAG, "ConvertPeaks - added ${it.name}")
+                peaks.add(Peak(it.name))
+                repository.savePeak(Peak(it.name, it.elevationData.maxElevation))
+            }
         }
     }
 

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,6 +30,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -78,40 +80,29 @@ fun BarChartScreen(
     filteredSummits: List<Summit>,
     forecasts: List<Forecast>,
     dailyActivitySummaryList: List<DailyActivitySummary>,
+    areMoreThanOneYearSelected: Boolean = false
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val sharedPreferences =
         androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
 
-    var selectedXAxisSpinnerEntry by remember { mutableStateOf(BarChartXAxisSelector.DateByMonth) }
+    var selectedXAxisSpinnerEntry by remember { mutableStateOf(if (areMoreThanOneYearSelected) BarChartXAxisSelector.DateByYear else BarChartXAxisSelector.DateByMonth) }
     var selectedYAxisSpinnerEntry by remember { mutableStateOf(BarChartYAxisSelector.TotalActivities) }
     var selectedZAxisSpinnerEntry by remember { mutableStateOf(BarChartZAxisSelector.PerSportGroup) }
-    var selectedXAxisSpinnerMonth by remember { mutableStateOf(0) }
+    var selectedXAxisSpinnerMonth by remember { mutableIntStateOf(0) }
     var includeFilteredDailyActivitySummaries by remember { mutableStateOf(false) }
 
     var barChartEntries by remember { mutableStateOf<List<BarChartDataPoint>>(emptyList()) }
     var lineChartEntriesForecast by remember { mutableStateOf<List<LineChartDataPoint>>(emptyList()) }
-    var selectedDataPoint by remember { mutableStateOf<BarChartDataPoint?>(null) }
     var minDate by remember { mutableStateOf(Date()) }
     var intervalHelper by remember { mutableStateOf<IntervalHelper?>(null) }
-    var filteredDailyActivitySummaries by remember {
-        mutableStateOf<List<DailyActivitySummary>>(
-            emptyList()
-        )
-    }
     var unit by remember { mutableStateOf("hm") }
-    var label by remember { mutableStateOf("Height meters") }
 
-    var showXAxisDropdown by remember { mutableStateOf(false) }
-    var showYAxisDropdown by remember { mutableStateOf(false) }
-    var showZAxisDropdown by remember { mutableStateOf(false) }
-    var showMonthDropdown by remember { mutableStateOf(false) }
 
     val xAxisEntries = remember { BarChartXAxisSelector.entries.toList() }
     val yAxisEntries = remember { BarChartYAxisSelector.entries.toList() }
     val zAxisEntries = remember { BarChartZAxisSelector.entries.toList() }
-    val nameLabel = stringResource(selectedYAxisSpinnerEntry.nameId)
     val unitLabel = stringResource(selectedYAxisSpinnerEntry.unitId)
     val weekLabel = stringResource(R.string.calender_wek_abrv)
     val allLabel = stringResource(R.string.all)
@@ -141,7 +132,6 @@ fun BarChartScreen(
                         dailyActivitySummaryList,
                         filteredSummits
                     )
-                filteredDailyActivitySummaries = filteredDailyActivities
                 filteredSummits + parseAsSummit(filteredDailyActivities)
             } else {
                 filteredSummits
@@ -181,8 +171,6 @@ fun BarChartScreen(
             lineChartEntriesForecast = lineEntries
         }
 
-        // Update labels after background work
-        label = nameLabel
         unit = unitLabel
     }
 
@@ -201,266 +189,29 @@ fun BarChartScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundColor)
-            .padding(2.dp)
+            .padding(8.dp)
     ) {
         // Spinner section
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 2.dp)
-        ) {
-            // X, Y, Z Axis Spinners in one line
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 1.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                // X Axis Spinner
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = "X",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = textColor,
-                        modifier = Modifier.padding(end = 2.dp)
-                    )
+        SpinnerSection(
+            selectedXAxisSpinnerEntry = selectedXAxisSpinnerEntry,
+            selectedYAxisSpinnerEntry = selectedYAxisSpinnerEntry,
+            selectedZAxisSpinnerEntry = selectedZAxisSpinnerEntry,
+            selectedXAxisSpinnerMonth = selectedXAxisSpinnerMonth,
+            includeFilteredDailyActivitySummaries = includeFilteredDailyActivitySummaries,
+            onXAxisEntrySelected = { selectedXAxisSpinnerEntry = it },
+            onYAxisEntrySelected = { selectedYAxisSpinnerEntry = it },
+            onZAxisEntrySelected = { selectedZAxisSpinnerEntry = it },
+            onMonthSelected = { selectedXAxisSpinnerMonth = it },
+            onIncludeFilteredChanged = { includeFilteredDailyActivitySummaries = it },
+            xAxisEntries = xAxisEntries,
+            yAxisEntries = yAxisEntries,
+            zAxisEntries = zAxisEntries,
+            monthNames = monthNames,
+            textColor = textColor,
+            isDarkTheme = isDarkTheme
+        )
 
-                    Box {
-                        TextButton(
-                            onClick = { showXAxisDropdown = true }
-                        ) {
-                            Text(
-                                text = stringResource(id = selectedXAxisSpinnerEntry.nameId),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = textColor
-                            )
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
-                                contentDescription = null,
-                                tint = textColor,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = showXAxisDropdown,
-                            onDismissRequest = { showXAxisDropdown = false },
-                            properties = PopupProperties(focusable = true),
-                            containerColor = if (isDarkTheme) Color(0xFF1E1E1E) else Color.White
-                        ) {
-                            xAxisEntries.forEach { entry ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            stringResource(id = entry.nameId),
-                                            color = if (isDarkTheme) Color.White else Color.Black,
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    },
-                                    onClick = {
-                                        selectedXAxisSpinnerEntry = entry
-                                        showXAxisDropdown = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Y Axis Spinner
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = "Y",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = textColor,
-                        modifier = Modifier.padding(end = 2.dp)
-                    )
-
-                    Box {
-                        TextButton(
-                            onClick = { showYAxisDropdown = true }
-                        ) {
-                            Text(
-                                text = stringResource(id = selectedYAxisSpinnerEntry.nameId),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = textColor
-                            )
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
-                                contentDescription = null,
-                                tint = textColor,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = showYAxisDropdown,
-                            onDismissRequest = { showYAxisDropdown = false },
-                            properties = PopupProperties(focusable = true),
-                            containerColor = if (isDarkTheme) Color(0xFF1E1E1E) else Color.White
-                        ) {
-                            yAxisEntries.forEach { entry ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            stringResource(id = entry.nameId),
-                                            color = if (isDarkTheme) Color.White else Color.Black,
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    },
-                                    onClick = {
-                                        selectedYAxisSpinnerEntry = entry
-                                        showYAxisDropdown = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Z Axis Spinner
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = "Z",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = textColor,
-                        modifier = Modifier.padding(end = 2.dp)
-                    )
-
-                    Box {
-                        TextButton(
-                            onClick = { showZAxisDropdown = true }
-                        ) {
-                            Text(
-                                text = stringResource(id = selectedZAxisSpinnerEntry.nameId),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = textColor
-                            )
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
-                                contentDescription = null,
-                                tint = textColor,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = showZAxisDropdown,
-                            onDismissRequest = { showZAxisDropdown = false },
-                            properties = PopupProperties(focusable = true),
-                            containerColor = if (isDarkTheme) Color(0xFF1E1E1E) else Color.White
-                        ) {
-                            zAxisEntries.forEach { entry ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            stringResource(id = entry.nameId),
-                                            color = if (isDarkTheme) Color.White else Color.Black,
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    },
-                                    onClick = {
-                                        selectedZAxisSpinnerEntry = entry
-                                        showZAxisDropdown = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Month spinner (only visible for DateByYear)
-            if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByYear) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 1.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_today_black_24dp),
-                        contentDescription = stringResource(id = R.string.choose_data_source),
-                        tint = textColor,
-                        modifier = Modifier
-                            .padding(end = 2.dp)
-                            .size(12.dp)
-                    )
-
-                    Box {
-                        TextButton(
-                            onClick = { showMonthDropdown = true }
-                        ) {
-                            Text(
-                                text = monthNames[selectedXAxisSpinnerMonth],
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = textColor
-                            )
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
-                                contentDescription = null,
-                                tint = textColor,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = showMonthDropdown && selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByYear,
-                            onDismissRequest = { showMonthDropdown = false },
-                            properties = PopupProperties(focusable = true),
-                            containerColor = if (isDarkTheme) Color(0xFF1E1E1E) else Color.White
-                        ) {
-                            monthNames.forEachIndexed { index, monthName ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            monthName,
-                                            color = if (isDarkTheme) Color.White else Color.Black,
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    },
-                                    onClick = {
-                                        selectedXAxisSpinnerMonth = index
-                                        showMonthDropdown = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Include filtered daily activity summaries checkbox
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Checkbox(
-                    checked = includeFilteredDailyActivitySummaries,
-                    onCheckedChange = { includeFilteredDailyActivitySummaries = it },
-                    modifier = Modifier.size(12.dp)
-                )
-                Text(
-                    text = stringResource(id = R.string.include_not_persisted_activities),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = textColor,
-                    modifier = Modifier.padding(start = 2.dp),
-                    fontSize = 10.sp
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(2.dp))
 
         // Chart section
         Box(
@@ -469,12 +220,12 @@ fun BarChartScreen(
                 .weight(1f)
                 .clip(RoundedCornerShape(8.dp))
                 .background(chartBackgroundColor)
+                .padding(8.dp, top = 0.dp)
         ) {
             if (barChartEntries.isNotEmpty()) {
                 BarChart(
                     barDataPoints = barChartEntries,
                     lineDataPoints = lineChartEntriesForecast,
-                    onDataPointSelected = { selectedDataPoint = it },
                     selectedXAxisSpinnerEntry = selectedXAxisSpinnerEntry,
                     selectedYAxisSpinnerEntry = selectedYAxisSpinnerEntry,
                     selectedZAxisSpinnerEntry = selectedZAxisSpinnerEntry,
@@ -509,12 +260,318 @@ fun BarChartScreen(
     }
 }
 
+@Composable
+fun SpinnerSection(
+    selectedXAxisSpinnerEntry: BarChartXAxisSelector,
+    selectedYAxisSpinnerEntry: BarChartYAxisSelector,
+    selectedZAxisSpinnerEntry: BarChartZAxisSelector,
+    selectedXAxisSpinnerMonth: Int,
+    includeFilteredDailyActivitySummaries: Boolean,
+    onXAxisEntrySelected: (BarChartXAxisSelector) -> Unit,
+    onYAxisEntrySelected: (BarChartYAxisSelector) -> Unit,
+    onZAxisEntrySelected: (BarChartZAxisSelector) -> Unit,
+    onMonthSelected: (Int) -> Unit,
+    onIncludeFilteredChanged: (Boolean) -> Unit,
+    xAxisEntries: List<BarChartXAxisSelector>,
+    yAxisEntries: List<BarChartYAxisSelector>,
+    zAxisEntries: List<BarChartZAxisSelector>,
+    monthNames: List<String>,
+    textColor: Color,
+    isDarkTheme: Boolean
+) {
+    var showXAxisDropdown by remember { mutableStateOf(false) }
+    var showYAxisDropdown by remember { mutableStateOf(false) }
+    var showZAxisDropdown by remember { mutableStateOf(false) }
+    var showMonthDropdown by remember { mutableStateOf(false) }
+
+    val backgroundColor = if (isDarkTheme) Color(0xFF1E1E1E) else Color.White
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(backgroundColor)
+            .padding(16.dp)
+    ) {
+        // X, Y, Z Axis Spinners in one line
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // X Axis Spinner
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "X",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textColor,
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+
+                Box {
+                    TextButton(
+                        onClick = { showXAxisDropdown = true }
+                    ) {
+                        Text(
+                            text = stringResource(id = selectedXAxisSpinnerEntry.nameId),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor
+                        )
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
+                            contentDescription = null,
+                            tint = textColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showXAxisDropdown,
+                        onDismissRequest = { showXAxisDropdown = false },
+                        properties = PopupProperties(focusable = true),
+                        containerColor = backgroundColor
+                    ) {
+                        xAxisEntries.forEach { entry ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(id = entry.nameId),
+                                        color = if (isDarkTheme) Color.White else Color.Black,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                },
+                                onClick = {
+                                    onXAxisEntrySelected(entry)
+                                    showXAxisDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Y Axis Spinner
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Y",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textColor,
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+
+                Box {
+                    TextButton(
+                        onClick = { showYAxisDropdown = true }
+                    ) {
+                        Text(
+                            text = stringResource(id = selectedYAxisSpinnerEntry.nameId),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor
+                        )
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
+                            contentDescription = null,
+                            tint = textColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showYAxisDropdown,
+                        onDismissRequest = { showYAxisDropdown = false },
+                        properties = PopupProperties(focusable = true),
+                        containerColor = backgroundColor
+                    ) {
+                        yAxisEntries.forEach { entry ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(id = entry.nameId),
+                                        color = if (isDarkTheme) Color.White else Color.Black,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                },
+                                onClick = {
+                                    onYAxisEntrySelected(entry)
+                                    showYAxisDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Z Axis Spinner
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Z",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textColor,
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+
+                Box {
+                    TextButton(
+                        onClick = { showZAxisDropdown = true }
+                    ) {
+                        Text(
+                            text = stringResource(id = selectedZAxisSpinnerEntry.nameId),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor
+                        )
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
+                            contentDescription = null,
+                            tint = textColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showZAxisDropdown,
+                        onDismissRequest = { showZAxisDropdown = false },
+                        properties = PopupProperties(focusable = true),
+                        containerColor = backgroundColor
+                    ) {
+                        zAxisEntries.forEach { entry ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(id = entry.nameId),
+                                        color = if (isDarkTheme) Color.White else Color.Black,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                },
+                                onClick = {
+                                    onZAxisEntrySelected(entry)
+                                    showZAxisDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Month spinner (only visible for DateByYear)
+        if (selectedXAxisSpinnerEntry == BarChartXAxisSelector.DateByYear) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_today_black_24dp),
+                    contentDescription = stringResource(id = R.string.choose_data_source),
+                    tint = textColor,
+                    modifier = Modifier
+                        .padding(end = 4.dp)
+                        .size(12.dp)
+                )
+
+                Box {
+                    TextButton(
+                        onClick = { showMonthDropdown = true }
+                    ) {
+                        Text(
+                            text = monthNames[selectedXAxisSpinnerMonth],
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor
+                        )
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
+                            contentDescription = null,
+                            tint = textColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showMonthDropdown,
+                        onDismissRequest = { showMonthDropdown = false },
+                        properties = PopupProperties(focusable = true),
+                        containerColor = backgroundColor
+                    ) {
+                        monthNames.forEachIndexed { index, monthName ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        monthName,
+                                        color = if (isDarkTheme) Color.White else Color.Black,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                },
+                                onClick = {
+                                    onMonthSelected(index)
+                                    showMonthDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Include filtered daily activity summaries checkbox
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = includeFilteredDailyActivitySummaries,
+                onCheckedChange = onIncludeFilteredChanged,
+                modifier = Modifier.size(12.dp)
+            )
+            Text(
+                text = stringResource(id = R.string.include_not_persisted_activities),
+                style = MaterialTheme.typography.bodySmall,
+                color = textColor,
+                modifier = Modifier.padding(start = 4.dp),
+                fontSize = 10.sp
+            )
+        }
+    }
+}
+
 // Data classes for chart data points
 data class BarChartDataPoint(
     val x: Float,
     val yValues: FloatArray, // Stacked values
     val label: String
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as BarChartDataPoint
+
+        if (x != other.x) return false
+        if (!yValues.contentEquals(other.yValues)) return false
+        if (label != other.label) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = x.hashCode()
+        result = 31 * result + yValues.contentHashCode()
+        result = 31 * result + label.hashCode()
+        return result
+    }
+}
 
 data class LineChartDataPoint(
     val x: Float,
@@ -525,7 +582,6 @@ data class LineChartDataPoint(
 fun BarChart(
     barDataPoints: List<BarChartDataPoint>,
     lineDataPoints: List<LineChartDataPoint>,
-    onDataPointSelected: (BarChartDataPoint?) -> Unit,
     selectedXAxisSpinnerEntry: BarChartXAxisSelector,
     selectedYAxisSpinnerEntry: BarChartYAxisSelector,
     selectedZAxisSpinnerEntry: BarChartZAxisSelector,
@@ -577,16 +633,13 @@ fun BarChart(
                                 (closestPoint.x - paddedMinX) / (paddedMaxX - paddedMinX) * chartWidth
 
                             // Check if tap is close enough to the point (within 50 pixels)
-                            if (kotlin.math.abs(screenX - tappedX) < 50) {
-                                selectedDataPoint = closestPoint
-                                onDataPointSelected(closestPoint)
+                            selectedDataPoint = if (kotlin.math.abs(screenX - tappedX) < 50) {
+                                closestPoint
                             } else {
-                                selectedDataPoint = null
-                                onDataPointSelected(null)
+                                null
                             }
                         } else {
                             selectedDataPoint = null
-                            onDataPointSelected(null)
                         }
                     }
                 }
@@ -598,8 +651,6 @@ fun BarChart(
             drawGridAndLabels(
                 minX = paddedMinX,
                 maxX = paddedMaxX,
-                minY = minY,
-                maxY = maxY,
                 paddedMinY = paddedMinY,
                 paddedMaxY = paddedMaxY,
                 selectedXAxisSpinnerEntry = selectedXAxisSpinnerEntry,
@@ -701,8 +752,6 @@ fun BarChart(
                     for (i in 1 until lineDataPoints.size) {
                         val prevPoint = lineDataPoints[i - 1]
                         val point = lineDataPoints[i]
-                        val prevX =
-                            (prevPoint.x - paddedMinX) / (paddedMaxX - paddedMinX) * chartWidth
                         val prevY =
                             chartHeight - (prevPoint.y - paddedMinY) / (paddedMaxY - paddedMinY) * chartHeight
                         val x = (point.x - paddedMinX) / (paddedMaxX - paddedMinX) * chartWidth
@@ -755,8 +804,6 @@ fun BarChart(
 fun DrawScope.drawGridAndLabels(
     minX: Float,
     maxX: Float,
-    minY: Float,
-    maxY: Float,
     paddedMinY: Float,
     paddedMaxY: Float,
     selectedXAxisSpinnerEntry: BarChartXAxisSelector,
@@ -811,13 +858,13 @@ fun DrawScope.drawGridAndLabels(
             }
 
             BarChartXAxisSelector.DateByMonth -> {
-                val month = (xValue % 12f).toInt()
+                val month = ((xValue % 12f).toInt() + 12) % 12
                 val year = floor((xValue + 1f) / 12f).toInt() + getYear(minDate)
                 "${DateFormatSymbols(configuration.locales[0]).months[month]} $year"
             }
 
             BarChartXAxisSelector.DateByQuarter -> {
-                val quarter = ((xValue + 1f) % 4f).toInt()
+                val quarter = (((xValue + 1f) % 4f).toInt() + 4) % 4
                 val year = floor((xValue + 1f) / 4f).toInt() + getYear(minDate)
                 "${toRomanNumerics(quarter)} $year"
             }
@@ -928,7 +975,7 @@ fun Legend(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(4.dp)
+            .padding(8.dp)
             .background(backgroundColor, RoundedCornerShape(4.dp))
     ) {
         LazyRow(
@@ -1029,13 +1076,13 @@ private fun generateBarChartEntries(
                 }
 
                 BarChartXAxisSelector.DateByMonth -> {
-                    val month = (xValue % 12f).toInt()
+                    val month = ((xValue % 12f).toInt() + 12) % 12
                     val year = floor((xValue + 1f) / 12f).toInt() + getYear(minDate)
                     "${DateFormatSymbols().months[month]} $year"
                 }
 
                 BarChartXAxisSelector.DateByQuarter -> {
-                    val quarter = ((xValue + 1f) % 4f).toInt()
+                    val quarter = (((xValue + 1f) % 4f).toInt() + 4) % 4
                     val year = floor((xValue + 1f) / 4f).toInt() + getYear(minDate)
                     "${toRomanNumerics(quarter)} $year"
                 }

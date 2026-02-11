@@ -8,7 +8,6 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -38,33 +38,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import com.github.mikephil.charting.charts.HorizontalBarChart
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.BarData
-import com.github.mikephil.charting.data.BarDataSet
-import com.github.mikephil.charting.data.BarEntry
-import com.github.mikephil.charting.formatter.ValueFormatter
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.models.RoadType
-import de.drtobiasprinz.summitbook.models.Surface
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.getSportTypeForMapProviders
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
 import de.drtobiasprinz.summitbook.ui.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.SummitUtils
 import de.drtobiasprinz.summitbook.utils.FileHelper
@@ -124,19 +115,21 @@ fun SummitEntryTrackScreen(
     LaunchedEffect(summit.id) {
         isLoading = true
         withContext(Dispatchers.IO) {
-            setGpsTrack(summit, useSimplifiedTrack = true) { track, _ ->
+            setGpsTrack(summit, useSimplifiedTrack = true) { track ->
                 trackPoints = track?.trackPoints ?: emptyList()
             }
+            isLoading = false
         }
-
-        // Load full track in background
-        coroutineScope.launch(Dispatchers.IO) {
-            setGpsTrack(summit, forceUpdate = true) { track, _ ->
-                trackPoints = track?.trackPoints ?: emptyList()
-            }
-        }
-        isLoading = false
     }
+
+    LaunchedEffect(summit.id) {
+        coroutineScope.launch(Dispatchers.IO) {
+            setGpsTrack(summit, forceUpdate = true) { track ->
+                trackPoints = track?.trackPoints ?: emptyList()
+            }
+        }
+    }
+
 
     // Update used items for color code
     LaunchedEffect(trackPoints) {
@@ -178,82 +171,86 @@ fun SummitEntryTrackScreen(
             }
         }
 
-        // Map view
-        if (!hasOnlyZeroCoordinates(trackPoints) || summit.latLng != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height((Resources.getSystem().displayMetrics.heightPixels * 0.6 / Resources.getSystem().displayMetrics.density).dp)
-                    .clipToBounds()
-            ) {
-                MapView(
-                    summit = summit,
-                    trackPoints = trackPoints,
-                    summitToCompare = compareSummit,
-                    allSummits = allSummits,
-                    selectedTrackColor = selectedCustomizeTrackItem,
-                    calculateBoundingBox = !alreadyZoomedOnTrack,
-                    onMapReady = { alreadyZoomedOnTrack = true },
-                    onMapViewCreated = { mapView -> mapViewRef = mapView },
-                    onLocationOverlayCreated = { overlay -> locationOverlayRef = overlay }
-                )
-
-                // Track info display (shows track points count or clicked track point info)
-                val displayText =
-                    trackInfoText ?: if (trackPoints.isNotEmpty()) {
-                        "${trackPoints.size} ${stringResource(R.string.pts)}"
-                    } else {
-                        null
-                    }
-
-                if (displayText != null) {
-                    Text(
-                        text = displayText,
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(8.dp)
-                            .shadow(4.dp, RoundedCornerShape(4.dp))
-                            .background(
-                                androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                                RoundedCornerShape(4.dp)
-                            )
-                            .border(
-                                1.dp,
-                                androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
-                                RoundedCornerShape(4.dp)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                        color = androidx.compose.ui.graphics.Color.White,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                    )
-                }
-
-                // Map control buttons
-                MapControlButtons(
-                    summit = summit,
-                    trackPoints = trackPoints,
-                    allSummits = allSummits,
-                    compareSummit = compareSummit,
-                    mapView = mapViewRef,
-                    locationOverlay = locationOverlayRef,
-                    onCustomizeTrack = { showColorDialog = true },
-                    modifier = Modifier.align(Alignment.TopEnd)
-                )
-            }
-        }
-
         // Loading indicator
         if (isLoading) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f))
+                    .zIndex(1f)
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(150.dp),
+                    strokeWidth = 8.dp
+                )
             }
         } else {
+            if (!hasOnlyZeroCoordinates(trackPoints) || summit.latLng != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height((Resources.getSystem().displayMetrics.heightPixels * 0.6 / Resources.getSystem().displayMetrics.density).dp)
+                        .clipToBounds()
+                ) {
+                    MapView(
+                        summit = summit,
+                        trackPoints = trackPoints,
+                        summitToCompare = compareSummit,
+                        allSummits = allSummits,
+                        selectedTrackColor = selectedCustomizeTrackItem,
+                        calculateBoundingBox = !alreadyZoomedOnTrack,
+                        onMapReady = { alreadyZoomedOnTrack = true },
+                        onMapViewCreated = { mapView -> mapViewRef = mapView },
+                        onLocationOverlayCreated = { overlay -> locationOverlayRef = overlay }
+                    )
+
+                    // Track info display (shows track points count or clicked track point info)
+                    val displayText =
+                        trackInfoText ?: if (trackPoints.isNotEmpty()) {
+                            "${trackPoints.size} ${stringResource(R.string.pts)}"
+                        } else {
+                            null
+                        }
+
+                    if (displayText != null) {
+                        Text(
+                            text = displayText,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(8.dp)
+                                .shadow(4.dp, RoundedCornerShape(4.dp))
+                                .background(
+                                    androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .border(
+                                    1.dp,
+                                    androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                            color = androidx.compose.ui.graphics.Color.White,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                        )
+                    }
+
+                    // Map control buttons
+                    MapControlButtons(
+                        summit = summit,
+                        trackPoints = trackPoints,
+                        allSummits = allSummits,
+                        compareSummit = compareSummit,
+                        mapView = mapViewRef,
+                        locationOverlay = locationOverlayRef,
+                        onCustomizeTrack = { showColorDialog = true },
+                        modifier = Modifier.align(Alignment.TopEnd)
+                    )
+                }
+            }
+
             // Chart view
             if (selectedCustomizeTrackItem.discreteInput) {
                 BarChartView(
@@ -426,13 +423,18 @@ fun MapControlButtons(
             onClick = {
                 if (mapView != null && allSummits != null) {
                     coroutineScope.launch {
+                        val sharedPreferences =
+                            androidx.preference.PreferenceManager.getDefaultSharedPreferences(
+                                context
+                            )
                         showAllTracksOfSummitInBoundingBox(
                             context = context,
                             mapView = mapView,
                             summit = summit,
                             trackPoints = trackPoints,
                             compareSummit = compareSummit,
-                            allSummits = allSummits
+                            allSummits = allSummits,
+                            sharedPreferences = sharedPreferences
                         )
                     }
                 }
@@ -522,101 +524,10 @@ fun MapControlButtons(
 fun BarChartView(
     summit: Summit, trackColor: TrackColor, modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
-    val configuration = LocalConfiguration.current
-
-    if (!summit.hasGpsTrack()) return
-
-    val noDataText = stringResource(R.string.no_data_available)
-    val dataSetLabel = stringResource(trackColor.labelId)
-
-    // Pre-compute labels outside of remember block
-    val roadTypeLabels = RoadType.entries.associateWith { stringResource(it.nameId) }
-    val surfaceLabels = Surface.entries.associateWith { stringResource(it.nameId) }
-
-    // Pre-compute data
-    val chartData = remember(summit, trackColor) {
-        val entries = mutableListOf<BarEntry>()
-        val labels = mutableListOf<String>()
-        val colors = mutableListOf<Int>()
-        var i = 0
-
-        if (trackColor == TrackColor.RoadType) {
-            RoadType.entries.forEach { enumEntry ->
-                val distance = (summit.distancePerRoadType[enumEntry] ?: 0) / 1000.0
-                if (distance > 0.0) {
-                    entries.add(BarEntry(i.toFloat(), distance.toFloat()))
-                    labels.add(roadTypeLabels[enumEntry] ?: "")
-                    colors.add(enumEntry.color)
-                    i += 1
-                }
-            }
-        } else if (trackColor == TrackColor.RoadSurface) {
-            Surface.entries.forEach { enumEntry ->
-                val distance = (summit.distancePerSurface[enumEntry] ?: 0) / 1000.0
-                if (distance > 0.0) {
-                    entries.add(BarEntry(i.toFloat(), distance.toFloat()))
-                    labels.add(surfaceLabels[enumEntry] ?: "")
-                    colors.add(enumEntry.color)
-                    i += 1
-                }
-            }
-        }
-
-        Triple(entries, labels, colors)
-    }
-
-    AndroidView(
-        factory = { ctx ->
-            HorizontalBarChart(ctx).apply {
-                description.isEnabled = false
-                legend.isEnabled = false
-                axisLeft.isEnabled = false
-                axisRight.isEnabled = false
-            }
-        }, update = { chart ->
-            val (entries, labels, colors) = chartData
-
-            if (entries.isNotEmpty()) {
-                val dataSet = BarDataSet(entries, dataSetLabel)
-                dataSet.colors = colors
-                dataSet.valueTextSize = 12f
-                dataSet.valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String {
-                        return String.format(
-                            configuration.locales[0], "%.1f km", value
-                        )
-                    }
-                }
-
-                val barData = BarData(dataSet)
-                chart.data = barData
-
-                val xAxis = chart.xAxis
-                xAxis.position = XAxis.XAxisPosition.BOTTOM
-                xAxis.setLabelCount(labels.size, false)
-                xAxis.valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String {
-                        val index = value.toInt()
-                        return if (index >= 0 && index < labels.size) labels[index] else ""
-                    }
-                }
-
-                // Set colors based on theme
-                val textColor = if (isDark) Color.WHITE else Color.BLACK
-                chart.xAxis.textColor = textColor
-                chart.axisRight.textColor = textColor
-                chart.axisLeft.textColor = textColor
-                chart.legend?.textColor = textColor
-                chart.data.setValueTextColor(textColor)
-
-                chart.setFitBars(true)
-                chart.invalidate()
-            } else {
-                chart.clear()
-                chart.setNoDataText(noDataText)
-            }
-        }, modifier = modifier
+    HorizontalBarChartView(
+        summit = summit,
+        trackColor = trackColor,
+        modifier = modifier
     )
 }
 
@@ -652,7 +563,7 @@ private fun setGpsTrack(
     summit: Summit,
     useSimplifiedTrack: Boolean = false,
     forceUpdate: Boolean = false,
-    onTrackLoaded: (GpsTrack?, MutableList<com.github.mikephil.charting.data.Entry>) -> Unit
+    onTrackLoaded: (GpsTrack?) -> Unit
 ) {
     if (summit.hasGpsTrack(useSimplifiedTrack)) {
         summit.setGpsTrack(useSimplifiedTrack)
@@ -662,15 +573,9 @@ private fun setGpsTrack(
             gpsTrack?.parseTrack(useSimplifiedIfExists = useSimplifiedTrack)
         }
 
-        val trackSlopeGraph = if (gpsTrack?.trackPoints?.isNotEmpty() == true) {
-            gpsTrack.getTrackSlopeGraph()
-        } else {
-            mutableListOf()
-        }
-
-        onTrackLoaded(gpsTrack, trackSlopeGraph)
+        onTrackLoaded(gpsTrack)
     } else {
-        onTrackLoaded(null, mutableListOf())
+        onTrackLoaded(null)
     }
 }
 
@@ -737,7 +642,8 @@ private suspend fun showAllTracksOfSummitInBoundingBox(
     summit: Summit,
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
     compareSummit: Summit?,
-    allSummits: List<Summit>
+    allSummits: List<Summit>,
+    sharedPreferences: android.content.SharedPreferences
 ) {
     val maxPointsToShow = sharedPreferences
         .getString(Keys.PREF_MAX_NUMBER_POINT, "10000")?.toInt() ?: 10000

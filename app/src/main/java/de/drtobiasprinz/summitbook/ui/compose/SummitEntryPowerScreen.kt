@@ -1,9 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
 import android.content.res.Resources
-import android.graphics.Color
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,24 +36,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.graphics.ColorUtils
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.formatter.ValueFormatter
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.PowerData
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.TextFieldPower
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
-import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
-import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
 import de.drtobiasprinz.summitbook.ui.utils.SummitUtils
-import de.drtobiasprinz.summitbook.ui.utils.TimeIntervalPower
 import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Date
@@ -63,9 +48,6 @@ import java.util.GregorianCalendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
-import kotlin.math.log10
-import kotlin.math.pow
-import kotlin.math.round
 
 @Composable
 fun SummitEntryPowerScreen(
@@ -116,10 +98,6 @@ fun SummitEntryPowerScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
-        item {
-            SummitHeader(summit = summit)
-        }
 
         // Compare dropdown (if not bookmark)
         if (!summit.isBookmark && summitsToCompare.isNotEmpty()) {
@@ -149,7 +127,7 @@ fun SummitEntryPowerScreen(
         // Power chart
         if (summit.garminData?.power != null) {
             item {
-                PowerChart(
+                PowerLineChart(
                     summit = summit,
                     summitToCompare = compareSummit,
                     extremaValuesAllSummits = extremaValuesAllSummits,
@@ -200,7 +178,10 @@ fun TimeRangeSelector(
 
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = it }
+        onExpandedChange = {
+            @Suppress("AssignedValueIsNeverRead")
+            expanded = it
+        }
     ) {
         OutlinedTextField(
             value = timeRangeOptions[selectedTimeRange],
@@ -230,133 +211,6 @@ fun TimeRangeSelector(
     }
 }
 
-@Composable
-fun PowerChart(
-    summit: Summit,
-    summitToCompare: Summit?,
-    extremaValuesAllSummits: ExtremaValuesSummits,
-    modifier: Modifier = Modifier
-) {
-    val isDark = isSystemInDarkTheme()
-    val configuration = LocalConfiguration.current
-
-    val power = summit.garminData?.power ?: return
-
-    val secLabel = stringResource(R.string.sec)
-    val powerProfileLabel = stringResource(R.string.power_profile_label)
-    val powerProfileCompareLabel = stringResource(R.string.power_profile_compare_label)
-    val powerProfileMaxLabel = stringResource(R.string.power_profile_max_label)
-    val powerProfileMinLabel = stringResource(R.string.power_profile_min_label)
-
-    AndroidView(
-        factory = { ctx ->
-            LineChart(ctx).apply {
-                description.isEnabled = false
-                setDrawGridBackground(false)
-                setTouchEnabled(true)
-
-                // Setup X axis
-                xAxis.position = XAxis.XAxisPosition.BOTTOM
-                xAxis.valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String {
-                        val unscaled = unScaleCbr(round(value.toDouble())).toInt()
-                        return String.format(
-                            configuration.locales[0],
-                            "%s $secLabel",
-                            unscaled
-                        )
-                    }
-                }
-                xAxis.axisMinimum = scaleCbr(1.0)
-                xAxis.axisMaximum = scaleCbr(100000.0)
-                xAxis.setLabelCount(6, true)
-
-                axisLeft.axisMinimum = 0f
-                axisRight.axisMinimum = 0f
-                axisLeft.setDrawGridLines(true)
-                axisLeft.isGranularityEnabled = true
-            }
-        },
-        update = { chart ->
-            val dataSets: MutableList<ILineDataSet> = ArrayList()
-
-            // Main power data
-            val chartEntries = getLineChartEntriesMax(power)
-            val dataSet = LineDataSet(chartEntries, powerProfileLabel)
-            setGraphView(dataSet, false)
-
-            // Compare power data
-            val powerToCompare = summitToCompare?.garminData?.power
-            if (powerToCompare != null) {
-                val chartEntriesComparator = getLineChartEntriesMax(powerToCompare)
-                val dataSetComparator = LineDataSet(
-                    chartEntriesComparator,
-                    powerProfileCompareLabel
-                )
-                setGraphView(dataSetComparator, true, color = Color.GRAY)
-                dataSets.add(dataSetComparator)
-            }
-
-            // Extremal values
-            val extremalChartEntries = getLineChartEntriesMax(extremaValuesAllSummits)
-            val minimalChartEntries = getLineChartEntriesMin(extremaValuesAllSummits)
-            val maxWatts = (extremalChartEntries + chartEntries).maxOf { it?.y ?: 0f }
-            chart.axisLeft.axisMaximum = maxWatts
-            chart.axisRight.axisMaximum = maxWatts
-
-            val dataSetMaximalValues = LineDataSet(
-                extremalChartEntries,
-                powerProfileMaxLabel
-            )
-            dataSetMaximalValues.fillFormatter = MyFillFormatter(
-                LineDataSet(
-                    minimalChartEntries,
-                    powerProfileMinLabel
-                )
-            )
-            chart.renderer = MyLineLegendRenderer(
-                chart,
-                chart.animator,
-                chart.viewPortHandler
-            )
-
-            setGraphView(dataSetMaximalValues)
-            dataSets.add(dataSetMaximalValues)
-
-            // Color circles based on performance
-            dataSet.circleColors = chartEntries.mapIndexed { index, chartEntry ->
-                val maxEntry = extremalChartEntries[index]
-                val minEntry = minimalChartEntries[index]
-                if (chartEntry != null && maxEntry != null && minEntry != null) {
-                    when {
-                        chartEntry.y >= maxEntry.y -> Color.rgb(255, 215, 0) // Gold
-                        chartEntry.y < minEntry.y -> Color.RED
-                        else -> ColorUtils.blendARGB(
-                            Color.GREEN,
-                            Color.RED,
-                            1f - ((chartEntry.y - minEntry.y) / (maxEntry.y - minEntry.y))
-                        )
-                    }
-                } else {
-                    Color.BLUE
-                }
-            }
-            dataSets.add(dataSet)
-
-            chart.data = LineData(dataSets)
-
-            // Set colors based on theme
-            val textColor = if (isDark) Color.WHITE else Color.BLACK
-            chart.xAxis.textColor = textColor
-            chart.axisRight.textColor = textColor
-            chart.axisLeft.textColor = textColor
-            chart.legend?.textColor = textColor
-
-            chart.invalidate()
-        },
-        modifier = modifier
-    )
-}
 
 @Composable
 fun PowerDataFieldRow(
@@ -499,100 +353,3 @@ private fun getYear(date: Date): Int {
     return calendar[Calendar.YEAR]
 }
 
-private fun getLineChartEntriesMin(extremaValuesSummits: ExtremaValuesSummits?): MutableList<Entry?> {
-    return TimeIntervalPower.entries.map {
-        Entry(
-            scaleCbr(it.seconds.toDouble()),
-            it.minPower(extremaValuesSummits),
-            it.getMinSummit(extremaValuesSummits)
-        )
-    }.toMutableList()
-}
-
-private fun getLineChartEntriesMax(extremaValuesSummits: ExtremaValuesSummits?): MutableList<Entry?> {
-    return TimeIntervalPower.entries.map {
-        Entry(
-            scaleCbr(it.seconds.toDouble()),
-            it.maxPower(extremaValuesSummits),
-            it.getMaxSummit(extremaValuesSummits)
-        )
-    }.toMutableList()
-}
-
-private fun scaleCbr(cbr: Double): Float {
-    return log10(cbr).toFloat()
-}
-
-private fun unScaleCbr(cbr: Double): Float {
-    val calcVal = 10.0.pow(cbr)
-    return calcVal.toFloat()
-}
-
-private fun getLineChartEntriesMax(power: PowerData): MutableList<Entry?> {
-    val lineChartEntries: MutableList<Entry?> = ArrayList()
-    if (power.oneSec > 0) lineChartEntries.add(Entry(scaleCbr(1.0), power.oneSec.toFloat()))
-    if (power.twoSec > 0) lineChartEntries.add(Entry(scaleCbr(2.0), power.twoSec.toFloat()))
-    if (power.fiveSec > 0) lineChartEntries.add(Entry(scaleCbr(5.0), power.fiveSec.toFloat()))
-    if (power.tenSec > 0) lineChartEntries.add(Entry(scaleCbr(10.0), power.tenSec.toFloat()))
-    if (power.twentySec > 0) lineChartEntries.add(Entry(scaleCbr(20.0), power.twentySec.toFloat()))
-    if (power.thirtySec > 0) lineChartEntries.add(Entry(scaleCbr(30.0), power.thirtySec.toFloat()))
-    if (power.oneMin > 0) lineChartEntries.add(Entry(scaleCbr(60.0), power.oneMin.toFloat()))
-    if (power.twoMin > 0) lineChartEntries.add(Entry(scaleCbr(120.0), power.twoMin.toFloat()))
-    if (power.fiveMin > 0) lineChartEntries.add(Entry(scaleCbr(300.0), power.fiveMin.toFloat()))
-    if (power.tenMin > 0) lineChartEntries.add(Entry(scaleCbr(600.0), power.tenMin.toFloat()))
-    if (power.twentyMin > 0) lineChartEntries.add(
-        Entry(
-            scaleCbr(1200.0),
-            power.twentyMin.toFloat()
-        )
-    )
-    if (power.thirtyMin > 0) lineChartEntries.add(
-        Entry(
-            scaleCbr(1800.0),
-            power.thirtyMin.toFloat()
-        )
-    )
-    if (power.oneHour > 0) lineChartEntries.add(Entry(scaleCbr(3600.0), power.oneHour.toFloat()))
-    if (power.twoHours > 0) lineChartEntries.add(Entry(scaleCbr(7200.0), power.twoHours.toFloat()))
-    if (power.threeHours > 0) lineChartEntries.add(
-        Entry(
-            scaleCbr(10400.0),
-            power.threeHours.toFloat()
-        )
-    )
-    if (power.fourHours > 0) lineChartEntries.add(
-        Entry(
-            scaleCbr(14400.0),
-            power.fourHours.toFloat()
-        )
-    )
-    if (power.fiveHours > 0) lineChartEntries.add(
-        Entry(
-            scaleCbr(18000.0),
-            power.fiveHours.toFloat()
-        )
-    )
-    return lineChartEntries
-}
-
-private fun setGraphView(set1: LineDataSet?, filled: Boolean = true, color: Int = Color.BLUE) {
-    set1?.mode = LineDataSet.Mode.LINEAR
-    set1?.circleRadius = 7.0f
-    set1?.setDrawValues(false)
-    if (filled) {
-        set1?.cubicIntensity = 20f
-        set1?.lineWidth = 2.5f
-        set1?.setCircleColor(color)
-        set1?.color = color
-        set1?.highLightColor = Color.rgb(244, 117, 117)
-        set1?.setDrawFilled(true)
-        set1?.fillColor = color
-        set1?.fillAlpha = 50
-    } else {
-        set1?.lineWidth = 4.8f
-        set1?.setCircleColor(Color.BLACK)
-        set1?.color = Color.BLACK
-        set1?.setDrawFilled(false)
-    }
-    set1?.setDrawHorizontalHighlightIndicator(true)
-}

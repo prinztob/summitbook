@@ -55,19 +55,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.Legend
-import com.github.mikephil.charting.components.LegendEntry
-import com.github.mikephil.charting.components.LimitLine
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.components.YAxis
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.formatter.ValueFormatter
-import com.github.mikephil.charting.highlight.Highlight
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
-import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
@@ -95,7 +82,6 @@ import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlayOptions
 import org.osmdroid.views.overlay.simplefastpoint.SimplePointTheme
 import java.util.Locale
 import kotlin.math.abs
-import kotlin.math.roundToLong
 
 /**
  * Main composable screen for adding/editing segment entries
@@ -244,7 +230,7 @@ fun AddSegmentEntryScreen(
                         }
                         // Update the UI state with the new track points
                         uiState = uiState.copy(trackPoints = trackPoints)
-                        
+
                         val guessedIds =
                             guessStartAndEndPoint(uiState.segment?.segmentEntries, trackPoints)
                         if (guessedIds != null) {
@@ -291,7 +277,8 @@ fun AddSegmentEntryContent(
     // Initialize selected summit name when editing an existing entry
     LaunchedEffect(uiState.currentSummit, uiState.isUpdate) {
         if (uiState.isUpdate && uiState.currentSummit != null && selectedSummitName.isEmpty()) {
-            selectedSummitName = "${uiState.currentSummit.getDateAsString()} ${uiState.currentSummit.name}"
+            selectedSummitName =
+                "${uiState.currentSummit.getDateAsString()} ${uiState.currentSummit.name}"
         }
     }
     var expanded by remember { mutableStateOf(false) }
@@ -1083,221 +1070,20 @@ fun AddSegmentChartSection(
     onEndPointSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    AndroidView(
-        factory = { context ->
-            LineChart(context).apply {
-                // Configure chart
-                setupAddSegmentChart(
-                    this,
-                    trackPoints,
-                    startPointId,
-                    endPointId,
-                    startSelected,
-                    onStartPointSelected,
-                    onEndPointSelected
-                )
-            }
-        },
-        update = { chart ->
-            // Update chart when data changes
-            setupAddSegmentChart(
-                chart,
-                trackPoints,
-                startPointId,
-                endPointId,
-                startSelected,
-                onStartPointSelected,
-                onEndPointSelected
-            )
-        },
+    InteractiveLineChartView(
+        trackPoints = trackPoints,
+        trackColor = TrackColor.Elevation,
+        startPointId = startPointId,
+        endPointId = endPointId,
+        startSelected = startSelected,
+        onStartPointSelected = onStartPointSelected,
+        onEndPointSelected = onEndPointSelected,
         modifier = modifier
             .fillMaxWidth()
             .height(150.dp)
     )
 }
 
-/**
- * Setup the line chart with data for add segment entry
- */
-private fun setupAddSegmentChart(
-    lineChart: LineChart,
-    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
-    startPointId: Int,
-    endPointId: Int,
-    startSelected: Boolean,
-    onStartPointSelected: (Int) -> Unit,
-    onEndPointSelected: (Int) -> Unit
-) {
-    if (trackPoints.isNotEmpty()) {
-        lineChart.clear()
-        lineChart.xAxis.removeAllLimitLines()
-        setXAxis(lineChart)
-
-        val dataSets: MutableList<ILineDataSet> = ArrayList()
-        val lineChartEntries = GpsTrack.getTrackGraph(trackPoints, TrackColor.Elevation.f)
-        val label = "Elevation" // TODO: Get proper label from resources
-
-        val leftAxis: YAxis = lineChart.axisLeft
-        leftAxis.textColor = android.graphics.Color.BLACK
-        leftAxis.setDrawGridLines(true)
-        leftAxis.isGranularityEnabled = true
-
-        val dataSet = LineDataSet(lineChartEntries, label)
-        setGraphView(dataSet)
-        setColors(lineChartEntries, dataSet)
-        dataSets.add(dataSet)
-        lineChart.data = LineData(dataSets)
-        setLegendForSegment(lineChart)
-
-        // Add chart value selection listener
-        lineChart.setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
-            override fun onValueSelected(e: Entry, h: Highlight?) {
-                // Get the track point from the entry data
-                @Suppress("UNCHECKED_CAST")
-                if (e.data is Pair<*, *>) {
-                    val trackPoint = e.data as Pair<TrackPoint, ExtensionFromYaml>
-                    val index = trackPoints.indexOf(trackPoint)
-                    if (index != -1) {
-                        // Update the start or end point
-                        if (startSelected) {
-                            onStartPointSelected(index)
-                        } else {
-                            onEndPointSelected(index)
-                        }
-                    }
-                }
-            }
-
-            override fun onNothingSelected() {}
-        })
-
-        // Add vertical lines for segment start/end
-        if (startPointId < trackPoints.size) {
-            trackPoints[startPointId].second.distance?.toFloat()
-                ?.let { drawVerticalLine(lineChart, it, android.graphics.Color.GREEN) }
-        }
-        if (endPointId < trackPoints.size) {
-            trackPoints[endPointId].second.distance?.toFloat()
-                ?.let { drawVerticalLine(lineChart, it, android.graphics.Color.RED) }
-        }
-
-        lineChart.invalidate()
-    }
-}
-
-/**
- * Draw a vertical line on the chart
- */
-private fun drawVerticalLine(lineChart: LineChart, distance: Float, color: Int) {
-    val ll = LimitLine(distance)
-    ll.lineColor = color
-    ll.lineWidth = 2f
-    lineChart.xAxis.addLimitLine(ll)
-}
-
-/**
- * Set up the legend for the chart
- */
-private fun setLegendForSegment(
-    lineChart: LineChart,
-    trackColor: TrackColor = TrackColor.Elevation
-) {
-    val l: Legend = lineChart.legend
-    l.yEntrySpace = 10f
-    l.isWordWrapEnabled = true
-    val l1 = LegendEntry(
-        "Min",
-        Legend.LegendForm.CIRCLE,
-        9f,
-        5f,
-        null,
-        trackColor.minColor
-    )
-    val l2 = LegendEntry(
-        "Max",
-        Legend.LegendForm.CIRCLE,
-        9f,
-        5f,
-        null,
-        trackColor.maxColor
-    )
-    l.setCustom(arrayOf(l1, l2))
-    l.isEnabled = true
-}
-
-/**
- * Set colors for the chart data set
- */
-private fun setColors(
-    lineChartEntries: MutableList<Entry>,
-    dataSet: LineDataSet,
-    trackColor: TrackColor = TrackColor.Elevation
-) {
-    val min = lineChartEntries.minByOrNull { it.y }?.y
-    val max = lineChartEntries.maxByOrNull { it.y }?.y
-    if (min != null && max != null) {
-        val colors = lineChartEntries.map {
-            val fraction = (it.y - min) / (max - min)
-            interpolateColor(
-                trackColor.minColor,
-                trackColor.maxColor,
-                fraction
-            )
-        }
-        dataSet.colors = colors
-    }
-}
-
-/**
- * Interpolate between two colors
- */
-private fun interpolateColor(colorA: Int, colorB: Int, fraction: Float): Int {
-    val a = (android.graphics.Color.alpha(colorA) +
-            (android.graphics.Color.alpha(colorB) - android.graphics.Color.alpha(colorA)) * fraction).toInt()
-    val r = (android.graphics.Color.red(colorA) +
-            (android.graphics.Color.red(colorB) - android.graphics.Color.red(colorA)) * fraction).toInt()
-    val g = (android.graphics.Color.green(colorA) +
-            (android.graphics.Color.green(colorB) - android.graphics.Color.green(colorA)) * fraction).toInt()
-    val b = (android.graphics.Color.blue(colorA) +
-            (android.graphics.Color.blue(colorB) - android.graphics.Color.blue(colorA)) * fraction).toInt()
-    return android.graphics.Color.argb(a, r, g, b)
-}
-
-/**
- * Set up the graph view properties
- */
-private fun setGraphView(set1: LineDataSet?) {
-    set1?.setDrawValues(false)
-    set1?.setDrawFilled(true)
-    set1?.setDrawCircles(false)
-    set1?.axisDependency = YAxis.AxisDependency.LEFT
-    set1?.color = android.graphics.Color.RED
-    set1?.setCircleColor(android.graphics.Color.RED)
-    set1?.lineWidth = 5f
-    set1?.circleRadius = 3f
-    set1?.fillAlpha = 50
-    set1?.fillColor = android.graphics.Color.RED
-    set1?.setDrawCircleHole(false)
-    set1?.highLightColor = android.graphics.Color.rgb(244, 117, 117)
-    set1?.setDrawHorizontalHighlightIndicator(true)
-}
-
-/**
- * Set up the X axis formatting
- */
-private fun setXAxis(lineChart: LineChart) {
-    val xAxis = lineChart.xAxis
-    xAxis?.position = XAxis.XAxisPosition.BOTTOM
-    xAxis?.valueFormatter = object : ValueFormatter() {
-        override fun getFormattedValue(value: Float): String {
-            return String.format(
-                Locale.getDefault(),
-                "%.1f km",
-                (value / 100f).roundToLong() / 10f
-            )
-        }
-    }
-}
 
 /**
  * UI state for the add segment entry screen

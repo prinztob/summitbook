@@ -5,6 +5,7 @@ package de.drtobiasprinz.summitbook.ui
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
+import android.icu.util.Calendar
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -18,10 +19,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +57,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -70,6 +79,7 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Peak
+import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.Poster
@@ -91,6 +101,7 @@ import de.drtobiasprinz.summitbook.ui.compose.SummitsListScreen
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
 import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
+import de.drtobiasprinz.summitbook.ui.utils.TimeIntervalPower
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileWriter
 import de.drtobiasprinz.summitbook.ui.work.SummitUpdateWorker
@@ -131,7 +142,6 @@ class MainActivityCompose : ComponentActivity(),
 
     // Dialog states
     private var showSortAndFilterDialog by mutableStateOf(false)
-    private var showNewSummitsDialog by mutableStateOf(false)
     private var showAddSummitDialog by mutableStateOf(false)
     private var newSummitsSelectedDate by mutableStateOf<Date?>(null)
 
@@ -146,24 +156,19 @@ class MainActivityCompose : ComponentActivity(),
 
         // Enable edge-to-edge
         WindowCompat.setDecorFitsSystemWindows(window, false)
-
-        // Initialize Python if needed
-        if (!Python.isStarted()) {
-            Python.start(AndroidPlatform(this))
-        }
-
-        // Initialize shared preferences
         sharedPreferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)
-        updatePythonExecutor()
-        pythonInstance = Python.getInstance()
         storage = applicationContext.filesDir
         cache = applicationContext.cacheDir
         activitiesDir = File(storage, "activities")
         segmentScreenshotDir = File(storage, "segmentScreenshots")
         segmentScreenshotDir?.mkdirs()
-
-        // Configure MapsForge settings
+        // Initialize Python if needed
+        if (!Python.isStarted()) {
+            Python.start(AndroidPlatform(this))
+        }
+        pythonInstance = Python.getInstance()
+        updatePythonExecutor()
         MapsForgeTileSource.createInstance(application)
 
         // Schedule WorkManager for bounding box updates (every minute)
@@ -199,6 +204,7 @@ class MainActivityCompose : ComponentActivity(),
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun MainScreen() {
+        val darkTheme = isSystemInDarkTheme()
         val coroutineScope = rememberCoroutineScope()
         val snackbarHostState = remember { SnackbarHostState() }
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -211,18 +217,37 @@ class MainActivityCompose : ComponentActivity(),
             .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
         val forecastList by viewModel.forecastList.asFlow()
             .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
+        val segmentsList by viewModel.segmentsList.asFlow()
+            .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
+        val peakList by viewModel.peaks.asFlow()
+            .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
 
         // Update forecasts if needed
         LaunchedEffect(summitsList) {
             summitsList.data?.let {
                 summitsFromDatabase = it
                 filteredSummits = sortFilterValues.applyForSummits(it)
+                latestFilteredSummits = filteredSummits
             }
         }
 
         LaunchedEffect(forecastList) {
             forecastList.data?.let {
                 forecasts = it
+            }
+        }
+        LaunchedEffect(peaks) {
+            peakList.data?.let {
+                peaks = it as MutableList<Peak>
+            }
+        }
+
+
+        LaunchedEffect(forecastList, filteredSummits) {
+            coroutineScope.launch(Dispatchers.IO) {
+                segmentsList.data?.let {
+                    setRecordsOnce(summitsFromDatabase, filteredSummits, it)
+                }
             }
         }
 
@@ -251,85 +276,109 @@ class MainActivityCompose : ComponentActivity(),
                         currentDestination = Destination.Summits
                         showBookmarksOnly = true
                         coroutineScope.launch { drawerState.close() }
+                    },
+                    filteredSummits = filteredSummits,
+                    topBarPadding = if (!isMapFullscreen) {
+                        WindowInsets.statusBars.asPaddingValues()
+                    } else {
+                        PaddingValues(0.dp)
                     }
                 )
             }
         ) {
             Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
                     if (!isMapFullscreen) {
-                        TopAppBar(
-                            title = { Text(stringResource(R.string.app_name)) },
-                            navigationIcon = {
-                                IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.baseline_menu_24),
-                                        contentDescription = "Menu"
-                                    )
-                                }
-                            },
-                            actions = {
-                                // Search action
-                                var searchText by remember { mutableStateOf("") }
-                                var isSearching by remember { mutableStateOf(false) }
-
-                                if (isSearching) {
-                                    OutlinedTextField(
-                                        value = searchText,
-                                        onValueChange = {
-                                            searchText = it
-                                            sortFilterValues.searchString = it
-                                            filteredSummits = sortFilterValues.applyForSummits(
-                                                summitsFromDatabase
-                                            )
-                                        },
-                                        placeholder = { Text(stringResource(R.string.search)) },
-                                        trailingIcon = {
-                                            IconButton(onClick = {
-                                                isSearching = false
-                                                searchText = ""
-                                                sortFilterValues.searchString = ""
+                        var searchText by remember { mutableStateOf("") }
+                        var isSearching by remember { mutableStateOf(false) }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    if (darkTheme) {
+                                        Color.Black.copy(alpha = 0.8f)
+                                    } else {
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                                    }
+                                )
+                        ) {
+                            TopAppBar(
+                                title = {
+                                    if (isSearching) {
+                                        OutlinedTextField(
+                                            value = searchText,
+                                            onValueChange = {
+                                                searchText = it
+                                                sortFilterValues.searchString = it
                                                 filteredSummits = sortFilterValues.applyForSummits(
                                                     summitsFromDatabase
                                                 )
-                                            }) {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.baseline_cancel_24),
-                                                    contentDescription = "Close search"
-                                                )
-                                            }
-                                        }
-                                    )
-                                } else {
-                                    IconButton(onClick = { isSearching = true }) {
+                                            },
+                                            placeholder = { Text(stringResource(R.string.search)) },
+                                            trailingIcon = {
+                                                IconButton(onClick = {
+                                                    isSearching = false
+                                                    searchText = ""
+                                                    sortFilterValues.searchString = ""
+                                                    filteredSummits =
+                                                        sortFilterValues.applyForSummits(
+                                                            summitsFromDatabase
+                                                        )
+                                                }) {
+                                                    Icon(
+                                                        painter = painterResource(R.drawable.baseline_cancel_24),
+                                                        contentDescription = "Close search"
+                                                    )
+                                                }
+                                            },
+                                            singleLine = true
+                                        )
+                                    } else {
+                                        Text(stringResource(R.string.app_name))
+                                    }
+                                },
+                                navigationIcon = {
+                                    IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
                                         Icon(
-                                            painter = painterResource(R.drawable.ic_baseline_search_24),
-                                            contentDescription = stringResource(R.string.action_search)
+                                            painter = painterResource(R.drawable.baseline_menu_24),
+                                            contentDescription = "Menu"
+                                        )
+                                    }
+                                },
+                                actions = {
+                                    // Search action
+                                    if (!isSearching) {
+                                        IconButton(onClick = { isSearching = true }) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.ic_baseline_search_24),
+                                                contentDescription = stringResource(R.string.action_search)
+                                            )
+                                        }
+                                    }
+
+                                    // Sort action
+                                    IconButton(onClick = { showSortAndFilterDialog() }) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_baseline_sort_24),
+                                            contentDescription = stringResource(R.string.sort_entries)
+                                        )
+                                    }
+
+                                    // Update action
+                                    IconButton(onClick = {
+                                        updateThirdPartyData(
+                                            coroutineScope
+                                        )
+                                    }) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_baseline_sync_24),
+                                            contentDescription = stringResource(R.string.update_3rd_part)
                                         )
                                     }
                                 }
-
-                                // Sort action
-                                IconButton(onClick = { showSortAndFilterDialog() }) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_baseline_sort_24),
-                                        contentDescription = stringResource(R.string.sort_entries)
-                                    )
-                                }
-
-                                // Update action
-                                IconButton(onClick = {
-                                    updateThirdPartyData(
-                                        coroutineScope
-                                    )
-                                }) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_baseline_sync_24),
-                                        contentDescription = stringResource(R.string.update_3rd_part)
-                                    )
-                                }
-                            }
-                        )
+                            )
+                        }
                     }
                 },
                 snackbarHost = {
@@ -342,7 +391,7 @@ class MainActivityCompose : ComponentActivity(),
                         .padding(padding)
                 ) {
                     // Main content based on current destination
-                    MainContent(filteredSummits, summitsFromDatabase, forecasts)
+                    MainContent(filteredSummits, summitsFromDatabase, forecasts, coroutineScope)
 
                     // Floating Action Button for adding a summit (only visible on Summits screen)
                     if (currentDestination == Destination.Summits) {
@@ -390,37 +439,19 @@ class MainActivityCompose : ComponentActivity(),
                         )
                     }
 
-                    if (showNewSummitsDialog) {
-                        ShowNewSummitsFromGarminScreen(
-                            viewModel = viewModel,
-                            summits = summitsList.data ?: emptyList(),
-                            selectedDate = newSummitsSelectedDate,
-                            onBack = { selectedSummits, isMerge ->
-                                showNewSummitsDialog = false
-                                // Execute download for selected summits
-                                if (isMerge) {
-                                    executeDownload(selectedSummits, coroutineScope)
-                                } else {
-                                    selectedSummits.forEach {
-                                        executeDownload(listOf(it), coroutineScope)
-                                    }
-                                }
-                            },
-                            onRefresh = {
-                                updateThirdPartyData(coroutineScope)
-                            }
-                        )
-                    }
-
                     // Loading indicator
                     if (loadingState.value) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.5f))
                                 .zIndex(1f)
                         ) {
                             CircularProgressIndicator(
-                                modifier = Modifier.align(Alignment.Center)
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .size(150.dp),
+                                strokeWidth = 8.dp
                             )
                         }
                     }
@@ -432,12 +463,19 @@ class MainActivityCompose : ComponentActivity(),
     @Composable
     fun NavigationDrawerContent(
         onDestinationSelected: (Destination) -> Unit,
-        onBookmarksSelected: () -> Unit
+        onBookmarksSelected: () -> Unit,
+        topBarPadding: PaddingValues = PaddingValues(0.dp),
+        filteredSummits: List<Summit>,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(
+                    start = 16.dp,
+                    end = 16.dp,
+                    bottom = 16.dp,
+                    top = 16.dp + topBarPadding.calculateTopPadding()
+                )
                 .background(MaterialTheme.colorScheme.surface)
         ) {
 
@@ -542,7 +580,10 @@ class MainActivityCompose : ComponentActivity(),
                 },
                 label = { Text(stringResource(R.string.nav_diashow)) },
                 selected = false,
-                onClick = { openViewer() },
+                onClick = {
+                    openViewer(filteredSummits)
+                    onDestinationSelected(Destination.Summits)
+                },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
 
@@ -562,26 +603,13 @@ class MainActivityCompose : ComponentActivity(),
             NavigationDrawerItem(
                 icon = {
                     Icon(
-                        painter = painterResource(R.drawable.baseline_add_location_alt_black_24dp),
-                        contentDescription = null
-                    )
-                },
-                label = { Text(stringResource(R.string.add_new_summit)) },
-                selected = false,
-                onClick = { showAddSummitDialog() },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-            )
-
-            NavigationDrawerItem(
-                icon = {
-                    Icon(
                         painter = painterResource(R.drawable.baseline_landscape_black_24dp),
                         contentDescription = null
                     )
                 },
                 label = { Text(stringResource(R.string.new_summits)) },
-                selected = false,
-                onClick = { showNewSummitsDialog() },
+                selected = currentDestination == Destination.NewSummits,
+                onClick = { onDestinationSelected(Destination.NewSummits) },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
 
@@ -609,7 +637,10 @@ class MainActivityCompose : ComponentActivity(),
                 },
                 label = { Text(stringResource(R.string.nav_export)) },
                 selected = false,
-                onClick = { showExportCsvDialog() },
+                onClick = {
+                    showExportCsvDialog()
+                    onDestinationSelected(Destination.Summits)
+                },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
 
@@ -628,6 +659,7 @@ class MainActivityCompose : ComponentActivity(),
                         type = "application/zip"
                     }
                     resultLauncherForImportZip.launch(intent)
+                    onDestinationSelected(Destination.Summits)
                 },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
             )
@@ -655,6 +687,7 @@ class MainActivityCompose : ComponentActivity(),
         filteredSummits: List<Summit>,
         summitFromDatabase: List<Summit>,
         forecasts: List<Forecast>,
+        coroutineScope: CoroutineScope
     ) {
         when (currentDestination) {
             Destination.Summits -> {
@@ -665,8 +698,9 @@ class MainActivityCompose : ComponentActivity(),
                     if (!showBookmarksOnly) {
                         OverviewScreen(
                             filteredSummits = filteredSummits,
+                            summitsFromDatabase = summitFromDatabase,
                             forecasts = forecasts,
-                            sortFilterValues = sortFilterValues
+                            years = sortFilterValues.years
                         )
                     }
 
@@ -694,8 +728,9 @@ class MainActivityCompose : ComponentActivity(),
             Destination.Overview -> {
                 OverviewScreen(
                     filteredSummits,
+                    summitFromDatabase,
                     forecasts,
-                    sortFilterValues
+                    sortFilterValues.years
                 )
             }
 
@@ -730,7 +765,12 @@ class MainActivityCompose : ComponentActivity(),
             Destination.BarCharts -> {
                 val dailyActivitySummary by viewModel.dailyActivitySummary.asFlow()
                     .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
-                BarChartScreen(filteredSummits, forecasts, dailyActivitySummary.data ?: emptyList())
+                BarChartScreen(
+                    filteredSummits,
+                    forecasts,
+                    dailyActivitySummary.data ?: emptyList(),
+                    !sortFilterValues.wasFullYearSelected()
+                )
             }
 
             Destination.Map -> {
@@ -749,6 +789,28 @@ class MainActivityCompose : ComponentActivity(),
                     forecasts as MutableList<Forecast>,
                     { currentDestination = Destination.Summits },
                     { isEdit, forecasts -> viewModel.saveForecasts(isEdit, forecasts) })
+            }
+
+            Destination.NewSummits -> {
+                ShowNewSummitsFromGarminScreen(
+                    viewModel = viewModel,
+                    summits = summitFromDatabase,
+                    selectedDate = newSummitsSelectedDate,
+                    onBack = { selectedSummits, isMerge ->
+                        currentDestination = Destination.Summits
+                        // Execute download for selected summits
+                        if (isMerge) {
+                            executeDownload(selectedSummits, coroutineScope)
+                        } else {
+                            selectedSummits.forEach {
+                                executeDownload(listOf(it), coroutineScope)
+                            }
+                        }
+                    },
+                    onRefresh = {
+                        updateThirdPartyData(coroutineScope)
+                    }
+                )
             }
 
             Destination.AdditionalData -> {
@@ -786,7 +848,7 @@ class MainActivityCompose : ComponentActivity(),
     }
 
     fun updateThirdPartyData(scope: CoroutineScope) {
-        scope.launch() {
+        scope.launch {
             val executor = pythonExecutor
             if (executor != null) {
                 loadingState.value = true
@@ -812,7 +874,7 @@ class MainActivityCompose : ComponentActivity(),
                     },
                     this@MainActivityCompose
                 ) {
-                    showNewSummitsDialog()
+                    currentDestination = Destination.NewSummits
                 }
             } else {
                 Toast.makeText(
@@ -862,11 +924,6 @@ class MainActivityCompose : ComponentActivity(),
                 Toast.LENGTH_LONG
             ).show()
         }
-    }
-
-    fun showNewSummitsDialog(selectedDate: Date? = null) {
-        newSummitsSelectedDate = selectedDate
-        showNewSummitsDialog = true
     }
 
     private fun showExportCsvDialog() {
@@ -1061,13 +1118,9 @@ class MainActivityCompose : ComponentActivity(),
         }?.flatten() as MutableList<Poster>
     }
 
-    private fun openViewer() {
-        // Collect data from ViewModels using .asFlow().collectAsStateWithLifecycle pattern
+    private fun openViewer(filteredSummits: List<Summit>) {
         lifecycleScope.launch(Dispatchers.Main.immediate) {
-            val summitsListDataStatus = viewModel.summitsList.asFlow().first()
-            val summits = summitsListDataStatus.data ?: emptyList()
-            val sortFilterSummits = summits.let { sortFilterValues.applyForSummits(it) }
-            val allImages = getAllImages(sortFilterSummits)
+            val allImages = getAllImages(filteredSummits)
 
             if (fullscreenImageViewer == null) {
                 fullscreenImageViewer = FullscreenImageViewer(this@MainActivityCompose, resources)
@@ -1078,7 +1131,7 @@ class MainActivityCompose : ComponentActivity(),
 
             if (allImages.isNotEmpty()) {
                 Log.i("MainActivity", "showFullscreenImageViewer")
-                fullscreenImageViewer?.show(allImages, adjustedPosition, sortFilterSummits)
+                fullscreenImageViewer?.show(allImages, adjustedPosition, filteredSummits)
             } else {
                 Toast.makeText(
                     this@MainActivityCompose,
@@ -1099,7 +1152,7 @@ class MainActivityCompose : ComponentActivity(),
         super.onRestoreInstanceState(savedInstanceState)
         val isDialogShown = savedInstanceState.getBoolean(KEY_IS_DIALOG_SHOWN)
         if (isDialogShown) {
-            openViewer()
+            openViewer(latestFilteredSummits)
         }
     }
 
@@ -1136,6 +1189,54 @@ class MainActivityCompose : ComponentActivity(),
         }
     }
 
+    private fun setRecordsOnce(
+        allSummits: List<Summit>,
+        filteredSummits: List<Summit>,
+        segments: List<Segment>
+    ) {
+        Log.i(
+            "SummitListScreen",
+            "setRecordsOnce - records will be added for ${filteredSummits.size} summits."
+        )
+
+        activitiesWithPowerRecordsFiltered =
+            getSummitIdsWithPowerRecord(filteredSummits)
+        val calendar = Calendar.getInstance()
+        // Move calendar back 5 years from today
+        calendar.add(Calendar.YEAR, -5)
+        activitiesWithPowerRecordsLast5Years = getSummitIdsWithPowerRecord(
+            allSummits.filter { it.date.after(calendar.time) })
+        activitiesWithPowerRecordsAll = getSummitIdsWithPowerRecord(allSummits)
+
+        if (!segments.isEmpty()) {
+            allSummits.forEach { summit ->
+                summit.updateSegmentInfo(segments)
+            }
+
+
+            allSummits.forEach { summit ->
+                if (summit.segmentInfo.isNotEmpty()) {
+                    val position = summit.segmentInfo.minOf { it.third }
+                    if (position in 1..3) {
+                        activitiesWithSegmentsRecord.add(
+                            Pair(
+                                summit.activityId, position
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun getSummitIdsWithPowerRecord(
+        summits: List<Summit>,
+    ): List<Long> {
+        return TimeIntervalPower.entries.mapNotNull { interval ->
+            summits.filter { interval.value(it) > 0 }.maxByOrNull { interval.value(it) }?.activityId
+        }
+    }
+
     companion object {
         var peaks: MutableList<Peak> = mutableListOf()
         private const val KEY_IS_DIALOG_SHOWN = "IS_DIALOG_SHOWN"
@@ -1161,6 +1262,7 @@ class MainActivityCompose : ComponentActivity(),
         var activitiesWithPowerRecordsAll: List<Long> = emptyList()
         var activitiesWithSegmentsRecord: MutableList<Pair<Long, Int>> = mutableListOf()
         lateinit var sharedPreferences: SharedPreferences
+        var latestFilteredSummits: List<Summit> = emptyList()
     }
 }
 
@@ -1174,6 +1276,7 @@ enum class Destination {
     BarCharts,
     Map,
     Forecast,
+    NewSummits,
     AdditionalData,
     Settings
 }
