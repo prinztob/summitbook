@@ -1,7 +1,7 @@
 package de.drtobiasprinz.summitbook.ui
 
-import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.summitbook.db.entities.Forecast
+import de.drtobiasprinz.summitbook.models.ChartEntry
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.utils.Constants.DATETIME_FORMAT_SIMPLE
@@ -20,7 +20,7 @@ class PerformanceGraphProvider(
 
     fun getActualGraphForSummits(
         graphType: GraphType, year: String, month: String? = null, currentDate: Date? = null
-    ): List<Entry> {
+    ): List<ChartEntry> {
         var (dateRange, maximum) = getDateRange(year, month)
         val filteredSummits = getRelevantSummitsSorted(dateRange, graphType)
         if (filteredSummits.isNotEmpty()) {
@@ -55,7 +55,7 @@ class PerformanceGraphProvider(
             lastY = 0f
             return (0 until maximum).map {
                 lastY = basicGraph[it + 1] ?: lastY
-                Entry((it + 1).toFloat(), lastY)
+                ChartEntry((it + 1).toFloat(), lastY)
             }
         } else {
             return emptyList()
@@ -64,8 +64,8 @@ class PerformanceGraphProvider(
 
     fun getForecastGraphForSummits(
         graphType: GraphType, year: String, month: String? = null, allDays: Boolean = false
-    ): List<Entry> {
-        val graph = mutableListOf(Entry(1f, 0f))
+    ): List<ChartEntry> {
+        val graph = mutableListOf(ChartEntry(1f, 0f))
         val months = if (month != null) listOf(month) else listOf(
             "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"
         )
@@ -75,7 +75,7 @@ class PerformanceGraphProvider(
             cal.time = startDate
             val lastX = if (graph.size == 1) 0f else graph.last().x
             graph.add(
-                Entry(cal.getActualMaximum(Calendar.DAY_OF_MONTH).toFloat() + lastX,
+                ChartEntry(cal.getActualMaximum(Calendar.DAY_OF_MONTH).toFloat() + lastX,
                     forecasts.filter { it.year == year.toInt() && it.month == selectedMonth.toInt() }
                         .sumOf { graphType.getForecastValue(it) }.toFloat() + graph.last().y
                 )
@@ -88,8 +88,8 @@ class PerformanceGraphProvider(
         }
     }
 
-    private fun expandGraphWithMissingDays(graph: MutableList<Entry>): MutableList<Entry> {
-        val allDaysGraph = mutableListOf<Entry>()
+    private fun expandGraphWithMissingDays(graph: MutableList<ChartEntry>): MutableList<ChartEntry> {
+        val allDaysGraph = mutableListOf<ChartEntry>()
         graph.forEach {
             if (allDaysGraph.isEmpty()) {
                 allDaysGraph.add(it)
@@ -99,7 +99,7 @@ class PerformanceGraphProvider(
                 val stepSize = (it.y - allDaysGraph.last().y) / steps
                 for (i in 1..<steps.toInt()) {
                     allDaysGraph.add(
-                        Entry(
+                        ChartEntry(
                             startX + i, allDaysGraph.last().y + stepSize
                         )
                     )
@@ -112,7 +112,7 @@ class PerformanceGraphProvider(
 
     fun getActualGraphMinMaxForSummits(
         graphType: GraphType, year: String, month: String? = null
-    ): Pair<List<Entry>, List<Entry>> {
+    ): Pair<List<ChartEntry>, List<ChartEntry>> {
         val graphs = (year.toInt() - 5 until year.toInt()).map {
             getActualGraphForSummits(
                 graphType, it.toString(), month
@@ -122,8 +122,8 @@ class PerformanceGraphProvider(
         if (size == null || size == 0) {
             return Pair(emptyList(), emptyList())
         }
-        val minGraph = graphs[0].subList(0, size).map { Entry(it.x, Float.MAX_VALUE) }
-        val maxGraph = graphs[0].subList(0, size).map { Entry(it.x, 0f) }
+        val minGraph = graphs[0].subList(0, size).map { ChartEntry(it.x, Float.MAX_VALUE) }
+        val maxGraph = graphs[0].subList(0, size).map { ChartEntry(it.x, 0f) }
         graphs.forEach {
             it.forEachIndexed { index, entry ->
                 if (index < size) {
@@ -187,8 +187,7 @@ enum class GraphType(
     val getForecastValue: (Forecast) -> Int,
     val cumulative: Boolean = true,
     val hasForecast: Boolean = true,
-    val filterZeroValues: Boolean = false,
-    val delta: Float = 1f
+    val filterZeroValues: Boolean = false
 ) {
 
     Count(
@@ -205,8 +204,7 @@ enum class GraphType(
                 e.elevationData.elevationGain.toDouble()
             }
         },
-        { f -> f.forecastHeightMeter },
-        delta = 10f
+        { f -> f.forecastHeightMeter }
     ),
     Kilometer(
         "km",

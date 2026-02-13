@@ -54,24 +54,25 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
 import java.io.File
 
+@Suppress("AssignedValueIsNeverRead")
 @AndroidEntryPoint
 class ReceiverActivityCompose : ComponentActivity() {
     private var gpxTrackUri: Uri? = null
     private lateinit var mapView: CustomMapViewToAllowScrolling
     private val viewModel: DatabaseViewModel by viewModels()
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        
+
         Log.i("ReceiverActivityCompose", "onCreate")
-        
+
         // Initialize cache and storage directories
         MainActivityCompose.cache = applicationContext.cacheDir
         MainActivityCompose.storage = applicationContext.filesDir
         MainActivityCompose.activitiesDir = File(MainActivityCompose.storage, "activities")
-        
+
         setContent {
             SummitBookTheme {
                 ReceiverScreen(
@@ -81,6 +82,7 @@ class ReceiverActivityCompose : ComponentActivity() {
         }
     }
 
+    @Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun ReceiverScreen(
@@ -92,11 +94,11 @@ class ReceiverActivityCompose : ComponentActivity() {
         var gpsTrack by remember { mutableStateOf<GpsTrack?>(null) }
         var mapViewReference by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
         var gpxTrackUriState by remember { mutableStateOf<Uri?>(null) }
-        
+
         LaunchedEffect(Unit) {
             // Initialize map configuration
             Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-            
+
             // Process intent when activity starts
             if (Intent.ACTION_VIEW == intent.action) {
                 scope.launch {
@@ -112,7 +114,7 @@ class ReceiverActivityCompose : ComponentActivity() {
                 Log.i("ReceiverActivityCompose", "intent was something else: ${intent.action}")
             }
         }
-        
+
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -146,9 +148,9 @@ class ReceiverActivityCompose : ComponentActivity() {
                             },
                             text = { Text(stringResource(R.string.add_to_bookmarks)) }
                         )
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         ExtendedFloatingActionButton(
                             onClick = {
                                 isBookmark = false
@@ -194,11 +196,11 @@ class ReceiverActivityCompose : ComponentActivity() {
                 )
             }
         }
-        
+
         // Show add summit dialog when requested
         if (showDialog && gpxTrackUriState != null) {
             AddSummitDialogCompose(
-                summits = emptyList(),
+                summitsFromDatabase = emptyList(),
                 uri = gpxTrackUri,
                 isBookmark = isBookmark,
                 onDismiss = {
@@ -218,7 +220,7 @@ class ReceiverActivityCompose : ComponentActivity() {
             )
         }
     }
-    
+
     private fun processIntent(
         intent: Intent,
         onTrackProcessed: (GpsTrack?) -> Unit
@@ -229,13 +231,13 @@ class ReceiverActivityCompose : ComponentActivity() {
             "ReceiverActivityCompose",
             "intent was: ${intent.action} , received url ${gpxTrackUri.toString()}"
         )
-        
+
         if (uri != null) {
             val file = File(MainActivityCompose.cache, "input_filter_file.gpx")
             contentResolver.openInputStream(uri)?.use { inputStream ->
                 copyGpxFileToCache(inputStream, file)
             }
-            
+
             if (file.exists()) {
                 val gpsTrack = prepareGpxTrack(file.toPath(), null)
                 onTrackProcessed(gpsTrack)
@@ -246,11 +248,11 @@ class ReceiverActivityCompose : ComponentActivity() {
             onTrackProcessed(null)
         }
     }
-    
+
     private fun drawGpxTrackOnMap(gpsTrack: GpsTrack?, mapView: CustomMapViewToAllowScrolling) {
         gpsTrack?.addGpsTrack(mapView, TrackColor.None)
         val highestTrackPoint = gpsTrack?.getHighestElevation()
-        
+
         if (highestTrackPoint != null) {
             val highestGeoPoint = GeoPoint(highestTrackPoint.latitude, highestTrackPoint.longitude)
             val marker = Marker(mapView)
@@ -264,7 +266,7 @@ class ReceiverActivityCompose : ComponentActivity() {
             marker.title = "New summit"
             mapView.overlays.add(marker)
         }
-        
+
         if (gpsTrack != null) {
             mapView.post {
                 mapView.calculateBoundingBox(gpsTrack.trackGeoPoints)

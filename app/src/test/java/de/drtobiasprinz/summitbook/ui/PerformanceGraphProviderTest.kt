@@ -1,16 +1,9 @@
 package de.drtobiasprinz.summitbook.ui
 
-import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.summitbook.TestSummitsPreparation
-import de.drtobiasprinz.summitbook.db.entities.GarminData
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.utils.ZipFileVersions
+import de.drtobiasprinz.summitbook.models.ChartEntry
 import org.junit.Test
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileInputStream
-import java.io.InputStream
-import java.io.InputStreamReader
 import kotlin.system.measureTimeMillis
 
 class PerformanceGraphProviderTest {
@@ -222,6 +215,7 @@ class PerformanceGraphProviderTest {
             ) { "Elevation mismatch for Y on day ${n}: ${it.y}" }
         }
     }
+
     @Test
     fun testGetActualGraphMinMaxForSummits() {
         val expected = listOf(
@@ -301,11 +295,10 @@ class PerformanceGraphProviderTest {
             "01"
         )
         assert(graphCount.size == 2)
-        assert(graphCount[0].equalTo(Entry(1f, 0f)))
+        assert(graphCount[0] == ChartEntry(1f, 0f))
         assert(
-            graphCount[1]
-                .equalTo(Entry(31f, 5f))
-        ) { "Count Forecast graph for day 31 was ${graphCount[1]} not Entry(31, 5)." }
+            graphCount[1] == ChartEntry(31f, 5f)
+        ) { "Count Forecast graph for day 31 was ${graphCount[1]} not ChartEntry(31, 5)." }
 
         val graphElevationGain = performanceGraphProvider.getForecastGraphForSummits(
             GraphType.ElevationGain,
@@ -313,11 +306,10 @@ class PerformanceGraphProviderTest {
             "01"
         )
         assert(graphElevationGain.size == 2)
-        assert(graphElevationGain[0].equalTo(Entry(1f, 0f)))
+        assert(graphElevationGain[0] == ChartEntry(1f, 0f))
         assert(
-            graphElevationGain[1]
-                .equalTo(Entry(31f, 1000f))
-        ) { "Elevation Forecast graph for day 31 was ${graphElevationGain[1]} not Entry(31, 1000)." }
+            graphElevationGain[1] == ChartEntry(31f, 1000f)
+        ) { "Elevation Forecast graph for day 31 was ${graphElevationGain[1]} not ChartEntry(31, 1000)." }
 
         val graphKilometer = performanceGraphProvider.getForecastGraphForSummits(
             GraphType.Kilometer,
@@ -325,29 +317,28 @@ class PerformanceGraphProviderTest {
             "01"
         )
         assert(graphKilometer.size == 2)
-        assert(graphKilometer[0].equalTo(Entry(1f, 0f)))
+        assert(graphKilometer[0] == ChartEntry(1f, 0f))
         assert(
-            graphKilometer[1]
-                .equalTo(Entry(31f, 20f))
-        ) { "Forecast graph for day 31 was ${graphKilometer[1]} not Entry(31, 1000)." }
+            graphKilometer[1] == ChartEntry(31f, 20f)
+        ) { "Forecast graph for day 31 was ${graphKilometer[1]} not ChartEntry(31, 1000)." }
     }
 
     @Test
     fun testGetForecastGraphForWholeYear() {
         val expectedGraph = listOf(
-            Entry(1f, 0f),
-            Entry(31f, 5f),
-            Entry(60f, 15f),
-            Entry(91f, 28f),
-            Entry(121f, 40f),
-            Entry(152f, 55f),
-            Entry(182f, 73f),
-            Entry(213f, 93f),
-            Entry(244f, 115f),
-            Entry(274f, 127f),
-            Entry(305f, 135f),
-            Entry(335f, 141f),
-            Entry(366f, 145f),
+            ChartEntry(1f, 0f),
+            ChartEntry(31f, 5f),
+            ChartEntry(60f, 15f),
+            ChartEntry(91f, 28f),
+            ChartEntry(121f, 40f),
+            ChartEntry(152f, 55f),
+            ChartEntry(182f, 73f),
+            ChartEntry(213f, 93f),
+            ChartEntry(244f, 115f),
+            ChartEntry(274f, 127f),
+            ChartEntry(305f, 135f),
+            ChartEntry(335f, 141f),
+            ChartEntry(366f, 145f),
         )
         val performanceGraphProvider =
             PerformanceGraphProvider(emptyList(), TestSummitsPreparation.getForecasts())
@@ -359,7 +350,7 @@ class PerformanceGraphProviderTest {
         assert(graphCount.size == expectedGraph.size)
         expectedGraph.forEachIndexed { i, e ->
             assert(
-                graphCount[i].equalTo(e)
+                graphCount[i] == e
             ) { "Count Forecast graph for index $i was '${graphCount[i]}' not '${e}'." }
         }
 
@@ -371,50 +362,4 @@ class PerformanceGraphProviderTest {
         assert(graphCountAllDays.size == 366)
     }
 
-
-    private fun getTestEntries(): List<Summit> {
-        val entries = mutableListOf<Summit>()
-        val resourceSummit = this.javaClass.classLoader?.getResource("summits.csv")
-        if (resourceSummit != null) {
-            val iStream: InputStream = FileInputStream(File(resourceSummit.path))
-            BufferedReader(InputStreamReader(iStream)).use { br ->
-                var line: String?
-                while (br.readLine().also { line = it } != null) {
-                    val lineLocal = line
-                    try {
-                        if (
-                            lineLocal != null &&
-                            !lineLocal.startsWith("Activity") &&
-                            !lineLocal.startsWith("required")
-                        ) {
-                            entries.add(Summit.parseFromCsvFileLine(lineLocal, "v0"))
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
-        val resourceThirdParty = this.javaClass.classLoader?.getResource("third_party.csv")
-        if (resourceThirdParty != null) {
-            val iStream: InputStream = FileInputStream(File(resourceThirdParty.path))
-            BufferedReader(InputStreamReader(iStream)).use { br ->
-                var line: String?
-                while (br.readLine().also { line = it } != null) {
-                    val lineLocal = line
-                    try {
-                        if (lineLocal != null &&
-                            !lineLocal.startsWith("activityId") &&
-                            !lineLocal.startsWith("required")
-                        ) {
-                            GarminData.parseFromCsvFileLineAndSave(lineLocal, entries, { _, _ -> }, ZipFileVersions.V0)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
-        return entries
-    }
 }

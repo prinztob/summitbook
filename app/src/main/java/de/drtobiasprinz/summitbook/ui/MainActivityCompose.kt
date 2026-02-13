@@ -685,7 +685,7 @@ class MainActivityCompose : ComponentActivity(),
     @Composable
     fun MainContent(
         filteredSummits: List<Summit>,
-        summitFromDatabase: List<Summit>,
+        summitsFromDatabase: List<Summit>,
         forecasts: List<Forecast>,
         coroutineScope: CoroutineScope
     ) {
@@ -698,26 +698,16 @@ class MainActivityCompose : ComponentActivity(),
                     if (!showBookmarksOnly) {
                         OverviewScreen(
                             filteredSummits = filteredSummits,
-                            summitsFromDatabase = summitFromDatabase,
+                            summitsFromDatabase = summitsFromDatabase,
                             forecasts = forecasts,
                             years = sortFilterValues.years
                         )
                     }
 
                     SummitsListScreen(
-                        summits = if (showBookmarksOnly) summitFromDatabase.filter { it.isBookmark } else filteredSummits,
+                        summits = if (showBookmarksOnly) summitsFromDatabase.filter { it.isBookmark } else filteredSummits,
                         isBookmark = showBookmarksOnly,
                         onSaveSummit = { isEdit, summit -> viewModel.saveSummit(isEdit, summit) },
-                        onUpdateIsFavorite = { summit ->
-                            val updatedSummit = summit.clone()
-                            updatedSummit.isFavorite = !summit.isFavorite
-                            viewModel.saveSummit(true, updatedSummit)
-                        },
-                        onUpdateIsPeak = { summit ->
-                            val updatedSummit = summit.clone()
-                            updatedSummit.isPeak = !summit.isPeak
-                            viewModel.saveSummit(true, updatedSummit)
-                        },
                         onDelete = { summit ->
                             viewModel.deleteSummit(summit)
                         }
@@ -728,7 +718,7 @@ class MainActivityCompose : ComponentActivity(),
             Destination.Overview -> {
                 OverviewScreen(
                     filteredSummits,
-                    summitFromDatabase,
+                    summitsFromDatabase,
                     forecasts,
                     sortFilterValues.years
                 )
@@ -739,7 +729,7 @@ class MainActivityCompose : ComponentActivity(),
                     .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
                 SegmentsListScreen(
                     segments = segmentsList.data ?: emptyList(),
-                    summits = summitFromDatabase,
+                    summits = summitsFromDatabase,
                     onDeleteSegment = { segment ->
                         viewModel.deleteSegment(segment)
                     },
@@ -776,7 +766,7 @@ class MainActivityCompose : ComponentActivity(),
             Destination.Map -> {
                 OpenStreetMapScreen(
                     filteredSummits,
-                    summitFromDatabase.filter { it.isBookmark },
+                    summitsFromDatabase.filter { it.isBookmark },
                     onFullscreenChanged = { isFullscreen ->
                         isMapFullscreen = isFullscreen
                     }
@@ -785,7 +775,7 @@ class MainActivityCompose : ComponentActivity(),
 
             Destination.Forecast -> {
                 ForecastScreen(
-                    summitFromDatabase,
+                    summitsFromDatabase,
                     forecasts as MutableList<Forecast>,
                     { currentDestination = Destination.Summits },
                     { isEdit, forecasts -> viewModel.saveForecasts(isEdit, forecasts) })
@@ -794,7 +784,7 @@ class MainActivityCompose : ComponentActivity(),
             Destination.NewSummits -> {
                 ShowNewSummitsFromGarminScreen(
                     viewModel = viewModel,
-                    summits = summitFromDatabase,
+                    summits = summitsFromDatabase,
                     selectedDate = newSummitsSelectedDate,
                     onBack = { selectedSummits, isMerge ->
                         currentDestination = Destination.Summits
@@ -826,7 +816,7 @@ class MainActivityCompose : ComponentActivity(),
             }
 
             Destination.Settings -> {
-                SettingsScreen(summitFromDatabase, { key ->
+                SettingsScreen(summitsFromDatabase, { key ->
                     onSharedPreferenceChanged(sharedPreferences, key)
                 }, onSaveSummit = { isEdit, summit -> viewModel.saveSummit(isEdit, summit) })
             }

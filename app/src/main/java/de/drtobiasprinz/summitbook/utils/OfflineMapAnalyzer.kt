@@ -64,7 +64,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
                 LatLong(
                     geoPoint.latitude, geoPoint.longitude
                 ), mapFile
-            )?.minByOrNull { it.minDistance }
+            ).minByOrNull { it.minDistance }
             val locationInfo = getClosestLocationInfo(
                 LatLong(
                     geoPoint.latitude, geoPoint.longitude
@@ -82,7 +82,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
      * @param trackBoundingBox The bounding box to check
      * @return true if the bounding box overlaps with at least one map file, false otherwise
      */
-    fun hasMapCoverageForBoundingBox(trackBoundingBox: TrackBoundingBox): Boolean {
+    fun hasMapCoverageForBoundingBox(trackBoundingBox: TrackBoundingBox?): Boolean {
         if (mapFiles.isEmpty()) {
             Log.w(TAG, "No map files available to check coverage.")
             return false
@@ -99,7 +99,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
                     mapBoundingBox.minLongitude
                 )
 
-                if (trackBoundingBox.intersects(osmBoundingBox)) {
+                if (trackBoundingBox?.intersects(osmBoundingBox) == true) {
                     Log.d(
                         TAG,
                         "Track bounding box overlaps with map file: ${mapFile.mapFileInfo.fileVersion}"
@@ -128,7 +128,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
         try {
             for ((index, trackPointPair) in trackPointsWithExtension.withIndex()) {
                 val latLong = LatLong(trackPointPair.first.latitude, trackPointPair.first.longitude)
-                val bestRoadInfoForPoints = mapFiles.mapNotNull { mapFile ->
+                val bestRoadInfoForPoints = mapFiles.map { mapFile ->
                     getRoadInfoForLatLong(latLong, mapFile)
                 }.flatten()
                 val bestRoadInfoForPoint =
@@ -160,7 +160,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
         distancePerSurface: MutableMap<Surface, Double>,
         distancePerRoadTypes: MutableMap<RoadType, Double>
     ) {
-        trackPointsWithExtension.forEachIndexed { i, e ->
+        trackPointsWithExtension.forEachIndexed { i, _ ->
             val distanceI = trackPointsWithExtension[i].second.distance
             val distanceBetween = if (i > 0) {
                 val distanceBefore = trackPointsWithExtension[i - 1].second.distance
@@ -243,7 +243,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
 
     fun getRoadInfoForLatLong(
         latLong: LatLong, mapFile: MapFile? = mapFiles.firstOrNull()
-    ): List<RoadInfo>? {
+    ): List<RoadInfo> {
         val roadInfos: MutableList<RoadInfo> = mutableListOf()
         if (mapFile != null) {
             val tile = Tile(
@@ -502,15 +502,14 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
         fun isDistancePerSurfacesAndRoadTypePossible(
             analyzer: OfflineMapAnalyzer, summit: Summit
         ): Boolean {
-            val boundingBox = summit.trackBoundingBox
             if (!summit.hasGpsTrack()) {
                 return false
             }
             if (distanceMapsEmpty(summit)) {
-                if (boundingBox == null) {
+                if (summit.trackBoundingBox == null) {
                     summit.setBoundingBoxFromTrack()
                 }
-                if (boundingBox != null && analyzer.hasMapCoverageForBoundingBox(boundingBox)) {
+                if (summit.trackBoundingBox != null && analyzer.hasMapCoverageForBoundingBox(summit.trackBoundingBox)) {
                     return true
                 } else {
                     Log.w(
@@ -545,7 +544,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
                 if (extensions?.isNotEmpty() == true) {
                     val extensionsFromYaml = ExtensionsFromYaml(extensions)
                     try {
-                        val yamlString = Yaml.Default.encodeToString(extensionsFromYaml)
+                        val yamlString = Yaml.encodeToString(extensionsFromYaml)
                         summit.getYamlExtensionsFile().writeText(yamlString)
                         Log.i(
                             TAG,

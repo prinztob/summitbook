@@ -4,7 +4,6 @@ import android.graphics.*
 import android.util.Log
 import android.util.LruCache
 import android.widget.Toast
-import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.getDistance
 import io.ticofab.androidgpxparser.parser.GPXParser
@@ -68,7 +67,7 @@ class GpsTrack(
             }
             osMapRoute = Polyline(mMapView)
 
-            osMapRoute?.setOnClickListener { _, _, eventPos ->
+            osMapRoute?.setOnClickListener { _, _, _ ->
                 if (mMapView != null && summit != null) {
                     Toast.makeText(
                         mMapView.context,
@@ -235,29 +234,10 @@ class GpsTrack(
     }
 
 
-    fun getTrackPositions(): List<TrackPoint?> {
-        return trackPoints.map { it.first }
-    }
-
     fun setDistance() {
         setDistance(trackPoints)
     }
 
-
-    fun getTrackGraph(
-        f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?,
-        discreteInput: Boolean = false
-    ): MutableList<Entry> {
-        return getTrackGraph(trackPoints, f, discreteInput)
-    }
-
-    fun getTrackSlopeGraph(): MutableList<Entry> {
-        if (trackPoints.first().second.distance == null) {
-            setDistance()
-        }
-        //TODO
-        return mutableListOf()
-    }
 
     fun getHighestElevation(): GeoPoint? {
         val trackPoint = trackPoints.maxByOrNull { it.first.elevation ?: 0.0 }
@@ -336,17 +316,17 @@ class GpsTrack(
             trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
             f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?,
             discreteInput: Boolean = false
-        ): MutableList<Entry> {
+        ): MutableList<ChartEntry> {
             if (trackPoints.lastOrNull()?.second?.distance == 0.0) {
                 setDistance(trackPoints)
             }
             return if (trackPoints.isNotEmpty()) {
-                val graph = mutableListOf<Entry>()
+                val graph = mutableListOf<ChartEntry>()
                 for (trackPoint in trackPoints) {
                     val value = if (discreteInput) 1f else f(trackPoint)?.toFloat()
                     val distance = trackPoint.second.distance?.toFloat()
                     if (value != null && distance != null) {
-                        graph.add(Entry(distance, value, trackPoint))
+                        graph.add(ChartEntry(distance, value, trackPoint))
                     }
                 }
                 graph

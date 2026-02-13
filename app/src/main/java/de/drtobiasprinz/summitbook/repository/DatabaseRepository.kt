@@ -27,6 +27,7 @@ class DatabaseRepository @Inject constructor(
     suspend fun deleteSummit(entity: Summit) = summitsDao.deleteSummit(entity)
     fun getDetailsSummit(id: Long) = summitsDao.getSummit(id)
     fun getAllSummits() = summitsDao.getAllSummits()
+    fun getSummitsPaginated(limit: Int, offset: Int) = summitsDao.getSummitsPaginated(limit, offset)
     fun getAllSegments() = segmentsDao.getAllSegments()
     suspend fun deleteSegmentEntry(entity: SegmentEntry) = segmentsDao.deleteSegmentEntry(entity)
     suspend fun deleteSegment(entity: Segment) = segmentsDao.deleteSegment(entity)

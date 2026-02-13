@@ -91,7 +91,7 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
                     onBackPressed = { finish() },
                     onSummitLoaded = { summit ->
                         if (!hasLoadedSummit) {
-                            Log.i("SummitEntryDetails", "Loading summit: ${summit.id}")
+                            Log.i("SummitEntryDetails", "Loading summit: ${summit.activityId}")
                             hasLoadedSummit = true
                             summitEntry = summit
                             coroutineScope.launch {
@@ -171,6 +171,7 @@ data class SummitUiState(
     val summitId: Long, val summitName: String, val tabs: List<SummitTab>
 )
 
+@Suppress("AssignedValueIsNeverRead")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SummitEntryDetailsScreen(
@@ -187,11 +188,11 @@ fun SummitEntryDetailsScreen(
     LaunchedEffect(summitToView) {
         Log.i(
             "SummitEntryDetails",
-            "LaunchedEffect triggered, summitToView: ${summitToView?.data?.id}"
+            "LaunchedEffect triggered, summitToView: ${summitToView?.data?.activityId}"
         )
         val newSummit = summitToView?.data
         if (newSummit != null && newSummit.id != lastProcessedId) {
-            Log.i("SummitEntryDetails", "Processing new summit: ${newSummit.id}")
+            Log.i("SummitEntryDetails", "Processing new summit: ${newSummit.activityId}")
             lastProcessedId = newSummit.id
             summitUiState = SummitUiState(
                 summitId = newSummit.id,
@@ -384,7 +385,7 @@ enum class SummitTab(val titleResId: Int) {
 }
 
 fun getTabsForSummit(summit: Summit): List<SummitTab> {
-    Log.i("SummitEntryDetails", "Getting tabs for summit: ${summit.id}")
+    Log.i("SummitEntryDetails", "Getting tabs for summit: ${summit.activityId}")
     val tabs = mutableListOf(SummitTab.DATA)
 
     if (summit.garminData != null) {

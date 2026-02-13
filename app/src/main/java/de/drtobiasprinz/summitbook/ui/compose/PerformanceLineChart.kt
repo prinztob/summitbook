@@ -14,10 +14,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -26,8 +32,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.github.mikephil.charting.data.Entry
+import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.models.ChartEntry
 import de.drtobiasprinz.summitbook.ui.GraphType
 import de.drtobiasprinz.summitbook.ui.PerformanceGraphProvider
 import java.text.NumberFormat
@@ -72,6 +80,7 @@ fun PerformanceLineChart(
     numberFormat: NumberFormat
 ) {
     val isDark = isSystemInDarkTheme()
+    var zoomed by remember { mutableStateOf(false) }
 
     if (series.all { it.data.isEmpty() }) return
 
@@ -82,14 +91,64 @@ fun PerformanceLineChart(
     val minY = allDataPoints.minOfOrNull { it.y } ?: 0f
     val maxY = allDataPoints.maxOfOrNull { it.y } ?: 1f
 
+    // Calculate current date position in the chart
+    val currentDate = Calendar.getInstance()
+    val currentXValue = calculateCurrentXValue(currentDate, year, month)
+    
+    // Find the Y value at the current date (or closest to it)
+    val currentYValue = findYValueAtCurrentDate(allDataPoints, currentXValue)
+
     // Add padding to bounds
     val xRange = maxX - minX
     val yRange = maxY - minY
-    val paddedMinX = if (xRange > 0) minX - xRange * 0.05f else minX
-    val paddedMaxX = if (xRange > 0) maxX + xRange * 0.05f else maxX + 1f
+    
+    // Apply zoom if enabled - zoom to 1/10 of range around current date
+    val (displayMinX, displayMaxX) = if (zoomed && xRange > 0) {
+        val zoomRange = xRange * 0.1f
+        val zoomMinX = (currentXValue - zoomRange / 2).coerceAtLeast(minX)
+        val zoomMaxX = (currentXValue + zoomRange / 2).coerceAtMost(maxX)
+        // Adjust if we hit the boundaries
+        val adjustedMinX = if (zoomMaxX - zoomMinX < zoomRange) {
+            if (zoomMinX == minX) minX + zoomRange else zoomMinX
+        } else {
+            zoomMinX
+        }
+        val adjustedMaxX = if (zoomMaxX - zoomMinX < zoomRange) {
+            if (zoomMaxX == maxX) maxX - zoomRange else zoomMaxX
+        } else {
+            zoomMaxX
+        }
+        adjustedMinX to adjustedMaxX
+    } else {
+        minX to maxX
+    }
+    
+    // Apply vertical zoom if enabled - zoom to 1/10 of Y-range around current Y value
+    val (displayMinY, displayMaxY) = if (zoomed && yRange > 0) {
+        val zoomYRange = yRange * 0.1f
+        val zoomMinY = (currentYValue - zoomYRange / 2).coerceAtLeast(minY)
+        val zoomMaxY = (currentYValue + zoomYRange / 2).coerceAtMost(maxY)
+        // Adjust if we hit the boundaries
+        val adjustedMinY = if (zoomMaxY - zoomMinY < zoomYRange) {
+            if (zoomMinY == minY) minY + zoomYRange else zoomMinY
+        } else {
+            zoomMinY
+        }
+        val adjustedMaxY = if (zoomMaxY - zoomMinY < zoomYRange) {
+            if (zoomMaxY == maxY) maxY - zoomYRange else zoomMaxY
+        } else {
+            zoomMaxY
+        }
+        adjustedMinY to adjustedMaxY
+    } else {
+        minY to maxY
+    }
+    
+    val paddedMinX = if (xRange > 0) displayMinX - (displayMaxX - displayMinX) * 0.05f else displayMinX
+    val paddedMaxX = if (xRange > 0) displayMaxX + (displayMaxX - displayMinX) * 0.05f else displayMaxX + 1f
     val paddedMinY =
-        if (graphType.cumulative) 0f else if (yRange > 0) minY - yRange * 0.1f else minY
-    val paddedMaxY = if (yRange > 0) maxY + yRange * 0.1f else maxY + 1f
+        if (graphType.cumulative) 0f else if (yRange > 0) displayMinY - (displayMaxY - displayMinY) * 0.1f else displayMinY
+    val paddedMaxY = if (yRange > 0) displayMaxY + (displayMaxY - displayMinY) * 0.1f else displayMaxY + 1f
 
     val textColor = if (isDark) ComposeColor.White else ComposeColor.Black
     val gridColor = if (isDark) ComposeColor(0xFF444444) else ComposeColor.LightGray
@@ -100,6 +159,29 @@ fun PerformanceLineChart(
             .fillMaxWidth()
             .background(chartBackgroundColor)
     ) {
+        // Zoom button row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = { zoomed = !zoomed },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    painter = painterResource(
+                        id = if (zoomed) R.drawable.ic_baseline_zoom_out_24 else R.drawable.ic_baseline_zoom_in_24
+                    ),
+                    contentDescription = if (zoomed) "Zoom out" else "Zoom in to current date",
+                    tint = textColor,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+        
         // Chart area
         Box(
             modifier = Modifier
@@ -292,7 +374,6 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGridAndLabels(
     effectiveChartHeight: Float
 ) {
     val chartWidth = size.width
-    val chartHeight = effectiveChartHeight
 
     // Draw X axis labels (dates) - reduce number of labels to prevent overlap
     val xSteps = if (month != null) 4 else 6
@@ -304,7 +385,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGridAndLabels(
         drawLine(
             color = gridColor,
             start = Offset(xPos, 0f),
-            end = Offset(xPos, chartHeight),
+            end = Offset(xPos, effectiveChartHeight),
             strokeWidth = 1f
         )
 
@@ -324,7 +405,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGridAndLabels(
             drawContext.canvas.nativeCanvas.drawText(
                 label,
                 xPos,
-                chartHeight + bottomPadding - 5,
+                effectiveChartHeight + bottomPadding - 5,
                 Paint().apply {
                     color = textColor.toArgb()
                     textSize = 24f
@@ -338,7 +419,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGridAndLabels(
     val ySteps = 5
     for (i in 0..ySteps) {
         val yValue = minY + (maxY - minY) * i / ySteps
-        val yPos = chartHeight - i * chartHeight / ySteps
+        val yPos = effectiveChartHeight - i * effectiveChartHeight / ySteps
 
         // Draw grid line (only within chart area)
         drawLine(
@@ -429,8 +510,46 @@ private fun LegendItem(
 }
 
 /**
- * Convert MPAndroidChart Entry list to ChartDataPoint list
+ * Convert ChartEntry list to ChartDataPoint list
  */
-fun convertEntriesToChartDataPoints(entries: List<Entry>): List<ChartDataPoint> {
+fun convertEntriesToChartDataPoints(entries: List<ChartEntry>): List<ChartDataPoint> {
     return entries.map { ChartDataPoint(it.x, it.y) }
+}
+
+/**
+ * Calculate the x-value for the current date in the chart
+ */
+private fun calculateCurrentXValue(currentDate: Calendar, year: String, month: String?): Float {
+    val chartYear = year.toIntOrNull() ?: currentDate.get(Calendar.YEAR)
+    
+    return if (month != null) {
+        // For monthly charts, return day of month
+        val chartMonth = month.toIntOrNull() ?: (currentDate.get(Calendar.MONTH) + 1)
+        if (currentDate.get(Calendar.YEAR) == chartYear &&
+            currentDate.get(Calendar.MONTH) + 1 == chartMonth) {
+            currentDate.get(Calendar.DAY_OF_MONTH).toFloat()
+        } else {
+            // If current date is not in the displayed month, return middle of month
+            15f
+        }
+    } else {
+        // For yearly charts, return day of year
+        if (currentDate.get(Calendar.YEAR) == chartYear) {
+            currentDate.get(Calendar.DAY_OF_YEAR).toFloat()
+        } else {
+            // If current date is not in the displayed year, return middle of year
+            183f // Approximately middle of year
+        }
+    }
+}
+
+/**
+ * Find the Y value at or closest to the current X value
+ */
+private fun findYValueAtCurrentDate(dataPoints: List<ChartDataPoint>, currentXValue: Float): Float {
+    if (dataPoints.isEmpty()) return 0f
+    
+    // Find the data point closest to the current X value
+    val closestPoint = dataPoints.minByOrNull { kotlin.math.abs(it.x - currentXValue) }
+    return closestPoint?.y ?: dataPoints.first().y
 }

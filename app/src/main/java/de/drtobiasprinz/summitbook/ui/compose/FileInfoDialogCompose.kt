@@ -41,8 +41,8 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.utils.FileRowType
 import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -57,7 +57,7 @@ import java.util.Locale
 @Composable
 fun FileInfoDialogCompose(
     entry: Summit,
-    viewModel: DatabaseViewModel? = null,
+    onUpdateSummit: (Boolean, Summit) -> Job,
     onDismiss: () -> Unit,
     onLoadingStateChanged: (Boolean) -> Unit = {}
 ) {
@@ -109,7 +109,6 @@ fun FileInfoDialogCompose(
 
                 // Table Header
                 FileTableRow(
-                    isHeader = true,
                     fileName = stringResource(R.string.file_name),
                     exists = stringResource(R.string.exists),
                     fileSize = stringResource(R.string.file_size),
@@ -138,8 +137,7 @@ fun FileInfoDialogCompose(
                                         updateRoadInfos(
                                             context,
                                             entry,
-                                            viewModel,
-                                            onLoadingStateChanged
+                                            onUpdateSummit
                                         )
                                     }
                                 }
@@ -181,18 +179,13 @@ fun FileInfoDialogCompose(
 
 @Composable
 private fun FileTableRow(
-    isHeader: Boolean,
     fileName: String,
     exists: String,
     fileSize: String,
     update: String,
     revert: String
 ) {
-    val backgroundColor = if (isHeader) {
-        Color(0xFFE0E0E0)
-    } else {
-        Color.Transparent
-    }
+    val backgroundColor = MaterialTheme.colorScheme.surfaceVariant
 
     Row(
         modifier = Modifier
@@ -207,8 +200,8 @@ private fun FileTableRow(
             modifier = Modifier
                 .weight(2f)
                 .padding(4.dp),
-            fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
-            fontSize = if (isHeader) 14.sp else 12.sp
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp
         )
 
         // Exists (weight 1)
@@ -217,7 +210,7 @@ private fun FileTableRow(
             modifier = Modifier
                 .weight(1f)
                 .padding(4.dp),
-            fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
 
@@ -227,7 +220,7 @@ private fun FileTableRow(
             modifier = Modifier
                 .weight(1f)
                 .padding(4.dp),
-            fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
 
@@ -237,7 +230,7 @@ private fun FileTableRow(
             modifier = Modifier
                 .weight(1f)
                 .padding(4.dp),
-            fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
 
@@ -247,7 +240,7 @@ private fun FileTableRow(
             modifier = Modifier
                 .weight(1f)
                 .padding(4.dp),
-            fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
     }
@@ -262,15 +255,15 @@ private fun FileRow(
     onRevert: () -> Unit
 ) {
     val backgroundColor = if (isAlternate) {
-        Color(0xFFF5F5F5)
+        MaterialTheme.colorScheme.surfaceContainerHighest
     } else {
         Color.Transparent
     }
 
     val existsColor = if (fileState.exists) {
-        Color(0xFF43A047) // green_600
+        MaterialTheme.colorScheme.primary
     } else {
-        Color(0xFFF44336) // red_500
+        MaterialTheme.colorScheme.error
     }
 
     val existsText = if (fileState.exists) "✓" else "✗"
@@ -390,8 +383,7 @@ private fun updateFileData(
 private suspend fun updateRoadInfos(
     context: Context,
     entry: Summit,
-    viewModel: DatabaseViewModel?,
-    onLoadingStateChanged: (Boolean) -> Unit
+    onUpdateSummit: (Boolean, Summit) -> Job
 ) {
     val analyzer = OfflineMapAnalyzer.from(context)
     if (OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(analyzer, entry)) {
@@ -399,7 +391,7 @@ private suspend fun updateRoadInfos(
             OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(context, entry)
         }
         if (updated) {
-            viewModel?.saveSummit(true, entry)
+            onUpdateSummit(true, entry)
             withContext(Dispatchers.Main) {
                 Toast.makeText(
                     context,

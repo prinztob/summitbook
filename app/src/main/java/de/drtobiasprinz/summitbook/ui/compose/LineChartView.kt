@@ -64,7 +64,9 @@ fun LineChartView(
     trackColor: TrackColor,
     modifier: Modifier = Modifier,
     showLegend: Boolean = true,
-    verticalLines: List<Pair<Float, ComposeColor>>? = null
+    verticalLines: List<Pair<Float, ComposeColor>>? = null,
+    selectedTrackPointIndex: Int? = null,
+    onTrackPointSelected: (Int) -> Unit = {}
 ) {
     val isDark = isSystemInDarkTheme()
     val configuration = LocalConfiguration.current
@@ -131,9 +133,41 @@ fun LineChartView(
                 .fillMaxWidth()
                 .weight(1f)
         ) {
+            var canvasSize by remember { mutableStateOf(Size.Zero) }
             Canvas(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures { offset ->
+                            // Find the closest point to the tap
+                            val chartWidth = canvasSize.width
+                            val chartHeight = canvasSize.height
+
+                            if (chartWidth == 0f || chartHeight == 0f) return@detectTapGestures
+
+                            var closestIndex = -1
+                            var closestDistance = Float.MAX_VALUE
+
+                            lineChartEntries.forEachIndexed { index, entry ->
+                                val x = (entry.x - paddedMinX) / (paddedMaxX - paddedMinX) * chartWidth
+                                val y = chartHeight - (entry.y - paddedMinY) / (paddedMaxY - paddedMinY) * chartHeight
+                                val distance = abs(offset.x - x) + abs(offset.y - y)
+
+                                if (distance < closestDistance) {
+                                    closestDistance = distance
+                                    closestIndex = index
+                                }
+                            }
+
+                            // Select the point if it's close enough (within 50 pixels)
+                            if (closestIndex != -1 && closestDistance < 50f) {
+                                onTrackPointSelected(closestIndex)
+                            }
+                        }
+                    }
             ) {
+                // Update canvas size for tap detection
+                canvasSize = size
                 val chartWidth = size.width
                 val chartHeight = size.height
 
@@ -199,6 +233,28 @@ fun LineChartView(
                         end = Offset(xPos, chartHeight),
                         strokeWidth = 2f
                     )
+                }
+
+                // Draw highlight for selected track point
+                selectedTrackPointIndex?.let { index ->
+                    if (index in screenPoints.indices) {
+                        val (selectedPoint, _) = screenPoints[index]
+                        
+                        // Draw vertical line
+                        drawLine(
+                            color = ComposeColor(android.graphics.Color.YELLOW),
+                            start = Offset(selectedPoint.x, 0f),
+                            end = Offset(selectedPoint.x, chartHeight),
+                            strokeWidth = 2f
+                        )
+                        
+                        // Draw highlight circle
+                        drawCircle(
+                            color = ComposeColor(android.graphics.Color.YELLOW),
+                            radius = 10.dp.toPx(),
+                            center = selectedPoint
+                        )
+                    }
                 }
             }
         }

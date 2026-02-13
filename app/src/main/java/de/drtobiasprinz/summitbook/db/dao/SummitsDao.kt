@@ -37,6 +37,9 @@ interface SummitsDao {
     @Query("SELECT * FROM $SUMMITS_TABLE")
     fun getAllSummits(): Flow<MutableList<Summit>>
 
+    @Query("SELECT * FROM $SUMMITS_TABLE LIMIT :limit OFFSET :offset")
+    fun getSummitsPaginated(limit: Int, offset: Int): Flow<MutableList<Summit>>
+
     @Query("SELECT * FROM $SUMMITS_TABLE")
     fun getAllSummitsLiveData(): LiveData<MutableList<Summit>>
 

@@ -1,3 +1,5 @@
+@file:Suppress("AssignedValueIsNeverRead")
+
 package de.drtobiasprinz.summitbook.ui.compose
 
 import android.app.DatePickerDialog
@@ -94,7 +96,7 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun AddSummitDialogCompose(
-    summits: List<Summit>,
+    summitsFromDatabase: List<Summit>,
     summitId: Long = 0L,
     isBookmark: Boolean = false,
     uri: Uri? = null,
@@ -145,7 +147,7 @@ fun AddSummitDialogCompose(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { uriNotNull ->
-            scope.launch() {
+            scope.launch {
                 handleGpxTrackUpload(
                     context, uriNotNull, entity, isLoading = { isLoading = it },
                     onUpdate = { name, km, hm, elev, dur ->
@@ -163,9 +165,9 @@ fun AddSummitDialogCompose(
     }
 
     // Load existing summit data if editing
-    LaunchedEffect(summitId, summits) {
-        summits.firstOrNull { it.id == summitId }?.let { summit ->
-            entity = summit.clone()
+    LaunchedEffect(summitId, summitsFromDatabase) {
+        summitsFromDatabase.firstOrNull { it.id == summitId }?.let { summit ->
+            entity = summit
             summitName = entity.name
             tourDate = entity.getDateAsString() ?: ""
             selectedSportType = entity.sportType
@@ -189,7 +191,7 @@ fun AddSummitDialogCompose(
 
     LaunchedEffect(temporaryGpxFile) {
         if (uri != null) {
-            scope.launch() {
+            scope.launch {
                 handleGpxTrackUpload(
                     context, uri, entity, isLoading = { isLoading = it },
                     onUpdate = { name, km, hm, elev, dur ->
@@ -258,13 +260,12 @@ fun AddSummitDialogCompose(
                     }
 
                     // Summit name
-                    OutlinedTextField(
+                    AutocompleteTextField(
                         value = summitName,
                         onValueChange = { summitName = it },
-                        label = { Text(stringResource(if (isBookmark) R.string.add_new_bookmark else R.string.summit_name_hint)) },
-                        leadingIcon = {
-                            Icon(painterResource(R.drawable.baseline_landscape_black_24dp), null)
-                        },
+                        label = stringResource(if (isBookmark) R.string.add_new_bookmark else R.string.summit_name_hint),
+                        icon = R.drawable.baseline_landscape_black_24dp,
+                        suggestions = summitsFromDatabase.map { it.name }.distinct(),
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -294,7 +295,7 @@ fun AddSummitDialogCompose(
                         if (FileHelper.getOnDeviceMapFiles(context).isNotEmpty()) {
                             IconButton(
                                 onClick = {
-                                    scope.launch() {
+                                    scope.launch {
                                         isLoading = true
                                         withContext(Dispatchers.IO) {
                                             (latlngHighestPoint ?: entity.latLng)?.let { point ->
@@ -325,7 +326,12 @@ fun AddSummitDialogCompose(
                     // Kilometers
                     OutlinedTextField(
                         value = kilometers,
-                        onValueChange = { kilometers = it },
+                        onValueChange = { input ->
+                            // Allow only digits and at most one decimal point
+                            val filtered = input.filter { char -> char.isDigit() || char == '.' }
+                            val decimalCount = filtered.count { it == '.' }
+                            kilometers = if (decimalCount <= 1) filtered else filtered.substringBeforeLast(".")
+                        },
                         label = { Text(stringResource(R.string.kilometers_hint)) },
                         leadingIcon = {
                             Icon(
@@ -343,7 +349,10 @@ fun AddSummitDialogCompose(
                     // Height meters
                     OutlinedTextField(
                         value = heightMeter,
-                        onValueChange = { heightMeter = it },
+                        onValueChange = {
+                            // Allow only digits (no decimal point)
+                            heightMeter = it.filter { char -> char.isDigit() }
+                        },
                         label = { Text(stringResource(R.string.height_meter_hint)) },
                         leadingIcon = {
                             Icon(
@@ -369,7 +378,7 @@ fun AddSummitDialogCompose(
                             countries, { countries = it },
                             equipments, { equipments = it },
                             comments, { comments = it },
-                            summits,
+                            summitsFromDatabase,
                             elevationAndSpeedExpanded, { elevationAndSpeedExpanded = it },
                             locationDetailsExpanded, { locationDetailsExpanded = it },
                             commentsExpanded, { commentsExpanded = it }
@@ -414,7 +423,7 @@ fun AddSummitDialogCompose(
 
                         Button(
                             onClick = {
-                                scope.launch() {
+                                scope.launch {
                                     isLoading = true
                                     saveSummit(
                                         entity, summitName, tourDate, selectedSportType,
@@ -600,7 +609,7 @@ fun AdditionalDataFields(
     countries: List<String>, onCountriesChange: (List<String>) -> Unit,
     equipments: List<String>, onEquipmentsChange: (List<String>) -> Unit,
     comments: String, onCommentsChange: (String) -> Unit,
-    summits: List<Summit>,
+    summitsFromDatabase: List<Summit>,
     elevationAndSpeedExpanded: Boolean,
     onElevationAndSpeedExpandedChange: (Boolean) -> Unit,
     locationDetailsExpanded: Boolean,
@@ -691,11 +700,14 @@ fun AdditionalDataFields(
                         R.drawable.ic_baseline_people_24,
                         participants,
                         onParticipantsChange,
-                        summits.flatMap { it.participants }.distinct()
+                        summitsFromDatabase.flatMap { it.participants }.distinct()
                     )
                     ChipInputField(
-                        stringResource(R.string.place_hint), R.drawable.outline_distance_24,
-                        places, onPlacesChange, summits.flatMap { it.places }.distinct()
+                        stringResource(R.string.place_hint),
+                        R.drawable.outline_distance_24,
+                        places,
+                        onPlacesChange,
+                        summitsFromDatabase.flatMap { it.places + it.name }.distinct()
                     )
                     ChipInputField(
                         stringResource(R.string.country_hint),
@@ -705,8 +717,11 @@ fun AdditionalDataFields(
                         Locale.getAvailableLocales().map { it.displayCountry }.distinct()
                             .filter { it.isNotEmpty() })
                     ChipInputField(
-                        stringResource(R.string.equipments), R.drawable.ic_baseline_handyman_24,
-                        equipments, onEquipmentsChange, summits.flatMap { it.equipments }.distinct()
+                        stringResource(R.string.equipments),
+                        R.drawable.ic_baseline_handyman_24,
+                        equipments,
+                        onEquipmentsChange,
+                        summitsFromDatabase.flatMap { it.equipments }.distinct()
                     )
                 }
             }
@@ -738,6 +753,61 @@ fun AdditionalDataFields(
                     )
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AutocompleteTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    icon: Int,
+    suggestions: List<String>,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {
+                onValueChange(it)
+                expanded = it.isNotEmpty() && suggestions.any { s ->
+                    s.contains(it, ignoreCase = true)
+                }
+            },
+            label = { Text(label) },
+            leadingIcon = {
+                Icon(painterResource(icon), null)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
+        )
+
+        // Autocomplete dropdown
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            suggestions
+                .filter { it.contains(value, ignoreCase = true) }
+                .take(5)
+                .forEach { suggestion ->
+                    DropdownMenuItem(
+                        text = { Text(suggestion) },
+                        onClick = {
+                            onValueChange(suggestion)
+                            expanded = false
+                        }
+                    )
+                }
         }
     }
 }

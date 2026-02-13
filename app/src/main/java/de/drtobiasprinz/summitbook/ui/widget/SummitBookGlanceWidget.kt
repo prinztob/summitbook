@@ -77,7 +77,7 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
     }
 
     /**
-     * Generate a bitmap of the yearly overview chart
+     * Generate a bitmap of the yearly overview chart centered on current month
      */
     private fun generateYearlyChartBitmap(
         summits: List<Summit>,
@@ -95,222 +95,410 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
                 indoorHeightMeterPercent
             )
 
-            // Get actual data for the current year (only until today)
-            val actualEntries = performanceGraphProvider.getActualGraphForSummits(
-                GraphType.ElevationGain,
-                currentYear,
-                month = null,
-                currentDate = currentDate
-            )
+            // Load chart data
+            val chartData =
+                loadChartData(performanceGraphProvider, currentYear, currentDate) ?: return null
 
-            // Get forecast data
-            val forecastEntries = performanceGraphProvider.getForecastGraphForSummits(
-                GraphType.ElevationGain,
-                currentYear,
-                month = null
-            )
-
-            // Get min/max data from previous 5 years
-            val minMaxData = performanceGraphProvider.getActualGraphMinMaxForSummits(
-                GraphType.ElevationGain,
-                currentYear,
-                month = null
-            )
-            val minEntries = minMaxData.first
-            val maxEntries = minMaxData.second
-
-            if (actualEntries.isEmpty() && minEntries.isEmpty() && forecastEntries.isEmpty()) {
-                return null
-            }
-
-            // Chart dimensions
+            // Create bitmap and canvas
             val width = 400
             val height = 200
             val bitmap = createBitmap(width, height)
             val canvas = Canvas(bitmap)
 
-            // Background
-            val backgroundColor = "#1E1E1E".toColorInt()
-            canvas.drawColor(backgroundColor)
+            // Draw background
+            canvas.drawColor("#1E1E1E".toColorInt())
 
-            // Calculate bounds - include all data for proper scaling
-            val allEntries = actualEntries + maxEntries
-            val minX = 1f
-            val maxX = 366f // Days in a year
-            val minY = 0f
-            val maxY = allEntries.maxOfOrNull { it.y } ?: 1f
-
+            // Calculate chart bounds
+            val bounds = calculateChartBounds(chartData, calendar)
             val padding = 20f
             val chartWidth = width - 2 * padding
-            val chartHeight = height - 2 * padding - 30f // Extra space for labels
+            val chartHeight = height - 2 * padding - 30f
 
-            // Draw grid lines
-            val gridPaint = Paint().apply {
-                color = "#444444".toColorInt()
-                strokeWidth = 1f
-                alpha = 128
-            }
-
-            // Horizontal grid lines
-            for (i in 0..4) {
-                val y = padding + (chartHeight * i / 4f)
-                canvas.drawLine(padding, y, width - padding, y, gridPaint)
-            }
-
-            // Vertical grid lines
-            for (i in 0..6) {
-                val x = padding + (chartWidth * i / 6f)
-                canvas.drawLine(x, padding, x, padding + chartHeight, gridPaint)
-            }
-
-            // Draw min/max filled area (blue)
-            if (minEntries.isNotEmpty() && maxEntries.isNotEmpty()) {
-                val fillPaint = Paint().apply {
-                    color = "#0000FF".toColorInt()
-                    alpha = 50 // Semi-transparent
-                    style = Paint.Style.FILL
-                }
-
-                val fillPath = Path()
-                // Start with max line
-                maxEntries.forEachIndexed { index, entry ->
-                    val x = padding + ((entry.x - minX) / (maxX - minX)) * chartWidth
-                    val y = padding + chartHeight - ((entry.y - minY) / (maxY - minY)) * chartHeight
-                    if (index == 0) {
-                        fillPath.moveTo(x, y)
-                    } else {
-                        fillPath.lineTo(x, y)
-                    }
-                }
-                // Go back with min line
-                minEntries.reversed().forEach { entry ->
-                    val x = padding + ((entry.x - minX) / (maxX - minX)) * chartWidth
-                    val y = padding + chartHeight - ((entry.y - minY) / (maxY - minY)) * chartHeight
-                    fillPath.lineTo(x, y)
-                }
-                fillPath.close()
-                canvas.drawPath(fillPath, fillPaint)
-
-                // Draw max line (blue)
-                val maxPaint = Paint().apply {
-                    color = "#0000FF".toColorInt()
-                    strokeWidth = 2f
-                    style = Paint.Style.STROKE
-                    strokeCap = Paint.Cap.ROUND
-                }
-                val maxPath = Path()
-                maxEntries.forEachIndexed { index, entry ->
-                    val x = padding + ((entry.x - minX) / (maxX - minX)) * chartWidth
-                    val y = padding + chartHeight - ((entry.y - minY) / (maxY - minY)) * chartHeight
-                    if (index == 0) {
-                        maxPath.moveTo(x, y)
-                    } else {
-                        maxPath.lineTo(x, y)
-                    }
-                }
-                canvas.drawPath(maxPath, maxPaint)
-
-                // Draw min line (blue)
-                val minPath = Path()
-                minEntries.forEachIndexed { index, entry ->
-                    val x = padding + ((entry.x - minX) / (maxX - minX)) * chartWidth
-                    val y = padding + chartHeight - ((entry.y - minY) / (maxY - minY)) * chartHeight
-                    if (index == 0) {
-                        minPath.moveTo(x, y)
-                    } else {
-                        minPath.lineTo(x, y)
-                    }
-                }
-                canvas.drawPath(minPath, maxPaint)
-            }
-
-            // Draw actual data line with colored segments
-            if (actualEntries.isNotEmpty()) {
-                val lineWidth = 4f
-
-                actualEntries.forEachIndexed { index, entry ->
-                    if (index < actualEntries.size - 1) {
-                        val nextEntry = actualEntries[index + 1]
-
-                        val x1 = padding + ((entry.x - minX) / (maxX - minX)) * chartWidth
-                        val y1 =
-                            padding + chartHeight - ((entry.y - minY) / (maxY - minY)) * chartHeight
-                        val x2 = padding + ((nextEntry.x - minX) / (maxX - minX)) * chartWidth
-                        val y2 =
-                            padding + chartHeight - ((nextEntry.y - minY) / (maxY - minY)) * chartHeight
-
-                        // Determine color based on comparison with max
-                        val maxValue = maxEntries.firstOrNull { it.x == entry.x }?.y ?: 0f
-                        val color = if (entry.y > maxValue) {
-                            "#FFD700".toColorInt() // Gold - new record
-                        } else {
-                            "#FF0000".toColorInt() // Red
-                        }
-
-                        val actualPaint = Paint().apply {
-                            this.color = color
-                            strokeWidth = lineWidth
-                            style = Paint.Style.STROKE
-                            strokeCap = Paint.Cap.ROUND
-                        }
-
-                        canvas.drawLine(x1, y1, x2, y2, actualPaint)
-                    }
-                }
-            }
-
-            // Draw forecast line (dashed, gray)
-            if (forecastEntries.isNotEmpty()) {
-                val forecastPaint = Paint().apply {
-                    color = "#888888".toColorInt()
-                    strokeWidth = 2f
-                    style = Paint.Style.STROKE
-                    strokeCap = Paint.Cap.ROUND
-                    pathEffect = DashPathEffect(floatArrayOf(10f, 5f), 0f)
-                }
-                val forecastPath = Path()
-                forecastEntries.forEachIndexed { index, entry ->
-                    val x = padding + ((entry.x - minX) / (maxX - minX)) * chartWidth
-                    val y = padding + chartHeight - ((entry.y - minY) / (maxY - minY)) * chartHeight
-                    if (index == 0) {
-                        forecastPath.moveTo(x, y)
-                    } else {
-                        forecastPath.lineTo(x, y)
-                    }
-                }
-                canvas.drawPath(forecastPath, forecastPaint)
-            }
-
-            // Draw axis labels
-            val labelPaint = Paint().apply {
-                color = android.graphics.Color.WHITE
-                textSize = 20f
-                textAlign = Paint.Align.CENTER
-            }
-
-            // X-axis labels (months)
-            val months = listOf("Jan", "Mar", "May", "Jul", "Sep", "Nov")
-            months.forEachIndexed { index, month ->
-                val x = padding + (chartWidth * (index + 1) / 7f)
-                canvas.drawText(month, x, height - 5f, labelPaint)
-            }
-
-            // Y-axis labels
-            labelPaint.textAlign = Paint.Align.LEFT
-            for (i in 0..4) {
-                val yValue = minY + (maxY - minY) * (4 - i) / 4f
-                val y = padding + (chartHeight * i / 4f)
-                val label = if (yValue > 999) {
-                    "${(yValue / 1000).toInt()}k"
-                } else {
-                    "${yValue.toInt()}"
-                }
-                canvas.drawText(label, 5f, y + 5f, labelPaint)
-            }
+            // Draw chart elements
+            drawGridLines(canvas, chartWidth, chartHeight, width.toFloat())
+            drawMinMaxArea(
+                canvas,
+                chartData.minEntries,
+                chartData.maxEntries,
+                bounds,
+                chartWidth,
+                chartHeight
+            )
+            drawActualDataLine(
+                canvas,
+                chartData.actualEntries,
+                chartData.maxEntries,
+                chartData.forecastEntries,
+                bounds,
+                chartWidth,
+                chartHeight
+            )
+            drawForecastLine(canvas, chartData.forecastEntries, bounds, chartWidth, chartHeight)
+            drawAxisLabels(
+                canvas,
+                bounds,
+                chartWidth,
+                chartHeight,
+                width.toFloat(),
+                height.toFloat(),
+                calendar
+            )
 
             bitmap
         } catch (_: Exception) {
             null
+        }
+    }
+
+    /**
+     * Data class to hold chart data
+     */
+    private data class ChartData(
+        val actualEntries: List<de.drtobiasprinz.summitbook.models.ChartEntry>,
+        val forecastEntries: List<de.drtobiasprinz.summitbook.models.ChartEntry>,
+        val minEntries: List<de.drtobiasprinz.summitbook.models.ChartEntry>,
+        val maxEntries: List<de.drtobiasprinz.summitbook.models.ChartEntry>
+    )
+
+    /**
+     * Data class to hold chart bounds
+     */
+    private data class ChartBounds(
+        val minX: Float,
+        val maxX: Float,
+        val minY: Float,
+        val maxY: Float
+    )
+
+    /**
+     * Load chart data from performance graph provider
+     */
+    private fun loadChartData(
+        provider: PerformanceGraphProvider,
+        year: String,
+        currentDate: Date
+    ): ChartData? {
+        val actualEntries = provider.getActualGraphForSummits(
+            GraphType.ElevationGain, year, month = null, currentDate = currentDate
+        )
+        val forecastEntries = provider.getForecastGraphForSummits(
+            GraphType.ElevationGain, year, month = null, allDays = true
+        )
+        val minMaxData = provider.getActualGraphMinMaxForSummits(
+            GraphType.ElevationGain, year, month = null
+        )
+
+        if (actualEntries.isEmpty() && minMaxData.first.isEmpty() && forecastEntries.isEmpty()) {
+            return null
+        }
+
+        return ChartData(
+            actualEntries = actualEntries,
+            forecastEntries = forecastEntries,
+            minEntries = minMaxData.first,
+            maxEntries = minMaxData.second
+        )
+    }
+
+    /**
+     * Calculate chart bounds centered on current month
+     */
+    private fun calculateChartBounds(data: ChartData, calendar: Calendar): ChartBounds {
+        val currentMonth = calendar[Calendar.MONTH]
+        val currentYearInt = calendar[Calendar.YEAR]
+
+        // Calculate X-axis bounds centered on current month
+        val startOfMonthCalendar = Calendar.getInstance().apply {
+            set(currentYearInt, currentMonth, 1)
+        }
+        val endOfMonthCalendar = Calendar.getInstance().apply {
+            set(currentYearInt, currentMonth, getActualMaximum(Calendar.DAY_OF_MONTH))
+        }
+
+        val startDayOfYear = startOfMonthCalendar.get(Calendar.DAY_OF_YEAR).toFloat()
+        val endDayOfYear = endOfMonthCalendar.get(Calendar.DAY_OF_YEAR).toFloat()
+
+        val paddingDays = 15f
+        val minX = maxOf(1f, startDayOfYear - paddingDays)
+        val maxX = minOf(366f, endDayOfYear + paddingDays)
+
+        // Calculate Y-axis bounds from visible data only
+        val allEntries = data.actualEntries + data.maxEntries
+        val visibleEntries = allEntries.filter { it.x in minX..maxX }
+        val visibleYValues = visibleEntries.map { it.y }
+        val minY = visibleYValues.minOrNull() ?: 0f
+        val maxY = visibleYValues.maxOrNull() ?: 1f
+
+        // Add 10% padding to Y-axis
+        val yRange = maxY - minY
+        val yPadding = if (yRange > 0) yRange * 0.1f else 1f
+        val adjustedMinY = maxOf(0f, minY - yPadding)
+        val adjustedMaxY = maxY + yPadding
+
+        return ChartBounds(minX, maxX, adjustedMinY, adjustedMaxY)
+    }
+
+    /**
+     * Draw grid lines
+     */
+    private fun drawGridLines(
+        canvas: Canvas,
+        chartWidth: Float,
+        chartHeight: Float,
+        width: Float,
+        padding: Float = 20f
+    ) {
+        val gridPaint = Paint().apply {
+            color = "#444444".toColorInt()
+            strokeWidth = 1f
+            alpha = 128
+        }
+
+        // Horizontal grid lines
+        for (i in 0..4) {
+            val y = padding + (chartHeight * i / 4f)
+            canvas.drawLine(padding, y, width - padding, y, gridPaint)
+        }
+
+        // Vertical grid lines
+        for (i in 0..6) {
+            val x = padding + (chartWidth * i / 6f)
+            canvas.drawLine(x, padding, x, padding + chartHeight, gridPaint)
+        }
+    }
+
+    /**
+     * Draw min/max filled area and lines
+     */
+    private fun drawMinMaxArea(
+        canvas: Canvas,
+        minEntries: List<de.drtobiasprinz.summitbook.models.ChartEntry>,
+        maxEntries: List<de.drtobiasprinz.summitbook.models.ChartEntry>,
+        bounds: ChartBounds,
+        chartWidth: Float,
+        chartHeight: Float,
+        padding: Float = 20f
+    ) {
+        if (minEntries.isEmpty() || maxEntries.isEmpty()) return
+
+        // Draw filled area
+        val fillPaint = Paint().apply {
+            color = "#0000FF".toColorInt()
+            alpha = 50
+            style = Paint.Style.FILL
+        }
+
+        val fillPath = Path()
+        maxEntries.forEachIndexed { index, entry ->
+            val (x, y) = mapToCanvas(entry.x, entry.y, bounds, padding, chartWidth, chartHeight)
+            if (index == 0) fillPath.moveTo(x, y) else fillPath.lineTo(x, y)
+        }
+        minEntries.reversed().forEach { entry ->
+            val (x, y) = mapToCanvas(entry.x, entry.y, bounds, padding, chartWidth, chartHeight)
+            fillPath.lineTo(x, y)
+        }
+        fillPath.close()
+        canvas.drawPath(fillPath, fillPaint)
+
+        // Draw max and min lines
+        val linePaint = Paint().apply {
+            color = "#0000FF".toColorInt()
+            strokeWidth = 2f
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+        }
+
+        listOf(maxEntries, minEntries).forEach { entries ->
+            val path = Path()
+            entries.forEachIndexed { index, entry ->
+                val (x, y) = mapToCanvas(entry.x, entry.y, bounds, padding, chartWidth, chartHeight)
+                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            canvas.drawPath(path, linePaint)
+        }
+    }
+
+    /**
+     * Draw actual data line with colored segments
+     */
+    private fun drawActualDataLine(
+        canvas: Canvas,
+        actualEntries: List<de.drtobiasprinz.summitbook.models.ChartEntry>,
+        maxEntries: List<de.drtobiasprinz.summitbook.models.ChartEntry>,
+        forecastEntries: List<de.drtobiasprinz.summitbook.models.ChartEntry>,
+        bounds: ChartBounds,
+        chartWidth: Float,
+        chartHeight: Float,
+        padding: Float = 20f
+    ) {
+        if (actualEntries.isEmpty()) return
+
+        actualEntries.forEachIndexed { index, entry ->
+            if (index < actualEntries.size - 1) {
+                val nextEntry = actualEntries[index + 1]
+                val (x1, y1) = mapToCanvas(
+                    entry.x,
+                    entry.y,
+                    bounds,
+                    padding,
+                    chartWidth,
+                    chartHeight
+                )
+                val (x2, y2) = mapToCanvas(
+                    nextEntry.x,
+                    nextEntry.y,
+                    bounds,
+                    padding,
+                    chartWidth,
+                    chartHeight
+                )
+
+                val color = determineLineColor(entry, maxEntries, forecastEntries)
+
+                val paint = Paint().apply {
+                    this.color = color
+                    strokeWidth = 4f
+                    style = Paint.Style.STROKE
+                    strokeCap = Paint.Cap.ROUND
+                }
+
+                canvas.drawLine(x1, y1, x2, y2, paint)
+            }
+        }
+    }
+
+    /**
+     * Draw forecast line (dashed)
+     */
+    private fun drawForecastLine(
+        canvas: Canvas,
+        forecastEntries: List<de.drtobiasprinz.summitbook.models.ChartEntry>,
+        bounds: ChartBounds,
+        chartWidth: Float,
+        chartHeight: Float,
+        padding: Float = 20f
+    ) {
+        if (forecastEntries.isEmpty()) return
+
+        val paint = Paint().apply {
+            color = "#888888".toColorInt()
+            strokeWidth = 2f
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            pathEffect = DashPathEffect(floatArrayOf(10f, 5f), 0f)
+        }
+
+        val path = Path()
+        forecastEntries.forEachIndexed { index, entry ->
+            val (x, y) = mapToCanvas(entry.x, entry.y, bounds, padding, chartWidth, chartHeight)
+            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        canvas.drawPath(path, paint)
+    }
+
+    /**
+     * Draw axis labels
+     */
+    private fun drawAxisLabels(
+        canvas: Canvas,
+        bounds: ChartBounds,
+        chartWidth: Float,
+        chartHeight: Float,
+        width: Float,
+        height: Float,
+        calendar: Calendar,
+        padding: Float = 20f
+    ) {
+        val labelPaint = Paint().apply {
+            color = android.graphics.Color.WHITE
+            textSize = 20f
+            textAlign = Paint.Align.CENTER
+        }
+
+        // X-axis labels (months)
+        val monthNames = listOf(
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec"
+        )
+        val currentMonth = calendar[Calendar.MONTH]
+        val currentYearInt = calendar[Calendar.YEAR]
+
+        val monthsToShow = buildList {
+            add(currentMonth)
+            if (currentMonth > 0) add(currentMonth - 1)
+            if (currentMonth < 11) add(currentMonth + 1)
+            if (currentMonth > 1) add(currentMonth - 2)
+            if (currentMonth < 10) add(currentMonth + 2)
+        }.distinct().sorted().take(3)
+
+        monthsToShow.forEach { monthIndex ->
+            val dayOfYearForMonth = Calendar.getInstance().apply {
+                set(currentYearInt, monthIndex, 15)
+            }.get(Calendar.DAY_OF_YEAR).toFloat()
+
+            val x =
+                padding + ((dayOfYearForMonth - bounds.minX) / (bounds.maxX - bounds.minX)) * chartWidth
+            if (x in padding..(width - padding)) {
+                canvas.drawText(monthNames[monthIndex], x, height - 5f, labelPaint)
+            }
+        }
+
+        // Y-axis labels
+        labelPaint.textAlign = Paint.Align.LEFT
+        for (i in 0..4) {
+            val yValue = bounds.minY + (bounds.maxY - bounds.minY) * (4 - i) / 4f
+            val y = padding + (chartHeight * i / 4f)
+            val label = if (yValue > 999) {
+                "${(yValue / 1000).toInt()}k"
+            } else {
+                "${yValue.toInt()}"
+            }
+            canvas.drawText(label, 5f, y + 5f, labelPaint)
+        }
+    }
+
+    /**
+     * Map data coordinates to canvas coordinates
+     */
+    private fun mapToCanvas(
+        x: Float,
+        y: Float,
+        bounds: ChartBounds,
+        padding: Float,
+        chartWidth: Float,
+        chartHeight: Float
+    ): Pair<Float, Float> {
+        val canvasX = padding + ((x - bounds.minX) / (bounds.maxX - bounds.minX)) * chartWidth
+        val canvasY =
+            padding + chartHeight - ((y - bounds.minY) / (bounds.maxY - bounds.minY)) * chartHeight
+        return canvasX to canvasY
+    }
+
+    /**
+     * Determine line color based on comparison with max and forecast
+     */
+    private fun determineLineColor(
+        entry: de.drtobiasprinz.summitbook.models.ChartEntry,
+        maxEntries: List<de.drtobiasprinz.summitbook.models.ChartEntry>,
+        forecastEntries: List<de.drtobiasprinz.summitbook.models.ChartEntry>
+    ): Int {
+        val maxValue = maxEntries.firstOrNull { it.x == entry.x }?.y ?: 0f
+        val forecastEntry = forecastEntries.firstOrNull { it.x == entry.x }
+
+        return when {
+            entry.y > maxValue -> "#FFD700".toColorInt() // Gold - new record
+            forecastEntry != null && entry.y > forecastEntry.y -> "#00FF00".toColorInt() // Green - above forecast
+            else -> "#FF0000".toColorInt() // Red - below forecast or no forecast
         }
     }
 

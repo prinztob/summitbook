@@ -35,8 +35,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.mikephil.charting.data.Entry
 import de.drtobiasprinz.summitbook.Keys
+import de.drtobiasprinz.summitbook.models.ChartEntry
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -539,10 +539,10 @@ fun PerformanceChartView(
 ) {
     val scope = rememberCoroutineScope()
 
-    var chartEntries by remember { mutableStateOf<List<Entry>>(emptyList()) }
-    var chartEntriesForecast by remember { mutableStateOf<List<Entry>>(emptyList()) }
+    var chartEntries by remember { mutableStateOf<List<ChartEntry>>(emptyList()) }
+    var chartEntriesForecast by remember { mutableStateOf<List<ChartEntry>>(emptyList()) }
     var minMax by remember {
-        mutableStateOf<Pair<List<Entry>, List<Entry>>>(
+        mutableStateOf<Pair<List<ChartEntry>, List<ChartEntry>>>(
             Pair(
                 emptyList(),
                 emptyList()
@@ -614,9 +614,9 @@ fun PerformanceChartView(
  * Build chart series from raw data
  */
 private fun buildChartSeries(
-    chartEntries: List<Entry>,
-    chartEntriesForecast: List<Entry>,
-    minMax: Pair<List<Entry>, List<Entry>>,
+    chartEntries: List<ChartEntry>,
+    chartEntriesForecast: List<ChartEntry>,
+    minMax: Pair<List<ChartEntry>, List<ChartEntry>>,
     graphType: GraphType
 ): List<ChartSeries> {
     val series = mutableListOf<ChartSeries>()
@@ -684,7 +684,7 @@ private fun buildChartSeries(
     if (chartEntries.isNotEmpty()) {
         var actualEntries = chartEntries
         if (actualEntries[0].x != 1f) {
-            actualEntries = listOf(Entry(1f, 0f)) + actualEntries
+            actualEntries = listOf(ChartEntry(1f, 0f)) + actualEntries
         }
         val filteredEntries = if (graphType.filterZeroValues) {
             actualEntries.filter { it.y > 0f }

@@ -46,6 +46,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.drawable.toDrawable
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
@@ -64,6 +66,8 @@ import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.IOException
@@ -93,6 +97,7 @@ fun SummitEntryTrackScreen(
     var trackInfoText by remember { mutableStateOf<String?>(null) }
     var mapViewRef by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
     var locationOverlayRef by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
+    var selectedTrackPointIndex by remember { mutableStateOf<Int?>(null) }
 
     if (summit == null) {
         Box(
@@ -203,7 +208,9 @@ fun SummitEntryTrackScreen(
                         calculateBoundingBox = !alreadyZoomedOnTrack,
                         onMapReady = { alreadyZoomedOnTrack = true },
                         onMapViewCreated = { mapView -> mapViewRef = mapView },
-                        onLocationOverlayCreated = { overlay -> locationOverlayRef = overlay }
+                        onLocationOverlayCreated = { overlay -> locationOverlayRef = overlay },
+                        selectedTrackPointIndex = selectedTrackPointIndex,
+                        onTrackPointSelected = { index -> selectedTrackPointIndex = index }
                     )
 
                     // Track info display (shows track points count or clicked track point info)
@@ -265,6 +272,8 @@ fun SummitEntryTrackScreen(
                 LineChartView(
                     trackPoints = trackPoints,
                     trackColor = selectedCustomizeTrackItem,
+                    selectedTrackPointIndex = selectedTrackPointIndex,
+                    onTrackPointSelected = { index -> selectedTrackPointIndex = index },
                     modifier = Modifier
                         .fillMaxWidth()
                         .clipToBounds()
@@ -298,7 +307,9 @@ fun MapView(
     onMapReady: () -> Unit,
     modifier: Modifier = Modifier,
     onMapViewCreated: (CustomMapViewToAllowScrolling) -> Unit = {},
-    onLocationOverlayCreated: (MyLocationNewOverlay) -> Unit = {}
+    onLocationOverlayCreated: (MyLocationNewOverlay) -> Unit = {},
+    selectedTrackPointIndex: Int? = null,
+    onTrackPointSelected: (Int) -> Unit = {}
 ) {
     var mLocationOverlay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
 
@@ -384,8 +395,33 @@ fun MapView(
                 true,
                 selectedTrackColor,
                 true,
-                calculateBondingBox = calculateBoundingBox
+                addInfoWindow = false,
+                calculateBondingBox = calculateBoundingBox,
+                onTrackPointSelected = onTrackPointSelected
             )
+
+            // Handle selected track point marker
+            selectedTrackPointIndex?.let { index ->
+                if (index in trackPoints.indices) {
+                    val trackPoint = trackPoints[index].first
+                    val geoPoint = GeoPoint(
+                        trackPoint.latitude,
+                        trackPoint.longitude,
+                        trackPoint.elevation
+                    )
+                    val marker = Marker(view).apply {
+                        position = geoPoint
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        icon = createBitmap(20, 20).apply {
+                            eraseColor(Color.YELLOW)
+                        }.toDrawable(view.resources)
+                        setOnMarkerClickListener { _, _ ->
+                            true // Don't consume the click event
+                        }
+                    }
+                    view.overlays.add(marker)
+                }
+            }
 
             if (calculateBoundingBox && trackPoints.isNotEmpty()) {
                 onMapReady()
@@ -708,6 +744,7 @@ private suspend fun showAllTracksOfSummitInBoundingBox(
             true,
             TrackColor.Elevation,
             true,
+            addInfoWindow = false,
             calculateBondingBox = false
         )
 

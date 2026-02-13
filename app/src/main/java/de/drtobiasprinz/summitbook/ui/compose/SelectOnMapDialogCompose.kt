@@ -59,11 +59,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.osmdroid.bonuspack.location.GeocoderNominatim
 import org.osmdroid.config.Configuration
-import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.infowindow.MarkerInfoWindow
 import java.io.File
@@ -78,6 +76,7 @@ import java.nio.file.StandardCopyOption
  * Jetpack Compose version of SelectOnOsMapActivity
  * Replaces the Activity-based implementation with a modern Compose Dialog
  */
+@Suppress("AssignedValueIsNeverRead", "COMPOSE_APPLIER_CALL_MISMATCH")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SelectOnMapDialogCompose(
@@ -97,7 +96,6 @@ fun SelectOnMapDialogCompose(
     var searchQuery by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showFileInfoDialog by remember { mutableStateOf(false) }
-    var wasBoundingBoxCalculated by remember { mutableStateOf(false) }
 
     // Map view reference
     var mapView by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
@@ -107,7 +105,7 @@ fun SelectOnMapDialogCompose(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            scope.launch() {
+            scope.launch {
                 val file = File(MainActivityCompose.cache, "new_gpx_track.gpx")
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
                     copyGpxFileToCache(inputStream, file)
@@ -115,7 +113,6 @@ fun SelectOnMapDialogCompose(
                 addGpxTrack(file, GPXParser(), mapView, summitEntry) { position, _ ->
                     latLngSelectedPosition = position
                     selectedGpsPath = file.toPath()
-                    wasBoundingBoxCalculated = true
                 }
             }
         }
@@ -214,29 +211,22 @@ fun SelectOnMapDialogCompose(
                             summitEntry.sportType
                         )
 
-                        // Map tap handler - add before track and marker
-                        val mapEventsReceiver = object : MapEventsReceiver {
-                            override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
-                                latLngSelectedPosition = GeoPoint(p.latitude, p.longitude)
-                                map.addMarker(p, summitEntry)
-                                map.zoomController.activate()
-                                return false
-                            }
-
-                            override fun longPressHelper(p: GeoPoint): Boolean {
-                                return false
-                            }
+                        // Load GPS track if available
+                        if (summitEntry.hasGpsTrack() && summitEntry.gpsTrack == null) {
+                            summitEntry.setGpsTrack()
                         }
-                        // Remove existing MapEventsOverlay if present, then add new one
-                        map.overlays.removeIf { it is MapEventsOverlay }
-                        map.overlays.add(MapEventsOverlay(mapEventsReceiver))
+                        val gpsTrack = summitEntry.gpsTrack
+                        if (gpsTrack?.hasNoTrackPoints() == true) {
+                            gpsTrack.parseTrack()
+                        }
 
                         map.addTrackAndMarker(
                             summitEntry,
-                            summitEntry.gpsTrack?.trackPoints ?: emptyList(),
+                            gpsTrack?.trackPoints ?: emptyList(),
                             false,
                             TrackColor.None,
-                            alwaysShowTrackOnMap = false
+                            alwaysShowTrackOnMap = false,
+                            calculateBondingBox = true
                         )
                         summitEntry.trackBoundingBox?.let { boundingBox ->
                             map.drawBoundingBox(boundingBox)
@@ -474,7 +464,7 @@ fun SelectOnMapDialogCompose(
     if (showFileInfoDialog) {
         FileInfoDialogCompose(
             entry = summitEntry,
-            viewModel = null,
+            onUpdateSummit = onSaveSummit,
             onDismiss = { showFileInfoDialog = false },
             onLoadingStateChanged = { loading -> isLoading = loading }
         )
@@ -584,13 +574,12 @@ private fun addSelectedPositionAndTrack(
  * Custom info window for map markers
  */
 private class CustomInfoWindow(mapView: CustomMapViewToAllowScrolling?) :
-    MarkerInfoWindow(org.osmdroid.bonuspack.R.layout.bonuspack_bubble, mapView) {
+    MarkerInfoWindow(R.layout.bonuspack_bubble, mapView) {
     private var mSelectedPoi: Address? = null
     override fun onOpen(item: Any) {
         super.onOpen(item)
-        val button =
-            mView.findViewById<android.widget.Button>(org.osmdroid.bonuspack.R.id.bubble_moreinfo)
-        button.visibility = android.view.View.VISIBLE
+        val button = mView.findViewById<android.widget.Button>(R.id.bubble_moreinfo)
+        button?.visibility = android.view.View.VISIBLE
         val marker: Marker = item as Marker
         mSelectedPoi = marker.relatedObject as Address
     }

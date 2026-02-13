@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -65,8 +66,6 @@ fun SummitsListScreen(
     modifier: Modifier = Modifier,
     isBookmark: Boolean = false,
     onSaveSummit: (Boolean, Summit) -> Job,
-    onUpdateIsFavorite: (Summit) -> Unit = {},
-    onUpdateIsPeak: (Summit) -> Unit = {},
     onDelete: (Summit) -> Unit = {}
 ) {
     if (summits.isEmpty()) {
@@ -105,8 +104,6 @@ fun SummitsListScreen(
                     summits = summits,
                     summit = summit,
                     isBookmark = isBookmark,
-                    onUpdateIsFavorite = onUpdateIsFavorite,
-                    onUpdateIsPeak = onUpdateIsPeak,
                     onDelete = onDelete,
                     onSaveSummit = onSaveSummit
                 )
@@ -118,13 +115,12 @@ fun SummitsListScreen(
 /**
  * Individual summit card composable
  */
+@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SummitCard(
     summits: List<Summit>,
     summit: Summit,
     isBookmark: Boolean,
-    onUpdateIsFavorite: (Summit) -> Unit,
-    onUpdateIsPeak: (Summit) -> Unit,
     onDelete: (Summit) -> Unit,
     onSaveSummit: (Boolean, Summit) -> Job
 ) {
@@ -134,8 +130,12 @@ fun SummitCard(
     var showAddImagesDialog by remember { mutableStateOf(false) }
     var showSelectOnMapDialog by remember { mutableStateOf(false) }
     var showAddAdditionalDataDialog by remember { mutableStateOf(false) }
+    var refreshTrigger by remember { mutableIntStateOf(0) }
     val isDarkTheme = isSystemInDarkTheme()
     val deleteCancelMessage = stringResource(R.string.delete_cancel)
+
+    // Force recomposition when refreshTrigger changes
+    val currentSummit = remember(refreshTrigger) { summit }
 
     Card(
         modifier = Modifier
@@ -155,13 +155,13 @@ fun SummitCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(if (summit.hasImagePath()) 200.dp else 60.dp)
+                    .height(if (currentSummit.hasImagePath()) 200.dp else 60.dp)
             ) {
                 // Background image if available
-                if (summit.hasImagePath()) {
+                if (currentSummit.hasImagePath()) {
                     AsyncImage(
                         model = ImageRequest.Builder(context)
-                            .data("file://" + summit.getImagePath(summit.imageIds.first()))
+                            .data("file://" + currentSummit.getImagePath(currentSummit.imageIds.first()))
                             .crossfade(true)
                             .build(),
                         contentDescription = stringResource(R.string.summit_image),
@@ -176,7 +176,7 @@ fun SummitCard(
                         .fillMaxWidth()
                         .align(Alignment.BottomStart)
                         .background(
-                            if (summit.hasImagePath()) {
+                            if (currentSummit.hasImagePath()) {
                                 androidx.compose.ui.graphics.Color(0x55000000)
                             } else {
                                 androidx.compose.ui.graphics.Color.Transparent
@@ -189,10 +189,10 @@ fun SummitCard(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         // Sport type icon
-                        val sportTypeIcon = if (summit.hasImagePath()) {
-                            summit.sportType.imageIdWhite
+                        val sportTypeIcon = if (currentSummit.hasImagePath()) {
+                            currentSummit.sportType.imageIdWhite
                         } else {
-                            if (isDarkTheme) summit.sportType.imageIdWhite else summit.sportType.imageIdBlack
+                            if (isDarkTheme) currentSummit.sportType.imageIdWhite else currentSummit.sportType.imageIdBlack
                         }
 
                         Image(
@@ -212,9 +212,9 @@ fun SummitCard(
                             modifier = Modifier.weight(1f)
                         ) {
                             // Date (only for non-bookmarks)
-                            if (!summit.isBookmark) {
+                            if (!currentSummit.isBookmark) {
                                 Text(
-                                    text = summit.getDateAsString() ?: "",
+                                    text = currentSummit.getDateAsString() ?: "",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = if (summit.hasImagePath()) {
                                         androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f)
@@ -230,7 +230,7 @@ fun SummitCard(
 
                             // Summit name
                             Text(
-                                text = summit.name,
+                                text = currentSummit.name,
                                 style = MaterialTheme.typography.titleLarge,
                                 color = if (summit.hasImagePath()) {
                                     androidx.compose.ui.graphics.Color.White
@@ -242,7 +242,7 @@ fun SummitCard(
                         }
 
                         // Record badges aligned to the right
-                        RecordBadges(summit = summit)
+                        RecordBadges(summit = currentSummit)
                     }
                 }
             }
@@ -260,7 +260,7 @@ fun SummitCard(
                     text = String.format(
                         Locale.getDefault(),
                         "%s %s",
-                        summit.elevationData.elevationGain,
+                        currentSummit.elevationData.elevationGain,
                         stringResource(R.string.hm)
                     ),
                     modifier = Modifier.weight(1f)
@@ -272,18 +272,18 @@ fun SummitCard(
                     text = String.format(
                         Locale.getDefault(),
                         "%.1f %s",
-                        summit.kilometers,
+                        currentSummit.kilometers,
                         stringResource(R.string.km)
                     ),
                     modifier = Modifier.weight(1f)
                 )
                 StatItem(
-                    icon = getThirdEntryValues(summit).third,
+                    icon = getThirdEntryValues(currentSummit).third,
                     text = String.format(
                         Locale.getDefault(),
-                        if (getThirdEntryValues(summit).first is Int) "%s %s" else "%.1f %s",
-                        getThirdEntryValues(summit).first,
-                        stringResource(getThirdEntryValues(summit).second)
+                        if (getThirdEntryValues(currentSummit).first is Int) "%s %s" else "%.1f %s",
+                        getThirdEntryValues(currentSummit).first,
+                        stringResource(getThirdEntryValues(currentSummit).second)
                     ),
                     modifier = Modifier.weight(1f)
                 )
@@ -301,7 +301,7 @@ fun SummitCard(
                 // Add image button
                 IconButton(
                     onClick = {
-                        if (summit.isBookmark) {
+                        if (currentSummit.isBookmark) {
                             // Bookmark icon - no action
                         } else {
                             showAddImagesDialog = true
@@ -310,7 +310,7 @@ fun SummitCard(
                 ) {
                     Icon(
                         painter = painterResource(
-                            id = if (summit.isBookmark) {
+                            id = if (currentSummit.isBookmark) {
                                 R.drawable.ic_baseline_bookmarks_24
                             } else {
                                 R.drawable.baseline_add_a_photo_black_24dp
@@ -322,7 +322,7 @@ fun SummitCard(
                 }
 
                 // Add velocity data button (only if has GPS track)
-                if (summit.hasGpsTrack() && !summit.isBookmark) {
+                if (currentSummit.hasGpsTrack() && !currentSummit.isBookmark) {
                     IconButton(
                         onClick = {
                             showAddAdditionalDataDialog = true
@@ -330,7 +330,7 @@ fun SummitCard(
                     ) {
                         Icon(
                             painter = painterResource(
-                                id = if (summit.velocityData.hasAdditionalData() || summit.elevationData.hasAdditionalData()) {
+                                id = if (currentSummit.velocityData.hasAdditionalData() || currentSummit.elevationData.hasAdditionalData()) {
                                     R.drawable.baseline_speed_black_24dp
                                 } else {
                                     R.drawable.baseline_more_time_black_24dp
@@ -351,8 +351,8 @@ fun SummitCard(
                     Icon(
                         painter = painterResource(
                             id = when {
-                                summit.latLng == null -> R.drawable.baseline_add_location_black_24dp
-                                summit.hasGpsTrack(true) -> R.drawable.baseline_edit_location_alt_24
+                                currentSummit.latLng == null -> R.drawable.baseline_add_location_black_24dp
+                                currentSummit.hasGpsTrack(true) -> R.drawable.baseline_edit_location_alt_24
                                 else -> R.drawable.baseline_edit_location_black_24dp
                             }
                         ),
@@ -388,15 +388,18 @@ fun SummitCard(
                 }
 
                 // Favorite button (only for non-bookmarks)
-                if (!summit.isBookmark) {
+                if (!currentSummit.isBookmark) {
                     IconButton(
                         onClick = {
-                            onUpdateIsFavorite(summit)
+                            summit.isFavorite = !summit.isFavorite
+                            onSaveSummit(true, summit).invokeOnCompletion {
+                                refreshTrigger++
+                            }
                         }
                     ) {
                         Icon(
                             painter = painterResource(
-                                id = if (summit.isFavorite) {
+                                id = if (currentSummit.isFavorite) {
                                     R.drawable.baseline_star_black_24dp
                                 } else {
                                     R.drawable.baseline_star_border_black_24dp
@@ -410,12 +413,15 @@ fun SummitCard(
                     // Peak button
                     IconButton(
                         onClick = {
-                            onUpdateIsPeak(summit)
+                            summit.isPeak = !summit.isPeak
+                            onSaveSummit(true, summit).invokeOnCompletion {
+                                refreshTrigger++
+                            }
                         }
                     ) {
                         Icon(
                             painter = painterResource(
-                                id = if (summit.isPeak) {
+                                id = if (currentSummit.isPeak) {
                                     R.drawable.outline_landscape_2_24
                                 } else {
                                     R.drawable.outline_landscape_2_off_24
@@ -452,38 +458,56 @@ fun SummitCard(
     // Edit summit dialog
     if (showEditDialog) {
         AddSummitDialogCompose(
-            summitId = summit.id,
-            summits = summits,
+            summitId = currentSummit.id,
+            summitsFromDatabase = summits,
             isBookmark = isBookmark,
             onDismiss = { showEditDialog = false },
-            onSaveSummit = onSaveSummit
+            onSaveSummit = { isEdit, updatedSummit ->
+                val job = onSaveSummit(isEdit, updatedSummit)
+                job.invokeOnCompletion {
+                    refreshTrigger++
+                }
+                job
+            }
         )
     }
 
     // Add images dialog
     if (showAddImagesDialog) {
         AddImagesDialogCompose(
-            summit = summit,
+            summit = currentSummit,
             onDismiss = { showAddImagesDialog = false },
-            onSaveSummit = onSaveSummit
+            onSaveSummit = { isEdit, updatedSummit ->
+                val job = onSaveSummit(isEdit, updatedSummit)
+                refreshTrigger++
+                job
+            }
         )
     }
 
     // Select on map dialog
     if (showSelectOnMapDialog) {
         SelectOnMapDialogCompose(
-            summit = summit,
+            summit = currentSummit,
             onDismiss = { showSelectOnMapDialog = false },
-            onSaveSummit = onSaveSummit
+            onSaveSummit = { isEdit, updatedSummit ->
+                val job = onSaveSummit(isEdit, updatedSummit)
+                refreshTrigger++
+                job
+            }
         )
     }
 
     // Add additional data dialog
     if (showAddAdditionalDataDialog) {
         AddAdditionalDataDialogCompose(
-            summit = summit,
+            summit = currentSummit,
             onDismiss = { showAddAdditionalDataDialog = false },
-            onSaveSummit = onSaveSummit
+            onSaveSummit = { isEdit, updatedSummit ->
+                val job = onSaveSummit(isEdit, updatedSummit)
+                refreshTrigger++
+                job
+            }
         )
     }
 }

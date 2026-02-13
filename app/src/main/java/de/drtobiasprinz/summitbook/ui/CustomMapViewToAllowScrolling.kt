@@ -55,6 +55,7 @@ import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 import org.osmdroid.views.overlay.milestones.MilestoneManager
 import org.osmdroid.views.overlay.milestones.MilestoneMeterDistanceSliceLister
 import java.io.File
+import kotlin.math.abs
 
 class CustomMapViewToAllowScrolling : MapView {
     constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
@@ -80,7 +81,9 @@ class CustomMapViewToAllowScrolling : MapView {
         forceAddTrack: Boolean,
         selectedCustomizeTrackItem: TrackColor,
         alwaysShowTrackOnMap: Boolean,
-        calculateBondingBox: Boolean = true
+        addInfoWindow: Boolean = true,
+        calculateBondingBox: Boolean = true,
+        onTrackPointSelected: (Int) -> Unit = {}
     ): Marker? {
         val geoPoints = ArrayList<GeoPoint>()
 
@@ -90,7 +93,7 @@ class CustomMapViewToAllowScrolling : MapView {
             geoPoints.add(point)
 
             val createdMarker =
-                addMarker(point, summitEntry, addToOverlay = false, alwaysShowTrackOnMap)
+                addMarker(point, summitEntry, addToOverlay = false, alwaysShowTrackOnMap, addInfoWindow=addInfoWindow)
 
             // Center map on marker if no GPS track exists
             if (!summitEntry.hasGpsTrack()) {
@@ -110,6 +113,7 @@ class CustomMapViewToAllowScrolling : MapView {
             selectedCustomizeTrackItem = selectedCustomizeTrackItem,
             calculateBondingBox = calculateBondingBox,
             mGeoPoints = geoPoints,
+            onTrackPointSelected = onTrackPointSelected
         )
 
         // Add marker to overlays after track to ensure it's drawn on top
@@ -135,10 +139,17 @@ class CustomMapViewToAllowScrolling : MapView {
         selectedCustomizeTrackItem: TrackColor,
         calculateBondingBox: Boolean = false,
         mGeoPoints: ArrayList<GeoPoint> = arrayListOf(),
-        color: Int = Color.BLUE
+        color: Int = Color.BLUE,
+        onTrackPointSelected: (Int) -> Unit = {}
     ) {
         if (osMapRoute == null || forceAddTrack) {
-            addGpsTrack(this, trackPoints, selectedCustomizeTrackItem, color)
+            addGpsTrack(
+                this,
+                trackPoints,
+                selectedCustomizeTrackItem,
+                color,
+                onTrackPointSelected = onTrackPointSelected
+            )
         }
         mGeoPoints.addAll(getTrackPointsFrom(trackPoints))
         if (calculateBondingBox) {
@@ -151,7 +162,8 @@ class CustomMapViewToAllowScrolling : MapView {
         trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
         selectedCustomizeTrackItem: TrackColor = TrackColor.None,
         color: Int = COLOR_POLYLINE_STATIC,
-        summit: Summit? = null
+        summit: Summit? = null,
+        onTrackPointSelected: (Int) -> Unit = {}
     ) {
         var usedTrackPoints = trackPoints
         try {
@@ -161,12 +173,23 @@ class CustomMapViewToAllowScrolling : MapView {
             osMapRoute = Polyline(mMapView)
 
             osMapRoute?.setOnClickListener { _, _, eventPos ->
-                if (mMapView != null && summit != null) {
-                    Toast.makeText(
-                        mMapView.context,
-                        "${summit.getDateAsString()} ${summit.name}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                if (mMapView != null) {
+                    if (summit != null) {
+                        Toast.makeText(
+                            mMapView.context,
+                            "${summit.getDateAsString()} ${summit.name}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+
+                    val closestPoint = trackPoints.withIndex().minByOrNull { (_, trackPoint) ->
+                        val trackPointGeo =
+                            GeoPoint(trackPoint.first.latitude, trackPoint.first.longitude)
+                        abs(trackPointGeo.distanceToAsDouble(eventPos))
+                    }?.index
+                    if (closestPoint != null) {
+                        onTrackPointSelected(closestPoint)
+                    }
                 }
                 return@setOnClickListener true
             }
@@ -229,7 +252,8 @@ class CustomMapViewToAllowScrolling : MapView {
         entry: Summit,
         addToOverlay: Boolean = true,
         alwaysShowTrackOnMap: Boolean = false,
-        useIconId: Int? = null
+        useIconId: Int? = null,
+        addInfoWindow: Boolean = true
     ): Marker? {
         try {
             val marker = Marker(this)
@@ -244,14 +268,22 @@ class CustomMapViewToAllowScrolling : MapView {
             marker.icon = ResourcesCompat.getDrawable(
                 context.resources, iconId, null
             )
-            marker.infoWindow = MapCustomInfoBubble(this, entry, context, alwaysShowTrackOnMap)
-            marker.setOnMarkerClickListener { marker1, _ ->
-                if (!marker1.isInfoWindowShown) {
-                    marker1.showInfoWindow()
-                } else {
-                    marker1.closeInfoWindow()
+            if (addInfoWindow) {
+                marker.infoWindow = MapCustomInfoBubble(this, entry, context, alwaysShowTrackOnMap)
+                marker.setOnMarkerClickListener { marker1, _ ->
+                    if (!marker1.isInfoWindowShown) {
+                        marker1.showInfoWindow()
+                    } else {
+                        marker1.closeInfoWindow()
+                    }
+                    false
                 }
-                false
+            } else {
+                // Disable default info window behavior when addInfoWindow is false
+                marker.infoWindow = null // Explicitly set to null to prevent default info window
+                marker.setOnMarkerClickListener { _, _ ->
+                    true // Consume the click event without showing info window
+                }
             }
             if (addToOverlay) {
                 this.overlays.add(marker)
@@ -270,7 +302,10 @@ class CustomMapViewToAllowScrolling : MapView {
         }
     }
 
-    fun calculateBoundingBox(trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>, point: GeoPoint?) {
+    fun calculateBoundingBox(
+        trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+        point: GeoPoint?
+    ) {
         val mGeoPoints = ArrayList<GeoPoint>()
         if (point != null) {
             mGeoPoints.add(point)
@@ -302,6 +337,12 @@ class CustomMapViewToAllowScrolling : MapView {
     }
 
     fun enableRoadInfoOnMapClick(scope: CoroutineScope? = null) {
+        // Check if a MapEventsOverlay already exists to avoid adding multiple overlays
+        val existingOverlay = overlays.firstOrNull { it is org.osmdroid.views.overlay.MapEventsOverlay }
+        if (existingOverlay != null) {
+            return // Already exists, don't add another one
+        }
+        
         val coroutineScope = scope ?: CoroutineScope(Dispatchers.Main)
         val mapEventsReceiver = object : org.osmdroid.events.MapEventsReceiver {
             override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
@@ -312,7 +353,7 @@ class CustomMapViewToAllowScrolling : MapView {
                 if (p != null) {
                     showRoadInfoAtPosition(context, p, coroutineScope)
                 }
-                return true
+                return false // Don't consume the event, allow it to pass through to other overlays
             }
 
             override fun longPressHelper(p: GeoPoint?): Boolean {

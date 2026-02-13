@@ -1,7 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.widget
 
-import android.content.Context
-import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -10,6 +8,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.background
@@ -45,9 +44,7 @@ fun SummitBookWidgetContent(
             .background(Color.Transparent.copy(alpha = 0.7f), Color.Transparent.copy(alpha = 0.7f))
             .cornerRadius(16.dp)
             .padding(8.dp)
-            .clickable {
-                openAppAction(context)
-            }
+            .clickable(actionStartActivity<MainActivityCompose>())
     ) {
         Column(
             modifier = GlanceModifier.fillMaxSize(),
@@ -175,10 +172,3 @@ private val TextStyle = androidx.glance.text.TextStyle(
     textAlign = TextAlign.Start,
     color = ColorProvider(Color.White, Color.White)
 )
-
-private fun openAppAction(context: Context) {
-    val intent = Intent(context, MainActivityCompose::class.java).apply {
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-    }
-    context.startActivity(intent)
-}

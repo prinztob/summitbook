@@ -23,7 +23,7 @@ enum class FileRowType(
             try {
                 pythonInstance?.let { python ->
                     GpxPyExecutor(python).removeExtensionsFromGpxTracks(
-                        summit.getGpsTrackPath().toFile()
+                        backupFile, summit.getGpsTrackPath().toFile()
                     )
                 }
                 Log.i(
@@ -53,7 +53,7 @@ enum class FileRowType(
             try {
                 pythonInstance?.let { python ->
                     GpxPyExecutor(python).removeExtensionsFromGpxTracks(
-                        summit.getGpsTrackPath().toFile()
+                        backupFile, summit.getGpsTrackPath().toFile()
                     )
                 }
                 Log.i(

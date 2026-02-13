@@ -35,8 +35,27 @@ class SummitUpdateWorker(
         return try {
             Log.i(TAG, "Update boundingBoxes")
             withContext(Dispatchers.IO) {
-                val summits = repository.getAllSummits().first()
-                updateTracksAndBoundingBox(summits)
+                // Process in batches to avoid OOM
+                val batchSize = 50
+                var offset = 0
+                var hasMore = true
+                
+                while (hasMore) {
+                    val summits = repository.getSummitsPaginated(batchSize, offset).first()
+                    if (summits.isEmpty()) {
+                        hasMore = false
+                    } else {
+                        updateTracksAndBoundingBox(summits)
+                        offset += batchSize
+                        // Clear references to allow GC
+                        System.gc()
+                    }
+                }
+                
+                // Clear the exclusion list periodically to prevent memory leak
+                if (entriesToExcludeForBoundingBoxCalculation.size > 100) {
+                    entriesToExcludeForBoundingBoxCalculation.clear()
+                }
             }
             Result.success()
         } catch (e: Exception) {
@@ -63,19 +82,28 @@ class SummitUpdateWorker(
         if (entriesWithoutBoundingBox.isNotEmpty()) {
             val entriesToCheck = entriesWithoutBoundingBox.take(takeNumberOfSummits)
             entriesToCheck.forEachIndexed { index, entryToCheck ->
-                entryToCheck.setBoundingBoxFromTrack()
-                if (entryToCheck.trackBoundingBox != null) {
-                    repository.updateSummit(entryToCheck)
-                    Log.i(
-                        TAG,
-                        "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name}, " + "${entriesWithoutBoundingBox.size - index} remaining."
-                    )
-                } else {
-                    Log.i(
-                        TAG,
-                        "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name} failed, remove it from update list."
-                    )
+                try {
+                    entryToCheck.setBoundingBoxFromTrack()
+                    if (entryToCheck.trackBoundingBox != null) {
+                        repository.updateSummit(entryToCheck)
+                        Log.i(
+                            TAG,
+                            "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name}, " + "${entriesWithoutBoundingBox.size - index} remaining."
+                        )
+                    } else {
+                        Log.i(
+                            TAG,
+                            "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name} failed, remove it from update list."
+                        )
+                        entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
+                    }
+                } catch (e: OutOfMemoryError) {
+                    Log.e(TAG, "OOM while updating bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name}", e)
                     entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
+                    // Suggest GC to free memory
+                    System.gc()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error updating bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name}", e)
                 }
             }
         }
@@ -213,6 +241,18 @@ class SummitUpdateWorker(
                         TAG,
                         "asyncSimplifyGpsTracks - Simplified track for ${summit.getDateAsString()}_${summit.name}."
                     )
+                    // Suggest GC after each track to free memory
+                    if (i % 5 == 0) {
+                        System.gc()
+                    }
+                } catch (ex: OutOfMemoryError) {
+                    Log.e(
+                        TAG,
+                        "asyncSimplifyGpsTracks - OOM while simplifying track for ${summit.getDateAsString()}_${summit.name}: ${ex.message}"
+                    )
+                    summit.ignoreSimplifyingTrack = true
+                    repository.updateIgnoreSimplifyingTrack(summit.id, true)
+                    System.gc()
                 } catch (ex: RuntimeException) {
                     Log.e(
                         TAG,
@@ -234,6 +274,18 @@ class SummitUpdateWorker(
                         TAG,
                         "asyncSimplifyGpsTracks - Calculated additional data for ${summit.getDateAsString()}_${summit.name}."
                     )
+                    // Suggest GC after each track to free memory
+                    if (i % 5 == 0) {
+                        System.gc()
+                    }
+                } catch (ex: OutOfMemoryError) {
+                    Log.e(
+                        TAG,
+                        "asyncSimplifyGpsTracks - OOM while analyzing track for ${summit.getDateAsString()}_${summit.name}: ${ex.message}"
+                    )
+                    summit.ignoreSimplifyingTrack = true
+                    repository.updateIgnoreSimplifyingTrack(summit.id, true)
+                    System.gc()
                 } catch (ex: RuntimeException) {
                     Log.e(
                         TAG,
