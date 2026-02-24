@@ -69,6 +69,10 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     }
 
     fun saveSummit(isEdite: Boolean, entity: Summit) = viewModelScope.launch {
+        entity.places = entity.places.filter { it.isNotEmpty() }
+        entity.countries = entity.countries.filter { it.isNotEmpty() }
+        entity.participants = entity.participants.filter { it.isNotEmpty() }
+        entity.equipments = entity.equipments.filter { it.isNotEmpty() }
         if (isEdite) {
             repository.updateSummit(entity)
         } else {
@@ -85,10 +89,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
 
     fun updateIgnoreSimplifyingTrack(summitId: Long, ignoreSimplifyingTrack: Boolean) = viewModelScope.launch {
         repository.updateIgnoreSimplifyingTrack(summitId, ignoreSimplifyingTrack)
-    }
-
-    fun deleteSummits() = viewModelScope.launch {
-        repository.deleteAll()
     }
 
     fun deleteSummit(entity: Summit) = viewModelScope.launch {

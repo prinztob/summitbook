@@ -705,7 +705,8 @@ class MainActivityCompose : ComponentActivity(),
                     }
 
                     SummitsListScreen(
-                        summits = if (showBookmarksOnly) summitsFromDatabase.filter { it.isBookmark } else filteredSummits,
+                        filteredSummits = if (showBookmarksOnly) summitsFromDatabase.filter { it.isBookmark } else filteredSummits,
+                        summitsFromDatabase = summitsFromDatabase,
                         isBookmark = showBookmarksOnly,
                         onSaveSummit = { isEdit, summit -> viewModel.saveSummit(isEdit, summit) },
                         onDelete = { summit ->

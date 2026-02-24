@@ -298,33 +298,36 @@ fun SummitEntryDataScreen(
         }
 
         // Countries chips
-        if (summit.countries.isNotEmpty() && summit.countries.first().isNotEmpty()) {
+        val countries = summit.countries.filter { it != "" }
+        if (countries.isNotEmpty() && countries.first().isNotEmpty()) {
             item {
                 ChipSection(
                     title = stringResource(R.string.country_hint),
-                    items = summit.countries,
+                    items = countries,
                     icon = R.drawable.ic_baseline_flag_24
                 )
             }
         }
 
         // Participants chips
-        if (summit.participants.isNotEmpty() && summit.participants.first().isNotEmpty()) {
+        val participants = summit.participants.filter { it != "" }
+        if (participants.isNotEmpty() && participants.first().isNotEmpty()) {
             item {
                 ChipSection(
                     title = stringResource(R.string.participants),
-                    items = summit.participants,
+                    items = participants,
                     icon = R.drawable.ic_baseline_people_24
                 )
             }
         }
 
         // Equipment chips
-        if (summit.equipments.isNotEmpty() && summit.equipments.first().isNotEmpty()) {
+        val equipments = summit.equipments.filter { it != "" }
+        if (equipments.isNotEmpty() && equipments.first().isNotEmpty()) {
             item {
                 ChipSection(
                     title = stringResource(R.string.equipments),
-                    items = summit.equipments,
+                    items = equipments,
                     icon = R.drawable.ic_baseline_handyman_24
                 )
             }
@@ -387,6 +390,7 @@ fun SummitHeader(summit: Summit) {
     }
 }
 
+@Suppress("AssignedValueIsNeverRead")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompareDropdown(

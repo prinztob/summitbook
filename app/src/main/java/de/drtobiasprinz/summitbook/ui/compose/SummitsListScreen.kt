@@ -62,13 +62,14 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun SummitsListScreen(
-    summits: List<Summit>,
+    filteredSummits: List<Summit>,
+    summitsFromDatabase: List<Summit>,
     modifier: Modifier = Modifier,
     isBookmark: Boolean = false,
     onSaveSummit: (Boolean, Summit) -> Job,
     onDelete: (Summit) -> Unit = {}
 ) {
-    if (summits.isEmpty()) {
+    if (filteredSummits.isEmpty()) {
         // Show app icon and "no summit" message when list is empty
         Column(
             modifier = modifier
@@ -97,11 +98,11 @@ fun SummitsListScreen(
                 .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
             items(
-                items = summits,
+                items = filteredSummits,
                 key = { summit -> summit.id }
             ) { summit ->
                 SummitCard(
-                    summits = summits,
+                    summitsFromDatabase = summitsFromDatabase,
                     summit = summit,
                     isBookmark = isBookmark,
                     onDelete = onDelete,
@@ -118,7 +119,7 @@ fun SummitsListScreen(
 @Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SummitCard(
-    summits: List<Summit>,
+    summitsFromDatabase: List<Summit>,
     summit: Summit,
     isBookmark: Boolean,
     onDelete: (Summit) -> Unit,
@@ -459,7 +460,7 @@ fun SummitCard(
     if (showEditDialog) {
         AddSummitDialogCompose(
             summitId = currentSummit.id,
-            summitsFromDatabase = summits,
+            summitsFromDatabase = summitsFromDatabase,
             isBookmark = isBookmark,
             onDismiss = { showEditDialog = false },
             onSaveSummit = { isEdit, updatedSummit ->

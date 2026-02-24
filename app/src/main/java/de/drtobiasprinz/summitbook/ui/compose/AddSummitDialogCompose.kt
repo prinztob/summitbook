@@ -20,13 +20,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -260,13 +258,14 @@ fun AddSummitDialogCompose(
                     }
 
                     // Summit name
-                    AutocompleteTextField(
+                    AutoCompleteCompose(
                         value = summitName,
-                        onValueChange = { summitName = it },
+                        onItemSelected = { summitName = it },
                         label = stringResource(if (isBookmark) R.string.add_new_bookmark else R.string.summit_name_hint),
                         icon = R.drawable.baseline_landscape_black_24dp,
-                        suggestions = summitsFromDatabase.map { it.name }.distinct(),
-                        modifier = Modifier.fillMaxWidth()
+                        options = summitsFromDatabase.flatMap { it.places + it.name }.distinct(),
+                        modifier = Modifier.fillMaxWidth(),
+                        onValueChange = { summitName = it }
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -330,7 +329,8 @@ fun AddSummitDialogCompose(
                             // Allow only digits and at most one decimal point
                             val filtered = input.filter { char -> char.isDigit() || char == '.' }
                             val decimalCount = filtered.count { it == '.' }
-                            kilometers = if (decimalCount <= 1) filtered else filtered.substringBeforeLast(".")
+                            kilometers =
+                                if (decimalCount <= 1) filtered else filtered.substringBeforeLast(".")
                         },
                         label = { Text(stringResource(R.string.kilometers_hint)) },
                         leadingIcon = {
@@ -695,28 +695,28 @@ fun AdditionalDataFields(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    ChipInputField(
+                    AutoCompleteComposeChipField(
                         stringResource(R.string.participants),
                         R.drawable.ic_baseline_people_24,
                         participants,
                         onParticipantsChange,
                         summitsFromDatabase.flatMap { it.participants }.distinct()
                     )
-                    ChipInputField(
+                    AutoCompleteComposeChipField(
                         stringResource(R.string.place_hint),
                         R.drawable.outline_distance_24,
                         places,
                         onPlacesChange,
                         summitsFromDatabase.flatMap { it.places + it.name }.distinct()
                     )
-                    ChipInputField(
+                    AutoCompleteComposeChipField(
                         stringResource(R.string.country_hint),
                         R.drawable.ic_baseline_flag_24,
                         countries,
                         onCountriesChange,
                         Locale.getAvailableLocales().map { it.displayCountry }.distinct()
                             .filter { it.isNotEmpty() })
-                    ChipInputField(
+                    AutoCompleteComposeChipField(
                         stringResource(R.string.equipments),
                         R.drawable.ic_baseline_handyman_24,
                         equipments,
@@ -757,162 +757,6 @@ fun AdditionalDataFields(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AutocompleteTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    icon: Int,
-    suggestions: List<String>,
-    modifier: Modifier = Modifier
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { },
-        modifier = modifier
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {
-                onValueChange(it)
-                expanded = it.isNotEmpty() && suggestions.any { s ->
-                    s.contains(it, ignoreCase = true)
-                }
-            },
-            label = { Text(label) },
-            leadingIcon = {
-                Icon(painterResource(icon), null)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
-        )
-
-        // Autocomplete dropdown
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            suggestions
-                .filter { it.contains(value, ignoreCase = true) }
-                .take(5)
-                .forEach { suggestion ->
-                    DropdownMenuItem(
-                        text = { Text(suggestion) },
-                        onClick = {
-                            onValueChange(suggestion)
-                            expanded = false
-                        }
-                    )
-                }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ChipInputField(
-    label: String, icon: Int,
-    chips: List<String>, onChipsChange: (List<String>) -> Unit,
-    suggestions: List<String>
-) {
-    var inputText by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
-
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(painterResource(icon), null, Modifier.padding(end = 8.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { },
-                modifier = Modifier.weight(1f)
-            ) {
-                OutlinedTextField(
-                    value = inputText,
-                    onValueChange = {
-                        inputText = it
-                        expanded = it.isNotEmpty() && suggestions.any { s ->
-                            s.contains(it, ignoreCase = true) && s !in chips
-                        }
-                    },
-                    label = { Text(label) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true),
-                    trailingIcon = {
-                        if (inputText.isNotEmpty()) {
-                            IconButton(onClick = {
-                                if (inputText.isNotBlank()) {
-                                    onChipsChange(chips + inputText.trim())
-                                    inputText = ""
-                                    expanded = false
-                                }
-                            }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_add_black_24dp),
-                                    stringResource(R.string.addGpsTrack)
-                                )
-                            }
-                        }
-                    }
-                )
-
-                // Autocomplete dropdown
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    suggestions
-                        .filter { it.contains(inputText, ignoreCase = true) && it !in chips }
-                        .take(5)
-                        .forEach { suggestion ->
-                            DropdownMenuItem(
-                                text = { Text(suggestion) },
-                                onClick = {
-                                    onChipsChange(chips + suggestion)
-                                    inputText = ""
-                                    expanded = false
-                                }
-                            )
-                        }
-                }
-            }
-        }
-
-        // Display chips
-        val nonEmptyChips = chips.filter { it.isNotBlank() }
-        if (nonEmptyChips.isNotEmpty()) {
-            ScrollableRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-            ) {
-                nonEmptyChips.forEach { chip ->
-                    AssistChip(
-                        onClick = { },
-                        label = { Text(chip) },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = { onChipsChange(chips - chip) },
-                                modifier = Modifier.size(18.dp)
-                            ) {
-                                Icon(
-                                    painterResource(R.drawable.ic_baseline_clear_24),
-                                    stringResource(R.string.cancelButtonText),
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
 
 class PerformanceDataState {
     var calories by mutableStateOf("")
@@ -1387,16 +1231,18 @@ private fun saveSummit(
         entity.date = if (isBookmark) Date() else Summit.parseDate(tourDate)
         entity.name = summitName
         entity.sportType = selectedSportType
-        entity.places = places.toMutableList()
-        entity.countries = countries.toMutableList()
+        // Filter out empty strings from lists before saving
+        entity.places = places.filter { it.isNotEmpty() }.toMutableList()
+        entity.countries = countries.filter { it.isNotEmpty() }.toMutableList()
         entity.comments = comments
         entity.elevationData.elevationGain = heightMeter.toIntOrNull() ?: 0
         entity.kilometers = kilometers.toDoubleOrNull() ?: 0.0
         entity.duration = duration.toIntOrNull() ?: 0
         entity.velocityData.maxVelocity = topSpeed.toDoubleOrNull() ?: 0.0
         entity.elevationData.maxElevation = topElevation.toIntOrNull() ?: 0
-        entity.participants = participants.toMutableList()
-        entity.equipments = equipments.toMutableList()
+        // Filter out empty strings from lists before saving
+        entity.participants = participants.filter { it.isNotEmpty() }.toMutableList()
+        entity.equipments = equipments.filter { it.isNotEmpty() }.toMutableList()
 
         if (entity.latLng == null && latlngHighestPoint != null) {
             entity.latLng = latlngHighestPoint
