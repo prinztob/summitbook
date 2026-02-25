@@ -208,17 +208,17 @@ fun SummitEntryDetailsScreen(
         topBar = {
             TopAppBar(
                 title = { Text(summitUiState?.summitName ?: "") }, navigationIcon = {
-                IconButton(onClick = onBackPressed) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_baseline_arrow_back_24),
-                        contentDescription = "Back"
-                    )
-                }
-            }, colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-            )
+                    IconButton(onClick = onBackPressed) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_baseline_arrow_back_24),
+                            contentDescription = "Back"
+                        )
+                    }
+                }, colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         }) { paddingValues ->
         if (summitUiState != null) {

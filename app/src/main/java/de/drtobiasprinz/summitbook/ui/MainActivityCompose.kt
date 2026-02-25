@@ -57,6 +57,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -110,6 +112,7 @@ import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -292,6 +295,8 @@ class MainActivityCompose : ComponentActivity(),
                     if (!isMapFullscreen) {
                         var searchText by remember { mutableStateOf("") }
                         var isSearching by remember { mutableStateOf(false) }
+                        val focusRequester = remember { FocusRequester() }
+
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -332,7 +337,8 @@ class MainActivityCompose : ComponentActivity(),
                                                     )
                                                 }
                                             },
-                                            singleLine = true
+                                            singleLine = true,
+                                            modifier = Modifier.focusRequester(focusRequester)
                                         )
                                     } else {
                                         Text(stringResource(R.string.app_name))
@@ -349,14 +355,21 @@ class MainActivityCompose : ComponentActivity(),
                                 actions = {
                                     // Search action
                                     if (!isSearching) {
-                                        IconButton(onClick = { isSearching = true }) {
+                                        IconButton(onClick = {
+                                            isSearching = true
+                                            // Request focus after a short delay to ensure the text field is rendered
+                                            coroutineScope.launch {
+                                                delay(100)
+                                                focusRequester.requestFocus()
+                                            }
+                                        }) {
                                             Icon(
                                                 painter = painterResource(R.drawable.ic_baseline_search_24),
                                                 contentDescription = stringResource(R.string.action_search)
                                             )
                                         }
                                     }
-
+    
                                     // Sort action
                                     IconButton(onClick = { showSortAndFilterDialog() }) {
                                         Icon(
@@ -364,7 +377,7 @@ class MainActivityCompose : ComponentActivity(),
                                             contentDescription = stringResource(R.string.sort_entries)
                                         )
                                     }
-
+    
                                     // Update action
                                     IconButton(onClick = {
                                         updateThirdPartyData(

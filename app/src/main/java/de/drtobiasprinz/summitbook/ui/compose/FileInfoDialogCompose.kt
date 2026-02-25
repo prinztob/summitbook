@@ -48,6 +48,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 /**
@@ -79,7 +81,8 @@ fun FileInfoDialogCompose(
             val file = fileRowType.getFile(entry)
             fileStates[fileRowType] = FileState(
                 exists = file.exists(),
-                size = if (file.exists()) formatFileSize(file.length()) else "-"
+                size = if (file.exists()) formatFileSize(file.length()) else "-",
+                lastModified = if (file.exists()) formatLastModified(file.lastModified()) else "-"
             )
         }
     }
@@ -118,7 +121,7 @@ fun FileInfoDialogCompose(
 
                 // File Rows
                 FileRowType.entries.forEachIndexed { index, fileRowType ->
-                    val fileState = fileStates[fileRowType] ?: FileState(false, "-")
+                    val fileState = fileStates[fileRowType] ?: FileState(false, "-", "-")
                     val file = fileRowType.getFile(entry)
                     val isAlternate = index % 2 == 1
 
@@ -146,7 +149,8 @@ fun FileInfoDialogCompose(
                                 val updatedFile = fileRowType.getFile(entry)
                                 fileStates[fileRowType] = FileState(
                                     exists = updatedFile.exists(),
-                                    size = if (updatedFile.exists()) formatFileSize(updatedFile.length()) else "-"
+                                    size = if (updatedFile.exists()) formatFileSize(updatedFile.length()) else "-",
+                                    lastModified = if (updatedFile.exists()) formatLastModified(updatedFile.lastModified()) else "-"
                                 )
                             }
                         },
@@ -156,7 +160,8 @@ fun FileInfoDialogCompose(
                                 val updatedFile = fileRowType.getFile(entry)
                                 fileStates[fileRowType] = FileState(
                                     exists = updatedFile.exists(),
-                                    size = if (updatedFile.exists()) formatFileSize(updatedFile.length()) else "-"
+                                    size = if (updatedFile.exists()) formatFileSize(updatedFile.length()) else "-",
+                                    lastModified = if (updatedFile.exists()) formatLastModified(updatedFile.lastModified()) else "-"
                                 )
                             }
                         }
@@ -276,14 +281,24 @@ private fun FileRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // File Name (weight 2)
-        Text(
-            text = fileName,
+        // File Name with Last Modified Date (weight 2)
+        Column(
             modifier = Modifier
                 .weight(2f)
-                .padding(4.dp),
-            fontSize = 12.sp
-        )
+                .padding(4.dp)
+        ) {
+            Text(
+                text = fileName,
+                fontSize = 12.sp
+            )
+            if (fileState.lastModified != "-") {
+                Text(
+                    text = fileState.lastModified,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
         // Exists (weight 1)
         Text(
@@ -346,7 +361,8 @@ private fun FileRow(
 
 private data class FileState(
     val exists: Boolean,
-    val size: String
+    val size: String,
+    val lastModified: String
 )
 
 private fun formatFileSize(sizeInBytes: Long): String {
@@ -358,6 +374,12 @@ private fun formatFileSize(sizeInBytes: Long): String {
 
         else -> String.format(Locale.getDefault(), "%.1f MB", sizeInBytes / (1024.0 * 1024.0))
     }
+}
+
+private fun formatLastModified(lastModified: Long): String {
+    if (lastModified == 0L) return "-"
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ENGLISH)
+    return dateFormat.format(Date(lastModified))
 }
 
 private fun updateFileData(

@@ -213,7 +213,7 @@ class SummitUpdateWorker(
     private suspend fun convertPeaks(data: List<Summit>?) {
         data?.forEach {
             if (it.isPeak && it.name !in peaks.map { peak -> peak.name }) {
-                Log.i(TAG, "ConvertPeaks - added ${it.name}")
+                Log.d(TAG, "ConvertPeaks - added ${it.name}")
                 peaks.add(Peak(it.name))
                 repository.savePeak(Peak(it.name, it.elevationData.maxElevation))
             }

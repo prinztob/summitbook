@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -46,17 +45,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.res.ResourcesCompat
 import de.drtobiasprinz.summitbook.BuildConfig
+import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonExecutor
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
+import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.copyGpxFileToCache
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.prepareGpxTrack
 import io.ticofab.androidgpxparser.parser.GPXParser
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.osmdroid.bonuspack.location.GeocoderNominatim
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -239,12 +244,15 @@ fun SelectOnMapDialogCompose(
                 if (isLoading) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(150.dp)
-                            .align(Alignment.BottomCenter),
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.5f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(64.dp),
+                            color = Color.Black,
+                            strokeWidth = 6.dp
+                        )
                     }
                 }
 
@@ -430,6 +438,50 @@ fun SelectOnMapDialogCompose(
                             Icon(
                                 painter = painterResource(R.drawable.baseline_refresh_24),
                                 contentDescription = null
+                            )
+                        }
+                    }
+                    
+                    // Download from Garmin button
+                    val garminData = summitEntry.garminData
+                    if (!searchPanelVisible && garminData != null && garminData.activityIds.isNotEmpty()) {
+                        val downloadSuccess = stringResource(R.string.download_success)
+                        IconButton(
+                            onClick = {
+                                isLoading = true
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        val downloader = GarminTrackAndDataDownloader(
+                                            listOf(summitEntry),
+                                            pythonExecutor,
+                                            sharedPreferences.getBoolean(Keys.PREF_DOWNLOAD_TCX, false)
+                                        )
+                                        downloader.downloadTracks(forceDownload = true)
+                                        downloader.composeFinalTrack(summitEntry)
+                                    }
+                                    isLoading = false
+                                    // Show success message
+                                    Toast.makeText(
+                                        context,
+                                        String.format(
+                                            downloadSuccess,
+                                            garminData.activityIds.size,
+                                            summitEntry.name
+                                        ),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_download_black_24dp),
+                                contentDescription = stringResource(R.string.download_from_garmin)
                             )
                         }
                     }

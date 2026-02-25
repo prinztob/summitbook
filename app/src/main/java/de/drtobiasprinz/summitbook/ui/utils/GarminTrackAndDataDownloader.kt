@@ -33,17 +33,17 @@ class GarminTrackAndDataDownloader(
     val downloadedYamlExtensions: MutableList<File> = mutableListOf()
     var finalEntry: Summit? = null
 
-    fun downloadTracks(isAlreadyDownloaded: Boolean = false) {
+    fun downloadTracks(isAlreadyDownloaded: Boolean = false, forceDownload: Boolean = false) {
         for (entry in entries) {
+            Log.i(TAG, "Start downloading track for ${entry.getDateAsString()}_${entry.name}")
             try {
-
                 val garminData = entry.garminData
                 if (garminData != null) {
                     val idsWithoutParentId = getIds(garminData)
                     for (activityId in idsWithoutParentId) {
                         val file = getTempGpsFilePath(activityId).toFile()
                         val yamlExtensionsPath = getTempGpsFilePath(activityId, "_extensions.yaml")
-                        if (!(isAlreadyDownloaded || file.exists())) {
+                        if (forceDownload || !(isAlreadyDownloaded || file.exists())) {
                             if (useTcx) {
                                 garminPythonExecutor?.downloadTcxFile(
                                     activityId,
@@ -81,9 +81,10 @@ class GarminTrackAndDataDownloader(
         }
     }
 
-    fun composeFinalTrack() {
-        val finalEntryLocal = finalEntry
+    fun composeFinalTrack(summit: Summit? = null) {
+        val finalEntryLocal = summit ?: finalEntry
         if (finalEntryLocal != null) {
+            Log.i(TAG, "Compose final track for ${finalEntryLocal.getDateAsString()}_${finalEntryLocal.name}")
             try {
                 val name =
                     "${finalEntryLocal.getDateAsString()}_${finalEntryLocal.name.replace(" ", "_")}"
@@ -126,9 +127,9 @@ class GarminTrackAndDataDownloader(
                 }
                 finalEntryLocal.hasGpsTrack()
                 finalEntryLocal.setBoundingBoxFromTrack()
-
+                Log.i(TAG, "Compose final track done: hasGpsTrack -> ${finalEntryLocal.hasGpsTrack()}")
             } catch (e: RuntimeException) {
-                Log.e(TAG, "Download failed: ${e.message}")
+                Log.e(TAG, "Compose final track failed: ${e.message}")
             }
         }
     }

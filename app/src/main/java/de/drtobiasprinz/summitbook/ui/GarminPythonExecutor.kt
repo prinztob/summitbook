@@ -56,11 +56,14 @@ class GarminPythonExecutor(
     }
 
     fun downloadGpxFile(garminActivityId: String, downloadPath: String) {
-        if (client == null) {
-            login()
+        val time = measureTimeMillis {
+            if (client == null) {
+                login()
+            }
+            val result = pythonModule?.callAttr("download_gpx", client, garminActivityId, downloadPath)
+            checkOutput(result)
         }
-        val result = pythonModule?.callAttr("download_gpx", client, garminActivityId, downloadPath)
-        checkOutput(result)
+        Log.i(TAG, "downloadGpxFile took $time")
     }
 
     fun downloadTcxFile(

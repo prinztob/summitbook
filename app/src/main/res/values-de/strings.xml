@@ -580,6 +580,10 @@
     <string name="file_name">Dateiname</string>
     <string name="exists">Existiert</string>
     <string name="file_size">Größe</string>
+    <string name="download_from_garmin">Download von Garmin</string>
+    <string name="download_success">Erfolgreich downloaded %1$d Datei(en) für %2$s</string>
+    <string name="download_failed">Download %1$s fehlgeschlagen: %2$s</string>
+    <string name="no_garmin_data">Keine Garmin Daten fr diesen Gipfel vorhanden</string>
     <string name="update_done_roadinfo">Update von Straßeninformationen durchgeführt.</string>
     <string name="failed_to_backup_file">Fehler beim Sichern der Datei: %1$s</string>
     <string name="no_backup_found">Keine Sicherung gefunden für %1$s</string>
