@@ -80,6 +80,7 @@ fun ShowNewSummitsFromGarminScreen(
     var entriesWithoutIgnored by remember { mutableStateOf<MutableList<Summit>>(mutableListOf()) }
     var ignoredActivities by remember { mutableStateOf<List<IgnoredActivity>>(emptyList()) }
     var selectedSummits by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var canMerge by remember { mutableStateOf(false) }
 
     // Date format
     val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
@@ -107,6 +108,7 @@ fun ShowNewSummitsFromGarminScreen(
             withContext(Dispatchers.Main) {
                 entriesWithoutIgnored = updatedEntries
                 isLoading = false
+                canMerge = canSelectedSummitsBeMerged(updatedEntries.filter { it.isSelected })
             }
         }
     }
@@ -183,6 +185,7 @@ fun ShowNewSummitsFromGarminScreen(
                                     withContext(Dispatchers.Main) {
                                         entriesWithoutIgnored = updatedEntries
                                         isLoading = false
+                                        canMerge = canSelectedSummitsBeMerged(updatedEntries.filter { it.isSelected })
                                     }
                                 }
                             },
@@ -251,6 +254,7 @@ fun ShowNewSummitsFromGarminScreen(
                                     withContext(Dispatchers.Main) {
                                         entriesWithoutIgnored = updatedEntries
                                         isLoading = false
+                                        canMerge = canSelectedSummitsBeMerged(updatedEntries.filter { it.isSelected })
                                     }
                                 }
                             },
@@ -358,7 +362,7 @@ fun ShowNewSummitsFromGarminScreen(
                         )
                     }
                 },
-                enabled = canSelectedSummitsBeMerged(entriesWithoutIgnored.filter { it.isSelected }),
+                enabled = canMerge,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
@@ -391,6 +395,7 @@ fun ShowNewSummitsFromGarminScreen(
                         withContext(Dispatchers.Main) {
                             entriesWithoutIgnored = updatedEntries
                             isLoading = false
+                            canMerge = canSelectedSummitsBeMerged(updatedEntries.filter { it.isSelected })
                         }
                     }
                 },
@@ -456,6 +461,8 @@ fun ShowNewSummitsFromGarminScreen(
                                         remove(summit.activityId)
                                     }
                                 }
+                                // Update canMerge state
+                                canMerge = canSelectedSummitsBeMerged(entriesWithoutIgnored.filter { it.isSelected })
                             }
                         )
                     }

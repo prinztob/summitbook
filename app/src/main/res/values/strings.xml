@@ -171,6 +171,7 @@
     <string name="forecast_info_hm">"%1$s: Estimated elevation gain: %2$s m (Goal: %3$s m)."</string>
     <string name="forecast_info_km">"%1$s: Estimated distance: %2$s km (Goal: %3$s km)."</string>
     <string name="forecast_info_activities">"%1$s: Estimated activities: %2$s (Goal: %3$s)."</string>
+    <string name="forecast_info_combined">"%1$s: Estimated elevation gain: %2$s m (Goal: %3$s m), distance: %4$s km (Goal: %5$s km), activities: %6$s (Goal: %7$s)."</string>
     <string name="import_string_title">"Import successful"</string>
     <string name="forecast_successfully_saved">"Forecasts successfully saved"</string>
     <string name="forecast_canceled">"Update forcast canceled"</string>
@@ -628,4 +629,5 @@
     <string name="no_summits_in_bounding_box">No summits found in the bounding box of existing segment entries. Showing all summits with GPS tracks instead.</string>
     <string name="add_to_bookmarks">Import as Bookmark</string>
     <string name="add_to_summits">Import as Summit</string>
+    <string name="annual_target">Annual target</string>
 </resources>

@@ -175,6 +175,7 @@
     <string name="forecast_info_hm">"%1$s: Schätzung Höhenmeter: %2$s hm (Ziel: %3$s hm)."</string>
     <string name="forecast_info_km">"%1$s: Schätzung Entfernung: %2$s km (Ziel: %3$s km)."</string>
     <string name="forecast_info_activities">"%1$s: Schätzung Gipfel: %2$s (Ziel: %3$s)."</string>
+    <string name="forecast_info_combined">"%1$s: Schätzung Höhenmeter: %2$s hm (Ziel: %3$s hm), Entfernung: %4$s km (Ziel: %5$s km), Aktivitäten: %6$s (Ziel: %7$s)."</string>
     <string name="import_string_title">"Import erfolgreich"</string>
     <string name="forecast_successfully_saved">"Schätzung erfolgreich gespeichert"</string>
     <string name="forecast_canceled">"Aktualisierung von Schätzung wurde abgebrochen"</string>
@@ -614,7 +615,7 @@
     <string name="track_color">Track color</string>
     <string name="segment_entries">Segment entries</string>
     <string name="total">Total</string>
-    <string name="number_activities">Number of activities</string>
+    <string name="number_activities"># %1$</string>
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>
     <string name="error">Fehler</string>
@@ -626,9 +627,10 @@
     <string name="start">Start</string>
     <string name="stop">Stop</string>
     <string name="update_segment_entry">Update segment entry</string>
-    <string name="add_segment_entry">Add segment entry</string>
+    <string name="add_segment_entry">Füge Segment Eintrag hinzu</string>
     <string name="no_summits_in_bounding_box">Keine Gipfel im Begrenzungsrahmen der vorhandenen Segment-Einträge gefunden. Stattdessen werden alle Gipfel mit GPS-Tracks angezeigt.</string>
-    <string name="add_to_bookmarks">Import as Bookmark</string>
-    <string name="add_to_summits">Import as Summit</string>
+    <string name="add_to_bookmarks">Import als Lesezeichen</string>
+    <string name="add_to_summits">Import als Gipfel</string>
+    <string name="annual_target">Jahresziel</string>
 </resources>
 

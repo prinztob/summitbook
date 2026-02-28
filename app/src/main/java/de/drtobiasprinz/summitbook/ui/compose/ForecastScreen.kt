@@ -2,7 +2,6 @@ package de.drtobiasprinz.summitbook.ui.compose
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,13 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,7 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,13 +32,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Forecast
@@ -82,9 +73,11 @@ fun ForecastScreen(
     val currentYear = Calendar.getInstance().get(Calendar.YEAR)
     val currentMonth = Calendar.getInstance().get(Calendar.MONTH) + 1
 
-    var selectedYear by remember { mutableIntStateOf(0) } // 0 = current year, 1 = next year
-    var selectedProperty by remember { mutableIntStateOf(0) } // 0 = height meter, 1 = km, 2 = activities
     var forecastsUpdated by remember { mutableStateOf(false) }
+    var forecastsChanged by remember { mutableIntStateOf(0) }
+    var hmSum by remember { mutableIntStateOf(0) }
+    var kmSum by remember { mutableIntStateOf(0) }
+    var activitySum by remember { mutableIntStateOf(0) }
 
 
     // Update forecasts if needed
@@ -99,6 +92,15 @@ fun ForecastScreen(
                 forecast.setActual(summits, indoorHeightMeterPercent)
             }
         }
+    }
+
+    LaunchedEffect(forecasts, forecastsChanged) {
+        hmSum =
+            Forecast.getSumForYear(currentYear, forecasts, 0, currentYear, currentMonth)
+        kmSum =
+            Forecast.getSumForYear(currentYear, forecasts, 1, currentYear, currentMonth)
+        activitySum =
+            Forecast.getSumForYear(currentYear, forecasts, 2, currentYear, currentMonth)
     }
 
     when {
@@ -124,46 +126,108 @@ fun ForecastScreen(
         }
 
         else -> {
-            val year = if (selectedYear == 0) currentYear else currentYear + 1
-
-            val sum = Forecast.getSumForYear(
-                year, forecasts, selectedProperty, currentYear, currentMonth
-            )
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
             ) {
-                // Overview text
-                val overviewText = when (selectedProperty) {
-                    1 -> stringResource(
-                        R.string.forecast_info_km,
-                        year.toString(),
-                        sum.toString(),
-                        annualTargetKm
-                    )
 
-                    2 -> stringResource(
-                        R.string.forecast_info_activities,
-                        year.toString(),
-                        sum.toString(),
-                        annualTargetActivity
-                    )
 
-                    else -> stringResource(
-                        R.string.forecast_info_hm,
-                        year.toString(),
-                        sum.toString(),
-                        annualTargetHm
-                    )
+                val hmTargetReached = hmSum > annualTargetHm.toInt()
+                val kmTargetReached = kmSum > annualTargetKm.toInt()
+                val activityTargetReached = activitySum > annualTargetActivity.toInt()
+
+
+                // Table approach for forecast info
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                    ) {
+                        // Column headers
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.elevationGain),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = stringResource(R.string.kilometers_accumulated),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = stringResource(R.string.total_activities),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        // Current year data row
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "$hmSum${stringResource(R.string.m)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (hmTargetReached) Color.Green else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.align(Alignment.CenterVertically)
+                            )
+                            Text(
+                                text = "$kmSum${stringResource(R.string.km)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (kmTargetReached) Color.Green else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.align(Alignment.CenterVertically)
+                            )
+                            Text(
+                                text = activitySum.toString(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (activityTargetReached) Color.Green else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.align(Alignment.CenterVertically)
+                            )
+                        }
+                        // Annual target data row
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "$annualTargetHm${stringResource(R.string.m)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "$annualTargetKm${stringResource(R.string.km)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = annualTargetActivity,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
                 }
-                val annualTarget = when (selectedProperty) {
-                    1 -> annualTargetKm.toInt()
-                    2 -> annualTargetActivity.toInt()
-                    else -> annualTargetHm.toInt()
-                }
-                val overviewColor = if (sum > annualTarget) Color.Green else Color.Red
 
                 // Action buttons (Recalculate and Save)
                 Row(
@@ -172,169 +236,72 @@ fun ForecastScreen(
                         .padding(horizontal = 10.dp, vertical = 5.dp),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(2.dp)
-                    ) {
-                        val textForToast = stringResource(R.string.not_recalculate_current_year)
-                        IconButton(
-                            onClick = {
-                                if (selectedYear == 1) {
-                                    updateForecastsForYear(
-                                        forecasts,
-                                        year,
-                                        summits,
-                                        onSaveForecasts
-                                    )
-                                    forecastsUpdated = !forecastsUpdated
-                                } else {
-                                    Toast.makeText(context, textForToast, Toast.LENGTH_LONG).show()
-                                }
-                            }
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_refresh_24),
-                                contentDescription = stringResource(R.string.recalculate),
-                                tint = MaterialTheme.colorScheme.onSurface
+                    IconButton(
+                        onClick = {
+                            updateForecastsForYear(
+                                forecasts,
+                                currentYear + 1,
+                                summits,
+                                onSaveForecasts
                             )
+                            forecastsUpdated = !forecastsUpdated
                         }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_refresh_24),
+                            contentDescription = stringResource(R.string.recalculate),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
 
-                        val txtForToast = stringResource(R.string.forecast_successfully_saved)
-                        // Save button
-                        IconButton(
-                            onClick = {
-                                // Save all forecasts for the current selected year
-                                val forecastsToSave = forecasts.filter { it.year == year }
-                                val job = onSaveForecasts(true, forecastsToSave)
-                                job.invokeOnCompletion {
-                                    Toast.makeText(
-                                        context,
-                                        txtForToast,
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    onNavigateBack()
-                                }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    val successfullySaved = stringResource(R.string.forecast_successfully_saved)
+                    IconButton(
+                        onClick = {
+                            // Save all forecasts for both years
+                            val job = onSaveForecasts(true, forecasts)
+                            job.invokeOnCompletion {
+                                Toast.makeText(
+                                    context,
+                                    successfullySaved,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                onNavigateBack()
                             }
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_save_black_24dp),
-                                contentDescription = stringResource(R.string.saveButtonText),
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
                         }
-                    }
-
-                    Spacer(modifier = Modifier.width(1.dp))
-                    Text(
-                        text = overviewText,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(15.dp)
-                            .shadow(4.dp, RoundedCornerShape(4.dp))
-                            .background(
-                                Color.Black.copy(alpha = 0.7f),
-                                RoundedCornerShape(4.dp)
-                            )
-                            .border(
-                                1.dp,
-                                Color.White.copy(alpha = 0.5f),
-                                RoundedCornerShape(4.dp)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        textAlign = TextAlign.Center,
-                        color = overviewColor
-                    )
-
-                }
-                // Year selection buttons
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 1.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Button(
-                        onClick = { selectedYear = 0 },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedYear == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = if (selectedYear == 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
-                        )
                     ) {
-                        Text(stringResource(R.string.current_year))
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = { selectedYear = 1 },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedYear == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = if (selectedYear == 1) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_save_black_24dp),
+                            contentDescription = stringResource(R.string.saveButtonText),
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
-                    ) {
-                        Text(stringResource(R.string.next_year))
                     }
                 }
 
-                // Property selection buttons
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 1.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Button(
-                        onClick = { selectedProperty = 0 },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedProperty == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = if (selectedProperty == 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    ) {
-                        Text(stringResource(R.string.hm))
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = { selectedProperty = 1 },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedProperty == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = if (selectedProperty == 1) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    ) {
-                        Text(stringResource(R.string.km))
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = { selectedProperty = 2 },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedProperty == 2) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = if (selectedProperty == 2) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    ) {
-                        Text(stringResource(R.string.activity_hint))
-                    }
-                }
-
-                // Month list
+                // Month list for both current and next year
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // Items for current year, starting from current month
                     items(
-                        count = 12,
-                        key = { month -> month + 1 }
+                        count = 12 - currentMonth + 1,
+                        key = { index -> (currentMonth + index) * 100 + currentYear }
                     ) { index ->
-                        val month = index + 1
+                        val month = currentMonth + index
                         ForecastMonthRow(
                             month = month,
-                            year = year,
+                            year = currentYear,
                             forecasts = forecasts,
                             currentYear = currentYear,
                             currentMonth = currentMonth,
-                            selectedProperty = selectedProperty,
                             forecastsUpdated = forecastsUpdated,
                             onForecastChanged = { updatedForecast ->
+                                forecastsChanged++
                                 val forecastIndex =
-                                    forecasts.indexOfFirst { it.month == month && it.year == year }
+                                    forecasts.indexOfFirst { it.month == month && it.year == currentYear }
                                 if (forecastIndex != -1) {
                                     updatedForecast.id = forecasts[forecastIndex].id
                                     forecasts[forecastIndex] = updatedForecast
@@ -343,7 +310,41 @@ fun ForecastScreen(
                             onRecalculate = {
                                 updateForecastForMonthAndYear(
                                     month,
-                                    year,
+                                    currentYear,
+                                    summits,
+                                    forecasts,
+                                    onSaveForecasts = onSaveForecasts
+                                )
+                                forecastsUpdated = !forecastsUpdated
+                            }
+                        )
+                    }
+
+                    // Items for next year, starting from January
+                    items(
+                        count = 12,
+                        key = { index -> (index + 1) * 100 + (currentYear + 1) }
+                    ) { index ->
+                        val month = index + 1
+                        ForecastMonthRow(
+                            month = month,
+                            year = currentYear + 1,
+                            forecasts = forecasts,
+                            currentYear = currentYear,
+                            currentMonth = currentMonth,
+                            forecastsUpdated = forecastsUpdated,
+                            onForecastChanged = { updatedForecast ->
+                                val forecastIndex =
+                                    forecasts.indexOfFirst { it.month == month && it.year == (currentYear + 1) }
+                                if (forecastIndex != -1) {
+                                    updatedForecast.id = forecasts[forecastIndex].id
+                                    forecasts[forecastIndex] = updatedForecast
+                                }
+                            },
+                            onRecalculate = {
+                                updateForecastForMonthAndYear(
+                                    month,
+                                    currentYear + 1,
                                     summits,
                                     forecasts,
                                     onSaveForecasts = onSaveForecasts
@@ -358,7 +359,6 @@ fun ForecastScreen(
     }
 }
 
-@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun ForecastMonthRow(
     month: Int,
@@ -366,7 +366,6 @@ fun ForecastMonthRow(
     forecasts: List<Forecast>,
     currentYear: Int,
     currentMonth: Int,
-    selectedProperty: Int,
     forecastsUpdated: Boolean,
     onForecastChanged: (Forecast) -> Unit,
     onRecalculate: () -> Unit
@@ -384,83 +383,48 @@ fun ForecastMonthRow(
 
     val actualDistance = forecast.actualDistance
 
-    var sliderValue by remember {
-        mutableIntStateOf(getForecastValue(forecast, selectedProperty))
-    }
-    var isSliderEnabled by remember { mutableStateOf(!isPastMonth) }
-    var showEditDialog by remember { mutableStateOf(false) }
+    var heightMeterValue by remember { mutableIntStateOf(forecast.forecastHeightMeter) }
+    var distanceValue by remember { mutableIntStateOf(forecast.forecastDistance) }
+    var activitiesValue by remember { mutableIntStateOf(forecast.forecastNumberActivities) }
 
-    // Update sliderValue when forecast values change (e.g., after recalculation)
+    var isSliderEnabled by remember { mutableStateOf(!isPastMonth) }
+
+    // Update slider values when forecast values change (e.g., after recalculation)
     LaunchedEffect(
-        selectedProperty,
         forecast.forecastHeightMeter,
         forecast.forecastDistance,
         forecast.forecastNumberActivities,
         forecastsUpdated
     ) {
-        sliderValue = getForecastValue(forecast, selectedProperty)
+        heightMeterValue = forecast.forecastHeightMeter
+        distanceValue = forecast.forecastDistance
+        activitiesValue = forecast.forecastNumberActivities
     }
 
-    val stepSize = when (selectedProperty) {
-        1 -> ForecastConstants.STEP_SIZE_KM
-        2 -> ForecastConstants.STEP_SIZE_ACTIVITY
-        else -> ForecastConstants.STEP_SIZE_HM
-    }
+    // Height meter slider parameters
+    val hmStepSize = ForecastConstants.STEP_SIZE_HM
+    val hmValueTo = (ceil(forecast.forecastHeightMeter * 1.2 / hmStepSize) * hmStepSize).toInt()
+    val hmMaxValue = if (hmValueTo < 15000) 15000f else hmValueTo.toFloat()
+    val hmCalculatedSteps = ((hmMaxValue / hmStepSize).toInt() - 1).coerceAtLeast(0)
 
-    val valueTo = when (selectedProperty) {
-        1 -> (ceil(forecast.forecastDistance * 1.2 / stepSize) * stepSize).toInt()
-        2 -> (ceil(forecast.forecastNumberActivities * 1.2 / stepSize) * stepSize).toInt()
-        else -> (ceil(forecast.forecastHeightMeter * 1.2 / stepSize) * stepSize).toInt()
-    }
+    // Distance slider parameters
+    val kmStepSize = ForecastConstants.STEP_SIZE_KM
+    val kmValueTo = (ceil(forecast.forecastDistance * 1.2 / kmStepSize) * kmStepSize).toInt()
+    val kmMaxValue = if (kmValueTo < 750) 750f else kmValueTo.toFloat()
+    val kmCalculatedSteps = ((kmMaxValue / kmStepSize).toInt() - 1).coerceAtLeast(0)
 
-    val maxValue =
-        if (valueTo < (if (selectedProperty == 1) 750 else if (selectedProperty == 2) 25 else 15000)) {
-            if (selectedProperty == 1) 750f else if (selectedProperty == 2) 25f else 15000f
-        } else {
-            valueTo.toFloat()
-        }
-
-    val unit = when (selectedProperty) {
-        1 -> stringResource(R.string.km)
-        2 -> ""
-        else -> stringResource(R.string.hm)
-    }
+    // Activities slider parameters
+    val activityStepSize = ForecastConstants.STEP_SIZE_ACTIVITY
+    val activityValueTo =
+        (ceil(forecast.forecastNumberActivities * 1.2 / activityStepSize) * activityStepSize).toInt()
+    val activityMaxValue = if (activityValueTo < 25) 25f else activityValueTo.toFloat()
+    val activityCalculatedSteps =
+        ((activityMaxValue / activityStepSize).toInt() - 1).coerceAtLeast(0)
 
     val textColor = if (isCurrentYear && month <= currentMonth) {
         MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.onSurface
-    }
-
-    val achievementText = if (isPastMonth) {
-        val percentAchievement = if (forecast.forecastDistance > 0) {
-            (actualDistance.toDouble() / forecast.forecastDistance.toDouble() * 100.0).roundToInt()
-        } else forecast.forecastDistance
-        val text = if (forecast.forecastDistance > 0) {
-            "$actualDistance $unit (${percentAchievement} %)"
-        } else "$actualDistance $unit"
-        val achievementColor = if (percentAchievement > 0 && actualDistance > 0) {
-            if (percentAchievement >= 100) Color.Green else Color.Red
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        }
-        text to achievementColor
-    } else {
-        // Show current slider value in real-time
-        val displayValue = sliderValue
-        val text = when (selectedProperty) {
-            1 -> String.format(
-                stringResource(R.string.value_with_km),
-                displayValue.toString()
-            )
-
-            2 -> displayValue.toString()
-            else -> String.format(
-                stringResource(R.string.value_with_hm),
-                displayValue.toString()
-            )
-        }
-        text to textColor
     }
 
     Card(
@@ -473,15 +437,15 @@ fun ForecastMonthRow(
                 .fillMaxWidth()
                 .padding(8.dp)
         ) {
-            // Top row: Month name, recalculate button, value, and edit button
+            // Top row: Month name and year, and recalculate button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Month name
+                // Month name and year
                 Text(
-                    text = stringResource(getMonthResource(month)),
-                    modifier = Modifier.width(80.dp),
+                    text = "${stringResource(getMonthResource(month))} $year",
+                    modifier = Modifier.width(120.dp),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium
                 )
@@ -499,91 +463,148 @@ fun ForecastMonthRow(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.weight(1f))
 
-                // Forecast value text
+                // Actual values for past months
+                if (isPastMonth) {
+                    val percentAchievement = if (forecast.forecastDistance > 0) {
+                        (actualDistance.toDouble() / forecast.forecastDistance.toDouble() * 100.0).roundToInt()
+                    } else 0
+                    val achievementColor = if (percentAchievement > 0 && actualDistance > 0) {
+                        if (percentAchievement >= 100) Color.Green else Color.Red
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                    Text(
+                        text = "${actualDistance}${stringResource(R.string.km)} ($percentAchievement%)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = achievementColor
+                    )
+                }
+            }
+
+            // Height meter slider
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    text = achievementText.first,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = achievementText.second
+                    text = stringResource(R.string.hm),
+                    modifier = Modifier.width(80.dp),
+                    style = MaterialTheme.typography.bodyMedium
                 )
-
-                // Edit button
-                if (isCurrentYear && month <= currentMonth) {
-                    IconButton(
-                        onClick = { showEditDialog = true },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_baseline_edit_12),
-                            contentDescription = stringResource(R.string.edit_icon),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-
-            // Bottom row: Slider
-            val calculatedSteps = ((maxValue / stepSize).toInt() - 1).coerceAtLeast(0)
-            Slider(
-                value = sliderValue.toFloat(),
-                onValueChange = { newValue: Float ->
-                    if (isSliderEnabled) {
-                        // Round to nearest step
-                        val roundedValue = (newValue / stepSize).roundToInt() * stepSize
-                        sliderValue = roundedValue
-                        val updatedForecast = when (selectedProperty) {
-                            1 -> forecast.copy(forecastDistance = roundedValue)
-                            2 -> forecast.copy(forecastNumberActivities = roundedValue)
-                            else -> forecast.copy(forecastHeightMeter = roundedValue)
+                Text(
+                    text = "${heightMeterValue}${stringResource(R.string.hm)}",
+                    modifier = Modifier.width(80.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor
+                )
+                Slider(
+                    value = heightMeterValue.toFloat(),
+                    onValueChange = { newValue: Float ->
+                        if (isSliderEnabled) {
+                            val roundedValue = (newValue / hmStepSize).roundToInt() * hmStepSize
+                            heightMeterValue = roundedValue
+                            val updatedForecast = forecast.copy(forecastHeightMeter = roundedValue)
+                            onForecastChanged(updatedForecast)
                         }
-                        onForecastChanged(updatedForecast)
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
-                valueRange = 0f..maxValue,
-                steps = calculatedSteps,
-                enabled = isSliderEnabled,
-                colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp),
+                    valueRange = 0f..hmMaxValue,
+                    steps = hmCalculatedSteps,
+                    enabled = isSliderEnabled,
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
                 )
-            )
-        }
-    }
-
-    // Edit dialog
-    if (showEditDialog) {
-        AlertDialog(
-            onDismissRequest = { showEditDialog = false },
-            title = { Text(stringResource(R.string.edit_icon)) },
-            text = { Text("Edit forecast value") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showEditDialog = false
-                    isSliderEnabled = !isSliderEnabled
-                }) {
-                    Text(stringResource(android.R.string.ok))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) {
-                    Text(stringResource(android.R.string.cancel))
-                }
             }
-        )
-    }
-}
 
-private fun getForecastValue(forecast: Forecast, selectedProperty: Int): Int {
-    return when (selectedProperty) {
-        1 -> forecast.forecastDistance
-        2 -> forecast.forecastNumberActivities
-        else -> forecast.forecastHeightMeter
+            // Distance slider
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.km),
+                    modifier = Modifier.width(80.dp),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "${distanceValue}${stringResource(R.string.km)}",
+                    modifier = Modifier.width(80.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor
+                )
+                Slider(
+                    value = distanceValue.toFloat(),
+                    onValueChange = { newValue: Float ->
+                        if (isSliderEnabled) {
+                            val roundedValue = (newValue / kmStepSize).roundToInt() * kmStepSize
+                            distanceValue = roundedValue
+                            val updatedForecast = forecast.copy(forecastDistance = roundedValue)
+                            onForecastChanged(updatedForecast)
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp),
+                    valueRange = 0f..kmMaxValue,
+                    steps = kmCalculatedSteps,
+                    enabled = isSliderEnabled,
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            }
+
+            // Activities slider
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.activity_hint),
+                    modifier = Modifier.width(80.dp),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = activitiesValue.toString(),
+                    modifier = Modifier.width(80.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor
+                )
+                Slider(
+                    value = activitiesValue.toFloat(),
+                    onValueChange = { newValue: Float ->
+                        if (isSliderEnabled) {
+                            val roundedValue =
+                                (newValue / activityStepSize).roundToInt() * activityStepSize
+                            activitiesValue = roundedValue
+                            val updatedForecast =
+                                forecast.copy(forecastNumberActivities = roundedValue)
+                            onForecastChanged(updatedForecast)
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp),
+                    valueRange = 0f..activityMaxValue,
+                    steps = activityCalculatedSteps,
+                    enabled = isSliderEnabled,
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            }
+        }
     }
 }
 
@@ -671,43 +692,4 @@ private fun updateForecastForMonthAndYear(
         updatedForecast.id = forecasts[existingForecastIndex].id
         forecasts[existingForecastIndex] = updatedForecast
     }
-}
-
-@Composable
-fun Card(
-    modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(8.dp),
-    elevation: CardElevation = CardDefaults.cardElevation(
-        defaultElevation = 2.dp
-    ),
-    colors: CardColors = CardDefaults.cardColors(
-        containerColor = MaterialTheme.colorScheme.surface
-    ),
-    content: @Composable () -> Unit
-) {
-    Card(
-        modifier = modifier,
-        shape = shape,
-        elevation = elevation,
-        colors = colors
-    ) {
-        content()
-    }
-}
-
-@Composable
-fun AlertDialog(
-    onDismissRequest: () -> Unit,
-    title: @Composable (() -> Unit)? = null,
-    text: @Composable (() -> Unit)? = null,
-    confirmButton: @Composable (() -> Unit)? = null,
-    dismissButton: @Composable (() -> Unit)? = null
-) {
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = title,
-        text = text,
-        confirmButton = confirmButton,
-        dismissButton = dismissButton
-    )
 }

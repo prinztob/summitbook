@@ -369,7 +369,7 @@ class MainActivityCompose : ComponentActivity(),
                                             )
                                         }
                                     }
-    
+
                                     // Sort action
                                     IconButton(onClick = { showSortAndFilterDialog() }) {
                                         Icon(
@@ -377,7 +377,7 @@ class MainActivityCompose : ComponentActivity(),
                                             contentDescription = stringResource(R.string.sort_entries)
                                         )
                                     }
-    
+
                                     // Update action
                                     IconButton(onClick = {
                                         updateThirdPartyData(
@@ -803,11 +803,17 @@ class MainActivityCompose : ComponentActivity(),
                     onBack = { selectedSummits, isMerge ->
                         currentDestination = Destination.Summits
                         // Execute download for selected summits
-                        if (isMerge) {
-                            executeDownload(selectedSummits, coroutineScope)
-                        } else {
-                            selectedSummits.forEach {
-                                executeDownload(listOf(it), coroutineScope)
+                        coroutineScope.launch {
+                            val finalSummits = if (isMerge) {
+                                listOf(executeDownload(selectedSummits))
+                            } else {
+                                selectedSummits.map {
+                                    executeDownload(listOf(it))
+                                }
+                            }.filterNotNull()
+                            viewModel.saveSummits(finalSummits).invokeOnCompletion {
+                                loadingState.value = false
+                                loadingTooltip.value = ""
                             }
                         }
                     },
@@ -890,7 +896,7 @@ class MainActivityCompose : ComponentActivity(),
         }
     }
 
-    private fun executeDownload(summits: List<Summit>, scope: CoroutineScope) {
+    private suspend fun executeDownload(summits: List<Summit>): Summit? {
         val downloader = GarminTrackAndDataDownloader(
             summits, pythonExecutor, sharedPreferences.getBoolean(Keys.PREF_DOWNLOAD_TCX, false)
         )
@@ -898,16 +904,17 @@ class MainActivityCompose : ComponentActivity(),
         loadingTooltip.value = getString(
             R.string.tool_tip_progress_new_garmin_activities,
             summits.joinToString(", ") { it.name })
-        scope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    downloader.extractFinalSummit()
-                    if (downloader.finalEntry?.sportType != SportType.IndoorTrainer) {
-                        downloader.downloadTracks()
-                        downloader.composeFinalTrack()
-                    }
+        return try {
+            withContext(Dispatchers.IO) {
+                downloader.extractFinalSummit()
+                if (downloader.finalEntry?.sportType != SportType.IndoorTrainer) {
+                    downloader.downloadTracks()
+                    downloader.composeFinalTrack()
                 }
-            } catch (e: RuntimeException) {
+                downloader.finalEntry
+            }
+        } catch (e: RuntimeException) {
+            withContext(Dispatchers.Main) {
                 Toast.makeText(
                     this@MainActivityCompose,
                     "Connecting to third party provider failed. Please try again later. Error: ${e.message}",
@@ -919,14 +926,16 @@ class MainActivityCompose : ComponentActivity(),
                     e
                 )
             }
-            downloader.updateFinalEntry(viewModel)
-            loadingState.value = false
-            loadingTooltip.value = ""
-            Toast.makeText(
-                this@MainActivityCompose,
-                getString(R.string.add_new_summit_successful),
-                Toast.LENGTH_LONG
-            ).show()
+            null
+        } finally {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    this@MainActivityCompose,
+                    getString(R.string.add_new_summit_successful),
+                    Toast.LENGTH_LONG
+                ).show()
+                loadingState.value = false
+            }
         }
     }
 
