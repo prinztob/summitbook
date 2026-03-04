@@ -5,4 +5,5 @@
     
     <color name="table_header_background">#2C2C2C</color>
     <color name="table_row_alternate">#1E1E1E</color>
+    <color name="dark_gray_transparent">#802E2E2E</color>
 </resources>

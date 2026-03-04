@@ -20,7 +20,10 @@
     <string name="summit_name_compare_hint">Vergleiche mit Gipfel</string>
     <string name="select_summit">Wähle Gipfel aus</string>
     <string name="height_meter_hint">Höhenmeter</string>
+    <string name="height_meter">Höhenmeter</string>
+    <string name="kilometers">Kilometer</string>
     <string name="activity_hint">Aktivitäten</string>
+    <string name="activities">Aktivitäten</string>
     <string name="action_share">Teilen</string>
     <string name="date">Datum</string>
     <string name="yearly">Jährlich</string>
@@ -632,5 +635,7 @@
     <string name="add_to_bookmarks">Import als Lesezeichen</string>
     <string name="add_to_summits">Import als Gipfel</string>
     <string name="annual_target">Jahresziel</string>
+    <string name="recent_activities">Letzte Aktivitäten</string>
+    <string name="performance_chart">Leistungsdiagramm</string>
 </resources>
 

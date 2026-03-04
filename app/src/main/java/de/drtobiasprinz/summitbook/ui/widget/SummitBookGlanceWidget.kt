@@ -6,14 +6,21 @@ import android.graphics.Canvas
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Path
+import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.toColorInt
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.glance.GlanceId
+import androidx.glance.GlanceTheme
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
+import androidx.glance.currentState
+import androidx.glance.state.GlanceStateDefinition
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.room.Room
 import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Forecast
@@ -21,6 +28,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.GraphType
 import de.drtobiasprinz.summitbook.ui.PerformanceGraphProvider
+import de.drtobiasprinz.summitbook.ui.widget.theme.GlanceColorScheme
 import de.drtobiasprinz.summitbook.utils.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -32,14 +40,24 @@ import kotlin.math.roundToInt
 class SummitBookGlanceWidget : GlanceAppWidget() {
 
     override val sizeMode = SizeMode.Exact
+    override var stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
-            val widgetData by produceState(WidgetData()) {
+            val prefs = currentState<Preferences>()
+            val now = prefs[longPreferencesKey("now")] ?: 0L
+            val widgetData by produceState(WidgetData(), now) {
                 value = loadWidgetData(context)
             }
-
-            SummitBookWidgetContent(widgetData)
+            GlanceTheme(
+                colors = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    GlanceTheme.colors
+                } else {
+                    GlanceColorScheme.colors
+                },
+            ) {
+                SummitBookWidgetContent(widgetData)
+            }
         }
     }
 
@@ -57,11 +75,10 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
                 dao.peakDao(),
                 dao.dailyActivitySummaryDao()
             )
+
             val summits = repository.getAllSummits().first()
             val forecasts = repository.getAllForecasts().first()
 
-
-            // Check if we have forecasts for current year
             val calendar = Calendar.getInstance()
             val currentYear: Int = calendar[Calendar.YEAR]
 
@@ -71,7 +88,6 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
                 createWidgetDataFromStatistics(summits, context)
             }
         } catch (_: Exception) {
-            // Return default data in case of error
             WidgetData()
         }
     }
@@ -411,7 +427,7 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
     ) {
         val labelPaint = Paint().apply {
             color = android.graphics.Color.WHITE
-            textSize = 20f
+            textSize = 14f
             textAlign = Paint.Align.CENTER
         }
 
@@ -620,7 +636,8 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
                     isAchieved = actualKilometersMonthly >= kilometerForecastForCurrentMonth.roundToInt()
                 )
             ),
-            yearlyChartBitmap = chartBitmap
+            yearlyChartBitmap = chartBitmap,
+            recentSummits = summits.sortedByDescending { it.date }.take(3)
         )
     }
 
@@ -724,7 +741,8 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
                     isAchieved = monthlyKm >= monthlyTargetKm
                 )
             ),
-            yearlyChartBitmap = chartBitmap
+            yearlyChartBitmap = chartBitmap,
+            recentSummits = entries.sortedByDescending { it.date }.take(3)
         )
     }
 

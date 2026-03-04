@@ -1,5 +1,10 @@
 package de.drtobiasprinz.summitbook.viewmodel
 
+import android.util.Log
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -16,6 +21,8 @@ import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.applicationContext
+import de.drtobiasprinz.summitbook.ui.widget.SummitBookGlanceWidget
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -49,7 +56,8 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val entityEvents: LiveData<DataStatus<List<EntityEvent>>>
         get() = _entityEvents
 
-    private val _dailyActivitySummaryList = MutableLiveData<DataStatus<List<DailyActivitySummary>>>()
+    private val _dailyActivitySummaryList =
+        MutableLiveData<DataStatus<List<DailyActivitySummary>>>()
     val dailyActivitySummary: LiveData<DataStatus<List<DailyActivitySummary>>>
         get() = _dailyActivitySummaryList
 
@@ -78,21 +86,58 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         } else {
             entity.id = repository.saveSummit(entity)
         }
+        updateWidget()
     }
 
     fun saveSummits(entities: List<Summit>) = viewModelScope.launch {
         repository.saveSummits(entities)
-    }
-    fun updateSummitDistanceDataBatch(entities: List<Summit>) = viewModelScope.launch {
-        entities.forEach { repository.updateDistanceData(it.id, it.distancePerSurface, it.distancePerRoadType) }
+        updateWidget()
     }
 
-    fun updateIgnoreSimplifyingTrack(summitId: Long, ignoreSimplifyingTrack: Boolean) = viewModelScope.launch {
-        repository.updateIgnoreSimplifyingTrack(summitId, ignoreSimplifyingTrack)
+    fun updateSummitDistanceDataBatch(entities: List<Summit>) = viewModelScope.launch {
+        entities.forEach {
+            repository.updateDistanceData(
+                it.id,
+                it.distancePerSurface,
+                it.distancePerRoadType
+            )
+        }
+        updateWidget()
     }
+
+    fun updateIgnoreSimplifyingTrack(summitId: Long, ignoreSimplifyingTrack: Boolean) =
+        viewModelScope.launch {
+            repository.updateIgnoreSimplifyingTrack(summitId, ignoreSimplifyingTrack)
+            updateWidget()
+        }
 
     fun deleteSummit(entity: Summit) = viewModelScope.launch {
         repository.deleteSummit(entity)
+        updateWidget()
+    }
+
+    private fun updateWidget() {
+        viewModelScope.launch {
+            try {
+                val context = applicationContext
+                if (context != null) {
+                    val manager = GlanceAppWidgetManager(context)
+                    val glanceIds = manager.getGlanceIds(SummitBookGlanceWidget::class.java)
+                    glanceIds.forEach { glanceId ->
+                        // Update the "now" preference to force recomposition
+                        updateAppWidgetState(context, glanceId) { prefs ->
+                            prefs.toMutablePreferences().apply {
+                                this[longPreferencesKey("now")] = System.currentTimeMillis()
+                            }
+                        }
+                        Log.i("SummitBookWidgetReceiver", "update SummitBookGlanceWidget with id $glanceId")
+                    }
+                    SummitBookGlanceWidget().updateAll(context)
+                }
+            } catch (_: Exception) {
+                // Handle exception silently to avoid crashing the app
+            }
+        }
     }
 
     fun getAllSummits() = viewModelScope.launch {
@@ -161,6 +206,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
             _ignoredActivityList.postValue(DataStatus.success(it, false))
         }
     }
+
     fun saveIgnoredActivity(entity: IgnoredActivity) = viewModelScope.launch {
         repository.saveIgnoredActivity(entity)
     }

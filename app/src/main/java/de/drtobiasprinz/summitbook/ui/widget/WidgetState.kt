@@ -2,14 +2,15 @@ package de.drtobiasprinz.summitbook.ui.widget
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.Immutable
+import de.drtobiasprinz.summitbook.db.entities.Summit
 
 @Immutable
 data class WidgetData(
     val yearlyStats: YearlyStats = YearlyStats(),
-    val monthlyStats: MonthlyStats? = null,
-    val yearlyChartBitmap: Bitmap? = null
+    val monthlyStats: MonthlyStats = MonthlyStats(),
+    val yearlyChartBitmap: Bitmap? = null,
+    val recentSummits: List<Summit> = emptyList()
 )
-
 @Immutable
 sealed class Stats {
     abstract val activities: StatItem

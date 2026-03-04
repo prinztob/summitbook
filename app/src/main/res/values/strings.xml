@@ -19,6 +19,8 @@
     <string name="summit_name_compare_hint">Compare with summit</string>
     <string name="select_summit">Select summit</string>
     <string name="height_meter_hint">Elevation gain</string>
+    <string name="height_meter">Height meter</string>
+    <string name="kilometers">Kilometers</string>
     <string name="action_share">share</string>
     <string name="date">Date</string>
     <string name="yearly">Yearly</string>
@@ -392,6 +394,7 @@
     <string name="november">November</string>
     <string name="december">December</string>
     <string name="activity_hint">Activities</string>
+    <string name="activities">Activities</string>
     <string name="next_year">Next year</string>
     <string name="current_month">Current month</string>
     <string name="current_year">Current year</string>
@@ -630,4 +633,6 @@
     <string name="add_to_bookmarks">Import as Bookmark</string>
     <string name="add_to_summits">Import as Summit</string>
     <string name="annual_target">Annual target</string>
+    <string name="recent_activities">Recent activities</string>
+    <string name="performance_chart">Performance chart</string>
 </resources>

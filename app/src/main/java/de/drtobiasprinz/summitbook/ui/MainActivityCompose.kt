@@ -2,6 +2,7 @@
 
 package de.drtobiasprinz.summitbook.ui
 
+import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
@@ -176,7 +177,7 @@ class MainActivityCompose : ComponentActivity(),
 
         // Schedule WorkManager for bounding box updates (every minute)
         scheduleBoundingBoxUpdateWorker()
-
+        MainActivityCompose.applicationContext = applicationContext
         // Set the Compose content
         setContent {
             SummitBookTheme {
@@ -1276,6 +1277,8 @@ class MainActivityCompose : ComponentActivity(),
         var activitiesWithSegmentsRecord: MutableList<Pair<Long, Int>> = mutableListOf()
         lateinit var sharedPreferences: SharedPreferences
         var latestFilteredSummits: List<Summit> = emptyList()
+
+        var applicationContext: Context? = null
     }
 }
 
