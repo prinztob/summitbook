@@ -65,7 +65,7 @@ fun OverviewScreen(
     var selectedGraphType by remember { mutableStateOf(GraphType.ElevationGain) }
     var graphIsVisible by remember { mutableStateOf(false) }
     var showMonths by remember { mutableStateOf(false) }
-    var showYears by remember { mutableStateOf(false) }
+    var showYears by remember { mutableStateOf(true) }
     var currentMonth by remember { mutableIntStateOf(Calendar.getInstance()[Calendar.MONTH] + 1) }
     var currentYear by remember { mutableIntStateOf(Calendar.getInstance()[Calendar.YEAR]) }
     var selectedYear by remember { mutableIntStateOf(currentYear) }
