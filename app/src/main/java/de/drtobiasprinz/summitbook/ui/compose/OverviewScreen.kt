@@ -650,7 +650,8 @@ private fun buildChartSeries(
                     data = convertEntriesToChartDataPoints(minData),
                     color = ComposeColor(0xFF0000FF), // Blue
                     lineWidth = 2f,
-                    filled = false
+                    fillColor = ComposeColor(0xFFF44336),
+                    filled = true
                 )
             )
         } else {
@@ -692,14 +693,14 @@ private fun buildChartSeries(
             actualEntries
         }
 
-        // Calculate colors for each point
+        // Calculate colors for each point based on comparison with max and forecast
         val pointColors = filteredEntries.map { entry ->
             val minMaxValue = minMax.second.firstOrNull { it.x == entry.x }?.y ?: 0f
             val forecastValue = chartEntriesForecast.firstOrNull { it.x == entry.x }?.y ?: 0f
             when {
-                entry.y > minMaxValue -> ComposeColor(0xFFFFD700) // Gold - new record
-                graphType.hasForecast && entry.y > forecastValue -> ComposeColor(0xFF00FF00) // Green
-                else -> ComposeColor(0xFFFF0000) // Red
+                entry.y > minMaxValue -> ComposeColor(0xFFFFD700) // Gold - above max 5 yrs (new record)
+                graphType.hasForecast && entry.y < forecastValue -> ComposeColor(0xFFFF0000) // Red - below forecast
+                else -> ComposeColor(0xFF00FF00) // Green - between forecast and max
             }
         }
 
@@ -708,7 +709,7 @@ private fun buildChartSeries(
                 name = "Actual",
                 data = convertEntriesToChartDataPoints(filteredEntries),
                 color = ComposeColor(0xFFFF0000), // Default red
-                lineWidth = 5f,
+                lineWidth = 2f,
                 filled = false,
                 drawCircles = false,
                 pointColors = pointColors
