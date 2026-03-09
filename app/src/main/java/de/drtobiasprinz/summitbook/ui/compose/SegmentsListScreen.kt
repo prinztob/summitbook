@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,7 +51,6 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SegmentEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
-import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.util.Locale
@@ -59,17 +59,17 @@ import java.util.Locale
  * Composable function that displays a list of segments
  * This replaces the RecyclerView-based SegmentsViewAdapter
  */
+@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SegmentsListScreen(
     segments: List<Segment>,
     summits: List<Summit>,
     modifier: Modifier = Modifier,
-    onDeleteSegment: (Segment) -> Unit = {},
-    onDeleteSegmentEntry: (SegmentEntry) -> Unit = {}
+    onDeleteSegment: (Segment) -> Unit = {}
 ) {
     val viewModel: DatabaseViewModel = viewModel()
     var showAddSegmentEntryDialog by remember { mutableStateOf(false) }
-    var selectedSegmentId by remember { mutableStateOf(0L) }
+    var selectedSegmentId by remember { mutableLongStateOf(0L) }
     var showAddSegmentDetailsDialog by remember { mutableStateOf(false) }
     var showEditSegmentDetailsDialog by remember { mutableStateOf(false) }
     var selectedSegmentDetails by remember { mutableStateOf<SegmentDetails?>(null) }
@@ -146,6 +146,7 @@ fun SegmentsListScreen(
 /**
  * Individual segment card composable
  */
+@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SegmentCard(
     segment: Segment,
@@ -202,7 +203,7 @@ fun SegmentCard(
                             .build(),
                         contentDescription = stringResource(R.string.map),
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.FillBounds
                     )
                 }
                 

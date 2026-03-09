@@ -743,13 +743,10 @@ class MainActivityCompose : ComponentActivity(),
                 val segmentsList by viewModel.segmentsList.asFlow()
                     .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
                 SegmentsListScreen(
-                    segments = segmentsList.data ?: emptyList(),
+                    segments = sortFilterValues.applyForSegments(segmentsList.data ?: emptyList()),
                     summits = summitsFromDatabase,
                     onDeleteSegment = { segment ->
                         viewModel.deleteSegment(segment)
-                    },
-                    onDeleteSegmentEntry = { entry ->
-                        viewModel.deleteSegmentEntry(entry)
                     }
                 )
             }

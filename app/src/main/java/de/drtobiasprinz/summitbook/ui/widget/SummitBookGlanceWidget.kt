@@ -7,6 +7,7 @@ import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Path
 import android.os.Build
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.core.graphics.createBitmap
@@ -43,10 +44,14 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
     override var stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        Log.i("SummitBookGlanceWidget", "provideGlance started")
+        val widgetData = loadWidgetData(context)
+        Log.i("SummitBookGlanceWidget", "provideGlance data loaded, providing content")
         provideContent {
             val prefs = currentState<Preferences>()
-            val now = prefs[longPreferencesKey("now")] ?: 0L
-            val widgetData by produceState(WidgetData(), now) {
+            val now = prefs[longPreferencesKey("now")] ?: System.currentTimeMillis()
+            Log.i("SummitBookGlanceWidget", "provideGlance at $now")
+            val widgetData by produceState(widgetData, now) {
                 value = loadWidgetData(context)
             }
             GlanceTheme(
@@ -62,33 +67,41 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
     }
 
     private suspend fun loadWidgetData(context: Context): WidgetData = withContext(Dispatchers.IO) {
+        var db: AppDatabase? = null
         try {
-            val dao = Room.databaseBuilder(
+            db = Room.databaseBuilder(
                 context, AppDatabase::class.java, Constants.DATABASE
             ).build()
             val repository = DatabaseRepository(
-                dao.summitsDao(),
-                dao.segmentsDao(),
-                dao.forecastDao(),
-                dao.ignoredActivityDao(),
-                dao.entityEventDao(),
-                dao.peakDao(),
-                dao.dailyActivitySummaryDao()
+                db.summitsDao(),
+                db.segmentsDao(),
+                db.forecastDao(),
+                db.ignoredActivityDao(),
+                db.entityEventDao(),
+                db.peakDao(),
+                db.dailyActivitySummaryDao()
             )
 
-            val summits = repository.getAllSummits().first()
+            val summits = repository.getAllSummits().first().filter { !it.isBookmark }
             val forecasts = repository.getAllForecasts().first()
 
             val calendar = Calendar.getInstance()
             val currentYear: Int = calendar[Calendar.YEAR]
 
-            if (forecasts.isNotEmpty() && forecasts.any { it.year == currentYear }) {
+            Log.d("SummitBookGlanceWidget", "Loading widget data: ${summits.size} summits, ${forecasts.size} forecasts")
+
+            val result = if (forecasts.isNotEmpty() && forecasts.any { it.year == currentYear }) {
                 createWidgetDataFromForecasts(forecasts, summits, context)
             } else {
                 createWidgetDataFromStatistics(summits, context)
             }
-        } catch (_: Exception) {
+            Log.d("SummitBookGlanceWidget", "Widget data loaded successfully")
+            result
+        } catch (e: Exception) {
+            Log.e("SummitBookGlanceWidget", "Error loading widget data", e)
             WidgetData()
+        } finally {
+            db?.close()
         }
     }
 

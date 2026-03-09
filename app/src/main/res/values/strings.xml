@@ -627,6 +627,8 @@
     <string name="old_value">Old Value</string>
     <string name="start">Start</string>
     <string name="stop">Stop</string>
+    <string name="zoom_to_track">Zoom to track</string>
+    <string name="zoom_to_selected_point">Zoom to selected point</string>
     <string name="update_segment_entry">Update segment entry</string>
     <string name="add_segment_entry">Add segment entry</string>
     <string name="no_summits_in_bounding_box">No summits found in the bounding box of existing segment entries. Showing all summits with GPS tracks instead.</string>
@@ -635,4 +637,7 @@
     <string name="annual_target">Annual target</string>
     <string name="recent_activities">Recent activities</string>
     <string name="performance_chart">Performance chart</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="page_of">Page %1$d of %2$d</string>
 </resources>

@@ -1,3 +1,5 @@
+@file:Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
+
 package de.drtobiasprinz.summitbook.ui.compose
 
 import android.content.Context
@@ -33,11 +35,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,11 +47,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import de.drtobiasprinz.summitbook.R
@@ -137,7 +136,7 @@ fun AddSegmentEntryScreen(
                     // Show warning when no summits match the bounding box criteria
                     Pair(summits.filter { it.hasGpsTrack() }.sortedByDescending { it.date }, true)
                 } else {
-                    Pair(filteredSummits, false)
+                    Pair(filteredSummits.sortedByDescending { it.date }, false)
                 }
             } else {
                 Pair(summits.filter { it.hasGpsTrack() }.sortedByDescending { it.date }, false)
@@ -153,11 +152,9 @@ fun AddSegmentEntryScreen(
 
             // Load track points for the current summit if we're editing
             if (currentSummit != null && trackPoints.isEmpty()) {
-                scope.launch {
-                    withContext(Dispatchers.IO) {
-                        currentSummit.setGpsTrack(useSimplifiedTrack = false)
-                        trackPoints = currentSummit.gpsTrack?.trackPoints ?: emptyList()
-                    }
+                withContext(Dispatchers.IO) {
+                    currentSummit.setGpsTrack(useSimplifiedTrack = false)
+                    trackPoints = currentSummit.gpsTrack?.trackPoints ?: emptyList()
                 }
             }
 
@@ -177,59 +174,32 @@ fun AddSegmentEntryScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = if (uiState.isUpdate) {
-                            stringResource(R.string.update_segment_entry)
-                        } else {
-                            stringResource(R.string.add_segment_entry)
-                        },
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onCancel) {
-                        Icon(
-                            painterResource(R.drawable.ic_baseline_arrow_back_24),
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
+
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
         }
-    ) { paddingValues ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
             AddSegmentEntryContent(
                 uiState = uiState,
                 trackPoints = trackPoints,
                 onSummitSelected = { summit ->
-                    uiState = uiState.copy(currentSummit = summit)
+                    uiState = uiState.copy(currentSummit = summit, isLoading = true)
                     scope.launch {
                         withContext(Dispatchers.IO) {
                             summit.setGpsTrack(useSimplifiedTrack = false)
                             trackPoints = summit.gpsTrack?.trackPoints ?: emptyList()
                         }
                         // Update the UI state with the new track points
-                        uiState = uiState.copy(trackPoints = trackPoints)
+                        uiState = uiState.copy(trackPoints = trackPoints, isLoading = false)
 
                         val guessedIds =
                             guessStartAndEndPoint(uiState.segment?.segmentEntries, trackPoints)
@@ -252,7 +222,6 @@ fun AddSegmentEntryScreen(
                     ).invokeOnCompletion { onCancel() }
                 },
                 onCancel = onCancel,
-                modifier = Modifier.padding(paddingValues)
             )
         }
     }
@@ -496,6 +465,7 @@ fun AddSegmentEntryContent(
 
                 AddSegmentStatsCard(
                     date = summit.getDateAsString() ?: "",
+                    name = uiState.segment?.segmentDetails?.getDisplayNameWithLineBreak() ?: "",
                     heightMeterUp = heightMeterResult.second.toInt(),
                     heightMeterDown = heightMeterResult.third.toInt(),
                     kilometers = distance,
@@ -545,26 +515,23 @@ fun AddSegmentEntryContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(R.string.start),
+                text = if (startSelected) stringResource(R.string.start) else stringResource(R.string.stop),
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (startSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (startSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                fontWeight = FontWeight.Bold,
+                color = if (startSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
 
             Spacer(modifier = Modifier.width(8.dp))
 
             Switch(
                 checked = startSelected,
-                onCheckedChange = { startSelected = it }
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Text(
-                text = stringResource(R.string.stop),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (!startSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (!startSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                onCheckedChange = { startSelected = it },
+                colors = androidx.compose.material3.SwitchDefaults.colors(
+                    checkedThumbColor = if (startSelected) Color.Green else Color.Red,
+                    checkedTrackColor = if (startSelected) Color.Green.copy(alpha = 0.5f) else Color.Red.copy(alpha = 0.5f),
+                    uncheckedThumbColor = if (startSelected) Color.Green else Color.Red,
+                    uncheckedTrackColor = if (startSelected) Color.Green.copy(alpha = 0.5f) else Color.Red.copy(alpha = 0.5f)
+                )
             )
         }
 
@@ -574,8 +541,7 @@ fun AddSegmentEntryContent(
         if (mapVisible && uiState.currentSummit != null) {
             AddSegmentMapSection(
                 trackPoints = trackPoints,
-                startPointId = uiState.startPointId,
-                endPointId = uiState.endPointId,
+                uiState = uiState,
                 startSelected = startSelected,
                 onStartPointSelected = onStartPointSelected,
                 onEndPointSelected = onEndPointSelected,
@@ -606,6 +572,7 @@ fun AddSegmentEntryContent(
 @Composable
 fun AddSegmentStatsCard(
     date: String,
+    name: String,
     heightMeterUp: Int,
     heightMeterDown: Int,
     kilometers: Double,
@@ -632,6 +599,12 @@ fun AddSegmentStatsCard(
                 )
                 Text(
                     text = date,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = name,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium
                 )
@@ -722,8 +695,7 @@ fun AddSegmentStatItem(
 @Composable
 fun AddSegmentMapSection(
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
-    startPointId: Int,
-    endPointId: Int,
+    uiState: AddSegmentEntryUiState,
     startSelected: Boolean,
     onStartPointSelected: (Int) -> Unit,
     onEndPointSelected: (Int) -> Unit,
@@ -732,6 +704,14 @@ fun AddSegmentMapSection(
     val context = LocalContext.current
     var mapView: CustomMapViewToAllowScrolling? by remember { mutableStateOf(null) }
     var isMapReady by remember { mutableStateOf(false) }
+    var hasZoomed by remember { mutableStateOf(false) }
+    var isZoomedToBoundingBox by remember { mutableStateOf(true) }
+
+    // Reset hasZoomed and isZoomedToBoundingBox when trackPoints change (new track loaded)
+    LaunchedEffect(trackPoints) {
+        hasZoomed = false
+        isZoomedToBoundingBox = false
+    }
 
     Box(
         modifier = modifier
@@ -748,16 +728,28 @@ fun AddSegmentMapSection(
                 }
             },
             update = { view ->
-                if (isMapReady) {
+                if (isMapReady && trackPoints.isNotEmpty() && !hasZoomed) {
                     updateAddSegmentMapContent(
                         view,
                         trackPoints,
-                        startPointId,
-                        endPointId,
+                        uiState,
                         startSelected,
                         onStartPointSelected,
                         onEndPointSelected,
-                        context
+                        context,
+                        shouldZoomToTrack = true
+                    )
+                    hasZoomed = true
+                } else if (isMapReady && trackPoints.isNotEmpty()) {
+                    updateAddSegmentMapContent(
+                        view,
+                        trackPoints,
+                        uiState,
+                        startSelected,
+                        onStartPointSelected,
+                        onEndPointSelected,
+                        context,
+                        shouldZoomToTrack = false
                     )
                 }
             },
@@ -782,6 +774,31 @@ fun AddSegmentMapSection(
                 contentDescription = stringResource(R.string.map_type)
             )
         }
+        // Zoom toggle button: - zooms to bounding box, + zooms to selected point
+        IconButton(
+            onClick = {
+                if (isZoomedToBoundingBox) {
+                    // Currently zoomed to bounding box, so zoom to selected point
+                    zoomToSelectedPoint(mapView, trackPoints, uiState.startPointId, uiState.endPointId, startSelected)
+                    isZoomedToBoundingBox = false
+                } else {
+                    // Zoom to bounding box
+                    zoomToBoundingBox(mapView, trackPoints, uiState.startPointId, uiState.endPointId)
+                    isZoomedToBoundingBox = true
+                }
+            },
+            modifier = Modifier
+                .padding(8.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    shape = RoundedCornerShape(50)
+                )
+        ) {
+            Icon(
+                painter = painterResource(id = if (isZoomedToBoundingBox) R.drawable.ic_baseline_zoom_out_24 else R.drawable.ic_baseline_zoom_in_24),
+                contentDescription = if (isZoomedToBoundingBox) stringResource(R.string.zoom_to_selected_point) else stringResource(R.string.zoom_to_track)
+            )
+        }
     }
 }
 
@@ -791,20 +808,22 @@ fun AddSegmentMapSection(
 private fun updateAddSegmentMapContent(
     mapView: MapView,
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
-    startPointId: Int,
-    endPointId: Int,
+    uiState: AddSegmentEntryUiState,
     startSelected: Boolean,
     onStartPointSelected: (Int) -> Unit,
     onEndPointSelected: (Int) -> Unit,
-    context: Context
+    context: Context,
+    shouldZoomToTrack: Boolean = false
 ) {
     // Clear existing overlays
     mapView.overlays?.clear()
     mapView.overlayManager?.clear()
+    val startPointId = uiState.startPointId
+    val endPointId = uiState.endPointId
     if (trackPoints.isNotEmpty()) {
         // Add start marker
-        if (startPointId < trackPoints.size) {
-            val startPoint = trackPoints[startPointId].first
+        if (uiState.startPointId < trackPoints.size) {
+            val startPoint = trackPoints[uiState.startPointId].first
             addMarker(
                 mapView,
                 GeoPoint(startPoint.latitude, startPoint.longitude),
@@ -825,21 +844,24 @@ private fun updateAddSegmentMapContent(
         }
 
         // Add special marker for currently selected point based on toggle switch
-        val selectedPointId = if (startSelected) startPointId else endPointId
-        if (selectedPointId < trackPoints.size) {
-            val selectedPoint = trackPoints[selectedPointId].first
-            val selectedMarkerIcon =
-                if (startSelected) R.drawable.ic_outline_location_green_48 else R.drawable.ic_outline_location_red_48
+        val selectedSegment = uiState.segment?.segmentEntries?.first()
+        if (selectedSegment != null) {
             addMarker(
                 mapView,
-                GeoPoint(selectedPoint.latitude, selectedPoint.longitude),
-                selectedMarkerIcon,
+                GeoPoint(selectedSegment.startPositionLatitude, selectedSegment.startPositionLongitude),
+                R.drawable.ic_outline_location_green_48,
+                context
+            )
+            addMarker(
+                mapView,
+                GeoPoint(selectedSegment.endPositionLatitude, selectedSegment.endPositionLongitude),
+                R.drawable.ic_outline_location_red_48,
                 context
             )
         }
 
         // Draw GPX track
-        drawGpxTrack(mapView, trackPoints, startPointId, endPointId)
+        drawGpxTrack(mapView, trackPoints, startPointId, endPointId, shouldZoomToTrack)
 
         // Add point overlay for selection
         addPointOverlay(
@@ -863,7 +885,8 @@ private fun drawGpxTrack(
     mapView: MapView,
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
     startPointId: Int,
-    endPointId: Int
+    endPointId: Int,
+    shouldZoomToTrack: Boolean = false
 ) {
     try {
         val osMapRoute = Polyline(mapView)
@@ -880,10 +903,13 @@ private fun drawGpxTrack(
             osMapRoute.setPoints(geoPoints)
             mapView.overlays.add(osMapRoute)
 
-            // Zoom to the bounding box of the track segment
-            val boundingBox = BoundingBox.fromGeoPoints(geoPoints)
-            mapView.post {
-                mapView.zoomToBoundingBox(boundingBox, false, 50)
+            // Zoom to the bounding box of the track segment only when loading the track
+            if (shouldZoomToTrack) {
+                Log.i("AddSegmentEntryScreen", "shouldZoomToTrack ${geoPoints.size}")
+                val boundingBox = BoundingBox.fromGeoPoints(geoPoints)
+                mapView.post {
+                    mapView.zoomToBoundingBox(boundingBox, false, 50)
+                }
             }
         }
     } catch (e: Exception) {
@@ -1054,6 +1080,53 @@ private fun addMarker(
         }
     } catch (e: Exception) {
         e.printStackTrace()
+    }
+}
+
+/**
+ * Zoom to the bounding box of the track segment
+ */
+private fun zoomToBoundingBox(
+    mapView: MapView?,
+    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+    startPointId: Int,
+    endPointId: Int
+) {
+    if (mapView == null || trackPoints.isEmpty()) return
+
+    val usedTrackPoints = trackPoints.filterIndexed { index, _ ->
+        index in startPointId..endPointId
+    }
+
+    if (usedTrackPoints.size > 1) {
+        val geoPoints = usedTrackPoints.map { GeoPoint(it.first.latitude, it.first.longitude) }
+        val boundingBox = BoundingBox.fromGeoPoints(geoPoints)
+        mapView.post {
+            mapView.zoomToBoundingBox(boundingBox, false, 50)
+        }
+    }
+}
+
+/**
+ * Zoom to the selected point (start or stop) with zoom level 15
+ */
+private fun zoomToSelectedPoint(
+    mapView: MapView?,
+    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+    startPointId: Int,
+    endPointId: Int,
+    startSelected: Boolean
+) {
+    if (mapView == null || trackPoints.isEmpty()) return
+
+    val selectedPointId = if (startSelected) startPointId else endPointId
+    if (selectedPointId in trackPoints.indices) {
+        val selectedPoint = trackPoints[selectedPointId].first
+        val geoPoint = GeoPoint(selectedPoint.latitude, selectedPoint.longitude)
+        mapView.post {
+            mapView.controller.setCenter(geoPoint)
+            mapView.controller.setZoom(20.0)
+        }
     }
 }
 

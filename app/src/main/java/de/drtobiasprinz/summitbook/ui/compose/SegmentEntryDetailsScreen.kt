@@ -110,7 +110,6 @@ fun SegmentEntryDetailsScreen(
         summits,
         segmentDetailsId,
         segmentEntryId,
-        trackPoints,
         uiState.selectedSortOption
     ) {
         val segmentToUse =
@@ -146,10 +145,11 @@ fun SegmentEntryDetailsScreen(
             val currentSummit =
                 relevantSummits.firstOrNull { it.activityId == currentEntry?.activityId }
 
-            scope.launch {
+            // Load track points for the current summit
+            if (currentSummit != null) {
                 withContext(Dispatchers.IO) {
-                    currentSummit?.setGpsTrack(useSimplifiedTrack = false)
-                    trackPoints = currentSummit?.gpsTrack?.trackPoints ?: emptyList()
+                    currentSummit.setGpsTrack(useSimplifiedTrack = false)
+                    trackPoints = currentSummit.gpsTrack?.trackPoints ?: emptyList()
                 }
             }
             uiState = uiState.copy(
@@ -208,7 +208,7 @@ fun SegmentEntryDetailsScreen(
                     uiState = uiState.copy(selectedSortOption = option)
                 },
                 onEntrySelected = { entry ->
-                    uiState = uiState.copy(currentEntry = entry)
+                    uiState = uiState.copy(currentEntry = entry, isLoading = true)
                     val currentSummit =
                         uiState.relevantSummits.firstOrNull { it.activityId == entry.activityId }
                     uiState = uiState.copy(currentSummit = currentSummit)
@@ -221,7 +221,8 @@ fun SegmentEntryDetailsScreen(
                             )
                         }
                         uiState = uiState.copy(
-                            trackPoints = currentSummit?.gpsTrack?.trackPoints ?: emptyList()
+                            trackPoints = currentSummit?.gpsTrack?.trackPoints ?: emptyList(),
+                            isLoading = false
                         )
                     }
                 },
@@ -471,6 +472,7 @@ fun SegmentDetailStatItem(
 /**
  * Map section with custom map view
  */
+@Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
 @Composable
 fun SegmentMapSection(
     summit: Summit,

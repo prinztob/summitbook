@@ -59,7 +59,6 @@ import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.getSportTypeForMapProviders
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
 import de.drtobiasprinz.summitbook.ui.MapProvider
-import de.drtobiasprinz.summitbook.ui.utils.SummitUtils
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
@@ -77,6 +76,7 @@ import java.io.IOException
 fun SummitEntryTrackScreen(
     summit: Summit?,
     allSummits: List<Summit>?,
+    summitsToCompare: List<Summit>,
     compareSummit: Summit?,
     onGetSummitToCompare: (Long) -> Unit,
     onSetSummitToCompareToNull: () -> Unit,
@@ -88,6 +88,16 @@ fun SummitEntryTrackScreen(
     var trackPoints by remember {
         mutableStateOf<List<Pair<TrackPoint, ExtensionFromYaml>>>(
             emptyList()
+        )
+    }
+    var compareTrackPoints by remember {
+        mutableStateOf<List<Pair<TrackPoint, ExtensionFromYaml>>>(
+            emptyList()
+        )
+    }
+    var connectedTrackPoints by remember {
+        mutableStateOf<List<List<Pair<TrackPoint, ExtensionFromYaml>>>>(
+            mutableListOf()
         )
     }
     var selectedCustomizeTrackItem by remember { mutableStateOf(TrackColor.Elevation) }
@@ -106,14 +116,6 @@ fun SummitEntryTrackScreen(
             CircularProgressIndicator()
         }
         return
-    }
-
-    val summitsToCompare = remember(allSummits, summit.id) {
-        allSummits?.let { summits ->
-            SummitUtils.getSummitsToCompare(
-                summits, summit, onlyWithPowerData = true
-            )
-        } ?: emptyList()
     }
 
     // Initialize GPS track - use summit.id to avoid infinite recomposition
@@ -135,6 +137,36 @@ fun SummitEntryTrackScreen(
         }
     }
 
+    // Load compare track asynchronously
+    LaunchedEffect(compareSummit?.id) {
+        if (compareSummit != null) {
+            withContext(Dispatchers.IO) {
+                setGpsTrack(compareSummit, useSimplifiedTrack = true) { track ->
+                    compareTrackPoints = track?.trackPoints ?: emptyList()
+                }
+            }
+        } else {
+            compareTrackPoints = emptyList()
+        }
+    }
+
+    // Load connected tracks asynchronously
+    LaunchedEffect(summit.id, allSummits?.size) {
+        if (allSummits != null) {
+            withContext(Dispatchers.IO) {
+                val connectedEntries = summit.getConnectedEntries(allSummits)
+                val trackPointList: MutableList<List<Pair<TrackPoint, ExtensionFromYaml>>> = mutableListOf()
+                for (entry in connectedEntries) {
+                    setGpsTrack(entry, useSimplifiedTrack = true) { track ->
+                        trackPointList.add(track?.trackPoints ?: emptyList())
+                    }
+                }
+                connectedTrackPoints = trackPointList
+            }
+        } else {
+            connectedTrackPoints = mutableListOf()
+        }
+    }
 
     // Update used items for color code
     LaunchedEffect(trackPoints) {
@@ -202,8 +234,9 @@ fun SummitEntryTrackScreen(
                     MapView(
                         summit = summit,
                         trackPoints = trackPoints,
+                        compareTrackPoints = compareTrackPoints,
+                        connectedTrackPoints = connectedTrackPoints,
                         summitToCompare = compareSummit,
-                        allSummits = allSummits,
                         selectedTrackColor = selectedCustomizeTrackItem,
                         calculateBoundingBox = !alreadyZoomedOnTrack,
                         onMapReady = { alreadyZoomedOnTrack = true },
@@ -249,7 +282,6 @@ fun SummitEntryTrackScreen(
                         summit = summit,
                         trackPoints = trackPoints,
                         allSummits = allSummits,
-                        compareSummit = compareSummit,
                         mapView = mapViewRef,
                         locationOverlay = locationOverlayRef,
                         onCustomizeTrack = { showColorDialog = true },
@@ -300,12 +332,13 @@ private fun hasOnlyZeroCoordinates(trackPoints: List<Pair<TrackPoint, ExtensionF
 fun MapView(
     summit: Summit,
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+    modifier: Modifier = Modifier,
+    compareTrackPoints: List<Pair<TrackPoint, ExtensionFromYaml>> = emptyList(),
+    connectedTrackPoints: List<List<Pair<TrackPoint, ExtensionFromYaml>>> = emptyList(),
     summitToCompare: Summit?,
-    allSummits: List<Summit>?,
     selectedTrackColor: TrackColor,
     calculateBoundingBox: Boolean,
     onMapReady: () -> Unit,
-    modifier: Modifier = Modifier,
     onMapViewCreated: (CustomMapViewToAllowScrolling) -> Unit = {},
     onLocationOverlayCreated: (MyLocationNewOverlay) -> Unit = {},
     selectedTrackPointIndex: Int? = null,
@@ -371,20 +404,15 @@ fun MapView(
             view.addDefaultSettings()
 
             if (summitToCompare != null) {
-                view.drawTrack(
-                    summitToCompare.gpsTrack?.trackPoints ?: emptyList(),
-                    true,
-                    TrackColor.None,
-                    color = Color.BLACK,
+                view.addAdditionalGpsTrack(
+                    trackPoints = compareTrackPoints,
+                    color = Color.BLACK
                 )
             } else {
-                val connectedEntries = summit.getConnectedEntries(allSummits)
-                for (entry in connectedEntries) {
-                    view.drawTrack(
-                        entry.gpsTrack?.trackPoints ?: emptyList(),
-                        true,
-                        TrackColor.None,
-                        color = Color.BLACK,
+                connectedTrackPoints.forEach {
+                    view.addAdditionalGpsTrack(
+                        trackPoints = it,
+                        color = Color.BLACK
                     )
                 }
             }
@@ -439,7 +467,6 @@ fun MapControlButtons(
     summit: Summit,
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
     allSummits: List<Summit>?,
-    compareSummit: Summit?,
     mapView: CustomMapViewToAllowScrolling?,
     locationOverlay: MyLocationNewOverlay?,
     onCustomizeTrack: () -> Unit,
@@ -468,7 +495,6 @@ fun MapControlButtons(
                             mapView = mapView,
                             summit = summit,
                             trackPoints = trackPoints,
-                            compareSummit = compareSummit,
                             allSummits = allSummits,
                             sharedPreferences = sharedPreferences
                         )
@@ -677,7 +703,6 @@ private suspend fun showAllTracksOfSummitInBoundingBox(
     mapView: CustomMapViewToAllowScrolling,
     summit: Summit,
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
-    compareSummit: Summit?,
     allSummits: List<Summit>,
     sharedPreferences: android.content.SharedPreferences
 ) {
@@ -688,8 +713,8 @@ private suspend fun showAllTracksOfSummitInBoundingBox(
         mapView.overlays.clear()
 
         val summitsWithSameBoundingBox = allSummits.filter {
-            it.activityId != summit.activityId && mapView.boundingBox?.let { bbox ->
-                it.trackBoundingBox?.intersects(bbox)
+            it.activityId != summit.activityId && mapView.boundingBox?.let { boundingBox ->
+                it.trackBoundingBox?.intersects(boundingBox)
             } == true
         }
 
@@ -715,26 +740,6 @@ private suspend fun showAllTracksOfSummitInBoundingBox(
                     pointsShown += entry.gpsTrack?.trackPoints?.size ?: 0
                     mapView.zoomController.activate()
                 }
-            }
-        }
-
-        // Redraw the main summit track on top
-        if (compareSummit != null) {
-            mapView.drawTrack(
-                compareSummit.gpsTrack?.trackPoints ?: emptyList(),
-                true,
-                TrackColor.None,
-                color = Color.BLACK
-            )
-        } else {
-            val connectedEntries = summit.getConnectedEntries(allSummits)
-            for (entry in connectedEntries) {
-                mapView.drawTrack(
-                    entry.gpsTrack?.trackPoints ?: emptyList(),
-                    true,
-                    TrackColor.None,
-                    color = Color.BLACK
-                )
             }
         }
 

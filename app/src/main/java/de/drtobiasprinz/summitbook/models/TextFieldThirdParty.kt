@@ -12,6 +12,8 @@ enum class TextFieldGroupThirdParty {
 enum class TextFieldThirdParty(
     val group: TextFieldGroupThirdParty,
     val unitWithPlaceHolder: Int,
+    val iconId: Int,
+    val labelId: Int,
     val getValue: (Summit) -> Number?,
     val getMinMaxSummit: (ExtremaValuesSummits?) -> Pair<Summit, Summit>? = { _ -> null },
     val reverse: Boolean = false,
@@ -23,6 +25,8 @@ enum class TextFieldThirdParty(
     AverageHr(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_with_bpm,
+        R.drawable.ic_baseline_monitor_heart_24,
+        R.string.average_hr,
         { e -> e.garminData?.averageHR },
         { e -> e?.averageHRMinMax },
         digits = 0,
@@ -31,6 +35,8 @@ enum class TextFieldThirdParty(
     MaxHr(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_with_bpm,
+        R.drawable.ic_baseline_monitor_heart_24,
+        R.string.max_hr,
         { e -> e.garminData?.maxHR },
         { e -> e?.maxHRMinMax },
         digits = 0,
@@ -39,6 +45,8 @@ enum class TextFieldThirdParty(
     Calories(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_with_kcal,
+        R.drawable.ic_baseline_monitor_heart_24,
+        R.string.calories,
         { e -> e.garminData?.calories },
         { e -> e?.caloriesMinMax },
         digits = 0
@@ -46,6 +54,8 @@ enum class TextFieldThirdParty(
     PartPaved(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_with_per_cent,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.part_unpaved,
         { e -> e.garminData?.surfaceTypeUnpavedPercentage },
         { e -> e?.surfaceTypeUnpavedPercentageMinMax },
         digits = 1,
@@ -53,36 +63,48 @@ enum class TextFieldThirdParty(
     AerobicTrainingEffect(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_only,
+        R.drawable.ic_baseline_directions_run_24,
+        R.string.aerobic_te,
         { e -> e.garminData?.aerobicTrainingEffect },
         { e -> e?.aerobicTrainingEffectMinMax },
     ),
     AnaerobicTrainingEffect(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_only,
+        R.drawable.ic_baseline_directions_run_24,
+        R.string.anaerobic_te,
         { e -> e.garminData?.anaerobicTrainingEffect },
         { e -> e?.anaerobicTrainingEffectMinMax },
     ),
     Grit(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_only,
+        R.drawable.ic_baseline_directions_run_24,
+        R.string.grit,
         { e -> e.garminData?.grit },
         { e -> e?.gritMinMax },
     ),
     Flow(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_only,
+        R.drawable.ic_baseline_directions_run_24,
+        R.string.flow,
         { e -> e.garminData?.flow },
         { e -> e?.flowMinMax },
     ),
     TrainingsLoad(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_only,
+        R.drawable.ic_baseline_directions_run_24,
+        R.string.trainingLoad,
         { e -> e.garminData?.trainingLoad },
         { e -> e?.trainingsLoadMinMax },
     ),
     Vo2Max(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_only,
+        R.drawable.ic_baseline_directions_run_24,
+        R.string.vo2Max,
         { e -> e.garminData?.vo2max },
         { e -> e?.vo2maxMinMax },
         digits = 1
@@ -90,6 +112,8 @@ enum class TextFieldThirdParty(
     Strokes(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_only,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.totalNumberOfStrokes,
         { e -> e.garminData?.cyclingDynamics?.totalNumberOfStrokes },
         { e -> e?.strokesMinMax },
         digits = 0
@@ -97,6 +121,8 @@ enum class TextFieldThirdParty(
     StandingTime(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_only,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.standingTime,
         { e -> e.garminData?.cyclingDynamics?.standingTime },
         { e -> e?.standingTimeMinMax },
         digits = 0,
@@ -105,6 +131,8 @@ enum class TextFieldThirdParty(
     StandingAvgPower(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_only,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.averageStandingPower,
         { e -> e.garminData?.cyclingDynamics?.averageStandingPower },
         { e -> e?.standingAvgPowerMinMax },
         digits = 0
@@ -112,6 +140,8 @@ enum class TextFieldThirdParty(
     StandingMaxPower(
         TextFieldGroupThirdParty.ThirdParty,
         R.string.value_only,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.maxStandingPower,
         { e -> e.garminData?.cyclingDynamics?.maxStandingPower },
         { e -> e?.standingMaxPowerMinMax },
         digits = 0
@@ -119,6 +149,8 @@ enum class TextFieldThirdParty(
     PedalSmoothness(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
         R.string.value_with_per_cent,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.pedal_smoothness,
         { e -> e.garminData?.cyclingDynamics?.leftPedalSmoothness },
         digits = 1,
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPedalSmoothness },
@@ -126,6 +158,8 @@ enum class TextFieldThirdParty(
     Balance(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
         R.string.value_with_per_cent,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.balance,
         { e -> e.garminData?.cyclingDynamics?.leftBalance },
         digits = 1,
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightBalance },
@@ -133,6 +167,8 @@ enum class TextFieldThirdParty(
     TorqueEffectiveness(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
         R.string.value_with_per_cent,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.torque_effectiveness,
         { e -> e.garminData?.cyclingDynamics?.leftTorqueEffectiveness },
         digits = 1,
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightTorqueEffectiveness },
@@ -140,6 +176,8 @@ enum class TextFieldThirdParty(
     LeftPowerPhase(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
         R.string.value_with_degree,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.power_phase_left,
         { e -> e.garminData?.cyclingDynamics?.leftPowerPhaseStart },
         digits = 1,
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.leftPowerPhaseEnd },
@@ -147,6 +185,8 @@ enum class TextFieldThirdParty(
     RightPowerPhase(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
         R.string.value_with_degree,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.power_phase_right,
         { e -> e.garminData?.cyclingDynamics?.rightPowerPhaseStart },
         digits = 1,
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPowerPhaseEnd },
@@ -154,6 +194,8 @@ enum class TextFieldThirdParty(
     LeftPeakPowerPhase(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
         R.string.value_with_degree,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.peak_power_phase_left,
         { e -> e.garminData?.cyclingDynamics?.leftPowerPhasePeakStart },
         digits = 1,
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.leftPowerPhasePeakEnd },
@@ -161,6 +203,8 @@ enum class TextFieldThirdParty(
     RightPeakPowerPhase(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
         R.string.value_with_degree,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.peak_power_phase_right,
         { e -> e.garminData?.cyclingDynamics?.rightPowerPhasePeakStart },
         digits = 1,
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPowerPhasePeakEnd },
@@ -168,6 +212,8 @@ enum class TextFieldThirdParty(
     PlatformCenterOffset(
         TextFieldGroupThirdParty.ThirdPartyAdditionalData,
         R.string.value_with_millimeter,
+        R.drawable.baseline_electric_bolt_24,
+        R.string.platform_center_offset,
         { e -> e.garminData?.cyclingDynamics?.leftPlatformCenterOffset },
         digits = 1,
         getValueRange =  { e -> e.garminData?.cyclingDynamics?.rightPlatformCenterOffset },

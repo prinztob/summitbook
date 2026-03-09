@@ -40,7 +40,6 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.TextFieldPower
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
-import de.drtobiasprinz.summitbook.ui.utils.SummitUtils
 import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Date
@@ -53,6 +52,7 @@ import kotlin.math.abs
 fun SummitEntryPowerScreen(
     summit: Summit?,
     allSummits: List<Summit>?,
+    summitsToCompare: List<Summit>,
     compareSummit: Summit?,
     extrema: ExtremaValuesSummits?,
     onGetSummitToCompare: (Long) -> Unit,
@@ -73,16 +73,6 @@ fun SummitEntryPowerScreen(
             CircularProgressIndicator()
         }
         return
-    }
-
-    val summitsToCompare = remember(allSummits, summit.id) {
-        allSummits?.let { summits ->
-            SummitUtils.getSummitsToCompare(
-                summits,
-                summit,
-                onlyWithPowerData = true
-            )
-        } ?: emptyList()
     }
 
     val filteredSummits = remember(summit.id, allSummits, selectedTimeRange) {

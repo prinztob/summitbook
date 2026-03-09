@@ -240,6 +240,32 @@ class CustomMapViewToAllowScrolling : MapView {
         }
     }
 
+    fun addAdditionalGpsTrack(
+        trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+        color: Int = COLOR_POLYLINE_STATIC,
+        lineWidth: Float = LINE_WIDTH_BIG
+    ): Polyline? {
+        return try {
+            val additionalRoute = Polyline(this)
+            additionalRoute.outlinePaint?.color = color
+            additionalRoute.outlinePaint?.strokeWidth = lineWidth
+            additionalRoute.outlinePaint?.strokeCap = Paint.Cap.ROUND
+            
+            additionalRoute.setPoints(trackPoints.map {
+                GeoPoint(
+                    it.first.latitude,
+                    it.first.longitude,
+                    it.first.elevation
+                )
+            })
+            overlayManager?.add(additionalRoute)
+            additionalRoute
+        } catch (e: NullPointerException) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     private fun getUsedPoints(
         trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
         f: (Pair<TrackPoint, ExtensionFromYaml>) -> Double?

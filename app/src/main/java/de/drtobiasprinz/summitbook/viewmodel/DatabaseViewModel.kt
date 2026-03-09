@@ -94,17 +94,6 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         updateWidget()
     }
 
-    fun updateSummitDistanceDataBatch(entities: List<Summit>) = viewModelScope.launch {
-        entities.forEach {
-            repository.updateDistanceData(
-                it.id,
-                it.distancePerSurface,
-                it.distancePerRoadType
-            )
-        }
-        updateWidget()
-    }
-
     fun updateIgnoreSimplifyingTrack(summitId: Long, ignoreSimplifyingTrack: Boolean) =
         viewModelScope.launch {
             repository.updateIgnoreSimplifyingTrack(summitId, ignoreSimplifyingTrack)
@@ -126,16 +115,14 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
                     glanceIds.forEach { glanceId ->
                         // Update the "now" preference to force recomposition
                         updateAppWidgetState(context, glanceId) { prefs ->
-                            prefs.toMutablePreferences().apply {
-                                this[longPreferencesKey("now")] = System.currentTimeMillis()
-                            }
+                            prefs[longPreferencesKey("now")] = System.currentTimeMillis()
                         }
                         Log.i("SummitBookWidgetReceiver", "update SummitBookGlanceWidget with id $glanceId")
                     }
                     SummitBookGlanceWidget().updateAll(context)
                 }
-            } catch (_: Exception) {
-                // Handle exception silently to avoid crashing the app
+            } catch (e: Exception) {
+                Log.e("DatabaseViewModel", "Error updating widget", e)
             }
         }
     }
@@ -189,6 +176,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         } else {
             repository.saveForecast(entity)
         }
+        updateWidget()
     }
 
     fun saveForecasts(isEdite: Boolean, entities: List<Forecast>) = viewModelScope.launch {
@@ -199,6 +187,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
                 repository.saveForecast(entity)
             }
         }
+        updateWidget()
     }
 
     private fun getAllIgnoredActivities() = viewModelScope.launch {

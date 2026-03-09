@@ -41,7 +41,6 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.TextFieldGroupThirdParty
 import de.drtobiasprinz.summitbook.models.TextFieldThirdParty
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
-import de.drtobiasprinz.summitbook.ui.utils.SummitUtils
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -50,7 +49,7 @@ import kotlin.math.abs
 @Composable
 fun SummitEntryThirdPartyScreen(
     summit: Summit?,
-    allSummits: List<Summit>?,
+    summitsToCompare: List<Summit>,
     compareSummit: Summit?,
     extrema: ExtremaValuesSummits?,
     onGetSummitToCompare: (Long) -> Unit,
@@ -83,15 +82,6 @@ fun SummitEntryThirdPartyScreen(
             )
         }
         return
-    }
-
-    val summitsToCompare = remember(allSummits, summit.id) {
-        allSummits?.let { summits ->
-            SummitUtils.getSummitsToCompare(
-                summits,
-                summit
-            )
-        } ?: emptyList()
     }
 
     var showMoreCyclingDynamics by remember { mutableStateOf(false) }
@@ -279,14 +269,14 @@ fun ThirdPartyDataFieldRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                painter = painterResource(id = getIconForThirdPartyField(field)),
+                painter = painterResource(id = field.iconId),
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Text(
-                text = getFieldLabel(field),
+                text = stringResource(field.labelId),
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -318,6 +308,7 @@ fun ThirdPartyDataFieldRow(
     }
 }
 
+@Composable
 fun formatThirdPartyValue(
     value: Double,
     compareValue: Double?,
@@ -350,7 +341,6 @@ fun formatThirdPartyValue(
         }
     } else {
         val formattedValue = numberFormat.format(value * field.factor)
-        val unit = getUnitString(field.unitWithPlaceHolder)
 
         val result = StringBuilder(formattedValue)
 
@@ -364,75 +354,12 @@ fun formatThirdPartyValue(
             result.append(" (").append(formattedCompare).append(")")
         }
 
-        result.append(" ").append(unit)
+        val unitString = stringResource(field.unitWithPlaceHolder)
+        val unit = String.format(Locale.getDefault(), unitString, "")
+        if (unit.isNotBlank()) {
+            result.append(" ").append(unit.trim())
+        }
         result.toString()
     }
 }
 
-fun getIconForThirdPartyField(field: TextFieldThirdParty): Int {
-    return when (field) {
-        TextFieldThirdParty.AverageHr,
-        TextFieldThirdParty.MaxHr,
-        TextFieldThirdParty.Calories -> R.drawable.ic_baseline_monitor_heart_24
-
-        TextFieldThirdParty.AerobicTrainingEffect,
-        TextFieldThirdParty.AnaerobicTrainingEffect,
-        TextFieldThirdParty.Grit,
-        TextFieldThirdParty.Flow,
-        TextFieldThirdParty.TrainingsLoad,
-        TextFieldThirdParty.Vo2Max -> R.drawable.ic_baseline_directions_run_24
-
-        TextFieldThirdParty.PartPaved,
-        TextFieldThirdParty.Strokes,
-        TextFieldThirdParty.StandingTime,
-        TextFieldThirdParty.StandingAvgPower,
-        TextFieldThirdParty.StandingMaxPower,
-        TextFieldThirdParty.PedalSmoothness,
-        TextFieldThirdParty.Balance,
-        TextFieldThirdParty.TorqueEffectiveness,
-        TextFieldThirdParty.LeftPowerPhase,
-        TextFieldThirdParty.RightPowerPhase,
-        TextFieldThirdParty.LeftPeakPowerPhase,
-        TextFieldThirdParty.RightPeakPowerPhase,
-        TextFieldThirdParty.PlatformCenterOffset -> R.drawable.baseline_electric_bolt_24
-    }
-}
-
-fun getFieldLabel(field: TextFieldThirdParty): String {
-    return when (field) {
-        TextFieldThirdParty.AverageHr -> "Average HR"
-        TextFieldThirdParty.MaxHr -> "Max HR"
-        TextFieldThirdParty.Calories -> "Calories"
-        TextFieldThirdParty.PartPaved -> "Part Unpaved"
-        TextFieldThirdParty.AerobicTrainingEffect -> "Aerobic TE"
-        TextFieldThirdParty.AnaerobicTrainingEffect -> "Anaerobic TE"
-        TextFieldThirdParty.Grit -> "Grit"
-        TextFieldThirdParty.Flow -> "Flow"
-        TextFieldThirdParty.TrainingsLoad -> "Training Load"
-        TextFieldThirdParty.Vo2Max -> "VO2 Max"
-        TextFieldThirdParty.Strokes -> "Strokes"
-        TextFieldThirdParty.StandingTime -> "Standing Time"
-        TextFieldThirdParty.StandingAvgPower -> "Avg Standing Power"
-        TextFieldThirdParty.StandingMaxPower -> "Max Standing Power"
-        TextFieldThirdParty.PedalSmoothness -> "Pedal Smoothness"
-        TextFieldThirdParty.Balance -> "Balance"
-        TextFieldThirdParty.TorqueEffectiveness -> "Torque Effectiveness"
-        TextFieldThirdParty.LeftPowerPhase -> "Power Phase Left"
-        TextFieldThirdParty.RightPowerPhase -> "Power Phase Right"
-        TextFieldThirdParty.LeftPeakPowerPhase -> "Peak Power Phase Left"
-        TextFieldThirdParty.RightPeakPowerPhase -> "Peak Power Phase Right"
-        TextFieldThirdParty.PlatformCenterOffset -> "Platform Center Offset"
-    }
-}
-
-fun getUnitString(unitResourceId: Int): String {
-    return when (unitResourceId) {
-        R.string.value_with_bpm -> "bpm"
-        R.string.value_with_kcal -> "kcal"
-        R.string.value_with_per_cent -> "%"
-        R.string.value_with_degree -> "°"
-        R.string.value_with_millimeter -> "mm"
-        R.string.value_only -> ""
-        else -> ""
-    }
-}

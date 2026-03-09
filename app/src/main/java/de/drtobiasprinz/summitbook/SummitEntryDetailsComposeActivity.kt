@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
 import com.chaquo.python.Python
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.db.entities.SportGroup
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
@@ -273,6 +274,7 @@ fun SummitEntryDetailsTabs(
     // Extract actual data from DataStatus wrappers to create stable state
     val summit = remember(summitToViewData) { summitToViewData?.data }
     val allSummits = remember(summitsListData) { summitsListData?.data }
+    val summitsToCompare = remember(summitsListData) { getSummitsToCompare(allSummits, summit) }
     val compareSummit = remember(summitToCompareData) { summitToCompareData?.data }
     val segments = remember(segmentsListData) { segmentsListData?.data }
 
@@ -323,6 +325,7 @@ fun SummitEntryDetailsTabs(
                     SummitEntryDataScreen(
                         summit = summit,
                         allSummits = allSummits,
+                        summitsToCompare = summitsToCompare,
                         compareSummit = compareSummit,
                         segments = segments,
                         extrema = extremaValuesSummits,
@@ -335,7 +338,7 @@ fun SummitEntryDetailsTabs(
                     Log.i("SummitEntryDetails", "Rendering THIRD_PARTY tab for page $page")
                     SummitEntryThirdPartyScreen(
                         summit = summit,
-                        allSummits = allSummits,
+                        summitsToCompare = summitsToCompare,
                         compareSummit = compareSummit,
                         extrema = extremaValuesSummits,
                         onGetSummitToCompare = onGetSummitToCompare,
@@ -355,6 +358,7 @@ fun SummitEntryDetailsTabs(
                     SummitEntryTrackScreen(
                         summit = summit,
                         allSummits = allSummits,
+                        summitsToCompare = summitsToCompare,
                         compareSummit = compareSummit,
                         onGetSummitToCompare = onGetSummitToCompare,
                         onSetSummitToCompareToNull = onSetSummitToCompareToNull
@@ -366,6 +370,7 @@ fun SummitEntryDetailsTabs(
                     SummitEntryPowerScreen(
                         summit = summit,
                         allSummits = allSummits,
+                        summitsToCompare = summitsToCompare,
                         compareSummit = compareSummit,
                         extrema = extremaValuesSummits,
                         onGetSummitToCompare = onGetSummitToCompare,
@@ -402,4 +407,41 @@ fun getTabsForSummit(summit: Summit): List<SummitTab> {
     }
 
     return tabs
+}
+
+fun getSummitsToCompare(
+    summits: List<Summit>?,
+    summitEntry: Summit?,
+    onlyWithGpxTrack: Boolean = false,
+    onlyWithPowerData: Boolean = false,
+): List<Summit> {
+    Log.i("SummitEntryDetailsComposeActivity", "getSummitsToCompare")
+    if (summits?.isNotEmpty() != null && summitEntry != null) {
+        summits.let { summits ->
+            val sportGroup =
+                SportGroup.entries
+                    .filter { summitEntry.sportType in it.sportTypes }
+            val filtered = if (sportGroup.size == 1) {
+                summits.filter {
+                    it.id != summitEntry.id && it.hasGpsTrack() &&
+                            it.sportType in sportGroup.first().sportTypes
+                }
+            } else {
+                summits.filter {
+                    it.id != summitEntry.id &&
+                            (if (onlyWithGpxTrack) it.hasGpsTrack() else true) &&
+                            (if (onlyWithPowerData) it.garminData?.power != null else true) &&
+                            it.sportType == summitEntry.sportType
+                }
+            }
+            val similarSummits =
+                filtered.filter { it.name == summitEntry.name }
+                    .sortedByDescending { it.date }
+            val otherSummits =
+                filtered.filter { it.name != summitEntry.name }
+                    .sortedByDescending { it.date }
+            return similarSummits + otherSummits
+        }
+    }
+    return emptyList()
 }

@@ -32,7 +32,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -51,7 +53,6 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.TextField
 import de.drtobiasprinz.summitbook.models.TextFieldGroup
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
-import de.drtobiasprinz.summitbook.ui.utils.SummitUtils
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -61,6 +62,7 @@ import kotlin.math.abs
 fun SummitEntryDataScreen(
     summit: Summit?,
     allSummits: List<Summit>?,
+    summitsToCompare: List<Summit>,
     compareSummit: Summit?,
     segments: List<*>?,
     extrema: ExtremaValuesSummits?,
@@ -80,15 +82,6 @@ fun SummitEntryDataScreen(
             CircularProgressIndicator()
         }
         return
-    }
-
-    val summitsToCompare = remember(allSummits, summit.id) {
-        allSummits?.let { summits ->
-            SummitUtils.getSummitsToCompare(
-                summits,
-                summit
-            )
-        } ?: emptyList()
     }
 
     var showMoreSpeedData by remember { mutableStateOf(false) }
@@ -390,7 +383,6 @@ fun SummitHeader(summit: Summit) {
     }
 }
 
-@Suppress("AssignedValueIsNeverRead")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompareDropdown(
@@ -400,7 +392,28 @@ fun CompareDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val items = remember(summitsToCompare) {
-        listOf(null) + summitsToCompare
+        summitsToCompare
+    }
+
+    // Pagination state
+    val pageSize = 50
+    val totalPages = remember(items.size) {
+        (items.size + pageSize - 1) / pageSize
+    }
+    var currentPage by remember { mutableIntStateOf(0) }
+
+    // Get paginated items
+    val paginatedItems = remember(items, currentPage, pageSize) {
+        val start = currentPage * pageSize
+        val end = minOf(start + pageSize, items.size)
+        if (start >= items.size) emptyList() else items.subList(start, end)
+    }
+
+    // Reset page when dropdown closes
+    LaunchedEffect(expanded) {
+        if (!expanded) {
+            currentPage = 0
+        }
     }
 
     ExposedDropdownMenuBox(
@@ -423,12 +436,45 @@ fun CompareDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            items.forEach { summit ->
+            // Pagination controls at top
+            if (totalPages > 1) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = { currentPage = (currentPage - 1).coerceAtLeast(0) },
+                        enabled = currentPage > 0
+                    ) {
+                        Text(text = stringResource(R.string.previous))
+                    }
+                    Text(
+                        text = String.format(
+                            Locale.getDefault(),
+                            stringResource(R.string.page_of),
+                            currentPage + 1,
+                            totalPages
+                        ),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    TextButton(
+                        onClick = { currentPage = (currentPage + 1).coerceAtMost(totalPages - 1) },
+                        enabled = currentPage < totalPages - 1
+                    ) {
+                        Text(text = stringResource(R.string.next))
+                    }
+                }
+            }
+
+            // Paginated items
+            paginatedItems.forEach { summit ->
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = summit?.let { "${it.getDateAsString()} ${it.name}" }
-                                ?: stringResource(R.string.none)
+                            text = "${summit.getDateAsString()} ${summit.name}"
                         )
                     },
                     onClick = {
@@ -436,6 +482,39 @@ fun CompareDropdown(
                         expanded = false
                     }
                 )
+            }
+
+            // Pagination controls at bottom
+            if (totalPages > 1) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = { currentPage = (currentPage - 1).coerceAtLeast(0) },
+                        enabled = currentPage > 0
+                    ) {
+                        Text(text = stringResource(R.string.previous))
+                    }
+                    Text(
+                        text = String.format(
+                            Locale.getDefault(),
+                            stringResource(R.string.page_of),
+                            currentPage + 1,
+                            totalPages
+                        ),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    TextButton(
+                        onClick = { currentPage = (currentPage + 1).coerceAtMost(totalPages - 1) },
+                        enabled = currentPage < totalPages - 1
+                    ) {
+                        Text(text = stringResource(R.string.next))
+                    }
+                }
             }
         }
     }
@@ -494,7 +573,7 @@ fun DataFieldRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                painter = painterResource(id = getIconForField(field)),
+                painter = painterResource(id = field.iconId),
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -524,49 +603,6 @@ fun DataFieldRow(
                 fontWeight = FontWeight.Medium
             )
         }
-    }
-}
-
-fun getIconForField(field: TextField): Int {
-    return when (field) {
-        TextField.HeightMeter -> R.drawable.baseline_trending_up_black_24dp
-        TextField.Kilometer -> R.drawable.outline_distance_24
-        TextField.TopElevation -> R.drawable.baseline_terrain_24
-        TextField.TopVerticalVelocity1Min,
-        TextField.TopVerticalVelocity10Min,
-        TextField.TopVerticalVelocity1H,
-        TextField.TopVerticalVelocityDown1Min,
-        TextField.TopVerticalVelocityDown10Min,
-        TextField.TopVerticalVelocityDown1H,
-        TextField.TopSlope -> R.drawable.baseline_terrain_24
-
-        TextField.Pace,
-        TextField.TopSpeed,
-        TextField.TopSpeedOneKm,
-        TextField.TopSpeedFiveKm,
-        TextField.TopSpeedTenKm,
-        TextField.TopSpeedFifteenKm,
-        TextField.TopSpeedTwentyKm,
-        TextField.TopSpeedThirtyKm,
-        TextField.TopSpeedFortyKm,
-        TextField.TopSpeedFiftyKm,
-        TextField.TopSpeedSeventyFiveKm,
-        TextField.TopSpeedHundredKm -> R.drawable.baseline_speed_black_24dp
-
-        TextField.Durations -> R.drawable.ic_baseline_timer_24
-        TextField.RoadSurfaceAsphalt,
-        TextField.RoadSurfaceStonePavement,
-        TextField.RoadSurfaceCompacted,
-        TextField.RoadSurfaceLoseGround,
-        TextField.RoadSurfacePath,
-        TextField.RoadSurfaceUnknown,
-        TextField.RoadTypeWay,
-        TextField.RoadTypeSideStreet,
-        TextField.RoadTypeMinorRoad,
-        TextField.RoadTypeMajorRoad,
-        TextField.RoadTypeCycleWay,
-        TextField.RoadTypeRoad,
-        TextField.RoadTypeUnknown -> R.drawable.baseline_add_road_24
     }
 }
 
