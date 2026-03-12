@@ -201,6 +201,7 @@ class ReceiverActivityCompose : ComponentActivity() {
         if (showDialog && gpxTrackUriState != null) {
             AddSummitDialogCompose(
                 summitsFromDatabase = emptyList(),
+                peaks = emptyList(),
                 uri = gpxTrackUri,
                 isBookmark = isBookmark,
                 onDismiss = {

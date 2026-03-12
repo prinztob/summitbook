@@ -95,11 +95,13 @@ import kotlin.math.roundToInt
 @Composable
 fun AddSummitDialogCompose(
     summitsFromDatabase: List<Summit>,
+    peaks: List<de.drtobiasprinz.summitbook.db.entities.Peak>,
     summitId: Long = 0L,
     isBookmark: Boolean = false,
     uri: Uri? = null,
     onDismiss: () -> Unit,
     onSaveSummit: (Boolean, Summit) -> Job,
+    onPeakToggle: ((String, Boolean) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -379,6 +381,8 @@ fun AddSummitDialogCompose(
                             equipments, { equipments = it },
                             comments, { comments = it },
                             summitsFromDatabase,
+                            peaks,
+                            onPeakToggle,
                             elevationAndSpeedExpanded, { elevationAndSpeedExpanded = it },
                             locationDetailsExpanded, { locationDetailsExpanded = it },
                             commentsExpanded, { commentsExpanded = it }
@@ -610,6 +614,8 @@ fun AdditionalDataFields(
     equipments: List<String>, onEquipmentsChange: (List<String>) -> Unit,
     comments: String, onCommentsChange: (String) -> Unit,
     summitsFromDatabase: List<Summit>,
+    peaks: List<de.drtobiasprinz.summitbook.db.entities.Peak>,
+    onPeakToggle: ((String, Boolean) -> Unit)? = null,
     elevationAndSpeedExpanded: Boolean,
     onElevationAndSpeedExpandedChange: (Boolean) -> Unit,
     locationDetailsExpanded: Boolean,
@@ -707,7 +713,11 @@ fun AdditionalDataFields(
                         R.drawable.outline_distance_24,
                         places,
                         onPlacesChange,
-                        summitsFromDatabase.flatMap { it.places + it.name }.distinct()
+                        summitsFromDatabase.flatMap { it.places + it.name }.distinct(),
+                        peakIcon = R.drawable.outline_landscape_2_24,
+                        nonPeakIcon = R.drawable.outline_landscape_2_off_24,
+                        peaksList = peaks.map { it.name },
+                        onPeakToggle = onPeakToggle
                     )
                     AutoCompleteComposeChipField(
                         stringResource(R.string.country_hint),

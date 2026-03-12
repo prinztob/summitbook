@@ -1,11 +1,13 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.DropdownMenuItem
@@ -19,6 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -122,11 +125,19 @@ fun AutoCompleteComposeChipField(
     icon: Int,
     chips: List<String>,
     onChipsChange: (List<String>) -> Unit,
-    suggestions: List<String>
+    suggestions: List<String>,
+    // Optional parameters for icon support (like the old CustomAutoCompleteChips)
+    peakIcon: Int? = null,
+    nonPeakIcon: Int? = null,
+    peaksList: List<String> = emptyList(),
+    onPeakToggle: ((String, Boolean) -> Unit)? = null
 ) {
     val focusRequester = LocalFocusManager.current
     var inputText by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
+
+    // Track icon state for each chip (true = peak icon, false = non-peak icon)
+    val chipIconStates = remember { mutableStateMapOf<String, Boolean>() }
 
     val filteredOptions = remember(inputText) {
         if (inputText.length > 1) {
@@ -136,6 +147,8 @@ fun AutoCompleteComposeChipField(
             emptyList()
         }
     }
+
+    val isDarkTheme = isSystemInDarkTheme()
 
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -168,7 +181,22 @@ fun AutoCompleteComposeChipField(
                     },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Next
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            // Add custom entry when Enter is pressed
+                            val trimmedInput = inputText.trim()
+                            if (trimmedInput.isNotEmpty() && trimmedInput !in chips) {
+                                onChipsChange(chips + trimmedInput)
+                                // Initialize icon state based on whether it's a peak
+                                if (trimmedInput in peaksList) {
+                                    chipIconStates[trimmedInput] = true
+                                }
+                                inputText = ""
+                                expanded = false
+                            }
+                        }
                     ),
                     singleLine = true,
                     label = { Text(text = label) },
@@ -186,6 +214,10 @@ fun AutoCompleteComposeChipField(
                             text = { Text(text = option) },
                             onClick = {
                                 onChipsChange(chips + option)
+                                // Initialize icon state based on whether it's a peak
+                                if (option in peaksList) {
+                                    chipIconStates[option] = true
+                                }
                                 inputText = ""
                                 expanded = false
                                 focusRequester.moveFocus(FocusDirection.Next)
@@ -205,12 +237,45 @@ fun AutoCompleteComposeChipField(
                     .padding(top = 8.dp),
             ) {
                 nonEmptyChips.forEach { chip ->
+                    // Determine icon based on whether chip is a peak and its toggle state
+                    val isPeak = chip in peaksList
+                    val hasPeakIcon = chipIconStates[chip] ?: isPeak
+                    val chipIcon = if (peakIcon != null && nonPeakIcon != null) {
+                        if (hasPeakIcon) peakIcon else nonPeakIcon
+                    } else {
+                        null
+                    }
+
                     AssistChip(
-                        onClick = { },
+                        onClick = {
+                            // Toggle icon state on click (like old long click behavior)
+                            if (peakIcon != null && nonPeakIcon != null) {
+                                val newState = !hasPeakIcon
+                                chipIconStates[chip] = newState
+                                // Notify about the peak toggle
+                                onPeakToggle?.invoke(chip, newState)
+                            }
+                        },
                         label = { Text(chip) },
+                        leadingIcon = if (chipIcon != null) {
+                            {
+                                Icon(
+                                    painterResource(chipIcon),
+                                    contentDescription = if (hasPeakIcon) "Peak" else "Non-peak",
+                                    modifier = Modifier.size(18.dp),
+                                    tint = if (isDarkTheme)
+                                        androidx.compose.ui.graphics.Color.White
+                                    else
+                                        androidx.compose.ui.graphics.Color.Black
+                                )
+                            }
+                        } else null,
                         trailingIcon = {
                             IconButton(
-                                onClick = { onChipsChange(chips - chip) },
+                                onClick = {
+                                    onChipsChange(chips - chip)
+                                    chipIconStates.remove(chip)
+                                },
                                 modifier = Modifier.size(18.dp)
                             ) {
                                 Icon(

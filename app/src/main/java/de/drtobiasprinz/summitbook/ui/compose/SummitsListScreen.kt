@@ -64,10 +64,12 @@ import kotlin.math.roundToInt
 fun SummitsListScreen(
     filteredSummits: List<Summit>,
     summitsFromDatabase: List<Summit>,
+    peaks: List<de.drtobiasprinz.summitbook.db.entities.Peak>,
     modifier: Modifier = Modifier,
     isBookmark: Boolean = false,
     onSaveSummit: (Boolean, Summit) -> Job,
-    onDelete: (Summit) -> Unit = {}
+    onDelete: (Summit) -> Unit = {},
+    onPeakToggle: ((String, Boolean) -> Unit)? = null
 ) {
     if (filteredSummits.isEmpty()) {
         // Show app icon and "no summit" message when list is empty
@@ -103,10 +105,12 @@ fun SummitsListScreen(
             ) { summit ->
                 SummitCard(
                     summitsFromDatabase = summitsFromDatabase,
+                    peaks = peaks,
                     summit = summit,
                     isBookmark = isBookmark,
                     onDelete = onDelete,
-                    onSaveSummit = onSaveSummit
+                    onSaveSummit = onSaveSummit,
+                    onPeakToggle = onPeakToggle
                 )
             }
         }
@@ -120,10 +124,12 @@ fun SummitsListScreen(
 @Composable
 fun SummitCard(
     summitsFromDatabase: List<Summit>,
+    peaks: List<de.drtobiasprinz.summitbook.db.entities.Peak>,
     summit: Summit,
     isBookmark: Boolean,
     onDelete: (Summit) -> Unit,
-    onSaveSummit: (Boolean, Summit) -> Job
+    onSaveSummit: (Boolean, Summit) -> Job,
+    onPeakToggle: ((String, Boolean) -> Unit)? = null
 ) {
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -459,8 +465,9 @@ fun SummitCard(
     // Edit summit dialog
     if (showEditDialog) {
         AddSummitDialogCompose(
-            summitId = currentSummit.id,
             summitsFromDatabase = summitsFromDatabase,
+            peaks = peaks,
+            summitId = currentSummit.id,
             isBookmark = isBookmark,
             onDismiss = { showEditDialog = false },
             onSaveSummit = { isEdit, updatedSummit ->
@@ -469,7 +476,8 @@ fun SummitCard(
                     refreshTrigger++
                 }
                 job
-            }
+            },
+            onPeakToggle = onPeakToggle
         )
     }
 

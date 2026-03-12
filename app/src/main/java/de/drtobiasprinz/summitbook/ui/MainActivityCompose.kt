@@ -428,6 +428,7 @@ class MainActivityCompose : ComponentActivity(),
                     if (showAddSummitDialog) {
                         AddSummitDialogCompose(
                             summitsFromDatabase,
+                            peaks,
                             isBookmark = showBookmarksOnly,
                             onDismiss = { showAddSummitDialog = false },
                             onSaveSummit = { isEdit, summit ->
@@ -435,6 +436,20 @@ class MainActivityCompose : ComponentActivity(),
                                     isEdit,
                                     summit
                                 )
+                            },
+                            onPeakToggle = { placeName, isPeak ->
+                                // Update peak in database when toggled
+                                if (isPeak) {
+                                    // Add as peak - try to get elevation from existing summit
+                                    val elevation = summitsFromDatabase.firstOrNull {
+                                        it.name == placeName || it.places.contains(placeName)
+                                    }?.elevationData?.maxElevation ?: 0
+                                    viewModel.savePeak(Peak(placeName, elevation))
+                                } else {
+                                    // Remove from peaks
+                                    val peakToRemove = peaks.find { it.name == placeName }
+                                    peakToRemove?.let { viewModel.deletePeak(it) }
+                                }
                             }
                         )
                     }
@@ -721,10 +736,25 @@ class MainActivityCompose : ComponentActivity(),
                     SummitsListScreen(
                         filteredSummits = if (showBookmarksOnly) summitsFromDatabase.filter { it.isBookmark } else filteredSummits,
                         summitsFromDatabase = summitsFromDatabase,
+                        peaks = peaks,
                         isBookmark = showBookmarksOnly,
                         onSaveSummit = { isEdit, summit -> viewModel.saveSummit(isEdit, summit) },
                         onDelete = { summit ->
                             viewModel.deleteSummit(summit)
+                        },
+                        onPeakToggle = { placeName, isPeak ->
+                            // Update peak in database when toggled
+                            if (isPeak) {
+                                // Add as peak - try to get elevation from existing summit
+                                val elevation = summitsFromDatabase.firstOrNull {
+                                    it.name == placeName || it.places.contains(placeName)
+                                }?.elevationData?.maxElevation ?: 0
+                                viewModel.savePeak(Peak(placeName, elevation))
+                            } else {
+                                // Remove from peaks
+                                val peakToRemove = peaks.find { it.name == placeName }
+                                peakToRemove?.let { viewModel.deletePeak(it) }
+                            }
                         }
                     )
                 }
