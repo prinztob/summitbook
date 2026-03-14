@@ -416,15 +416,16 @@ class Summit(
         if (segmentsForSummit.isNotEmpty()) {
             val list = mutableListOf<Triple<SegmentEntry, SegmentDetails, Int>>()
             segmentsForSummit.forEach { segment ->
-                segment.segmentEntries.sortBy { entry -> entry.duration }
+                // Create a copy of the list before sorting to avoid ConcurrentModificationException
+                val sortedEntries = segment.segmentEntries.sortedBy { entry -> entry.duration }
                 val relevantEntries =
-                    segment.segmentEntries.filter { entry -> entry.activityId == this.activityId }
+                    sortedEntries.filter { entry -> entry.activityId == this.activityId }
                 relevantEntries.forEach { segmentEntry ->
                     list.add(
                         Triple(
                             segmentEntry,
                             segment.segmentDetails,
-                            segment.segmentEntries.indexOf(segmentEntry) + 1
+                            sortedEntries.indexOf(segmentEntry) + 1
                         )
                     )
                 }

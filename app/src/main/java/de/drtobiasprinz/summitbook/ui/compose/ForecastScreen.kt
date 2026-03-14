@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -234,9 +236,9 @@ fun ForecastScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 10.dp, vertical = 5.dp),
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    IconButton(
+                    Button(
                         onClick = {
                             updateForecastsForYear(
                                 forecasts,
@@ -245,18 +247,19 @@ fun ForecastScreen(
                                 onSaveForecasts
                             )
                             forecastsUpdated = !forecastsUpdated
-                        }
+                        },
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_refresh_24),
                             contentDescription = stringResource(R.string.recalculate),
-                            tint = MaterialTheme.colorScheme.onSurface
+                            modifier = Modifier.padding(end = 8.dp)
                         )
+                        Text(stringResource(R.string.recalculate))
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
                     val successfullySaved = stringResource(R.string.forecast_successfully_saved)
-                    IconButton(
+                    Button(
                         onClick = {
                             // Save all forecasts for both years
                             val job = onSaveForecasts(true, forecasts)
@@ -268,13 +271,16 @@ fun ForecastScreen(
                                 ).show()
                                 onNavigateBack()
                             }
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_save_black_24dp),
                             contentDescription = stringResource(R.string.saveButtonText),
-                            tint = MaterialTheme.colorScheme.onSurface
+                            modifier = Modifier.padding(end = 8.dp)
                         )
+                        Text(stringResource(R.string.saveButtonText))
                     }
                 }
 
