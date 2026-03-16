@@ -18,7 +18,6 @@ class DatabaseRepository @Inject constructor(
 
     suspend fun saveSummit(entity: Summit) = summitsDao.saveSummit(entity)
     suspend fun saveSummits(entities: List<Summit>) = summitsDao.insertAll(entities)
-    suspend fun deleteAll() = summitsDao.deleteAll()
     suspend fun updateSummit(entity: Summit) = summitsDao.updateSummit(entity)
     suspend fun updateIgnoreSimplifyingTrack(summitId: Long, ignoreSimplifyingTrack: Boolean) =
         summitsDao.updateIgnoreSimplifyingTrack(summitId, ignoreSimplifyingTrack)
@@ -48,6 +47,20 @@ class DatabaseRepository @Inject constructor(
     fun getPeaks() = peakDao.getAllPeaks()
     suspend fun savePeak(peak: Peak) = peakDao.add(peak)
     suspend fun deletePeak(peak: Peak) = peakDao.delete(peak)
+    suspend fun updatePeak(peak: Peak) = peakDao.update(peak)
+    suspend fun getPeakByName(name: String) = peakDao.getPeakByName(name)
+    suspend fun getDuplicatePeakNames() = peakDao.getDuplicatePeakNames()
+    suspend fun getPeaksByName(name: String) = peakDao.getPeaksByName(name)
+    suspend fun deleteDuplicatePeaks() {
+        val duplicateNames = getDuplicatePeakNames()
+        duplicateNames.forEach { name ->
+            val peaks = getPeaksByName(name)
+            // Keep the first one (lowest id), delete the rest
+            peaks.drop(1).forEach { peak ->
+                deletePeak(peak)
+            }
+        }
+    }
 
     suspend fun saveEntityEvent(entity: EntityEvent) = entityEventDao.add(entity)
     suspend fun updateEntityEvent(entity: EntityEvent) = entityEventDao.update(entity)

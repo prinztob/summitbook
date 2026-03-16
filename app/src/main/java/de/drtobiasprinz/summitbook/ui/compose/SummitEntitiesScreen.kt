@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.models.SummitEntitySummary
 import de.drtobiasprinz.summitbook.models.SummitEntityType
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
@@ -65,9 +66,11 @@ import kotlin.math.roundToInt
 fun SummitEntitiesScreen(
     filteredSummits: List<Summit>,
     entityEvents: List<EntityEvent>,
+    sortFilterValues: SortFilterValues,
     onSaveSummit: (Boolean, Summit) -> Unit,
     onDeleteEntityEvent: (EntityEvent) -> Unit,
     onSaveEntityEvent: (Boolean, EntityEvent) -> Unit,
+    onUpdatePeakName: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -116,10 +119,12 @@ fun SummitEntitiesScreen(
             entityType = summitEntityType,
             filteredSummits,
             entityEvents,
+            sortFilterValues,
             modifier = Modifier.weight(1f),
             onSaveSummit = onSaveSummit,
             onDeleteEntityEvent = onDeleteEntityEvent,
-            onSaveEntityEvent = onSaveEntityEvent
+            onSaveEntityEvent = onSaveEntityEvent,
+            onUpdatePeakName = onUpdatePeakName
         )
     }
 }
@@ -127,15 +132,18 @@ fun SummitEntitiesScreen(
 /**
  * List of summit entities for a specific type
  */
+@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SummitEntitiesList(
     entityType: SummitEntityType,
     filteredSummits: List<Summit>,
     entityEvents: List<EntityEvent>,
+    sortFilterValues: SortFilterValues,
     modifier: Modifier = Modifier,
     onSaveSummit: (Boolean, Summit) -> Unit,
     onDeleteEntityEvent: (EntityEvent) -> Unit,
-    onSaveEntityEvent: (Boolean, EntityEvent) -> Unit
+    onSaveEntityEvent: (Boolean, EntityEvent) -> Unit,
+    onUpdatePeakName: (String, String) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -143,25 +151,28 @@ fun SummitEntitiesList(
     var showEntityEventDialog by remember { mutableStateOf(false) }
     var currentEntityEvent by remember { mutableStateOf<EntityEvent?>(null) }
     var currentEntity by remember { mutableStateOf<SummitEntitySummary?>(null) }
-    var summits by remember { mutableStateOf<List<Summit>>(filteredSummits) }
 
     // Create a key that changes when any summit is updated
-    val summitsKey = filteredSummits.fold(0L) { acc, summit -> acc + summit.updated }
+    // Use id and hashCode of mutable properties to detect changes
+    val summitsKey = filteredSummits.fold(0L) { acc, summit ->
+        acc + summit.id + summit.participants.hashCode() + summit.equipments.hashCode() + summit.places.hashCode() + summit.countries.hashCode()
+    }
 
     val entitySummaries = remember(summitsKey, entityEvents, entityType) {
-        Log.d("SummitEntitiesScreen", "Recalculating entitySummaries with key: $summitsKey")
+        Log.d("SummitEntitiesScreen", "Recalculating entitySummaries with key: $summitsKey, filteredSummits size: ${filteredSummits.size}")
         calculateEntitySummaries(
             filteredSummits,
             entityType,
         )
     }
+    val entitySummariesSorted = sortFilterValues.applyOnSummitEntities(entitySummaries)
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        if (entitySummaries.isEmpty()) {
+        if (entitySummariesSorted.isEmpty()) {
             item {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -171,20 +182,21 @@ fun SummitEntitiesList(
                 }
             }
         } else {
-            items(entitySummaries) { entity ->
+            items(entitySummariesSorted, key = { "${it.type.name}-${it.name}-${it.count}-${it.distance}-${it.heightMeters}" }) { entity ->
                 SummitEntityCard(
                     entity = entity,
                     entityType = entityType,
                     entityEvents = entityEvents,
-                    filteredSummits = summits,
+                    filteredSummits = filteredSummits,
                     onUpdateEntity = { oldName, newName ->
                         updateEntityName(
                             context,
                             oldName,
                             newName,
                             entityType,
-                            summits = summits,
+                            summits = filteredSummits,
                             onSaveSummit = onSaveSummit,
+                            onUpdatePeakName = onUpdatePeakName
                         )
                     },
                     onDeleteEntityEvent = onDeleteEntityEvent,
@@ -254,7 +266,8 @@ private fun updateEntityName(
     newName: String,
     entityType: SummitEntityType,
     summits: List<Summit>,
-    onSaveSummit: (Boolean, Summit) -> Unit
+    onSaveSummit: (Boolean, Summit) -> Unit,
+    onUpdatePeakName: (String, String) -> Unit
 ) {
     Log.d("SummitEntitiesScreen", "updateEntityName called: $oldName -> $newName")
     summits.forEach { summit ->
@@ -265,6 +278,13 @@ private fun updateEntityName(
             onSaveSummit(true, summit)
         }
     }
+    
+    // Update peak database if entity type is PLACES_VISITED
+    if (entityType == SummitEntityType.PLACES_VISITED) {
+        Log.d("SummitEntitiesScreen", "Updating peak name: $oldName -> $newName")
+        onUpdatePeakName(oldName, newName)
+    }
+    
     Toast.makeText(context, R.string.update_done, Toast.LENGTH_SHORT).show()
 }
 

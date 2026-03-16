@@ -227,10 +227,10 @@ class MainActivityCompose : ComponentActivity(),
             .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
 
         // Update forecasts if needed
-        LaunchedEffect(summitsList) {
+        LaunchedEffect(summitsList.data) {
             summitsList.data?.let {
-                summitsFromDatabase = it
-                filteredSummits = sortFilterValues.applyForSummits(it)
+                summitsFromDatabase = it.toList()
+                filteredSummits = sortFilterValues.applyForSummits(it).toList()
                 latestFilteredSummits = filteredSummits
             }
         }
@@ -438,15 +438,12 @@ class MainActivityCompose : ComponentActivity(),
                                 )
                             },
                             onPeakToggle = { placeName, isPeak ->
-                                // Update peak in database when toggled
                                 if (isPeak) {
-                                    // Add as peak - try to get elevation from existing summit
                                     val elevation = summitsFromDatabase.firstOrNull {
                                         it.name == placeName || it.places.contains(placeName)
                                     }?.elevationData?.maxElevation ?: 0
                                     viewModel.savePeak(Peak(placeName, elevation))
                                 } else {
-                                    // Remove from peaks
                                     val peakToRemove = peaks.find { it.name == placeName }
                                     peakToRemove?.let { viewModel.deletePeak(it) }
                                 }
@@ -857,9 +854,11 @@ class MainActivityCompose : ComponentActivity(),
                 SummitEntitiesScreen(
                     filteredSummits,
                     entityEvents.data ?: emptyList(),
+                    sortFilterValues,
                     { isEdit, summit -> viewModel.saveSummit(isEdit, summit) },
                     { viewModel.deleteEntityEvent(it) },
-                    { isEdit, event -> viewModel.saveEntityEvent(isEdit, event) }
+                    { isEdit, event -> viewModel.saveEntityEvent(isEdit, event) },
+                    { oldName, newName -> viewModel.updatePeakName(oldName, newName) }
                 )
             }
 
@@ -1150,13 +1149,13 @@ class MainActivityCompose : ComponentActivity(),
     }
 
     private fun getAllImages(summits: List<Summit>?): MutableList<Poster> {
-        return summits?.map { entry ->
+        return summits?.flatMap { entry ->
             entry.imageIds.mapIndexed { i, imageId ->
                 Poster(
                     entry.getImageUrl(imageId), entry.getImageDescription(resources, i)
                 )
             }
-        }?.flatten() as MutableList<Poster>
+        } as MutableList<Poster>
     }
 
     private fun openViewer(filteredSummits: List<Summit>) {

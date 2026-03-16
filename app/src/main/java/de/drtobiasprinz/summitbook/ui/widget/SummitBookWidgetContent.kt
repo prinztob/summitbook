@@ -254,7 +254,7 @@ private fun SummitItem(
                 )
                 Spacer(GlanceModifier.width(8.dp))
                 Text(
-                    text = if (garminData?.power?.avgPower != null) {
+                    text = if (garminData?.power?.avgPower != null && garminData.power.avgPower > 0) {
                         "${garminData.power.avgPower.roundToInt()} W"
                     } else {
                         String.format(Locale.getDefault(), "%.1f km/h", summit.getAverageVelocity())

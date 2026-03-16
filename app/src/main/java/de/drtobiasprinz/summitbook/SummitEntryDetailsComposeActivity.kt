@@ -56,16 +56,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/**
- * Compose-based activity for displaying summit entry details with tabs.
- *
- * NOTE: This is a TEMPLATE/SKELETON implementation. The fragments are currently shown as
- * placeholder screens. To complete the migration, each fragment needs to be converted to
- * a proper Compose screen that reads data from the PageViewModel.
- *
- * For now, use the original SummitEntryDetailsActivity for full functionality.
- * This Compose version demonstrates the structure and can be gradually completed.
- */
 @AndroidEntryPoint
 class SummitEntryDetailsComposeActivity : ComponentActivity() {
 
@@ -172,7 +162,6 @@ data class SummitUiState(
     val summitId: Long, val summitName: String, val tabs: List<SummitTab>
 )
 
-@Suppress("AssignedValueIsNeverRead")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SummitEntryDetailsScreen(
@@ -270,6 +259,7 @@ fun SummitEntryDetailsTabs(
     val summitToCompareData by pageViewModel.summitToCompare.observeAsState()
     val segmentsListData by pageViewModel.segmentsList.observeAsState()
     val extremaValuesSummits by pageViewModel.extremaValuesSummits.observeAsState()
+    val peaksData by pageViewModel.peaks.observeAsState()
 
     // Extract actual data from DataStatus wrappers to create stable state
     val summit = remember(summitToViewData) { summitToViewData?.data }
@@ -277,6 +267,7 @@ fun SummitEntryDetailsTabs(
     val summitsToCompare = remember(summitsListData) { getSummitsToCompare(allSummits, summit) }
     val compareSummit = remember(summitToCompareData) { summitToCompareData?.data }
     val segments = remember(segmentsListData) { segmentsListData?.data }
+    val peaks = remember(peaksData) { peaksData?.data ?: emptyList() }
 
     // Create stable callbacks
     val onGetSummitToCompare: (Long) -> Unit = remember {
@@ -330,7 +321,8 @@ fun SummitEntryDetailsTabs(
                         segments = segments,
                         extrema = extremaValuesSummits,
                         onGetSummitToCompare = onGetSummitToCompare,
-                        onSetSummitToCompareToNull = onSetSummitToCompareToNull
+                        onSetSummitToCompareToNull = onSetSummitToCompareToNull,
+                        peaks = peaks
                     )
                 }
 

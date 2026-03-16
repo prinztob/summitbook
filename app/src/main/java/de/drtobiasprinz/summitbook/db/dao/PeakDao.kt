@@ -17,4 +17,16 @@ interface PeakDao {
     @Delete
     suspend fun delete(peak: Peak)
 
+    @Update
+    suspend fun update(peak: Peak)
+
+    @Query("SELECT * FROM peak WHERE name = :name")
+    suspend fun getPeakByName(name: String): Peak?
+
+    @Query("SELECT name FROM peak GROUP BY name HAVING COUNT(*) > 1")
+    suspend fun getDuplicatePeakNames(): List<String>
+
+    @Query("SELECT * FROM peak WHERE name = :name ORDER BY id DESC")
+    suspend fun getPeaksByName(name: String): List<Peak>
+
 }

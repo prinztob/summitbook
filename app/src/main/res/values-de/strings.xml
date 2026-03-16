@@ -618,7 +618,7 @@
     <string name="track_color">Track color</string>
     <string name="segment_entries">Segment entries</string>
     <string name="total">Total</string>
-    <string name="number_activities"># %1$</string>
+    <string name="number_activities"># %1$d</string>
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>
     <string name="error">Fehler</string>

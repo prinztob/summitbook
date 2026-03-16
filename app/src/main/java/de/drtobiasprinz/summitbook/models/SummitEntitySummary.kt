@@ -2,8 +2,6 @@ package de.drtobiasprinz.summitbook.models
 
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
-import java.util.Collections
-
 
 class SummitEntitySummary(
     var type: SummitEntityType,
@@ -23,37 +21,29 @@ enum class SummitEntityType(
     COUNTRIES(
         { summit -> summit.countries },
         { summit, oldValue, newValue ->
-            Collections.replaceAll(summit.countries, oldValue, newValue)
+            summit.countries = summit.countries.map { if (it == oldValue) newValue else it }
         },
         R.drawable.ic_baseline_flag_24
     ),
     PARTICIPANTS(
         getRelevantValueFromSummit = { summit -> summit.participants },
         { summit, oldValue, newValue ->
-            Collections.replaceAll(summit.participants, oldValue, newValue)
+            summit.participants = summit.participants.map { if (it == oldValue) newValue else it }
         },
         R.drawable.ic_baseline_people_24
     ),
     EQUIPMENTS(
         getRelevantValueFromSummit = { summit -> summit.equipments },
         { summit, oldValue, newValue ->
-            Collections.replaceAll(summit.equipments, oldValue, newValue)
+            summit.equipments = summit.equipments.map { if (it == oldValue) newValue else it }
         },
         R.drawable.ic_baseline_handyman_24
     ),
     PLACES_VISITED(
         getRelevantValueFromSummit = { summit -> summit.places + summit.name },
         { summit, oldValue, newValue ->
-            val places = mutableListOf<String>()
             if (oldValue in summit.places) {
-                summit.places.forEach {
-                    if (it == oldValue) {
-                        places.add(newValue)
-                    } else {
-                        places.add(it)
-                    }
-                }
-                summit.places = places
+                summit.places = summit.places.map { if (it == oldValue) newValue else it }
             }
             if (summit.name == oldValue) {
                 summit.name = newValue

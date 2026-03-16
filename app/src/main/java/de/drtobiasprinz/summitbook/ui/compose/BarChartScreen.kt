@@ -599,7 +599,10 @@ fun BarChart(
     val minX = barDataPoints.minOfOrNull { it.x } ?: 0f
     val maxX = barDataPoints.maxOfOrNull { it.x } ?: 1f
     val minY = 0f // Bar charts typically start at 0
-    val maxY = barDataPoints.maxOfOrNull { it.yValues.sum() } ?: 1f
+    // Use the maximum of bar chart values and forecast values for maxY
+    val maxBarY = barDataPoints.maxOfOrNull { it.yValues.sum() } ?: 0f
+    val maxForecastY = lineDataPoints.maxOfOrNull { it.y } ?: 0f
+    val maxY = maxOf(maxBarY, maxForecastY).takeIf { it > 0 } ?: 1f
 
     // Add some padding to the bounds
     val xRange = if (maxX - minX > 0) maxX - minX else 1f

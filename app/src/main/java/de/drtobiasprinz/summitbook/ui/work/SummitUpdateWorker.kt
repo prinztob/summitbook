@@ -211,6 +211,9 @@ class SummitUpdateWorker(
 
 
     private suspend fun convertPeaks(data: List<Summit>?) {
+        Log.d(TAG, "Start converting peaks")
+        repository.deleteDuplicatePeaks()
+        peaks = repository.getPeaks().first() as MutableList<Peak>
         data?.forEach {
             if (it.isPeak && it.name !in peaks.map { peak -> peak.name }) {
                 Log.d(TAG, "ConvertPeaks - added ${it.name}")

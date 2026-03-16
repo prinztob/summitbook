@@ -89,16 +89,18 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         updateWidget()
     }
 
+    fun updatePeakName(oldName: String, newName: String) = viewModelScope.launch {
+        val peak = repository.getPeakByName(oldName)
+        if (peak != null) {
+            peak.name = newName
+            repository.updatePeak(peak)
+        }
+    }
+
     fun saveSummits(entities: List<Summit>) = viewModelScope.launch {
         repository.saveSummits(entities)
         updateWidget()
     }
-
-    fun updateIgnoreSimplifyingTrack(summitId: Long, ignoreSimplifyingTrack: Boolean) =
-        viewModelScope.launch {
-            repository.updateIgnoreSimplifyingTrack(summitId, ignoreSimplifyingTrack)
-            updateWidget()
-        }
 
     fun deleteSummit(entity: Summit) = viewModelScope.launch {
         repository.deleteSummit(entity)

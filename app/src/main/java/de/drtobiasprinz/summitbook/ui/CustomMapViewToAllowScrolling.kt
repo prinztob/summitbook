@@ -230,7 +230,7 @@ class CustomMapViewToAllowScrolling : MapView {
                 GeoPoint(
                     it.first.latitude,
                     it.first.longitude,
-                    it.first.elevation
+                    it.first.elevation ?: 0.0
                 )
             })
             mMapView?.overlayManager?.add(osMapRoute)
@@ -255,7 +255,7 @@ class CustomMapViewToAllowScrolling : MapView {
                 GeoPoint(
                     it.first.latitude,
                     it.first.longitude,
-                    it.first.elevation
+                    it.first.elevation ?: 0.0
                 )
             })
             overlayManager?.add(additionalRoute)

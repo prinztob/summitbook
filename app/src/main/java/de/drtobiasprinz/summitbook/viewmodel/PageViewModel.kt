@@ -5,8 +5,8 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.Segment
-import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
@@ -39,10 +39,15 @@ class PageViewModel @Inject constructor(private val repository: DatabaseReposito
     val extremaValuesSummits: LiveData<ExtremaValuesSummits?>
         get() = _extremaValuesSummits
 
+    private val _peaks = MutableLiveData<DataStatus<List<Peak>>>()
+    val peaks: LiveData<DataStatus<List<Peak>>>
+        get() = _peaks
+
     init {
         getAllSummits()
         getAllSegments()
         setSummitToCompareToNull()
+        getPeaks()
     }
 
     private fun getAllSummits() = viewModelScope.launch {
@@ -89,11 +94,9 @@ class PageViewModel @Inject constructor(private val repository: DatabaseReposito
         }
     }
 
-    fun saveSegmentEntry(isEdite: Boolean, entity: SegmentEntry) = viewModelScope.launch {
-        if (isEdite) {
-            repository.updateSegmentEntry(entity)
-        } else {
-            repository.saveSegmentEntry(entity)
+    private fun getPeaks() = viewModelScope.launch {
+        repository.getPeaks().collect {
+            _peaks.postValue(DataStatus.success(it, false))
         }
     }
 }

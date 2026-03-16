@@ -23,11 +23,11 @@ class TrackAnalyzer(object):
     TRACK_EXTENSIONS = "TrackPointExtension"
 
     def __init__(
-            self,
-            file: Path,
-            additional_data_folder: Path | None = None,
-            split_files: list[Path] | None = None,
-            yaml_file: Path | None = None,
+        self,
+        file: Path,
+        additional_data_folder: Path | None = None,
+        split_files: list[Path] | None = None,
+        yaml_file: Path | None = None,
     ) -> None:
         self.file = file
         if not additional_data_folder:
@@ -36,7 +36,7 @@ class TrackAnalyzer(object):
             yaml_file
             if yaml_file
             else additional_data_folder
-                 / self.file.name.replace(".gpx", "_extensions.yaml")
+            / self.file.name.replace(".gpx", "_extensions.yaml")
         )
         self.gpx_file_simplified = additional_data_folder / prefix_filename(
             self.file.name
@@ -52,7 +52,7 @@ class TrackAnalyzer(object):
         self.split_files = split_files
 
     def write_simplified_track_to_file(
-            self, gpx_file_simplified: Path | None = None
+        self, gpx_file_simplified: Path | None = None
     ) -> None:
         if self.gpx_file:
             if self.gpx is None:
@@ -68,7 +68,7 @@ class TrackAnalyzer(object):
             print(f"Written simplified track to {gpx_file_simplified}")
 
     def write_data_and_extension_to_file(
-            self, gpx_file_gpxpy: Path | None = None, yaml_file: Path | None = None
+        self, gpx_file_gpxpy: Path | None = None, yaml_file: Path | None = None
     ) -> None:
         if not yaml_file:
             yaml_file = self.yaml_file
@@ -97,10 +97,12 @@ class TrackAnalyzer(object):
             self.data.update(
                 ElevationTrackAnalyzer(points_with_time_and_elevation).analyze()
             )
+            print(f"ElevationTrackAnalyzer successful with {len(points_with_time)} points: {self.data}")
         except Exception as err:
             print(f"ElevationTrackAnalyzer failed with {err}")
         try:
             self.data.update(PowerTrackAnalyzer(points_with_time).analyze())
+            print(f"PowerTrackAnalyzer successful with {len(points_with_time)} points: {self.data}")
         except Exception as err:
             if err.args[0] == "index values must be monotonic":
                 return False
@@ -109,6 +111,7 @@ class TrackAnalyzer(object):
             self.data.update(
                 VelocityTrackAnalyzer(points_with_time, self.split_files).analyze()
             )
+            print(f"VelocityTrackAnalyzer successful with {len(points_with_time)} points: {self.data}")
         except Exception as err:
             if err.args[0] == "index values must be monotonic":
                 return False
@@ -203,7 +206,7 @@ class TrackAnalyzer(object):
         distances = [p.distance for p in extensions] if extensions else []
         dx = np.diff(distances)
         monotonic = len(set(distances)) > 1 and (
-                bool(np.all(dx <= 0)) or bool(np.all(dx >= 0))
+            bool(np.all(dx <= 0)) or bool(np.all(dx >= 0))
         )
         all_points_with_extension = list(zip(all_points, extensions))
         self.all_points_with_extension = [

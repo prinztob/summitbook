@@ -103,7 +103,7 @@ fun OverviewScreen(
         // Chart section (conditionally visible)
         if ((showMonths || showYears) && filteredSummits.isNotEmpty() && forecasts.isNotEmpty()) {
             ChartSection(
-                summits = summitsFromDatabase,
+                summits = summitsFromDatabase.filter { !it.isBookmark },
                 forecasts = forecasts,
                 selectedGraphType = selectedGraphType,
                 onGraphTypeSelected = { selectedGraphType = it },

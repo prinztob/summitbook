@@ -48,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.TextField
@@ -68,7 +69,8 @@ fun SummitEntryDataScreen(
     extrema: ExtremaValuesSummits?,
     onGetSummitToCompare: (Long) -> Unit,
     onSetSummitToCompareToNull: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    peaks: List<Peak> = emptyList()
 ) {
 
     val configuration = LocalConfiguration.current
@@ -333,10 +335,10 @@ fun SummitEntryDataScreen(
                 summit.getPlacesWithConnectedEntryString(context, allSummits ?: emptyList())
             }
             if (places.isNotEmpty() && places.first().isNotEmpty()) {
-                ChipSection(
+                PlacesChipSection(
                     title = stringResource(R.string.place_hint),
                     items = places,
-                    icon = R.drawable.outline_landscape_2_off_24
+                    peaks = peaks
                 )
             }
         }
@@ -673,6 +675,47 @@ fun ChipSection(
                         Icon(
                             painter = painterResource(id = icon),
                             contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PlacesChipSection(
+    title: String,
+    items: List<String>,
+    peaks: List<Peak>
+) {
+    val peakNames = remember(peaks) { peaks.map { it.name }.toSet() }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(items) { item ->
+                val isPeak = peakNames.contains(item)
+                AssistChip(
+                    onClick = { },
+                    label = { Text(item) },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(
+                                id = if (isPeak) R.drawable.baseline_terrain_24 else R.drawable.outline_landscape_2_off_24
+                            ),
+                            contentDescription = if (isPeak) "Peak in database" else "Place",
                             modifier = Modifier.size(18.dp)
                         )
                     }
