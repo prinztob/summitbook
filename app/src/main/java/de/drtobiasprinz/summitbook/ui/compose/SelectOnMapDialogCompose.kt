@@ -42,7 +42,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.res.ResourcesCompat
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.Keys
@@ -63,7 +62,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.osmdroid.bonuspack.location.GeocoderNominatim
-import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
@@ -202,14 +200,11 @@ fun SelectOnMapDialogCompose(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 // Map view
-                AndroidView(
-                    factory = { ctx ->
-                        CustomMapViewToAllowScrolling(ctx).apply {
-                            mapView = this
-                            setTileSource(TileSourceFactory.MAPNIK)
-                            Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-                            addDefaultSettings()
-                        }
+                SummitBookMapView(
+                    modifier = Modifier.fillMaxSize(),
+                    onMapCreated = { map ->
+                        mapView = map
+                        map.setTileSource(TileSourceFactory.MAPNIK)
                     },
                     update = { map ->
                         map.setTileProviderDependingOnSummitSportType(
@@ -236,8 +231,7 @@ fun SelectOnMapDialogCompose(
                         summitEntry.trackBoundingBox?.let { boundingBox ->
                             map.drawBoundingBox(boundingBox)
                         }
-                    },
-                    modifier = Modifier.fillMaxSize()
+                    }
                 )
 
                 // Loading panel

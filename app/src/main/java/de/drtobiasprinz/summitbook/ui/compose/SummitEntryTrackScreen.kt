@@ -42,10 +42,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.toDrawable
 import de.drtobiasprinz.summitbook.BuildConfig
@@ -231,7 +229,7 @@ fun SummitEntryTrackScreen(
                         .height((Resources.getSystem().displayMetrics.heightPixels * 0.6 / Resources.getSystem().displayMetrics.density).dp)
                         .clipToBounds()
                 ) {
-                    MapView(
+                    SummitEntryTrackMapView(
                         summit = summit,
                         trackPoints = trackPoints,
                         compareTrackPoints = compareTrackPoints,
@@ -329,7 +327,7 @@ private fun hasOnlyZeroCoordinates(trackPoints: List<Pair<TrackPoint, ExtensionF
 }
 
 @Composable
-fun MapView(
+fun SummitEntryTrackMapView(
     summit: Summit,
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
     modifier: Modifier = Modifier,
@@ -347,41 +345,36 @@ fun MapView(
     var mLocationOverlay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
 
     DisposableEffect(Unit) {
-        org.osmdroid.config.Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
         onDispose {
             mLocationOverlay?.disableMyLocation()
         }
     }
 
-    AndroidView(
-        factory = { ctx ->
-            CustomMapViewToAllowScrolling(ctx).apply {
+    SummitBookMapView(
+        onMapCreated = { view ->
+            val ctx = view.context
+            // Initialize location overlay
+            val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(ctx), view)
+            locationOverlay.enableMyLocation()
+            view.overlays.add(locationOverlay)
+            mLocationOverlay = locationOverlay
 
-                // Initialize location overlay
-                val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(ctx), this)
-                locationOverlay.enableMyLocation()
-                overlays.add(locationOverlay)
-                mLocationOverlay = locationOverlay
+            // Notify that location overlay is created
+            onLocationOverlayCreated(locationOverlay)
 
-                // Notify that location overlay is created
-                onLocationOverlayCreated(locationOverlay)
-
-                // Configure map
-                addDefaultSettings()
-
-                if (PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(ctx)
-                        .isNotEmpty()
-                ) {
-                    selectedItem = getSportTypeForMapProviders(summit.sportType, ctx)
-                } else if (FileHelper.getOnDeviceMbtilesFiles(ctx).isNotEmpty()) {
-                    selectedItem = MapProvider.MBTILES
-                }
-                setTileProvider()
-
-                // Notify that map view is created
-                onMapViewCreated(this)
+            if (PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(ctx)
+                    .isNotEmpty()
+            ) {
+                selectedItem = getSportTypeForMapProviders(summit.sportType, ctx)
+            } else if (FileHelper.getOnDeviceMbtilesFiles(ctx).isNotEmpty()) {
+                selectedItem = MapProvider.MBTILES
             }
-        }, update = { view ->
+            view.setTileProvider()
+
+            // Notify that map view is created
+            onMapViewCreated(view)
+        },
+        update = { view ->
             // Ensure the view fills its allocated space
             view.layoutParams = FrameLayout.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
@@ -457,8 +450,8 @@ fun MapView(
 
             view.enableRoadInfoOnMapClick()
             view.invalidate()
-
-        }, modifier = modifier
+        },
+        modifier = modifier
     )
 }
 
@@ -644,7 +637,7 @@ private fun setGpsTrack(
 private fun shareGpsTrack(context: android.content.Context, summit: Summit) {
     try {
         val uri = summit.copyGpsTrackToTempFile(context.externalCacheDir)?.let {
-            FileProvider.getUriForFile(
+            androidx.core.content.FileProvider.getUriForFile(
                 context, BuildConfig.APPLICATION_ID + ".provider", it
             )
         }
@@ -678,7 +671,7 @@ private fun shareGpsTrack(context: android.content.Context, summit: Summit) {
 private fun openGpsTrack(context: android.content.Context, summit: Summit) {
     try {
         val uri = summit.copyGpsTrackToTempFile(context.externalCacheDir)?.let {
-            FileProvider.getUriForFile(
+            androidx.core.content.FileProvider.getUriForFile(
                 context, BuildConfig.APPLICATION_ID + ".provider", it
             )
         }

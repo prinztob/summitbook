@@ -57,7 +57,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color as ComposeColor
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.createBitmap
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Segment
@@ -66,7 +65,6 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
-import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -482,8 +480,6 @@ fun SegmentMapSection(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var mapView: CustomMapViewToAllowScrolling? by remember { mutableStateOf(null) }
-    var isMapReady by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -496,34 +492,22 @@ fun SegmentMapSection(
                 .fillMaxWidth()
                 .height(250.dp)
         ) {
-            AndroidView(
-                factory = { ctx ->
-                    CustomMapViewToAllowScrolling(ctx).apply {
-                        mapView = this
-                        // Set up the map
-                        setTileProvider()
-                        addDefaultSettings()
-                        isMapReady = true
-                    }
-                },
+            SummitBookMapView(
                 update = { view ->
-                    if (isMapReady) {
-                        // Update map with track and markers
-                        updateMapContent(view, summit, trackPoints, segmentEntry)
-                    }
+                    // Update map with track and markers
+                    updateMapContent(view, summit, trackPoints, segmentEntry)
                 },
+                extraControls = { map ->
+                    // Map controls
+                    MapControls(
+                        onUpdateSnapshot = {
+                            takeScreenshot(map, segmentDetailsId, context)
+                        },
+                        modifier = Modifier.align(Alignment.TopEnd)
+                    )
+                },
+                showMapTypeButton = true,
                 modifier = Modifier.fillMaxSize()
-            )
-
-            // Map controls
-            MapControls(
-                onMapTypeChange = {
-                    mapView?.showMapTypeSelectorDialog()
-                },
-                onUpdateSnapshot = {
-                    mapView?.let { takeScreenshot(it, segmentDetailsId, context) }
-                },
-                modifier = Modifier.align(Alignment.TopEnd)
             )
         }
     }
@@ -534,7 +518,6 @@ fun SegmentMapSection(
  */
 @Composable
 fun MapControls(
-    onMapTypeChange: () -> Unit,
     onUpdateSnapshot: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -542,20 +525,10 @@ fun MapControls(
         modifier = modifier.padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        IconButton(
-            onClick = onMapTypeChange,
-            modifier = Modifier
-                .background(
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                    shape = RoundedCornerShape(50)
-                )
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.baseline_more_vert_black_24dp),
-                contentDescription = stringResource(R.string.map_type)
-            )
-        }
-
+        // Map type toggle is now handled by SummitBookMapView
+        // Add spacing to position snapshot button below the map type button
+        Spacer(modifier = Modifier.height(48.dp))
+        
         IconButton(
             onClick = onUpdateSnapshot,
             modifier = Modifier
@@ -563,6 +536,7 @@ fun MapControls(
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                     shape = RoundedCornerShape(50)
                 )
+                .size(40.dp)
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.baseline_refresh_24),

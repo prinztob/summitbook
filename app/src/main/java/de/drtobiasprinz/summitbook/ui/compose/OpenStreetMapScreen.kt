@@ -52,7 +52,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.edit
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -242,18 +241,80 @@ fun OpenStreetMapScreen(
 
                 // Map view
                 Box(modifier = Modifier.weight(1f)) {
-                    MapViewComposable(
-                        followLocationEnabled = followLocationEnabled,
-                        onMapReady = { map ->
+                    SummitBookMapView(
+                        onMapCreated = { map ->
                             mapView = map
-                        },
-                        onPolylineCreated = { newPolyline ->
+                            map.updateBoundingBox = true
+                            map.setTileProvider()
+                            
+                            // Setup polyline for follow location
+                            val newPolyline = Polyline(map).apply {
+                                outlinePaint?.color = Color.MAGENTA
+                                outlinePaint?.strokeWidth = 16f
+                            }
                             polyline = newPolyline
+
+                            // Setup location overlay
+                            val locationOverlay =
+                                object : MyLocationNewOverlay(GpsMyLocationProvider(context), map) {
+                                    override fun onLocationChanged(
+                                        location: android.location.Location?,
+                                        source: IMyLocationProvider?
+                                    ) {
+                                        super.onLocationChanged(location, source)
+                                        if (location != null && followLocationEnabled && location.speed > 0f) {
+                                            newPolyline.addPoint(GeoPoint(location.latitude, location.longitude))
+                                            map.overlayManager?.remove(newPolyline)
+                                            map.overlayManager?.add(newPolyline)
+                                            map.controller.setCenter(myLocation)
+                                        }
+                                    }
+                                }
+                            mLocationOverlay = locationOverlay
+                            map.overlays.add(locationOverlay)
+                            locationOverlay.enableMyLocation()
+
+                            // Enable road info on map click
+                            map.enableRoadInfoOnMapClick()
                         },
-                        onLocationOverlayCreated = { overlay ->
-                            mLocationOverlay = overlay
-                        },
-                        osMapBoundingBox = osMapBoundingBox
+                        update = { map ->
+                            // Update map when state changes
+                            map.updateBoundingBox = true
+
+                            Log.e(TAG, "Updated $osMapBoundingBox")
+                            if (osMapBoundingBox.size == 6) {
+                                try {
+                                    val boundingBox = BoundingBox()
+                                    boundingBox.set(
+                                        osMapBoundingBox[0].toDouble(),
+                                        osMapBoundingBox[1].toDouble(),
+                                        osMapBoundingBox[2].toDouble(),
+                                        osMapBoundingBox[3].toDouble()
+                                    )
+                                    map.post {
+                                        Log.d(
+                                            "OpenStreetMapScreen", "Attempting to zoom to bounding box: " +
+                                                    "north=${boundingBox.latNorth}, east=${boundingBox.lonEast}, " +
+                                                    "south=${boundingBox.latSouth}, west=${boundingBox.lonWest}"
+                                        )
+                                        map.zoomToBoundingBox(boundingBox, false, 30)
+                                        Log.d("OpenStreetMapScreen", "Zoom operation completed")
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e(
+                                        "MapViewComposable",
+                                        "Getting bounding box from shared preference failed. ${e.message}"
+                                    )
+                                }
+                            }
+
+                            // Show my location
+                            showMyLocation(
+                                map,
+                                map.overlays.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay)
+
+                            map.onResume()
+                        }
                     )
                 }
             }
@@ -370,97 +431,6 @@ fun OpenStreetMapScreen(
             }
         }
     }
-}
-
-@Composable
-fun MapViewComposable(
-    followLocationEnabled: Boolean,
-    onMapReady: (CustomMapViewToAllowScrolling) -> Unit,
-    onPolylineCreated: (Polyline) -> Unit,
-    onLocationOverlayCreated: (MyLocationNewOverlay) -> Unit,
-    osMapBoundingBox: List<String>
-) {
-    AndroidView(
-        factory = { ctx ->
-            val mapView = CustomMapViewToAllowScrolling(ctx).apply {
-                updateBoundingBox = true
-                setTileProvider()
-                addDefaultSettings()
-
-                // Setup polyline for follow location
-                val polyline = Polyline(this).apply {
-                    outlinePaint?.color = Color.MAGENTA
-                    outlinePaint?.strokeWidth = 16f
-                }
-                onPolylineCreated(polyline)
-
-                // Setup location overlay
-                val locationOverlay =
-                    object : MyLocationNewOverlay(GpsMyLocationProvider(ctx), this) {
-                        override fun onLocationChanged(
-                            location: android.location.Location?,
-                            source: IMyLocationProvider?
-                        ) {
-                            super.onLocationChanged(location, source)
-                            if (location != null && followLocationEnabled && location.speed > 0f) {
-                                polyline.addPoint(GeoPoint(location.latitude, location.longitude))
-                                this@apply.overlayManager?.remove(polyline)
-                                this@apply.overlayManager?.add(polyline)
-                                this@apply.controller.setCenter(myLocation)
-                            }
-                        }
-                    }
-                onLocationOverlayCreated(locationOverlay)
-                overlays.add(locationOverlay)
-                locationOverlay.enableMyLocation()
-
-                // Enable road info on map click
-                enableRoadInfoOnMapClick()
-            }
-
-            onMapReady(mapView)
-            mapView
-        },
-        update = { mapView ->
-            // Update map when state changes
-            mapView.updateBoundingBox = true
-
-            Log.e(TAG, "Updated $osMapBoundingBox")
-            if (osMapBoundingBox.size == 6) {
-                try {
-                    val boundingBox = BoundingBox()
-                    boundingBox.set(
-                        osMapBoundingBox[0].toDouble(),
-                        osMapBoundingBox[1].toDouble(),
-                        osMapBoundingBox[2].toDouble(),
-                        osMapBoundingBox[3].toDouble()
-                    )
-                    mapView.post {
-                        Log.d(
-                            "OpenStreetMapScreen", "Attempting to zoom to bounding box: " +
-                                    "north=${boundingBox.latNorth}, east=${boundingBox.lonEast}, " +
-                                    "south=${boundingBox.latSouth}, west=${boundingBox.lonWest}"
-                        )
-                        mapView.zoomToBoundingBox(boundingBox, false, 30)
-                        Log.d("OpenStreetMapScreen", "Zoom operation completed")
-                    }
-                } catch (e: Exception) {
-                    Log.e(
-                        "MapViewComposable",
-                        "Getting bounding box from shared preference failed. ${e.message}"
-                    )
-                }
-            }
-
-            // Show my location
-            showMyLocation(
-                mapView,
-                mapView.overlays.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay)
-
-            mapView.onResume()
-        },
-        modifier = Modifier.fillMaxSize()
-    )
 }
 
 @Composable

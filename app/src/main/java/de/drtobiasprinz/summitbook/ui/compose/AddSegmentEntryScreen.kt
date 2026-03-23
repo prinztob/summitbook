@@ -53,7 +53,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
@@ -61,7 +60,6 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
-import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
@@ -702,8 +700,6 @@ fun AddSegmentMapSection(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var mapView: CustomMapViewToAllowScrolling? by remember { mutableStateOf(null) }
-    var isMapReady by remember { mutableStateOf(false) }
     var hasZoomed by remember { mutableStateOf(false) }
     var isZoomedToBoundingBox by remember { mutableStateOf(true) }
 
@@ -718,17 +714,9 @@ fun AddSegmentMapSection(
             .height(300.dp)
             .clipToBounds()
     ) {
-        AndroidView(
-            factory = { ctx ->
-                CustomMapViewToAllowScrolling(ctx).apply {
-                    mapView = this
-                    setTileProvider()
-                    addDefaultSettings()
-                    isMapReady = true
-                }
-            },
+        SummitBookMapView(
             update = { view ->
-                if (isMapReady && trackPoints.isNotEmpty() && !hasZoomed) {
+                if (trackPoints.isNotEmpty() && !hasZoomed) {
                     updateAddSegmentMapContent(
                         view,
                         trackPoints,
@@ -740,7 +728,7 @@ fun AddSegmentMapSection(
                         shouldZoomToTrack = true
                     )
                     hasZoomed = true
-                } else if (isMapReady && trackPoints.isNotEmpty()) {
+                } else if (trackPoints.isNotEmpty()) {
                     updateAddSegmentMapContent(
                         view,
                         trackPoints,
@@ -753,52 +741,37 @@ fun AddSegmentMapSection(
                     )
                 }
             },
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Map type selector button
-        IconButton(
-            onClick = {
-                mapView?.showMapTypeSelectorDialog()
-            },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                    shape = RoundedCornerShape(50)
-                )
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.baseline_more_vert_black_24dp),
-                contentDescription = stringResource(R.string.map_type)
-            )
-        }
-        // Zoom toggle button: - zooms to bounding box, + zooms to selected point
-        IconButton(
-            onClick = {
-                if (isZoomedToBoundingBox) {
-                    // Currently zoomed to bounding box, so zoom to selected point
-                    zoomToSelectedPoint(mapView, trackPoints, uiState.startPointId, uiState.endPointId, startSelected)
-                    isZoomedToBoundingBox = false
-                } else {
-                    // Zoom to bounding box
-                    zoomToBoundingBox(mapView, trackPoints, uiState.startPointId, uiState.endPointId)
-                    isZoomedToBoundingBox = true
+            extraControls = { map ->
+                // Zoom toggle button: - zooms to bounding box, + zooms to selected point
+                IconButton(
+                    onClick = {
+                        if (isZoomedToBoundingBox) {
+                            // Currently zoomed to bounding box, so zoom to selected point
+                            zoomToSelectedPoint(map, trackPoints, uiState.startPointId, uiState.endPointId, startSelected)
+                            isZoomedToBoundingBox = false
+                        } else {
+                            // Zoom to bounding box
+                            zoomToBoundingBox(map, trackPoints, uiState.startPointId, uiState.endPointId)
+                            isZoomedToBoundingBox = true
+                        }
+                    },
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                            shape = RoundedCornerShape(50)
+                        )
+                        .size(40.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = if (isZoomedToBoundingBox) R.drawable.ic_baseline_zoom_out_24 else R.drawable.ic_baseline_zoom_in_24),
+                        contentDescription = if (isZoomedToBoundingBox) stringResource(R.string.zoom_to_selected_point) else stringResource(R.string.zoom_to_track)
+                    )
                 }
             },
-            modifier = Modifier
-                .padding(8.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                    shape = RoundedCornerShape(50)
-                )
-        ) {
-            Icon(
-                painter = painterResource(id = if (isZoomedToBoundingBox) R.drawable.ic_baseline_zoom_out_24 else R.drawable.ic_baseline_zoom_in_24),
-                contentDescription = if (isZoomedToBoundingBox) stringResource(R.string.zoom_to_selected_point) else stringResource(R.string.zoom_to_track)
-            )
-        }
+            showMapTypeButton = true,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 

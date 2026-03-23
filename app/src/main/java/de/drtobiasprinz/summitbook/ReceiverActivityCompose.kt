@@ -33,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
@@ -42,13 +41,13 @@ import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.compose.AddSummitDialogCompose
+import de.drtobiasprinz.summitbook.ui.compose.SummitBookMapView
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.copyGpxFileToCache
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.prepareGpxTrack
 import de.drtobiasprinz.summitbook.utils.Utils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.launch
-import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
@@ -58,7 +57,6 @@ import java.io.File
 @AndroidEntryPoint
 class ReceiverActivityCompose : ComponentActivity() {
     private var gpxTrackUri: Uri? = null
-    private lateinit var mapView: CustomMapViewToAllowScrolling
     private val viewModel: DatabaseViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,9 +94,6 @@ class ReceiverActivityCompose : ComponentActivity() {
         var gpxTrackUriState by remember { mutableStateOf<Uri?>(null) }
 
         LaunchedEffect(Unit) {
-            // Initialize map configuration
-            Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-
             // Process intent when activity starts
             if (Intent.ACTION_VIEW == intent.action) {
                 scope.launch {
@@ -174,14 +169,11 @@ class ReceiverActivityCompose : ComponentActivity() {
                     .padding(paddingValues)
             ) {
                 // Map view
-                AndroidView(
-                    factory = { ctx ->
-                        mapView = CustomMapViewToAllowScrolling(ctx).apply {
-                            setTileSource(TileSourceFactory.OpenTopo)
-                            addDefaultSettings()
-                        }
-                        mapViewReference = mapView
-                        mapView
+                SummitBookMapView(
+                    modifier = Modifier.fillMaxSize(),
+                    onMapCreated = { map ->
+                        map.setTileSource(TileSourceFactory.OpenTopo)
+                        mapViewReference = map
                     },
                     update = { map ->
                         Utils.fixEdgeToEdge(map)
@@ -191,8 +183,7 @@ class ReceiverActivityCompose : ComponentActivity() {
                                 drawGpxTrackOnMap(track, map)
                             }
                         }
-                    },
-                    modifier = Modifier.fillMaxSize()
+                    }
                 )
             }
         }
