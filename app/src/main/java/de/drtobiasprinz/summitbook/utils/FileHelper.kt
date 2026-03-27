@@ -50,6 +50,19 @@ object FileHelper {
         return emptyList()
     }
 
+    fun getOnDeviceOverlayMbtilesFiles(context: Context): List<DocumentFile> {
+        val onDeviceMapsFolder: String = PreferencesHelper.loadOnDeviceMapsFolder()
+        if (onDeviceMapsFolder.isNotEmpty()) {
+            val folder: DocumentFile? =
+                DocumentFile.fromTreeUri(context, onDeviceMapsFolder.toUri())
+            val overlaysFolder = folder?.listFiles()?.find { it.name == "overlays" }
+            return overlaysFolder?.listFiles()?.filter { file ->
+                file.name?.endsWith(".mbtiles") == true
+            } ?: emptyList()
+        }
+        return emptyList()
+    }
+
     fun getOnDeviceMapsFolderName(context: Context): String {
         val onDeviceMapsFolder: String = PreferencesHelper.loadOnDeviceMapsFolder()
         if (onDeviceMapsFolder.isNotEmpty()) {

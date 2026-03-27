@@ -85,6 +85,7 @@ import org.osmdroid.views.overlay.TilesOverlay
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import de.drtobiasprinz.summitbook.utils.FileHelper
 import java.io.File
 
 @Suppress("AssignedValueIsNeverRead")
@@ -112,6 +113,7 @@ fun OpenStreetMapScreen(
     var showMapTypeDialog by remember { mutableStateOf(false) }
     var showOverlaySliders by remember { mutableStateOf(false) }
     var overlayAlphas by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
+    var hasOverlayLayers by remember { mutableStateOf(false) }
 
     // Lists
     val mGeoPoints = remember { mutableStateListOf<GeoPoint?>() }
@@ -172,6 +174,9 @@ fun OpenStreetMapScreen(
                 )
             }
         }
+        
+        // Check for overlay layers
+        hasOverlayLayers = hasOverlayLayers(context)
     }
 
     // Handle system bar visibility when fullscreen state changes
@@ -402,7 +407,7 @@ fun OpenStreetMapScreen(
                     }
                 },
                 showOverlaySliders = showOverlaySliders,
-                hasOverlayLayers = getLayerFiles().second.isNotEmpty(),
+                hasOverlayLayers = hasOverlayLayers,
                 onToggleOverlaySliders = {
                     showOverlaySliders = !showOverlaySliders
                 },
@@ -413,8 +418,8 @@ fun OpenStreetMapScreen(
 
             // Overlay map sliders
             if (showOverlaySliders) {
-                val layerFiles = getLayerFiles()
-                if (layerFiles.second.isNotEmpty() && layers.isEmpty()) {
+                val layerFiles = getLayerFiles(context)
+                if (layerFiles.isNotEmpty() && layers.isEmpty()) {
                     mapView?.let { showOverlayIfExist(it, context, layers, layerFiles) }
                 }
                 OverlaySliders(
@@ -528,20 +533,19 @@ private fun showOverlayIfExist(
     mapView: CustomMapViewToAllowScrolling,
     context: Context,
     layers: SnapshotStateList<Pair<String, TilesOverlay>>,
-    layerFiles: Pair<String, List<Pair<File?, String>>>
+    layerFiles: List<Pair<File, String>>
 ) {
-    val (fileEnding, files) = layerFiles
-    if (ArchiveFileFactory.isFileExtensionRegistered(fileEnding) && files.isNotEmpty()) {
+    if (ArchiveFileFactory.isFileExtensionRegistered("mbtiles") && layerFiles.isNotEmpty()) {
         try {
-            files.forEach {
-                if (!layers.map { layer -> layer.first }.contains(it.second)) {
+            layerFiles.forEach { (file, name) ->
+                if (!layers.map { layer -> layer.first }.contains(name)) {
                     val tileProvider =
-                        OfflineTileProvider(SimpleRegisterReceiver(context), arrayOf(it.first))
+                        OfflineTileProvider(SimpleRegisterReceiver(context), arrayOf(file))
                     val layer = TilesOverlay(tileProvider, context)
                     layer.loadingBackgroundColor = Color.TRANSPARENT
                     layer.loadingLineColor = Color.TRANSPARENT
                     mapView.overlays.add(layer)
-                    layers.add(Pair(it.second, layer))
+                    layers.add(Pair(name, layer))
                     setAlphaForLayer(layer)
                     mapView.invalidate()
                 }
@@ -552,12 +556,49 @@ private fun showOverlayIfExist(
     }
 }
 
-private fun getLayerFiles(): Pair<String, List<Pair<File?, String>>> {
-    val fileEnding = "mbtiles"
-    val overlayFolder = File(CustomMapViewToAllowScrolling.getOsmdroidTilesFolder(), "overlays")
-    val files = overlayFolder.listFiles()?.filter { it.name.endsWith(".${fileEnding}") }
-        ?.map { Pair(it, it.name.replace(".$fileEnding", "")) } ?: emptyList()
-    return Pair(fileEnding, files)
+private fun getLayerFiles(context: Context): List<Pair<File, String>> {
+    val documentFiles = FileHelper.getOnDeviceOverlayMbtilesFiles(context)
+    val overlayCacheDir = File(context.cacheDir, "overlay_mbtiles")
+    if (!overlayCacheDir.exists()) {
+        overlayCacheDir.mkdirs()
+    }
+    
+    // Clean up old files not in current document files
+    val currentUris = documentFiles.map { it.uri.toString() }.toSet()
+    overlayCacheDir.listFiles()?.forEach { cachedFile ->
+        val uriInName = cachedFile.nameWithoutExtension
+        if (!currentUris.any { it.hashCode().toString() == uriInName }) {
+            cachedFile.delete()
+        }
+    }
+    
+    val files = documentFiles.mapNotNull { docFile ->
+        val name = docFile.name?.replace(".mbtiles", "") ?: return@mapNotNull null
+        val cacheFileName = docFile.uri.toString().hashCode().toString() + ".mbtiles"
+        val cachedFile = File(overlayCacheDir, cacheFileName)
+        
+        // Copy to cache if not exists or source is newer
+        if (!cachedFile.exists() || docFile.lastModified() > cachedFile.lastModified()) {
+            try {
+                context.contentResolver.openInputStream(docFile.uri)?.use { input ->
+                    cachedFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to copy overlay file: ${e.message}")
+                return@mapNotNull null
+            }
+        }
+        
+        Pair(cachedFile, name)
+    }
+    Log.i(TAG, "getLayerFiles -> ${files.size} mbtiles in overlays")
+    return files
+}
+
+private fun hasOverlayLayers(context: Context): Boolean {
+    return FileHelper.getOnDeviceOverlayMbtilesFiles(context).isNotEmpty()
 }
 
 private fun setAlphaForLayer(layer: TilesOverlay, alpha: Float = 0f) {
