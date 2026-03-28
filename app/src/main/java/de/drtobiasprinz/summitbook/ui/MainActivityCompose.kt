@@ -165,6 +165,8 @@ class MainActivityCompose : ComponentActivity(),
         storage = applicationContext.filesDir
         cache = applicationContext.cacheDir
         activitiesDir = File(storage, "activities")
+        heatmapDir = File(storage, "heatmaps")
+        heatmapDir?.mkdirs()
         segmentScreenshotDir = File(storage, "segmentScreenshots")
         segmentScreenshotDir?.mkdirs()
         // Initialize Python if needed
@@ -1294,6 +1296,7 @@ class MainActivityCompose : ComponentActivity(),
         var storage: File? = null
         var cache: File? = null
         var activitiesDir: File? = null
+        var heatmapDir: File? = null
         var segmentScreenshotDir: File? = null
         var pythonInstance: Python? = null
         var pythonExecutor: GarminPythonExecutor? = null

@@ -75,6 +75,19 @@ class GpxPyExecutor(private var pythonInstance: Python) {
         checkOutput(result)
     }
 
+    fun generateHeatmap(
+        tracks: List<File>,
+        outputMbtilesFile: File
+    ) {
+        pythonModule = pythonInstance.getModule("entry_point")
+        val result = pythonModule.callAttr(
+            "generate_heatmap_from_tracks",
+            tracks.map { it.absolutePath }.toTypedArray(),
+            outputMbtilesFile.absolutePath
+        )
+        checkOutput(result)
+    }
+
     fun removeExtensionsFromGpxTracks(input: File, export: File) {
         pythonModule = pythonInstance.getModule("entry_point")
         val result = pythonModule.callAttr(

@@ -114,6 +114,8 @@ fun OpenStreetMapScreen(
     var showOverlaySliders by remember { mutableStateOf(false) }
     var overlayAlphas by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
     var hasOverlayLayers by remember { mutableStateOf(false) }
+    var heatmapEnabled by rememberSaveable { mutableStateOf(false) }
+    var heatmapOverlay by remember { mutableStateOf<TilesOverlay?>(null) }
 
     // Lists
     val mGeoPoints = remember { mutableStateListOf<GeoPoint?>() }
@@ -220,6 +222,10 @@ fun OpenStreetMapScreen(
             onMapTypeSelected = { mapProvider ->
                 CustomMapViewToAllowScrolling.selectedItem = mapProvider
                 mapView?.setTileProvider()
+                // Update heatmap overlay if enabled
+                if (heatmapEnabled) {
+                    heatmapOverlay = showHeatmapOverlay(mapView, context, heatmapOverlay)
+                }
             }
         )
     }
@@ -411,6 +417,16 @@ fun OpenStreetMapScreen(
                 onToggleOverlaySliders = {
                     showOverlaySliders = !showOverlaySliders
                 },
+                heatmapEnabled = heatmapEnabled,
+                hasHeatmap = hasHeatmapForProvider(context),
+                onToggleHeatmap = {
+                    heatmapEnabled = !heatmapEnabled
+                    if (heatmapEnabled) {
+                        heatmapOverlay = showHeatmapOverlay(mapView, context, heatmapOverlay)
+                    } else {
+                        heatmapOverlay = removeHeatmapOverlay(mapView, heatmapOverlay)
+                    }
+                },
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(16.dp)
@@ -598,7 +614,8 @@ private fun getLayerFiles(context: Context): List<Pair<File, String>> {
 }
 
 private fun hasOverlayLayers(context: Context): Boolean {
-    return FileHelper.getOnDeviceOverlayMbtilesFiles(context).isNotEmpty()
+    return FileHelper.getOnDeviceOverlayMbtilesFiles(context).isNotEmpty() ||
+           FileHelper.getHeatmapMbtilesFiles(context).isNotEmpty()
 }
 
 private fun setAlphaForLayer(layer: TilesOverlay, alpha: Float = 0f) {
@@ -613,6 +630,66 @@ private fun setAlphaForLayer(layer: TilesOverlay, alpha: Float = 0f) {
             )
         )
     )
+}
+
+private fun hasHeatmapForProvider(context: Context): Boolean {
+    val heatmapFiles = FileHelper.getHeatmapMbtilesFiles(context)
+    return heatmapFiles.isNotEmpty()
+}
+
+private fun showHeatmapOverlay(
+    mapView: CustomMapViewToAllowScrolling?,
+    context: Context,
+    currentOverlay: TilesOverlay?
+): TilesOverlay? {
+    if (mapView == null) return null
+    
+    // Remove existing heatmap overlay if present
+    currentOverlay?.let { mapView.overlays.remove(it) }
+    
+    val heatmapFiles = FileHelper.getHeatmapMbtilesFiles(context)
+    if (heatmapFiles.isEmpty()) return null
+    
+    // Get the heatmap file based on the selected MapProvider's heatmap property
+    val selectedProvider = CustomMapViewToAllowScrolling.selectedItem
+    val targetHeatmapName = selectedProvider.heatmap.name
+    val heatmapFile = heatmapFiles.find {
+        it.nameWithoutExtension.equals(targetHeatmapName, ignoreCase = true)
+    } ?: heatmapFiles.firstOrNull() // Fallback to first available
+    
+    if (heatmapFile == null) return null
+    
+    return try {
+        if (ArchiveFileFactory.isFileExtensionRegistered("mbtiles")) {
+            val tileProvider = OfflineTileProvider(SimpleRegisterReceiver(context), arrayOf(heatmapFile))
+            val overlay = TilesOverlay(tileProvider, context)
+            overlay.loadingBackgroundColor = Color.TRANSPARENT
+            overlay.loadingLineColor = Color.TRANSPARENT
+            // Set 100% alpha (fully visible)
+            setAlphaForLayer(overlay, 1f)
+            mapView.overlays.add(overlay)
+            mapView.invalidate()
+            Log.i(TAG, "Heatmap overlay added: ${heatmapFile.name}")
+            overlay
+        } else {
+            null
+        }
+    } catch (ex: Exception) {
+        Log.e(TAG, "Failed to add heatmap overlay: ${ex.message}")
+        null
+    }
+}
+
+private fun removeHeatmapOverlay(
+    mapView: CustomMapViewToAllowScrolling?,
+    overlay: TilesOverlay?
+): TilesOverlay? {
+    if (mapView != null && overlay != null) {
+        mapView.overlays.remove(overlay)
+        mapView.invalidate()
+        Log.i(TAG, "Heatmap overlay removed")
+    }
+    return null
 }
 
 private fun updateSelectedParameters(
@@ -875,6 +952,9 @@ fun MapControlButtons(
     showOverlaySliders: Boolean,
     hasOverlayLayers: Boolean,
     onToggleOverlaySliders: () -> Unit,
+    heatmapEnabled: Boolean = false,
+    hasHeatmap: Boolean = false,
+    onToggleHeatmap: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -1012,6 +1092,22 @@ fun MapControlButtons(
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_map_black_24dp),
                     contentDescription = "Toggle overlay sliders"
+                )
+            }
+        }
+        
+        // Toggle heatmap button (only shown if heatmap exists)
+        if (hasHeatmap) {
+            FloatingActionButton(
+                onClick = onToggleHeatmap,
+                modifier = Modifier
+                    .size(40.dp)
+                    .padding(top = 8.dp),
+                containerColor = if (heatmapEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_terrain_24),
+                    contentDescription = "Toggle heatmap"
                 )
             }
         }

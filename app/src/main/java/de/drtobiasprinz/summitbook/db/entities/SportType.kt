@@ -167,3 +167,29 @@ enum class SportGroup(
         R.color.grey_500,
     )
 }
+
+enum class GroupForHeatmap(
+    val sportTypes: List<SportType>,
+    val sportNameStringId: Int,
+) {
+    Bicycle(
+        listOf(
+            SportType.Bicycle,
+            SportType.Racer,
+            SportType.Mountainbike
+        ),
+        R.string.bicycle
+    ),
+    Walking(
+        listOf(SportType.Climb, SportType.Hike, SportType.Running),
+        R.string.hiking
+    ),
+    Winter(
+        listOf(SportType.Skitour),
+        R.string.winter
+    ),
+    All(
+        SportType.entries,
+        R.string.all
+    )
+}

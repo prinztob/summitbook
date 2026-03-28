@@ -21,7 +21,7 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         python {
-            version "3.13"
+            version "3.10"
             pip {
                 install "six"
                 install "pydantic==1.10.22"
@@ -35,11 +35,14 @@ android {
                 install "PyYAML"
                 install "tcxreader"
                 install "dateutils"
+                install "numpy"
+                install "Pillow"
+                install "scipy"
             }
         }
         chaquopy {
             defaultConfig {
-                buildPython("C:\\Users\\prinzt\\PyCharmMiscProject\\.venv\\Scripts\\python.exe")
+                buildPython("C:\\Users\\prinzt\\AppData\\Local\\Programs\\Python\\Python310\\python.exe")
             }
         }
         ndk {

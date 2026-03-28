@@ -642,5 +642,24 @@
     <string name="next">Nächste</string>
     <string name="previous">Vorherige</string>
     <string name="page_of">Seite %1$d von %2$d</string>
+    
+    <!-- Heatmap Management -->
+    <string name="heatmap_management_title">Heatmap-Verwaltung</string>
+    <string name="manage_heatmaps">Heatmaps verwalten</string>
+    <string name="manage_heatmaps_summary">Heatmaps für verschiedene Aktivitätsarten anzeigen und erstellen</string>
+    <string name="all_activities">Alle Aktivitäten</string>
+    <string name="tracks_count">%1$d Tracks</string>
+    <string name="generate">Erstellen</string>
+    <string name="regenerate">Neu erstellen</string>
+    <string name="generated">Erstellt</string>
+    <string name="last_updated">Zuletzt aktualisiert: %1$s</string>
+    <string name="loading_heatmap_statuses">Lade Heatmap-Status…</string>
+    <string name="no_activities_with_tracks">Keine Aktivitäten mit GPX-Tracks für diese Kategorie gefunden</string>
+    <string name="no_valid_track_files">Keine gültigen GPX-Track-Dateien gefunden</string>
+    <string name="found_tracks_generating">%1$d Tracks gefunden. Heatmap wird erstellt…</string>
+    <string name="heatmap_saved">Heatmap gespeichert unter: %1$s</string>
+    <string name="heatmap_failed">Heatmap konnte nicht erstellt werden</string>
+    <string name="hiking">Wandern</string>
+    <string name="winter">Winter</string>
 </resources>
 

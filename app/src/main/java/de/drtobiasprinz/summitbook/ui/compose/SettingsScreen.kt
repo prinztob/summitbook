@@ -1,3 +1,5 @@
+@file:Suppress("AssignedValueIsNeverRead")
+
 package de.drtobiasprinz.summitbook.ui.compose
 
 import android.app.Activity
@@ -7,6 +9,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.view.WindowManager
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,11 +24,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +43,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -48,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -59,9 +67,12 @@ import androidx.preference.PreferenceManager
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.db.entities.GroupForHeatmap
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
+import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.MapProvider
 import de.drtobiasprinz.summitbook.ui.utils.FileRowType
 import de.drtobiasprinz.summitbook.utils.FileHelper
@@ -83,6 +94,7 @@ import java.util.Locale
  * Jetpack Compose version of SettingsFragment
  * Replaces the PreferenceFragmentCompat-based implementation with a modern Compose UI
  */
+@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SettingsScreen(
     summits: List<Summit>,
@@ -130,6 +142,7 @@ fun SettingsScreen(
     var showProgressDialog by remember { mutableStateOf(false) }
     var progressDialogMessage by remember { mutableStateOf("") }
     var showEmptyFolderError by remember { mutableStateOf(false) }
+    var showHeatmapDialog by remember { mutableStateOf(false) }
 
     // Date format
     val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
@@ -414,6 +427,15 @@ fun SettingsScreen(
                     savePreference(Keys.PREF_MAX_NUMBER_POINT, it)
                 }
             )
+
+            // Heatmap management button
+            ActionButtonSetting(
+                title = stringResource(R.string.manage_heatmaps),
+                summary = stringResource(R.string.manage_heatmaps_summary),
+                icon = R.drawable.baseline_map_black_24dp,
+                buttonText = stringResource(R.string.manage_heatmaps),
+                onClick = { showHeatmapDialog = true }
+            )
         }
 
         // Third Party Settings Category
@@ -581,9 +603,339 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { },
             title = { Text(stringResource(R.string.bulk_update_progress_title)) },
-            text = { Text(progressDialogMessage) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(progressDialogMessage)
+                }
+            },
             confirmButton = { }
         )
+    }
+
+    // Heatmap management dialog
+    if (showHeatmapDialog) {
+        HeatmapManagementDialog(
+            summits = summits,
+            onDismiss = { showHeatmapDialog = false },
+            onProgressUpdate = { message ->
+                progressDialogMessage = message
+                showProgressDialog = true
+            },
+            onComplete = { message ->
+                showProgressDialog = false
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                Log.i("Settings", message)
+            },
+            coroutineScope = coroutineScope
+        )
+    }
+}
+
+/**
+ * Data class representing the status of a heatmap for a specific sport group or all activities
+ */
+data class HeatmapStatus(
+    val name: String,
+    val sportGroup: GroupForHeatmap?,
+    val isAllActivities: Boolean = false,
+    val exists: Boolean,
+    val fileSize: String,
+    val lastModified: Date?,
+    val trackCount: Int
+)
+
+@Composable
+fun HeatmapManagementDialog(
+    summits: List<Summit>,
+    onDismiss: () -> Unit,
+    onProgressUpdate: (String) -> Unit,
+    onComplete: (String) -> Unit,
+    coroutineScope: CoroutineScope
+) {
+    val context = LocalContext.current
+    val view = LocalView.current
+    var heatmapStatuses by remember { mutableStateOf<List<HeatmapStatus>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var generatingForItem by remember { mutableStateOf<String?>(null) }
+    var refreshTrigger by remember { mutableIntStateOf(0) }
+    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
+
+    // Pre-fetch sport group names to avoid using context in IO dispatcher
+    val sportGroupNames = GroupForHeatmap.entries.associateWith { sportGroup ->
+        stringResource(sportGroup.sportNameStringId)
+    }
+
+    // Keep screen on while generating heatmap
+    DisposableEffect(generatingForItem) {
+        val activity = view.context as? Activity
+        if (generatingForItem != null) {
+            activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    // Load heatmap statuses
+    LaunchedEffect(refreshTrigger) {
+        withContext(Dispatchers.IO) {
+            val statuses = mutableListOf<HeatmapStatus>()
+            // Add entries for each sport group
+            GroupForHeatmap.entries.forEach { sportGroup ->
+                val fileName = "${sportGroup.name.lowercase()}.mbtiles"
+                val heatmapFile = File(MainActivityCompose.heatmapDir, fileName)
+                val trackCount = summits.count { summit ->
+                    summit.sportType in sportGroup.sportTypes && summit.hasGpsTrack()
+                }
+
+                statuses.add(
+                    HeatmapStatus(
+                        name = sportGroupNames[sportGroup] ?: sportGroup.name,
+                        sportGroup = sportGroup,
+                        exists = heatmapFile.exists(),
+                        fileSize = if (heatmapFile.exists()) formatFileSize(heatmapFile.length()) else "-",
+                        lastModified = if (heatmapFile.exists()) Date(heatmapFile.lastModified()) else null,
+                        trackCount = trackCount
+                    )
+                )
+            }
+
+            heatmapStatuses = statuses
+            isLoading = false
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.heatmap_management_title)) },
+        text = {
+            if (isLoading) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(stringResource(R.string.loading_heatmap_statuses))
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(heatmapStatuses) { status ->
+                        HeatmapStatusRow(
+                            status = status,
+                            dateFormat = dateFormat,
+                            isGenerating = generatingForItem == status.name,
+                            onGenerate = {
+                                generatingForItem = status.name
+                                generateHeatmapForSportGroup(
+                                    summits = summits,
+                                    sportGroup = status.sportGroup,
+                                    isAllActivities = status.isAllActivities,
+                                    coroutineScope = coroutineScope,
+                                    context = context,
+                                    onProgressUpdate = onProgressUpdate,
+                                    onComplete = { _, message ->
+                                        generatingForItem = null
+                                        onComplete(message)
+                                        // Refresh the dialog by reloading
+                                        refreshTrigger++
+                                    }
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.ok))
+            }
+        }
+    )
+}
+
+@Composable
+fun HeatmapStatusRow(
+    status: HeatmapStatus,
+    dateFormat: SimpleDateFormat,
+    isGenerating: Boolean,
+    onGenerate: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (status.exists)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            else
+                MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = status.name,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        text = stringResource(R.string.tracks_count, status.trackCount),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (isGenerating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    TextButton(
+                        onClick = onGenerate,
+                        enabled = status.trackCount > 0
+                    ) {
+                        Text(if (status.exists) stringResource(R.string.regenerate) else stringResource(R.string.generate))
+                    }
+                }
+            }
+
+            if (status.exists) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_check_circle_24),
+                        contentDescription = stringResource(R.string.generated),
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(R.string.generated),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = status.fileSize,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                status.lastModified?.let { date ->
+                    Text(
+                        text = stringResource(R.string.last_updated, dateFormat.format(date)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun formatFileSize(bytes: Long): String {
+    return when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
+        bytes < 1024 * 1024 * 1024 -> String.format(Locale.getDefault(), "%.1f MB", bytes / (1024.0 * 1024))
+        else -> String.format(Locale.getDefault(), "%.1f GB", bytes / (1024.0 * 1024 * 1024))
+    }
+}
+
+private fun generateHeatmapForSportGroup(
+    summits: List<Summit>,
+    sportGroup: GroupForHeatmap?,
+    isAllActivities: Boolean,
+    coroutineScope: CoroutineScope,
+    context: Context,
+    onProgressUpdate: (String) -> Unit,
+    onComplete: (Boolean, String) -> Unit
+) {
+    val filteredSummits = when {
+        isAllActivities -> summits.filter { it.hasGpsTrack() }
+        sportGroup != null -> summits.filter { summit ->
+            summit.sportType in sportGroup.sportTypes && summit.hasGpsTrack()
+        }
+        else -> emptyList()
+    }
+
+    if (filteredSummits.isEmpty()) {
+        onComplete(false, context.getString(R.string.no_activities_with_tracks))
+        return
+    }
+
+    coroutineScope.launch(Dispatchers.Main) {
+        try {
+            withContext(Dispatchers.IO) {
+                val trackFiles = filteredSummits.mapNotNull { summit ->
+                    val trackFile = summit.getGpsTrackPath().toFile()
+                    if (trackFile.exists()) trackFile else null
+                }
+
+                if (trackFiles.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        onComplete(false, context.getString(R.string.no_valid_track_files))
+                    }
+                    return@withContext
+                }
+
+                withContext(Dispatchers.Main) {
+                    onProgressUpdate(context.getString(R.string.found_tracks_generating, trackFiles.size))
+                }
+
+                val fileName = when {
+                    isAllActivities -> "all_activities.mbtiles"
+                    sportGroup != null -> "${sportGroup.name.lowercase()}.mbtiles"
+                    else -> "unknown.mbtiles"
+                }
+                val outputFile = File(MainActivityCompose.heatmapDir, fileName)
+
+                pythonInstance?.let { python ->
+                    try {
+                        Log.i(
+                            "Settings",
+                            "generateHeatmap for ${trackFiles.size} tracks, saving to $outputFile"
+                        )
+                        GpxPyExecutor(python).generateHeatmap(trackFiles, outputFile)
+                    } catch (e: RuntimeException) {
+                        Log.e("Settings", "Generate Heatmap failed.", e)
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    if (outputFile.exists()) {
+                        onComplete(true, "Heatmap saved to: ${outputFile.absolutePath}")
+                    } else {
+                        onComplete(false, "Failed to generate heatmap")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SettingsScreen", "Failed to generate heatmap", e)
+            withContext(Dispatchers.Main) {
+                onComplete(false, "Error: ${e.message}")
+            }
+        }
     }
 }
 
@@ -665,6 +1017,7 @@ fun SwitchSetting(
     HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
 }
 
+@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun EditTextSetting(
     title: String,
@@ -1026,6 +1379,61 @@ fun BulkUpdateSetting(
                 contentDescription = "Update",
                 tint = MaterialTheme.colorScheme.primary
             )
+        }
+    }
+
+    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+}
+
+@Composable
+fun ActionButtonSetting(
+    title: String,
+    summary: String? = null,
+    icon: Int,
+    buttonText: String,
+    isLoading: Boolean = false,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            if (summary != null) {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        TextButton(
+            onClick = onClick,
+            enabled = !isLoading
+        ) {
+            if (isLoading) {
+                Text("Generating...")
+            } else {
+                Text(buttonText)
+            }
         }
     }
 

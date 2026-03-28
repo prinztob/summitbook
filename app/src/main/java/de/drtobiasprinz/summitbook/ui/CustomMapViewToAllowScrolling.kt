@@ -16,6 +16,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.documentfile.provider.DocumentFile
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.db.entities.GroupForHeatmap
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.db.entities.TrackBoundingBox
@@ -491,7 +492,7 @@ class CustomMapViewToAllowScrolling : MapView {
     }
 
     companion object {
-        const val TAG = "CustomMapViewToAllowScrolling"
+        const val TAG = "CustomMap"
         const val LINE_WIDTH_BIG = 16f
         const val COLOR_POLYLINE_STATIC = Color.BLUE
         var selectedItem = MapProvider.OPENTOPO
@@ -608,7 +609,8 @@ enum class MapProvider(
     var offlineStyle: String?,
     var isOffline: Boolean = false,
     var exists: (Context) -> Boolean = { true },
-    var relevantSportTypes: List<SportType> = listOf()
+    var relevantSportTypes: List<SportType> = listOf(),
+    val heatmap: GroupForHeatmap = GroupForHeatmap.All
 ) {
     OPENTOPO(
         R.string.open_topo_map_type, TileSourceFactory.OpenTopo, null
@@ -622,6 +624,7 @@ enum class MapProvider(
         null,
         true,
         { context -> FileHelper.getOnDeviceMbtilesFiles(context).isNotEmpty() },
+        heatmap = GroupForHeatmap.Winter
     ),
     HIKING(
         R.string.hiking_map_type, null, "elv-hiking", true, { context ->
@@ -629,7 +632,8 @@ enum class MapProvider(
                 .isNotEmpty()
         }, relevantSportTypes = listOf(
             SportType.Hike, SportType.Climb, SportType.BikeAndHike, SportType.Skitour
-        )
+        ),
+        heatmap = GroupForHeatmap.Walking
     ),
     CITY(
         R.string.city_map_type, null, "elv-city", true, { context ->
@@ -641,12 +645,14 @@ enum class MapProvider(
         R.string.cycling_map_type, null, "elv-cycling", true, { context ->
             PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
                 .isNotEmpty()
-        }, relevantSportTypes = listOf(SportType.Bicycle, SportType.Racer)
+        }, relevantSportTypes = listOf(SportType.Bicycle, SportType.Racer),
+        heatmap = GroupForHeatmap.Bicycle
     ),
     MTB(
         R.string.mtb_map_type, null, "elv-mtb", true, { context ->
             PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
                 .isNotEmpty()
-        }, relevantSportTypes = listOf(SportType.Mountainbike)
-    )
+        }, relevantSportTypes = listOf(SportType.Mountainbike),
+        heatmap = GroupForHeatmap.Bicycle
+    ),
 }

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
+import java.io.File
 import java.io.FileInputStream
 
 
@@ -58,6 +59,16 @@ object FileHelper {
             val overlaysFolder = folder?.listFiles()?.find { it.name == "overlays" }
             return overlaysFolder?.listFiles()?.filter { file ->
                 file.name?.endsWith(".mbtiles") == true
+            } ?: emptyList()
+        }
+        return emptyList()
+    }
+
+    fun getHeatmapMbtilesFiles(context: Context): List<File> {
+        val heatmapDir = File(context.filesDir, "heatmaps")
+        if (heatmapDir.exists() && heatmapDir.isDirectory) {
+            return heatmapDir.listFiles()?.filter { file ->
+                file.name.endsWith(".mbtiles")
             } ?: emptyList()
         }
         return emptyList()
