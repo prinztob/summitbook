@@ -314,6 +314,7 @@
     <string name="peak_power_phase_right">Peak Power Phase R</string>
     <string name="peak_power_phase_right_start">Peak Power Phase R Anfang</string>
     <string name="peak_power_phase_right_end">Peak Power Phase R Ende</string>
+    <string name="efficiency_factor">Effizienzfaktor</string>
     <string name="power_1sec">Leistung 1s</string>
     <string name="power_2sec">Leistung 2s</string>
     <string name="power_5sec">Leistung 5s</string>
@@ -661,5 +662,6 @@
     <string name="heatmap_failed">Heatmap konnte nicht erstellt werden</string>
     <string name="hiking">Wandern</string>
     <string name="winter">Winter</string>
+    <string name="statistics">Statistics</string>
 </resources>
 

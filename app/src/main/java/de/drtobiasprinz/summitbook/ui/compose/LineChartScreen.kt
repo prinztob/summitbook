@@ -76,7 +76,6 @@ fun LineChartScreen(
     var lineChartSpinnerEntry by remember { mutableStateOf(OrderBySpinnerEntry.HeightMeter) }
     var lineChartEntries by remember { mutableStateOf<List<ChartDataPoint>>(emptyList()) }
     var showDropdown by remember { mutableStateOf(false) }
-    var selectedDataPoint by remember { mutableStateOf<ChartDataPoint?>(null) }
 
     val spinnerEntries = remember {
         OrderBySpinnerEntry.getSpinnerEntriesWithoutExcludedFromLineChart()
@@ -207,7 +206,7 @@ fun LineChartScreen(
             if (lineChartEntries.isNotEmpty()) {
                 LineChart(
                     dataPoints = lineChartEntries,
-                    onDataPointSelected = { selectedDataPoint = it },
+                    onDataPointSelected = { _ -> },
                     lineChartSpinnerEntry = lineChartSpinnerEntry,
                     onNavigateToSummitDetails = onNavigateToSummitDetails,
                     isDarkTheme = isDarkTheme,
@@ -467,7 +466,7 @@ fun DrawScope.drawGridAndLabels(
     for (i in 0..4) {
         val yValue = minY + (maxY - minY) * i / 4f
         val format =
-            if (lineChartSpinnerEntry == OrderBySpinnerEntry.Vo2Max) "%.1f %s" else "%.0f %s"
+            if (lineChartSpinnerEntry == OrderBySpinnerEntry.Vo2Max || yValue < 10) "%.1f %s" else "%.0f %s"
         val label = String.format(
             configuration.locales[0],
             format,
@@ -505,9 +504,9 @@ fun ChartMarker(
     isDarkTheme: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val format =
-        if (lineChartSpinnerEntry == OrderBySpinnerEntry.Vo2Max) "%s\n%s\n%.1f %s" else "%s\n%s\n%.0f %s"
     val value = dataPoint.summit?.let { lineChartSpinnerEntry.f(it) } ?: 0f
+    val format =
+        if (lineChartSpinnerEntry == OrderBySpinnerEntry.Vo2Max || value < 10) "%s\n%s\n%.1f %s" else "%s\n%s\n%.0f %s"
     val unit = stringResource(lineChartSpinnerEntry.unit)
     val text = String.format(
         format,

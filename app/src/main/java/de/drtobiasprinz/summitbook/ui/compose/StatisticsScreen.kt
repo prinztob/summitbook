@@ -62,7 +62,7 @@ fun StatisticsScreen(
     val annualTargetHm = sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET, "50000") ?: "50000"
     val indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
     var statisticsData by remember { mutableStateOf(StatisticsData()) }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(filteredSummits, forecasts) {
         val statisticEntry = StatisticEntry(
             filteredSummits,
             annualTargetActivity.toIntOrNull() ?: 52,
@@ -105,27 +105,27 @@ fun StatisticsScreen(
 
         // Road surface section
         item {
-            RoadSurfaceSection(statisticsData)
+            RoadSurfaceSection(statisticsData, numberFormat)
         }
 
         // Road type section
         item {
-            RoadTypeSection(statisticsData)
+            RoadTypeSection(statisticsData, numberFormat)
         }
 
         // Height meters section
         item {
-            HeightMetersSection(statisticsData)
+            HeightMetersSection(statisticsData, numberFormat)
         }
 
         // Achievement section
         item {
-            AchievementSection(statisticsData)
+            AchievementSection(statisticsData, numberFormat)
         }
 
         // Extrema values sections
         item {
-            ExtremaValuesSection(statisticsData, onNavigateToSummitDetails)
+            ExtremaValuesSection(statisticsData, onNavigateToSummitDetails, numberFormat)
         }
 
         // Visited countries section
@@ -151,7 +151,7 @@ fun SummarySection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Total Activities",
+                text = stringResource(R.string.total_activities),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -165,7 +165,7 @@ fun SummarySection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Total Summits",
+                text = stringResource(R.string.total_summits),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -179,12 +179,12 @@ fun SummarySection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Total Kilometers",
+                text = stringResource(R.string.total_kilometers),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             Text(
-                text = String.format(Locale.getDefault(), "%.1f km", statisticsData.totalKm),
+                text = "${numberFormat.format(statisticsData.totalKm)} km",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 fontSize = 35.sp
@@ -194,7 +194,7 @@ fun SummarySection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
 }
 
 @Composable
-fun RoadSurfaceSection(statisticsData: StatisticsData) {
+fun RoadSurfaceSection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -207,7 +207,7 @@ fun RoadSurfaceSection(statisticsData: StatisticsData) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Road Surfaces",
+                text = stringResource(R.string.road_surface),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -216,7 +216,7 @@ fun RoadSurfaceSection(statisticsData: StatisticsData) {
             // Horizontal scrollable row for road surfaces
             HorizontalScrollbarContainer {
                 statisticsData.totalRoadSurfaceMeter.forEach { (surface, meters) ->
-                    SurfaceCard(surface.name.replace("_", " "), meters / 1000.0)
+                    SurfaceCard(surface.name.replace("_", " "), meters / 1000.0, numberFormat)
                 }
             }
         }
@@ -242,7 +242,7 @@ fun ScrollableRow(modifier: Modifier = Modifier, content: @Composable () -> Unit
 }
 
 @Composable
-fun SurfaceCard(title: String, value: Double) {
+fun SurfaceCard(title: String, value: Double, numberFormat: NumberFormat) {
     Card(
         modifier = Modifier.width(150.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -264,7 +264,7 @@ fun SurfaceCard(title: String, value: Double) {
                     .height(48.dp)
             )
             Text(
-                text = String.format(Locale.getDefault(), "%.1f km", value),
+                text = "${numberFormat.format(value)} km",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -321,7 +321,8 @@ fun StatItemCard(
 @Composable
 fun ExtremaValuesSection(
     statisticsData: StatisticsData,
-    onNavigateToSummitDetails: (Long) -> Unit
+    onNavigateToSummitDetails: (Long) -> Unit,
+    numberFormat: NumberFormat
 ) {
     val extremaValues = statisticsData.extremaValuesSummits
 
@@ -340,7 +341,7 @@ fun ExtremaValuesSection(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Statistics",
+                    text = stringResource(R.string.statistics),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -379,9 +380,7 @@ fun ExtremaValuesSection(
                                         ),
                                     )
                                 } else {
-                                    String.format(
-                                        "%.${entry.digits}f", value * entry.factor
-                                    )
+                                    numberFormat.format(value * entry.factor)
                                 }
 
                                 StatItemCard(
@@ -427,9 +426,7 @@ fun ExtremaValuesSection(
                                         ),
                                     )
                                 } else {
-                                    String.format(
-                                        "%.${entry.digits}f", value * entry.factor
-                                    )
+                                    numberFormat.format(value * entry.factor)
                                 }
 
                                 StatItemCard(
@@ -475,9 +472,7 @@ fun ExtremaValuesSection(
                                         ),
                                     )
                                 } else {
-                                    String.format(
-                                        "%.${entry.digits}f", value * entry.factor
-                                    )
+                                    numberFormat.format(value * entry.factor)
                                 }
 
                                 StatItemCard(
@@ -514,9 +509,7 @@ fun ExtremaValuesSection(
                                     ),
                                 )
                             } else {
-                                String.format(
-                                    "%.${entry.digits}f", value * entry.factor
-                                )
+                                numberFormat.format(value * entry.factor)
                             }
 
                             Card(
@@ -567,7 +560,7 @@ fun ExtremaValuesSummits.getSummitForEntry(entry: StatisticEntryDefinitions): Su
 }
 
 @Composable
-fun RoadTypeSection(statisticsData: StatisticsData) {
+fun RoadTypeSection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -582,7 +575,7 @@ fun RoadTypeSection(statisticsData: StatisticsData) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Road Types",
+                text = stringResource(R.string.road_type),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -591,7 +584,7 @@ fun RoadTypeSection(statisticsData: StatisticsData) {
             // Horizontal scrollable row for road types
             HorizontalScrollbarContainer {
                 statisticsData.totalRoadTypeMeter.forEach { (roadType, meters) ->
-                    SurfaceCard(roadType.name.replace("_", " "), meters / 1000.0)
+                    SurfaceCard(roadType.name.replace("_", " "), meters / 1000.0, numberFormat)
                 }
             }
         }
@@ -599,7 +592,7 @@ fun RoadTypeSection(statisticsData: StatisticsData) {
 }
 
 @Composable
-fun HeightMetersSection(statisticsData: StatisticsData) {
+fun HeightMetersSection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -614,12 +607,12 @@ fun HeightMetersSection(statisticsData: StatisticsData) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Total Height Meters",
+                text = stringResource(R.string.total_height_meters),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             Text(
-                text = String.format(Locale.getDefault(), "%d hm", statisticsData.totalHm),
+                text = "${numberFormat.format(statisticsData.totalHm)} hm",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 fontSize = 35.sp
@@ -629,7 +622,7 @@ fun HeightMetersSection(statisticsData: StatisticsData) {
 }
 
 @Composable
-fun AchievementSection(statisticsData: StatisticsData) {
+fun AchievementSection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
     if (statisticsData.totalActivities > 0) {
         Card(
             modifier = Modifier
@@ -645,12 +638,12 @@ fun AchievementSection(statisticsData: StatisticsData) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Achievement",
+                    text = stringResource(R.string.achievement),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Text(
-                    text = String.format(Locale.getDefault(), "%.1f%%", statisticsData.achievement),
+                    text = "${numberFormat.format(statisticsData.achievement)}%",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     fontSize = 35.sp
@@ -677,7 +670,7 @@ fun VisitedCountriesSection(statisticsData: StatisticsData, numberFormat: Number
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Visited Countries",
+                    text = stringResource(R.string.visited_countries),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )

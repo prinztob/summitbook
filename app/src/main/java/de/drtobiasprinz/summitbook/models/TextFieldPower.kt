@@ -13,7 +13,6 @@ enum class TextFieldPower(
     val toHHms: Boolean = false,
     val digits: Int = 1,
     val factor: Int = 1,
-    val getValueRange: (Summit) -> Number? = { _ -> null }, //TODO  fix graph
 ) {
 
 
@@ -58,6 +57,17 @@ enum class TextFieldPower(
         { e -> e.garminData?.ftp },
         { e -> e?.ftpMinMax },
         digits = 0
+    ),
+    EfficiencyFactor(
+        "",
+        R.string.efficiency_factor,
+        { e ->
+            if ((e.garminData?.averageHR ?: 0f) > 0) {
+                ((e.garminData?.power?.normPower ?: 0f) / e.garminData?.averageHR!!)
+            } else 0f
+        },
+        { e -> e?.power1sMinMax },
+        digits = 2
     ),
     Power1s(
         "W",
@@ -177,6 +187,6 @@ enum class TextFieldPower(
         { e -> e.garminData?.power?.fiveHours },
         { e -> e?.power5hMinMax },
         digits = 0
-    ),;
+    ), ;
 
 }

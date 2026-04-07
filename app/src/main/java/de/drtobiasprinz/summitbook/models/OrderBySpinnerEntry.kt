@@ -70,6 +70,11 @@ enum class OrderBySpinnerEntry(
     Grit(R.string.grit, includeIndoorActivities = true, f = { e -> e.garminData?.grit }),
     Flow(R.string.flow, includeIndoorActivities = true, f = { e -> e.garminData?.flow }),
     FTP(R.string.ftp, includeIndoorActivities = true, f = { e -> e.garminData?.ftp?.toFloat() }),
+    EF(R.string.efficiency_factor, includeIndoorActivities = true, f = { e ->
+        if ((e.garminData?.averageHR ?: 0f) > 0) {
+            ((e.garminData?.power?.normPower ?: 0f) / e.garminData?.averageHR!!)
+        } else 0f
+    }),
     Calories(
         R.string.calories,
         includeIndoorActivities = true,
