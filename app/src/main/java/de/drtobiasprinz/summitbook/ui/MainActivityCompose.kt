@@ -169,12 +169,16 @@ class MainActivityCompose : ComponentActivity(),
         heatmapDir?.mkdirs()
         segmentScreenshotDir = File(storage, "segmentScreenshots")
         segmentScreenshotDir?.mkdirs()
-        // Initialize Python if needed
-        if (!Python.isStarted()) {
-            Python.start(AndroidPlatform(this))
+        // Initialize Python if needed (off main thread to prevent frame skips)
+        lifecycleScope.launch(Dispatchers.IO) {
+            if (!Python.isStarted()) {
+                Python.start(AndroidPlatform(this@MainActivityCompose))
+            }
+            pythonInstance = Python.getInstance()
+            withContext(Dispatchers.Main) {
+                updatePythonExecutor()
+            }
         }
-        pythonInstance = Python.getInstance()
-        updatePythonExecutor()
         MapsForgeTileSource.createInstance(application)
 
         // Schedule WorkManager for bounding box updates (every minute)
@@ -228,12 +232,17 @@ class MainActivityCompose : ComponentActivity(),
         val peakList by viewModel.peaks.asFlow()
             .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
 
-        // Update forecasts if needed
+        // Update forecasts if needed - run filtering on background thread
         LaunchedEffect(summitsList.data) {
-            summitsList.data?.let {
-                summitsFromDatabase = it.toList()
-                filteredSummits = sortFilterValues.applyForSummits(it).toList()
-                latestFilteredSummits = filteredSummits
+            summitsList.data?.let { data ->
+                summitsFromDatabase = data.toList()
+                withContext(Dispatchers.Default) {
+                    val filtered = sortFilterValues.applyForSummits(data).toList()
+                    withContext(Dispatchers.Main) {
+                        filteredSummits = filtered
+                        latestFilteredSummits = filtered
+                    }
+                }
             }
         }
 
@@ -299,6 +308,9 @@ class MainActivityCompose : ComponentActivity(),
                         var searchText by remember { mutableStateOf("") }
                         var isSearching by remember { mutableStateOf(false) }
                         val focusRequester = remember { FocusRequester() }
+                        
+                        // Debounced search job to prevent excessive filtering on main thread
+                        var searchJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
                         Box(
                             modifier = Modifier
@@ -319,9 +331,17 @@ class MainActivityCompose : ComponentActivity(),
                                             onValueChange = {
                                                 searchText = it
                                                 sortFilterValues.searchString = it
-                                                filteredSummits = sortFilterValues.applyForSummits(
-                                                    summitsFromDatabase
-                                                )
+                                                // Cancel previous search job and start new one with debounce
+                                                searchJob?.cancel()
+                                                searchJob = coroutineScope.launch {
+                                                    delay(300) // 300ms debounce
+                                                    withContext(Dispatchers.Default) {
+                                                        val filtered = sortFilterValues.applyForSummits(summitsFromDatabase)
+                                                        withContext(Dispatchers.Main) {
+                                                            filteredSummits = filtered
+                                                        }
+                                                    }
+                                                }
                                             },
                                             placeholder = { Text(stringResource(R.string.search)) },
                                             trailingIcon = {
@@ -329,10 +349,15 @@ class MainActivityCompose : ComponentActivity(),
                                                     isSearching = false
                                                     searchText = ""
                                                     sortFilterValues.searchString = ""
-                                                    filteredSummits =
-                                                        sortFilterValues.applyForSummits(
-                                                            summitsFromDatabase
-                                                        )
+                                                    searchJob?.cancel()
+                                                    coroutineScope.launch {
+                                                        withContext(Dispatchers.Default) {
+                                                            val filtered = sortFilterValues.applyForSummits(summitsFromDatabase)
+                                                            withContext(Dispatchers.Main) {
+                                                                filteredSummits = filtered
+                                                            }
+                                                        }
+                                                    }
                                                 }) {
                                                     Icon(
                                                         painter = painterResource(R.drawable.baseline_cancel_24),
@@ -459,9 +484,14 @@ class MainActivityCompose : ComponentActivity(),
                             sortFilterValues = sortFilterValues,
                             onDismiss = { showSortAndFilterDialog = false },
                             onApply = {
-                                filteredSummits = sortFilterValues.applyForSummits(
-                                    summitsFromDatabase
-                                )
+                                coroutineScope.launch {
+                                    withContext(Dispatchers.Default) {
+                                        val filtered = sortFilterValues.applyForSummits(summitsFromDatabase)
+                                        withContext(Dispatchers.Main) {
+                                            filteredSummits = filtered
+                                        }
+                                    }
+                                }
                             },
                             summits = summitsFromDatabase
                         )
@@ -1150,14 +1180,16 @@ class MainActivityCompose : ComponentActivity(),
         }
     }
 
-    private fun getAllImages(summits: List<Summit>?): MutableList<Poster> {
-        return summits?.flatMap { entry ->
-            entry.imageIds.mapIndexed { i, imageId ->
-                Poster(
-                    entry.getImageUrl(imageId), entry.getImageDescription(resources, i)
-                )
-            }
-        } as MutableList<Poster>
+    private suspend fun getAllImages(summits: List<Summit>?): MutableList<Poster> {
+        return withContext(Dispatchers.Default) {
+            summits?.flatMap { entry ->
+                entry.imageIds.mapIndexed { i, imageId ->
+                    Poster(
+                        entry.getImageUrl(imageId), entry.getImageDescription(resources, i)
+                    )
+                }
+            } as MutableList<Poster>
+        }
     }
 
     private fun openViewer(filteredSummits: List<Summit>) {

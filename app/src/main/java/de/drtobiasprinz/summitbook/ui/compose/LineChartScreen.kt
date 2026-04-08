@@ -99,23 +99,19 @@ fun LineChartScreen(
             }.sortedBy { it.date }
 
             var accumulator = 0f
-            val colors = useEntries.map {
-                val colorRes = ContextCompat.getColor(context, it.sportType.color)
-                Color(colorRes)
-            }
-
-            val entries = useEntries.map {
+            val entries = useEntries.mapIndexed { _, summit ->
+                val colorRes = ContextCompat.getColor(context, summit.sportType.color)
                 val value = if (!lineChartSpinnerEntry.accumulate) {
-                    lineChartSpinnerEntry.f(it)
+                    lineChartSpinnerEntry.f(summit)
                 } else {
-                    accumulator += lineChartSpinnerEntry.f(it) ?: 0f
+                    accumulator += lineChartSpinnerEntry.f(summit) ?: 0f
                     accumulator
                 }
                 ChartDataPoint(
-                    x = it.getDateAsFloat(),
+                    x = summit.getDateAsFloat(),
                     y = value ?: 0f,
-                    summit = it,
-                    color = colors.getOrNull(useEntries.indexOf(it)) ?: Color.Black
+                    summit = summit,
+                    color = Color(colorRes)
                 )
             }
 
@@ -260,19 +256,54 @@ fun LineChart(
     val configuration = LocalConfiguration.current
     val primaryColor = MaterialTheme.colorScheme.primary
 
-    // Calculate chart bounds
-    val minX = dataPoints.minOfOrNull { it.x } ?: 0f
-    val maxX = dataPoints.maxOfOrNull { it.x } ?: 1f
-    val minY = dataPoints.minOfOrNull { it.y } ?: 0f
-    val maxY = dataPoints.maxOfOrNull { it.y } ?: 1f
+    // Calculate chart bounds - memoized to avoid recalculation
+    val chartBounds = remember(dataPoints) {
+        val minX = dataPoints.minOfOrNull { it.x } ?: 0f
+        val maxX = dataPoints.maxOfOrNull { it.x } ?: 1f
+        val minY = dataPoints.minOfOrNull { it.y } ?: 0f
+        val maxY = dataPoints.maxOfOrNull { it.y } ?: 1f
 
-    // Add some padding to the bounds
-    val xRange = maxX - minX
-    val yRange = maxY - minY
-    val paddedMinX = minX - xRange * 0.05f
-    val paddedMaxX = maxX + xRange * 0.05f
-    val paddedMinY = minY - yRange * 0.1f
-    val paddedMaxY = maxY + yRange * 0.1f
+        // Add some padding to the bounds
+        val xRange = maxX - minX
+        val yRange = maxY - minY
+        ChartBounds(
+            paddedMinX = minX - xRange * 0.05f,
+            paddedMaxX = maxX + xRange * 0.05f,
+            paddedMinY = minY - yRange * 0.1f,
+            paddedMaxY = maxY + yRange * 0.1f
+        )
+    }
+
+    // Pre-calculate screen coordinates - memoized
+    val screenPoints = remember(dataPoints, chartBounds) {
+        dataPoints.map { point ->
+            val x = (point.x - chartBounds.paddedMinX) / (chartBounds.paddedMaxX - chartBounds.paddedMinX)
+            val y = (point.y - chartBounds.paddedMinY) / (chartBounds.paddedMaxY - chartBounds.paddedMinY)
+            Pair(x, y)
+        }
+    }
+
+    // Reuse Paint objects to avoid allocation on each frame
+    val centerAlignedPaint = remember(textColor) {
+        Paint().apply {
+            color = textColor.toArgb()
+            textSize = 30f
+            textAlign = Paint.Align.CENTER
+        }
+    }
+
+    val leftAlignedPaint = remember(textColor) {
+        Paint().apply {
+            color = textColor.toArgb()
+            textSize = 30f
+            textAlign = Paint.Align.LEFT
+        }
+    }
+
+    // Reuse SimpleDateFormat to avoid allocation on each frame
+    val dateFormat = remember(configuration) {
+        SimpleDateFormat(DATE_FORMAT, configuration.locales[0])
+    }
 
     var selectedDataPoint by remember { mutableStateOf<ChartDataPoint?>(null) }
 
@@ -280,7 +311,7 @@ fun LineChart(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(dataPoints) {
+                .pointerInput(dataPoints, chartBounds) {
                     detectTapGestures { offset ->
                         // Find the closest data point to the tap
                         val chartWidth = size.width
@@ -289,23 +320,20 @@ fun LineChart(
                         val tappedX = offset.x
                         val tappedY = offset.y
 
-                        // Find the closest data point
-                        val closestPoint = dataPoints.minByOrNull { point ->
-                            val screenX =
-                                (point.x - paddedMinX) / (paddedMaxX - paddedMinX) * chartWidth
+                        // Find the closest data point using pre-calculated normalized coordinates
+                        val closestIndex = screenPoints.indices.minByOrNull { index ->
+                            val screenX = screenPoints[index].first * chartWidth
                             abs(screenX - tappedX)
                         }
 
-                        if (closestPoint != null) {
-                            val screenX =
-                                (closestPoint.x - paddedMinX) / (paddedMaxX - paddedMinX) * chartWidth
-                            val screenY =
-                                chartHeight - (closestPoint.y - paddedMinY) / (paddedMaxY - paddedMinY) * chartHeight
+                        if (closestIndex != null) {
+                            val screenX = screenPoints[closestIndex].first * chartWidth
+                            val screenY = chartHeight - screenPoints[closestIndex].second * chartHeight
 
                             // Check if tap is close enough to the point (within 50 pixels)
                             if (abs(screenX - tappedX) < 50 && abs(screenY - tappedY) < 50) {
-                                selectedDataPoint = closestPoint
-                                onDataPointSelected(closestPoint)
+                                selectedDataPoint = dataPoints[closestIndex]
+                                onDataPointSelected(dataPoints[closestIndex])
                             } else {
                                 selectedDataPoint = null
                                 onDataPointSelected(null)
@@ -321,34 +349,34 @@ fun LineChart(
             val chartHeight = size.height
 
             // Draw grid lines and labels
-            this.drawGridAndLabels(
-                minX = paddedMinX,
-                maxX = paddedMaxX,
-                minY = paddedMinY,
-                maxY = paddedMaxY,
+            drawGridAndLabels(
+                minX = chartBounds.paddedMinX,
+                maxX = chartBounds.paddedMaxX,
+                minY = chartBounds.paddedMinY,
+                maxY = chartBounds.paddedMaxY,
                 lineChartSpinnerEntry = lineChartSpinnerEntry,
-                configuration = configuration,
+                dateFormat = dateFormat,
                 unit = unit,
                 gridColor = gridColor,
-                textColor = textColor
+                centerAlignedPaint = centerAlignedPaint,
+                leftAlignedPaint = leftAlignedPaint
             )
 
-            // Convert data points to screen coordinates
-            val screenPoints = dataPoints.map { point ->
-                val x = (point.x - paddedMinX) / (paddedMaxX - paddedMinX) * chartWidth
-                val y =
-                    chartHeight - (point.y - paddedMinY) / (paddedMaxY - paddedMinY) * chartHeight
-                Offset(x, y)
+            // Convert normalized coordinates to screen coordinates
+            // Note: This is done inside Canvas because chartWidth/chartHeight are only available here
+            // But we use the pre-calculated normalized coordinates to minimize work
+            val actualScreenPoints = screenPoints.map { (normX, normY) ->
+                Offset(normX * chartWidth, chartHeight - normY * chartHeight)
             }
 
             // Draw filled area under curve
-            if (screenPoints.size > 1) {
+            if (actualScreenPoints.size > 1) {
                 val fillPath = Path().apply {
-                    moveTo(screenPoints.first().x, chartHeight)
-                    screenPoints.forEach { point ->
-                        lineTo(point.x, point.y)
+                    moveTo(actualScreenPoints.first().x, chartHeight)
+                    for (i in 0 until actualScreenPoints.size) {
+                        lineTo(actualScreenPoints[i].x, actualScreenPoints[i].y)
                     }
-                    lineTo(screenPoints.last().x, chartHeight)
+                    lineTo(actualScreenPoints.last().x, chartHeight)
                     close()
                 }
 
@@ -360,12 +388,12 @@ fun LineChart(
             }
 
             // Draw line
-            if (screenPoints.size > 1) {
+            if (actualScreenPoints.size > 1) {
                 val linePath = Path().apply {
-                    moveTo(screenPoints.first().x, screenPoints.first().y)
-                    for (i in 1 until screenPoints.size) {
-                        val prev = screenPoints[i - 1]
-                        val current = screenPoints[i]
+                    moveTo(actualScreenPoints.first().x, actualScreenPoints.first().y)
+                    for (i in 1 until actualScreenPoints.size) {
+                        val prev = actualScreenPoints[i - 1]
+                        val current = actualScreenPoints[i]
                         cubicTo(
                             x1 = (prev.x + current.x) / 2,
                             y1 = prev.y,
@@ -385,7 +413,7 @@ fun LineChart(
             }
 
             // Draw data points
-            screenPoints.forEachIndexed { index, point ->
+            actualScreenPoints.forEachIndexed { index, point ->
                 val color = dataPoints[index].color
                 drawCircle(
                     color = color,
@@ -397,8 +425,8 @@ fun LineChart(
             // Draw selected point highlight
             selectedDataPoint?.let { dataPoint ->
                 val selectedIndex = dataPoints.indexOfFirst { it === dataPoint }
-                if (selectedIndex >= 0 && selectedIndex < screenPoints.size) {
-                    val point = screenPoints[selectedIndex]
+                if (selectedIndex >= 0 && selectedIndex < actualScreenPoints.size) {
+                    val point = actualScreenPoints[selectedIndex]
                     drawCircle(
                         color = Color.Red,
                         radius = 15f,
@@ -421,20 +449,25 @@ fun LineChart(
     }
 }
 
+data class ChartBounds(
+    val paddedMinX: Float,
+    val paddedMaxX: Float,
+    val paddedMinY: Float,
+    val paddedMaxY: Float
+)
+
 fun DrawScope.drawGridAndLabels(
     minX: Float,
     maxX: Float,
     minY: Float,
     maxY: Float,
     lineChartSpinnerEntry: OrderBySpinnerEntry,
-    configuration: Configuration,
+    dateFormat: SimpleDateFormat,
     unit: String,
     gridColor: Color,
-    textColor: Color
+    centerAlignedPaint: Paint,
+    leftAlignedPaint: Paint
 ) {
-    // Draw X axis labels (dates)
-    val dateFormat = SimpleDateFormat(DATE_FORMAT, configuration.locales[0])
-
     // Draw a few X axis labels
     for (i in 0..4) {
         val xValue = minX + (maxX - minX) * i / 4f
@@ -449,16 +482,12 @@ fun DrawScope.drawGridAndLabels(
             strokeWidth = 1f
         )
 
-        // Draw label
+        // Draw label using reused Paint object
         drawContext.canvas.nativeCanvas.drawText(
             dateString,
             i * this.size.width / 4f,
             this.size.height - 10,
-            Paint().apply {
-                color = textColor.toArgb()
-                textSize = 30f
-                textAlign = Paint.Align.CENTER
-            }
+            centerAlignedPaint
         )
     }
 
@@ -467,12 +496,7 @@ fun DrawScope.drawGridAndLabels(
         val yValue = minY + (maxY - minY) * i / 4f
         val format =
             if (lineChartSpinnerEntry == OrderBySpinnerEntry.Vo2Max || yValue < 10) "%.1f %s" else "%.0f %s"
-        val label = String.format(
-            configuration.locales[0],
-            format,
-            yValue,
-            unit
-        )
+        val label = String.format(format, yValue, unit)
 
         // Draw grid line
         drawLine(
@@ -482,16 +506,12 @@ fun DrawScope.drawGridAndLabels(
             strokeWidth = 1f
         )
 
-        // Draw label
+        // Draw label using reused Paint object
         drawContext.canvas.nativeCanvas.drawText(
             label,
             10f,
             this.size.height - i * this.size.height / 4f,
-            Paint().apply {
-                color = textColor.toArgb()
-                textSize = 30f
-                textAlign = Paint.Align.LEFT
-            }
+            leftAlignedPaint
         )
     }
 }
