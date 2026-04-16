@@ -329,7 +329,7 @@ fun SummitCard(
                 }
 
                 // Add velocity data button (only if has GPS track)
-                if (currentSummit.hasGpsTrack() && !currentSummit.isBookmark) {
+                if (currentSummit.hasTrack && !currentSummit.isBookmark) {
                     IconButton(
                         onClick = {
                             showAddAdditionalDataDialog = true
@@ -359,7 +359,7 @@ fun SummitCard(
                         painter = painterResource(
                             id = when {
                                 currentSummit.latLng == null -> R.drawable.baseline_add_location_black_24dp
-                                currentSummit.hasGpsTrack(true) -> R.drawable.baseline_edit_location_alt_24
+                                currentSummit.hasTrack -> R.drawable.baseline_edit_location_alt_24
                                 else -> R.drawable.baseline_edit_location_black_24dp
                             }
                         ),

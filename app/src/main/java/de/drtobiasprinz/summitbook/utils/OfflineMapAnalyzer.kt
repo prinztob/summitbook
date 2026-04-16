@@ -30,7 +30,7 @@ import kotlin.math.tan
 import kotlin.time.measureTime
 
 
-class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Double) {
+class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Double) : AutoCloseable {
 
     fun getRoadTypeSummaryFromTrackPoints(
         trackPointsWithExtension: List<Pair<TrackPoint, ExtensionFromYaml>>?,
@@ -489,6 +489,16 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
         return ((1.0 - ln(tan(latRad) + 1.0 / cos(latRad)) / Math.PI) / 2.0 * (1 shl zoom)).toInt()
     }
 
+    override fun close() {
+        mapFiles.forEach { mapFile ->
+            try {
+                mapFile.close()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to close map file", e)
+            }
+        }
+    }
+
     companion object {
         const val TAG = "RoadSurfaceAnalyzer"
         fun from(context: Context, searchRadiusMeters: Double = 15.0): OfflineMapAnalyzer {
@@ -535,31 +545,32 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
             context: Context, summit: Summit
         ): Boolean {
             summit.setGpsTrack(useSimplifiedTrack = false, updateTrack = true)
-            val analyzer = from(context)
-            val distancePerSurfacesAndRoadType = analyzer.getRoadTypeSummaryFromTrackPoints(
-                summit.gpsTrack?.trackPoints, summit.sportType
-            )
-            if (valuesAreNotEmpty(distancePerSurfacesAndRoadType)) {
-                val extensions = summit.gpsTrack?.trackPoints?.map { it.second }
-                if (extensions?.isNotEmpty() == true) {
-                    val extensionsFromYaml = ExtensionsFromYaml(extensions)
-                    try {
-                        val yamlString = Yaml.encodeToString(extensionsFromYaml)
-                        summit.getYamlExtensionsFile().writeText(yamlString)
-                        Log.i(
-                            TAG,
-                            "Successfully wrote extensions to ${summit.getYamlExtensionsFile().absolutePath}"
-                        )
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to write YAML extensions file", e)
+            from(context).use { analyzer ->
+                val distancePerSurfacesAndRoadType = analyzer.getRoadTypeSummaryFromTrackPoints(
+                    summit.gpsTrack?.trackPoints, summit.sportType
+                )
+                if (valuesAreNotEmpty(distancePerSurfacesAndRoadType)) {
+                    val extensions = summit.gpsTrack?.trackPoints?.map { it.second }
+                    if (extensions?.isNotEmpty() == true) {
+                        val extensionsFromYaml = ExtensionsFromYaml(extensions)
+                        try {
+                            val yamlString = Yaml.encodeToString(extensionsFromYaml)
+                            summit.getYamlExtensionsFile().writeText(yamlString)
+                            Log.i(
+                                TAG,
+                                "Successfully wrote extensions to ${summit.getYamlExtensionsFile().absolutePath}"
+                            )
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to write YAML extensions file", e)
+                        }
                     }
+                    summit.distancePerSurface = distancePerSurfacesAndRoadType.first
+                    summit.distancePerRoadType = distancePerSurfacesAndRoadType.second
+                    return true
+                } else {
+                    Log.e(TAG, "No road information found in map")
+                    return false
                 }
-                summit.distancePerSurface = distancePerSurfacesAndRoadType.first
-                summit.distancePerRoadType = distancePerSurfacesAndRoadType.second
-                return true
-            } else {
-                Log.e(TAG, "No road information found in map")
-                return false
             }
         }
 

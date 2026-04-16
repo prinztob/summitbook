@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook
 
 import android.os.Bundle
+import android.os.StrictMode
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -67,7 +68,14 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         pageViewModel = ViewModelProvider(this)[PageViewModel::class.java]
-        CustomMapViewToAllowScrolling.setOsmConfForTiles()
+        // Temporarily allow disk reads and writes for OSMDroid tile configuration
+        // which involves File.exists(), File.mkdirs() and SQLite operations
+        val oldPolicy = StrictMode.allowThreadDiskWrites()
+        try {
+            CustomMapViewToAllowScrolling.setOsmConfForTiles()
+        } finally {
+            StrictMode.setThreadPolicy(oldPolicy)
+        }
 
         val summitEntryId = intent.extras?.getLong(SUMMIT_ID_EXTRA_IDENTIFIER)
         Log.i("SummitEntryDetails", "Summit entry ID from intent: $summitEntryId")
@@ -264,7 +272,13 @@ fun SummitEntryDetailsTabs(
     // Extract actual data from DataStatus wrappers to create stable state
     val summit = remember(summitToViewData) { summitToViewData?.data }
     val allSummits = remember(summitsListData) { summitsListData?.data }
-    val summitsToCompare = remember(summitsListData) { getSummitsToCompare(allSummits, summit) }
+    // Compute summitsToCompare asynchronously to avoid disk I/O on main thread
+    var summitsToCompare by remember { mutableStateOf<List<Summit>>(emptyList()) }
+    LaunchedEffect(allSummits, summit) {
+        withContext(Dispatchers.IO) {
+            summitsToCompare = getSummitsToCompare(allSummits, summit)
+        }
+    }
     val compareSummit = remember(summitToCompareData) { summitToCompareData?.data }
     val segments = remember(segmentsListData) { segmentsListData?.data }
     val peaks = remember(peaksData) { peaksData?.data ?: emptyList() }

@@ -83,4 +83,23 @@ object FileHelper {
         }
     }
 
+    /**
+     * Get HGT files from the DEM subfolder within the maps folder
+     * Uses DocumentFile for Android 11+ scoped storage compatibility
+     */
+    fun getHgtFiles(context: Context): List<DocumentFile> {
+        val onDeviceMapsFolder: String = PreferencesHelper.loadOnDeviceMapsFolder()
+        if (onDeviceMapsFolder.isNotEmpty()) {
+            val folder: DocumentFile? =
+                DocumentFile.fromTreeUri(context, onDeviceMapsFolder.toUri())
+            val demFolder = folder?.listFiles()?.find { it.name?.lowercase() == "dem" }
+            return demFolder?.listFiles()?.filter { file ->
+                // HGT files can have .hgt extension or no extension (SRTM naming pattern)
+                file.name?.lowercase()?.endsWith(".hgt") == true ||
+                file.name?.matches(Regex("^[NS]\\d{2}[EW]\\d{3}$", RegexOption.IGNORE_CASE)) == true
+            } ?: emptyList()
+        }
+        return emptyList()
+    }
+
 }

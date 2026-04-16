@@ -2,6 +2,8 @@
     <string name="no_new_summits">Keine neuen Gipfel gefunden</string>
     <string name="revert">Zurücksetzen</string>
     <string name="app_name">Gipfelbuch</string>
+    <string name="waiting_for_location">Warte auf Standort…</string>
+    <string name="location_permission_denied">Standortberechtigung verweigert. Bitte aktivieren Sie sie in den Einstellungen.</string>
     <string name="required">Erforderlich</string>
     <string name="optional">Optional</string>
     <string name="nav_summits">Gipfel</string>

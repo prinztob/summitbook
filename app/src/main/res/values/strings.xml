@@ -1,6 +1,8 @@
 <resources>
     <string name="no_new_summits">No new summits found</string>
     <string name="app_name">Summit Book</string>
+    <string name="waiting_for_location">Waiting for location…</string>
+    <string name="location_permission_denied">Location permission denied. Please enable it in settings.</string>
     <string name="required">required</string>
     <string name="optional">optional</string>
     <string name="nav_summits">Summits</string>

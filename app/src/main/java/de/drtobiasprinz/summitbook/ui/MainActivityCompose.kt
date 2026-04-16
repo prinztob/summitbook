@@ -10,6 +10,7 @@ import android.icu.util.Calendar
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.StrictMode
 import android.util.Log
 import android.widget.ProgressBar
 import android.widget.Toast
@@ -76,6 +77,7 @@ import androidx.work.WorkManager
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.Keys
 import de.drtobiasprinz.summitbook.PythonActivity
 import de.drtobiasprinz.summitbook.R
@@ -160,26 +162,51 @@ class MainActivityCompose : ComponentActivity(),
 
         // Enable edge-to-edge
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        sharedPreferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
-        sharedPreferences.registerOnSharedPreferenceChangeListener(this)
-        storage = applicationContext.filesDir
-        cache = applicationContext.cacheDir
-        activitiesDir = File(storage, "activities")
-        heatmapDir = File(storage, "heatmaps")
-        heatmapDir?.mkdirs()
-        segmentScreenshotDir = File(storage, "segmentScreenshots")
-        segmentScreenshotDir?.mkdirs()
-        // Initialize Python if needed (off main thread to prevent frame skips)
+        
+        // Initialize disk I/O operations off main thread to avoid StrictMode violations
         lifecycleScope.launch(Dispatchers.IO) {
+            // SharedPreferences access involves disk read
+            val prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this@MainActivityCompose)
+            prefs.registerOnSharedPreferenceChangeListener(this@MainActivityCompose)
+            sharedPreferences = prefs
+            
+            // File system operations
+            val filesDir = applicationContext.filesDir
+            val cacheDir = applicationContext.cacheDir
+            storage = filesDir
+            cache = cacheDir
+            activitiesDir = File(filesDir, "activities")
+            
+            val heatmapDirectory = File(filesDir, "heatmaps")
+            heatmapDirectory.mkdirs()
+            heatmapDir = heatmapDirectory
+            
+            val segmentScreenshotDirectory = File(filesDir, "segmentScreenshots")
+            segmentScreenshotDirectory.mkdirs()
+            segmentScreenshotDir = segmentScreenshotDirectory
+            
+            // Pre-initialize OSMDroid tile cache database to avoid StrictMode violation
+            // SqlTileWriter accesses SQLite when MapView is created
+            try {
+                val osmConf = org.osmdroid.config.Configuration.getInstance()
+                osmConf.userAgentValue = BuildConfig.APPLICATION_ID
+                // Trigger tile cache database initialization on background thread
+                val tileWriter = org.osmdroid.tileprovider.modules.SqlTileWriter()
+                tileWriter.onDetach()
+            } catch (e: Exception) {
+                Log.w("MainActivityCompose", "Failed to pre-initialize OSMDroid tile cache", e)
+            }
+            
+            // Initialize Python and MapsForge off main thread to prevent frame skips
             if (!Python.isStarted()) {
                 Python.start(AndroidPlatform(this@MainActivityCompose))
             }
             pythonInstance = Python.getInstance()
+            MapsForgeTileSource.createInstance(application)
             withContext(Dispatchers.Main) {
                 updatePythonExecutor()
             }
         }
-        MapsForgeTileSource.createInstance(application)
 
         // Schedule WorkManager for bounding box updates (every minute)
         scheduleBoundingBoxUpdateWorker()
@@ -1254,11 +1281,17 @@ class MainActivityCompose : ComponentActivity(),
             val password = sharedPreferences.getString(Keys.PREF_GARMIN_PASSWORD, "") ?: ""
             val garminMfaSwitch = sharedPreferences.getBoolean(Keys.PREF_GARMIN_MFA, false)
             val oauthPath = File(storage?.absolutePath, ".garminconnect")
-            if (oauthPath.exists()) {
-                pythonExecutor = GarminPythonExecutor(username, password)
-            } else if (username != "" && password != "" && garminMfaSwitch) {
-                val intent = Intent(this, PythonActivity::class.java)
-                startActivity(intent)
+            // Use cached hasTrack property or allow disk read temporarily for this check
+            val oldPolicy = StrictMode.allowThreadDiskReads()
+            try {
+                if (oauthPath.exists()) {
+                    pythonExecutor = GarminPythonExecutor(username, password)
+                } else if (username != "" && password != "" && garminMfaSwitch) {
+                    val intent = Intent(this, PythonActivity::class.java)
+                    startActivity(intent)
+                }
+            } finally {
+                StrictMode.setThreadPolicy(oldPolicy)
             }
         }
     }

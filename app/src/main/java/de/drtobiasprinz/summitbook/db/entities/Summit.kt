@@ -228,6 +228,10 @@ class Summit(
     }
 
     fun hasGpsTrack(simplified: Boolean = false): Boolean {
+        // For non-simplified tracks, use the cached hasTrack property to avoid disk I/O
+        if (!simplified && hasTrack) {
+            return true
+        }
         val checkIfHasTrack = getGpsTrackPath(simplified).toFile()?.exists() ?: false
         if (!simplified) {
             hasTrack = checkIfHasTrack
@@ -236,6 +240,10 @@ class Summit(
     }
 
     fun hasTrackData(): Boolean {
+        // If there's no track, there can't be track data
+        if (!hasTrack) {
+            return false
+        }
         val checkIfHasTrack = getYamlExtensionsFile().exists() && getGpxPyPath().toFile().exists()
         return checkIfHasTrack
     }

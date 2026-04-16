@@ -1,8 +1,10 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
 import android.util.Log
@@ -10,6 +12,7 @@ import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -128,6 +131,54 @@ fun OpenStreetMapScreen(
     var mapView by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
     var polyline by remember { mutableStateOf<Polyline?>(null) }
     var osMapBoundingBox by remember { mutableStateOf<List<String>>(emptyList()) }
+    var mapProviderInitialized by remember { mutableStateOf(false) }
+    var hasLocationPermission by remember { mutableStateOf(false) }
+    val locationPermissionDeniedMessage = stringResource(R.string.location_permission_denied)
+
+    // Check and update location permission state
+    LaunchedEffect(Unit) {
+        val fineLocation = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val coarseLocation = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        hasLocationPermission = fineLocation || coarseLocation
+    }
+
+    // Permission launcher for location
+    val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        hasLocationPermission = fineLocationGranted || coarseLocationGranted
+        
+        if (hasLocationPermission) {
+            Log.i("OpenStreetMapScreen", "Location permission granted")
+            // Enable location on the overlay
+            mLocationOverlay?.enableMyLocation()
+        } else {
+            Log.w("OpenStreetMapScreen", "Location permission denied")
+            Toast.makeText(
+                context,
+                locationPermissionDeniedMessage,
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    // Function to request location permission
+    fun requestLocationPermission() {
+        locationPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
 
     LaunchedEffect(Unit) {
         sharedPreferences =
@@ -147,6 +198,9 @@ fun OpenStreetMapScreen(
         if (offlineProvider != null && CustomMapViewToAllowScrolling.selectedItem == MapProvider.OPENTOPO) {
             CustomMapViewToAllowScrolling.selectedItem = offlineProvider
         }
+        
+        // Mark that map provider initialization is complete
+        mapProviderInitialized = true
 
         // Load saved bounding box
         osMapBoundingBox =
@@ -181,6 +235,14 @@ fun OpenStreetMapScreen(
         hasOverlayLayers = hasOverlayLayers(context)
     }
 
+    // Update map tile provider when map provider is initialized and map is ready
+    LaunchedEffect(mapProviderInitialized, mapView) {
+        if (mapProviderInitialized && mapView != null) {
+            Log.i("OpenStreetMapScreen", "Updating tile provider after initialization")
+            mapView?.setTileProvider()
+        }
+    }
+
     // Handle system bar visibility when fullscreen state changes
     LaunchedEffect(fullscreenEnabled) {
         val activity = context as? Activity
@@ -210,7 +272,9 @@ fun OpenStreetMapScreen(
                 mGeoPoints,
                 mMarkers,
                 context,
-                coroutineScope
+                coroutineScope,
+                hasLocationPermission = hasLocationPermission,
+                onRequestLocationPermission = { requestLocationPermission() }
             )
         }
     }
@@ -322,7 +386,10 @@ fun OpenStreetMapScreen(
                             // Show my location
                             showMyLocation(
                                 map,
-                                map.overlays.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay)
+                                map.overlays.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay,
+                                hasPermission = hasLocationPermission,
+                                onRequestPermission = { requestLocationPermission() }
+                            )
 
                             map.onResume()
                         }
@@ -351,7 +418,13 @@ fun OpenStreetMapScreen(
                     showMapTypeDialog = true
                 },
                 onCenterOnLocation = {
-                    showMyLocation(mapView, mLocationOverlay, true)
+                    showMyLocation(
+                        mapView,
+                        mLocationOverlay,
+                        zoom = true,
+                        hasPermission = hasLocationPermission,
+                        onRequestPermission = { requestLocationPermission() }
+                    )
                 },
                 onCenterOnSummits = {
                     mapView?.post {
@@ -375,7 +448,9 @@ fun OpenStreetMapScreen(
                             mGeoPoints,
                             mMarkers,
                             context,
-                            coroutineScope
+                            coroutineScope,
+                            hasLocationPermission = hasLocationPermission,
+                            onRequestLocationPermission = { requestLocationPermission() }
                         )
                     }
                 },
@@ -396,7 +471,9 @@ fun OpenStreetMapScreen(
                             mGeoPoints,
                             mMarkers,
                             context,
-                            coroutineScope
+                            coroutineScope,
+                            hasLocationPermission = hasLocationPermission,
+                            onRequestLocationPermission = { requestLocationPermission() }
                         )
                     } else {
                         coroutineScope.launch {
@@ -421,10 +498,10 @@ fun OpenStreetMapScreen(
                 hasHeatmap = hasHeatmapForProvider(context),
                 onToggleHeatmap = {
                     heatmapEnabled = !heatmapEnabled
-                    if (heatmapEnabled) {
-                        heatmapOverlay = showHeatmapOverlay(mapView, context, heatmapOverlay)
+                    heatmapOverlay = if (heatmapEnabled) {
+                        showHeatmapOverlay(mapView, context, heatmapOverlay)
                     } else {
-                        heatmapOverlay = removeHeatmapOverlay(mapView, heatmapOverlay)
+                        removeHeatmapOverlay(mapView, heatmapOverlay)
                     }
                 },
                 modifier = Modifier
@@ -719,7 +796,9 @@ private fun showSummitsAndBookmarksIfEnabled(
     mGeoPoints: SnapshotStateList<GeoPoint?>,
     mMarkers: SnapshotStateList<Marker?>,
     context: Context,
-    coroutineScope: CoroutineScope
+    coroutineScope: CoroutineScope,
+    hasLocationPermission: Boolean = false,
+    onRequestLocationPermission: (() -> Unit)? = null
 ) {
     if (showSummits || showBookmarks) {
         // In a real implementation, we would set isLoading = true here
@@ -739,14 +818,16 @@ private fun showSummitsAndBookmarksIfEnabled(
                                 && it.lng != 0.0
                     }.map { Pair(it, GeoPoint(it.lat!!, it.lng!!)) }
             }
-            addAllMarkers(mapView, filteredSummits, context, mGeoPoints, mMarkers, coroutineScope)
+            addAllMarkers(mapView, filteredSummits, context, mGeoPoints, mMarkers, coroutineScope, hasLocationPermission, onRequestLocationPermission)
             // In a real implementation, we would set isLoading = false here
         }
     } else {
         mapView?.overlays?.clear()
         showMyLocation(
             mapView,
-            mapView?.overlays?.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay)
+            mapView?.overlays?.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay,
+            hasPermission = hasLocationPermission,
+            onRequestPermission = onRequestLocationPermission)
         mapView?.invalidate()
     }
 }
@@ -754,23 +835,71 @@ private fun showSummitsAndBookmarksIfEnabled(
 private fun showMyLocation(
     mapView: CustomMapViewToAllowScrolling?,
     mLocationOverlay: MyLocationNewOverlay?,
-    zoom: Boolean = false
+    zoom: Boolean = false,
+    hasPermission: Boolean = false,
+    onRequestPermission: (() -> Unit)? = null
 ) {
-    mLocationOverlay?.let { overlay ->
-        if (overlay.isMyLocationEnabled) {
-            val arrow = ResourcesCompat.getDrawable(
-                mapView!!.context.resources, R.drawable.baseline_my_location_24,
-                null
-            )?.toBitmap()
-            overlay.setPersonIcon(arrow)
-            overlay.setPersonAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-            overlay.setDirectionIcon(arrow)
-            overlay.setDirectionAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-            mapView.overlays?.add(overlay)
-            if (zoom) {
-                mapView.controller?.setCenter(overlay.myLocation)
+    if (mapView == null || mLocationOverlay == null) {
+        Log.w("OpenStreetMapScreen", "showMyLocation: mapView or locationOverlay is null")
+        return
+    }
+    
+    // Check if we have location permission
+    if (!hasPermission) {
+        Log.w("OpenStreetMapScreen", "No location permission, requesting...")
+        onRequestPermission?.invoke()
+        return
+    }
+    
+    mLocationOverlay.apply {
+        // Enable location if not already enabled
+        if (!isMyLocationEnabled) {
+            try {
+                enableMyLocation()
+            } catch (e: SecurityException) {
+                Log.e("OpenStreetMapScreen", "Failed to enable location: ${e.message}")
+                Toast.makeText(
+                    mapView.context,
+                    mapView.context.getString(R.string.location_permission_denied),
+                    Toast.LENGTH_LONG
+                ).show()
+                return
             }
         }
+        
+        // Set the person icon
+        val arrow = ResourcesCompat.getDrawable(
+            mapView.context.resources, R.drawable.baseline_my_location_24,
+            null
+        )?.toBitmap()
+        setPersonIcon(arrow)
+        setPersonAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+        setDirectionIcon(arrow)
+        setDirectionAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+        
+        // Only add overlay if not already in the list
+        if (!mapView.overlays.contains(this)) {
+            mapView.overlays.add(this)
+        }
+        
+        if (zoom) {
+            // Try to get the current location
+            val myLocationGeoPoint = myLocation
+            if (myLocationGeoPoint != null && myLocationGeoPoint.latitude != 0.0 && myLocationGeoPoint.longitude != 0.0) {
+                Log.d("OpenStreetMapScreen", "Centering on location: ${myLocationGeoPoint.latitude}, ${myLocationGeoPoint.longitude}")
+                mapView.controller.setCenter(myLocationGeoPoint)
+            } else {
+                Log.w("OpenStreetMapScreen", "Location not yet available, waiting for fix...")
+                // Location not available yet - we need to wait for the first fix
+                // The overlay will automatically update when location becomes available
+                Toast.makeText(
+                    mapView.context,
+                    mapView.context.getString(R.string.waiting_for_location),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+        mapView.invalidate()
     }
 }
 
@@ -780,7 +909,9 @@ private fun addAllMarkers(
     context: Context,
     mGeoPoints: SnapshotStateList<GeoPoint?>,
     mMarkers: SnapshotStateList<Marker?>,
-    coroutineScope: CoroutineScope
+    coroutineScope: CoroutineScope,
+    hasLocationPermission: Boolean = false,
+    onRequestLocationPermission: (() -> Unit)? = null
 ) {
     mapView?.let { map ->
         var mReceive: MapEventsReceiver
@@ -788,7 +919,9 @@ private fun addAllMarkers(
         map.overlays?.clear()
         showMyLocation(
             map,
-            map.overlays?.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay)
+            map.overlays?.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay,
+            hasPermission = hasLocationPermission,
+            onRequestPermission = onRequestLocationPermission)
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
                 val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(
@@ -952,10 +1085,10 @@ fun MapControlButtons(
     showOverlaySliders: Boolean,
     hasOverlayLayers: Boolean,
     onToggleOverlaySliders: () -> Unit,
+    modifier: Modifier = Modifier,
     heatmapEnabled: Boolean = false,
     hasHeatmap: Boolean = false,
-    onToggleHeatmap: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onToggleHeatmap: () -> Unit = {}
 ) {
     Column(
         modifier = modifier,

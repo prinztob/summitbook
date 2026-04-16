@@ -1192,28 +1192,30 @@ private fun updateLocationInfo(
     summit: Summit,
     onUpdate: (String, String) -> Unit
 ) {
-    val info = OfflineMapAnalyzer.from(context).getClosestLocationInfo(
-        LatLong(latlngHighestPoint.latitude, latlngHighestPoint.longitude)
-    )
+    OfflineMapAnalyzer.from(context).use { analyzer ->
+        val info = analyzer.getClosestLocationInfo(
+            LatLong(latlngHighestPoint.latitude, latlngHighestPoint.longitude)
+        )
 
-    if (info != null) {
-        val name = info.name
-        var elevation = ""
+        if (info != null) {
+            val name = info.name
+            var elevation = ""
 
-        if (info.placeType == "peak") {
-            summit.isPeak = true
-            try {
-                val elevationValue = info.additionalTags?.get("ele")
-                if (elevationValue != null) {
-                    val elevationAsInt = Integer.valueOf(elevationValue)
-                    summit.elevationData.maxElevation = elevationAsInt
-                    elevation = elevationAsInt.toString()
+            if (info.placeType == "peak") {
+                summit.isPeak = true
+                try {
+                    val elevationValue = info.additionalTags?.get("ele")
+                    if (elevationValue != null) {
+                        val elevationAsInt = Integer.valueOf(elevationValue)
+                        summit.elevationData.maxElevation = elevationAsInt
+                        elevation = elevationAsInt.toString()
+                    }
+                } catch (_: Exception) {
                 }
-            } catch (_: Exception) {
             }
-        }
 
-        onUpdate(name, elevation)
+            onUpdate(name, elevation)
+        }
     }
 }
 

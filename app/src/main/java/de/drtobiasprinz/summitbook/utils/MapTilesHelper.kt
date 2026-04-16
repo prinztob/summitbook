@@ -1,7 +1,12 @@
 package de.drtobiasprinz.summitbook.utils
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Environment
 import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.getOsmdroidTilesFolder
 import de.drtobiasprinz.summitbook.ui.MapProvider
@@ -109,7 +114,7 @@ object MapTilesHelper {
                 })
             val mapFileInputStreams: Array<FileInputStream> =
                 FileHelper.getOnDeviceMapFileInputStreams(context, mapFiles)
-            val demFolder = getDemFolder()
+            val demFolder = getDemFolder(context)
             val hillsRenderConfig = if (demFolder != null) createHillShadingConfig(
                 demFolder, AndroidGraphicFactory.INSTANCE
             ) else null
@@ -128,32 +133,124 @@ object MapTilesHelper {
             return null
         }
 
+
     }
 
-    private fun getDemFolder(): File? {
+    /**
+     * Check if the app has MANAGE_EXTERNAL_STORAGE permission for direct file access
+     */
+    private fun hasManageExternalStoragePermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    /**
+     * Get DEM folder with HGT files for hill shading.
+     * On Android 11+, if MANAGE_EXTERNAL_STORAGE permission is granted, we can access files directly.
+     * Otherwise, we need to use DocumentFile to access external storage.
+     */
+    private fun getDemFolder(context: Context): File? {
         return try {
-            val demFolder = File(getOsmdroidTilesFolder(), "dem")
-            if (demFolder.exists() && demFolder.isDirectory) {
-                val hgtFiles = demFolder.listFiles { file ->
-                    file.extension.equals("hgt", ignoreCase = true)
-                }
-                if (hgtFiles != null && hgtFiles.isNotEmpty()) {
-                    Log.i(
-                        TAG,
-                        "Found DEM folder with ${hgtFiles.size} HGT files: ${demFolder.absolutePath}"
-                    )
-                    demFolder
+            // First try direct file access if we have MANAGE_EXTERNAL_STORAGE permission
+            if (hasManageExternalStoragePermission(context)) {
+                Log.d(TAG, "Has MANAGE_EXTERNAL_STORAGE permission, trying direct file access")
+                val demFolder = File(getOsmdroidTilesFolder(), "dem")
+                Log.d(TAG, "Checking DEM folder at: ${demFolder.absolutePath}")
+                Log.d(TAG, "DEM folder exists: ${demFolder.exists()}, isDirectory: ${demFolder.isDirectory}")
+                
+                if (demFolder.exists() && demFolder.isDirectory) {
+                    val allFiles = demFolder.listFiles()
+                    Log.d(TAG, "Total files in DEM folder: ${allFiles?.size ?: 0}")
+                    allFiles?.forEach { file ->
+                        Log.d(TAG, "  File: ${file.name}, isFile: ${file.isFile}, extension: '${file.extension}'")
+                    }
+                    
+                    // HGT files can have .hgt extension or no extension at all (e.g., N48E011.hgt or N48E011)
+                    // They are typically named with latitude/longitude like N48E011
+                    val hgtFiles = demFolder.listFiles { file ->
+                        file.isFile && (
+                            file.name.lowercase().endsWith(".hgt") ||
+                            // HGT files without extension: match pattern like N48E011, S48W011, etc.
+                            file.name.matches(Regex("^[NS]\\d{2}[EW]\\d{3}$", RegexOption.IGNORE_CASE))
+                        )
+                    }
+                    if (hgtFiles != null && hgtFiles.isNotEmpty()) {
+                        Log.i(
+                            TAG,
+                            "Found DEM folder with ${hgtFiles.size} HGT files: ${demFolder.absolutePath}"
+                        )
+                        hgtFiles.forEach { Log.d(TAG, "  HGT file: ${it.name}") }
+                        return demFolder
+                    } else {
+                        Log.w(
+                            TAG,
+                            "DEM folder exists but contains no HGT files: ${demFolder.absolutePath}"
+                        )
+                    }
                 } else {
-                    Log.w(
-                        TAG,
-                        "DEM folder exists but contains no HGT files: ${demFolder.absolutePath}"
-                    )
-                    null
+                    Log.d(TAG, "No DEM folder found at: ${demFolder.absolutePath}")
                 }
             } else {
-                Log.d(TAG, "No DEM folder found at: ${demFolder.absolutePath}")
-                null
+                Log.d(TAG, "No MANAGE_EXTERNAL_STORAGE permission, falling back to DocumentFile access")
             }
+            
+            // Fallback: try DocumentFile access (for Android 11+ without MANAGE_EXTERNAL_STORAGE)
+            val hgtDocumentFiles = FileHelper.getHgtFiles(context)
+            Log.d(TAG, "Found ${hgtDocumentFiles.size} HGT files via DocumentFile")
+            
+            if (hgtDocumentFiles.isNotEmpty()) {
+                // Copy HGT files to cache directory
+                val demCacheDir = File(context.cacheDir, "dem_hgt")
+                if (!demCacheDir.exists()) {
+                    demCacheDir.mkdirs()
+                }
+                
+                // Clean up old cached files that are no longer in the document files list
+                val currentUris = hgtDocumentFiles.map { it.uri.toString() }.toSet()
+                demCacheDir.listFiles()?.forEach { cachedFile ->
+                    val uriInName = cachedFile.nameWithoutExtension
+                    if (!currentUris.any { it.hashCode().toString() == uriInName }) {
+                        cachedFile.delete()
+                    }
+                }
+                
+                // Copy HGT files to cache
+                hgtDocumentFiles.forEach { docFile ->
+                    val cacheFileName = docFile.uri.toString().hashCode().toString() + "_" + (docFile.name ?: "unknown")
+                    val cachedFile = File(demCacheDir, cacheFileName)
+                    
+                    // Copy to cache if not exists or source is newer
+                    if (!cachedFile.exists() || docFile.lastModified() > cachedFile.lastModified()) {
+                        try {
+                            context.contentResolver.openInputStream(docFile.uri)?.use { input ->
+                                cachedFile.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            Log.d(TAG, "Copied HGT file: ${docFile.name}")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to copy HGT file ${docFile.name}: ${e.message}")
+                        }
+                    }
+                }
+                
+                // Check if we have any cached HGT files
+                val cachedHgtFiles = demCacheDir.listFiles { file ->
+                    file.isFile
+                }
+                if (cachedHgtFiles != null && cachedHgtFiles.isNotEmpty()) {
+                    Log.i(TAG, "Using cached DEM folder with ${cachedHgtFiles.size} HGT files: ${demCacheDir.absolutePath}")
+                    return demCacheDir
+                }
+            }
+            
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Error accessing DEM folder", e)
             null

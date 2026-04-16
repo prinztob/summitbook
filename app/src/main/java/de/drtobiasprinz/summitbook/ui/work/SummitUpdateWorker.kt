@@ -137,35 +137,36 @@ class SummitUpdateWorker(
     }
 
     private suspend fun updateDistances(summits: List<Summit>, takeNumberOfSummits: Int) {
-        val analyzer = OfflineMapAnalyzer.from(context)
-        val summitsForDistanceCalc = summits.filter {
-            OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(analyzer, it)
-        }.sortedByDescending { it.date }.take(takeNumberOfSummits)
-        Log.i(
-            TAG,
-            "updateTracks - setDistancePerSurfacesAndRoadType for ${summitsForDistanceCalc.size} summits."
-        )
-        val summitsToUpdate = summitsForDistanceCalc.filter {
+        OfflineMapAnalyzer.from(context).use { analyzer ->
+            val summitsForDistanceCalc = summits.filter {
+                OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(analyzer, it)
+            }.sortedByDescending { it.date }.take(takeNumberOfSummits)
             Log.i(
                 TAG,
-                "updateTracks - setDistancePerSurfacesAndRoadType for summit ${it.getDateAsString()}_${it.name}."
+                "updateTracks - setDistancePerSurfacesAndRoadType for ${summitsForDistanceCalc.size} summits."
             )
-            try {
-                OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(context, it)
-            } catch (e: Exception) {
-                Log.w(
+            val summitsToUpdate = summitsForDistanceCalc.filter {
+                Log.i(
                     TAG,
-                    "updateTracks - setDistancePerSurfacesAndRoadType for summit ${it.getDateAsString()}_${it.name} failed with ${e.message}."
+                    "updateTracks - setDistancePerSurfacesAndRoadType for summit ${it.getDateAsString()}_${it.name}."
                 )
-                false
+                try {
+                    OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(context, it)
+                } catch (e: Exception) {
+                    Log.w(
+                        TAG,
+                        "updateTracks - setDistancePerSurfacesAndRoadType for summit ${it.getDateAsString()}_${it.name} failed with ${e.message}."
+                    )
+                    false
+                }
             }
-        }
-        summitsToUpdate.forEach {
-            repository.updateDistanceData(
-                it.id,
-                it.distancePerSurface,
-                it.distancePerRoadType
-            )
+            summitsToUpdate.forEach {
+                repository.updateDistanceData(
+                    it.id,
+                    it.distancePerSurface,
+                    it.distancePerRoadType
+                )
+            }
         }
         Log.i(
             TAG, "updateTracks - setDistancePerSurfacesAndRoadType done."

@@ -1537,17 +1537,18 @@ private fun executeBulkUpdate(
                         fileRowType.updateAction.invoke(summit, backupFile)
 
                         if (fileRowType.shouldUpdateRoadInfos) {
-                            val analyzer = OfflineMapAnalyzer.from(context)
-                            if (OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(
-                                    analyzer,
-                                    summit
-                                )
-                            ) {
-                                val updated = OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(
-                                    context, summit
-                                )
-                                if (updated) {
-                                    onSaveSummit(true, summit)
+                            OfflineMapAnalyzer.from(context).use { analyzer ->
+                                if (OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(
+                                        analyzer,
+                                        summit
+                                    )
+                                ) {
+                                    val updated = OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(
+                                        context, summit
+                                    )
+                                    if (updated) {
+                                        onSaveSummit(true, summit)
+                                    }
                                 }
                             }
                         }

@@ -13,6 +13,7 @@ import de.drtobiasprinz.summitbook.db.AppDatabase
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.utils.Constants.DATABASE
+import java.util.concurrent.Executors
 import javax.inject.Singleton
 
 @Module
@@ -23,7 +24,10 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context) = Room.databaseBuilder(
         context, AppDatabase::class.java, DATABASE
-    ).build()
+    )
+        .setQueryExecutor(Executors.newFixedThreadPool(4))
+        .setTransactionExecutor(Executors.newSingleThreadExecutor())
+        .build()
 
     @Provides
     @Singleton

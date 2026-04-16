@@ -425,30 +425,40 @@ class CustomMapViewToAllowScrolling : MapView {
     }
 
     fun setTileProvider() {
-        enableRoadInfoOnMapClick()
-        val mapFiles: List<DocumentFile> = FileHelper.getOnDeviceMapFiles(context)
-        if (selectedItem.isOffline) {
-            if (selectedItem == MapProvider.MBTILES) {
-                Log.i(TAG, "Use MBTILES map")
-                setOsmConfForTiles()
-                setOnlineMap(context)
-                this.invalidate()
+        // Temporarily allow disk reads and writes for OSMDroid tile configuration
+        // This method performs multiple disk I/O operations:
+        // - FileHelper.getOnDeviceMapFiles() reads file system
+        // - setOsmConfForTiles() creates directories
+        // - MapTilesHelper.getOfflineMapProviderWithHillShading() opens file streams
+        val oldPolicy = android.os.StrictMode.allowThreadDiskWrites()
+        try {
+            enableRoadInfoOnMapClick()
+            val mapFiles: List<DocumentFile> = FileHelper.getOnDeviceMapFiles(context)
+            if (selectedItem.isOffline) {
+                if (selectedItem == MapProvider.MBTILES) {
+                    Log.i(TAG, "Use MBTILES map")
+                    setOsmConfForTiles()
+                    setOnlineMap(context)
+                    this.invalidate()
+                } else {
+                    setOsmConfForTiles(true)
+                }
+                val provider = MapTilesHelper.getOfflineMapProviderWithHillShading(
+                    context,
+                    mapFiles,
+                    selectedItem
+                )
+                if (provider != null) {
+                    Log.i(TAG, "Use offline map")
+                    this.setTileProvider(provider)
+                } else {
+                    setOnlineMap(context)
+                }
             } else {
-                setOsmConfForTiles(true)
-            }
-            val provider = MapTilesHelper.getOfflineMapProviderWithHillShading(
-                context,
-                mapFiles,
-                selectedItem
-            )
-            if (provider != null) {
-                Log.i(TAG, "Use offline map")
-                this.setTileProvider(provider)
-            } else {
                 setOnlineMap(context)
             }
-        } else {
-            setOnlineMap(context)
+        } finally {
+            android.os.StrictMode.setThreadPolicy(oldPolicy)
         }
     }
 
@@ -535,8 +545,9 @@ class CustomMapViewToAllowScrolling : MapView {
                 try {
                     var info: Pair<RoadInfo?, LocationInfo?>? = null
                     withContext(Dispatchers.IO) {
-                        val analyzer = OfflineMapAnalyzer.from(context)
-                        info = analyzer.getInfosForLocation(geoPoint)
+                        OfflineMapAnalyzer.from(context).use { analyzer ->
+                            info = analyzer.getInfosForLocation(geoPoint)
+                        }
                     }
 
                     // Show result on main thread

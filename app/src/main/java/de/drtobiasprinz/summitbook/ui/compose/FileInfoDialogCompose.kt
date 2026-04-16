@@ -407,19 +407,20 @@ private suspend fun updateRoadInfos(
     entry: Summit,
     onUpdateSummit: (Boolean, Summit) -> Job
 ) {
-    val analyzer = OfflineMapAnalyzer.from(context)
-    if (OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(analyzer, entry)) {
-        val updated = withContext(Dispatchers.IO) {
-            OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(context, entry)
-        }
-        if (updated) {
-            onUpdateSummit(true, entry)
-            withContext(Dispatchers.Main) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.update_done_roadinfo),
-                    Toast.LENGTH_SHORT
-                ).show()
+    OfflineMapAnalyzer.from(context).use { analyzer ->
+        if (OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(analyzer, entry)) {
+            val updated = withContext(Dispatchers.IO) {
+                OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(context, entry)
+            }
+            if (updated) {
+                onUpdateSummit(true, entry)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.update_done_roadinfo),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
     }
