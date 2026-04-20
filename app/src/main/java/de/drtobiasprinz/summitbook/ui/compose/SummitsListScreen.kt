@@ -141,15 +141,15 @@ fun SummitCard(
     val isDarkTheme = isSystemInDarkTheme()
     val deleteCancelMessage = stringResource(R.string.delete_cancel)
 
-    // Force recomposition when refreshTrigger changes
-    val currentSummit = remember(refreshTrigger) { summit }
+    // Force recomposition when summit prop or refreshTrigger changes
+    val currentSummit = remember(summit, refreshTrigger) { summit }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
             .clickable {
-                navigateToSummitDetails(context, summit.id)
+                navigateToSummitDetails(context, currentSummit.id)
             },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -206,7 +206,7 @@ fun SummitCard(
                             painter = painterResource(id = sportTypeIcon),
                             contentDescription = stringResource(R.string.sport_type_image),
                             modifier = Modifier.size(40.dp),
-                            colorFilter = if (!summit.hasImagePath() && !isDarkTheme) {
+                            colorFilter = if (!currentSummit.hasImagePath() && !isDarkTheme) {
                                 ColorFilter.tint(androidx.compose.ui.graphics.Color.Black)
                             } else {
                                 ColorFilter.tint(androidx.compose.ui.graphics.Color.White)
@@ -223,7 +223,7 @@ fun SummitCard(
                                 Text(
                                     text = currentSummit.getDateAsString() ?: "",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = if (summit.hasImagePath()) {
+                                    color = if (currentSummit.hasImagePath()) {
                                         androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f)
                                     } else {
                                         if (isDarkTheme) androidx.compose.ui.graphics.Color.White.copy(
@@ -239,7 +239,7 @@ fun SummitCard(
                             Text(
                                 text = currentSummit.name,
                                 style = MaterialTheme.typography.titleLarge,
-                                color = if (summit.hasImagePath()) {
+                                color = if (currentSummit.hasImagePath()) {
                                     androidx.compose.ui.graphics.Color.White
                                 } else {
                                     if (isDarkTheme) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color.Black
@@ -398,8 +398,8 @@ fun SummitCard(
                 if (!currentSummit.isBookmark) {
                     IconButton(
                         onClick = {
-                            summit.isFavorite = !summit.isFavorite
-                            onSaveSummit(true, summit).invokeOnCompletion {
+                            currentSummit.isFavorite = !currentSummit.isFavorite
+                            onSaveSummit(true, currentSummit).invokeOnCompletion {
                                 refreshTrigger++
                             }
                         }
@@ -420,8 +420,8 @@ fun SummitCard(
                     // Peak button
                     IconButton(
                         onClick = {
-                            summit.isPeak = !summit.isPeak
-                            onSaveSummit(true, summit).invokeOnCompletion {
+                            currentSummit.isPeak = !currentSummit.isPeak
+                            onSaveSummit(true, currentSummit).invokeOnCompletion {
                                 refreshTrigger++
                             }
                         }
@@ -446,9 +446,9 @@ fun SummitCard(
     // Delete confirmation dialog
     if (showDeleteDialog) {
         DeleteConfirmationDialog(
-            summitName = summit.name,
+            summitName = currentSummit.name,
             onConfirm = {
-                deleteEntry(summit, onDelete)
+                deleteEntry(currentSummit, onDelete)
                 showDeleteDialog = false
             },
             onDismiss = {
@@ -488,7 +488,9 @@ fun SummitCard(
             onDismiss = { showAddImagesDialog = false },
             onSaveSummit = { isEdit, updatedSummit ->
                 val job = onSaveSummit(isEdit, updatedSummit)
-                refreshTrigger++
+                job.invokeOnCompletion {
+                    refreshTrigger++
+                }
                 job
             }
         )
@@ -501,7 +503,9 @@ fun SummitCard(
             onDismiss = { showSelectOnMapDialog = false },
             onSaveSummit = { isEdit, updatedSummit ->
                 val job = onSaveSummit(isEdit, updatedSummit)
-                refreshTrigger++
+                job.invokeOnCompletion {
+                    refreshTrigger++
+                }
                 job
             }
         )
@@ -514,7 +518,9 @@ fun SummitCard(
             onDismiss = { showAddAdditionalDataDialog = false },
             onSaveSummit = { isEdit, updatedSummit ->
                 val job = onSaveSummit(isEdit, updatedSummit)
-                refreshTrigger++
+                job.invokeOnCompletion {
+                    refreshTrigger++
+                }
                 job
             }
         )
@@ -594,6 +600,64 @@ fun RecordBadges(summit: Summit) {
                 painter = painterResource(id = R.drawable.ic_baseline_power_24),
                 contentDescription = stringResource(R.string.new_power_record),
                 tint = androidx.compose.ui.graphics.Color(powerRecordColor)
+            )
+        }
+    }
+
+    // Vertical velocity record badge
+    val verticalVelocityRecordColor = when (summit.activityId) {
+        in MainActivityCompose.activitiesWithVerticalVelocityRecordsAll -> Color.rgb(255, 215, 0) // Gold
+        in MainActivityCompose.activitiesWithVerticalVelocityRecordsLast5Years -> Color.rgb(
+            192,
+            192,
+            192
+        ) // Silver
+        in MainActivityCompose.activitiesWithVerticalVelocityRecordsFiltered -> Color.rgb(
+            168,
+            112,
+            0
+        ) // Bronze
+        else -> null
+    }
+
+    if (verticalVelocityRecordColor != null) {
+        IconButton(
+            onClick = {},
+            enabled = false
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_trending_up_black_24dp),
+                contentDescription = stringResource(R.string.new_vertical_velocity_record),
+                tint = androidx.compose.ui.graphics.Color(verticalVelocityRecordColor)
+            )
+        }
+    }
+
+    // Average velocity record badge
+    val averageVelocityRecordColor = when (summit.activityId) {
+        in MainActivityCompose.activitiesWithAverageVelocityRecordsAll -> Color.rgb(255, 215, 0) // Gold
+        in MainActivityCompose.activitiesWithAverageVelocityRecordsLast5Years -> Color.rgb(
+            192,
+            192,
+            192
+        ) // Silver
+        in MainActivityCompose.activitiesWithAverageVelocityRecordsFiltered -> Color.rgb(
+            168,
+            112,
+            0
+        ) // Bronze
+        else -> null
+    }
+
+    if (averageVelocityRecordColor != null) {
+        IconButton(
+            onClick = {},
+            enabled = false
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_speed_black_24dp),
+                contentDescription = stringResource(R.string.new_velocity_record),
+                tint = androidx.compose.ui.graphics.Color(averageVelocityRecordColor)
             )
         }
     }

@@ -125,8 +125,8 @@ fun PowerLineChart(
     val gridColor = if (isDark) ComposeColor(0xFF444444) else ComposeColor.LightGray
     val chartBackgroundColor = if (isDark) ComposeColor(0xFF1E1E1E) else ComposeColor.White
 
-    // State for selected data point
-    var selectedPointIndex by remember { mutableStateOf<Int?>(null) }
+    // State for selected data point - reset when chart data or bounds change
+    var selectedPointIndex by remember(mainPowerData, extremaValuesAllSummits) { mutableStateOf<Int?>(null) }
 
     Column(
         modifier = modifier
@@ -142,7 +142,7 @@ fun PowerLineChart(
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
-                    .pointerInput(Unit) {
+                    .pointerInput(mainPowerData, extremaValuesAllSummits, maxY, minY, maxX, minX) {
                         detectTapGestures { offset ->
                             // Find the closest data point to the tap
                             val chartWidth = size.width
@@ -526,6 +526,20 @@ fun PowerChartTooltip(
     backgroundColor: ComposeColor,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val wattLabel = stringResource(R.string.watt)
+    val currentLabel = stringResource(R.string.current)
+    val maxLabel = stringResource(R.string.max)
+    val minLabel = stringResource(R.string.minimum)
+    val compareLabel = stringResource(R.string.compare)
+    
+    // Find matching TimeIntervalPower and use its asLocalizedString method
+    val timeLabel = remember(point.originalSeconds) {
+        TimeIntervalPower.entries.find { it.seconds == point.originalSeconds.toInt() }
+            ?.asLocalizedString(context)
+            ?: "$secLabel ${point.originalSeconds.toInt()}"
+    }
+    
     Surface(
         modifier = modifier.padding(8.dp),
         shape = RoundedCornerShape(8.dp),
@@ -537,7 +551,7 @@ fun PowerChartTooltip(
         ) {
             // Time label
             Text(
-                text = formatTimeLabel(point.originalSeconds, secLabel),
+                text = timeLabel,
                 color = textColor,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
@@ -545,7 +559,7 @@ fun PowerChartTooltip(
             
             // Current value
             Text(
-                text = "Current: ${point.y.toInt()} W",
+                text = "$currentLabel: ${point.y.toInt()} $wattLabel",
                 color = textColor,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -553,7 +567,7 @@ fun PowerChartTooltip(
             // Max value
             maxPoint?.let {
                 Text(
-                    text = "Max: ${it.y.toInt()} W",
+                    text = "$maxLabel: ${it.y.toInt()} $wattLabel",
                     color = ComposeColor(0xFF4CAF50),
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -562,7 +576,7 @@ fun PowerChartTooltip(
             // Min value
             minPoint?.let {
                 Text(
-                    text = "Min: ${it.y.toInt()} W",
+                    text = "$minLabel: ${it.y.toInt()} $wattLabel",
                     color = ComposeColor.Red,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -571,23 +585,12 @@ fun PowerChartTooltip(
             // Compare value
             comparePoint?.let {
                 Text(
-                    text = "Compare: ${it.y.toInt()} W",
+                    text = "$compareLabel: ${it.y.toInt()} $wattLabel",
                     color = ComposeColor.Gray,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
         }
-    }
-}
-
-/**
- * Format time label for tooltip
- */
-private fun formatTimeLabel(seconds: Double, secLabel: String): String {
-    return when {
-        seconds < 60 -> "${seconds.toInt()} $secLabel"
-        seconds < 3600 -> "${(seconds / 60).toInt()} min"
-        else -> "${(seconds / 3600).toInt()} h"
     }
 }
 
@@ -767,9 +770,9 @@ private fun getPowerChartDataPoints(power: PowerData): List<PowerChartDataPoint>
     )
     if (power.threeHours > 0) dataPoints.add(
         PowerChartDataPoint(
-            scaleCbr(10400.0),
+            scaleCbr(10800.0),
             power.threeHours.toFloat(),
-            10400.0
+            10800.0
         )
     )
     if (power.fourHours > 0) dataPoints.add(

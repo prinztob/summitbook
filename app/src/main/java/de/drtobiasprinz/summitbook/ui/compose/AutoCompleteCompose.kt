@@ -27,9 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -59,7 +56,6 @@ fun AutoCompleteCompose(
         }
     }
 
-    val focusRequester = LocalFocusManager.current
     var expanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(
@@ -73,14 +69,12 @@ fun AutoCompleteCompose(
             },
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
-                .onFocusChanged { focusState ->
-                    if (!focusState.isFocused) {
-                        expanded = false
-                    }
-                }
                 .fillMaxWidth(),
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = {
+                onValueChange(it)
+                expanded = it.isNotEmpty()
+            },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(
                     expanded = expanded,
@@ -97,7 +91,7 @@ fun AutoCompleteCompose(
 
         ExposedDropdownMenu(
             shape = RoundedCornerShape(8.dp),
-            expanded = expanded,
+            expanded = expanded && filteredOptions.isNotEmpty(),
             onDismissRequest = { expanded = false }) {
             filteredOptions.fastForEach { option ->
                 DropdownMenuItem(
@@ -107,9 +101,6 @@ fun AutoCompleteCompose(
                         onValueChange(option)
                         onItemSelected(option)
                         expanded = false
-                        //Clear focus from this component and move focus to the next one by selecting
-                        // an option from the dropdown.
-                        focusRequester.moveFocus(FocusDirection.Next)
                     },
                 )
             }
@@ -132,7 +123,6 @@ fun AutoCompleteComposeChipField(
     peaksList: List<String> = emptyList(),
     onPeakToggle: ((String, Boolean) -> Unit)? = null
 ) {
-    val focusRequester = LocalFocusManager.current
     var inputText by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
 
@@ -163,11 +153,6 @@ fun AutoCompleteComposeChipField(
                     },
                     modifier = Modifier
                         .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
-                        .onFocusChanged { focusState ->
-                            if (!focusState.isFocused) {
-                                expanded = false
-                            }
-                        }
                         .fillMaxWidth(),
                     value = inputText,
                     onValueChange = {
@@ -205,7 +190,7 @@ fun AutoCompleteComposeChipField(
 
                 ExposedDropdownMenu(
                     shape = RoundedCornerShape(8.dp),
-                    expanded = expanded,
+                    expanded = expanded && filteredOptions.isNotEmpty(),
                     onDismissRequest = { expanded = false }
                 ) {
                     filteredOptions.fastForEach { option ->
@@ -220,7 +205,6 @@ fun AutoCompleteComposeChipField(
                                 }
                                 inputText = ""
                                 expanded = false
-                                focusRequester.moveFocus(FocusDirection.Next)
                             },
                         )
                     }

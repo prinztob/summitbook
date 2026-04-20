@@ -75,7 +75,7 @@ fun SummitEntryPowerScreen(
         return
     }
 
-    val filteredSummits = remember(summit.id, allSummits, selectedTimeRange) {
+    val filteredSummits = remember(summit.id, allSummits?.size, selectedTimeRange) {
         getFilteredSummits(summit, allSummits ?: emptyList(), selectedTimeRange)
     }
 

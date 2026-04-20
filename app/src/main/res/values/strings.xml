@@ -458,6 +458,9 @@
     <string name="min">min</string>
     <string name="minutes">minutes</string>
     <string name="max">max</string>
+    <string name="minimum">min</string>
+    <string name="compare">Compare</string>
+    <string name="value_with_unit">%1$s %2$s</string>
     <string name="m">m</string>
     <string name="sec">sec</string>
     <string name="delete_coordinates">Delete coordinates and GPS track</string>
@@ -508,6 +511,8 @@
     <string name="sleep_hours">Sleep Hours</string>
     <string name="new_power_record">New power record</string>
     <string name="new_segment_record">New segment record</string>
+    <string name="new_vertical_velocity_record">New vertical velocity record</string>
+    <string name="new_velocity_record">New velocity record</string>
     <string name="title">Title</string>
     <string name="description">Description</string>
     <string name="summits_for_segments_not_found">No activity for segment found</string>

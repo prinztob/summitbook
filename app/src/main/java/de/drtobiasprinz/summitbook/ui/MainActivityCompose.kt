@@ -105,8 +105,10 @@ import de.drtobiasprinz.summitbook.ui.compose.SummitEntitiesScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitsListScreen
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
 import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
+import de.drtobiasprinz.summitbook.ui.utils.DistanceIntervalVelocity
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.TimeIntervalPower
+import de.drtobiasprinz.summitbook.ui.utils.TimeIntervalVerticalVelocity
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileReader
 import de.drtobiasprinz.summitbook.ui.utils.ZipFileWriter
 import de.drtobiasprinz.summitbook.ui.work.SummitUpdateWorker
@@ -1315,6 +1317,20 @@ class MainActivityCompose : ComponentActivity(),
             allSummits.filter { it.date.after(calendar.time) })
         activitiesWithPowerRecordsAll = getSummitIdsWithPowerRecord(allSummits)
 
+        // Calculate vertical velocity records
+        activitiesWithVerticalVelocityRecordsFiltered =
+            getSummitIdsWithVerticalVelocityRecord(filteredSummits)
+        activitiesWithVerticalVelocityRecordsLast5Years = getSummitIdsWithVerticalVelocityRecord(
+            allSummits.filter { it.date.after(calendar.time) })
+        activitiesWithVerticalVelocityRecordsAll = getSummitIdsWithVerticalVelocityRecord(allSummits)
+
+        // Calculate average velocity records
+        activitiesWithAverageVelocityRecordsFiltered =
+            getSummitIdsWithAverageVelocityRecord(filteredSummits)
+        activitiesWithAverageVelocityRecordsLast5Years = getSummitIdsWithAverageVelocityRecord(
+            allSummits.filter { it.date.after(calendar.time) })
+        activitiesWithAverageVelocityRecordsAll = getSummitIdsWithAverageVelocityRecord(allSummits)
+
         if (!segments.isEmpty()) {
             allSummits.forEach { summit ->
                 summit.updateSegmentInfo(segments)
@@ -1344,6 +1360,22 @@ class MainActivityCompose : ComponentActivity(),
         }
     }
 
+    private fun getSummitIdsWithVerticalVelocityRecord(
+        summits: List<Summit>,
+    ): List<Long> {
+        return TimeIntervalVerticalVelocity.entries.mapNotNull { interval ->
+            summits.filter { interval.value(it) > 0.0 }.maxByOrNull { interval.value(it) }?.activityId
+        }
+    }
+
+    private fun getSummitIdsWithAverageVelocityRecord(
+        summits: List<Summit>,
+    ): List<Long> {
+        return DistanceIntervalVelocity.entries.mapNotNull { interval ->
+            summits.filter { interval.value(it) > 0.0 }.maxByOrNull { interval.value(it) }?.activityId
+        }
+    }
+
     companion object {
         var peaks: MutableList<Peak> = mutableListOf()
         private const val KEY_IS_DIALOG_SHOWN = "IS_DIALOG_SHOWN"
@@ -1368,6 +1400,12 @@ class MainActivityCompose : ComponentActivity(),
         var activitiesWithPowerRecordsFiltered: List<Long> = emptyList()
         var activitiesWithPowerRecordsLast5Years: List<Long> = emptyList()
         var activitiesWithPowerRecordsAll: List<Long> = emptyList()
+        var activitiesWithVerticalVelocityRecordsFiltered: List<Long> = emptyList()
+        var activitiesWithVerticalVelocityRecordsLast5Years: List<Long> = emptyList()
+        var activitiesWithVerticalVelocityRecordsAll: List<Long> = emptyList()
+        var activitiesWithAverageVelocityRecordsFiltered: List<Long> = emptyList()
+        var activitiesWithAverageVelocityRecordsLast5Years: List<Long> = emptyList()
+        var activitiesWithAverageVelocityRecordsAll: List<Long> = emptyList()
         var activitiesWithSegmentsRecord: MutableList<Pair<Long, Int>> = mutableListOf()
         lateinit var sharedPreferences: SharedPreferences
         var latestFilteredSummits: List<Summit> = emptyList()
