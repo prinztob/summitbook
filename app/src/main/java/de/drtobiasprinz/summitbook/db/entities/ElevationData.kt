@@ -46,7 +46,7 @@ class ElevationData(
         if (maxVerticalVelocity1h != other.maxVerticalVelocity1h) return false
         if (maxSlope != other.maxSlope) return false
         if (maxVerticalVelocityDown1Min != other.maxVerticalVelocityDown1Min) return false
-        if (maxVerticalVelocityDown10Min != other.maxVerticalVelocityDown1h) return false
+        if (maxVerticalVelocityDown10Min != other.maxVerticalVelocityDown10Min) return false
         if (maxVerticalVelocityDown1h != other.maxVerticalVelocityDown1h) return false
         if (maxSlopeDown != other.maxSlopeDown) return false
 
@@ -71,8 +71,8 @@ class ElevationData(
             maxVerticalVelocity10Min,
             maxVerticalVelocity1h,
             maxSlope,
-            maxVerticalVelocityDown10Min,
             maxVerticalVelocityDown1Min,
+            maxVerticalVelocityDown10Min,
             maxVerticalVelocityDown1h,
             maxSlopeDown,
         )

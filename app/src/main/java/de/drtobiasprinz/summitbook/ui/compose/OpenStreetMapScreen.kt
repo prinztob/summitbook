@@ -511,7 +511,7 @@ fun OpenStreetMapScreen(
 
             // Overlay map sliders
             if (showOverlaySliders) {
-                val layerFiles = getLayerFiles(context)
+                val layerFiles = getLayerFiles()
                 if (layerFiles.isNotEmpty() && layers.isEmpty()) {
                     mapView?.let { showOverlayIfExist(it, context, layers, layerFiles) }
                 }
@@ -649,45 +649,11 @@ private fun showOverlayIfExist(
     }
 }
 
-private fun getLayerFiles(context: Context): List<Pair<File, String>> {
-    val documentFiles = FileHelper.getOnDeviceOverlayMbtilesFiles(context)
-    val overlayCacheDir = File(context.cacheDir, "overlay_mbtiles")
-    if (!overlayCacheDir.exists()) {
-        overlayCacheDir.mkdirs()
-    }
-    
-    // Clean up old files not in current document files
-    val currentUris = documentFiles.map { it.uri.toString() }.toSet()
-    overlayCacheDir.listFiles()?.forEach { cachedFile ->
-        val uriInName = cachedFile.nameWithoutExtension
-        if (!currentUris.any { it.hashCode().toString() == uriInName }) {
-            cachedFile.delete()
-        }
-    }
-    
-    val files = documentFiles.mapNotNull { docFile ->
-        val name = docFile.name?.replace(".mbtiles", "") ?: return@mapNotNull null
-        val cacheFileName = docFile.uri.toString().hashCode().toString() + ".mbtiles"
-        val cachedFile = File(overlayCacheDir, cacheFileName)
-        
-        // Copy to cache if not exists or source is newer
-        if (!cachedFile.exists() || docFile.lastModified() > cachedFile.lastModified()) {
-            try {
-                context.contentResolver.openInputStream(docFile.uri)?.use { input ->
-                    cachedFile.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to copy overlay file: ${e.message}")
-                return@mapNotNull null
-            }
-        }
-        
-        Pair(cachedFile, name)
-    }
-    Log.i(TAG, "getLayerFiles -> ${files.size} mbtiles in overlays")
-    return files
+private fun getLayerFiles(): List<Pair<File, String>> {
+    val fileEnding = "mbtiles"
+    val overlayFolder = File(CustomMapViewToAllowScrolling.getOsmdroidTilesFolder(), "overlays")
+    return overlayFolder.listFiles()?.filter { it.name.endsWith(".${fileEnding}") }
+        ?.mapNotNull { Pair(it, it.name.replace(".$fileEnding", "")) } ?: emptyList()
 }
 
 private fun hasOverlayLayers(context: Context): Boolean {

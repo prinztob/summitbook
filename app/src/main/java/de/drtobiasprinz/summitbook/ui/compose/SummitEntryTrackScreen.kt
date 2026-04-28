@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Color
+import android.util.Log
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -159,6 +160,7 @@ fun SummitEntryTrackScreen(
                         trackPointList.add(track?.trackPoints ?: emptyList())
                     }
                 }
+                Log.i("Summit", "getConnectedEntriesSummary for summit ${summit.getDateAsString()}_${summit.name} is $connectedEntries with ${trackPoints.size} points.")
                 connectedTrackPoints = trackPointList
             }
         } else {

@@ -51,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -86,6 +87,9 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import de.drtobiasprinz.summitbook.utils.Constants.CONNECTED_ACTIVITY_PREFIX
+import java.util.concurrent.TimeUnit
+import kotlin.math.round
 import kotlin.math.roundToInt
 
 /**
@@ -111,7 +115,7 @@ fun AddSummitDialogCompose(
     var entity by remember { mutableStateOf(createEmptySummit(isBookmark, context)) }
     var isLoading by remember { mutableStateOf(false) }
     var temporaryGpxFile by remember { mutableStateOf<File?>(null) }
-    var latlngHighestPoint by remember { mutableStateOf<GeoPoint?>(null) }
+    var latLngHighestPoint by remember { mutableStateOf<GeoPoint?>(null) }
     var garminDataFromGarminConnect by remember { mutableStateOf<GarminData?>(null) }
 
     // UI State - Basic fields
@@ -130,6 +134,9 @@ fun AddSummitDialogCompose(
     var places by remember { mutableStateOf<List<String>>(emptyList()) }
     var countries by remember { mutableStateOf<List<String>>(emptyList()) }
     var equipments by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    // Connected summits (summits within 0-1 days of the current entity's date)
+    var connectedSummits by remember { mutableStateOf<List<Summit>>(emptyList()) }
 
     // Performance data state
     val performanceState = remember { PerformanceDataState() }
@@ -158,7 +165,7 @@ fun AddSummitDialogCompose(
                         duration = dur
                     },
                     onFileUpdate = { temporaryGpxFile = it },
-                    onPointUpdate = { latlngHighestPoint = it }
+                    onPointUpdate = { latLngHighestPoint = it }
                 )
             }
         }
@@ -181,11 +188,31 @@ fun AddSummitDialogCompose(
                 if (entity.velocityData.maxVelocity > 0.0) entity.velocityData.maxVelocity.toString() else ""
             comments = entity.comments
             participants = entity.participants
-            places = entity.places
+            // Convert ac_id:XXXXX entries to display strings for the UI
+            places = entity.getPlacesWithConnectedEntryString(context, summitsFromDatabase)
             countries = entity.countries
             equipments = entity.equipments
             garminDataFromGarminConnect = entity.garminData
             performanceState.loadFromGarminData(entity.garminData)
+        }
+        // Compute connected summits based on entity date when editing
+        connectedSummits = computeConnectedSummits(entity, summitsFromDatabase)
+    }
+
+    // Recompute connected summits when tourDate changes (for new summits)
+    LaunchedEffect(tourDate, summitsFromDatabase) {
+        if (tourDate.isNotBlank()) {
+            try {
+                val parsedDate = Summit.parseDate(tourDate)
+                val tempEntity = entity.clone()
+                tempEntity.date = parsedDate
+                connectedSummits = computeConnectedSummits(tempEntity, summitsFromDatabase)
+            } catch (_: Exception) {
+                // If date parsing fails, keep existing connected summits
+            }
+        } else if (!isEdit) {
+            // For new summits with no date, clear connected summits
+            connectedSummits = emptyList()
         }
     }
 
@@ -202,7 +229,7 @@ fun AddSummitDialogCompose(
                         duration = dur
                     },
                     onFileUpdate = { temporaryGpxFile = it },
-                    onPointUpdate = { latlngHighestPoint = it }
+                    onPointUpdate = { latLngHighestPoint = it }
                 )
             }
         }
@@ -299,7 +326,7 @@ fun AddSummitDialogCompose(
                                     scope.launch {
                                         isLoading = true
                                         withContext(Dispatchers.IO) {
-                                            (latlngHighestPoint ?: entity.latLng)?.let { point ->
+                                            (latLngHighestPoint ?: entity.latLng)?.let { point ->
                                                 try {
                                                     updateLocationInfo(
                                                         context,
@@ -371,6 +398,16 @@ fun AddSummitDialogCompose(
 
                     // Additional data section (expandable)
                     if (!isBookmark) {
+                        // Build places suggestions including connected summit entries
+                        val placesSuggestions = summitsFromDatabase.flatMap {
+                            it.places + it.name
+                        }.filter {
+                            it.isNotEmpty() && !it.startsWith(CONNECTED_ACTIVITY_PREFIX)
+                        }.distinct().toMutableList()
+                        for (entry in connectedSummits) {
+                            placesSuggestions.add(entry.getConnectedEntryString(context))
+                        }
+
                         AdditionalDataFields(
                             topElevation, { topElevation = it },
                             duration, { duration = it },
@@ -385,7 +422,8 @@ fun AddSummitDialogCompose(
                             onPeakToggle,
                             elevationAndSpeedExpanded, { elevationAndSpeedExpanded = it },
                             locationDetailsExpanded, { locationDetailsExpanded = it },
-                            commentsExpanded, { commentsExpanded = it }
+                            commentsExpanded, { commentsExpanded = it },
+                            placesSuggestions = placesSuggestions
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -433,8 +471,8 @@ fun AddSummitDialogCompose(
                                         entity, summitName, tourDate, selectedSportType,
                                         kilometers, heightMeter, topElevation, duration, topSpeed,
                                         comments, participants, places, countries, equipments,
-                                        performanceState, isBookmark, latlngHighestPoint,
-                                        garminDataFromGarminConnect
+                                        performanceState, isBookmark, latLngHighestPoint,
+                                        garminDataFromGarminConnect, connectedSummits, context
                                     )
 
                                     onSaveSummit(isEdit, entity).invokeOnCompletion {
@@ -569,10 +607,14 @@ fun SportTypeDropdown(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = it },
+        onExpandedChange = {
+            expanded = it
+            if (it) keyboardController?.hide()
+        },
         modifier = modifier
     ) {
         OutlinedTextField(
@@ -621,7 +663,8 @@ fun AdditionalDataFields(
     locationDetailsExpanded: Boolean,
     onLocationDetailsExpandedChange: (Boolean) -> Unit,
     commentsExpanded: Boolean,
-    onCommentsExpandedChange: (Boolean) -> Unit
+    onCommentsExpandedChange: (Boolean) -> Unit,
+    placesSuggestions: List<String> = emptyList()
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // Elevation & Speed Section
@@ -713,7 +756,7 @@ fun AdditionalDataFields(
                         R.drawable.outline_distance_24,
                         places,
                         onPlacesChange,
-                        summitsFromDatabase.flatMap { it.places + it.name }.distinct(),
+                        placesSuggestions.ifEmpty { summitsFromDatabase.flatMap { it.places + it.name }.distinct() },
                         peakIcon = R.drawable.outline_landscape_2_24,
                         nonPeakIcon = R.drawable.outline_landscape_2_off_24,
                         peaksList = peaks.map { it.name },
@@ -1188,13 +1231,13 @@ private suspend fun handleGpxTrackUpload(
 
 private fun updateLocationInfo(
     context: Context,
-    latlngHighestPoint: GeoPoint,
+    latLngHighestPoint: GeoPoint,
     summit: Summit,
     onUpdate: (String, String) -> Unit
 ) {
     OfflineMapAnalyzer.from(context).use { analyzer ->
         val info = analyzer.getClosestLocationInfo(
-            LatLong(latlngHighestPoint.latitude, latlngHighestPoint.longitude)
+            LatLong(latLngHighestPoint.latitude, latLngHighestPoint.longitude)
         )
 
         if (info != null) {
@@ -1236,15 +1279,29 @@ private fun saveSummit(
     equipments: List<String>,
     performanceState: PerformanceDataState,
     isBookmark: Boolean,
-    latlngHighestPoint: GeoPoint?,
-    garminDataFromGarminConnect: GarminData?
+    latLngHighestPoint: GeoPoint?,
+    garminDataFromGarminConnect: GarminData?,
+    connectedSummits: List<Summit> = emptyList(),
+    context: Context? = null
 ) {
     try {
         entity.date = if (isBookmark) Date() else Summit.parseDate(tourDate)
         entity.name = summitName
         entity.sportType = selectedSportType
+        // Convert connected entry display strings (e.g. "End of SummitName") back to ac_id:XXXXX format
+        val resolvedPlaces = places.map { place ->
+            var resolved: String? = null
+            for (connectedSummit in connectedSummits) {
+                val connectedEntryString = context?.let { connectedSummit.getConnectedEntryString(it) }
+                if (place == connectedEntryString) {
+                    resolved = "$CONNECTED_ACTIVITY_PREFIX${connectedSummit.activityId}"
+                    break
+                }
+            }
+            resolved ?: place
+        }
         // Filter out empty strings from lists before saving
-        entity.places = places.filter { it.isNotEmpty() }.toMutableList()
+        entity.places = resolvedPlaces.filter { it.isNotEmpty() }.toMutableList()
         entity.countries = countries.filter { it.isNotEmpty() }.toMutableList()
         entity.comments = comments
         entity.elevationData.elevationGain = heightMeter.toIntOrNull() ?: 0
@@ -1256,8 +1313,8 @@ private fun saveSummit(
         entity.participants = participants.filter { it.isNotEmpty() }.toMutableList()
         entity.equipments = equipments.filter { it.isNotEmpty() }.toMutableList()
 
-        if (entity.latLng == null && latlngHighestPoint != null) {
-            entity.latLng = latlngHighestPoint
+        if (entity.latLng == null && latLngHighestPoint != null) {
+            entity.latLng = latLngHighestPoint
         }
         entity.hasTrack = true
         if (isBookmark) entity.isBookmark = true
@@ -1306,5 +1363,18 @@ private fun saveSummit(
         }
     } catch (e: Exception) {
         e.printStackTrace()
+    }
+}
+
+private fun computeConnectedSummits(
+    entity: Summit,
+    summitsFromDatabase: List<Summit>
+): List<Summit> {
+    return summitsFromDatabase.filter { entry ->
+        entry.activityId != entity.activityId && run {
+            val differenceInMilliSec = entity.date.time - entry.date.time
+            val differenceInDays = round(TimeUnit.MILLISECONDS.toDays(differenceInMilliSec).toDouble())
+            0.0 < differenceInDays && differenceInDays <= 1.0
+        }
     }
 }

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,6 +45,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -160,9 +162,14 @@ fun SummitCard(
         Column {
             // Image and title section
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(if (currentSummit.hasImagePath()) 200.dp else 60.dp)
+                modifier = if (currentSummit.hasImagePath()) {
+                    Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                } else {
+                    Modifier
+                        .fillMaxWidth()
+                }
             ) {
                 // Background image if available
                 if (currentSummit.hasImagePath()) {
@@ -205,14 +212,14 @@ fun SummitCard(
                         Image(
                             painter = painterResource(id = sportTypeIcon),
                             contentDescription = stringResource(R.string.sport_type_image),
-                            modifier = Modifier.size(40.dp),
+                            modifier = Modifier.size(32.dp),
                             colorFilter = if (!currentSummit.hasImagePath() && !isDarkTheme) {
                                 ColorFilter.tint(androidx.compose.ui.graphics.Color.Black)
                             } else {
                                 ColorFilter.tint(androidx.compose.ui.graphics.Color.White)
                             }
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
 
                         // Date and Summit name column
                         Column(
@@ -244,12 +251,17 @@ fun SummitCard(
                                 } else {
                                     if (isDarkTheme) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color.Black
                                 },
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
                         // Record badges aligned to the right
-                        RecordBadges(summit = currentSummit)
+                        RecordBadges(
+                            summit = currentSummit,
+                            modifier = Modifier.wrapContentWidth(unbounded = true)
+                        )
                     }
                 }
             }
@@ -574,114 +586,106 @@ fun StatItem(icon: Int, text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun RecordBadges(summit: Summit) {
-    // Power record badge
-    val powerRecordColor = when (summit.activityId) {
-        in MainActivityCompose.activitiesWithPowerRecordsAll -> Color.rgb(255, 215, 0) // Gold
-        in MainActivityCompose.activitiesWithPowerRecordsLast5Years -> Color.rgb(
-            192,
-            192,
-            192
-        ) // Silver
-        in MainActivityCompose.activitiesWithPowerRecordsFiltered -> Color.rgb(
-            168,
-            112,
-            0
-        ) // Bronze
-        else -> null
-    }
-
-    if (powerRecordColor != null) {
-        IconButton(
-            onClick = {},
-            enabled = false
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_baseline_power_24),
-                contentDescription = stringResource(R.string.new_power_record),
-                tint = androidx.compose.ui.graphics.Color(powerRecordColor)
-            )
-        }
-    }
-
-    // Vertical velocity record badge
-    val verticalVelocityRecordColor = when (summit.activityId) {
-        in MainActivityCompose.activitiesWithVerticalVelocityRecordsAll -> Color.rgb(255, 215, 0) // Gold
-        in MainActivityCompose.activitiesWithVerticalVelocityRecordsLast5Years -> Color.rgb(
-            192,
-            192,
-            192
-        ) // Silver
-        in MainActivityCompose.activitiesWithVerticalVelocityRecordsFiltered -> Color.rgb(
-            168,
-            112,
-            0
-        ) // Bronze
-        else -> null
-    }
-
-    if (verticalVelocityRecordColor != null) {
-        IconButton(
-            onClick = {},
-            enabled = false
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.baseline_trending_up_black_24dp),
-                contentDescription = stringResource(R.string.new_vertical_velocity_record),
-                tint = androidx.compose.ui.graphics.Color(verticalVelocityRecordColor)
-            )
-        }
-    }
-
-    // Average velocity record badge
-    val averageVelocityRecordColor = when (summit.activityId) {
-        in MainActivityCompose.activitiesWithAverageVelocityRecordsAll -> Color.rgb(255, 215, 0) // Gold
-        in MainActivityCompose.activitiesWithAverageVelocityRecordsLast5Years -> Color.rgb(
-            192,
-            192,
-            192
-        ) // Silver
-        in MainActivityCompose.activitiesWithAverageVelocityRecordsFiltered -> Color.rgb(
-            168,
-            112,
-            0
-        ) // Bronze
-        else -> null
-    }
-
-    if (averageVelocityRecordColor != null) {
-        IconButton(
-            onClick = {},
-            enabled = false
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.baseline_speed_black_24dp),
-                contentDescription = stringResource(R.string.new_velocity_record),
-                tint = androidx.compose.ui.graphics.Color(averageVelocityRecordColor)
-            )
-        }
-    }
-
-    // Segment record badge
-    val bestPositionInSegment =
-        MainActivityCompose.activitiesWithSegmentsRecord.firstOrNull { it.first == summit.activityId }
-
-    if (bestPositionInSegment != null) {
-        val segmentColor = when (bestPositionInSegment.second) {
-            1 -> Color.rgb(255, 215, 0) // Gold
-            2 -> Color.rgb(192, 192, 192) // Silver
-            3 -> Color.rgb(168, 112, 0) // Bronze
+fun RecordBadges(summit: Summit, modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+    ) {
+        // Power record badge
+        val powerRecordColor = when (summit.activityId) {
+            in MainActivityCompose.activitiesWithPowerRecordsAll -> Color.rgb(255, 215, 0) // Gold
+            in MainActivityCompose.activitiesWithPowerRecordsLast5Years -> Color.rgb(
+                192,
+                192,
+                192
+            ) // Silver
+            in MainActivityCompose.activitiesWithPowerRecordsFiltered -> Color.rgb(
+                168,
+                112,
+                0
+            ) // Bronze
             else -> null
         }
 
-        if (segmentColor != null) {
-            IconButton(
-                onClick = {},
-                enabled = false
-            ) {
+        if (powerRecordColor != null) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_baseline_power_24),
+                contentDescription = stringResource(R.string.new_power_record),
+                modifier = Modifier.size(20.dp),
+                tint = androidx.compose.ui.graphics.Color(powerRecordColor)
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+        }
+
+        // Vertical velocity record badge
+        val verticalVelocityRecordColor = when (summit.activityId) {
+            in MainActivityCompose.activitiesWithVerticalVelocityRecordsAll -> Color.rgb(255, 215, 0) // Gold
+            in MainActivityCompose.activitiesWithVerticalVelocityRecordsLast5Years -> Color.rgb(
+                192,
+                192,
+                192
+            ) // Silver
+            in MainActivityCompose.activitiesWithVerticalVelocityRecordsFiltered -> Color.rgb(
+                168,
+                112,
+                0
+            ) // Bronze
+            else -> null
+        }
+
+        if (verticalVelocityRecordColor != null) {
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_trending_up_black_24dp),
+                contentDescription = stringResource(R.string.new_vertical_velocity_record),
+                modifier = Modifier.size(20.dp),
+                tint = androidx.compose.ui.graphics.Color(verticalVelocityRecordColor)
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+        }
+
+        // Average velocity record badge
+        val averageVelocityRecordColor = when (summit.activityId) {
+            in MainActivityCompose.activitiesWithAverageVelocityRecordsAll -> Color.rgb(255, 215, 0) // Gold
+            in MainActivityCompose.activitiesWithAverageVelocityRecordsLast5Years -> Color.rgb(
+                192,
+                192,
+                192
+            ) // Silver
+            in MainActivityCompose.activitiesWithAverageVelocityRecordsFiltered -> Color.rgb(
+                168,
+                112,
+                0
+            ) // Bronze
+            else -> null
+        }
+
+        if (averageVelocityRecordColor != null) {
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_speed_black_24dp),
+                contentDescription = stringResource(R.string.new_velocity_record),
+                modifier = Modifier.size(20.dp),
+                tint = androidx.compose.ui.graphics.Color(averageVelocityRecordColor)
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+        }
+
+        // Segment record badge
+        val bestPositionInSegment =
+            MainActivityCompose.activitiesWithSegmentsRecord.firstOrNull { it.first == summit.activityId }
+
+        if (bestPositionInSegment != null) {
+            val segmentColor = when (bestPositionInSegment.second) {
+                1 -> Color.rgb(255, 215, 0) // Gold
+                2 -> Color.rgb(192, 192, 192) // Silver
+                3 -> Color.rgb(168, 112, 0) // Bronze
+                else -> null
+            }
+
+            if (segmentColor != null) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_baseline_route_24),
                     contentDescription = stringResource(R.string.new_segment_record),
+                    modifier = Modifier.size(20.dp),
                     tint = androidx.compose.ui.graphics.Color(segmentColor)
                 )
             }

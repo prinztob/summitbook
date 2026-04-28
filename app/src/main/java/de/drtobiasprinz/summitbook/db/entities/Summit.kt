@@ -2,6 +2,7 @@ package de.drtobiasprinz.summitbook.db.entities
 
 import android.content.Context
 import android.content.res.Resources
+import android.util.Log
 import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import androidx.room.Entity
@@ -358,10 +359,11 @@ class Summit(
             connectedEntries.add(connectedSummit)
             connectedEntries.addAll(
                 connectedSummit.getConnectedEntriesWhichReferenceThisEntry(
-                    summits
+                    summits.filter { it.activityId != connectedSummit.activityId }
                 )
             )
         }
+        Log.i("Summit", "getConnectedEntriesWhichReferenceThisEntry for summit ${getDateAsString()}_${name} is $connectedEntries")
         return connectedEntries
     }
 
@@ -374,10 +376,11 @@ class Summit(
                     summits?.firstOrNull { it.activityId == (matchResult.groupValues[1].toLong()) }
                 if (connectedSummit != null) {
                     connectedEntries.add(connectedSummit)
-                    connectedEntries.addAll(connectedSummit.getConnectedEntriesFromPlaces(summits))
+                    connectedEntries.addAll(connectedSummit.getConnectedEntriesFromPlaces(summits.filter { it.activityId != connectedSummit.activityId }))
                 }
             }
         }
+        Log.i("Summit", "getConnectedEntriesFromPlaces for summit ${getDateAsString()}_${name} is $connectedEntries")
         return connectedEntries
     }
 

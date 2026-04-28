@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +61,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import androidx.compose.ui.platform.LocalConfiguration
 
 /**
  * Jetpack Compose version of AddAdditionalDataFromExternalResourcesDialog
@@ -74,7 +73,6 @@ fun AddAdditionalDataDialogCompose(
     onDismiss: () -> Unit,
     onSaveSummit: (Boolean, Summit) -> Job
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     // State management
@@ -87,7 +85,6 @@ fun AddAdditionalDataDialogCompose(
         summitEntry = summit.clone()
         scope.launch {
             extractDataFromFilesAndPutIntoView(
-                context = context,
                 summit = summitEntry,
                 tableEntries = tableEntries,
                 onLoadingChanged = { isLoading = it }
@@ -176,7 +173,7 @@ fun AddAdditionalDataDialogCompose(
                         },
                         onRecalculate = {
                             scope.launch {
-                                recalculateSummit(context, summitEntry, tableEntries) { isLoading = it }
+                                recalculateSummit(summitEntry) { isLoading = it }
                             }
                         },
                         onDelete = {
@@ -260,7 +257,7 @@ private fun TableEntryRow(
     index: Int,
     onEntryChanged: (TableEntry) -> Unit
 ) {
-    val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
     val isDarkTheme = isSystemInDarkTheme()
     val defaultBackground = MaterialTheme.colorScheme.surface
     val greenBackground = Color(0xFF4CAF50)
@@ -271,18 +268,18 @@ private fun TableEntryRow(
         "-"
     } else {
         String.format(
-            context.resources.configuration.locales[0],
+            locale,
             if (entry.tableEntry.isInt) "%.0f %s" else "%.1f %s",
             currentValue * entry.tableEntry.scaleFactorView,
-            context.getString(entry.tableEntry.unitId)
+            stringResource(entry.tableEntry.unitId)
         )
     }
 
     val newValueAsString = String.format(
-        context.resources.configuration.locales[0],
+        locale,
         if (entry.tableEntry.isInt) "%.0f %s" else "%.1f %s",
         entry.value * entry.tableEntry.scaleFactorView,
-        context.getString(entry.tableEntry.unitId)
+        stringResource(entry.tableEntry.unitId)
     )
 
     val backgroundColor = if (index % 2 == 1) {
@@ -305,7 +302,7 @@ private fun TableEntryRow(
     ) {
         // Entry name
         Text(
-            text = context.getString(entry.tableEntry.nameId),
+            text = stringResource(entry.tableEntry.nameId),
             modifier = Modifier.weight(1f),
             fontSize = 12.sp
         )
@@ -431,7 +428,6 @@ private fun ActionButtons(
  * Extract data from GPX files and populate table entries
  */
 private suspend fun extractDataFromFilesAndPutIntoView(
-    context: Context,
     summit: Summit,
     tableEntries: MutableList<TableEntry>,
     onLoadingChanged: (Boolean) -> Unit
@@ -442,7 +438,7 @@ private suspend fun extractDataFromFilesAndPutIntoView(
         extractGpxPyJson(gpxPyJsonFile, summit, tableEntries)
     } else {
         onLoadingChanged(true)
-        recalculateSummit(context, summit, tableEntries, onLoadingChanged)
+        recalculateSummit(summit, onLoadingChanged)
         // After recalculation, extract the data again
         val updatedGpxPyJsonFile = summit.getGpxPyPath().toFile()
         if (updatedGpxPyJsonFile.exists()) {
@@ -481,9 +477,7 @@ private fun extractGpxPyJson(
  * Recalculate summit data using GpxPyExecutor
  */
 private suspend fun recalculateSummit(
-    context: Context,
     summit: Summit,
-    tableEntries: MutableList<TableEntry>,
     onLoadingChanged: (Boolean) -> Unit
 ) {
     onLoadingChanged(true)

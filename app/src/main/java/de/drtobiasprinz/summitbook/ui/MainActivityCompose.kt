@@ -104,8 +104,8 @@ import de.drtobiasprinz.summitbook.ui.compose.StatisticsScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntitiesScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitsListScreen
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
-import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
 import de.drtobiasprinz.summitbook.ui.utils.DistanceIntervalVelocity
+import de.drtobiasprinz.summitbook.ui.utils.GarminDataUpdater
 import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.ui.utils.TimeIntervalPower
 import de.drtobiasprinz.summitbook.ui.utils.TimeIntervalVerticalVelocity
@@ -164,29 +164,30 @@ class MainActivityCompose : ComponentActivity(),
 
         // Enable edge-to-edge
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        
+
         // Initialize disk I/O operations off main thread to avoid StrictMode violations
         lifecycleScope.launch(Dispatchers.IO) {
             // SharedPreferences access involves disk read
-            val prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this@MainActivityCompose)
+            val prefs =
+                androidx.preference.PreferenceManager.getDefaultSharedPreferences(this@MainActivityCompose)
             prefs.registerOnSharedPreferenceChangeListener(this@MainActivityCompose)
             sharedPreferences = prefs
-            
+
             // File system operations
             val filesDir = applicationContext.filesDir
             val cacheDir = applicationContext.cacheDir
             storage = filesDir
             cache = cacheDir
             activitiesDir = File(filesDir, "activities")
-            
+
             val heatmapDirectory = File(filesDir, "heatmaps")
             heatmapDirectory.mkdirs()
             heatmapDir = heatmapDirectory
-            
+
             val segmentScreenshotDirectory = File(filesDir, "segmentScreenshots")
             segmentScreenshotDirectory.mkdirs()
             segmentScreenshotDir = segmentScreenshotDirectory
-            
+
             // Pre-initialize OSMDroid tile cache database to avoid StrictMode violation
             // SqlTileWriter accesses SQLite when MapView is created
             try {
@@ -198,7 +199,7 @@ class MainActivityCompose : ComponentActivity(),
             } catch (e: Exception) {
                 Log.w("MainActivityCompose", "Failed to pre-initialize OSMDroid tile cache", e)
             }
-            
+
             // Initialize Python and MapsForge off main thread to prevent frame skips
             if (!Python.isStarted()) {
                 Python.start(AndroidPlatform(this@MainActivityCompose))
@@ -337,7 +338,7 @@ class MainActivityCompose : ComponentActivity(),
                         var searchText by remember { mutableStateOf("") }
                         var isSearching by remember { mutableStateOf(false) }
                         val focusRequester = remember { FocusRequester() }
-                        
+
                         // Debounced search job to prevent excessive filtering on main thread
                         var searchJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
@@ -365,7 +366,10 @@ class MainActivityCompose : ComponentActivity(),
                                                 searchJob = coroutineScope.launch {
                                                     delay(300) // 300ms debounce
                                                     withContext(Dispatchers.Default) {
-                                                        val filtered = sortFilterValues.applyForSummits(summitsFromDatabase)
+                                                        val filtered =
+                                                            sortFilterValues.applyForSummits(
+                                                                summitsFromDatabase
+                                                            )
                                                         withContext(Dispatchers.Main) {
                                                             filteredSummits = filtered
                                                         }
@@ -381,7 +385,10 @@ class MainActivityCompose : ComponentActivity(),
                                                     searchJob?.cancel()
                                                     coroutineScope.launch {
                                                         withContext(Dispatchers.Default) {
-                                                            val filtered = sortFilterValues.applyForSummits(summitsFromDatabase)
+                                                            val filtered =
+                                                                sortFilterValues.applyForSummits(
+                                                                    summitsFromDatabase
+                                                                )
                                                             withContext(Dispatchers.Main) {
                                                                 filteredSummits = filtered
                                                             }
@@ -515,7 +522,8 @@ class MainActivityCompose : ComponentActivity(),
                             onApply = {
                                 coroutineScope.launch {
                                     withContext(Dispatchers.Default) {
-                                        val filtered = sortFilterValues.applyForSummits(summitsFromDatabase)
+                                        val filtered =
+                                            sortFilterValues.applyForSummits(summitsFromDatabase)
                                         withContext(Dispatchers.Main) {
                                             filteredSummits = filtered
                                         }
@@ -848,8 +856,8 @@ class MainActivityCompose : ComponentActivity(),
 
             Destination.Diagrams -> {
                 LineChartScreen(
-                    filteredSummits = filteredSummits,
-                    onNavigateToSummitDetails = { startSummitEntryDetailsComposeActivity(it) })
+                    filteredSummits = filteredSummits
+                )
             }
 
             Destination.BarCharts -> {
@@ -1322,7 +1330,8 @@ class MainActivityCompose : ComponentActivity(),
             getSummitIdsWithVerticalVelocityRecord(filteredSummits)
         activitiesWithVerticalVelocityRecordsLast5Years = getSummitIdsWithVerticalVelocityRecord(
             allSummits.filter { it.date.after(calendar.time) })
-        activitiesWithVerticalVelocityRecordsAll = getSummitIdsWithVerticalVelocityRecord(allSummits)
+        activitiesWithVerticalVelocityRecordsAll =
+            getSummitIdsWithVerticalVelocityRecord(allSummits)
 
         // Calculate average velocity records
         activitiesWithAverageVelocityRecordsFiltered =
@@ -1363,16 +1372,19 @@ class MainActivityCompose : ComponentActivity(),
     private fun getSummitIdsWithVerticalVelocityRecord(
         summits: List<Summit>,
     ): List<Long> {
-        return TimeIntervalVerticalVelocity.entries.mapNotNull { interval ->
-            summits.filter { interval.value(it) > 0.0 }.maxByOrNull { interval.value(it) }?.activityId
-        }
+        return TimeIntervalVerticalVelocity.entries.filter { it.relevantForRecords }
+            .mapNotNull { interval ->
+                summits.filter { interval.value(it) > 0.0 }
+                    .maxByOrNull { interval.value(it) }?.activityId
+            }
     }
 
     private fun getSummitIdsWithAverageVelocityRecord(
         summits: List<Summit>,
     ): List<Long> {
         return DistanceIntervalVelocity.entries.mapNotNull { interval ->
-            summits.filter { interval.value(it) > 0.0 }.maxByOrNull { interval.value(it) }?.activityId
+            summits.filter { interval.value(it) > 0.0 }
+                .maxByOrNull { interval.value(it) }?.activityId
         }
     }
 

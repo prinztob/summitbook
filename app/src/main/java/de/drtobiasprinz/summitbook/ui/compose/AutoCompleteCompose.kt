@@ -20,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -36,7 +38,6 @@ import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
 import de.drtobiasprinz.summitbook.R
 
-@Suppress("AssignedValueIsNeverRead")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AutoCompleteCompose(
@@ -57,6 +58,15 @@ fun AutoCompleteCompose(
     }
 
     var expanded by remember { mutableStateOf(false) }
+
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    // Dismiss keyboard when dropdown with suggestions appears so it's not hidden behind the keyboard
+    LaunchedEffect(expanded, filteredOptions.isNotEmpty()) {
+        if (expanded && filteredOptions.isNotEmpty()) {
+            keyboardController?.hide()
+        }
+    }
 
     ExposedDropdownMenuBox(
         modifier = modifier,
@@ -142,6 +152,15 @@ fun AutoCompleteComposeChipField(
 
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            val keyboardController = LocalSoftwareKeyboardController.current
+
+            // Dismiss keyboard when dropdown with suggestions appears so it's not hidden behind the keyboard
+            LaunchedEffect(expanded, filteredOptions.isNotEmpty()) {
+                if (expanded && filteredOptions.isNotEmpty()) {
+                    keyboardController?.hide()
+                }
+            }
+
             ExposedDropdownMenuBox(
                 modifier = Modifier.weight(1f),
                 expanded = expanded,
