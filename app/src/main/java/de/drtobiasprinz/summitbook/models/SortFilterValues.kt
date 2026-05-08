@@ -94,10 +94,6 @@ class SortFilterValues(
         return if (wasFullYearSelected() && years.isNotEmpty() && years.size > selectedDateSpinner - 2) years[selectedDateSpinner - 2] else ""
     }
 
-    fun wasCurrentYearSelected(): Boolean {
-        return wasFullYearSelected() && (Calendar.getInstance())[Calendar.YEAR] == getSelectedYear().toInt()
-    }
-
     fun wasFullYearSelected(): Boolean {
         return selectedDateSpinner >= 2
     }
@@ -137,13 +133,6 @@ class SortFilterValues(
         }
     }
 
-    fun applyForBookmarks(summits: List<Summit>): List<Summit> {
-        val filteredSummits = summits.filter {
-            it.isBookmark
-        }
-        return sortByAscOrDesc(filteredSummits)
-    }
-
     fun applyForSegments(segments: List<Segment>): List<Segment> {
         return if (orderByAscDescButtonGroup == OrderByAscDescButtonGroup.Ascending) {
             segments.sortedBy { orderByValueSpinner.segmentSorting(it) }
@@ -174,8 +163,8 @@ class SortFilterValues(
         return summit.participants.containsAll(participants)
     }
 
-    fun setToDefault() {
-        selectedDateSpinner = selectedDateSpinnerDefault
+    fun setToDefault(dateSpinner: Int = selectedDateSpinnerDefault) {
+        selectedDateSpinner = dateSpinner
         setDates()
         sportType = null
         kilometersSlider = RangeSliderValues({ e -> e.kilometers.toFloat() })

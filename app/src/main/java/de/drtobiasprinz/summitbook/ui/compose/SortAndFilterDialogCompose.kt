@@ -85,7 +85,7 @@ fun SortAndFilterDialogCompose(
     var startDate by remember { mutableStateOf(sortFilterValues.startDate) }
     var endDate by remember { mutableStateOf(sortFilterValues.endDate) }
     var sportType by remember { mutableStateOf(sortFilterValues.sportType) }
-    var participants by remember { mutableStateOf(sortFilterValues.participants.toMutableList()) }
+    var participants by remember { mutableStateOf(sortFilterValues.participants) }
 
     // Button group states
     var orderByAscDesc by remember { mutableStateOf(sortFilterValues.orderByAscDescButtonGroup) }
@@ -295,13 +295,12 @@ fun SortAndFilterDialogCompose(
                             onDismiss()
                         },
                         onApplyAll = {
-                            sortFilterValues.setToDefault()
-                            sortFilterValues.selectedDateSpinner = 0
+                            sortFilterValues.setToDefault(0)
                             startDate = null
                             endDate = null
                             selectedDateSpinner = 0
                             sportType = null
-                            participants.clear()
+                            participants = emptyList()
                             orderByAscDesc = OrderByAscDescButtonGroup.Descending
                             orderByValue = OrderBySpinnerEntry.Date
                             hasGpxTrack = HasGpxTrackButtonGroup.Indifferent
