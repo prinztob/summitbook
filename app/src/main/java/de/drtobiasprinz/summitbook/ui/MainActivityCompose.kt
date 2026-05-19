@@ -47,6 +47,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
@@ -65,6 +66,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.asFlow
@@ -90,6 +93,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.Poster
 import de.drtobiasprinz.summitbook.models.SortFilterValues
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
+import de.drtobiasprinz.summitbook.ui.compose.AddSegmentEntryScreen
 import de.drtobiasprinz.summitbook.ui.compose.AddSummitDialogCompose
 import de.drtobiasprinz.summitbook.ui.compose.BarChartScreen
 import de.drtobiasprinz.summitbook.ui.compose.ForecastScreen
@@ -152,6 +156,10 @@ class MainActivityCompose : ComponentActivity(),
     private var showSortAndFilterDialog by mutableStateOf(false)
     private var showAddSummitDialog by mutableStateOf(false)
     private var newSummitsSelectedDate by mutableStateOf<Date?>(null)
+
+    // Segment entry states
+    private var summitForSegmentEntry by mutableStateOf<Summit?>(null)
+    private var showAddSegmentEntryScreen by mutableStateOf(false)
 
     // Loading state
     private val loadingState = mutableStateOf(false)
@@ -534,6 +542,48 @@ class MainActivityCompose : ComponentActivity(),
                         )
                     }
 
+                    // Show Add Segment Entry Screen when requested (for adding mountain pass from map)
+                    if (showAddSegmentEntryScreen && summitForSegmentEntry != null) {
+                        val segmentsList by viewModel.segmentsList.asFlow()
+                            .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
+                        val segments = segmentsList.data ?: emptyList()
+                        val summit = summitForSegmentEntry!!
+                        Dialog(
+                            onDismissRequest = {
+                                showAddSegmentEntryScreen = false
+                                summitForSegmentEntry = null
+                            },
+                            properties = DialogProperties(
+                                dismissOnBackPress = true,
+                                dismissOnClickOutside = false,
+                                usePlatformDefaultWidth = false
+                            )
+                        ) {
+                            Surface(
+                                modifier = Modifier.fillMaxSize(),
+                                color = MaterialTheme.colorScheme.background
+                            ) {
+                                AddSegmentEntryScreen(
+                                    segmentId = -1,
+                                    segmentEntryId = null,
+                                    segments = segments,
+                                    summits = summitsFromDatabase,
+                                    onSaveSegmentEntry = { isUpdate, segmentEntry ->
+                                        viewModel.saveSegmentEntry(isUpdate, segmentEntry)
+                                    },
+                                    onCancel = {
+                                        showAddSegmentEntryScreen = false
+                                        summitForSegmentEntry = null
+                                    },
+                                    preselectedSummit = summit,
+                                    hideSummitDropdown = true,
+                                    initialStartPointId = 0,
+                                    initialEndPointId = -1,
+                                )
+                            }
+                        }
+                    }
+
                     // Loading indicator
                     if (loadingState.value) {
                         Box(
@@ -821,6 +871,10 @@ class MainActivityCompose : ComponentActivity(),
                                 val peakToRemove = peaks.find { it.name == placeName }
                                 peakToRemove?.let { viewModel.deletePeak(it) }
                             }
+                        },
+                        onAddSegmentEntry = { summit ->
+                            summitForSegmentEntry = summit
+                            showAddSegmentEntryScreen = true
                         }
                     )
                 }

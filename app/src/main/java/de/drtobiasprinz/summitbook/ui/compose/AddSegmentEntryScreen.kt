@@ -60,6 +60,7 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.models.GpsTrack
 import de.drtobiasprinz.summitbook.models.TrackColor
+import de.drtobiasprinz.summitbook.ui.utils.ElevationTrackAnalyzer
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils
 import de.drtobiasprinz.summitbook.ui.utils.TrackUtils
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
@@ -91,7 +92,11 @@ fun AddSegmentEntryScreen(
     segments: List<Segment>,
     summits: List<Summit>,
     onSaveSegmentEntry: (Boolean, SegmentEntry) -> Job,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    preselectedSummit: Summit? = null,
+    hideSummitDropdown: Boolean = false,
+    initialStartPointId: Int = 0,
+    initialEndPointId: Int = -1,
 ) {
     var uiState by remember { mutableStateOf(AddSegmentEntryUiState()) }
     var trackPoints by remember {
@@ -100,12 +105,55 @@ fun AddSegmentEntryScreen(
         )
     }
     val scope = rememberCoroutineScope()
+    val pointHistory = remember { mutableListOf<Pair<Int, Int>>() }
+    var canRevert by remember { mutableStateOf(false) }
+
+    val isMountainPassMode = segmentId == -1L
 
     // Process data when it changes
-    LaunchedEffect(segments, summits, segmentId, segmentEntryId) {
+    LaunchedEffect(segments, summits, segmentId, segmentEntryId, preselectedSummit) {
         val segment = segments.firstOrNull { it.segmentDetails.segmentDetailsId == segmentId }
 
-        if (segment != null) {
+        if (isMountainPassMode) {
+            // Mountain pass mode - no pre-selected segment, use preselected summit
+            val relevantSummits = if (preselectedSummit != null) {
+                val mutableSummits = summits.filter { it.hasGpsTrack() }.sortedByDescending { it.date }.toMutableList()
+                if (mutableSummits.none { it.activityId == preselectedSummit.activityId }) {
+                    mutableSummits.add(0, preselectedSummit)
+                }
+                mutableSummits.toList()
+            } else {
+                summits.filter { it.hasGpsTrack() }.sortedByDescending { it.date }
+            }
+
+            var endPointId = initialEndPointId
+
+            // Load track points for the current summit
+            if (preselectedSummit != null && trackPoints.isEmpty()) {
+                withContext(Dispatchers.IO) {
+                    preselectedSummit.setGpsTrack(useSimplifiedTrack = false)
+                    trackPoints = preselectedSummit.gpsTrack?.trackPoints ?: emptyList()
+                }
+            }
+
+            // If endPointId is -1, use the last track point index
+            if (endPointId == -1 && trackPoints.isNotEmpty()) {
+                endPointId = trackPoints.size - 1
+            }
+
+            uiState = uiState.copy(
+                segment = null,
+                segmentEntry = null,
+                relevantSummits = relevantSummits,
+                currentSummit = preselectedSummit,
+                trackPoints = trackPoints,
+                isLoading = false,
+                isUpdate = false,
+                startPointId = initialStartPointId,
+                endPointId = endPointId,
+                showFilteredSummitsWarning = false
+            )
+        } else if (segment != null) {
             val segmentEntry = if (segmentEntryId != null) {
                 segment.segmentEntries.firstOrNull { it.entryId == segmentEntryId }
             } else {
@@ -140,15 +188,16 @@ fun AddSegmentEntryScreen(
                 Pair(summits.filter { it.hasGpsTrack() }.sortedByDescending { it.date }, false)
             }
 
-            val currentSummit = if (segmentEntry != null) {
-                relevantSummits.firstOrNull { it.activityId == segmentEntry.activityId }
-            } else {
-                null
-            }
-            val startPointId = segmentEntry?.startPositionInTrack ?: 0
-            val endPointId = segmentEntry?.endPositionInTrack ?: 0
+            val currentSummit = preselectedSummit
+                ?: if (segmentEntry != null) {
+                    relevantSummits.firstOrNull { it.activityId == segmentEntry.activityId }
+                } else {
+                    null
+                }
+            val startPointId = if (preselectedSummit != null) initialStartPointId else segmentEntry?.startPositionInTrack ?: 0
+            var endPointId = if (preselectedSummit != null) initialEndPointId else segmentEntry?.endPositionInTrack ?: 0
 
-            // Load track points for the current summit if we're editing
+            // Load track points for the current summit
             if (currentSummit != null && trackPoints.isEmpty()) {
                 withContext(Dispatchers.IO) {
                     currentSummit.setGpsTrack(useSimplifiedTrack = false)
@@ -156,10 +205,26 @@ fun AddSegmentEntryScreen(
                 }
             }
 
+            // If endPointId is -1, use the last track point index
+            if (endPointId == -1 && trackPoints.isNotEmpty()) {
+                endPointId = trackPoints.size - 1
+            }
+
+            // Ensure preselected summit is in relevantSummits
+            val effectiveRelevantSummits = if (preselectedSummit != null) {
+                val mutableSummits = relevantSummits.toMutableList()
+                if (mutableSummits.none { it.activityId == preselectedSummit.activityId }) {
+                    mutableSummits.add(0, preselectedSummit)
+                }
+                mutableSummits.toList()
+            } else {
+                relevantSummits
+            }
+
             uiState = uiState.copy(
                 segment = segment,
                 segmentEntry = segmentEntry,
-                relevantSummits = relevantSummits,
+                relevantSummits = effectiveRelevantSummits,
                 currentSummit = currentSummit,
                 trackPoints = trackPoints,
                 isLoading = false,
@@ -168,7 +233,6 @@ fun AddSegmentEntryScreen(
                 endPointId = endPointId,
                 showFilteredSummitsWarning = showWarning
             )
-
         }
     }
 
@@ -208,10 +272,21 @@ fun AddSegmentEntryScreen(
                     }
                 },
                 onStartPointSelected = {
+                    pointHistory.add(Pair(uiState.startPointId, uiState.endPointId))
+                    canRevert = true
                     uiState = uiState.copy(startPointId = it)
                 },
                 onEndPointSelected = {
+                    pointHistory.add(Pair(uiState.startPointId, uiState.endPointId))
+                    canRevert = true
                     uiState = uiState.copy(endPointId = it)
+                },
+                onRevert = {
+                    if (pointHistory.isNotEmpty()) {
+                        val last = pointHistory.removeLast()
+                        uiState = uiState.copy(startPointId = last.first, endPointId = last.second)
+                        canRevert = pointHistory.isNotEmpty()
+                    }
                 },
                 onSave = { entry ->
                     onSaveSegmentEntry(
@@ -220,6 +295,9 @@ fun AddSegmentEntryScreen(
                     ).invokeOnCompletion { onCancel() }
                 },
                 onCancel = onCancel,
+                hideSummitDropdown = hideSummitDropdown,
+                isMountainPassMode = isMountainPassMode,
+                canRevert = canRevert,
             )
         }
     }
@@ -238,12 +316,18 @@ fun AddSegmentEntryContent(
     onCancel: () -> Unit,
     onStartPointSelected: (Int) -> Unit,
     onEndPointSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    onRevert: () -> Unit,
+    canRevert: Boolean,
+    modifier: Modifier = Modifier,
+    hideSummitDropdown: Boolean = false,
+    isMountainPassMode: Boolean = false,
 ) {
     var selectedSummitName by remember { mutableStateOf("") }
-    // Initialize selected summit name when editing an existing entry
-    LaunchedEffect(uiState.currentSummit, uiState.isUpdate) {
-        if (uiState.isUpdate && uiState.currentSummit != null && selectedSummitName.isEmpty()) {
+    var selectedSegmentName by remember { mutableStateOf("") }
+    var windowDistance by remember { mutableStateOf("500") }
+    // Initialize selected summit name when editing an existing entry or when summit is preselected
+    LaunchedEffect(uiState.currentSummit, uiState.isUpdate, hideSummitDropdown) {
+        if (uiState.currentSummit != null && selectedSummitName.isEmpty() && (uiState.isUpdate || hideSummitDropdown)) {
             selectedSummitName =
                 "${uiState.currentSummit.getDateAsString()} ${uiState.currentSummit.name}"
         }
@@ -264,44 +348,47 @@ fun AddSegmentEntryContent(
             .verticalScroll(rememberScrollState())
     ) {
         val none = stringResource(R.string.none)
-        // Summit selection dropdown
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it }
-        ) {
-            OutlinedTextField(
-                modifier = Modifier
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                    .fillMaxWidth(),
-                readOnly = true,
-                value = selectedSummitName,
-                onValueChange = {},
-                label = { Text(stringResource(R.string.select_summit)) },
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                },
-                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
-            )
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                summitSuggestions.forEach { suggestion ->
-                    DropdownMenuItem(
-                        text = { Text(suggestion) },
-                        onClick = {
-                            selectedSummitName = suggestion
-                            expanded = false
 
-                            if (suggestion != none) {
-                                val selectedSummit = uiState.relevantSummits.find {
-                                    "${it.getDateAsString()} ${it.name}" == suggestion
+        // Summit selection dropdown
+        if (!isMountainPassMode) {
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = it }
+            ) {
+                OutlinedTextField(
+                    modifier = Modifier
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                        .fillMaxWidth(),
+                    readOnly = true,
+                    value = selectedSummitName,
+                    onValueChange = {},
+                    label = { Text(stringResource(R.string.select_summit)) },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                    },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                )
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    summitSuggestions.forEach { suggestion ->
+                        DropdownMenuItem(
+                            text = { Text(suggestion) },
+                            onClick = {
+                                selectedSummitName = suggestion
+                                expanded = false
+
+                                if (suggestion != none) {
+                                    val selectedSummit = uiState.relevantSummits.find {
+                                        "${it.getDateAsString()} ${it.name}" == suggestion
+                                    }
+                                    selectedSummit?.let { onSummitSelected(it) }
                                 }
-                                selectedSummit?.let { onSummitSelected(it) }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -350,15 +437,17 @@ fun AddSegmentEntryContent(
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
-                Text(stringResource(R.string.cancelButtonText))
+                Text(stringResource(R.string.close))
             }
 
+            // Hide save button in mountain pass mode (not creating entity yet)
+            if (!isMountainPassMode) {
             Button(
                 onClick = {
                     // Create segment entry and save
                     uiState.currentSummit?.let { summit ->
                         val trackPoints = summit.gpsTrack?.trackPoints
-                        if (trackPoints != null && trackPoints.isNotEmpty() &&
+                        if (!trackPoints.isNullOrEmpty() &&
                             uiState.startPointId < trackPoints.size && uiState.endPointId < trackPoints.size
                         ) {
 
@@ -422,14 +511,34 @@ fun AddSegmentEntryContent(
             ) {
                 Text(if (uiState.isUpdate) stringResource(R.string.update) else stringResource(R.string.saveButtonText))
             }
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Window distance input for mountain pass mode
+        if (isMountainPassMode) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = windowDistance,
+                    onValueChange = { windowDistance = it },
+                    label = { Text(stringResource(R.string.window_distance_m)) },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+            }
+        }
+
         // Statistics display (when summit is selected)
         uiState.currentSummit?.let { summit ->
             val trackPoints = summit.gpsTrack?.trackPoints
-            if (trackPoints != null && trackPoints.isNotEmpty() &&
+            if (!trackPoints.isNullOrEmpty() &&
                 uiState.startPointId < trackPoints.size && uiState.endPointId < trackPoints.size
             ) {
 
@@ -461,15 +570,32 @@ fun AddSegmentEntryContent(
                     (((endTrackPoint.second.distance ?: 0.0) - (startTrackPoint.second.distance
                         ?: 0.0)) / 1000.0).coerceAtLeast(0.0)
 
+                // Compute mountain pass extra stats if in mountain pass mode
+                val elevationWindowResult = if (isMountainPassMode) {
+                    try {
+                        val actualStart = uiState.startPointId.coerceAtMost(uiState.endPointId)
+                        val actualEnd = uiState.endPointId.coerceAtLeast(uiState.startPointId)
+                        ElevationTrackAnalyzer.analyzeWindow(
+                            trackPoints, actualStart, actualEnd,
+                            windowDistance.toDoubleOrNull() ?: 500.0
+                        )
+                    } catch (_: Exception) {
+                        null
+                    }
+                } else null
+
                 AddSegmentStatsCard(
                     date = summit.getDateAsString() ?: "",
-                    name = uiState.segment?.segmentDetails?.getDisplayNameWithLineBreak() ?: "",
+                    name = if (isMountainPassMode) selectedSegmentName.ifBlank { stringResource(R.string.mountain_pass_info) } else uiState.segment?.segmentDetails?.getDisplayNameWithLineBreak() ?: "",
                     heightMeterUp = heightMeterResult.second.toInt(),
                     heightMeterDown = heightMeterResult.third.toInt(),
                     kilometers = distance,
                     averageHeartRate = averageHeartRate,
                     duration = duration,
-                    averagePower = averagePower
+                    averagePower = averagePower,
+                    elevationWindowResult = elevationWindowResult,
+                    windowDistanceMeters = if (isMountainPassMode) windowDistance else null,
+                    isMountainPassMode = isMountainPassMode
                 )
             }
         }
@@ -506,7 +632,7 @@ fun AddSegmentEntryContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Start/Stop selection toggle
+        // Start/Stop selection toggle with revert button
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -531,6 +657,19 @@ fun AddSegmentEntryContent(
                     uncheckedTrackColor = if (startSelected) Color.Green.copy(alpha = 0.5f) else Color.Red.copy(alpha = 0.5f)
                 )
             )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            IconButton(
+                onClick = onRevert,
+                enabled = canRevert
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_undo_24),
+                    contentDescription = stringResource(R.string.revert),
+                    tint = if (canRevert) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -577,7 +716,10 @@ fun AddSegmentStatsCard(
     averageHeartRate: Int,
     duration: Double,
     averagePower: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    elevationWindowResult: ElevationTrackAnalyzer.ElevationWindowResult? = null,
+    windowDistanceMeters: String? = null,
+    isMountainPassMode: Boolean = false,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -586,38 +728,42 @@ fun AddSegmentStatsCard(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_today_black_24dp),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = date,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+            if (!isMountainPassMode) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_today_black_24dp),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = date,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                AddSegmentStatItem(
-                    icon = R.drawable.baseline_trending_up_black_24dp,
-                    text = "$heightMeterUp/$heightMeterDown ${stringResource(R.string.hm)}"
-                )
+                if (!isMountainPassMode) {
+                    AddSegmentStatItem(
+                        icon = R.drawable.baseline_trending_up_black_24dp,
+                        text = "$heightMeterUp/$heightMeterDown ${stringResource(R.string.hm)}"
+                    )
+                }
 
                 AddSegmentStatItem(
                     icon = R.drawable.outline_distance_24,
@@ -630,31 +776,91 @@ fun AddSegmentStatsCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            if (!isMountainPassMode) {
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                AddSegmentStatItem(
-                    icon = R.drawable.ic_baseline_monitor_heart_24,
-                    text = "$averageHeartRate ${stringResource(R.string.bpm)}"
-                )
-
-                AddSegmentStatItem(
-                    icon = R.drawable.ic_baseline_timer_24,
-                    text = String.format(
-                        Locale.getDefault(),
-                        "%.1f %s",
-                        duration,
-                        stringResource(R.string.min)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    AddSegmentStatItem(
+                        icon = R.drawable.ic_baseline_monitor_heart_24,
+                        text = "$averageHeartRate ${stringResource(R.string.bpm)}"
                     )
-                )
 
-                AddSegmentStatItem(
-                    icon = R.drawable.ic_baseline_power_24,
-                    text = "$averagePower ${stringResource(R.string.watt)}"
-                )
+                    AddSegmentStatItem(
+                        icon = R.drawable.ic_baseline_timer_24,
+                        text = String.format(
+                            Locale.getDefault(),
+                            "%.1f %s",
+                            duration,
+                            stringResource(R.string.min)
+                        )
+                    )
+
+                    AddSegmentStatItem(
+                        icon = R.drawable.ic_baseline_power_24,
+                        text = "$averagePower ${stringResource(R.string.watt)}"
+                    )
+                }
+            }
+
+            // Mountain pass extra stats
+            if (elevationWindowResult != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    AddSegmentStatItem(
+                        icon = R.drawable.baseline_trending_flat_24,
+                        text = String.format(
+                            Locale.getDefault(),
+                            "%.1f%%",
+                            elevationWindowResult.avgGradient
+                        )
+                    )
+
+                    if (windowDistanceMeters != null) {
+                        AddSegmentStatItem(
+                            icon = R.drawable.baseline_trending_up_black_24dp,
+                            text = String.format(
+                                Locale.getDefault(),
+                                "%s: %.1f%%",
+                                windowDistanceMeters,
+                                elevationWindowResult.maxGradeInWindow
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    AddSegmentStatItem(
+                        icon = R.drawable.baseline_keyboard_double_arrow_up_black_24dp,
+                        text = String.format(
+                            Locale.getDefault(),
+                            "%.0f %s",
+                            elevationWindowResult.elevationGain,
+                            stringResource(R.string.hm)
+                        )
+                    )
+
+                    AddSegmentStatItem(
+                        icon = R.drawable.baseline_keyboard_double_arrow_down_black_24dp,
+                        text = String.format(
+                            Locale.getDefault(),
+                            "%.0f %s",
+                            elevationWindowResult.elevationLoss,
+                            stringResource(R.string.hm)
+                        )
+                    )
+                }
             }
         }
     }
@@ -924,7 +1130,7 @@ private fun guessStartAndEndPoint(
     entries: List<SegmentEntry>?,
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
 ): Pair<Int, Int>? {
-    if (entries != null && entries.isNotEmpty()) {
+    if (!entries.isNullOrEmpty()) {
         val firstStartPoint = GeoPoint(
             entries.first().startPositionLatitude,
             entries.first().startPositionLongitude

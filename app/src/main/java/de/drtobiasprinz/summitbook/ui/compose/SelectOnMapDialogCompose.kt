@@ -86,6 +86,7 @@ fun SelectOnMapDialogCompose(
     summit: Summit,
     onDismiss: () -> Unit,
     onSaveSummit: (Boolean, Summit) -> Job,
+    onAddSegmentEntry: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -436,6 +437,24 @@ fun SelectOnMapDialogCompose(
                         }
                     }
                     
+                    // Add mountain pass button
+                    if (!searchPanelVisible && onAddSegmentEntry != null) {
+                        IconButton(
+                            onClick = onAddSegmentEntry,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_add_mountain_pass_24),
+                                contentDescription = stringResource(R.string.add_mountain_pass)
+                            )
+                        }
+                    }
+
                     // Download from Garmin button
                     val garminData = summitEntry.garminData
                     if (!searchPanelVisible && garminData != null && garminData.activityIds.isNotEmpty()) {

@@ -1,6 +1,5 @@
 <resources>
     <string name="no_new_summits">Keine neuen Gipfel gefunden</string>
-    <string name="revert">Zurücksetzen</string>
     <string name="app_name">Gipfelbuch</string>
     <string name="waiting_for_location">Warte auf Standort…</string>
     <string name="location_permission_denied">Standortberechtigung verweigert. Bitte aktivieren Sie sie in den Einstellungen.</string>
@@ -88,6 +87,10 @@
     <string name="is_favorite">Markiere diesen Gipfel als Favorit</string>
     <string name="choose_data_source">Wähle Datenquelle</string>
     <string name="addGpsTrack">Füge GPS Track hinzu</string>
+    <string name="add_mountain_pass">Füge Pass hinzu</string>
+    <string name="select_pass_start_point">Wähle Pass-Startpunkt</string>
+    <string name="select_pass_end_point">Wähle Pass-Endpunkt</string>
+    <string name="no_gps_track_for_pass">Kein GPS-Track vorhanden. Bitte zuerst einen GPS-Track hinzufügen.</string>
     <string name="add_activity">Füge Garminaktivität hinzu</string>
     <string name="sort_entries">Sortiere Gipfel</string>
     <string name="descending">Absteigend</string>
@@ -670,5 +673,9 @@
     <string name="hiking">Wandern</string>
     <string name="winter">Winter</string>
     <string name="statistics">Statistics</string>
+    <string name="select_segment">Wähle Segment aus</string>
+    <string name="mountain_pass_info">Passinformationen</string>
+    <string name="window_distance_m">Fensterdistanz (m)</string>
+    <string name="revert">Rückgängig</string>
 </resources>
 

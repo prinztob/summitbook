@@ -71,7 +71,8 @@ fun SummitsListScreen(
     isBookmark: Boolean = false,
     onSaveSummit: (Boolean, Summit) -> Job,
     onDelete: (Summit) -> Unit = {},
-    onPeakToggle: ((String, Boolean) -> Unit)? = null
+    onPeakToggle: ((String, Boolean) -> Unit)? = null,
+    onAddSegmentEntry: ((Summit) -> Unit)? = null,
 ) {
     if (filteredSummits.isEmpty()) {
         // Show app icon and "no summit" message when list is empty
@@ -112,7 +113,8 @@ fun SummitsListScreen(
                     isBookmark = isBookmark,
                     onDelete = onDelete,
                     onSaveSummit = onSaveSummit,
-                    onPeakToggle = onPeakToggle
+                    onPeakToggle = onPeakToggle,
+                    onAddSegmentEntry = onAddSegmentEntry
                 )
             }
         }
@@ -131,7 +133,8 @@ fun SummitCard(
     isBookmark: Boolean,
     onDelete: (Summit) -> Unit,
     onSaveSummit: (Boolean, Summit) -> Job,
-    onPeakToggle: ((String, Boolean) -> Unit)? = null
+    onPeakToggle: ((String, Boolean) -> Unit)? = null,
+    onAddSegmentEntry: ((Summit) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -519,7 +522,10 @@ fun SummitCard(
                     refreshTrigger++
                 }
                 job
-            }
+            },
+            onAddSegmentEntry = if (onAddSegmentEntry != null) {
+                { onAddSegmentEntry.invoke(currentSummit) }
+            } else null
         )
     }
 

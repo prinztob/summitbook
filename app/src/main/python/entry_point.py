@@ -19,9 +19,14 @@ from garth.exc import GarthHTTPError
 from gpxpy.gpx import GPX, GPXTrackPoint
 
 from heatmap_generator import generate_heatmap
-from utils import get_number_of_track_points, parse_track, get_base_information_of_activities
+from utils import (
+    get_number_of_track_points,
+    parse_track,
+    get_base_information_of_activities,
+)
 from tcx_to_gpx import convert_tcx_to_gpx
 from Extension import Extension
+from src.elevation_track_analyzer import ElevationTrackAnalyzer
 from gpx_track_analyzer import TrackAnalyzer
 
 cycling_ids = [2, 5, 10, 19, 20, 21, 22, 25, 89, 143]
@@ -61,10 +66,10 @@ def init_api(user_name: str, password: str, output_file: str) -> Garmin | str:
             garmin.login(token_store)
             return garmin
         except (
-                FileNotFoundError,
-                GarthHTTPError,
-                GarminConnectAuthenticationError,
-                requests.exceptions.HTTPError,
+            FileNotFoundError,
+            GarthHTTPError,
+            GarminConnectAuthenticationError,
+            requests.exceptions.HTTPError,
         ) as err:
             return (
                 f"return code: 1Error occurred during Garmin Connect Client init: {err}"
@@ -80,7 +85,7 @@ def get_mfa() -> str:
 
 
 def get_activities_by_date(
-        api: Garmin, start_date: str, end_date: str, activity_type: str | None
+    api: Garmin, start_date: str, end_date: str, activity_type: str | None
 ) -> list[dict[str, Any]]:
     """Return available activities."""
     url = api.garmin_connect_activities
@@ -113,7 +118,7 @@ def get_exercise_sets(api: Garmin, activity_id: str) -> dict[str, Any]:
 
 
 def api_connect_wrapper(
-        url: str, api: Garmin, params: dict[str, str] = {}
+    url: str, api: Garmin, params: dict[str, str] = {}
 ) -> dict[str, Any]:
     value = api.connectapi(url, params=params)
     return value if isinstance(value, dict) else {}
@@ -128,9 +133,9 @@ def get_daily_events(api: Garmin, selected_date: str) -> dict[str, Any] | str:
         print(f"Fetching daily events with url {url} for date {selected_date}")
         return api_connect_wrapper(url, api, params)
     except (
-            GarminConnectConnectionError,
-            GarminConnectAuthenticationError,
-            GarminConnectTooManyRequestsError,
+        GarminConnectConnectionError,
+        GarminConnectAuthenticationError,
+        GarminConnectTooManyRequestsError,
     ) as err:
         return (
             f"return code: 1: Error occurred during Garmin Connect Client get daily events for date "
@@ -148,9 +153,9 @@ def get_user_summary(api: Garmin, selected_date: str) -> dict[str, Any] | str:
         value = api.get_user_summary(selected_date)
         return value if isinstance(value, dict) else {}
     except (
-            GarminConnectConnectionError,
-            GarminConnectAuthenticationError,
-            GarminConnectTooManyRequestsError,
+        GarminConnectConnectionError,
+        GarminConnectAuthenticationError,
+        GarminConnectTooManyRequestsError,
     ) as err:
         return (
             f"return code: 1: Error occurred during Garmin Connect Client get user summary for date "
@@ -169,9 +174,9 @@ def get_hrv(api: Garmin, selected_date: str) -> dict[str, Any] | str:
         value = api.get_hrv_data(selected_date)
         return value if isinstance(value, dict) else {}
     except (
-            GarminConnectConnectionError,
-            GarminConnectAuthenticationError,
-            GarminConnectTooManyRequestsError,
+        GarminConnectConnectionError,
+        GarminConnectAuthenticationError,
+        GarminConnectTooManyRequestsError,
     ) as err:
         return (
             f"return code: 1: Error occurred during Garmin Connect Client get daily hrv for for "
@@ -193,7 +198,7 @@ def is_cycling(activity: dict[str, Any]) -> bool:
 
 
 def download_tcx(
-        api: Garmin, activity_id: str, output_file_tcx: str, output_file_gpx: str
+    api: Garmin, activity_id: str, output_file_tcx: str, output_file_gpx: str
 ) -> str:
     try:
         gpx_data = api.download_activity(
@@ -204,9 +209,9 @@ def download_tcx(
         convert_tcx_to_gpx(Path(output_file_tcx), Path(output_file_gpx))
         return "return code: 0"
     except (
-            GarminConnectConnectionError,
-            GarminConnectAuthenticationError,
-            GarminConnectTooManyRequestsError,
+        GarminConnectConnectionError,
+        GarminConnectAuthenticationError,
+        GarminConnectTooManyRequestsError,
     ) as err:
         return f"return code: 1Error occurred during Garmin Connect Client download tcx for id {activity_id}: {err}"
     except Exception as err:
@@ -217,11 +222,11 @@ def download_tcx(
 
 
 def download_gpx_and_transfer_tcx_to_extension(
-        api: Garmin,
-        activity_id: str,
-        output_file_path_gpx: str,
-        out_file_path_yaml: str,
-        output_file_path_tcx: str = tempfile.NamedTemporaryFile().name,
+    api: Garmin,
+    activity_id: str,
+    output_file_path_gpx: str,
+    out_file_path_yaml: str,
+    output_file_path_tcx: str = tempfile.NamedTemporaryFile().name,
 ) -> str:
     try:
         tcx_data = api.download_activity(
@@ -237,9 +242,9 @@ def download_gpx_and_transfer_tcx_to_extension(
         )
         return "return code: 0"
     except (
-            GarminConnectConnectionError,
-            GarminConnectAuthenticationError,
-            GarminConnectTooManyRequestsError,
+        GarminConnectConnectionError,
+        GarminConnectAuthenticationError,
+        GarminConnectTooManyRequestsError,
     ) as err:
         return f"return code: 1Error occurred during Garmin Connect Client download tcx for id {activity_id}: {err}"
     except Exception as err:
@@ -258,9 +263,9 @@ def download_gpx(api: Garmin, activity_id: str, output_file: str) -> str:
             fb.write(gpx_data)
         return "return code: 0"
     except (
-            GarminConnectConnectionError,
-            GarminConnectAuthenticationError,
-            GarminConnectTooManyRequestsError,
+        GarminConnectConnectionError,
+        GarminConnectAuthenticationError,
+        GarminConnectTooManyRequestsError,
     ) as err:
         return f"return code: 1Error occurred during Garmin Connect Client download gpx for id {activity_id}: {err}"
     except Exception as err:
@@ -271,7 +276,7 @@ def download_gpx(api: Garmin, activity_id: str, output_file: str) -> str:
 
 
 def get_exercise_set(
-        api: Garmin, activity_id: str, folder: str
+    api: Garmin, activity_id: str, folder: str
 ) -> dict[str, Any] | str:
     try:
         sets = get_exercise_sets(api, activity_id)
@@ -281,9 +286,9 @@ def get_exercise_set(
                 json.dump(sets, fb)
         return sets
     except (
-            GarminConnectConnectionError,
-            GarminConnectAuthenticationError,
-            GarminConnectTooManyRequestsError,
+        GarminConnectConnectionError,
+        GarminConnectAuthenticationError,
+        GarminConnectTooManyRequestsError,
     ) as err:
         return f"return code: 1Error occurred during Garmin Connect Client get multi sport data: {err}"
     except Exception as err:
@@ -298,7 +303,7 @@ def get_split_data(api: Garmin, activity_id: str, folder: str) -> dict[str, Any]
 
 
 def get_power_data(
-        api: Garmin, selected_date: str
+    api: Garmin, selected_date: str
 ) -> dict[str, list[dict[str, str]]] | str:
     """
     Get power data
@@ -308,9 +313,9 @@ def get_power_data(
         print(f"Fetching power data with url {url}")
         return api_connect_wrapper(url, api)
     except (
-            GarminConnectConnectionError,
-            GarminConnectAuthenticationError,
-            GarminConnectTooManyRequestsError,
+        GarminConnectConnectionError,
+        GarminConnectAuthenticationError,
+        GarminConnectTooManyRequestsError,
     ) as err:
         return f"return code: 1Error occurred during Garmin Connect Client get power data: {err}"
     except Exception as err:  # pylint: disable=broad-except
@@ -332,9 +337,9 @@ def get_vo2max(api: Garmin, selected_date: str) -> str:
         else:
             return "0"
     except (
-            GarminConnectConnectionError,
-            GarminConnectAuthenticationError,
-            GarminConnectTooManyRequestsError,
+        GarminConnectConnectionError,
+        GarminConnectAuthenticationError,
+        GarminConnectTooManyRequestsError,
     ) as err:
         return f"return code: 1Error occurred during Garmin Connect Client get vo2max: {err}"
     except Exception as err:  # pylint: disable=broad-except
@@ -342,8 +347,8 @@ def get_vo2max(api: Garmin, selected_date: str) -> str:
 
 
 def download_activities_by_date(
-        api: Garmin, folder: str, start_date: str, end_date: str
-) -> str:
+    api: Garmin, folder: str, start_date: str, end_date: str
+) -> str | list[dict[str, Any]]:
     try:
         print(f"Download activities between {start_date} and {end_date}.")
         activities = get_activities_by_date(api, start_date, end_date, None)
@@ -387,9 +392,9 @@ def download_activities_by_date(
             get_exercise_set(api, activity_id, folder)
         return get_base_information_of_activities(activities)
     except (
-            GarminConnectConnectionError,
-            GarminConnectAuthenticationError,
-            GarminConnectTooManyRequestsError,
+        GarminConnectConnectionError,
+        GarminConnectAuthenticationError,
+        GarminConnectTooManyRequestsError,
     ) as err:
         return f"return code: 1Error occurred during Garmin Connect Client download activities by date: {err}"
     except Exception as err:  # pylint: disable=broad-except
@@ -397,23 +402,27 @@ def download_activities_by_date(
 
 
 def get_precise_vo2max(
-        api: Garmin, selected_date: str, activity: dict[str, Any]
+    api: Garmin, selected_date: str, activity: dict[str, Any]
 ) -> str:
     url = f"/metrics-service/metrics/maxmet/daily/{selected_date}/{selected_date}"
     response = api.connectapi(url)
     if len(response) > 0:
         data = response[0]
         if (
-                is_cycling(activity)
-                and data["cycling"]
-                and "vo2MaxPreciseValue" in data["cycling"]
+            is_cycling(activity)
+            and data["cycling"]
+            and "vo2MaxPreciseValue" in data["cycling"]
         ):
             vo2_max_precise_value = data["cycling"]["vo2MaxPreciseValue"]
-            print(f"Found cycling vo2MaxPreciseValue {vo2_max_precise_value} on {selected_date}.")
+            print(
+                f"Found cycling vo2MaxPreciseValue {vo2_max_precise_value} on {selected_date}."
+            )
             return str(vo2_max_precise_value)
         elif data["generic"] and "vo2MaxPreciseValue" in data["generic"]:
             vo2_max_precise_value = data["generic"]["vo2MaxPreciseValue"]
-            print(f"Found generic vo2MaxPreciseValue {vo2_max_precise_value} on {selected_date}.")
+            print(
+                f"Found generic vo2MaxPreciseValue {vo2_max_precise_value} on {selected_date}."
+            )
             return str(vo2_max_precise_value)
     return "0"
 
@@ -426,8 +435,8 @@ def get_functional_threshold_power_for_cycling(api: Garmin, selected_date: str) 
             entry["functionalThresholdPower"]
             for entry in data
             if "sport" in entry
-               and entry["sport"] == "CYCLING"
-               and entry["ftpCreateTime"].startswith(selected_date)
+            and entry["sport"] == "CYCLING"
+            and entry["ftpCreateTime"].startswith(selected_date)
         ]
         if len(ftps) > 0:
             print(f"Found FTP {ftps[0]}.")
@@ -450,13 +459,13 @@ def download_splits(api: Garmin, activity_id: str, folder: str) -> dict[str, Any
 
 
 def update_power_data(
-        activity: dict[str, str], api: Garmin, selected_date: str
+    activity: dict[str, str], api: Garmin, selected_date: str
 ) -> None:
     power_data = get_power_data(api, selected_date)
     if (
-            isinstance(power_data, dict)
-            and "entries" in power_data
-            and len(power_data["entries"]) == 15
+        isinstance(power_data, dict)
+        and "entries" in power_data
+        and len(power_data["entries"]) == 15
     ):
         entries = power_data["entries"]
         activity["maxAvgPower_1"] = get_power_element_at(entries, 0)
@@ -480,11 +489,50 @@ def get_power_element_at(entries: list[dict[str, str]], index: int) -> str:
     return entries[index]["power"]
 
 
+def analyze_elevation_window(
+    gpx_path: str,
+    start_idx: int,
+    end_idx: int,
+    yaml_extensions_path: str | None = None,
+    additional_data_folder: str | None = None,
+) -> dict[str, float] | str:
+    """Analyze elevation gain, loss, average gradient and max gradient for a window of a GPX track.
+
+    Args:
+        gpx_path: Path to the GPX track file.
+        start_idx: Start index of the window (inclusive, 0-based).
+        end_idx: End index of the window (inclusive, 0-based).
+        yaml_extensions_path: Optional path to the YAML extensions file.
+        additional_data_folder: Optional folder for additional data files.
+
+    Returns:
+        Dictionary with elevation_gain, elevation_loss, avg_gradient, max_gradient,
+        window_length, or an error string if analysis fails.
+    """
+    try:
+        analyzer = TrackAnalyzer(
+            Path(gpx_path),
+            Path(additional_data_folder) if additional_data_folder else Path(gpx_path).parent,
+            yaml_file=Path(yaml_extensions_path) if yaml_extensions_path else None,
+        )
+        analyzer.set_all_points_with_distance()
+        points_with_time = [e for e in analyzer.all_points_with_extension if e[0].time]
+        points_with_time_and_elevation = [
+            e for e in points_with_time if e[0].elevation
+        ]
+        elevation_analyzer = ElevationTrackAnalyzer(points_with_time_and_elevation)
+        return elevation_analyzer.analyze_window(start_idx, end_idx)
+    except ValueError as err:
+        return f"Error: {err}"
+    except Exception as err:  # pylint: disable=broad-except
+        return f"return code: 1Unknown error occurred during elevation window analysis: {err}"
+
+
 def analyze_gpx_track(
-        gpx_path: str,
-        yaml_extensions_path: str,
-        additional_data_folder: str,
-        split_files: list[str],
+    gpx_path: str,
+    yaml_extensions_path: str,
+    additional_data_folder: str,
+    split_files: list[str],
 ) -> str:
     try:
         start_time = datetime.now()
@@ -522,11 +570,11 @@ def simplify_gpx_track(gpx_path: str, additional_data_folder: str) -> str:
 
 
 def merge_tracks(
-        gpx_track_files_to_merge: Any,
-        extension_yaml_files_to_merge: Any,
-        output_file: str,
-        name: str,
-        extensions_yaml_file: str | None = None,
+    gpx_track_files_to_merge: Any,
+    extension_yaml_files_to_merge: Any,
+    output_file: str,
+    name: str,
+    extensions_yaml_file: str | None = None,
 ) -> str:
     try:
         print(
@@ -560,11 +608,11 @@ def merge_tracks(
                         analyzer.all_points_with_extension
                     )
         if (
-                analyzer_for_all_tracks is not None
-                and analyzer_for_all_tracks.gpx is not None
+            analyzer_for_all_tracks is not None
+            and analyzer_for_all_tracks.gpx is not None
         ):
             if get_number_of_track_points(analyzer_for_all_tracks.gpx) != len(
-                    analyzer_for_all_tracks.all_points_with_extension
+                analyzer_for_all_tracks.all_points_with_extension
             ):
                 raise Exception("Extension points do not match gpx tracks")
             analyzer_for_all_tracks.gpx.name = name
@@ -612,8 +660,8 @@ def generate_heatmap_from_tracks(
 
 
 def remove_extensions_from_gpx_track(
-        input_gpx_track_file: str,
-        output_gpx_track_file: str | None = None,
+    input_gpx_track_file: str,
+    output_gpx_track_file: str | None = None,
 ) -> str:
     try:
         parse_track_and_remove_extensions(
@@ -623,13 +671,13 @@ def remove_extensions_from_gpx_track(
         return "return code: 0Removing of extensions from track successful"
     except Exception as err:
         return (
-                "return code: 1Unknown error occurred during removing of extensions from tracks: %s"
-                % err
+            "return code: 1Unknown error occurred during removing of extensions from tracks: %s"
+            % err
         )
 
 
 def parse_track_and_remove_extensions(
-        input_gpx_track_file: Path, output_gpx_track_file: Path | None
+    input_gpx_track_file: Path, output_gpx_track_file: Path | None
 ) -> None:
     if output_gpx_track_file is None:
         output_gpx_track_file = input_gpx_track_file
@@ -639,8 +687,8 @@ def parse_track_and_remove_extensions(
 
 
 def update_distance(
-        extension_points_correct_distances: list[Tuple[GPXTrackPoint, Extension]],
-        extension_points_to_be_updated: list[Tuple[GPXTrackPoint, Extension]],
+    extension_points_correct_distances: list[Tuple[GPXTrackPoint, Extension]],
+    extension_points_to_be_updated: list[Tuple[GPXTrackPoint, Extension]],
 ) -> None:
     last_point_first_track = extension_points_correct_distances[-1]
     last_point_last_track = extension_points_to_be_updated[0]
@@ -651,7 +699,7 @@ def update_distance(
 
 
 def set_tag_in_extensions(
-        gpx: GPX, value: float, point: GPXTrackPoint, tag_name: str
+    gpx: GPX, value: float, point: GPXTrackPoint, tag_name: str
 ) -> None:
     namespace_name = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
     namespace = "{" + namespace_name + "}"
@@ -677,10 +725,10 @@ def get_time(gpx: GPX | None) -> datetime:
     if gpx.time:
         return gpx.time
     elif (
-            gpx
-            and len(gpx.tracks) > 0
-            and len(gpx.tracks[0].segments) > 0
-            and len(gpx.tracks[0].segments[0].points) > 0
+        gpx
+        and len(gpx.tracks) > 0
+        and len(gpx.tracks[0].segments) > 0
+        and len(gpx.tracks[0].segments[0].points) > 0
     ):
         point = gpx.tracks[0].segments[0].points[0]
         return point.time if point.time else datetime.now()

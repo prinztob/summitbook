@@ -85,6 +85,10 @@
     <string name="is_favorite">Mark this entry as favorite summit</string>
     <string name="choose_data_source">Choose data source</string>
     <string name="addGpsTrack">add GPS track</string>
+    <string name="add_mountain_pass">add mountain pass</string>
+    <string name="select_pass_start_point">Select pass start point</string>
+    <string name="select_pass_end_point">Select pass end point</string>
+    <string name="no_gps_track_for_pass">No GPS track available. Please add a GPS track first.</string>
     <string name="add_activity">Add Garmin activity</string>
     <string name="sort_entries">Sort entries</string>
     <string name="descending">Descending</string>
@@ -449,7 +453,6 @@
     <string name="color_code_selection">Select value used for color code</string>
     <string name="entry">Entry</string>
     <string name="update">Update</string>
-    <string name="revert">Revert</string>
     <string name="update_3rd_part">Update third party data</string>
     <string name="unit">Unit</string>
     <string name="current">Current</string>
@@ -668,4 +671,8 @@
     <string name="hiking">Hiking</string>
     <string name="winter">Winter</string>
     <string name="statistics">Statistics</string>
+    <string name="select_segment">Select segment</string>
+    <string name="mountain_pass_info">Mountain Pass Info</string>
+    <string name="window_distance_m">Window distance (m)</string>
+    <string name="revert">Revert</string>
 </resources>
