@@ -579,6 +579,11 @@ class MainActivityCompose : ComponentActivity(),
                                     hideSummitDropdown = true,
                                     initialStartPointId = 0,
                                     initialEndPointId = -1,
+                                    onSaveMountainPass = { mountainPass ->
+                                        viewModel.saveMountainPass(mountainPass)
+                                        showAddSegmentEntryScreen = false
+                                        summitForSegmentEntry = null
+                                    }
                                 )
                             }
                         }

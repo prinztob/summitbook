@@ -14,6 +14,7 @@ class DatabaseRepository @Inject constructor(
     private val entityEventDao: EntityEventDao,
     private val peakDao: PeakDao,
     private val dailyActivitySummaryDao: DailyActivitySummaryDao,
+    private val mountainPassDao: MountainPassDao,
 ) {
 
     suspend fun saveSummit(entity: Summit) = summitsDao.saveSummit(entity)
@@ -70,5 +71,11 @@ class DatabaseRepository @Inject constructor(
     fun getAllDailyActivitySummary() = dailyActivitySummaryDao.getAllDailyActivitySummary()
     suspend fun saveDailyActivitySummary(entity: DailyActivitySummary) = dailyActivitySummaryDao.add(entity)
     suspend fun getDailyActivitySummaryByDateSync(activityId: Long) = dailyActivitySummaryDao.getDailyActivitySummaryByDateSync(activityId)
+
+    fun getAllMountainPasses() = mountainPassDao.getAllMountainPasses()
+    fun getMountainPassesForActivity(activityId: Long) = mountainPassDao.getMountainPassesForActivity(activityId)
+    suspend fun saveMountainPass(mountainPass: MountainPass) = mountainPassDao.add(mountainPass)
+    suspend fun updateMountainPass(mountainPass: MountainPass) = mountainPassDao.update(mountainPass)
+    suspend fun deleteMountainPass(mountainPass: MountainPass) = mountainPassDao.delete(mountainPass)
 
 }

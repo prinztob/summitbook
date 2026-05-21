@@ -14,6 +14,7 @@ import de.drtobiasprinz.summitbook.db.entities.DailyActivitySummary
 import de.drtobiasprinz.summitbook.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.db.entities.Forecast
 import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
+import de.drtobiasprinz.summitbook.db.entities.MountainPass
 import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
@@ -61,6 +62,10 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     val dailyActivitySummary: LiveData<DataStatus<List<DailyActivitySummary>>>
         get() = _dailyActivitySummaryList
 
+    private val _mountainPasses = MutableLiveData<DataStatus<List<MountainPass>>>()
+    val mountainPasses: LiveData<DataStatus<List<MountainPass>>>
+        get() = _mountainPasses
+
     init {
         getAllSummits()
         getAllSegments()
@@ -69,6 +74,7 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
         getPeaks()
         getAllEntityEvent()
         getAllDailyActivitySummaries()
+        getAllMountainPasses()
     }
 
     fun refresh() {
@@ -245,6 +251,24 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
 
     fun saveActivitySummary(entity: DailyActivitySummary) = viewModelScope.launch {
         repository.saveDailyActivitySummary(entity)
+    }
+
+    private fun getAllMountainPasses() = viewModelScope.launch {
+        repository.getAllMountainPasses()
+            .catch { _mountainPasses.postValue(DataStatus.error(it.message.toString())) }
+            .collect { _mountainPasses.postValue(DataStatus.success(it, it.isEmpty())) }
+    }
+
+    fun saveMountainPass(mountainPass: MountainPass) = viewModelScope.launch {
+        repository.saveMountainPass(mountainPass)
+    }
+
+    fun updateMountainPass(mountainPass: MountainPass) = viewModelScope.launch {
+        repository.updateMountainPass(mountainPass)
+    }
+
+    fun deleteMountainPass(mountainPass: MountainPass) = viewModelScope.launch {
+        repository.deleteMountainPass(mountainPass)
     }
 
 }

@@ -374,6 +374,7 @@
     <string name="back">Back</string>
     <string name="revert_ignored_summits">Clean ignored summits</string>
     <string name="delete">Delete all</string>
+    <string name="delete_mountain_pass">Delete mountain pass</string>
     <string name="edit">Edit</string>
     <string name="will_be_updated_soon">Will be updated soon</string>
     <string name="duration">Duration</string>
@@ -675,4 +676,12 @@
     <string name="mountain_pass_info">Mountain Pass Info</string>
     <string name="window_distance_m">Window distance (m)</string>
     <string name="revert">Revert</string>
+    <string name="mountain_passes">Mountain Passes</string>
+    <string name="mountain_pass_saved">Mountain pass saved</string>
+    <string name="avg_gradient">Avg gradient</string>
+    <string name="max_grade_in_window">Max grade in window</string>
+    <string name="elevation_gain">Elevation gain</string>
+    <string name="elevation_loss">Elevation loss</string>
+    <string name="pass_name_hint">Pass name</string>
+    <string name="save_mountain_pass">Save Mountain Pass</string>
 </resources>

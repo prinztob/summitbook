@@ -1,5 +1,8 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -27,6 +30,7 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -48,6 +52,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.db.entities.MountainPass
 import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -70,7 +75,10 @@ fun SummitEntryDataScreen(
     onGetSummitToCompare: (Long) -> Unit,
     onSetSummitToCompareToNull: () -> Unit,
     modifier: Modifier = Modifier,
-    peaks: List<Peak> = emptyList()
+    peaks: List<Peak> = emptyList(),
+    mountainPasses: List<MountainPass> = emptyList(),
+    onEditMountainPass: ((MountainPass) -> Unit)? = null,
+    onDeleteMountainPass: ((MountainPass) -> Unit)? = null
 ) {
 
     val configuration = LocalConfiguration.current
@@ -348,6 +356,16 @@ fun SummitEntryDataScreen(
             SegmentsSection(
                 summit = summit,
                 segments = segments
+            )
+        }
+
+        // Mountain Passes
+        item {
+            MountainPassesSection(
+                summit = summit,
+                mountainPasses = mountainPasses,
+                onEditMountainPass = onEditMountainPass,
+                onDeleteMountainPass = onDeleteMountainPass
             )
         }
     }
@@ -791,6 +809,230 @@ fun SegmentsSection(
                         style = MaterialTheme.typography.titleMedium
                     )
                     // Add segment details here based on entry.first properties
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MountainPassesSection(
+    summit: Summit,
+    mountainPasses: List<MountainPass>,
+    onEditMountainPass: ((MountainPass) -> Unit)? = null,
+    onDeleteMountainPass: ((MountainPass) -> Unit)? = null
+) {
+    // Filter mountain passes for this summit's activity
+    val summitPasses = remember(summit.activityId, mountainPasses) {
+        mountainPasses.filter { it.activityId == summit.activityId }
+    }
+
+    if (summitPasses.isEmpty()) return
+
+    var selectedPass by remember { mutableStateOf<MountainPass?>(null) }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.mountain_passes),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(summitPasses) { pass ->
+                AssistChip(
+                    onClick = {
+                        selectedPass = if (selectedPass == pass) null else pass
+                    },
+                    label = {
+                        Text(pass.getDisplayName())
+                    },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_add_mountain_pass_24),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                )
+            }
+        }
+
+        // Show mountain pass details if selected (with expand/collapse animation)
+        AnimatedVisibility(
+            visible = selectedPass != null,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            selectedPass?.let { pass ->
+                Card(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = pass.getDisplayName(),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (onEditMountainPass != null) {
+                                IconButton(
+                                    onClick = { onEditMountainPass.invoke(pass) }
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.baseline_edit_24),
+                                        contentDescription = stringResource(R.string.edit),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            if (onDeleteMountainPass != null) {
+                                IconButton(
+                                    onClick = { onDeleteMountainPass.invoke(pass) }
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.baseline_delete_24),
+                                        contentDescription = stringResource(R.string.delete_mountain_pass),
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            // Distance
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.outline_distance_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = String.format(Locale.getDefault(), "%.1f km", pass.kilometers),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+
+                            // Elevation gain
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.baseline_keyboard_double_arrow_up_black_24dp),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = String.format(Locale.getDefault(), "%.0f hm", pass.elevationGain),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+
+                            // Elevation loss
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.baseline_keyboard_double_arrow_down_black_24dp),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = String.format(Locale.getDefault(), "%.0f hm", pass.elevationLoss),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            // Average gradient
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.baseline_trending_flat_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = String.format(Locale.getDefault(), "%.1f%%", pass.avgGradient),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+
+                            // Max grade in window
+                            if (pass.windowDistanceMeters > 0) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.baseline_trending_up_black_24dp),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = String.format(
+                                            Locale.getDefault(),
+                                            "%.0fm: %.1f%%",
+                                            pass.windowDistanceMeters,
+                                            pass.maxGradeInWindow
+                                        ),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+
+                            // Duration
+                            if (pass.duration > 0) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_baseline_timer_24),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = String.format(Locale.getDefault(), "%.1f min", pass.duration),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

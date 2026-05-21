@@ -376,6 +376,7 @@
     <string name="back">Zurück</string>
     <string name="revert_ignored_summits">Lösche ignorierte Gipfel</string>
     <string name="delete">Löschen</string>
+    <string name="delete_mountain_pass">Bergpass löschen</string>
     <string name="edit">Bearbeiten</string>
     <string name="ok">OK</string>
     <string name="will_be_updated_soon">Wird gleich geupdated</string>
@@ -677,5 +678,13 @@
     <string name="mountain_pass_info">Passinformationen</string>
     <string name="window_distance_m">Fensterdistanz (m)</string>
     <string name="revert">Rückgängig</string>
+    <string name="mountain_passes">Pässe</string>
+    <string name="mountain_pass_saved">Pass gespeichert</string>
+    <string name="avg_gradient">Durchschnittsgefälle</string>
+    <string name="max_grade_in_window">Max. Gefälle im Fenster</string>
+    <string name="elevation_gain">Höhenaufstieg</string>
+    <string name="elevation_loss">Höhenabstieg</string>
+    <string name="pass_name_hint">Passname</string>
+    <string name="save_mountain_pass">Pass speichern</string>
 </resources>
 

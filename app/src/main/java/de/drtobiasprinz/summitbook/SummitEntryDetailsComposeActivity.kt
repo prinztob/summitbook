@@ -18,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -35,9 +36,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModelProvider
 import com.chaquo.python.Python
 import dagger.hilt.android.AndroidEntryPoint
+import de.drtobiasprinz.summitbook.db.entities.MountainPass
 import de.drtobiasprinz.summitbook.db.entities.SportGroup
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -45,6 +49,7 @@ import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonInstance
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
+import de.drtobiasprinz.summitbook.ui.compose.AddSegmentEntryScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryDataScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryImagesScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryPowerScreen
@@ -54,6 +59,7 @@ import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.viewmodel.PageViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -268,6 +274,7 @@ fun SummitEntryDetailsTabs(
     val segmentsListData by pageViewModel.segmentsList.observeAsState()
     val extremaValuesSummits by pageViewModel.extremaValuesSummits.observeAsState()
     val peaksData by pageViewModel.peaks.observeAsState()
+    val mountainPassesData by pageViewModel.mountainPasses.observeAsState()
 
     // Extract actual data from DataStatus wrappers to create stable state
     val summit = remember(summitToViewData) { summitToViewData?.data }
@@ -282,6 +289,10 @@ fun SummitEntryDetailsTabs(
     val compareSummit = remember(summitToCompareData) { summitToCompareData?.data }
     val segments = remember(segmentsListData) { segmentsListData?.data }
     val peaks = remember(peaksData) { peaksData?.data ?: emptyList() }
+    val mountainPasses = remember(mountainPassesData) { mountainPassesData?.data ?: emptyList() }
+
+    var editingMountainPass by remember { mutableStateOf<MountainPass?>(null) }
+    var showEditMountainPassDialog by remember { mutableStateOf(false) }
 
     // Create stable callbacks
     val onGetSummitToCompare: (Long) -> Unit = remember {
@@ -336,7 +347,15 @@ fun SummitEntryDetailsTabs(
                         extrema = extremaValuesSummits,
                         onGetSummitToCompare = onGetSummitToCompare,
                         onSetSummitToCompareToNull = onSetSummitToCompareToNull,
-                        peaks = peaks
+                        peaks = peaks,
+                        mountainPasses = mountainPasses,
+                        onEditMountainPass = { pass ->
+                            editingMountainPass = pass
+                            showEditMountainPassDialog = true
+                        },
+                        onDeleteMountainPass = { pass ->
+                            pageViewModel.deleteMountainPass(pass)
+                        }
                     )
                 }
 
@@ -383,6 +402,56 @@ fun SummitEntryDetailsTabs(
                         onSetSummitToCompareToNull = onSetSummitToCompareToNull
                     )
                 }
+            }
+        }
+    }
+
+    // Show Edit Mountain Pass Dialog
+    if (showEditMountainPassDialog && editingMountainPass != null) {
+        val segmentsListData by pageViewModel.segmentsList.observeAsState()
+        val segments = remember(segmentsListData) { segmentsListData?.data ?: emptyList() }
+        val pass = editingMountainPass!!
+
+        Dialog(
+            onDismissRequest = {
+                showEditMountainPassDialog = false
+                editingMountainPass = null
+            },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false
+            )
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                AddSegmentEntryScreen(
+                    segmentId = -1,
+                    segmentEntryId = null,
+                    segments = segments,
+                    summits = allSummits ?: emptyList(),
+                    onSaveSegmentEntry = { _, _ -> Job() },
+                    onCancel = {
+                        showEditMountainPassDialog = false
+                        editingMountainPass = null
+                    },
+                    preselectedSummit = summit,
+                    hideSummitDropdown = true,
+                    initialStartPointId = pass.startPositionInTrack,
+                    initialEndPointId = pass.endPositionInTrack,
+                    existingMountainPass = pass,
+                    onSaveMountainPass = { mountainPass ->
+                        if (mountainPass.id > 0) {
+                            pageViewModel.updateMountainPass(mountainPass)
+                        } else {
+                            pageViewModel.saveMountainPass(mountainPass)
+                        }
+                        showEditMountainPassDialog = false
+                        editingMountainPass = null
+                    }
+                )
             }
         }
     }

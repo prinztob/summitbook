@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.drtobiasprinz.summitbook.db.entities.MountainPass
 import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -43,11 +44,16 @@ class PageViewModel @Inject constructor(private val repository: DatabaseReposito
     val peaks: LiveData<DataStatus<List<Peak>>>
         get() = _peaks
 
+    private val _mountainPasses = MutableLiveData<DataStatus<List<MountainPass>>>()
+    val mountainPasses: LiveData<DataStatus<List<MountainPass>>>
+        get() = _mountainPasses
+
     init {
         getAllSummits()
         getAllSegments()
         setSummitToCompareToNull()
         getPeaks()
+        getAllMountainPasses()
     }
 
     private fun getAllSummits() = viewModelScope.launch {
@@ -98,5 +104,23 @@ class PageViewModel @Inject constructor(private val repository: DatabaseReposito
         repository.getPeaks().collect {
             _peaks.postValue(DataStatus.success(it, false))
         }
+    }
+
+    private fun getAllMountainPasses() = viewModelScope.launch {
+        repository.getAllMountainPasses()
+            .catch { _mountainPasses.postValue(DataStatus.error(it.message.toString())) }
+            .collect { _mountainPasses.postValue(DataStatus.success(it, it.isEmpty())) }
+    }
+
+    fun saveMountainPass(mountainPass: MountainPass) = viewModelScope.launch {
+        repository.saveMountainPass(mountainPass)
+    }
+
+    fun updateMountainPass(mountainPass: MountainPass) = viewModelScope.launch {
+        repository.updateMountainPass(mountainPass)
+    }
+
+    fun deleteMountainPass(mountainPass: MountainPass) = viewModelScope.launch {
+        repository.deleteMountainPass(mountainPass)
     }
 }

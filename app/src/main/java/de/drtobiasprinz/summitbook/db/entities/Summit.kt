@@ -110,7 +110,8 @@ class Summit(
     }
 
     private fun getRootDirectoryImages(): File {
-        val rootDirectoryImages = File(MainActivityCompose.storage, "$subDirForImages/${activityId}")
+        val rootDirectoryImages =
+            File(MainActivityCompose.storage, "$subDirForImages/${activityId}")
         if (!rootDirectoryImages.exists()) {
             rootDirectoryImages.mkdirs()
         }
@@ -154,7 +155,10 @@ class Summit(
 
     fun getYamlExtensionsFile(): File {
         return File(
-            File(MainActivityCompose.storage, subDirForGpsTrackExtensions),
+            File(
+                MainActivityCompose.storage,
+                if (isBookmark) subDirForGpsTracksBookmarkExtensions else subDirForGpsTrackExtensions
+            ),
             getGpsTrackPath().name.replace(".gpx", "_extensions.yaml")
         )
     }
@@ -163,7 +167,9 @@ class Summit(
         val fileName = "id_${activityId}_gpxpy.json"
         return if (isBookmark) {
             Paths.get(
-                MainActivityCompose.storage.toString(), subDirForGpsTracksBookmarkExtensions, fileName
+                MainActivityCompose.storage.toString(),
+                subDirForGpsTracksBookmarkExtensions,
+                fileName
             )
         } else {
             Paths.get(MainActivityCompose.storage.toString(), subDirForGpsTrackExtensions, fileName)
@@ -321,6 +327,7 @@ class Summit(
             ","
         ) + ';' + places.joinToString(",") + ';' + countries.joinToString(",") + '\n'
     }
+
     fun getConnectedEntryString(context: Context): String {
         return "${context.getString(R.string.end_of)} $name"
     }
@@ -363,7 +370,10 @@ class Summit(
                 )
             )
         }
-        Log.i("Summit", "getConnectedEntriesWhichReferenceThisEntry for summit ${getDateAsString()}_${name} is $connectedEntries")
+        Log.i(
+            "Summit",
+            "getConnectedEntriesWhichReferenceThisEntry for summit ${getDateAsString()}_${name} is $connectedEntries"
+        )
         return connectedEntries
     }
 
@@ -380,7 +390,10 @@ class Summit(
                 }
             }
         }
-        Log.i("Summit", "getConnectedEntriesFromPlaces for summit ${getDateAsString()}_${name} is $connectedEntries")
+        Log.i(
+            "Summit",
+            "getConnectedEntriesFromPlaces for summit ${getDateAsString()}_${name} is $connectedEntries"
+        )
         return connectedEntries
     }
 

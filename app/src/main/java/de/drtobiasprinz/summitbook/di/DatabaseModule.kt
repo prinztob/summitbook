@@ -59,6 +59,10 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideMountainPassDao(db: AppDatabase) = db.mountainPassDao()
+
+    @Provides
+    @Singleton
     fun provideSortFilterValues() = SortFilterValues()
 
     @Provides

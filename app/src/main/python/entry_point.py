@@ -26,7 +26,7 @@ from utils import (
 )
 from tcx_to_gpx import convert_tcx_to_gpx
 from Extension import Extension
-from src.elevation_track_analyzer import ElevationTrackAnalyzer
+from elevation_track_analyzer import ElevationTrackAnalyzer
 from gpx_track_analyzer import TrackAnalyzer
 
 cycling_ids = [2, 5, 10, 19, 20, 21, 22, 25, 89, 143]
