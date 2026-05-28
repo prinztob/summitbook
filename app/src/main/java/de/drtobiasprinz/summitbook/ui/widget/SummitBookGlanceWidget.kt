@@ -34,6 +34,8 @@ import de.drtobiasprinz.summitbook.utils.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import java.text.DateFormatSymbols
+import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Date
 import kotlin.math.roundToInt
@@ -445,21 +447,8 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
             textAlign = Paint.Align.CENTER
         }
 
-        // X-axis labels (months)
-        val monthNames = listOf(
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec"
-        )
+        // X-axis labels (months) - locale-aware
+        val monthNames = DateFormatSymbols.getInstance().shortMonths
         val currentMonth = calendar[Calendar.MONTH]
         val currentYearInt = calendar[Calendar.YEAR]
 
@@ -488,10 +477,11 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
         for (i in 0..4) {
             val yValue = bounds.minY + (bounds.maxY - bounds.minY) * (4 - i) / 4f
             val y = padding + (chartHeight * i / 4f)
+            val numberFormat = NumberFormat.getIntegerInstance()
             val label = if (yValue > 999) {
-                "${(yValue / 1000).toInt()}k"
+                "${numberFormat.format((yValue / 1000).roundToInt())}k"
             } else {
-                "${yValue.toInt()}"
+                numberFormat.format(yValue.roundToInt())
             }
             canvas.drawText(label, 5f, y + 5f, labelPaint)
         }
@@ -579,19 +569,19 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
         // Calculate actual values with indoor height meter adjustment
         val actualHeightMeterMonthly = summitsForCurrentMonth.sumOf {
             if (it.sportType == de.drtobiasprinz.summitbook.db.entities.SportType.IndoorTrainer) {
-                it.elevationData.elevationGain * indoorHeightMeterPercent / 100
+                it.elevationData.elevationGain.toDouble() * indoorHeightMeterPercent / 100.0
             } else {
-                it.elevationData.elevationGain
+                it.elevationData.elevationGain.toDouble()
             }
-        }
+        }.roundToInt()
 
         val actualHeightMeterYearly = summitsForCurrentYear.sumOf {
             if (it.sportType == de.drtobiasprinz.summitbook.db.entities.SportType.IndoorTrainer) {
-                it.elevationData.elevationGain * indoorHeightMeterPercent / 100
+                it.elevationData.elevationGain.toDouble() * indoorHeightMeterPercent / 100.0
             } else {
-                it.elevationData.elevationGain
+                it.elevationData.elevationGain.toDouble()
             }
-        }
+        }.roundToInt()
 
         val actualKilometersMonthly = summitsForCurrentMonth.sumOf { it.kilometers }.roundToInt()
         val actualKilometersYearly = summitsForCurrentYear.sumOf { it.kilometers }.roundToInt()
@@ -703,11 +693,11 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
         val monthlyActivities = entriesForCurrentMonth.count()
         val monthlyHm = entriesForCurrentMonth.sumOf {
             if (it.sportType == de.drtobiasprinz.summitbook.db.entities.SportType.IndoorTrainer) {
-                it.elevationData.elevationGain * indoorHeightMeterPercent / 100
+                it.elevationData.elevationGain.toDouble() * indoorHeightMeterPercent / 100.0
             } else {
-                it.elevationData.elevationGain
+                it.elevationData.elevationGain.toDouble()
             }
-        }
+        }.roundToInt()
         val monthlyKm = entriesForCurrentMonth.sumOf { it.kilometers }.roundToInt()
 
         val chartBitmap = generateYearlyChartBitmap(
@@ -721,19 +711,19 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
                 activities = StatItem(
                     actualValue = statisticEntry.getTotalActivities(),
                     expectedValue = statisticEntry.expectedAchievementActivityAbsolute.roundToInt(),
-                    isAchieved = statisticEntry.getTotalActivities() >= statisticEntry.expectedAchievementActivityAbsolute
+                    isAchieved = statisticEntry.getTotalActivities() >= statisticEntry.expectedAchievementActivityAbsolute.roundToInt()
                 ),
                 heightMeter = StatItem(
                     actualValue = statisticEntry.totalHm,
                     expectedValue = statisticEntry.expectedAchievementHmAbsolute.roundToInt(),
                     unit = "hm",
-                    isAchieved = statisticEntry.totalHm >= statisticEntry.expectedAchievementHmAbsolute
+                    isAchieved = statisticEntry.totalHm >= statisticEntry.expectedAchievementHmAbsolute.roundToInt()
                 ),
                 kilometers = StatItem(
                     actualValue = statisticEntry.totalKm.roundToInt(),
                     expectedValue = statisticEntry.expectedAchievementKmAbsolute.roundToInt(),
                     unit = "km",
-                    isAchieved = statisticEntry.totalKm >= statisticEntry.expectedAchievementKmAbsolute
+                    isAchieved = statisticEntry.totalKm.roundToInt() >= statisticEntry.expectedAchievementKmAbsolute.roundToInt()
                 )
             ),
             monthlyStats = MonthlyStats(

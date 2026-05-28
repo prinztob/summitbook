@@ -248,13 +248,18 @@ fun OpenStreetMapScreen(
         val activity = context as? Activity
         activity?.window?.let { window ->
             if (fullscreenEnabled) {
-                window.insetsController?.let { controller ->
-                    controller.hide(WindowInsets.Type.systemBars())
-                    controller.systemBarsBehavior =
-                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                window.insetsController?.hide(WindowInsets.Type.systemBars())
+                // Re-hide system bars immediately when they become visible (e.g., from edge swipe)
+                @Suppress("DEPRECATION")
+                window.decorView.setOnSystemUiVisibilityChangeListener { _ ->
+                    if (fullscreenEnabled) {
+                        window.insetsController?.hide(WindowInsets.Type.systemBars())
+                    }
                 }
             } else {
                 window.insetsController?.show(WindowInsets.Type.systemBars())
+                @Suppress("DEPRECATION")
+                window.decorView.setOnSystemUiVisibilityChangeListener(null)
             }
         }
         onFullscreenChanged(fullscreenEnabled)
@@ -324,6 +329,7 @@ fun OpenStreetMapScreen(
                             
                             // Setup polyline for follow location
                             val newPolyline = Polyline(map).apply {
+                                setInfoWindow(null) // Prevent default BasicInfoWindow crash
                                 outlinePaint?.color = Color.MAGENTA
                                 outlinePaint?.strokeWidth = 16f
                             }

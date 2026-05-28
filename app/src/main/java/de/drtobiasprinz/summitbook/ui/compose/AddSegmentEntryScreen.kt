@@ -1209,6 +1209,7 @@ private fun drawGpxTrack(
 ) {
     try {
         val osMapRoute = Polyline(mapView)
+        osMapRoute.setInfoWindow(null) // Prevent default BasicInfoWindow crash
         val paintBorder = Paint()
         paintBorder.strokeWidth = 20F
 

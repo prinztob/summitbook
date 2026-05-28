@@ -66,6 +66,7 @@ class GpsTrack(
                 mMapView?.overlays?.remove(osMapRoute)
             }
             osMapRoute = Polyline(mMapView)
+            osMapRoute?.setInfoWindow(null) // Prevent default BasicInfoWindow crash
 
             osMapRoute?.setOnClickListener { _, _, _ ->
                 if (mMapView != null && summit != null) {

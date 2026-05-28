@@ -33,6 +33,7 @@ import androidx.glance.text.TextAlign
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
+import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -165,11 +166,12 @@ private fun StatRow(
 
         Spacer(GlanceModifier.width(8.dp))
 
+        val numberFormat = NumberFormat.getIntegerInstance()
         Text(
             text = if (label.isEmpty()) {
-                "${statItem.actualValue} ${LocalContext.current.getString(R.string.of)} ${statItem.expectedValue}"
+                "${numberFormat.format(statItem.actualValue)} ${LocalContext.current.getString(R.string.of)} ${numberFormat.format(statItem.expectedValue)}"
             } else {
-                "${statItem.actualValue} ${LocalContext.current.getString(R.string.of)} ${statItem.expectedValue} $label"
+                "${numberFormat.format(statItem.actualValue)} ${LocalContext.current.getString(R.string.of)} ${numberFormat.format(statItem.expectedValue)} $label"
             },
             style = TextStyle
         )
@@ -243,19 +245,20 @@ private fun SummitItem(
                 modifier = GlanceModifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                val numberFormat = NumberFormat.getIntegerInstance()
                 Text(
-                    text = "${summit.kilometers.toInt()} km",
+                    text = "${numberFormat.format(summit.kilometers.roundToInt())} km",
                     style = TextStyle.copy(fontSize = 10.sp),
                 )
                 Spacer(GlanceModifier.width(8.dp))
                 Text(
-                    text = "${summit.elevationData.elevationGain} hm",
+                    text = "${numberFormat.format(summit.elevationData.elevationGain)} hm",
                     style = TextStyle.copy(fontSize = 10.sp),
                 )
                 Spacer(GlanceModifier.width(8.dp))
                 Text(
                     text = if (garminData?.power?.avgPower != null && garminData.power.avgPower > 0) {
-                        "${garminData.power.avgPower.roundToInt()} W"
+                        "${numberFormat.format(garminData.power.avgPower.roundToInt())} W"
                     } else {
                         String.format(Locale.getDefault(), "%.1f km/h", summit.getAverageVelocity())
                     },

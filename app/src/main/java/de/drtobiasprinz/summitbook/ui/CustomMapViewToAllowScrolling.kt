@@ -125,6 +125,7 @@ class CustomMapViewToAllowScrolling : MapView {
 
     fun drawBoundingBox(trackBoundingBox: TrackBoundingBox) {
         val polyline = Polyline(this)
+        polyline.setInfoWindow(null) // Prevent default BasicInfoWindow crash
         polyline.setOnClickListener { _, _, _ ->
             true // DO NOTHING
         }
@@ -172,6 +173,7 @@ class CustomMapViewToAllowScrolling : MapView {
                 mMapView?.overlays?.remove(osMapRoute)
             }
             osMapRoute = Polyline(mMapView)
+            osMapRoute?.setInfoWindow(null) // Prevent default BasicInfoWindow crash
 
             osMapRoute?.setOnClickListener { _, _, eventPos ->
                 if (mMapView != null) {
@@ -248,6 +250,7 @@ class CustomMapViewToAllowScrolling : MapView {
     ): Polyline? {
         return try {
             val additionalRoute = Polyline(this)
+            additionalRoute.setInfoWindow(null) // Prevent default BasicInfoWindow crash
             additionalRoute.outlinePaint?.color = color
             additionalRoute.outlinePaint?.strokeWidth = lineWidth
             additionalRoute.outlinePaint?.strokeCap = Paint.Cap.ROUND
