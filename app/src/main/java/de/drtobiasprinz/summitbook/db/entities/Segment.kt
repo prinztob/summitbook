@@ -88,8 +88,8 @@ data class Segment(
                 splitLine[9].toDouble(),
                 splitLine[10].toDouble(),
                 splitLine[11].toDouble(),
-                splitLine[12].toInt(),
-                splitLine[13].toInt(),
+                splitLine[12].toDouble(),
+                splitLine[13].toDouble(),
                 splitLine[14].toInt(),
                 splitLine[15].toInt()
             )

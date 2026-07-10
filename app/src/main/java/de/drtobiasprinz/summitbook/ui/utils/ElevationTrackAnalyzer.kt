@@ -30,7 +30,8 @@ class ElevationTrackAnalyzer(
         val elevationLoss: Double,
         val avgGradient: Double,
         val maxGradeInWindow: Double,
-        val windowLength: Double
+        val windowLength: Double,
+        val durationInMotion: Double
     )
 
     /**
@@ -100,12 +101,16 @@ class ElevationTrackAnalyzer(
         // Max grade in window: sliding window max grade (elevation diff / horizontal distance * 100)
         val maxGradeInWindow = computeMaxGradeInWindow(windowPoints, windowDistanceMeters)
 
+        // Duration in motion: sum of time deltas between consecutive points, excluding gaps > 10 seconds
+        val durationInMotion = computeDurationInMotion(windowPoints)
+
         return ElevationWindowResult(
             elevationGain = roundTo3(elevationGain),
             elevationLoss = roundTo3(elevationLoss),
             avgGradient = roundTo3(avgGradient),
             maxGradeInWindow = roundTo3(maxGradeInWindow),
-            windowLength = roundTo3(totalDistance)
+            windowLength = roundTo3(totalDistance),
+            durationInMotion = roundTo3(durationInMotion)
         )
     }
 
@@ -159,6 +164,34 @@ class ElevationTrackAnalyzer(
     private fun roundTo3(value: Double): Double = round(value * 1000.0) / 1000.0
 
     /**
+     * Compute the duration in motion by summing time deltas between consecutive
+     * track points, excluding gaps larger than [maxGapSeconds] (e.g. stops/pauses).
+     *
+     * @param windowPoints The track points in the window.
+     * @param maxGapSeconds Maximum gap in seconds between two consecutive points to be counted as motion.
+     * @return Duration in motion in minutes.
+     */
+    private fun computeDurationInMotion(
+        windowPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+        maxGapSeconds: Int = 10
+    ): Double {
+        if (windowPoints.size < 2) return 0.0
+
+        var totalMotionMillis = 0L
+        for (i in 1 until windowPoints.size) {
+            val prevTime = windowPoints[i - 1].first.time
+            val currTime = windowPoints[i].first.time
+            if (prevTime != null && currTime != null) {
+                val deltaMillis = currTime.millis - prevTime.millis
+                if (deltaMillis > 0 && deltaMillis <= maxGapSeconds * 1000L) {
+                    totalMotionMillis += deltaMillis
+                }
+            }
+        }
+        return totalMotionMillis.toDouble() / 60000.0
+    }
+
+    /**
      * Get cleaned elevation deltas for a list of track points.
      *
      * Converted from Python get_cleaned_track_elevation in utils.py.
@@ -172,7 +205,7 @@ class ElevationTrackAnalyzer(
         val reducedPoints = reduceTrackToRelevantElevationPoints(points)
 
         // Step 2: Remove elevation differences smaller than 10m
-        val relevantPoints = removeElevationDifferencesSmallerAs(reducedPoints, 10)
+        val relevantPoints = removeElevationDifferencesSmallerAs(reducedPoints)
 
         // Step 3: Build flattened elevation list with filled missing points
         val flattenedElevations = mutableListOf<Double>()
@@ -266,7 +299,7 @@ class ElevationTrackAnalyzer(
      */
     private fun removeElevationDifferencesSmallerAs(
         points: List<IndexedPoint>,
-        minimalDelta: Int
+        minimalDelta: Int = 10
     ): List<IndexedPoint> {
         val filteredPoints = mutableListOf<IndexedPoint>()
 

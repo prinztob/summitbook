@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.db.dao.SegmentsDao
+import de.drtobiasprinz.summitbook.db.dao.SegmentDao
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
@@ -25,7 +25,7 @@ import org.robolectric.annotation.Config
 class SegmentTest {
 
     private lateinit var db: AppDatabase
-    private var dao: SegmentsDao? = null
+    private var dao: SegmentDao? = null
 
     @Before
     fun setUp() {
@@ -33,7 +33,7 @@ class SegmentTest {
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        dao = db.segmentsDao()
+        dao = db.segmentDao()
     }
 
     @After
@@ -46,12 +46,12 @@ class SegmentTest {
         private val segmentEntry1 = SegmentEntry(
             0, 0, Summit.parseDate("2019-11-13"), 1L, 1,
             44.44, 33.33, 10, 44.94, 33.94,
-            18.1, 2.9, 220, 0, 157, 1
+            18.1, 2.9, 220.0, 0.0, 157, 1
         )
         private val segmentEntry2 = SegmentEntry(
             0, 0, Summit.parseDate("2019-11-14"), 1L, 1,
             44.44, 33.33, 10, 44.94, 33.94,
-            18.1, 2.9, 220, 0, 157, 1
+            18.1, 2.9, 220.0, 0.0, 157, 1
         )
 
     }

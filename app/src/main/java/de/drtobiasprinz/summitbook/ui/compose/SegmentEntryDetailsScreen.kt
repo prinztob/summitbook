@@ -89,6 +89,8 @@ fun SegmentEntryDetailsScreen(
     segmentEntryId: Long = -1L,
     segments: List<Segment>,
     summits: List<Summit>,
+    mountainPasses: List<SegmentEntry> = emptyList(),
+    showMountainPasses: Boolean = false,
     onNavigateBack: () -> Unit,
     onDeleteEntry: (SegmentEntry) -> Unit,
     onEditEntry: (SegmentEntry) -> Unit  // Add this parameter
@@ -108,42 +110,28 @@ fun SegmentEntryDetailsScreen(
         summits,
         segmentDetailsId,
         segmentEntryId,
-        uiState.selectedSortOption
+        uiState.selectedSortOption,
+        showMountainPasses,
+        mountainPasses
     ) {
-        val segmentToUse =
-            segments.firstOrNull { it.segmentDetails.segmentDetailsId == segmentDetailsId }
-
-        if (segmentToUse != null) {
+        if (showMountainPasses) {
+            val sortedPasses = when (uiState.selectedSortOption) {
+                SegmentSortOptions.AverageVelocity -> mountainPasses.sortedBy { it.kilometers / it.duration }.reversed()
+                SegmentSortOptions.Date -> mountainPasses.sortedBy { it.getDateAsString() }.reversed()
+                SegmentSortOptions.AverageHeartRate -> mountainPasses.sortedBy { it.averageHeartRate }.reversed()
+                SegmentSortOptions.Power -> mountainPasses.sortedBy { it.averagePower }.reversed()
+            }
             val currentEntryId = if (segmentEntryId == -1L) {
-                // Get first entry based on current sorting
-                segmentToUse.segmentEntries.let {
-                    when (uiState.selectedSortOption) {
-                        SegmentSortOptions.AverageVelocity -> it.sortedBy { entry -> entry.kilometers / entry.duration }
-                            .reversed()
-
-                        SegmentSortOptions.Date -> it.sortedBy { entry -> entry.getDateAsString() }
-                            .reversed()
-
-                        SegmentSortOptions.AverageHeartRate -> it.sortedBy { entry -> entry.averageHeartRate }
-                            .reversed()
-
-                        SegmentSortOptions.Power -> it.sortedBy { entry -> entry.averagePower }
-                            .reversed()
-                    }
-                }.firstOrNull()?.entryId ?: -1L
+                sortedPasses.firstOrNull()?.entryId ?: -1L
             } else {
                 segmentEntryId
             }
-
-            val currentEntry =
-                segmentToUse.segmentEntries.firstOrNull { it.entryId == currentEntryId }
-            val relevantSummits = segmentToUse.segmentEntries.mapNotNull { entry ->
+            val currentEntry = sortedPasses.firstOrNull { it.entryId == currentEntryId }
+            val relevantSummits = mountainPasses.mapNotNull { entry ->
                 summits.firstOrNull { it.activityId == entry.activityId }
             }
-            val currentSummit =
-                relevantSummits.firstOrNull { it.activityId == currentEntry?.activityId }
+            val currentSummit = relevantSummits.firstOrNull { it.activityId == currentEntry?.activityId }
 
-            // Load track points for the current summit
             if (currentSummit != null) {
                 withContext(Dispatchers.IO) {
                     currentSummit.setGpsTrack(useSimplifiedTrack = false)
@@ -151,13 +139,63 @@ fun SegmentEntryDetailsScreen(
                 }
             }
             uiState = uiState.copy(
-                segment = segmentToUse,
+                segment = null,
                 currentEntry = currentEntry,
                 relevantSummits = relevantSummits,
                 currentSummit = currentSummit,
                 trackPoints = trackPoints,
                 isLoading = false
             )
+        } else {
+            val segmentToUse =
+                segments.firstOrNull { it.segmentDetails.segmentDetailsId == segmentDetailsId }
+
+            if (segmentToUse != null) {
+                val currentEntryId = if (segmentEntryId == -1L) {
+                    // Get first entry based on current sorting
+                    segmentToUse.segmentEntries.let {
+                        when (uiState.selectedSortOption) {
+                            SegmentSortOptions.AverageVelocity -> it.sortedBy { entry -> entry.kilometers / entry.duration }
+                                .reversed()
+
+                            SegmentSortOptions.Date -> it.sortedBy { entry -> entry.getDateAsString() }
+                                .reversed()
+
+                            SegmentSortOptions.AverageHeartRate -> it.sortedBy { entry -> entry.averageHeartRate }
+                                .reversed()
+
+                            SegmentSortOptions.Power -> it.sortedBy { entry -> entry.averagePower }
+                                .reversed()
+                        }
+                    }.firstOrNull()?.entryId ?: -1L
+                } else {
+                    segmentEntryId
+                }
+
+                val currentEntry =
+                    segmentToUse.segmentEntries.firstOrNull { it.entryId == currentEntryId }
+                val relevantSummits = segmentToUse.segmentEntries.mapNotNull { entry ->
+                    summits.firstOrNull { it.activityId == entry.activityId }
+                }
+                val currentSummit =
+                    relevantSummits.firstOrNull { it.activityId == currentEntry?.activityId }
+
+                // Load track points for the current summit
+                if (currentSummit != null) {
+                    withContext(Dispatchers.IO) {
+                        currentSummit.setGpsTrack(useSimplifiedTrack = false)
+                        trackPoints = currentSummit.gpsTrack?.trackPoints ?: emptyList()
+                    }
+                }
+                uiState = uiState.copy(
+                    segment = segmentToUse,
+                    currentEntry = currentEntry,
+                    relevantSummits = relevantSummits,
+                    currentSummit = currentSummit,
+                    trackPoints = trackPoints,
+                    isLoading = false
+                )
+            }
         }
     }
 
@@ -166,7 +204,11 @@ fun SegmentEntryDetailsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = uiState.segment?.segmentDetails?.getDisplayName() ?: "",
+                        text = if (showMountainPasses) {
+                            stringResource(R.string.mountain_passes)
+                        } else {
+                            uiState.segment?.segmentDetails?.getDisplayName() ?: ""
+                        },
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -200,6 +242,8 @@ fun SegmentEntryDetailsScreen(
         } else {
             SegmentEntryDetailsContent(
                 uiState = uiState,
+                showMountainPasses = showMountainPasses,
+                mountainPasses = mountainPasses,
                 onDeleteEntry = { entry -> showDeleteDialog = entry },
                 onEditEntry = onEditEntry,  // Pass the edit function
                 onSortOptionSelected = { option ->
@@ -250,6 +294,8 @@ fun SegmentEntryDetailsScreen(
 @Composable
 fun SegmentEntryDetailsContent(
     uiState: SegmentEntryDetailsUiState,
+    showMountainPasses: Boolean,
+    mountainPasses: List<SegmentEntry>,
     onDeleteEntry: (SegmentEntry) -> Unit,
     onEditEntry: (SegmentEntry) -> Unit,  // Add this parameter
     onSortOptionSelected: (SegmentSortOptions) -> Unit,
@@ -274,7 +320,11 @@ fun SegmentEntryDetailsContent(
                 kilometers = entry.kilometers,
                 averageHeartRate = entry.averageHeartRate,
                 duration = entry.duration,
-                averagePower = entry.averagePower
+                averagePower = entry.averagePower,
+                avgGradient = if (showMountainPasses) entry.avgGradient else null,
+                maxGradeInWindow = if (showMountainPasses && entry.windowDistanceMeters > 0) entry.maxGradeInWindow else null,
+                windowDistanceMeters = if (showMountainPasses && entry.windowDistanceMeters > 0) entry.windowDistanceMeters else null,
+                displayName = if (showMountainPasses) entry.getDisplayName() else null
             )
         }
 
@@ -344,28 +394,44 @@ fun SegmentEntryDetailsContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         // Segment entries list
-        uiState.segment?.let { segment ->
-            val sortedEntries = when (uiState.selectedSortOption) {
-                SegmentSortOptions.AverageVelocity -> segment.segmentEntries.sortedBy { it.kilometers / it.duration }
-                    .reversed()
-
-                SegmentSortOptions.Date -> segment.segmentEntries.sortedBy { it.getDateAsString() }
-                    .reversed()
-
-                SegmentSortOptions.AverageHeartRate -> segment.segmentEntries.sortedBy { it.averageHeartRate }
-                    .reversed()
-
-                SegmentSortOptions.Power -> segment.segmentEntries.sortedBy { it.averagePower }
-                    .reversed()
+        if (showMountainPasses) {
+            val sortedPasses = when (uiState.selectedSortOption) {
+                SegmentSortOptions.AverageVelocity -> mountainPasses.sortedBy { it.kilometers / it.duration }.reversed()
+                SegmentSortOptions.Date -> mountainPasses.sortedBy { it.getDateAsString() }.reversed()
+                SegmentSortOptions.AverageHeartRate -> mountainPasses.sortedBy { it.averageHeartRate }.reversed()
+                SegmentSortOptions.Power -> mountainPasses.sortedBy { it.averagePower }.reversed()
             }
-
             SegmentEntriesList(
-                segmentEntries = sortedEntries,
+                segmentEntries = sortedPasses,
                 currentEntry = uiState.currentEntry,
                 onDeleteEntry = onDeleteEntry,
-                onEditEntry = onEditEntry,  // Pass the edit function
+                onEditEntry = onEditEntry,
                 onEntrySelected = onEntrySelected
             )
+        } else {
+            uiState.segment?.let { segment ->
+                val sortedEntries = when (uiState.selectedSortOption) {
+                    SegmentSortOptions.AverageVelocity -> segment.segmentEntries.sortedBy { it.kilometers / it.duration }
+                        .reversed()
+
+                    SegmentSortOptions.Date -> segment.segmentEntries.sortedBy { it.getDateAsString() }
+                        .reversed()
+
+                    SegmentSortOptions.AverageHeartRate -> segment.segmentEntries.sortedBy { it.averageHeartRate }
+                        .reversed()
+
+                    SegmentSortOptions.Power -> segment.segmentEntries.sortedBy { it.averagePower }
+                        .reversed()
+                }
+
+                SegmentEntriesList(
+                    segmentEntries = sortedEntries,
+                    currentEntry = uiState.currentEntry,
+                    onDeleteEntry = onDeleteEntry,
+                    onEditEntry = onEditEntry,  // Pass the edit function
+                    onEntrySelected = onEntrySelected
+                )
+            }
         }
     }
 }
@@ -375,18 +441,30 @@ fun SegmentEntryDetailsContent(
  */
 @Composable
 fun SegmentHeader(
-    heightMeterUp: Int,
-    heightMeterDown: Int,
+    heightMeterUp: Double,
+    heightMeterDown: Double,
     kilometers: Double,
     averageHeartRate: Int,
     duration: Double,
     averagePower: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    avgGradient: Double? = null,
+    maxGradeInWindow: Double? = null,
+    windowDistanceMeters: Double? = null,
+    displayName: String? = null
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        if (displayName != null) {
+            Text(
+                text = displayName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -397,13 +475,29 @@ fun SegmentHeader(
             ) {
                 SegmentDetailStatItem(
                     icon = R.drawable.baseline_trending_up_black_24dp,
-                    text = "$heightMeterUp/$heightMeterDown ${stringResource(R.string.hm)}"
+                    text = String.format(Locale.getDefault(), "%.0f/%.0f %s", heightMeterUp, heightMeterDown, stringResource(R.string.hm))
                 )
 
-                SegmentDetailStatItem(
-                    icon = R.drawable.ic_baseline_monitor_heart_24,
-                    text = "$averageHeartRate ${stringResource(R.string.bpm)}"
-                )
+                if (avgGradient != null) {
+                    SegmentDetailStatItem(
+                        icon = R.drawable.baseline_trending_flat_24,
+                        text = String.format(Locale.getDefault(), "%.1f%%", avgGradient)
+                    )
+                }
+
+                if (maxGradeInWindow != null && windowDistanceMeters != null) {
+                    SegmentDetailStatItem(
+                        icon = R.drawable.baseline_trending_up_black_24dp,
+                        text = String.format(Locale.getDefault(), "%.0fm: %.1f%%", windowDistanceMeters, maxGradeInWindow)
+                    )
+                }
+
+                if (avgGradient == null) {
+                    SegmentDetailStatItem(
+                        icon = R.drawable.ic_baseline_monitor_heart_24,
+                        text = "$averageHeartRate ${stringResource(R.string.bpm)}"
+                    )
+                }
             }
 
             Column(
@@ -430,10 +524,12 @@ fun SegmentHeader(
                     )
                 )
 
-                SegmentDetailStatItem(
-                    icon = R.drawable.ic_baseline_power_24,
-                    text = "$averagePower ${stringResource(R.string.watt)}"
-                )
+                if (avgGradient == null) {
+                    SegmentDetailStatItem(
+                        icon = R.drawable.ic_baseline_power_24,
+                        text = "$averagePower ${stringResource(R.string.watt)}"
+                    )
+                }
             }
         }
     }
@@ -690,7 +786,11 @@ fun SegmentEntryCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = entry.getDateAsString() ?: "",
+                    text = if (entry.isMountainPass && entry.name.isNotBlank()) {
+                        "${entry.name} (${entry.getDateAsString() ?: ""})"
+                    } else {
+                        entry.getDateAsString() ?: ""
+                    },
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -701,34 +801,65 @@ fun SegmentEntryCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    SegmentEntryStat(
-                        value = String.format(
-                            Locale.getDefault(),
-                            "%d:%02d",
-                            entry.duration.toInt(),
-                            ((entry.duration - entry.duration.toInt()) * 60).toInt()
-                        ),
-                        label = stringResource(R.string.min)
-                    )
+                    if (entry.isMountainPass) {
+                        SegmentEntryStat(
+                            value = String.format(
+                                Locale.getDefault(),
+                                "%d:%02d",
+                                entry.duration.toInt(),
+                                ((entry.duration - entry.duration.toInt()) * 60).toInt()
+                            ),
+                            label = stringResource(R.string.min)
+                        )
 
-                    SegmentEntryStat(
-                        value = String.format(
-                            Locale.getDefault(),
-                            "%.1f",
-                            entry.kilometers / entry.duration * 60
-                        ),
-                        label = stringResource(R.string.kmh)
-                    )
+                        SegmentEntryStat(
+                            value = String.format(
+                                Locale.getDefault(),
+                                "%.1f",
+                                entry.kilometers / entry.duration * 60
+                            ),
+                            label = stringResource(R.string.kmh)
+                        )
 
-                    SegmentEntryStat(
-                        value = entry.averageHeartRate.toString(),
-                        label = stringResource(R.string.bpm)
-                    )
+                        SegmentEntryStat(
+                            value = String.format(Locale.getDefault(), "%.0f", entry.heightMetersUp),
+                            label = stringResource(R.string.hm)
+                        )
 
-                    SegmentEntryStat(
-                        value = entry.averagePower.toString(),
-                        label = stringResource(R.string.watt)
-                    )
+                        SegmentEntryStat(
+                            value = String.format(Locale.getDefault(), "%.1f%%", entry.avgGradient),
+                            label = stringResource(R.string.avg_gradient)
+                        )
+                    } else {
+                        SegmentEntryStat(
+                            value = String.format(
+                                Locale.getDefault(),
+                                "%d:%02d",
+                                entry.duration.toInt(),
+                                ((entry.duration - entry.duration.toInt()) * 60).toInt()
+                            ),
+                            label = stringResource(R.string.min)
+                        )
+
+                        SegmentEntryStat(
+                            value = String.format(
+                                Locale.getDefault(),
+                                "%.1f",
+                                entry.kilometers / entry.duration * 60
+                            ),
+                            label = stringResource(R.string.kmh)
+                        )
+
+                        SegmentEntryStat(
+                            value = entry.averageHeartRate.toString(),
+                            label = stringResource(R.string.bpm)
+                        )
+
+                        SegmentEntryStat(
+                            value = entry.averagePower.toString(),
+                            label = stringResource(R.string.watt)
+                        )
+                    }
                 }
             }
 

@@ -35,10 +35,6 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideSegmentsDao(db: AppDatabase) = db.segmentsDao()
-
-    @Provides
-    @Singleton
     fun provideForecastsDao(db: AppDatabase) = db.forecastDao()
 
     @Provides
@@ -56,10 +52,6 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDailyActivitySummaryDao(db: AppDatabase) = db.dailyActivitySummaryDao()
-
-    @Provides
-    @Singleton
-    fun provideMountainPassDao(db: AppDatabase) = db.mountainPassDao()
 
     @Provides
     @Singleton

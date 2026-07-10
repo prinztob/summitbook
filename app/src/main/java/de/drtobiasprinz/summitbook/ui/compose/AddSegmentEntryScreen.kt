@@ -54,7 +54,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.MountainPass
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -98,8 +97,8 @@ fun AddSegmentEntryScreen(
     hideSummitDropdown: Boolean = false,
     initialStartPointId: Int = 0,
     initialEndPointId: Int = -1,
-    onSaveMountainPass: ((MountainPass) -> Unit)? = null,
-    existingMountainPass: MountainPass? = null,
+    onSaveMountainPass: ((SegmentEntry) -> Unit)? = null,
+    existingMountainPass: SegmentEntry? = null,
 ) {
     var uiState by remember { mutableStateOf(AddSegmentEntryUiState()) }
     var trackPoints by remember {
@@ -339,8 +338,8 @@ fun AddSegmentEntryContent(
     modifier: Modifier = Modifier,
     hideSummitDropdown: Boolean = false,
     isMountainPassMode: Boolean = false,
-    onSaveMountainPass: ((MountainPass) -> Unit)? = null,
-    existingMountainPass: MountainPass? = null,
+    onSaveMountainPass: ((SegmentEntry) -> Unit)? = null,
+    existingMountainPass: SegmentEntry? = null,
 ) {
     var selectedSummitName by remember { mutableStateOf("") }
     var selectedSegmentName by remember { mutableStateOf(existingMountainPass?.name ?: "") }
@@ -519,8 +518,10 @@ fun AddSegmentEntryContent(
                                     null
                                 }
 
-                                val mountainPass = MountainPass(
-                                    name = selectedSegmentName.ifBlank { summit.name },
+                                val mountainPass = SegmentEntry(
+                                    entryId = existingMountainPass?.entryId ?: 0,
+                                    segmentId = 0,
+                                    date = summit.date,
                                     activityId = summit.activityId,
                                     startPositionInTrack = uiState.startPointId,
                                     startPositionLatitude = startTrackPoint.first.latitude,
@@ -528,20 +529,22 @@ fun AddSegmentEntryContent(
                                     endPositionInTrack = uiState.endPointId,
                                     endPositionLatitude = endTrackPoint.first.latitude,
                                     endPositionLongitude = endTrackPoint.first.longitude,
-                                    elevationGain = elevationWindowResult?.elevationGain
+                                    duration = duration,
+                                    durationInMotion = elevationWindowResult?.durationInMotion ?: 0.0,
+                                    kilometers = distance,
+                                    heightMetersUp = elevationWindowResult?.elevationGain
                                         ?: heightMeterResult.second,
-                                    elevationLoss = elevationWindowResult?.elevationLoss
+                                    heightMetersDown = elevationWindowResult?.elevationLoss
                                         ?: heightMeterResult.third,
+                                    averageHeartRate = 0,
+                                    averagePower = 0,
+                                    isMountainPass = true,
+                                    name = selectedSegmentName.ifBlank { summit.name },
                                     avgGradient = elevationWindowResult?.avgGradient ?: 0.0,
                                     maxGradeInWindow = elevationWindowResult?.maxGradeInWindow
                                         ?: 0.0,
                                     windowDistanceMeters = windowDistance.toDoubleOrNull() ?: 500.0,
-                                    kilometers = distance,
-                                    duration = duration,
-                                    date = summit.date
-                                ).also {
-                                    it.id = existingMountainPass?.id ?: 0
-                                }
+                                )
                                 onSaveMountainPass(mountainPass)
                             }
                         }
@@ -613,8 +616,8 @@ fun AddSegmentEntryContent(
                                     endPositionLongitude = endTrackPoint.first.longitude,
                                     duration = duration,
                                     kilometers = distance,
-                                    heightMetersUp = heightMeterResult.second.toInt(),
-                                    heightMetersDown = heightMeterResult.third.toInt(),
+                                    heightMetersUp = heightMeterResult.second,
+                                    heightMetersDown = heightMeterResult.third,
                                     averageHeartRate = averageHeartRate,
                                     averagePower = averagePower
                                 )
@@ -705,8 +708,8 @@ fun AddSegmentEntryContent(
                     date = summit.getDateAsString() ?: "",
                     name = if (isMountainPassMode) selectedSegmentName.ifBlank { stringResource(R.string.mountain_pass_info) } else uiState.segment?.segmentDetails?.getDisplayNameWithLineBreak()
                         ?: "",
-                    heightMeterUp = heightMeterResult.second.toInt(),
-                    heightMeterDown = heightMeterResult.third.toInt(),
+                    heightMeterUp = heightMeterResult.second,
+                    heightMeterDown = heightMeterResult.third,
                     kilometers = distance,
                     averageHeartRate = averageHeartRate,
                     duration = duration,
@@ -834,8 +837,8 @@ fun AddSegmentEntryContent(
 fun AddSegmentStatsCard(
     date: String,
     name: String,
-    heightMeterUp: Int,
-    heightMeterDown: Int,
+    heightMeterUp: Double,
+    heightMeterDown: Double,
     kilometers: Double,
     averageHeartRate: Int,
     duration: Double,
@@ -885,7 +888,7 @@ fun AddSegmentStatsCard(
                 if (!isMountainPassMode) {
                     AddSegmentStatItem(
                         icon = R.drawable.baseline_trending_up_black_24dp,
-                        text = "$heightMeterUp/$heightMeterDown ${stringResource(R.string.hm)}"
+                        text = String.format(Locale.getDefault(), "%.0f/%.0f %s", heightMeterUp, heightMeterDown, stringResource(R.string.hm))
                     )
                 }
 
@@ -982,6 +985,23 @@ fun AddSegmentStatsCard(
                             "%.0f %s",
                             elevationWindowResult.elevationLoss,
                             stringResource(R.string.hm)
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    AddSegmentStatItem(
+                        icon = R.drawable.ic_baseline_timer_24,
+                        text = String.format(
+                            Locale.getDefault(),
+                            "%.1f %s",
+                            elevationWindowResult.durationInMotion,
+                            stringResource(R.string.min)
                         )
                     )
                 }

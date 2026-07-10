@@ -76,13 +76,12 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
             ).build()
             val repository = DatabaseRepository(
                 db.summitsDao(),
-                db.segmentsDao(),
+                db.segmentDao(),
                 db.forecastDao(),
                 db.ignoredActivityDao(),
                 db.entityEventDao(),
                 db.peakDao(),
-                db.dailyActivitySummaryDao(),
-                db.mountainPassDao()
+                db.dailyActivitySummaryDao()
             )
 
             val summits = repository.getAllSummits().first().filter { !it.isBookmark }

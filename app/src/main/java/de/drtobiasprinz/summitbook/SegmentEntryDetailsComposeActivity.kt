@@ -43,12 +43,15 @@ class SegmentEntryDetailsComposeActivity : ComponentActivity() {
                         .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
                     val summitsList by viewModel.summitsList.asFlow()
                         .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
+                    val mountainPassesList by viewModel.mountainPasses.asFlow()
+                        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
 
                     SegmentEntryDetailsScreen(
                         segmentDetailsId = segmentDetailsId,
                         segmentEntryId = segmentEntryId,
                         segments = segmentsList.data ?: emptyList(),
                         summits = summitsList.data ?: emptyList(),
+                        mountainPasses = mountainPassesList.data ?: emptyList(),
                         onNavigateBack = { finish() },
                         onDeleteEntry = { entry -> viewModel.deleteSegmentEntry(entry) },
                         onEditEntry = { entry -> 

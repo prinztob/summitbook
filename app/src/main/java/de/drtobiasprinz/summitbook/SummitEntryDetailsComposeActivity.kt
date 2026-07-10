@@ -41,7 +41,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModelProvider
 import com.chaquo.python.Python
 import dagger.hilt.android.AndroidEntryPoint
-import de.drtobiasprinz.summitbook.db.entities.MountainPass
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.SportGroup
 import de.drtobiasprinz.summitbook.db.entities.SportType
 import de.drtobiasprinz.summitbook.db.entities.Summit
@@ -247,6 +247,7 @@ fun SummitEntryDetailsScreen(
     }
 }
 
+@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SummitEntryDetailsTabs(
     summitId: Long,
@@ -291,7 +292,7 @@ fun SummitEntryDetailsTabs(
     val peaks = remember(peaksData) { peaksData?.data ?: emptyList() }
     val mountainPasses = remember(mountainPassesData) { mountainPassesData?.data ?: emptyList() }
 
-    var editingMountainPass by remember { mutableStateOf<MountainPass?>(null) }
+    var editingMountainPass by remember { mutableStateOf<SegmentEntry?>(null) }
     var showEditMountainPassDialog by remember { mutableStateOf(false) }
 
     // Create stable callbacks
@@ -443,7 +444,7 @@ fun SummitEntryDetailsTabs(
                     initialEndPointId = pass.endPositionInTrack,
                     existingMountainPass = pass,
                     onSaveMountainPass = { mountainPass ->
-                        if (mountainPass.id > 0) {
+                        if (mountainPass.entryId > 0) {
                             pageViewModel.updateMountainPass(mountainPass)
                         } else {
                             pageViewModel.saveMountainPass(mountainPass)

@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.db.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import de.drtobiasprinz.summitbook.utils.Constants.DATE_FORMAT
@@ -21,14 +22,24 @@ data class SegmentEntry(
         var endPositionLongitude: Double,
         var duration: Double,
         var kilometers: Double,
-        var heightMetersUp: Int,
-        var heightMetersDown: Int,
+        @ColumnInfo(defaultValue = "0") var heightMetersUp: Double = 0.0,
+        @ColumnInfo(defaultValue = "0") var heightMetersDown: Double = 0.0,
         var averageHeartRate: Int,
-        var averagePower: Int
+        var averagePower: Int,
+        @ColumnInfo(defaultValue = "0") var isMountainPass: Boolean = false,
+        @ColumnInfo(defaultValue = "") var name: String = "",
+        @ColumnInfo(defaultValue = "0.0") var avgGradient: Double = 0.0,
+        @ColumnInfo(defaultValue = "0.0") var maxGradeInWindow: Double = 0.0,
+        @ColumnInfo(defaultValue = "0.0") var windowDistanceMeters: Double = 0.0,
+        @ColumnInfo(defaultValue = "0.0") var durationInMotion: Double = 0.0
 ) {
     fun getDateAsString(): String? {
         val dateFormat: DateFormat = SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH)
         return dateFormat.format(date)
+    }
+
+    fun getDisplayName(): String {
+        return name.ifBlank { if (isMountainPass) "Mountain Pass" else "Segment" }
     }
 
     fun getStringRepresentation(): String {
@@ -74,8 +85,8 @@ data class SegmentEntry(
         result = 31 * result + endPositionLongitude.hashCode()
         result = 31 * result + duration.hashCode()
         result = 31 * result + kilometers.hashCode()
-        result = 31 * result + heightMetersUp
-        result = 31 * result + heightMetersDown
+        result = 31 * result + heightMetersUp.hashCode()
+        result = 31 * result + heightMetersDown.hashCode()
         result = 31 * result + averageHeartRate
         result = 31 * result + averagePower
         return result

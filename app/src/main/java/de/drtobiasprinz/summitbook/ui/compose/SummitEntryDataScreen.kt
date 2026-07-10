@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -52,9 +53,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.MountainPass
 import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.models.TextField
 import de.drtobiasprinz.summitbook.models.TextFieldGroup
@@ -76,9 +77,9 @@ fun SummitEntryDataScreen(
     onSetSummitToCompareToNull: () -> Unit,
     modifier: Modifier = Modifier,
     peaks: List<Peak> = emptyList(),
-    mountainPasses: List<MountainPass> = emptyList(),
-    onEditMountainPass: ((MountainPass) -> Unit)? = null,
-    onDeleteMountainPass: ((MountainPass) -> Unit)? = null
+    mountainPasses: List<SegmentEntry> = emptyList(),
+    onEditMountainPass: ((SegmentEntry) -> Unit)? = null,
+    onDeleteMountainPass: ((SegmentEntry) -> Unit)? = null
 ) {
 
     val configuration = LocalConfiguration.current
@@ -818,9 +819,9 @@ fun SegmentsSection(
 @Composable
 fun MountainPassesSection(
     summit: Summit,
-    mountainPasses: List<MountainPass>,
-    onEditMountainPass: ((MountainPass) -> Unit)? = null,
-    onDeleteMountainPass: ((MountainPass) -> Unit)? = null
+    mountainPasses: List<SegmentEntry>,
+    onEditMountainPass: ((SegmentEntry) -> Unit)? = null,
+    onDeleteMountainPass: ((SegmentEntry) -> Unit)? = null
 ) {
     // Filter mountain passes for this summit's activity
     val summitPasses = remember(summit.activityId, mountainPasses) {
@@ -829,7 +830,8 @@ fun MountainPassesSection(
 
     if (summitPasses.isEmpty()) return
 
-    var selectedPass by remember { mutableStateOf<MountainPass?>(null) }
+    var selectedPass by remember { mutableStateOf<SegmentEntry?>(null) }
+    var useDurationInMotion by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -945,7 +947,7 @@ fun MountainPassesSection(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(Locale.getDefault(), "%.0f hm", pass.elevationGain),
+                                    text = String.format(Locale.getDefault(), "%.0f hm", pass.heightMetersUp),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -962,7 +964,7 @@ fun MountainPassesSection(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(Locale.getDefault(), "%.0f hm", pass.elevationLoss),
+                                    text = String.format(Locale.getDefault(), "%.0f hm", pass.heightMetersDown),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -1012,24 +1014,72 @@ fun MountainPassesSection(
                                     )
                                 }
                             }
+                        }
 
+                        // Duration, average speed, and switch
+                        val effectiveDuration = if (useDurationInMotion && pass.durationInMotion > 0) {
+                            pass.durationInMotion
+                        } else {
+                            pass.duration
+                        }
+                        val avgSpeed = if (effectiveDuration > 0) {
+                            pass.kilometers / (effectiveDuration / 60.0)
+                        } else 0.0
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             // Duration
-                            if (pass.duration > 0) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_baseline_timer_24),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Text(
-                                        text = String.format(Locale.getDefault(), "%.1f min", pass.duration),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_baseline_timer_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = String.format(Locale.getDefault(), "%.1f %s", effectiveDuration, stringResource(R.string.min)),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+
+                            // Average speed
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.baseline_speed_black_24dp),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = String.format(Locale.getDefault(), "%.1f %s", avgSpeed, stringResource(R.string.kmh)),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+
+                            // Switch between total and in-motion duration
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.active_duration),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (useDurationInMotion) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Switch(
+                                    checked = useDurationInMotion,
+                                    onCheckedChange = { useDurationInMotion = it },
+                                    enabled = pass.durationInMotion > 0
+                                )
                             }
                         }
                     }

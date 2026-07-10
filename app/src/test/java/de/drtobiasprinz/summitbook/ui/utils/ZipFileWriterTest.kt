@@ -64,8 +64,8 @@ class ZipFileWriterTest {
             33.94,
             18.1,
             2.9,
-            220,
-            0,
+            220.0,
+            0.0,
             157,
             1
         )
@@ -82,8 +82,8 @@ class ZipFileWriterTest {
             33.94,
             18.1,
             2.9,
-            220,
-            0,
+            220.0,
+            0.0,
             157,
             1
         )
@@ -166,16 +166,16 @@ class ZipFileWriterTest {
         entries.forEach {
             db.summitsDao().addSummit(it)
         }
-        val id = db.segmentsDao().addSegmentDetails(segmentDetail1)
+        val id = db.segmentDao().addSegmentDetails(segmentDetail1)
         segmentEntry1.segmentId = id
         segmentEntry2.segmentId = id
-        db.segmentsDao().addSegmentEntry(segmentEntry1)
-        db.segmentsDao().addSegmentEntry(segmentEntry2)
+        db.segmentDao().addSegmentEntry(segmentEntry1)
+        db.segmentDao().addSegmentEntry(segmentEntry2)
         db.entityEventDao().add(event1)
         db.entityEventDao().add(event2)
         db.forecastDao().addForecastDeprecated(forcast)
         val summits = db.summitsDao().allSummit
-        val segments = db.segmentsDao().getAllSegmentsDeprecated()
+        val segments = db.segmentDao().getAllSegmentsDeprecated()
         val events = db.entityEventDao().allEntityEventsAsList
         val forecasts = db.forecastDao().allForecastsDeprecated
         val file = kotlin.io.path.createTempFile(suffix = ".zip").toFile()

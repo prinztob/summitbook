@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 
 @Dao
-interface SegmentsDao {
+interface SegmentDao {
     @Transaction
     @Query("select * from segmentdetails")
     fun getAllSegmentsDeprecated(): MutableList<Segment>
@@ -40,5 +40,11 @@ interface SegmentsDao {
         }
         deleteSegmentDetails(segment.segmentDetails)
     }
+
+    @Query("SELECT * FROM SegmentEntry WHERE isMountainPass = 1")
+    fun getAllMountainPasses(): Flow<List<SegmentEntry>>
+
+    @Query("SELECT * FROM SegmentEntry WHERE isMountainPass = 1 AND activityId = :activityId")
+    fun getMountainPassesForActivity(activityId: Long): Flow<List<SegmentEntry>>
 
 }

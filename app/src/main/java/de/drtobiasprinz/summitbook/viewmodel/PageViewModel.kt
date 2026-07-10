@@ -5,9 +5,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import de.drtobiasprinz.summitbook.db.entities.MountainPass
 import de.drtobiasprinz.summitbook.db.entities.Peak
 import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
@@ -44,8 +44,8 @@ class PageViewModel @Inject constructor(private val repository: DatabaseReposito
     val peaks: LiveData<DataStatus<List<Peak>>>
         get() = _peaks
 
-    private val _mountainPasses = MutableLiveData<DataStatus<List<MountainPass>>>()
-    val mountainPasses: LiveData<DataStatus<List<MountainPass>>>
+    private val _mountainPasses = MutableLiveData<DataStatus<List<SegmentEntry>>>()
+    val mountainPasses: LiveData<DataStatus<List<SegmentEntry>>>
         get() = _mountainPasses
 
     init {
@@ -112,15 +112,15 @@ class PageViewModel @Inject constructor(private val repository: DatabaseReposito
             .collect { _mountainPasses.postValue(DataStatus.success(it, it.isEmpty())) }
     }
 
-    fun saveMountainPass(mountainPass: MountainPass) = viewModelScope.launch {
-        repository.saveMountainPass(mountainPass)
+    fun saveMountainPass(mountainPass: SegmentEntry) = viewModelScope.launch {
+        repository.saveSegmentEntry(mountainPass)
     }
 
-    fun updateMountainPass(mountainPass: MountainPass) = viewModelScope.launch {
-        repository.updateMountainPass(mountainPass)
+    fun updateMountainPass(mountainPass: SegmentEntry) = viewModelScope.launch {
+        repository.updateSegmentEntry(mountainPass)
     }
 
-    fun deleteMountainPass(mountainPass: MountainPass) = viewModelScope.launch {
-        repository.deleteMountainPass(mountainPass)
+    fun deleteMountainPass(mountainPass: SegmentEntry) = viewModelScope.launch {
+        repository.deleteSegmentEntry(mountainPass)
     }
 }

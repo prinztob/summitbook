@@ -27,6 +27,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -44,6 +45,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.asFlow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -51,9 +54,12 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.SegmentEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.db.entities.Segment
 import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * Composable function that displays a list of segments
@@ -68,6 +74,11 @@ fun SegmentsListScreen(
     onDeleteSegment: (Segment) -> Unit = {}
 ) {
     val viewModel: DatabaseViewModel = viewModel()
+    val mountainPassesState by viewModel.mountainPasses.asFlow()
+        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
+    val mountainPasses = mountainPassesState.data ?: emptyList()
+
+    var showMountainPasses by remember { mutableStateOf(false) }
     var showAddSegmentEntryDialog by remember { mutableStateOf(false) }
     var selectedSegmentId by remember { mutableLongStateOf(0L) }
     var showAddSegmentDetailsDialog by remember { mutableStateOf(false) }
@@ -80,29 +91,71 @@ fun SegmentsListScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
-        items(
-            items = segments,
-            key = { segment -> segment.segmentDetails.segmentDetailsId }
-        ) { segment ->
-            SegmentCard(
-                segment = segment,
-                onDelete = onDeleteSegment,
-                onAddSegmentEntry = { segmentId ->
-                    selectedSegmentId = segmentId
-                    showAddSegmentEntryDialog = true
-                },
-                onEditSegmentDetails = { segmentDetails ->
-                    selectedSegmentDetails = segmentDetails
-                    showEditSegmentDetailsDialog = true
-                }
-            )
-        }
-        
-        // Add "Add Segment Details" button at the end
+        // Switch between Segments and Mountain Passes
         item {
-            AddSegmentDetailsButton(
-                onClick = { showAddSegmentDetailsDialog = true }
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.segments),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (!showMountainPasses) FontWeight.Bold else FontWeight.Normal,
+                    color = if (!showMountainPasses) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Switch(
+                    checked = showMountainPasses,
+                    onCheckedChange = { showMountainPasses = it }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.mountain_passes),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (showMountainPasses) FontWeight.Bold else FontWeight.Normal,
+                    color = if (showMountainPasses) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        if (showMountainPasses) {
+            items(
+                items = mountainPasses,
+                key = { pass -> pass.entryId }
+            ) { pass ->
+                MountainPassCard(
+                    pass = pass,
+                    onDelete = { viewModel.deleteMountainPass(it) }
+                )
+            }
+        } else {
+            items(
+                items = segments,
+                key = { segment -> segment.segmentDetails.segmentDetailsId }
+            ) { segment ->
+                SegmentCard(
+                    segment = segment,
+                    onDelete = onDeleteSegment,
+                    onAddSegmentEntry = { segmentId ->
+                        selectedSegmentId = segmentId
+                        showAddSegmentEntryDialog = true
+                    },
+                    onEditSegmentDetails = { segmentDetails ->
+                        selectedSegmentDetails = segmentDetails
+                        showEditSegmentDetailsDialog = true
+                    }
+                )
+            }
+
+            // Add "Add Segment Details" button at the end
+            item {
+                AddSegmentDetailsButton(
+                    onClick = { showAddSegmentDetailsDialog = true }
+                )
+            }
         }
     }
 
@@ -165,11 +218,11 @@ fun SegmentCard(
     
     val averageElevationGainUp = if (segment.segmentEntries.isNotEmpty()) {
         segment.segmentEntries.sumOf { it.heightMetersUp } / segment.segmentEntries.size
-    } else 0
+    } else 0.0
     
     val averageElevationGainDown = if (segment.segmentEntries.isNotEmpty()) {
         segment.segmentEntries.sumOf { it.heightMetersDown } / segment.segmentEntries.size
-    } else 0
+    } else 0.0
     
     val mapScreenshotFile = Segment.getMapScreenshotFile(segment.segmentDetails.segmentDetailsId)
     val hasMapScreenshot = mapScreenshotFile.exists()
@@ -293,8 +346,8 @@ fun SegmentCard(
                         String.format(
                             Locale.getDefault(),
                             "%s/%s %s",
-                            averageElevationGainUp,
-                            averageElevationGainDown,
+                            averageElevationGainUp.roundToInt(),
+                            averageElevationGainDown.roundToInt(),
                             stringResource(R.string.hm)
                         )
                     } else "",
@@ -359,6 +412,138 @@ fun SegmentCard(
             segmentName = segment.segmentDetails.getDisplayName(),
             onConfirm = {
                 onDelete(segment)
+                showDeleteDialog = false
+            },
+            onDismiss = {
+                showDeleteDialog = false
+                Toast.makeText(
+                    context,
+                    deleteCancelMessage,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        )
+    }
+}
+
+/**
+ * Mountain pass card composable
+ */
+@Suppress("AssignedValueIsNeverRead")
+@Composable
+fun MountainPassCard(
+    pass: SegmentEntry,
+    onDelete: (SegmentEntry) -> Unit
+) {
+    val context = LocalContext.current
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val deleteCancelMessage = stringResource(R.string.delete_cancel)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column {
+            // Title section
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(8.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.baseline_add_mountain_pass_24),
+                        contentDescription = stringResource(R.string.mountain_passes),
+                        modifier = Modifier.size(40.dp),
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = pass.getDisplayName(),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = pass.getDateAsString() ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            }
+
+            // Stats section
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Distance
+                SegmentStatItem(
+                    icon = R.drawable.outline_distance_24,
+                    text = String.format(Locale.getDefault(), "%.1f %s", pass.kilometers, stringResource(R.string.km)),
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Elevation gain/loss
+                SegmentStatItem(
+                    icon = R.drawable.baseline_trending_up_black_24dp,
+                    text = String.format(Locale.getDefault(), "%.0f/%.0f %s", pass.heightMetersUp, pass.heightMetersDown, stringResource(R.string.hm)),
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Avg gradient
+                SegmentStatItem(
+                    icon = R.drawable.baseline_trending_flat_24,
+                    text = String.format(Locale.getDefault(), "%.1f%%", pass.avgGradient),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Action buttons section
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(horizontal = 2.dp, vertical = 0.dp),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.Top
+            ) {
+                // Delete button
+                IconButton(
+                    onClick = { showDeleteDialog = true }
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_delete_black_24dp),
+                        contentDescription = stringResource(R.string.delete_icon),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        SegmentDeleteConfirmationDialog(
+            segmentName = pass.getDisplayName(),
+            onConfirm = {
+                onDelete(pass)
                 showDeleteDialog = false
             },
             onDismiss = {
@@ -463,4 +648,3 @@ private fun navigateToSegmentDetails(context: Context, segmentDetailsId: Long) {
     intent.putExtra(SegmentDetails.SEGMENT_DETAILS_ID_EXTRA_IDENTIFIER, segmentDetailsId)
     context.startActivity(intent)
 }
-

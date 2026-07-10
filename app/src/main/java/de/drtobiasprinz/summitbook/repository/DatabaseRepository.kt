@@ -8,13 +8,12 @@ import javax.inject.Inject
 
 class DatabaseRepository @Inject constructor(
     private val summitsDao: SummitsDao,
-    private val segmentsDao: SegmentsDao,
+    private val segmentDao: SegmentDao,
     private val forecastDao: ForecastDao,
     private val ignoredActivityDao: IgnoredActivityDao,
     private val entityEventDao: EntityEventDao,
     private val peakDao: PeakDao,
     private val dailyActivitySummaryDao: DailyActivitySummaryDao,
-    private val mountainPassDao: MountainPassDao,
 ) {
 
     suspend fun saveSummit(entity: Summit) = summitsDao.saveSummit(entity)
@@ -28,16 +27,17 @@ class DatabaseRepository @Inject constructor(
     fun getDetailsSummit(id: Long) = summitsDao.getSummit(id)
     fun getAllSummits() = summitsDao.getAllSummits()
     fun getSummitsPaginated(limit: Int, offset: Int) = summitsDao.getSummitsPaginated(limit, offset)
-    fun getAllSegments() = segmentsDao.getAllSegments()
-    suspend fun deleteSegmentEntry(entity: SegmentEntry) = segmentsDao.deleteSegmentEntry(entity)
-    suspend fun deleteSegment(entity: Segment) = segmentsDao.deleteSegment(entity)
-    suspend fun saveSegmentDetails(entity: SegmentDetails) = segmentsDao.addSegmentDetails(entity)
+    fun getAllSegments() = segmentDao.getAllSegments()
+    suspend fun deleteSegmentEntry(entity: SegmentEntry) = segmentDao.deleteSegmentEntry(entity)
+    suspend fun deleteSegment(entity: Segment) = segmentDao.deleteSegment(entity)
+    suspend fun saveSegmentDetails(entity: SegmentDetails) = segmentDao.addSegmentDetails(entity)
     suspend fun updateSegmentDetails(entity: SegmentDetails) =
-        segmentsDao.updateSegmentDetails(entity)
+        segmentDao.updateSegmentDetails(entity)
 
-    suspend fun saveSegmentEntry(entity: SegmentEntry) = segmentsDao.addSegmentEntry(entity)
-    suspend fun updateSegmentEntry(entity: SegmentEntry) = segmentsDao.updateSegmentEntry(entity)
+    suspend fun saveSegmentEntry(entity: SegmentEntry) = segmentDao.addSegmentEntry(entity)
+    suspend fun updateSegmentEntry(entity: SegmentEntry) = segmentDao.updateSegmentEntry(entity)
 
+    fun getAllMountainPasses() = segmentDao.getAllMountainPasses()
     fun getAllForecasts() = forecastDao.getAllForecasts()
     suspend fun saveForecast(entity: Forecast) = forecastDao.addForecast(entity)
     suspend fun updateForecast(entity: Forecast) = forecastDao.updateForecast(entity)
@@ -71,11 +71,5 @@ class DatabaseRepository @Inject constructor(
     fun getAllDailyActivitySummary() = dailyActivitySummaryDao.getAllDailyActivitySummary()
     suspend fun saveDailyActivitySummary(entity: DailyActivitySummary) = dailyActivitySummaryDao.add(entity)
     suspend fun getDailyActivitySummaryByDateSync(activityId: Long) = dailyActivitySummaryDao.getDailyActivitySummaryByDateSync(activityId)
-
-    fun getAllMountainPasses() = mountainPassDao.getAllMountainPasses()
-    fun getMountainPassesForActivity(activityId: Long) = mountainPassDao.getMountainPassesForActivity(activityId)
-    suspend fun saveMountainPass(mountainPass: MountainPass) = mountainPassDao.add(mountainPass)
-    suspend fun updateMountainPass(mountainPass: MountainPass) = mountainPassDao.update(mountainPass)
-    suspend fun deleteMountainPass(mountainPass: MountainPass) = mountainPassDao.delete(mountainPass)
 
 }
