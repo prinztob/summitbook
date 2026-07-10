@@ -49,15 +49,15 @@ fun AutoCompleteCompose(
     label: String,
     icon: Int
 ) {
-    val filteredOptions = remember(value) {
-        if (value.length > 1) {
+    var expanded by remember { mutableStateOf(false) }
+
+    val filteredOptions = remember(value, expanded) {
+        if (expanded && value.length > 1) {
             options.fastFilter { it.contains(value, ignoreCase = true) }.take(5)
         } else {
             emptyList()
         }
     }
-
-    var expanded by remember { mutableStateOf(false) }
 
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -71,7 +71,9 @@ fun AutoCompleteCompose(
     ExposedDropdownMenuBox(
         modifier = modifier,
         expanded = expanded,
-        onExpandedChange = { expanded = it }
+        onExpandedChange = {
+            if (!it) expanded = false
+        }
     ) {
         OutlinedTextField(
             leadingIcon = {
@@ -83,12 +85,13 @@ fun AutoCompleteCompose(
             value = value,
             onValueChange = {
                 onValueChange(it)
-                expanded = it.isNotEmpty()
             },
             trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(
-                    expanded = expanded,
-                )
+                IconButton(onClick = { if (value.length > 1) expanded = !expanded }) {
+                    ExposedDropdownMenuDefaults.TrailingIcon(
+                        expanded = expanded,
+                    )
+                }
             },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
@@ -164,7 +167,7 @@ fun AutoCompleteComposeChipField(
             ExposedDropdownMenuBox(
                 modifier = Modifier.weight(1f),
                 expanded = expanded,
-                onExpandedChange = { expanded = it }
+        onExpandedChange = { expanded = it }
             ) {
                 OutlinedTextField(
                     leadingIcon = {
