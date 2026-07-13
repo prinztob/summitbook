@@ -55,6 +55,10 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideSegmentDao(db: AppDatabase) = db.segmentDao()
+
+    @Provides
+    @Singleton
     fun provideSortFilterValues() = SortFilterValues()
 
     @Provides

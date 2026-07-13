@@ -33,7 +33,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -831,7 +830,6 @@ fun MountainPassesSection(
     if (summitPasses.isEmpty()) return
 
     var selectedPass by remember { mutableStateOf<SegmentEntry?>(null) }
-    var useDurationInMotion by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -1016,15 +1014,38 @@ fun MountainPassesSection(
                             }
                         }
 
-                        // Duration, average speed, and switch
-                        val effectiveDuration = if (useDurationInMotion && pass.durationInMotion > 0) {
-                            pass.durationInMotion
-                        } else {
-                            pass.duration
-                        }
-                        val avgSpeed = if (effectiveDuration > 0) {
-                            pass.kilometers / (effectiveDuration / 60.0)
+                        // Duration, average speed
+                        val activeDuration = if (pass.durationInMotion > 0) pass.durationInMotion else pass.duration
+                        val avgSpeed = if (activeDuration > 0) {
+                            pass.kilometers / (activeDuration / 60.0)
                         } else 0.0
+                        val avgSpeedTotal = if (pass.duration > 0) {
+                            pass.kilometers / (pass.duration / 60.0)
+                        } else 0.0
+
+                        val durationText = if (pass.durationInMotion > 0 && pass.durationInMotion != pass.duration) {
+                            String.format(
+                                Locale.getDefault(),
+                                "%.1f (%.1f) %s",
+                                pass.durationInMotion,
+                                pass.duration,
+                                stringResource(R.string.min)
+                            )
+                        } else {
+                            String.format(Locale.getDefault(), "%.1f %s", pass.duration, stringResource(R.string.min))
+                        }
+
+                        val speedText = if (pass.durationInMotion > 0 && pass.durationInMotion != pass.duration) {
+                            String.format(
+                                Locale.getDefault(),
+                                "%.1f (%.1f) %s",
+                                avgSpeed,
+                                avgSpeedTotal,
+                                stringResource(R.string.kmh)
+                            )
+                        } else {
+                            String.format(Locale.getDefault(), "%.1f %s", avgSpeed, stringResource(R.string.kmh))
+                        }
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1043,7 +1064,7 @@ fun MountainPassesSection(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(Locale.getDefault(), "%.1f %s", effectiveDuration, stringResource(R.string.min)),
+                                    text = durationText,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -1060,25 +1081,8 @@ fun MountainPassesSection(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(Locale.getDefault(), "%.1f %s", avgSpeed, stringResource(R.string.kmh)),
+                                    text = speedText,
                                     style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-
-                            // Switch between total and in-motion duration
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.active_duration),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (useDurationInMotion) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Switch(
-                                    checked = useDurationInMotion,
-                                    onCheckedChange = { useDurationInMotion = it },
-                                    enabled = pass.durationInMotion > 0
                                 )
                             }
                         }
