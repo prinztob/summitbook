@@ -12,6 +12,7 @@ import org.joda.time.DateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mapsforge.core.model.LatLong
@@ -25,130 +26,103 @@ class OfflineMapAnalyzerTest {
 
     @Test
     fun testE2EClimb() {
-        val track = this.javaClass.classLoader?.getResource("track3.gpx")
-        val extension = this.javaClass.classLoader?.getResource("track3_extensions.yaml")
-        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
-        if (track != null && extension != null && map != null) {
-            val gpsTrack = GpsTrack(
-                File(track.path).toPath(),
-                yamlExtensionsFile = File(extension.path)
-            )
-            gpsTrack.parseTrack(false)
-            val mapStream = FileInputStream(File(map.path))
-            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
-            val resultClimb = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints, SportType.Climb)
-            assertEquals(447, resultClimb.first[Surface.UNKNOWN])
-            assertEquals(0, resultClimb.second[RoadType.UNKNOWN])
-            assertTrue(resultClimb.second[RoadType.CYCLE_WAY] == 6003)
-        }
+        val track = fixture("track3.gpx")
+        val extension = fixture("track3_extensions.yaml")
+        val mapFile = assumeBayernMapPresent()
+        val gpsTrack = GpsTrack(track.toPath(), yamlExtensionsFile = extension)
+        gpsTrack.parseTrack(false)
+        val analyzer = OfflineMapAnalyzer(listOf(MapFile(FileInputStream(mapFile))), 15.0)
+        val resultClimb = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints, SportType.Climb)
+        assertEquals(447, resultClimb.first[Surface.UNKNOWN])
+        assertEquals(0, resultClimb.second[RoadType.UNKNOWN])
+        assertTrue(resultClimb.second[RoadType.CYCLE_WAY] == 6003)
     }
 
     @Test
     fun testE2ERacer() {
-        val track = this.javaClass.classLoader?.getResource("track3.gpx")
-        val extension = this.javaClass.classLoader?.getResource("track3_extensions.yaml")
-        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
-        if (track != null && extension != null && map != null) {
-            val gpsTrack = GpsTrack(
-                File(track.path).toPath(),
-                yamlExtensionsFile = File(extension.path)
-            )
-            gpsTrack.parseTrack(false)
-            val mapStream = FileInputStream(File(map.path))
-            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
-            val resultRacer = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints, SportType.Racer)
-            assertEquals(0, resultRacer.first[Surface.UNKNOWN])
-            assertEquals(0, resultRacer.second[RoadType.UNKNOWN])
-            assertEquals(6008, resultRacer.second[RoadType.CYCLE_WAY])
-        }
+        val track = fixture("track3.gpx")
+        val extension = fixture("track3_extensions.yaml")
+        val mapFile = assumeBayernMapPresent()
+        val gpsTrack = GpsTrack(track.toPath(), yamlExtensionsFile = extension)
+        gpsTrack.parseTrack(false)
+        val analyzer = OfflineMapAnalyzer(listOf(MapFile(FileInputStream(mapFile))), 15.0)
+        val resultRacer = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints, SportType.Racer)
+        assertEquals(0, resultRacer.first[Surface.UNKNOWN])
+        assertEquals(0, resultRacer.second[RoadType.UNKNOWN])
+        assertEquals(6008, resultRacer.second[RoadType.CYCLE_WAY])
     }
 
     @Test
     fun testE2EAllTerrain() {
-        val track = this.javaClass.classLoader?.getResource("track_all_terrain.gpx")
-        val extension = this.javaClass.classLoader?.getResource("track_all_terrain_extensions.yaml")
-        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
-        if (track != null && extension != null && map != null) {
-            val gpsTrack = GpsTrack(
-                File(track.path).toPath(),
-                yamlExtensionsFile = File(extension.path)
-            )
-            gpsTrack.parseTrack(false)
-            val mapStream = FileInputStream(File(map.path))
-            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
-            val result = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints)
-            assertEquals(16029, result.first[Surface.ASPHALT])
-            assertEquals(0, result.first[Surface.STONE_PAVEMENT])
-            assertEquals(5406, result.first[Surface.COMPACTED])
-            assertEquals(21, result.first[Surface.LOSE_GROUND])
-            assertEquals(25, result.first[Surface.PATH])
-            assertEquals(0, result.first[Surface.UNKNOWN])
-            assertEquals(10882, result.second[RoadType.WAY])
-            assertEquals(4355, result.second[RoadType.SIDE_STREET])
-            assertEquals(695, result.second[RoadType.MINOR_ROAD])
-            assertEquals(0, result.second[RoadType.MAJOR_ROAD])
-            assertEquals(5549, result.second[RoadType.CYCLE_WAY])
-            assertEquals(0, result.second[RoadType.ROAD])
-            assertEquals(0, result.second[RoadType.UNKNOWN])
-        }
+        val track = fixture("track_all_terrain.gpx")
+        val extension = fixture("track_all_terrain_extensions.yaml")
+        val mapFile = assumeBayernMapPresent()
+        val gpsTrack = GpsTrack(track.toPath(), yamlExtensionsFile = extension)
+        gpsTrack.parseTrack(false)
+        val analyzer = OfflineMapAnalyzer(listOf(MapFile(FileInputStream(mapFile))), 15.0)
+        val result = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints)
+        assertEquals(16029, result.first[Surface.ASPHALT])
+        assertEquals(0, result.first[Surface.STONE_PAVEMENT])
+        assertEquals(5406, result.first[Surface.COMPACTED])
+        assertEquals(21, result.first[Surface.LOSE_GROUND])
+        assertEquals(25, result.first[Surface.PATH])
+        assertEquals(0, result.first[Surface.UNKNOWN])
+        assertEquals(10882, result.second[RoadType.WAY])
+        assertEquals(4355, result.second[RoadType.SIDE_STREET])
+        assertEquals(695, result.second[RoadType.MINOR_ROAD])
+        assertEquals(0, result.second[RoadType.MAJOR_ROAD])
+        assertEquals(5549, result.second[RoadType.CYCLE_WAY])
+        assertEquals(0, result.second[RoadType.ROAD])
+        assertEquals(0, result.second[RoadType.UNKNOWN])
     }
 
     @Test
     fun testE2EOnlyAsphalt() {
-        val track = this.javaClass.classLoader?.getResource("track_asphalt.gpx")
-        val extension = this.javaClass.classLoader?.getResource("track_asphalt_extensions.yaml")
-        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
-        if (track != null && extension != null && map != null) {
-            val gpsTrack = GpsTrack(
-                File(track.path).toPath(),
-                yamlExtensionsFile = File(extension.path)
-            )
-            gpsTrack.parseTrack(false)
-            val mapStream = FileInputStream(File(map.path))
-            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
-            val result = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints)
-            assertEquals(32049, result.first[Surface.ASPHALT])
-            assertEquals(0, result.first[Surface.STONE_PAVEMENT])
-            assertEquals(221, result.first[Surface.COMPACTED])
-            assertEquals(38, result.first[Surface.LOSE_GROUND])
-            assertEquals(0, result.first[Surface.PATH])
-            assertEquals(0, result.first[Surface.UNKNOWN])
-            assertEquals(2737, result.second[RoadType.WAY])
-            assertEquals(27811, result.second[RoadType.SIDE_STREET])
-            assertEquals(1108, result.second[RoadType.MINOR_ROAD])
-            assertEquals(559, result.second[RoadType.MAJOR_ROAD])
-            assertEquals(93, result.second[RoadType.CYCLE_WAY])
-            assertEquals(0, result.second[RoadType.ROAD])
-            assertEquals(0, result.second[RoadType.UNKNOWN])
-        }
+        val track = fixture("track_asphalt.gpx")
+        val extension = fixture("track_asphalt_extensions.yaml")
+        val mapFile = assumeBayernMapPresent()
+        val gpsTrack = GpsTrack(track.toPath(), yamlExtensionsFile = extension)
+        gpsTrack.parseTrack(false)
+        val analyzer = OfflineMapAnalyzer(listOf(MapFile(FileInputStream(mapFile))), 15.0)
+        val result = analyzer.getRoadTypeSummaryFromTrackPoints(gpsTrack.trackPoints)
+        assertEquals(32049, result.first[Surface.ASPHALT])
+        assertEquals(0, result.first[Surface.STONE_PAVEMENT])
+        assertEquals(221, result.first[Surface.COMPACTED])
+        assertEquals(38, result.first[Surface.LOSE_GROUND])
+        assertEquals(0, result.first[Surface.PATH])
+        assertEquals(0, result.first[Surface.UNKNOWN])
+        assertEquals(2737, result.second[RoadType.WAY])
+        assertEquals(27811, result.second[RoadType.SIDE_STREET])
+        assertEquals(1108, result.second[RoadType.MINOR_ROAD])
+        assertEquals(559, result.second[RoadType.MAJOR_ROAD])
+        assertEquals(93, result.second[RoadType.CYCLE_WAY])
+        assertEquals(0, result.second[RoadType.ROAD])
+        assertEquals(0, result.second[RoadType.UNKNOWN])
     }
 
     @Test
     fun getNameOfPoi() {
-        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
-        if (map != null) {
-            val mapStream = FileInputStream(File(map.path))
-            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
+        val mapFile = assumeBayernMapPresent()
+        val analyzer = OfflineMapAnalyzer(listOf(MapFile(FileInputStream(mapFile))), 15.0)
 
-            val locationInfoHut =
-                analyzer.getClosestLocationInfo(LatLong(47.63978, 11.6795541271))
-            assert(locationInfoHut != null)
-            assertEquals("Buchsteinhütte", locationInfoHut?.name)
+        val locationInfoHut =
+            analyzer.getClosestLocationInfo(LatLong(47.63978, 11.6795541271))
+        assert(locationInfoHut != null)
+        assertEquals("Buchsteinhütte", locationInfoHut?.name)
 
-            val locationInfoVillage = analyzer.getClosestLocationInfo(LatLong(48.002878, 11.79445))
-            assert(locationInfoVillage != null)
-            assertEquals("Egmating", locationInfoVillage?.name)
+        val locationInfoVillage = analyzer.getClosestLocationInfo(LatLong(48.002878, 11.79445))
+        assert(locationInfoVillage != null)
+        assertEquals("Egmating", locationInfoVillage?.name)
 
-            val locationInfoPeak =
-                analyzer.getClosestLocationInfo(LatLong(47.7036326, 12.0109743))
-            assert(locationInfoPeak != null)
-            assertEquals("Wendelstein", locationInfoPeak?.name)
+        val locationInfoPeak =
+            analyzer.getClosestLocationInfo(LatLong(47.7036326, 12.0109743))
+        assert(locationInfoPeak != null)
+        assertEquals("Wendelstein", locationInfoPeak?.name)
 
-            val locationInfoPass =
-                analyzer.getClosestLocationInfo(LatLong(47.6722222,11.8863889))
-            assert(locationInfoPass != null)
-            assertEquals("Spitzingsattel", locationInfoPass?.name)
-        }
+        val locationInfoPass =
+            analyzer.getClosestLocationInfo(LatLong(47.6722222,11.8863889))
+        assert(locationInfoPass != null)
+        assertEquals("Spitzingsattel", locationInfoPass?.name)
     }
 
     /**
@@ -524,25 +498,22 @@ class OfflineMapAnalyzerTest {
      */
     @Test
     fun testHasMapCoverageForBoundingBox_WithOverlap() {
-        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
-        if (map != null) {
-            val mapStream = FileInputStream(File(map.path))
-            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
-            
-            // Create a bounding box that overlaps with Bayern map
-            // Bayern map covers approximately: lat 47.27-50.56, lon 8.98-13.84
-            val trackBoundingBox = TrackBoundingBox(
-                latNorth = 48.5,
-                latSouth = 47.5,
-                lonWest = 11.0,
-                lonEast = 12.0
-            )
-            
-            assertTrue(
-                "Track bounding box should overlap with Bayern map",
-                analyzer.hasMapCoverageForBoundingBox(trackBoundingBox)
-            )
-        }
+        val mapFile = assumeBayernMapPresent()
+        val analyzer = OfflineMapAnalyzer(listOf(MapFile(FileInputStream(mapFile))), 15.0)
+
+        // Create a bounding box that overlaps with Bayern map
+        // Bayern map covers approximately: lat 47.27-50.56, lon 8.98-13.84
+        val trackBoundingBox = TrackBoundingBox(
+            latNorth = 48.5,
+            latSouth = 47.5,
+            lonWest = 11.0,
+            lonEast = 12.0
+        )
+
+        assertTrue(
+            "Track bounding box should overlap with Bayern map",
+            analyzer.hasMapCoverageForBoundingBox(trackBoundingBox)
+        )
     }
 
     /**
@@ -550,25 +521,22 @@ class OfflineMapAnalyzerTest {
      */
     @Test
     fun testHasMapCoverageForBoundingBox_WithoutOverlap() {
-        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
-        if (map != null) {
-            val mapStream = FileInputStream(File(map.path))
-            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
-            
-            // Create a bounding box that doesn't overlap with Bayern map
-            // This is somewhere in northern Germany, far from Bayern
-            val trackBoundingBox = TrackBoundingBox(
-                latNorth = 54.0,
-                latSouth = 53.0,
-                lonWest = 9.0,
-                lonEast = 10.0
-            )
-            
-            assertFalse(
-                "Track bounding box should not overlap with Bayern map",
-                analyzer.hasMapCoverageForBoundingBox(trackBoundingBox)
-            )
-        }
+        val mapFile = assumeBayernMapPresent()
+        val analyzer = OfflineMapAnalyzer(listOf(MapFile(FileInputStream(mapFile))), 15.0)
+
+        // Create a bounding box that doesn't overlap with map
+        // This is somewhere in northern Germany, far from Bayern
+        val trackBoundingBox = TrackBoundingBox(
+            latNorth = 54.0,
+            latSouth = 53.0,
+            lonWest = 9.0,
+            lonEast = 10.0
+        )
+
+        assertFalse(
+            "Track bounding box should not overlap with Bayern map",
+            analyzer.hasMapCoverageForBoundingBox(trackBoundingBox)
+        )
     }
 
     /**
@@ -596,20 +564,17 @@ class OfflineMapAnalyzerTest {
      */
     @Test
     fun testGetRoadTypeSummaryFromTrackPoints_NoOverlap() {
-        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
-        if (map != null) {
-            val mapStream = FileInputStream(File(map.path))
-            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
+        val mapFile = assumeBayernMapPresent()
+        val analyzer = OfflineMapAnalyzer(listOf(MapFile(FileInputStream(mapFile))), 15.0)
 
-            val trackBoundingBox = TrackBoundingBox(
-                latNorth = 54.0,
-                latSouth = 53.0,
-                lonWest = 9.0,
-                lonEast = 10.0
-            )
-            
-            assertFalse(analyzer.hasMapCoverageForBoundingBox(trackBoundingBox))
-        }
+        val trackBoundingBox = TrackBoundingBox(
+            latNorth = 54.0,
+            latSouth = 53.0,
+            lonWest = 9.0,
+            lonEast = 10.0
+        )
+
+        assertFalse(analyzer.hasMapCoverageForBoundingBox(trackBoundingBox))
     }
 
     /**
@@ -617,21 +582,33 @@ class OfflineMapAnalyzerTest {
      */
     @Test
     fun testGetRoadTypeSummaryFromTrackPoints_WithOverlap() {
-        val track = this.javaClass.classLoader?.getResource("track_asphalt.gpx")
-        val extension = this.javaClass.classLoader?.getResource("track_asphalt_extensions.yaml")
-        val map = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
-        if (track != null && extension != null && map != null) {
-            val mapStream = FileInputStream(File(map.path))
-            val analyzer = OfflineMapAnalyzer(listOf(MapFile(mapStream)), 15.0)
+        val mapFile = assumeBayernMapPresent()
+        val analyzer = OfflineMapAnalyzer(listOf(MapFile(FileInputStream(mapFile))), 15.0)
 
-            val trackBoundingBox = TrackBoundingBox(
-                latNorth = 48.5,
-                latSouth = 47.5,
-                lonWest = 11.0,
-                lonEast = 12.0
-            )
+        val trackBoundingBox = TrackBoundingBox(
+            latNorth = 48.5,
+            latSouth = 47.5,
+            lonWest = 11.0,
+            lonEast = 12.0
+        )
 
-            assertTrue(analyzer.hasMapCoverageForBoundingBox(trackBoundingBox))
-        }
+        assertTrue(analyzer.hasMapCoverageForBoundingBox(trackBoundingBox))
+    }
+
+    private fun fixture(name: String): File =
+        File(
+            checkNotNull(this.javaClass.classLoader?.getResource(name)) {
+                "Required test fixture '$name' is missing from app/src/test/resources"
+            }.path
+        )
+
+    private fun assumeBayernMapPresent(): File {
+        val mapUrl = this.javaClass.classLoader?.getResource("Bayern_oam.osm.map")
+        assumeNotNull(
+            "Bayern_oam.osm.map is not on the classpath (large file, gitignored); " +
+                "place it in app/src/test/resources to run map-dependent tests",
+            mapUrl
+        )
+        return File(mapUrl!!.path)
     }
 }
