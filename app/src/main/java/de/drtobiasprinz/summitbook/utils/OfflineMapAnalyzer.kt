@@ -287,7 +287,7 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
         try {
             val mapReadResult: MapReadResult = mapFile.readPoiData(tile)
             val locationInfo = processPointsOfInterest(
-                mapReadResult.pointOfInterests, latLong
+                mapReadResult.pois, latLong
             )
 
             if (locationInfo != null) {

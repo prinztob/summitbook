@@ -121,15 +121,14 @@ dependencies {
     implementation 'com.github.ticofab:android-gpx-parser:2.3.1'
 
     // MapsForge (for offline maps)
-    implementation 'org.osmdroid:osmdroid-mapsforge:6.1.20'
-    //noinspection NewerVersionAvailable -> does not work with osmdroid-mapsforge:6.1.20
-    implementation 'org.mapsforge:mapsforge-map-android:0.21.0'
-    //noinspection NewerVersionAvailable -> does not work with osmdroid-mapsforge:6.1.20
-    implementation 'org.mapsforge:mapsforge-map:0.21.0'
-    //noinspection NewerVersionAvailable -> does not work with osmdroid-mapsforge:6.1.20
-    implementation 'org.mapsforge:mapsforge-themes:0.21.0'
-    //noinspection NewerVersionAvailable -> does not work with osmdroid-mapsforge:6.1.20
-    implementation 'org.mapsforge:mapsforge-map-reader:0.21.0'
+    // Adapter code (org.osmdroid.mapsforge) is vendored under app/src/main/java/org/osmdroid/mapsforge/
+    // because osmdroid (incl. the osmdroid-mapsforge artifact) is unmaintained since Nov 2024.
+    // Since mapsforge 0.26.0 the project no longer publishes to Maven Central (OSSRH sunset 2025-06-30);
+    // JitPack is the official distribution channel (see mapsforge docs/Integration.md).
+    implementation 'com.github.mapsforge.mapsforge:mapsforge-map-android:0.30.0'
+    implementation 'com.github.mapsforge.mapsforge:mapsforge-map:0.30.0'
+    implementation 'com.github.mapsforge.mapsforge:mapsforge-themes:0.30.0'
+    implementation 'com.github.mapsforge.mapsforge:mapsforge-map-reader:0.30.0'
 
     // Jetpack Compose
     implementation 'androidx.compose.runtime:runtime:1.12.1'
