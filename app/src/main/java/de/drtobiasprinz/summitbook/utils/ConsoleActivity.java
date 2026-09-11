@@ -25,28 +25,17 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModel;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 
 import de.drtobiasprinz.summitbook.R;
 
 public abstract class ConsoleActivity extends AppCompatActivity
         implements ViewTreeObserver.OnGlobalLayoutListener, ViewTreeObserver.OnScrollChangedListener {
-
-    // Because tvOutput has freezesText enabled, letting it get too large can cause a
-    // TransactionTooLargeException. The limit isn't in the saved state itself, but in the
-    // Binder transaction which transfers it to the system server. So it doesn't happen if
-    // you're rotating the screen, but it does happen when you press Back.
-    //
-    // The exception message shows the size of the failed transaction, so I can determine from
-    // experiment that the limit is about 500 KB, and each character consumes 4 bytes.
-    private final int MAX_SCROLLBACK_LEN = 100000;
 
     private EditText etInput;
     private ScrollView svOutput;
@@ -73,8 +62,8 @@ public abstract class ConsoleActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        consoleModel = ViewModelProviders.of(this).get(ConsoleModel.class);
-        task = ViewModelProviders.of(this).get(getTaskClass());
+        consoleModel = new ViewModelProvider(this).get(ConsoleModel.class);
+        task = new ViewModelProvider(this).get(getTaskClass());
         setContentView(resId("layout", "activity_console"));
         createInput();
         createOutput();
@@ -104,44 +93,38 @@ public abstract class ConsoleActivity extends AppCompatActivity
         // At least on API level 28, if an ACTION_UP is lost during a rotation, then the app
         // (or any other app which takes focus) will receive an endless stream of ACTION_DOWNs
         // until the key is pressed again. So we react to ACTION_UP instead.
-        etInput.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if ((actionId == EditorInfo.IME_ACTION_DONE && event == null) || // Soft keyboard
-                        (event != null && event.getAction() == KeyEvent.ACTION_UP)  // Hard keyboard
-                ) {
-                    String text = etInput.getText().toString() + "\n";
-                    etInput.setText("");
-                    output(span(text, new StyleSpan(Typeface.BOLD)));
-                    scrollTo(Scroll.BOTTOM);
-                    task.onInput(text);
-                }
-
-                // If we return false on ACTION_DOWN, we won't be given the ACTION_UP.
-                return true;
+        etInput.setOnEditorActionListener((v, actionId, event) -> {
+            if ((actionId == EditorInfo.IME_ACTION_DONE && event == null) || // Soft keyboard
+                    (event != null && event.getAction() == KeyEvent.ACTION_UP)  // Hard keyboard
+            ) {
+                String text = etInput.getText().toString() + "\n";
+                etInput.setText("");
+                output(span(text, new StyleSpan(Typeface.BOLD)));
+                scrollTo(Scroll.BOTTOM);
+                task.onInput(text);
             }
+
+            // If we return false on ACTION_DOWN, we won't be given the ACTION_UP.
+            return true;
         });
 
-        task.inputEnabled.observe(this, new Observer<Boolean>() {
-            @Override
-            public void onChanged(@Nullable Boolean enabled) {
-                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-                if (Boolean.TRUE.equals(enabled)) {
-                    etInput.setVisibility(View.VISIBLE);
-                    etInput.setEnabled(true);
+        task.inputEnabled.observe(this, enabled -> {
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (Boolean.TRUE.equals(enabled)) {
+                etInput.setVisibility(View.VISIBLE);
+                etInput.setEnabled(true);
 
-                    // requestFocus alone doesn't always bring up the soft keyboard during startup
-                    // on the Nexus 4 with API level 22: probably some race condition. (After
-                    // rotation with input *already* enabled, the focus may be overridden by
-                    // onRestoreInstanceState, which will run after this observer.)
-                    etInput.requestFocus();
-                    imm.showSoftInput(etInput, InputMethodManager.SHOW_IMPLICIT);
-                } else {
-                    // Disable rather than hide, otherwise tvOutput gets a gray background on API
-                    // level 26, like tvCaption in the main menu when you press an arrow key.
-                    etInput.setEnabled(false);
-                    imm.hideSoftInputFromWindow(tvOutput.getWindowToken(), 0);
-                }
+                // requestFocus alone doesn't always bring up the soft keyboard during startup
+                // on the Nexus 4 with API level 22: probably some race condition. (After
+                // rotation with input *already* enabled, the focus may be overridden by
+                // onRestoreInstanceState, which will run after this observer.)
+                etInput.requestFocus();
+                    imm.showSoftInput(etInput, 0);
+            } else {
+                // Disable rather than hide, otherwise tvOutput gets a gray background on API
+                // level 26, like tvCaption in the main menu when you press an arrow key.
+                etInput.setEnabled(false);
+                imm.hideSoftInputFromWindow(tvOutput.getWindowToken(), 0);
             }
         });
     }
@@ -199,15 +182,10 @@ public abstract class ConsoleActivity extends AppCompatActivity
             outputHeight = svOutput.getHeight();
             restoreScroll();
         } else if (scrollRequest != null) {
-            int y = -1;
-            switch (scrollRequest) {
-                case TOP:
-                    y = 0;
-                    break;
-                case BOTTOM:
-                    y = tvOutput.getHeight();
-                    break;
-            }
+            int y = switch (scrollRequest) {
+                case TOP -> 0;
+                case BOTTOM -> tvOutput.getHeight();
+            };
 
             // Don't use smooth scroll, because if an output call happens while it's animating
             // towards the bottom, isScrolledToBottom will believe we've left the bottom and
@@ -260,12 +238,7 @@ public abstract class ConsoleActivity extends AppCompatActivity
         saveScroll();
 
         task.output.removeObservers(this);
-        task.output.observe(this, new Observer<CharSequence>() {
-            @Override
-            public void onChanged(@Nullable CharSequence text) {
-                output(text);
-            }
-        });
+        task.output.observe(this, text -> output(text));
     }
 
     private boolean isScrolledToBottom() {
@@ -317,6 +290,14 @@ public abstract class ConsoleActivity extends AppCompatActivity
         }
 
         Editable scrollback = (Editable) tvOutput.getText();
+        // Because tvOutput has freezesText enabled, letting it get too large can cause a
+        // TransactionTooLargeException. The limit isn't in the saved state itself, but in the
+        // Binder transaction which transfers it to the system server. So it doesn't happen if
+        // you're rotating the screen, but it does happen when you press Back.
+        //
+        // The exception message shows the size of the failed transaction, so I can determine from
+        // experiment that the limit is about 500 KB, and each character consumes 4 bytes.
+        int MAX_SCROLLBACK_LEN = 100000;
         if (scrollback.length() > MAX_SCROLLBACK_LEN) {
             scrollback.delete(0, MAX_SCROLLBACK_LEN / 10);
         }
@@ -424,10 +405,6 @@ public abstract class ConsoleActivity extends AppCompatActivity
         public void output(final CharSequence text) {
             if (text.length() == 0) return;
             output.postValue(text);
-        }
-
-        public void outputError(CharSequence text) {
-            output(spanColor(text, resId("color", "console_error")));
         }
 
         public Spannable spanColor(CharSequence text, int colorId) {

@@ -262,12 +262,12 @@ fun ZoomableImage(
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    val state = rememberTransformableState { zoomChange, offsetChange, _ ->
+    val state = rememberTransformableState { panChange: Offset, zoomChange: Float, _, _ ->
         scale = (scale * zoomChange).coerceIn(1f, 4f)
 
         // Only allow panning when zoomed in
         if (scale > 1f) {
-            offset += offsetChange
+            offset += panChange
         } else {
             offset = Offset.Zero
         }

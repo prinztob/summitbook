@@ -40,6 +40,6 @@ Single-module Android app (`:app`), namespace `de.drtobiasprinz.summitbook`. Kot
 - Fixtures (GPX/JSON/CSV/YAML) are read from `app/src/test/resources` via `classLoader.getResource`.
 - `Bayern_oam.osm.map` (large MapsForge test map) and `OAM-World-1-10-J80.sqlitedb` are **gitignored**. Tests in `OfflineMapAnalyzerTest` guard on the resource being present and silently skip otherwise — those tests passing does not mean the map-dependent assertions ran.
 
-## Gradle flags — do not remove
+## Kotlin setup
 
-`gradle.properties` sets `android.builtInKotlin=false` and `android.newDsl=false`. Required because the project uses the standalone Kotlin plugin + KSP with AGP 9; removing them breaks the build.
+The project uses AGP 9 **built-in Kotlin** (no `org.jetbrains.kotlin.android` plugin applied; `kotlin.compilerOptions.jvmTarget` defaults to `compileOptions.targetCompatibility`). Do not re-add the `kotlin-android` plugin or the `android.builtInKotlin=false` / `android.newDsl=false` flags — the `kotlin-android` plugin is incompatible with AGP 9's new DSL.

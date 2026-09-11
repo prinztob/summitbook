@@ -6,7 +6,7 @@ import android.text.InputType;
 import android.util.Log;
 import android.widget.TextView;
 
-import androidx.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
@@ -29,7 +29,7 @@ public abstract class PythonConsoleActivity extends ConsoleActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        task = ViewModelProviders.of(this).get(getTaskClass());
+        task = new ViewModelProvider(this).get(getTaskClass());
         if (task.inputType != InputType.TYPE_NULL) {
             ((TextView) findViewById(resId("id", "etInput"))).setInputType(task.inputType);
         }

@@ -25,8 +25,7 @@
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:exported="false"
-            android:theme="@style/Theme.MaterialComponents.DayNight.WindowOptOutEdgeToEdge"
-            tools:replace="android:theme" />
+            android:theme="@style/Theme.MaterialComponents.DayNight.WindowOptOutEdgeToEdge" />
         <activity
             android:name="de.drtobiasprinz.summitbook.ui.MainActivityCompose"
             android:exported="true">
