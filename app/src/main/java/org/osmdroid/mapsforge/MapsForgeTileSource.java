@@ -1,11 +1,11 @@
 package org.osmdroid.mapsforge;
 
+import android.annotation.SuppressLint;
 import android.app.Application;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 
-import org.mapsforge.core.model.BoundingBox;
 import org.mapsforge.core.model.Tile;
 import org.mapsforge.map.android.graphics.AndroidGraphicFactory;
 import org.mapsforge.map.android.graphics.AndroidTileBitmap;
@@ -22,329 +22,90 @@ import org.mapsforge.map.rendertheme.rule.RenderThemeFuture;
 import org.osmdroid.api.IMapView;
 import org.osmdroid.tileprovider.tilesource.BitmapTileSourceBase;
 import org.osmdroid.util.MapTileIndex;
-import org.osmdroid.views.MapView;
 
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 
 /**
- * Adapted from code from here: https://github.com/MKergall/osmbonuspack, which is LGPL
- * http://www.salidasoftware.com/how-to-render-mapsforge-tiles-in-osmdroid/
+ * Adapted from code from here: <a href="https://github.com/MKergall/osmbonuspack">...</a>, which is LGPL
+ * <a href="http://www.salidasoftware.com/how-to-render-mapsforge-tiles-in-osmdroid/">...</a>
  *
  * @author Salida Software
- * Adapted from code found here : http://www.sieswerda.net/2012/08/15/upping-the-developer-friendliness/
+ * Adapted from code found here : <a href="http://www.sieswerda.net/2012/08/15/upping-the-developer-friendliness/">...</a>
  */
 public class MapsForgeTileSource extends BitmapTileSourceBase {
 
-    // Reasonable defaults ..
+    // Reasonable defaults
     public static int MIN_ZOOM = 3;
     public static int MAX_ZOOM = 29;
     public static final int TILE_SIZE_PIXELS = 256;
     private final DisplayModel model = new DisplayModel();
     private final float scale = DisplayModel.getDefaultUserScaleFactor();
-    private RenderThemeFuture theme = null;
-    private XmlRenderTheme mXmlRenderTheme = null;
+    private RenderThemeFuture theme;
     private DirectRenderer renderer;
-    private HillsRenderConfig hillsRenderConfig;
 
     private MultiMapDataStore mapDatabase;
 
+    private static Application application;
+
     /**
-     * The reason this constructor is protected is because all parameters,
-     * except file should be determined from the archive file. Therefore a
+     * The reason this constructor is protected is that all parameters,
+     * except file should be determined from the archive file. Therefore, a
      * factory method is necessary.
      *
-     * @param cacheTileSourceName
-     * @param minZoom
-     * @param maxZoom
-     * @param tileSizePixels
-     * @param fileInputStream
-     * @param xmlRenderTheme      the theme to render tiles with
-     * @param hillsRenderConfig   the hillshading setup to be used (can be null)
-     * @param language            preferred language for map labels as defined in ISO 639-1 or ISO 639-2 (can be null)
+     * @param cacheTileSourceName name used for the osmdroid tile cache
+     * @param minZoom            the minimum zoom level this tile source can render
+     * @param maxZoom            the maximum zoom level this tile source can render
+     * @param tileSizePixels     the tile size in pixels
+     * @param fileInputStream    streams of the .map files to read from; ownership is
+     *                           transferred to the map data store, and they are closed
+     *                           by {@link #dispose()} via {@link MultiMapDataStore#close()}
+     * @param xmlRenderTheme     the theme to render tiles with
+     * @param dataPolicy         how results from multiple map files are combined
+     * @param hillsRenderConfig  the hillshading setup to be used (can be null)
+     * @param language           preferred language for map labels as defined in ISO 639-1 or ISO 639-2 (can be null)
      */
+    @SuppressLint("Recourse") // the streams are owned by the MapFiles and closed by dispose()
     protected MapsForgeTileSource(String cacheTileSourceName, int minZoom, int maxZoom, int tileSizePixels, FileInputStream[] fileInputStream, XmlRenderTheme xmlRenderTheme, MultiMapDataStore.DataPolicy dataPolicy, HillsRenderConfig hillsRenderConfig, final String language) {
         super(cacheTileSourceName, minZoom, maxZoom, tileSizePixels, ".png", "© OpenStreetMap contributors");
 
         mapDatabase = new MultiMapDataStore(dataPolicy);
-        for (int i = 0; i < fileInputStream.length; i++)
-            mapDatabase.addMapDataStore(new MapFile(fileInputStream[i], language), false, false);
+        for (FileInputStream inputStream : fileInputStream)
+            mapDatabase.addMapDataStore(new MapFile(inputStream, language), false, false);
 
         if (AndroidGraphicFactory.INSTANCE == null) {
-            throw new RuntimeException("Must call MapsForgeTileSource.createInstance(context.getApplication()); once before MapsForgeTileSource.createFromFiles().");
+            throw new RuntimeException("Must call MapsForgeTileSource.createInstance(context.getApplication()); once before MapsForgeTileSource.createFromFileInputStream().");
         }
 
         if (xmlRenderTheme == null)
             xmlRenderTheme = MapsforgeThemes.OSMARENDER;
         //we the passed in theme is different that the existing one, or the theme is currently null, create it
-        if (xmlRenderTheme != mXmlRenderTheme || theme == null) {
-            theme = new RenderThemeFuture(AndroidGraphicFactory.INSTANCE, xmlRenderTheme, model);
-            //super important!! without the following line, all rendering activities will block until the theme is created.
-            new Thread(theme).start();
-        }
+        theme = new RenderThemeFuture(AndroidGraphicFactory.INSTANCE, xmlRenderTheme, model);
+        //super important!! without the following line, all rendering activities will block until the theme is created.
+        new Thread(theme).start();
         // mapsforge 0.30.0: DirectRenderer requires a MapDataStoreLabelStore for deterministic label rendering
         renderer = new DirectRenderer(mapDatabase, AndroidGraphicFactory.INSTANCE,
                 new MapDataStoreLabelStore(mapDatabase, theme, scale, model, AndroidGraphicFactory.INSTANCE),
                 true, false, hillsRenderConfig);
 
-        minZoom = MIN_ZOOM;
-        maxZoom = renderer.getZoomLevelMax();
-
         Log.d(IMapView.LOGTAG, "min=" + minZoom + " max=" + maxZoom + " tilesize=" + tileSizePixels);
     }
 
     /**
-     * The reason this constructor is protected is because all parameters,
-     * except file should be determined from the archive file. Therefore a
-     * factory method is necessary.
-     *
-     * @param cacheTileSourceName
-     * @param minZoom
-     * @param maxZoom
-     * @param tileSizePixels
-     * @param fileInputStream
-     * @param xmlRenderTheme      the theme to render tiles with
-     * @param hillsRenderConfig   the hillshading setup to be used (can be null)
-     */
-    protected MapsForgeTileSource(String cacheTileSourceName, int minZoom, int maxZoom, int tileSizePixels, FileInputStream[] fileInputStream, XmlRenderTheme xmlRenderTheme, MultiMapDataStore.DataPolicy dataPolicy, HillsRenderConfig hillsRenderConfig) {
-        this(cacheTileSourceName, minZoom, maxZoom, tileSizePixels, fileInputStream, xmlRenderTheme, dataPolicy, hillsRenderConfig, null);
-    }
-
-    public BoundingBox getBounds() {
-        return mapDatabase.boundingBox();
-    }
-
-    public org.osmdroid.util.BoundingBox getBoundsOsmdroid() {
-        BoundingBox boundingBox = mapDatabase.boundingBox();
-        final double latNorth = Math.min(MapView.getTileSystem().getMaxLatitude(), boundingBox.maxLatitude);
-        final double latSouth = Math.max(MapView.getTileSystem().getMinLatitude(), boundingBox.minLatitude);
-        return new org.osmdroid.util.BoundingBox(
-                latNorth, boundingBox.maxLongitude,
-                latSouth, boundingBox.minLongitude);
-    }
-
-    /**
-     * Creates a new MapsForgeTileSource from file.
+     * Creates a new MapsForgeTileSource from FileInputStream[].
      * <p></p>
      * Parameters minZoom and maxZoom are obtained from the
      * database. If they cannot be obtained from the DB, the default values as
      * defined by this class are used, which is zoom = 3-20
      *
-     * @param file
+     * @param fileInputStream   streams of the .map files to read from
+     * @param theme              this can be null, in which case the default theme will be used
+     * @param themeName          when using a custom theme, this sets up the osmdroid caching correctly
+     * @param dataPolicy         use this to override the default, which is "RETURN_ALL"
+     * @param hillsRenderConfig  the hillshading setup to be used (can be null)
      * @return the tile source
-     */
-    public static MapsForgeTileSource createFromFiles(File[] file) {
-        //these settings are ignored and are set based on .map file info
-        int minZoomLevel = MIN_ZOOM;
-        int maxZoomLevel = MAX_ZOOM;
-        int tileSizePixels = TILE_SIZE_PIXELS;
-        FileInputStream[] fileInputStream = convertFilesToInputStreams(file);
-
-        return new MapsForgeTileSource(MapsforgeThemes.OSMARENDER.name(), minZoomLevel, maxZoomLevel, tileSizePixels, fileInputStream, MapsforgeThemes.OSMARENDER, MultiMapDataStore.DataPolicy.RETURN_ALL, null, null);
-    }
-
-    /**
-     * Creates a new MapsForgeTileSource from file[].
-     * <p></p>
-     * Parameters minZoom and maxZoom are obtained from the
-     * database. If they cannot be obtained from the DB, the default values as
-     * defined by this class are used, which is zoom = 3-20
-     *
-     * @param file
-     * @param theme     this can be null, in which case the default them will be used
-     * @param themeName when using a custom theme, this sets up the osmdroid caching correctly
-     * @return
-     */
-    public static MapsForgeTileSource createFromFiles(File[] file, XmlRenderTheme theme, String themeName) {
-        //these settings are ignored and are set based on .map file info
-        int minZoomLevel = MIN_ZOOM;
-        int maxZoomLevel = MAX_ZOOM;
-        int tileSizePixels = TILE_SIZE_PIXELS;
-        FileInputStream[] fileInputStream = convertFilesToInputStreams(file);
-
-        return new MapsForgeTileSource(themeName, minZoomLevel, maxZoomLevel, tileSizePixels, fileInputStream, theme, MultiMapDataStore.DataPolicy.RETURN_ALL, null, null);
-    }
-
-    /**
-     * Creates a new MapsForgeTileSource from file[].
-     * <p></p>
-     * Parameters minZoom and maxZoom are obtained from the
-     * database. If they cannot be obtained from the DB, the default values as
-     * defined by this class are used, which is zoom = 3-20
-     *
-     * @param file
-     * @param theme     this can be null, in which case the default them will be used
-     * @param themeName when using a custom theme, this sets up the osmdroid caching correctly
-     * @param language  preferred language for map labels as defined in ISO 639-1 or ISO 639-2 (can be null)
-     * @return
-     */
-    public static MapsForgeTileSource createFromFiles(File[] file, XmlRenderTheme theme, String themeName, final String language) {
-        //these settings are ignored and are set based on .map file info
-        int minZoomLevel = MIN_ZOOM;
-        int maxZoomLevel = MAX_ZOOM;
-        int tileSizePixels = TILE_SIZE_PIXELS;
-        FileInputStream[] fileInputStream = convertFilesToInputStreams(file);
-
-        return new MapsForgeTileSource(themeName, minZoomLevel, maxZoomLevel, tileSizePixels, fileInputStream, theme, MultiMapDataStore.DataPolicy.RETURN_ALL, null, language);
-    }
-
-    /**
-     * Creates a new MapsForgeTileSource from file[].
-     * <p></p>
-     * Parameters minZoom and maxZoom are obtained from the
-     * database. If they cannot be obtained from the DB, the default values as
-     * defined by this class are used, which is zoom = 3-20
-     *
-     * @param file
-     * @param theme             this can be null, in which case the default them will be used
-     * @param themeName         when using a custom theme, this sets up the osmdroid caching correctly
-     * @param dataPolicy        use this to override the default, which is "RETURN_ALL"
-     * @param hillsRenderConfig the hillshading setup to be used (can be null)
-     * @return
-     */
-    public static MapsForgeTileSource createFromFiles(File[] file, XmlRenderTheme theme, String themeName, MultiMapDataStore.DataPolicy dataPolicy, HillsRenderConfig hillsRenderConfig) {
-        //these settings are ignored and are set based on .map file info
-        int minZoomLevel = MIN_ZOOM;
-        int maxZoomLevel = MAX_ZOOM;
-        int tileSizePixels = TILE_SIZE_PIXELS;
-        FileInputStream[] fileInputStream = convertFilesToInputStreams(file);
-
-        return new MapsForgeTileSource(themeName, minZoomLevel, maxZoomLevel, tileSizePixels, fileInputStream, theme, dataPolicy, hillsRenderConfig, null);
-    }
-
-    /**
-     * Creates a new MapsForgeTileSource from file[].
-     * <p></p>
-     * Parameters minZoom and maxZoom are obtained from the
-     * database. If they cannot be obtained from the DB, the default values as
-     * defined by this class are used, which is zoom = 3-20
-     *
-     * @param file
-     * @param theme             this can be null, in which case the default them will be used
-     * @param themeName         when using a custom theme, this sets up the osmdroid caching correctly
-     * @param dataPolicy        use this to override the default, which is "RETURN_ALL"
-     * @param hillsRenderConfig the hillshading setup to be used (can be null)
-     * @param language          preferred language for map labels as defined in ISO 639-1 or ISO 639-2 (can be null)
-     * @return
-     */
-    public static MapsForgeTileSource createFromFiles(File[] file, XmlRenderTheme theme, String themeName, MultiMapDataStore.DataPolicy dataPolicy, HillsRenderConfig hillsRenderConfig, final String language) {
-        //these settings are ignored and are set based on .map file info
-        int minZoomLevel = MIN_ZOOM;
-        int maxZoomLevel = MAX_ZOOM;
-        int tileSizePixels = TILE_SIZE_PIXELS;
-        FileInputStream[] fileInputStream = convertFilesToInputStreams(file);
-
-        return new MapsForgeTileSource(themeName, minZoomLevel, maxZoomLevel, tileSizePixels, fileInputStream, theme, dataPolicy, hillsRenderConfig, language);
-    }
-
-    /**
-     * Creates a new MapsForgeTileSource from FileInputStream[].
-     * <p></p>
-     * Parameters minZoom and maxZoom are obtained from the
-     * database. If they cannot be obtained from the DB, the default values as
-     * defined by this class are used, which is zoom = 3-20
-     *
-     * @param fileInputStream
-     * @return the tile source
-     */
-    public static MapsForgeTileSource createFromFileInputStream(FileInputStream[] fileInputStream) {
-        //these settings are ignored and are set based on .map file info
-        int minZoomLevel = MIN_ZOOM;
-        int maxZoomLevel = MAX_ZOOM;
-        int tileSizePixels = TILE_SIZE_PIXELS;
-
-        return new MapsForgeTileSource(MapsforgeThemes.OSMARENDER.name(), minZoomLevel, maxZoomLevel, tileSizePixels, fileInputStream, MapsforgeThemes.OSMARENDER, MultiMapDataStore.DataPolicy.RETURN_ALL, null, null);
-    }
-
-    /**
-     * Creates a new MapsForgeTileSource from FileInputStream[].
-     * <p></p>
-     * Parameters minZoom and maxZoom are obtained from the
-     * database. If they cannot be obtained from the DB, the default values as
-     * defined by this class are used, which is zoom = 3-20
-     *
-     * @param fileInputStream
-     * @param theme     this can be null, in which case the default them will be used
-     * @param themeName when using a custom theme, this sets up the osmdroid caching correctly
-     * @return
-     */
-    public static MapsForgeTileSource createFromFileInputStream(FileInputStream[] fileInputStream, XmlRenderTheme theme, String themeName) {
-        //these settings are ignored and are set based on .map file info
-        int minZoomLevel = MIN_ZOOM;
-        int maxZoomLevel = MAX_ZOOM;
-        int tileSizePixels = TILE_SIZE_PIXELS;
-
-        return new MapsForgeTileSource(themeName, minZoomLevel, maxZoomLevel, tileSizePixels, fileInputStream, theme, MultiMapDataStore.DataPolicy.RETURN_ALL, null, null);
-    }
-
-    /**
-     * Creates a new MapsForgeTileSource from FileInputStream[].
-     * <p></p>
-     * Parameters minZoom and maxZoom are obtained from the
-     * database. If they cannot be obtained from the DB, the default values as
-     * defined by this class are used, which is zoom = 3-20
-     *
-     * @param fileInputStream
-     * @param theme     this can be null, in which case the default them will be used
-     * @param themeName when using a custom theme, this sets up the osmdroid caching correctly
-     * @param language  preferred language for map labels as defined in ISO 639-1 or ISO 639-2 (can be null)
-     * @return
-     */
-    public static MapsForgeTileSource createFromFileInputStream(FileInputStream[] fileInputStream, XmlRenderTheme theme, String themeName, final String language) {
-        //these settings are ignored and are set based on .map file info
-        int minZoomLevel = MIN_ZOOM;
-        int maxZoomLevel = MAX_ZOOM;
-        int tileSizePixels = TILE_SIZE_PIXELS;
-
-        return new MapsForgeTileSource(themeName, minZoomLevel, maxZoomLevel, tileSizePixels, fileInputStream, theme, MultiMapDataStore.DataPolicy.RETURN_ALL, null, language);
-    }
-
-    /**
-     * Creates a new MapsForgeTileSource from FileInputStream[].
-     * <p></p>
-     * Parameters minZoom and maxZoom are obtained from the
-     * database. If they cannot be obtained from the DB, the default values as
-     * defined by this class are used, which is zoom = 3-20
-     *
-     * @param fileInputStream
-     * @param theme             this can be null, in which case the default them will be used
-     * @param themeName         when using a custom theme, this sets up the osmdroid caching correctly
-     * @param dataPolicy        use this to override the default, which is "RETURN_ALL"
-     * @param hillsRenderConfig the hillshading setup to be used (can be null)
-     * @return
      */
     public static MapsForgeTileSource createFromFileInputStream(FileInputStream[] fileInputStream, XmlRenderTheme theme, String themeName, MultiMapDataStore.DataPolicy dataPolicy, HillsRenderConfig hillsRenderConfig) {
-        //these settings are ignored and are set based on .map file info
-        int minZoomLevel = MIN_ZOOM;
-        int maxZoomLevel = MAX_ZOOM;
-        int tileSizePixels = TILE_SIZE_PIXELS;
-
-        return new MapsForgeTileSource(themeName, minZoomLevel, maxZoomLevel, tileSizePixels, fileInputStream, theme, dataPolicy, hillsRenderConfig, null);
-    }
-
-    /**
-     * Creates a new MapsForgeTileSource from FileInputStream[].
-     * <p></p>
-     * Parameters minZoom and maxZoom are obtained from the
-     * database. If they cannot be obtained from the DB, the default values as
-     * defined by this class are used, which is zoom = 3-20
-     *
-     * @param fileInputStream
-     * @param theme             this can be null, in which case the default them will be used
-     * @param themeName         when using a custom theme, this sets up the osmdroid caching correctly
-     * @param dataPolicy        use this to override the default, which is "RETURN_ALL"
-     * @param hillsRenderConfig the hillshading setup to be used (can be null)
-     * @param language          preferred language for map labels as defined in ISO 639-1 or ISO 639-2 (can be null)
-     * @return
-     */
-    public static MapsForgeTileSource createFromFileInputStream(FileInputStream[] fileInputStream, XmlRenderTheme theme, String themeName, MultiMapDataStore.DataPolicy dataPolicy, HillsRenderConfig hillsRenderConfig, final String language) {
-        //these settings are ignored and are set based on .map file info
-        int minZoomLevel = MIN_ZOOM;
-        int maxZoomLevel = MAX_ZOOM;
-        int tileSizePixels = TILE_SIZE_PIXELS;
-
-        return new MapsForgeTileSource(themeName, minZoomLevel, maxZoomLevel, tileSizePixels, fileInputStream, theme, dataPolicy, hillsRenderConfig, language);
+        return new MapsForgeTileSource(themeName, MIN_ZOOM, MAX_ZOOM, TILE_SIZE_PIXELS, fileInputStream, theme, dataPolicy, hillsRenderConfig, null);
     }
 
     //The synchronized here is VERY important.  If missing, the mapDatabase read gets corrupted by multiple threads reading the file at once.
@@ -353,23 +114,14 @@ public class MapsForgeTileSource extends BitmapTileSourceBase {
         Tile tile = new Tile(MapTileIndex.getX(pMapTileIndex), MapTileIndex.getY(pMapTileIndex), (byte) MapTileIndex.getZoom(pMapTileIndex), 256);
         model.setFixedTileSize(256);
 
-        //You could try something like this to load a custom theme
-        //try{
-        //	jobTheme = new ExternalRenderTheme(themeFile);
-        //}
-        //catch(Exception e){
-        //	jobTheme = MapsforgeThemes.OSMARENDER;
-        //}
-
-
         if (mapDatabase == null)
             return null;
         try {
             //Draw the tile
             RendererJob mapGeneratorJob = new RendererJob(tile, mapDatabase, theme, model, scale, false, false);
             AndroidTileBitmap bmp = (AndroidTileBitmap) renderer.executeJob(mapGeneratorJob);
-            if (bmp != null)
-                return new BitmapDrawable(AndroidGraphicFactory.getBitmap(bmp));
+            if (bmp != null && application != null)
+                return new BitmapDrawable(application.getResources(), AndroidGraphicFactory.getBitmap(bmp));
         } catch (Exception ex) {
             Log.d(IMapView.LOGTAG, "###################### Mapsforge tile generation failed", ex);
         }
@@ -378,12 +130,18 @@ public class MapsForgeTileSource extends BitmapTileSourceBase {
 
     public static void createInstance(Application app) {
         AndroidGraphicFactory.createInstance(app);
+        application = app;
     }
 
 
     public void dispose() {
-        theme.decrementRefCount();
-        theme = null;
+        // Idempotent: MapView.onDetach() invokes MapsForgeTileProvider.detach() twice
+        // (via the overlay manager and directly), so dispose() may be called again
+        // after the fields have already been nulled.
+        if (theme != null) {
+            theme.decrementRefCount();
+            theme = null;
+        }
         renderer = null;
         if (mapDatabase != null)
             mapDatabase.close();
@@ -403,18 +161,4 @@ public class MapsForgeTileSource extends BitmapTileSourceBase {
     public void setUserScaleFactor(float scaleFactor){
         model.setUserScaleFactor(scaleFactor);
     }
-
-
-    private static FileInputStream[] convertFilesToInputStreams(File[] files) {
-        FileInputStream[] fileInputStreams = new FileInputStream[files.length];
-        for (int i = 0; i < files.length; i++) {
-            try {
-                fileInputStreams[i] = new FileInputStream(files[i]);
-            } catch (FileNotFoundException ex) {
-                Log.d(IMapView.LOGTAG, "###################### Mapsforge file input stream conversion failed", ex);
-            }
-        }
-        return fileInputStreams;
-    }
-
 }

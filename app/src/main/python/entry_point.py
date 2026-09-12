@@ -4,9 +4,9 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any, cast, Tuple
+import xml.etree.ElementTree as mod_etree
 
 import garth
-import lxml.etree as mod_etree
 import requests
 import yaml
 from garminconnect import (  # type: ignore[import-untyped]

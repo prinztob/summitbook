@@ -236,6 +236,15 @@ fun AddSummitDialogCompose(
 
     }
 
+    // Checking for on-device map files queries storage via SAF; keep that off
+    // the main thread (StrictMode DiskReadViolation)
+    var hasOnDeviceMapFiles by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        hasOnDeviceMapFiles = withContext(Dispatchers.IO) {
+            FileHelper.getOnDeviceMapFiles(context).isNotEmpty()
+        }
+    }
+
     // Validation
     val isSaveEnabled = summitName.isNotBlank() &&
             heightMeter.isNotBlank() &&
@@ -320,7 +329,7 @@ fun AddSummitDialogCompose(
                             )
                         }
 
-                        if (FileHelper.getOnDeviceMapFiles(context).isNotEmpty()) {
+                        if (hasOnDeviceMapFiles) {
                             IconButton(
                                 onClick = {
                                     scope.launch {

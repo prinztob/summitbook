@@ -70,7 +70,6 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.IOException
 
-@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SummitEntryTrackScreen(
     summit: Summit?,
@@ -481,10 +480,13 @@ fun MapControlButtons(
             onClick = {
                 if (mapView != null && allSummits != null) {
                     coroutineScope.launch {
+                        // Reading the default shared preferences hits the disk
                         val sharedPreferences =
-                            androidx.preference.PreferenceManager.getDefaultSharedPreferences(
-                                context
-                            )
+                            withContext(Dispatchers.IO) {
+                                androidx.preference.PreferenceManager.getDefaultSharedPreferences(
+                                    context
+                                )
+                            }
                         showAllTracksOfSummitInBoundingBox(
                             context = context,
                             mapView = mapView,
@@ -520,8 +522,11 @@ fun MapControlButtons(
         // Share GPS button
         IconButton(
             onClick = {
-                if (summit.hasGpsTrack()) {
-                    shareGpsTrack(context, summit)
+                coroutineScope.launch {
+                    // hasGpsTrack() and copying the file hit the disk
+                    if (withContext(Dispatchers.IO) { summit.hasGpsTrack() }) {
+                        shareGpsTrack(context, summit)
+                    }
                 }
             },
             colors = buttonColors
@@ -535,8 +540,11 @@ fun MapControlButtons(
         // Open with button
         IconButton(
             onClick = {
-                if (summit.hasGpsTrack()) {
-                    openGpsTrack(context, summit)
+                coroutineScope.launch {
+                    // hasGpsTrack() and copying the file hit the disk
+                    if (withContext(Dispatchers.IO) { summit.hasGpsTrack() }) {
+                        openGpsTrack(context, summit)
+                    }
                 }
             },
             colors = buttonColors
@@ -636,12 +644,15 @@ private fun setGpsTrack(
     }
 }
 
-private fun shareGpsTrack(context: android.content.Context, summit: Summit) {
+private suspend fun shareGpsTrack(context: android.content.Context, summit: Summit) {
     try {
-        val uri = summit.copyGpsTrackToTempFile(context.externalCacheDir)?.let {
-            androidx.core.content.FileProvider.getUriForFile(
-                context, BuildConfig.APPLICATION_ID + ".provider", it
-            )
+        // Copying the GPX file to the external cache dir hits the disk
+        val uri = withContext(Dispatchers.IO) {
+            summit.copyGpsTrackToTempFile(context.externalCacheDir)?.let {
+                androidx.core.content.FileProvider.getUriForFile(
+                    context, BuildConfig.APPLICATION_ID + ".provider", it
+                )
+            }
         }
         val intentShareFile = Intent(Intent.ACTION_SEND)
         intentShareFile.type = "application/pdf"
@@ -670,12 +681,15 @@ private fun shareGpsTrack(context: android.content.Context, summit: Summit) {
     }
 }
 
-private fun openGpsTrack(context: android.content.Context, summit: Summit) {
+private suspend fun openGpsTrack(context: android.content.Context, summit: Summit) {
     try {
-        val uri = summit.copyGpsTrackToTempFile(context.externalCacheDir)?.let {
-            androidx.core.content.FileProvider.getUriForFile(
-                context, BuildConfig.APPLICATION_ID + ".provider", it
-            )
+        // Copying the GPX file to the external cache dir hits the disk
+        val uri = withContext(Dispatchers.IO) {
+            summit.copyGpsTrackToTempFile(context.externalCacheDir)?.let {
+                androidx.core.content.FileProvider.getUriForFile(
+                    context, BuildConfig.APPLICATION_ID + ".provider", it
+                )
+            }
         }
         val intent = Intent(Intent.ACTION_VIEW)
         intent.setDataAndType(uri, "application/gpx")
@@ -717,7 +731,10 @@ private suspend fun showAllTracksOfSummitInBoundingBox(
         var summitsShown = 0
 
         summitsWithSameBoundingBox.forEach { entry ->
-            if (entry.hasGpsTrack() && pointsShown < maxPointsToShow) {
+            // hasGpsTrack() checks the track file on disk; keep that off the main
+            // thread (StrictMode DiskReadViolation)
+            val hasTrack = withContext(Dispatchers.IO) { entry.hasGpsTrack() }
+            if (hasTrack && pointsShown < maxPointsToShow) {
                 withContext(Dispatchers.IO) {
                     if (entry.gpsTrack == null) {
                         entry.setGpsTrack()

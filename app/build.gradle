@@ -15,7 +15,7 @@ android {
     defaultConfig {
         applicationId "de.drtobiasprinz.summitbook"
         minSdk 26
-        targetSdk 36
+        targetSdk 37
         versionCode 1
         versionName "1.0"
 
@@ -30,7 +30,6 @@ android {
                 install "requests"
                 install "gpxpy"
                 install "geopy"
-                install "lxml"
                 install "pandas"
                 install "PyYAML"
                 install "tcxreader"

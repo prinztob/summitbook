@@ -131,6 +131,7 @@ import java.time.LocalDate
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
 class MainActivityCompose : ComponentActivity(),
@@ -201,6 +202,9 @@ class MainActivityCompose : ComponentActivity(),
             try {
                 val osmConf = org.osmdroid.config.Configuration.getInstance()
                 osmConf.userAgentValue = BuildConfig.APPLICATION_ID
+                // Point osmdroid to a writable cache dir, otherwise SqlTileWriter
+                // tries to open the unwritable default '/tiles/cache.db'
+                CustomMapViewToAllowScrolling.setOsmConfForTiles(true)
                 // Trigger tile cache database initialization on background thread
                 val tileWriter = org.osmdroid.tileprovider.modules.SqlTileWriter()
                 tileWriter.onDetach()
@@ -372,7 +376,7 @@ class MainActivityCompose : ComponentActivity(),
                                                 // Cancel previous search job and start new one with debounce
                                                 searchJob?.cancel()
                                                 searchJob = coroutineScope.launch {
-                                                    delay(300) // 300ms debounce
+                                                    delay(300.milliseconds)
                                                     withContext(Dispatchers.Default) {
                                                         val filtered =
                                                             sortFilterValues.applyForSummits(
@@ -431,7 +435,7 @@ class MainActivityCompose : ComponentActivity(),
                                             isSearching = true
                                             // Request focus after a short delay to ensure the text field is rendered
                                             coroutineScope.launch {
-                                                delay(100)
+                                                delay(100.milliseconds)
                                                 focusRequester.requestFocus()
                                             }
                                         }) {

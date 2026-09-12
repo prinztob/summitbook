@@ -47,13 +47,14 @@ import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.copyGpxFileToCach
 import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.prepareGpxTrack
 import de.drtobiasprinz.summitbook.utils.Utils
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
 import java.io.File
 
-@Suppress("AssignedValueIsNeverRead")
 @AndroidEntryPoint
 class ReceiverActivityCompose : ComponentActivity() {
     private var gpxTrackUri: Uri? = null
@@ -65,11 +66,6 @@ class ReceiverActivityCompose : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         Log.i("ReceiverActivityCompose", "onCreate")
-
-        // Initialize cache and storage directories
-        MainActivityCompose.cache = applicationContext.cacheDir
-        MainActivityCompose.storage = applicationContext.filesDir
-        MainActivityCompose.activitiesDir = File(MainActivityCompose.storage, "activities")
 
         setContent {
             SummitBookTheme {
@@ -94,6 +90,15 @@ class ReceiverActivityCompose : ComponentActivity() {
         var gpxTrackUriState by remember { mutableStateOf<Uri?>(null) }
 
         LaunchedEffect(Unit) {
+            // Initialize cache and storage directories off the main thread
+            // (getCacheDir()/getFilesDir() hit the file system)
+            withContext(Dispatchers.IO) {
+                MainActivityCompose.cache = applicationContext.cacheDir
+                MainActivityCompose.storage = applicationContext.filesDir
+                MainActivityCompose.activitiesDir =
+                    File(MainActivityCompose.storage, "activities")
+            }
+
             // Process intent when activity starts
             if (Intent.ACTION_VIEW == intent.action) {
                 scope.launch {
@@ -213,7 +218,7 @@ class ReceiverActivityCompose : ComponentActivity() {
         }
     }
 
-    private fun processIntent(
+    private suspend fun processIntent(
         intent: Intent,
         onTrackProcessed: (GpsTrack?) -> Unit
     ) {
@@ -225,17 +230,20 @@ class ReceiverActivityCompose : ComponentActivity() {
         )
 
         if (uri != null) {
-            val file = File(MainActivityCompose.cache, "input_filter_file.gpx")
-            contentResolver.openInputStream(uri)?.use { inputStream ->
-                copyGpxFileToCache(inputStream, file)
+            // Copying the shared file and parsing the GPX both hit the file
+            // system; keep that off the main thread (StrictMode violations)
+            val gpsTrack = withContext(Dispatchers.IO) {
+                val file = File(MainActivityCompose.cache, "input_filter_file.gpx")
+                contentResolver.openInputStream(uri)?.use { inputStream ->
+                    copyGpxFileToCache(inputStream, file)
+                }
+                if (file.exists()) {
+                    prepareGpxTrack(file.toPath(), null)
+                } else {
+                    null
+                }
             }
-
-            if (file.exists()) {
-                val gpsTrack = prepareGpxTrack(file.toPath(), null)
-                onTrackProcessed(gpsTrack)
-            } else {
-                onTrackProcessed(null)
-            }
+            onTrackProcessed(gpsTrack)
         } else {
             onTrackProcessed(null)
         }

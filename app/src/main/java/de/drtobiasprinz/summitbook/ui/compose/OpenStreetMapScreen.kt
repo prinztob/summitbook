@@ -9,7 +9,6 @@ import android.graphics.Color
 import android.os.Build
 import android.util.Log
 import android.view.WindowInsets
-import android.view.WindowInsetsController
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
@@ -91,7 +90,6 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import java.io.File
 
-@Suppress("AssignedValueIsNeverRead")
 @RequiresApi(Build.VERSION_CODES.S)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -119,6 +117,7 @@ fun OpenStreetMapScreen(
     var hasOverlayLayers by remember { mutableStateOf(false) }
     var heatmapEnabled by rememberSaveable { mutableStateOf(false) }
     var heatmapOverlay by remember { mutableStateOf<TilesOverlay?>(null) }
+    var hasHeatmap by remember { mutableStateOf(false) }
 
     // Lists
     val mGeoPoints = remember { mutableStateListOf<GeoPoint?>() }
@@ -181,58 +180,63 @@ fun OpenStreetMapScreen(
     }
 
     LaunchedEffect(Unit) {
-        sharedPreferences =
-            androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
-        maxPointsToShow =
-            (sharedPreferences?.getString(Keys.PREF_MAX_NUMBER_POINT, maxPointsToShow.toString())
-                ?: maxPointsToShow.toString()).toInt()
-        Configuration.getInstance().load(
-            context,
-            androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
-        )
-        CustomMapViewToAllowScrolling.setOsmConfForTiles()
+        // Disk I/O (SharedPreferences, osmdroid config, map folder checks) must stay
+        // off the main thread to avoid StrictMode DiskRead/WriteViolations
+        withContext(Dispatchers.IO) {
+            sharedPreferences =
+                androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
+            maxPointsToShow =
+                (sharedPreferences?.getString(Keys.PREF_MAX_NUMBER_POINT, maxPointsToShow.toString())
+                    ?: maxPointsToShow.toString()).toInt()
+            Configuration.getInstance().load(
+                context,
+                androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
+            )
+            CustomMapViewToAllowScrolling.setOsmConfForTiles()
 
-        // Set default map type to offline map if available
-        val availableProviders = MapProvider.entries.filter { it.exists(context) }
-        val offlineProvider = availableProviders.firstOrNull { it.isOffline }
-        if (offlineProvider != null && CustomMapViewToAllowScrolling.selectedItem == MapProvider.OPENTOPO) {
-            CustomMapViewToAllowScrolling.selectedItem = offlineProvider
-        }
-        
-        // Mark that map provider initialization is complete
-        mapProviderInitialized = true
-
-        // Load saved bounding box
-        osMapBoundingBox =
-            sharedPreferences?.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")?.split(";")
-                ?: emptyList()
-        if (osMapBoundingBox.size == 6) {
-            try {
-                if (osMapBoundingBox[4].toInt() == 1) {
-                    showSummits = true
-                }
-                if (osMapBoundingBox[5].toInt() == 1) {
-                    showBookmarks = true
-                }
-                Log.i(
-                    "OpenStreetMapScreen",
-                    "Loaded bounding box: ${
-                        sharedPreferences?.getString(
-                            Keys.PREF_OS_MAP_BOUNDING_BOX,
-                            ""
-                        )
-                    }"
-                )
-            } catch (e: Exception) {
-                Log.e(
-                    "OpenStreetMapScreen",
-                    "Getting bounding box from shared preference failed. ${e.message}"
-                )
+            // Set default map type to offline map if available
+            val availableProviders = MapProvider.entries.filter { it.exists(context) }
+            val offlineProvider = availableProviders.firstOrNull { it.isOffline }
+            if (offlineProvider != null && CustomMapViewToAllowScrolling.selectedItem == MapProvider.OPENTOPO) {
+                CustomMapViewToAllowScrolling.selectedItem = offlineProvider
             }
+
+            // Mark that map provider initialization is complete
+            mapProviderInitialized = true
+
+            // Load saved bounding box
+            osMapBoundingBox =
+                sharedPreferences?.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")?.split(";")
+                    ?: emptyList()
+            if (osMapBoundingBox.size == 6) {
+                try {
+                    if (osMapBoundingBox[4].toInt() == 1) {
+                        showSummits = true
+                    }
+                    if (osMapBoundingBox[5].toInt() == 1) {
+                        showBookmarks = true
+                    }
+                    Log.i(
+                        "OpenStreetMapScreen",
+                        "Loaded bounding box: ${
+                            sharedPreferences?.getString(
+                                Keys.PREF_OS_MAP_BOUNDING_BOX,
+                                ""
+                            )
+                        }"
+                    )
+                } catch (e: Exception) {
+                    Log.e(
+                        "OpenStreetMapScreen",
+                        "Getting bounding box from shared preference failed. ${e.message}"
+                    )
+                }
+            }
+
+            // Check for overlay layers
+            hasOverlayLayers = hasOverlayLayers(context)
+            hasHeatmap = hasHeatmapForProvider(context)
         }
-        
-        // Check for overlay layers
-        hasOverlayLayers = hasOverlayLayers(context)
     }
 
     // Update map tile provider when map provider is initialized and map is ready
@@ -501,7 +505,7 @@ fun OpenStreetMapScreen(
                     showOverlaySliders = !showOverlaySliders
                 },
                 heatmapEnabled = heatmapEnabled,
-                hasHeatmap = hasHeatmapForProvider(context),
+                hasHeatmap = hasHeatmap,
                 onToggleHeatmap = {
                     heatmapEnabled = !heatmapEnabled
                     heatmapOverlay = if (heatmapEnabled) {
@@ -587,7 +591,14 @@ fun MapTypeSelectionDialog(
     onMapTypeSelected: (MapProvider) -> Unit
 ) {
     val context = LocalContext.current
-    val mapProviders = MapProvider.entries.filter { it.exists(context) }
+    var mapProviders by remember { mutableStateOf<List<MapProvider>>(emptyList()) }
+    // MapProvider.exists() queries the maps folder via DocumentFile; keep that
+    // storage access off the main thread (StrictMode DiskReadViolation)
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            mapProviders = MapProvider.entries.filter { it.exists(context) }
+        }
+    }
     val currentProvider = CustomMapViewToAllowScrolling.selectedItem
 
     AlertDialog(
@@ -976,62 +987,71 @@ private fun showAllTracksOfSummitInBoundingBox(
     context: Context,
     coroutineScope: CoroutineScope
 ) {
-    var pointsShown = mMarkersShown.sumOf {
-        (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size ?: 0
-    }
-    val summitsInBoundingBox = mMarkers.filter {
-        val mapCustomInfoBubble: MapCustomInfoBubble = it?.infoWindow as MapCustomInfoBubble
-        val shouldBeShown = mapView?.boundingBox?.let { it1 ->
-            mapCustomInfoBubble.entry.isInBoundingBox(it1)
+    val boundingBox = mapView?.boundingBox ?: return
+    coroutineScope.launch {
+        // Summit.isInBoundingBox() checks the track file's existence; keep that
+        // file system access off the main thread (StrictMode DiskReadViolation)
+        val markersInBoundingBox: Set<Marker?> = withContext(Dispatchers.IO) {
+            mMarkers.filterTo(HashSet()) { marker ->
+                (marker?.infoWindow as? MapCustomInfoBubble)?.entry
+                    ?.isInBoundingBox(boundingBox) == true
+            }
         }
-        if (shouldBeShown == false && it in mMarkersShown) {
-            Log.i(
-                "trackPoints",
-                "trackPoints --: ${mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0}"
-            )
-            pointsShown -= mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0
-            mapCustomInfoBubble.updateGpxTrack(forceRemove = true)
-            mMarkersShown.remove(it)
+        var pointsShown = mMarkersShown.sumOf {
+            (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size ?: 0
         }
-        shouldBeShown == true
-    }
-    var boxAlreadyShown = false
-    summitsInBoundingBox.forEach {
-        if (it != null) {
-            val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
-            if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
-                if (infoWindow.entry.hasGpsTrack()) {
-                    coroutineScope.launch {
-                        var show = false
-                        withContext(Dispatchers.Default) {
-                            if (pointsShown < maxPointsToShow) {
-                                show = true
-                                infoWindow.entry.setGpsTrack()
-                                pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0
+        val summitsInBoundingBox = mMarkers.filter {
+            val mapCustomInfoBubble: MapCustomInfoBubble = it?.infoWindow as MapCustomInfoBubble
+            val shouldBeShown = it in markersInBoundingBox
+            if (!shouldBeShown && it in mMarkersShown) {
+                Log.i(
+                    "trackPoints",
+                    "trackPoints --: ${mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0}"
+                )
+                pointsShown -= mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0
+                mapCustomInfoBubble.updateGpxTrack(forceRemove = true)
+                mMarkersShown.remove(it)
+            }
+            shouldBeShown
+        }
+        var boxAlreadyShown = false
+        summitsInBoundingBox.forEach {
+            if (it != null) {
+                val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
+                if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
+                    if (infoWindow.entry.hasGpsTrack()) {
+                        coroutineScope.launch {
+                            var show = false
+                            withContext(Dispatchers.Default) {
+                                if (pointsShown < maxPointsToShow) {
+                                    show = true
+                                    infoWindow.entry.setGpsTrack()
+                                    pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0
+                                }
                             }
-                        }
-                        if (show) {
-                            infoWindow.updateGpxTrack(forceShow = true)
-                            Log.e(
-                                "trackPoints",
-                                "trackPoints ${pointsShown}++: ${infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0}"
-                            )
-                            mMarkersShown.add(it)
-                        } else if (!boxAlreadyShown) {
-                            Toast.makeText(
-                                context,
-                                String.format(
-                                    context.resources.getString(
-                                        R.string.summits_shown
+                            if (show) {
+                                infoWindow.updateGpxTrack(forceShow = true)
+                                Log.e(
+                                    "trackPoints",
+                                    "trackPoints ${pointsShown}++: ${infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0}"
+                                )
+                                mMarkersShown.add(it)
+                            } else if (!boxAlreadyShown) {
+                                Toast.makeText(
+                                    context,
+                                    String.format(
+                                        context.resources.getString(
+                                            R.string.summits_shown
+                                        ),
+                                        mMarkersShown.size.toString(),
+                                        summitsInBoundingBox.size.toString()
                                     ),
-                                    mMarkersShown.size.toString(),
-                                    summitsInBoundingBox.size.toString()
-                                ),
-                                Toast.LENGTH_LONG
-                            ).show()
-                            boxAlreadyShown = true
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                boxAlreadyShown = true
+                            }
+                            mapView.invalidate()
                         }
-                        mapView?.invalidate()
                     }
                 }
             }

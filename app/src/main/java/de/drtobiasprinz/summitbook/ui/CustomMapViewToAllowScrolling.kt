@@ -398,22 +398,29 @@ class CustomMapViewToAllowScrolling : MapView {
 
     fun showMapTypeSelectorDialog(onSelected: () -> Unit = {}) {
         val fDialogTitle = context.getString(R.string.select_map_type)
-        val builder = AlertDialog.Builder(context)
-        val mapProviders = getMapProviders(context)
-        builder.setTitle(fDialogTitle)
-        builder.setSingleChoiceItems(
-            mapProviders.map { context.getString(it.textId) }.toTypedArray(),
-            mapProviders.indexOf(selectedItem)
-        ) { dialog: DialogInterface, item: Int ->
-            selectedItem = mapProviders[item]
-            setTileProvider()
-            onSelected()
-            dialog.dismiss()
-        }
+        // getMapProviders() queries the maps folder via DocumentFile; keep that
+        // storage access off the main thread (StrictMode DiskReadViolation)
+        Thread {
+            val mapProviders = getMapProviders(context)
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                if (!isAttachedToWindow) return@post
+                val builder = AlertDialog.Builder(context)
+                builder.setTitle(fDialogTitle)
+                builder.setSingleChoiceItems(
+                    mapProviders.map { context.getString(it.textId) }.toTypedArray(),
+                    mapProviders.indexOf(selectedItem)
+                ) { dialog: DialogInterface, item: Int ->
+                    selectedItem = mapProviders[item]
+                    setTileProvider()
+                    onSelected()
+                    dialog.dismiss()
+                }
 
-        val fMapTypeDialog = builder.create()
-        fMapTypeDialog.setCanceledOnTouchOutside(true)
-        fMapTypeDialog.show()
+                val fMapTypeDialog = builder.create()
+                fMapTypeDialog.setCanceledOnTouchOutside(true)
+                fMapTypeDialog.show()
+            }
+        }.start()
     }
 
     fun setTileProviderDependingOnSummitSportType(sportType: SportType) {
