@@ -1,7 +1,13 @@
 package de.drtobiasprinz.summitbook.ui.utils
 
 import android.util.Log
-import de.drtobiasprinz.summitbook.db.entities.*
+import de.drtobiasprinz.summitbook.db.entities.EntityEvent
+import de.drtobiasprinz.summitbook.db.entities.Forecast
+import de.drtobiasprinz.summitbook.db.entities.GarminData
+import de.drtobiasprinz.summitbook.db.entities.Segment
+import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
+import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
+import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_CALCULATED_DATA
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_ENTITY_EVENTS
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_FORECASTS
@@ -11,7 +17,17 @@ import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAM
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.CSV_FILE_NAME_VERSION
 import de.drtobiasprinz.summitbook.utils.ZipFileVersions
 import kotlinx.coroutines.Job
-import java.io.*
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import java.io.BufferedInputStream
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
+import java.io.InputStreamReader
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.zip.ZipEntry
@@ -38,10 +54,16 @@ class ZipFileReader(
         baseDirectory.deleteRecursively()
     }
 
-    fun extractAndImport(inputStream: InputStream) {
+    suspend fun extractAndImport(
+        inputStream: InputStream,
+        onProgress: suspend (current: Int, total: Int) -> Unit = { _, _ -> }
+    ) {
         extractZip(inputStream)
         readFromCache()
-        newSummits.forEachIndexed { _, it ->
+        val total = newSummits.size
+        newSummits.forEachIndexed { index, it ->
+            currentCoroutineContext().ensureActive()
+            onProgress(index + 1, total)
             readGpxFile(it)
             readExtensionsFile(it)
             readImageFile(it)

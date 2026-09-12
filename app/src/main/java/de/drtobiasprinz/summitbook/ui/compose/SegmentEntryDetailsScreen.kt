@@ -50,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -77,7 +78,6 @@ import org.osmdroid.views.overlay.advancedpolyline.PolychromaticPaintList
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
-import java.util.Locale
 
 /**
  * Main composable screen for displaying segment entry details
@@ -475,20 +475,20 @@ fun SegmentHeader(
             ) {
                 SegmentDetailStatItem(
                     icon = R.drawable.baseline_trending_up_black_24dp,
-                    text = String.format(Locale.getDefault(), "%.0f/%.0f %s", heightMeterUp, heightMeterDown, stringResource(R.string.hm))
+                    text = String.format(LocalConfiguration.current.locales[0], "%.0f/%.0f %s", heightMeterUp, heightMeterDown, stringResource(R.string.hm))
                 )
 
                 if (avgGradient != null) {
                     SegmentDetailStatItem(
                         icon = R.drawable.baseline_trending_flat_24,
-                        text = String.format(Locale.getDefault(), "%.1f%%", avgGradient)
+                        text = String.format(LocalConfiguration.current.locales[0], "%.1f%%", avgGradient)
                     )
                 }
 
                 if (maxGradeInWindow != null && windowDistanceMeters != null) {
                     SegmentDetailStatItem(
                         icon = R.drawable.baseline_trending_up_black_24dp,
-                        text = String.format(Locale.getDefault(), "%.0fm: %.1f%%", windowDistanceMeters, maxGradeInWindow)
+                        text = String.format(LocalConfiguration.current.locales[0], "%.0fm: %.1f%%", windowDistanceMeters, maxGradeInWindow)
                     )
                 }
 
@@ -507,7 +507,7 @@ fun SegmentHeader(
                 SegmentDetailStatItem(
                     icon = R.drawable.outline_distance_24,
                     text = String.format(
-                        Locale.getDefault(),
+                        LocalConfiguration.current.locales[0],
                         "%.1f %s",
                         kilometers,
                         stringResource(R.string.km)
@@ -517,7 +517,7 @@ fun SegmentHeader(
                 SegmentDetailStatItem(
                     icon = R.drawable.ic_baseline_timer_24,
                     text = String.format(
-                        Locale.getDefault(),
+                        LocalConfiguration.current.locales[0],
                         "%.1f %s",
                         duration,
                         stringResource(R.string.min)
@@ -804,7 +804,7 @@ fun SegmentEntryCard(
                     if (entry.isMountainPass) {
                         SegmentEntryStat(
                             value = String.format(
-                                Locale.getDefault(),
+                                LocalConfiguration.current.locales[0],
                                 "%d:%02d",
                                 entry.duration.toInt(),
                                 ((entry.duration - entry.duration.toInt()) * 60).toInt()
@@ -814,7 +814,7 @@ fun SegmentEntryCard(
 
                         SegmentEntryStat(
                             value = String.format(
-                                Locale.getDefault(),
+                                LocalConfiguration.current.locales[0],
                                 "%.1f",
                                 entry.kilometers / entry.duration * 60
                             ),
@@ -822,18 +822,18 @@ fun SegmentEntryCard(
                         )
 
                         SegmentEntryStat(
-                            value = String.format(Locale.getDefault(), "%.0f", entry.heightMetersUp),
+                            value = String.format(LocalConfiguration.current.locales[0], "%.0f", entry.heightMetersUp),
                             label = stringResource(R.string.hm)
                         )
 
                         SegmentEntryStat(
-                            value = String.format(Locale.getDefault(), "%.1f%%", entry.avgGradient),
+                            value = String.format(LocalConfiguration.current.locales[0], "%.1f%%", entry.avgGradient),
                             label = stringResource(R.string.avg_gradient)
                         )
                     } else {
                         SegmentEntryStat(
                             value = String.format(
-                                Locale.getDefault(),
+                                LocalConfiguration.current.locales[0],
                                 "%d:%02d",
                                 entry.duration.toInt(),
                                 ((entry.duration - entry.duration.toInt()) * 60).toInt()
@@ -843,7 +843,7 @@ fun SegmentEntryCard(
 
                         SegmentEntryStat(
                             value = String.format(
-                                Locale.getDefault(),
+                                LocalConfiguration.current.locales[0],
                                 "%.1f",
                                 entry.kilometers / entry.duration * 60
                             ),

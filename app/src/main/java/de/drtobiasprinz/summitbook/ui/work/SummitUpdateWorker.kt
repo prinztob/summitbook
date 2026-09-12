@@ -18,6 +18,7 @@ import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import androidx.core.content.edit
 
 class SummitUpdateWorker(
     context: Context,
@@ -35,26 +36,20 @@ class SummitUpdateWorker(
         return try {
             Log.i(TAG, "Update boundingBoxes")
             withContext(Dispatchers.IO) {
+                val excludedBoundingBoxIds = getExcludedBoundingBoxIds(context)
                 // Process in batches to avoid OOM
                 val batchSize = 50
                 var offset = 0
                 var hasMore = true
-                
+
                 while (hasMore) {
                     val summits = repository.getSummitsPaginated(batchSize, offset).first()
                     if (summits.isEmpty()) {
                         hasMore = false
                     } else {
-                        updateTracksAndBoundingBox(summits)
+                        updateTracksAndBoundingBox(summits, excludedBoundingBoxIds)
                         offset += batchSize
-                        // Clear references to allow GC
-                        System.gc()
                     }
-                }
-                
-                // Clear the exclusion list periodically to prevent memory leak
-                if (entriesToExcludeForBoundingBoxCalculation.size > 100) {
-                    entriesToExcludeForBoundingBoxCalculation.clear()
                 }
             }
             Result.success()
@@ -64,9 +59,12 @@ class SummitUpdateWorker(
         }
     }
 
-    private suspend fun updateTracksAndBoundingBox(summits: List<Summit>) {
+    private suspend fun updateTracksAndBoundingBox(
+        summits: List<Summit>,
+        excludedBoundingBoxIds: Set<String>
+    ) {
         if (summits.isNotEmpty()) {
-            updateBoundingBox(summits, 10)
+            updateBoundingBox(summits, 10, excludedBoundingBoxIds)
             updateTracks(summits, 10)
             updateDistances(summits, 10)
             convertPeaks(summits)
@@ -74,9 +72,14 @@ class SummitUpdateWorker(
         }
     }
 
-    private suspend fun updateBoundingBox(summits: List<Summit>, takeNumberOfSummits: Int) {
+    private suspend fun updateBoundingBox(
+        summits: List<Summit>,
+        takeNumberOfSummits: Int,
+        excludedBoundingBoxIds: Set<String>
+    ) {
         val entriesWithoutBoundingBox = summits.filter {
-            it.hasGpsTrack() && it.trackBoundingBox == null && it !in entriesToExcludeForBoundingBoxCalculation
+            it.hasGpsTrack() && it.trackBoundingBox == null &&
+                    it.id.toString() !in excludedBoundingBoxIds
         }
         Log.i(TAG, "${entriesWithoutBoundingBox.size} bounding boxes are missing.")
         if (entriesWithoutBoundingBox.isNotEmpty()) {
@@ -93,15 +96,13 @@ class SummitUpdateWorker(
                     } else {
                         Log.i(
                             TAG,
-                            "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name} failed, remove it from update list."
+                            "Updated bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name} failed, exclude it from future updates."
                         )
-                        entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
+                        addExcludedBoundingBoxId(context, entryToCheck.id)
                     }
                 } catch (e: OutOfMemoryError) {
                     Log.e(TAG, "OOM while updating bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name}", e)
-                    entriesToExcludeForBoundingBoxCalculation.add(entryToCheck)
-                    // Suggest GC to free memory
-                    System.gc()
+                    addExcludedBoundingBoxId(context, entryToCheck.id)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error updating bounding box for ${entryToCheck.getDateAsString()}_${entryToCheck.name}", e)
                 }
@@ -245,10 +246,6 @@ class SummitUpdateWorker(
                         TAG,
                         "asyncSimplifyGpsTracks - Simplified track for ${summit.getDateAsString()}_${summit.name}."
                     )
-                    // Suggest GC after each track to free memory
-                    if (i % 5 == 0) {
-                        System.gc()
-                    }
                 } catch (ex: OutOfMemoryError) {
                     Log.e(
                         TAG,
@@ -256,7 +253,6 @@ class SummitUpdateWorker(
                     )
                     summit.ignoreSimplifyingTrack = true
                     repository.updateIgnoreSimplifyingTrack(summit.id, true)
-                    System.gc()
                 } catch (ex: RuntimeException) {
                     Log.e(
                         TAG,
@@ -278,10 +274,6 @@ class SummitUpdateWorker(
                         TAG,
                         "asyncSimplifyGpsTracks - Calculated additional data for ${summit.getDateAsString()}_${summit.name}."
                     )
-                    // Suggest GC after each track to free memory
-                    if (i % 5 == 0) {
-                        System.gc()
-                    }
                 } catch (ex: OutOfMemoryError) {
                     Log.e(
                         TAG,
@@ -289,7 +281,6 @@ class SummitUpdateWorker(
                     )
                     summit.ignoreSimplifyingTrack = true
                     repository.updateIgnoreSimplifyingTrack(summit.id, true)
-                    System.gc()
                 } catch (ex: RuntimeException) {
                     Log.e(
                         TAG,
@@ -306,7 +297,26 @@ class SummitUpdateWorker(
 
 
     companion object {
-        val entriesToExcludeForBoundingBoxCalculation: MutableList<Summit> = mutableListOf()
         const val TAG = "SummitUpdateWorker"
+        private const val PREF_EXCLUDED_BOUNDING_BOX_IDS = "pref_excluded_bounding_box_ids"
+
+        /**
+         * Summits whose bounding box could not be calculated are excluded via their
+         * persisted IDs instead of a static list holding strong Summit references.
+         */
+        fun getExcludedBoundingBoxIds(context: Context): MutableSet<String> {
+            val prefs =
+                androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
+            return prefs.getStringSet(PREF_EXCLUDED_BOUNDING_BOX_IDS, emptySet())
+                ?.toMutableSet() ?: mutableSetOf()
+        }
+
+        fun addExcludedBoundingBoxId(context: Context, summitId: Long) {
+            val prefs =
+                androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
+            val ids = getExcludedBoundingBoxIds(context)
+            ids.add(summitId.toString())
+            prefs.edit { putStringSet(PREF_EXCLUDED_BOUNDING_BOX_IDS, ids) }
+        }
     }
 }

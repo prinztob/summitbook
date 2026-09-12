@@ -648,11 +648,13 @@ def merge_tracks(
 def generate_heatmap_from_tracks(
     input_gpx_track_files: list[str],
     output_mbtiles_file: str,
+    progress_callback=None,
 ) -> str:
     try:
         generate_heatmap(
             [Path(track) for track in input_gpx_track_files],
             Path(output_mbtiles_file),
+            progress_callback=progress_callback,
         )
         return "return code: 0Generate heatmap was successful"
     except Exception as err:

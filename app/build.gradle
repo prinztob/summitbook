@@ -29,7 +29,6 @@ android {
                 install "garminconnect==0.2.28"
                 install "requests"
                 install "gpxpy"
-                install "geopy"
                 install "pandas"
                 install "PyYAML"
                 install "tcxreader"

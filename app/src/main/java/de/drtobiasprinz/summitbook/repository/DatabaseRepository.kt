@@ -19,6 +19,7 @@ class DatabaseRepository @Inject constructor(
     suspend fun saveSummit(entity: Summit) = summitsDao.saveSummit(entity)
     suspend fun saveSummits(entities: List<Summit>) = summitsDao.insertAll(entities)
     suspend fun updateSummit(entity: Summit) = summitsDao.updateSummit(entity)
+    suspend fun updateSummits(entities: List<Summit>) = summitsDao.updateSummits(entities)
     suspend fun updateIgnoreSimplifyingTrack(summitId: Long, ignoreSimplifyingTrack: Boolean) =
         summitsDao.updateIgnoreSimplifyingTrack(summitId, ignoreSimplifyingTrack)
     suspend fun updateDistanceData(summitId: Long, distancePerSurface: Map<Surface, Int>, distancePerRoadType: Map<RoadType, Int>) =

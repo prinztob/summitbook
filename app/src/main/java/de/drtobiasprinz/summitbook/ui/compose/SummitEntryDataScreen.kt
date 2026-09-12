@@ -473,7 +473,7 @@ fun CompareDropdown(
                     }
                     Text(
                         text = String.format(
-                            Locale.getDefault(),
+                            LocalConfiguration.current.locales[0],
                             stringResource(R.string.page_of),
                             currentPage + 1,
                             totalPages
@@ -521,7 +521,7 @@ fun CompareDropdown(
                     }
                     Text(
                         text = String.format(
-                            Locale.getDefault(),
+                            LocalConfiguration.current.locales[0],
                             stringResource(R.string.page_of),
                             currentPage + 1,
                             totalPages
@@ -772,7 +772,7 @@ fun SegmentsSection(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(segmentInfo) { entry ->
+            items(segmentInfo, key = { "${it.first.entryId}-${it.second.segmentDetailsId}" }) { entry ->
                 AssistChip(
                     onClick = { selectedSegment = entry },
                     label = {
@@ -844,7 +844,7 @@ fun MountainPassesSection(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(summitPasses) { pass ->
+            items(summitPasses, key = { it.entryId }) { pass ->
                 AssistChip(
                     onClick = {
                         selectedPass = if (selectedPass == pass) null else pass
@@ -928,7 +928,7 @@ fun MountainPassesSection(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(Locale.getDefault(), "%.1f km", pass.kilometers),
+                                    text = String.format(LocalConfiguration.current.locales[0], "%.1f km", pass.kilometers),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -945,7 +945,7 @@ fun MountainPassesSection(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(Locale.getDefault(), "%.0f hm", pass.heightMetersUp),
+                                    text = String.format(LocalConfiguration.current.locales[0], "%.0f hm", pass.heightMetersUp),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -962,7 +962,7 @@ fun MountainPassesSection(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(Locale.getDefault(), "%.0f hm", pass.heightMetersDown),
+                                    text = String.format(LocalConfiguration.current.locales[0], "%.0f hm", pass.heightMetersDown),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -984,7 +984,7 @@ fun MountainPassesSection(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(Locale.getDefault(), "%.1f%%", pass.avgGradient),
+                                    text = String.format(LocalConfiguration.current.locales[0], "%.1f%%", pass.avgGradient),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -1003,7 +1003,7 @@ fun MountainPassesSection(
                                     )
                                     Text(
                                         text = String.format(
-                                            Locale.getDefault(),
+                                            LocalConfiguration.current.locales[0],
                                             "%.0fm: %.1f%%",
                                             pass.windowDistanceMeters,
                                             pass.maxGradeInWindow
@@ -1025,26 +1025,26 @@ fun MountainPassesSection(
 
                         val durationText = if (pass.durationInMotion > 0 && pass.durationInMotion != pass.duration) {
                             String.format(
-                                Locale.getDefault(),
+                                LocalConfiguration.current.locales[0],
                                 "%.1f (%.1f) %s",
                                 pass.durationInMotion,
                                 pass.duration,
                                 stringResource(R.string.min)
                             )
                         } else {
-                            String.format(Locale.getDefault(), "%.1f %s", pass.duration, stringResource(R.string.min))
+                            String.format(LocalConfiguration.current.locales[0], "%.1f %s", pass.duration, stringResource(R.string.min))
                         }
 
                         val speedText = if (pass.durationInMotion > 0 && pass.durationInMotion != pass.duration) {
                             String.format(
-                                Locale.getDefault(),
+                                LocalConfiguration.current.locales[0],
                                 "%.1f (%.1f) %s",
                                 avgSpeed,
                                 avgSpeedTotal,
                                 stringResource(R.string.kmh)
                             )
                         } else {
-                            String.format(Locale.getDefault(), "%.1f %s", avgSpeed, stringResource(R.string.kmh))
+                            String.format(LocalConfiguration.current.locales[0], "%.1f %s", avgSpeed, stringResource(R.string.kmh))
                         }
 
                         Row(

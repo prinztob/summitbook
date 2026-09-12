@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -74,7 +75,6 @@ import java.util.GregorianCalendar
 import java.util.TimeZone
 import kotlin.math.floor
 
-@Suppress("AssignedValueIsNeverRead", "VariableNeverRead")
 @Composable
 fun BarChartScreen(
     filteredSummits: List<Summit>,
@@ -804,7 +804,7 @@ fun ChartMarkerCompose(
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val configuration = LocalContext.current.resources.configuration
+    val configuration = LocalConfiguration.current
     
     // Get string resources outside of remember blocks
     val weekAbbreviation = stringResource(R.string.calender_wek_abrv)

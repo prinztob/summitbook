@@ -78,8 +78,10 @@ import de.drtobiasprinz.summitbook.ui.utils.FileRowType
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -141,6 +143,9 @@ fun SettingsScreen(
     // Dialog states
     var showProgressDialog by remember { mutableStateOf(false) }
     var progressDialogMessage by remember { mutableStateOf("") }
+    var progressDialogCurrent by remember { mutableStateOf<Int?>(null) }
+    var progressDialogTotal by remember { mutableStateOf<Int?>(null) }
+    var progressDialogJob by remember { mutableStateOf<Job?>(null) }
     var showEmptyFolderError by remember { mutableStateOf(false) }
     var showHeatmapDialog by remember { mutableStateOf(false) }
 
@@ -531,6 +536,7 @@ fun SettingsScreen(
         // Bulk File Management Category
         SettingsCategory(title = stringResource(R.string.pref_bulk_file_management_title)) {
             val bulkUpdateComplete = stringResource(R.string.bulk_update_complete)
+            val loadingCanceled = stringResource(R.string.loading_canceled)
             FileRowType.entries.forEach { fileRowType ->
                 val fileCount = countFilesToUpdate(summits, fileRowType)
 
@@ -560,11 +566,16 @@ fun SettingsScreen(
                                 summits = summits,
                                 fileRowType = fileRowType,
                                 context = context,
-                                onProgressUpdate = { message ->
+                                onProgressUpdate = { message, current, total ->
                                     progressDialogMessage = message
+                                    progressDialogCurrent = current
+                                    progressDialogTotal = total
                                     showProgressDialog = true
+                                }, onJobStarted = { job ->
+                                    progressDialogJob = job
                                 }, onComplete = { successCount, failCount ->
                                     showProgressDialog = false
+                                    progressDialogJob = null
                                     Toast.makeText(
                                         context,
                                         String.format(
@@ -573,6 +584,14 @@ fun SettingsScreen(
                                             failCount
                                         ),
                                         Toast.LENGTH_LONG
+                                    ).show()
+                                }, onCanceled = {
+                                    showProgressDialog = false
+                                    progressDialogJob = null
+                                    Toast.makeText(
+                                        context,
+                                        loadingCanceled,
+                                        Toast.LENGTH_SHORT
                                     ).show()
                                 }, onSaveSummit = onSaveSummit,
                                 coroutineScope = coroutineScope
@@ -598,38 +617,48 @@ fun SettingsScreen(
         )
     }
 
-    // Progress dialog
-    if (showProgressDialog) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text(stringResource(R.string.bulk_update_progress_title)) },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator()
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(progressDialogMessage)
-                }
-            },
-            confirmButton = { }
-        )
-    }
+    // Progress panel
+    LoadingPanel(
+        visible = showProgressDialog,
+        statusText = progressDialogMessage,
+        progressCurrent = progressDialogCurrent,
+        progressTotal = progressDialogTotal,
+        onCancel = if (progressDialogJob != null) {
+            { progressDialogJob?.cancel() }
+        } else {
+            null
+        }
+    )
 
     // Heatmap management dialog
     if (showHeatmapDialog) {
+        val loadingCanceled = stringResource(R.string.loading_canceled)
         HeatmapManagementDialog(
             summits = summits,
             onDismiss = { showHeatmapDialog = false },
-            onProgressUpdate = { message ->
+            onProgressUpdate = { message, current, total ->
                 progressDialogMessage = message
+                progressDialogCurrent = current
+                progressDialogTotal = total
                 showProgressDialog = true
+            },
+            onJobStarted = { job ->
+                progressDialogJob = job
             },
             onComplete = { message ->
                 showProgressDialog = false
+                progressDialogJob = null
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                 Log.i("Settings", message)
+            },
+            onCanceled = {
+                showProgressDialog = false
+                progressDialogJob = null
+                Toast.makeText(
+                    context,
+                    loadingCanceled,
+                    Toast.LENGTH_SHORT
+                ).show()
             },
             coroutineScope = coroutineScope
         )
@@ -653,8 +682,10 @@ data class HeatmapStatus(
 fun HeatmapManagementDialog(
     summits: List<Summit>,
     onDismiss: () -> Unit,
-    onProgressUpdate: (String) -> Unit,
+    onProgressUpdate: (String, Int?, Int?) -> Unit,
+    onJobStarted: (Job) -> Unit,
     onComplete: (String) -> Unit,
+    onCanceled: () -> Unit,
     coroutineScope: CoroutineScope
 ) {
     val context = LocalContext.current
@@ -727,26 +758,32 @@ fun HeatmapManagementDialog(
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    items(heatmapStatuses) { status ->
+                    items(heatmapStatuses, key = { it.name }) { status ->
                         HeatmapStatusRow(
                             status = status,
                             dateFormat = dateFormat,
                             isGenerating = generatingForItem == status.name,
                             onGenerate = {
                                 generatingForItem = status.name
-                                generateHeatmapForSportGroup(
-                                    summits = summits,
-                                    sportGroup = status.sportGroup,
-                                    isAllActivities = status.isAllActivities,
-                                    coroutineScope = coroutineScope,
-                                    context = context,
-                                    onProgressUpdate = onProgressUpdate,
-                                    onComplete = { _, message ->
-                                        generatingForItem = null
-                                        onComplete(message)
-                                        // Refresh the dialog by reloading
-                                        refreshTrigger++
-                                    }
+                                onJobStarted(
+                                    generateHeatmapForSportGroup(
+                                        summits = summits,
+                                        sportGroup = status.sportGroup,
+                                        isAllActivities = status.isAllActivities,
+                                        coroutineScope = coroutineScope,
+                                        context = context,
+                                        onProgressUpdate = onProgressUpdate,
+                                        onComplete = { _, message ->
+                                            generatingForItem = null
+                                            onComplete(message)
+                                            // Refresh the dialog by reloading
+                                            refreshTrigger++
+                                        },
+                                        onCanceled = {
+                                            generatingForItem = null
+                                            onCanceled()
+                                        }
+                                    )
                                 )
                             }
                         )
@@ -868,9 +905,10 @@ private fun generateHeatmapForSportGroup(
     isAllActivities: Boolean,
     coroutineScope: CoroutineScope,
     context: Context,
-    onProgressUpdate: (String) -> Unit,
-    onComplete: (Boolean, String) -> Unit
-) {
+    onProgressUpdate: (String, Int?, Int?) -> Unit,
+    onComplete: (Boolean, String) -> Unit,
+    onCanceled: () -> Unit
+): Job {
     val filteredSummits = when {
         isAllActivities -> summits.filter { it.hasGpsTrack() }
         sportGroup != null -> summits.filter { summit ->
@@ -881,10 +919,10 @@ private fun generateHeatmapForSportGroup(
 
     if (filteredSummits.isEmpty()) {
         onComplete(false, context.getString(R.string.no_activities_with_tracks))
-        return
+        return Job().apply { cancel() }
     }
 
-    coroutineScope.launch(Dispatchers.Main) {
+    return coroutineScope.launch(Dispatchers.Main) {
         try {
             withContext(Dispatchers.IO) {
                 val trackFiles = filteredSummits.mapNotNull { summit ->
@@ -900,7 +938,11 @@ private fun generateHeatmapForSportGroup(
                 }
 
                 withContext(Dispatchers.Main) {
-                    onProgressUpdate(context.getString(R.string.found_tracks_generating, trackFiles.size))
+                    onProgressUpdate(
+                        context.getString(R.string.found_tracks_generating, trackFiles.size),
+                        null,
+                        null
+                    )
                 }
 
                 val fileName = when {
@@ -916,7 +958,22 @@ private fun generateHeatmapForSportGroup(
                             "Settings",
                             "generateHeatmap for ${trackFiles.size} tracks, saving to $outputFile"
                         )
-                        GpxPyExecutor(python).generateHeatmap(trackFiles, outputFile)
+                        GpxPyExecutor(python).generateHeatmap(
+                            trackFiles,
+                            outputFile
+                        ) { currentZoom, totalZoomLevels ->
+                            onProgressUpdate(
+                                context.getString(
+                                    R.string.loading_generating_heatmap_zoom,
+                                    currentZoom,
+                                    totalZoomLevels
+                                ),
+                                currentZoom,
+                                totalZoomLevels
+                            )
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: RuntimeException) {
                         Log.e("Settings", "Generate Heatmap failed.", e)
                     }
@@ -930,6 +987,9 @@ private fun generateHeatmapForSportGroup(
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            onCanceled()
+            throw e
         } catch (e: Exception) {
             Log.e("SettingsScreen", "Failed to generate heatmap", e)
             withContext(Dispatchers.Main) {
@@ -1456,8 +1516,10 @@ private fun performBulkUpdate(
     summits: List<Summit>,
     fileRowType: FileRowType,
     context: Context,
-    onProgressUpdate: (String) -> Unit,
+    onProgressUpdate: (String, Int?, Int?) -> Unit,
+    onJobStarted: (Job) -> Unit,
     onComplete: (Int, Int) -> Unit,
+    onCanceled: () -> Unit,
     onSaveSummit: (Boolean, Summit) -> Unit,
     coroutineScope: CoroutineScope
 ) {
@@ -1487,14 +1549,17 @@ private fun performBulkUpdate(
             )
         )
         .setPositiveButton(R.string.yes) { _, _ ->
-            executeBulkUpdate(
-                summits = summitsToUpdate,
-                fileRowType = fileRowType,
-                context = context,
-                onProgressUpdate = onProgressUpdate,
-                onComplete = onComplete,
-                onSaveSummit = onSaveSummit,
-                coroutineScope = coroutineScope
+            onJobStarted(
+                executeBulkUpdate(
+                    summits = summitsToUpdate,
+                    fileRowType = fileRowType,
+                    context = context,
+                    onProgressUpdate = onProgressUpdate,
+                    onComplete = onComplete,
+                    onCanceled = onCanceled,
+                    onSaveSummit = onSaveSummit,
+                    coroutineScope = coroutineScope
+                )
             )
         }
         .setNegativeButton(R.string.no, null)
@@ -1505,84 +1570,94 @@ private fun executeBulkUpdate(
     summits: List<Summit>,
     fileRowType: FileRowType,
     context: Context,
-    onProgressUpdate: (String) -> Unit,
+    onProgressUpdate: (String, Int?, Int?) -> Unit,
     onComplete: (Int, Int) -> Unit,
+    onCanceled: () -> Unit,
     onSaveSummit: (Boolean, Summit) -> Unit,
     coroutineScope: CoroutineScope
-) {
+): Job {
     val cacheDir = File(MainActivityCompose.cache, "file_backups")
 
-    coroutineScope.launch(Dispatchers.Main) {
+    return coroutineScope.launch(Dispatchers.Main) {
         var successCount = 0
         var failCount = 0
 
-        summits.forEachIndexed { index, summit ->
-            try {
-                if (fileRowType.checkAction(summit)) {
-                    withContext(Dispatchers.IO) {
-                        val file = fileRowType.getFile(summit)
-                        if (!cacheDir.exists()) {
-                            cacheDir.mkdirs()
-                        }
-                        val backupFile = File(cacheDir, file.name)
+        try {
+            summits.forEachIndexed { index, summit ->
+                try {
+                    if (fileRowType.checkAction(summit)) {
+                        withContext(Dispatchers.IO) {
+                            val file = fileRowType.getFile(summit)
+                            if (!cacheDir.exists()) {
+                                cacheDir.mkdirs()
+                            }
+                            val backupFile = File(cacheDir, file.name)
 
-                        if (file.exists()) {
-                            Files.move(
-                                file.toPath(),
-                                backupFile.toPath(),
-                                StandardCopyOption.REPLACE_EXISTING
-                            )
-                        }
+                            if (file.exists()) {
+                                Files.move(
+                                    file.toPath(),
+                                    backupFile.toPath(),
+                                    StandardCopyOption.REPLACE_EXISTING
+                                )
+                            }
 
-                        fileRowType.updateAction.invoke(summit, backupFile)
+                            fileRowType.updateAction.invoke(summit, backupFile)
 
-                        if (fileRowType.shouldUpdateRoadInfos) {
-                            OfflineMapAnalyzer.from(context).use { analyzer ->
-                                if (OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(
-                                        analyzer,
-                                        summit
-                                    )
-                                ) {
-                                    val updated = OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(
-                                        context, summit
-                                    )
-                                    if (updated) {
-                                        onSaveSummit(true, summit)
+                            if (fileRowType.shouldUpdateRoadInfos) {
+                                OfflineMapAnalyzer.from(context).use { analyzer ->
+                                    if (OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(
+                                            analyzer,
+                                            summit
+                                        )
+                                    ) {
+                                        val updated = OfflineMapAnalyzer.setDistancePerSurfacesAndRoadType(
+                                            context, summit
+                                        )
+                                        if (updated) {
+                                            onSaveSummit(true, summit)
+                                        }
                                     }
                                 }
                             }
                         }
+                        Log.d(
+                            "SettingsScreen",
+                            "Update for ${summit.getDateAsString()}_${summit.name} done."
+                        )
+                    } else {
+                        Log.d(
+                            "SettingsScreen",
+                            "Skip update for ${summit.getDateAsString()}_${summit.name} as the precondition is not fulfilled."
+                        )
                     }
-                    Log.d(
+                    successCount++
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e(
                         "SettingsScreen",
-                        "Update for ${summit.getDateAsString()}_${summit.name} done."
+                        "Failed to update file for summit ${summit.name}: ${e.message}"
                     )
-                } else {
-                    Log.d(
-                        "SettingsScreen",
-                        "Skip update for ${summit.getDateAsString()}_${summit.name} as the precondition is not fulfilled."
-                    )
+                    failCount++
                 }
-                successCount++
-            } catch (e: Exception) {
-                Log.e(
-                    "SettingsScreen",
-                    "Failed to update file for summit ${summit.name}: ${e.message}"
-                )
-                failCount++
-            }
 
-            withContext(Dispatchers.Main) {
-                onProgressUpdate(
-                    context.getString(
-                        R.string.bulk_update_progress_message,
+                withContext(Dispatchers.Main) {
+                    onProgressUpdate(
+                        context.getString(
+                            R.string.bulk_update_progress_message,
+                            index + 1,
+                            summits.size
+                        ),
                         index + 1,
                         summits.size
                     )
-                )
+                }
             }
-        }
 
-        onComplete(successCount, failCount)
+            onComplete(successCount, failCount)
+        } catch (e: CancellationException) {
+            onCanceled()
+            throw e
+        }
     }
 }

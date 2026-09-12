@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -72,15 +73,8 @@ fun OverviewScreen(
 
     val sharedPreferences = MainActivityCompose.sharedPreferences
     val indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
-    val numberFormat = NumberFormat.getInstance(java.util.Locale.getDefault())
+    val numberFormat = NumberFormat.getInstance(LocalConfiguration.current.locales[0])
 
-    // Calculate statistics when data changes
-    LaunchedEffect(filteredSummits, forecasts) {
-        // Calculate statistics
-        numberFormat.maximumFractionDigits = 0
-        val statisticEntry = StatisticEntry(filteredSummits, indoorHeightMeterPercent)
-        statisticEntry.calculate()
-    }
     Column(
         modifier = Modifier
             .background(MaterialTheme.colorScheme.surface)
@@ -141,30 +135,30 @@ fun OverviewHeader(
 
     // Update text when data changes
     LaunchedEffect(filteredSummits, forecastsList) {
-
-
-        // Calculate statistics
         numberFormat.maximumFractionDigits = 0
-        val statisticEntry = StatisticEntry(filteredSummits, indoorHeightMeterPercent)
-        statisticEntry.calculate()
-        val peaks = filteredSummits.filter { it.isPeak }
-        val numberOfPeaks = peaks.size + filteredSummits.flatMap { it.places }
-            .filter { it in MainActivityCompose.peaks.map { peak -> peak.name } }.size
+        // Heavy statistics computation runs off the main thread
+        val (activities, summits) = withContext(Dispatchers.Default) {
+            val statisticEntry = StatisticEntry(filteredSummits, indoorHeightMeterPercent)
+            statisticEntry.calculate()
+            val peaks = filteredSummits.filter { it.isPeak }
+            val numberOfPeaks = peaks.size + filteredSummits.flatMap { it.places }
+                .filter { it in MainActivityCompose.peaks.map { peak -> peak.name } }.size
 
-        // Format the text with string resources
-        activitiesText = "${
-            filteredSummits.size
-        } activities, ${
-            numberFormat.format(statisticEntry.totalKm)
-        } km, ${
-            numberFormat.format(statisticEntry.totalHm)
-        } hm"
-
-        summitsText = "$numberOfPeaks summits, ${
-            numberFormat.format(peaks.sumOf { it.kilometers })
-        } km, ${
-            numberFormat.format(peaks.sumOf { it.elevationData.elevationGain })
-        } hm"
+            // Format the text with string resources
+            "${
+                filteredSummits.size
+            } activities, ${
+                numberFormat.format(statisticEntry.totalKm)
+            } km, ${
+                numberFormat.format(statisticEntry.totalHm)
+            } hm" to "$numberOfPeaks summits, ${
+                numberFormat.format(peaks.sumOf { it.kilometers })
+            } km, ${
+                numberFormat.format(peaks.sumOf { it.elevationData.elevationGain })
+            } hm"
+        }
+        activitiesText = activities
+        summitsText = summits
     }
 
     Card(

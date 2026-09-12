@@ -103,7 +103,18 @@ class DatabaseViewModel @Inject constructor(private val repository: DatabaseRepo
     }
 
     fun saveSummits(entities: List<Summit>) = viewModelScope.launch {
+        entities.forEach { entity ->
+            entity.places = entity.places.filter { it.isNotEmpty() }
+            entity.countries = entity.countries.filter { it.isNotEmpty() }
+            entity.participants = entity.participants.filter { it.isNotEmpty() }
+            entity.equipments = entity.equipments.filter { it.isNotEmpty() }
+        }
         repository.saveSummits(entities)
+        updateWidget()
+    }
+
+    fun updateSummits(entities: List<Summit>) = viewModelScope.launch {
+        repository.updateSummits(entities)
         updateWidget()
     }
 

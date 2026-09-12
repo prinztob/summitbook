@@ -26,6 +26,8 @@ import numpy as np
 from PIL import Image
 from scipy.ndimage import gaussian_filter
 
+from utils import haversine_distance_m
+
 # Constants for tile generation
 TILE_SIZE = 256
 MAX_ZOOM = 18
@@ -321,18 +323,7 @@ def get_tiles_for_segment(
 
 def _haversine_distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculate the great-circle distance between two points in meters."""
-    R = 6371000.0  # Earth radius in meters
-    phi1 = math.radians(lat1)
-    phi2 = math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlambda = math.radians(lon2 - lon1)
-
-    a = (
-        math.sin(dphi / 2) ** 2
-        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
-    )
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return R * c
+    return haversine_distance_m(lat1, lon1, lat2, lon2)
 
 
 def compute_tile_coverage(
@@ -824,6 +815,7 @@ def generate_heatmap(
     num_workers: int = 1,
     gaussian_sigma: float = 2.0,
     max_segment_distance_m: float = MAX_SEGMENT_DISTANCE_M,
+    progress_callback=None,
 ) -> None:
     """
     Generate a heatmap MBTiles file from GPX tracks.
@@ -841,7 +833,10 @@ def generate_heatmap(
             merge offset tracks more aggressively.  Set to 0 to disable.
         max_segment_distance_m: Maximum distance (meters) between consecutive
             track points.  Segments longer than this are skipped to avoid
-            drawing spurious lines from GPS signal gaps.  Set to 0 to disable.
+            drawing spurious lines caused by GPS signal gaps.  Set to 0 to disable.
+        progress_callback: Optional callable invoked as
+            progress_callback(current_zoom_index, total_zoom_levels) at the
+            start of each zoom level.
     """
     start_time = time.time()
     tracks = load_gpx_tracks(gpx_files, num_workers)
@@ -869,6 +864,11 @@ def generate_heatmap(
     all_tiles: dict[tuple[int, int, int], bytes] = {}
 
     for zoom in range(min_zoom, max_zoom + 1):
+        if progress_callback:
+            try:
+                progress_callback(zoom - min_zoom + 1, max_zoom - min_zoom + 1)
+            except Exception:
+                pass
         print(f"Computing tile coverage for zoom level {zoom}...")
         tile_coverage = compute_tile_coverage(tracks, zoom, max_segment_distance_m)
 

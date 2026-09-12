@@ -45,7 +45,6 @@ import de.drtobiasprinz.summitbook.models.StatisticsData
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import java.text.NumberFormat
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @Composable
@@ -369,7 +368,7 @@ fun ExtremaValuesSection(
                                 val formattedValue = if (entry.toHHms) {
                                     val valueInMs = (value * 3600000.0).toLong()
                                     String.format(
-                                        Locale.getDefault(),
+                                        LocalConfiguration.current.locales[0],
                                         "%02d:%02d:%02d",
                                         TimeUnit.MILLISECONDS.toHours(valueInMs),
                                         TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(
@@ -415,7 +414,7 @@ fun ExtremaValuesSection(
                                 val formattedValue = if (entry.toHHms) {
                                     val valueInMs = (value * 3600000.0).toLong()
                                     String.format(
-                                        Locale.getDefault(),
+                                        LocalConfiguration.current.locales[0],
                                         "%02d:%02d:%02d",
                                         TimeUnit.MILLISECONDS.toHours(valueInMs),
                                         TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(
@@ -461,7 +460,7 @@ fun ExtremaValuesSection(
                                 val formattedValue = if (entry.toHHms) {
                                     val valueInMs = (value * 3600000.0).toLong()
                                     String.format(
-                                        Locale.getDefault(),
+                                        LocalConfiguration.current.locales[0],
                                         "%02d:%02d:%02d",
                                         TimeUnit.MILLISECONDS.toHours(valueInMs),
                                         TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(
@@ -498,7 +497,7 @@ fun ExtremaValuesSection(
                             val formattedValue = if (entry.toHHms) {
                                 val valueInMs = (value * 3600000.0).toLong()
                                 String.format(
-                                    Locale.getDefault(),
+                                    LocalConfiguration.current.locales[0],
                                     "%02d:%02d:%02d",
                                     TimeUnit.MILLISECONDS.toHours(valueInMs),
                                     TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(

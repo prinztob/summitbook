@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -58,14 +59,12 @@ import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
-import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
  * Composable function that displays a list of segments
  * This replaces the RecyclerView-based SegmentsViewAdapter
  */
-@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SegmentsListScreen(
     segments: List<Segment>,
@@ -199,7 +198,6 @@ fun SegmentsListScreen(
 /**
  * Individual segment card composable
  */
-@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SegmentCard(
     segment: Segment,
@@ -330,7 +328,7 @@ fun SegmentCard(
                     icon = R.drawable.baseline_trending_up_black_24dp,
                     text = if (averageDistance > 0.0) {
                         String.format(
-                            Locale.getDefault(),
+                            LocalConfiguration.current.locales[0],
                             "%.1f %s",
                             averageDistance,
                             stringResource(R.string.km)
@@ -344,7 +342,7 @@ fun SegmentCard(
                     icon = R.drawable.baseline_trending_up_black_24dp,
                     text = if (averageElevationGainUp > 0 || averageElevationGainDown > 0) {
                         String.format(
-                            Locale.getDefault(),
+                            LocalConfiguration.current.locales[0],
                             "%s/%s %s",
                             averageElevationGainUp.roundToInt(),
                             averageElevationGainDown.roundToInt(),
@@ -429,7 +427,6 @@ fun SegmentCard(
 /**
  * Mountain pass card composable
  */
-@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun MountainPassCard(
     pass: SegmentEntry,
@@ -496,21 +493,21 @@ fun MountainPassCard(
                 // Distance
                 SegmentStatItem(
                     icon = R.drawable.outline_distance_24,
-                    text = String.format(Locale.getDefault(), "%.1f %s", pass.kilometers, stringResource(R.string.km)),
+                    text = String.format(LocalConfiguration.current.locales[0], "%.1f %s", pass.kilometers, stringResource(R.string.km)),
                     modifier = Modifier.weight(1f)
                 )
 
                 // Elevation gain/loss
                 SegmentStatItem(
                     icon = R.drawable.baseline_trending_up_black_24dp,
-                    text = String.format(Locale.getDefault(), "%.0f/%.0f %s", pass.heightMetersUp, pass.heightMetersDown, stringResource(R.string.hm)),
+                    text = String.format(LocalConfiguration.current.locales[0], "%.0f/%.0f %s", pass.heightMetersUp, pass.heightMetersDown, stringResource(R.string.hm)),
                     modifier = Modifier.weight(1f)
                 )
 
                 // Avg gradient
                 SegmentStatItem(
                     icon = R.drawable.baseline_trending_flat_24,
-                    text = String.format(Locale.getDefault(), "%.1f%%", pass.avgGradient),
+                    text = String.format(LocalConfiguration.current.locales[0], "%.1f%%", pass.avgGradient),
                     modifier = Modifier.weight(1f)
                 )
             }

@@ -69,6 +69,7 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
     lateinit var pageViewModel: PageViewModel
     private var summitEntry: Summit? = null
     private var hasLoadedSummit = false
+    private var isAnalyzingTrack by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,14 +95,29 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
                 SummitEntryDetailsScreen(
                     pageViewModel = pageViewModel,
                     onBackPressed = { finish() },
+                    isAnalyzingTrack = isAnalyzingTrack,
                     onSummitLoaded = { summit ->
                         if (!hasLoadedSummit) {
                             Log.i("SummitEntryDetails", "Loading summit: ${summit.activityId}")
                             hasLoadedSummit = true
                             summitEntry = summit
                             coroutineScope.launch {
-                                withContext(Dispatchers.IO) {
-                                    pythonInstance?.let { analyzeAndSimplifyTrack(it, summit) }
+                                val needsAnalysis = withContext(Dispatchers.IO) {
+                                    val useSimplifiedTracks = sharedPreferences.getBoolean(
+                                        "pref_use_simplified_tracks", true
+                                    )
+                                    useSimplifiedTracks &&
+                                            summit.sportType != SportType.IndoorTrainer &&
+                                            summit.hasGpsTrack() &&
+                                            (!summit.hasGpsTrack(simplified = true) ||
+                                                    !summit.hasTrackData())
+                                }
+                                if (needsAnalysis) {
+                                    isAnalyzingTrack = true
+                                    withContext(Dispatchers.IO) {
+                                        pythonInstance?.let { analyzeAndSimplifyTrack(it, summit) }
+                                    }
+                                    isAnalyzingTrack = false
                                 }
                             }
                         }
@@ -179,7 +195,10 @@ data class SummitUiState(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SummitEntryDetailsScreen(
-    pageViewModel: PageViewModel, onBackPressed: () -> Unit, onSummitLoaded: (Summit) -> Unit
+    pageViewModel: PageViewModel,
+    onBackPressed: () -> Unit,
+    isAnalyzingTrack: Boolean,
+    onSummitLoaded: (Summit) -> Unit
 ) {
     Log.i("SummitEntryDetails", "SummitEntryDetailsScreen recomposing")
     val summitToView by pageViewModel.summitToView.observeAsState()
@@ -231,6 +250,7 @@ fun SummitEntryDetailsScreen(
                 summitId = summitUiState!!.summitId,
                 tabs = summitUiState!!.tabs,
                 pageViewModel = pageViewModel,
+                isAnalyzingTrack = isAnalyzingTrack,
                 modifier = Modifier.padding(paddingValues)
             )
         } else {
@@ -247,12 +267,12 @@ fun SummitEntryDetailsScreen(
     }
 }
 
-@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SummitEntryDetailsTabs(
     summitId: Long,
     tabs: List<SummitTab>,
     pageViewModel: PageViewModel,
+    isAnalyzingTrack: Boolean,
     modifier: Modifier = Modifier
 ) {
     Log.i(
@@ -386,6 +406,7 @@ fun SummitEntryDetailsTabs(
                         allSummits = allSummits,
                         summitsToCompare = summitsToCompare,
                         compareSummit = compareSummit,
+                        isAnalyzingTrack = isAnalyzingTrack,
                         onGetSummitToCompare = onGetSummitToCompare,
                         onSetSummitToCompareToNull = onSetSummitToCompareToNull
                     )

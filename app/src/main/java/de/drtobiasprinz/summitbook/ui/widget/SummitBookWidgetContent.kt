@@ -34,7 +34,6 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import java.text.NumberFormat
-import java.util.Locale
 import kotlin.math.roundToInt
 
 @Composable
@@ -260,7 +259,7 @@ private fun SummitItem(
                     text = if (garminData?.power?.avgPower != null && garminData.power.avgPower > 0) {
                         "${numberFormat.format(garminData.power.avgPower.roundToInt())} W"
                     } else {
-                        String.format(Locale.getDefault(), "%.1f km/h", summit.getAverageVelocity())
+                        String.format(LocalContext.current.resources.configuration.locales[0], "%.1f km/h", summit.getAverageVelocity())
                     },
                     style = TextStyle.copy(fontSize = 10.sp),
                 )

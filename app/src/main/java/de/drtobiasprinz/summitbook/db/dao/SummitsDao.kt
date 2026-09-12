@@ -19,6 +19,9 @@ interface SummitsDao {
     @Update
     suspend fun updateSummit(entity: Summit)
 
+    @Update
+    suspend fun updateSummits(summits: List<Summit>)
+
     @Query("UPDATE $SUMMITS_TABLE SET ignoreSimplifyingTrack = :ignoreSimplifyingTrack WHERE id = :summitId")
     suspend fun updateIgnoreSimplifyingTrack(summitId: Long, ignoreSimplifyingTrack: Boolean)
 

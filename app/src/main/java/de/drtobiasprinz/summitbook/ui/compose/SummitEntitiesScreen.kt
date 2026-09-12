@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -53,7 +54,6 @@ import de.drtobiasprinz.summitbook.models.SummitEntityType
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.utils.Constants
 import java.text.NumberFormat
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.round
 import kotlin.math.roundToInt
@@ -132,7 +132,6 @@ fun SummitEntitiesScreen(
 /**
  * List of summit entities for a specific type
  */
-@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SummitEntitiesList(
     entityType: SummitEntityType,
@@ -449,7 +448,7 @@ fun SummitEntityCard(
                             .fillMaxWidth()
                             .heightIn(max = 200.dp)
                     ) {
-                        items(relevantEvents) { event ->
+                        items(relevantEvents, key = { it.id }) { event ->
                             EntityEventItem(
                                 event = event,
                                 summitEntitySummary = entity,
@@ -482,7 +481,7 @@ fun EntityEventItem(
             it
         )
     }
-    val numberFormat = NumberFormat.getInstance(Locale.getDefault())
+    val numberFormat = NumberFormat.getInstance(LocalConfiguration.current.locales[0])
 
     Card(
         modifier = modifier

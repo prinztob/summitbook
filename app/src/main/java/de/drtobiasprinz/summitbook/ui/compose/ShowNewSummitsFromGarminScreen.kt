@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -532,7 +533,7 @@ fun SummitCardItem(
                     Text(
                         text = "${
                             String.format(
-                                Locale.getDefault(),
+                                LocalConfiguration.current.locales[0],
                                 "%.1f",
                                 summit.kilometers
                             )
@@ -546,7 +547,7 @@ fun SummitCardItem(
                     Text(
                         text = "${
                             String.format(
-                                Locale.getDefault(),
+                                LocalConfiguration.current.locales[0],
                                 "%.1f",
                                 summit.getAverageVelocity()
                             )
@@ -555,7 +556,7 @@ fun SummitCardItem(
                     )
                     Text(
                         text = String.format(
-                            Locale.getDefault(),
+                            LocalConfiguration.current.locales[0],
                             "%.1f",
                             summit.garminData?.vo2max ?: 0f
                         ),

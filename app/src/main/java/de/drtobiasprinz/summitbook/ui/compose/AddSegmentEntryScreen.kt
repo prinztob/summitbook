@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -78,7 +79,7 @@ import org.osmdroid.views.overlay.simplefastpoint.LabelledGeoPoint
 import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlay
 import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlayOptions
 import org.osmdroid.views.overlay.simplefastpoint.SimplePointTheme
-import java.util.Locale
+
 import kotlin.math.abs
 
 /**
@@ -888,14 +889,14 @@ fun AddSegmentStatsCard(
                 if (!isMountainPassMode) {
                     AddSegmentStatItem(
                         icon = R.drawable.baseline_trending_up_black_24dp,
-                        text = String.format(Locale.getDefault(), "%.0f/%.0f %s", heightMeterUp, heightMeterDown, stringResource(R.string.hm))
+                        text = String.format(LocalConfiguration.current.locales[0], "%.0f/%.0f %s", heightMeterUp, heightMeterDown, stringResource(R.string.hm))
                     )
                 }
 
                 AddSegmentStatItem(
                     icon = R.drawable.outline_distance_24,
                     text = String.format(
-                        Locale.getDefault(),
+                        LocalConfiguration.current.locales[0],
                         "%.1f %s",
                         kilometers,
                         stringResource(R.string.km)
@@ -918,7 +919,7 @@ fun AddSegmentStatsCard(
                     AddSegmentStatItem(
                         icon = R.drawable.ic_baseline_timer_24,
                         text = String.format(
-                            Locale.getDefault(),
+                            LocalConfiguration.current.locales[0],
                             "%.1f %s",
                             duration,
                             stringResource(R.string.min)
@@ -943,7 +944,7 @@ fun AddSegmentStatsCard(
                     AddSegmentStatItem(
                         icon = R.drawable.baseline_trending_flat_24,
                         text = String.format(
-                            Locale.getDefault(),
+                            LocalConfiguration.current.locales[0],
                             "%.1f%%",
                             elevationWindowResult.avgGradient
                         )
@@ -953,7 +954,7 @@ fun AddSegmentStatsCard(
                         AddSegmentStatItem(
                             icon = R.drawable.baseline_trending_up_black_24dp,
                             text = String.format(
-                                Locale.getDefault(),
+                                LocalConfiguration.current.locales[0],
                                 "%s: %.1f%%",
                                 windowDistanceMeters,
                                 elevationWindowResult.maxGradeInWindow
@@ -971,7 +972,7 @@ fun AddSegmentStatsCard(
                     AddSegmentStatItem(
                         icon = R.drawable.baseline_keyboard_double_arrow_up_black_24dp,
                         text = String.format(
-                            Locale.getDefault(),
+                            LocalConfiguration.current.locales[0],
                             "%.0f %s",
                             elevationWindowResult.elevationGain,
                             stringResource(R.string.hm)
@@ -981,7 +982,7 @@ fun AddSegmentStatsCard(
                     AddSegmentStatItem(
                         icon = R.drawable.baseline_keyboard_double_arrow_down_black_24dp,
                         text = String.format(
-                            Locale.getDefault(),
+                            LocalConfiguration.current.locales[0],
                             "%.0f %s",
                             elevationWindowResult.elevationLoss,
                             stringResource(R.string.hm)
@@ -998,7 +999,7 @@ fun AddSegmentStatsCard(
                     AddSegmentStatItem(
                         icon = R.drawable.ic_baseline_timer_24,
                         text = String.format(
-                            Locale.getDefault(),
+                            LocalConfiguration.current.locales[0],
                             "%.1f %s",
                             elevationWindowResult.durationInMotion,
                             stringResource(R.string.min)

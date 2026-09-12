@@ -75,15 +75,26 @@ class GpxPyExecutor(private var pythonInstance: Python) {
         checkOutput(result)
     }
 
+    /**
+     * Progress callback for heatmap generation. Called by the Python side once per
+     * zoom level; Chaquopy exposes this functional interface to Python as a callable.
+     */
+    fun interface HeatmapProgressCallback {
+        @Suppress("unused")
+        fun onProgress(currentZoom: Int, totalZoomLevels: Int)
+    }
+
     fun generateHeatmap(
         tracks: List<File>,
-        outputMbtilesFile: File
+        outputMbtilesFile: File,
+        onProgress: HeatmapProgressCallback
     ) {
         pythonModule = pythonInstance.getModule("entry_point")
         val result = pythonModule.callAttr(
             "generate_heatmap_from_tracks",
             tracks.map { it.absolutePath }.toTypedArray(),
-            outputMbtilesFile.absolutePath
+            outputMbtilesFile.absolutePath,
+            onProgress
         )
         checkOutput(result)
     }

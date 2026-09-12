@@ -266,7 +266,10 @@ fun AddImagesDialogCompose(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        itemsIndexed(imageFiles) { index, (imageId, file) ->
+                        itemsIndexed(
+                            imageFiles,
+                            key = { _, (imageId, _) -> imageId }
+                        ) { index, (imageId, file) ->
                             ImageItem(
                                 file = file,
                                 index = index,
@@ -446,7 +449,7 @@ private fun ImageItem(
                 }
 
                 // Down button
-                val canMoveDown = index < totalImages - 1 && !isVerticalImageOnNextPosition
+                val canMoveDown = index < totalImages - 1
                 if (canMoveDown) {
                     IconButton(
                         onClick = onMoveDown,

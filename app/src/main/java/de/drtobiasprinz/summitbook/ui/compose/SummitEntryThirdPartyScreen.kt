@@ -42,7 +42,6 @@ import de.drtobiasprinz.summitbook.models.TextFieldGroupThirdParty
 import de.drtobiasprinz.summitbook.models.TextFieldThirdParty
 import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
 import java.text.NumberFormat
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
@@ -324,7 +323,7 @@ fun formatThirdPartyValue(
 
         if (compareInSec > 0) {
             String.format(
-                Locale.getDefault(),
+                LocalConfiguration.current.locales[0],
                 "%02d:%02d (%02d:%02d)",
                 TimeUnit.SECONDS.toMinutes(valueInSec),
                 valueInSec % TimeUnit.MINUTES.toSeconds(1),
@@ -333,7 +332,7 @@ fun formatThirdPartyValue(
             )
         } else {
             String.format(
-                Locale.getDefault(),
+                LocalConfiguration.current.locales[0],
                 "%02d:%02d",
                 TimeUnit.SECONDS.toMinutes(valueInSec),
                 valueInSec % TimeUnit.MINUTES.toSeconds(1)
@@ -355,7 +354,7 @@ fun formatThirdPartyValue(
         }
 
         val unitString = stringResource(field.unitWithPlaceHolder)
-        val unit = String.format(Locale.getDefault(), unitString, "")
+        val unit = String.format(LocalConfiguration.current.locales[0], unitString, "")
         if (unit.isNotBlank()) {
             result.append(" ").append(unit.trim())
         }

@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 from typing import Any, Tuple
 
-import geopy.distance  # type: ignore[import-untyped]
 import numpy as np
 import yaml
 from gpxpy.gpx import GPXTrackPoint, GPX
@@ -11,7 +10,13 @@ from gpxpy.gpx import GPXTrackPoint, GPX
 from Extension import Extension
 from elevation_track_analyzer import ElevationTrackAnalyzer
 from power_track_analyzer import PowerTrackAnalyzer
-from utils import prefix_filename, write_extensions_to_yaml, get_points, parse_track
+from utils import (
+    prefix_filename,
+    write_extensions_to_yaml,
+    get_points,
+    parse_track,
+    haversine_distances_cumsum_m,
+)
 from velocity_track_analyzer import VelocityTrackAnalyzer
 
 GPXTrackPoint.extensions_calculated = Extension()  # type: ignore[attr-defined]
@@ -185,16 +190,13 @@ class TrackAnalyzer(object):
 
     def recalculate_distances(self, distance: float) -> None:
         print("Distances are not set or not monotonic -> recalculate distance")
-        for i, p in enumerate(self.all_points_with_extension):
-            if i > 0:
-                distance += geopy.distance.distance(
-                    (
-                        self.all_points_with_extension[i - 1][0].latitude,
-                        self.all_points_with_extension[i - 1][0].longitude,
-                    ),
-                    (p[0].latitude, p[0].longitude),
-                ).m
-            p[1].distance = distance
+        latitudes = [p[0].latitude for p in self.all_points_with_extension]
+        longitudes = [p[0].longitude for p in self.all_points_with_extension]
+        distances = haversine_distances_cumsum_m(latitudes, longitudes)
+        for point_with_extension, point_distance in zip(
+            self.all_points_with_extension, distances
+        ):
+            point_with_extension[1].distance = float(point_distance)
 
     def track_points_monotonic(self) -> bool:
         all_points = (

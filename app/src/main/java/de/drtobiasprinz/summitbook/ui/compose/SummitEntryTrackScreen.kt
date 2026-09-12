@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -43,7 +42,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.toDrawable
@@ -57,6 +55,7 @@ import de.drtobiasprinz.summitbook.models.TrackColor
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.getSportTypeForMapProviders
 import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
+import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
 import de.drtobiasprinz.summitbook.ui.MapProvider
 import de.drtobiasprinz.summitbook.utils.FileHelper
 import de.drtobiasprinz.summitbook.utils.PreferencesHelper
@@ -76,12 +75,12 @@ fun SummitEntryTrackScreen(
     allSummits: List<Summit>?,
     summitsToCompare: List<Summit>,
     compareSummit: Summit?,
+    modifier: Modifier = Modifier,
+    isAnalyzingTrack: Boolean = false,
     onGetSummitToCompare: (Long) -> Unit,
-    onSetSummitToCompareToNull: () -> Unit,
-    modifier: Modifier = Modifier
+    onSetSummitToCompareToNull: () -> Unit
 ) {
 
-    val coroutineScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(true) }
     var trackPoints by remember {
         mutableStateOf<List<Pair<TrackPoint, ExtensionFromYaml>>>(
@@ -116,23 +115,26 @@ fun SummitEntryTrackScreen(
         return
     }
 
-    // Initialize GPS track - use summit.id to avoid infinite recomposition
+    // Initialize GPS track - use summit.id to avoid infinite recomposition.
+    // Load the simplified track if available (fast), otherwise parse the full one.
+    // Previously this launched twice (simplified + forced full parse), making the
+    // spinner reappear and the simplified tracks pointless.
     LaunchedEffect(summit.id) {
         isLoading = true
         withContext(Dispatchers.IO) {
-            setGpsTrack(summit, useSimplifiedTrack = true) { track ->
-                trackPoints = track?.trackPoints ?: emptyList()
+            val useSimplifiedTracks =
+                sharedPreferences.getBoolean("pref_use_simplified_tracks", true)
+            if (useSimplifiedTracks && summit.hasGpsTrack(simplified = true)) {
+                setGpsTrack(summit, useSimplifiedTrack = true) { track ->
+                    trackPoints = track?.trackPoints ?: emptyList()
+                }
+            } else {
+                setGpsTrack(summit, forceUpdate = true) { track ->
+                    trackPoints = track?.trackPoints ?: emptyList()
+                }
             }
-            isLoading = false
         }
-    }
-
-    LaunchedEffect(summit.id) {
-        coroutineScope.launch(Dispatchers.IO) {
-            setGpsTrack(summit, forceUpdate = true) { track ->
-                trackPoints = track?.trackPoints ?: emptyList()
-            }
-        }
+        isLoading = false
     }
 
     // Load compare track asynchronously
@@ -207,22 +209,25 @@ fun SummitEntryTrackScreen(
             }
         }
 
-        // Loading indicator
+        // Loading panel
         if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f))
-                    .zIndex(1f)
-            ) {
-                CircularProgressIndicator(
+            LoadingPanel(
+                visible = true,
+                statusText = stringResource(
+                    if (isAnalyzingTrack) R.string.analyzing_track
+                    else R.string.loading_please_wait
+                )
+            )
+        } else {
+            if (isAnalyzingTrack && hasOnlyZeroCoordinates(trackPoints) && summit.latLng == null) {
+                // Track data is still being generated in the background
+                Text(
+                    text = stringResource(R.string.analyzing_track),
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(150.dp),
-                    strokeWidth = 8.dp
+                        .fillMaxWidth()
+                        .padding(16.dp)
                 )
             }
-        } else {
             if (!hasOnlyZeroCoordinates(trackPoints) || summit.latLng != null) {
                 Box(
                     modifier = Modifier

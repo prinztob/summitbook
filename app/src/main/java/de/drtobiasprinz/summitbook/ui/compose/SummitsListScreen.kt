@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -55,7 +56,6 @@ import de.drtobiasprinz.summitbook.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.MainActivityCompose
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import kotlinx.coroutines.Job
-import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
@@ -124,7 +124,6 @@ fun SummitsListScreen(
 /**
  * Individual summit card composable
  */
-@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun SummitCard(
     summitsFromDatabase: List<Summit>,
@@ -280,7 +279,7 @@ fun SummitCard(
                 StatItem(
                     icon = R.drawable.baseline_trending_up_black_24dp,
                     text = String.format(
-                        Locale.getDefault(),
+                        LocalConfiguration.current.locales[0],
                         "%s %s",
                         currentSummit.elevationData.elevationGain,
                         stringResource(R.string.hm)
@@ -292,7 +291,7 @@ fun SummitCard(
                 StatItem(
                     icon = R.drawable.baseline_trending_up_black_24dp,
                     text = String.format(
-                        Locale.getDefault(),
+                        LocalConfiguration.current.locales[0],
                         "%.1f %s",
                         currentSummit.kilometers,
                         stringResource(R.string.km)
@@ -302,7 +301,7 @@ fun SummitCard(
                 StatItem(
                     icon = getThirdEntryValues(currentSummit).third,
                     text = String.format(
-                        Locale.getDefault(),
+                        LocalConfiguration.current.locales[0],
                         if (getThirdEntryValues(currentSummit).first is Int) "%s %s" else "%.1f %s",
                         getThirdEntryValues(currentSummit).first,
                         stringResource(getThirdEntryValues(currentSummit).second)

@@ -684,4 +684,15 @@
     <string name="elevation_loss">Elevation loss</string>
     <string name="pass_name_hint">Pass name</string>
     <string name="save_mountain_pass">Save Mountain Pass</string>
+
+    <!-- Loading panel -->
+    <string name="loading_please_wait">Please wait…</string>
+    <string name="loading_progress_counter">%1$d of %2$d</string>
+    <string name="analyzing_track">Analyzing track…</string>
+    <string name="loading_generating_heatmap_zoom">Generating heatmap (zoom level %1$d of %2$d)…</string>
+    <string name="importing_backup">Importing backup…</string>
+    <string name="exporting_backup">Exporting backup…</string>
+    <string name="loading_canceled">Operation canceled</string>
+    <string name="garmin_connect_failed">Connecting to third party provider failed. Please try again later. Error: %1$s</string>
+    <string name="retry">Retry</string>
 </resources>

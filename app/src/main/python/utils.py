@@ -2,9 +2,10 @@ import datetime
 import math
 import re
 from pathlib import Path
-from typing import Tuple, List, Any
+from typing import Tuple, List, Any, Sequence
 
 import gpxpy
+import numpy as np
 import yaml
 from dateutil import parser
 from gpxpy.gpx import GPXTrackPoint, GPX
@@ -12,6 +13,43 @@ from gpxpy.gpx import GPXTrackPoint, GPX
 from Extension import Extension
 
 SUFFIX = "_simplified"
+
+EARTH_RADIUS_M = 6371000.0
+
+
+def haversine_distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate the great-circle distance between two points in meters."""
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+
+    a = (
+        math.sin(dphi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return EARTH_RADIUS_M * c
+
+
+def haversine_distances_cumsum_m(
+    latitudes: Sequence[float], longitudes: Sequence[float]
+) -> np.ndarray:
+    """Vectorized cumulative great-circle distances along a sequence of points, in meters."""
+    latitudes_array = np.asarray(latitudes, dtype=np.float64)
+    if latitudes_array.size < 2:
+        return np.zeros(latitudes_array.size)
+    lat = np.radians(latitudes_array)
+    lon = np.radians(np.asarray(longitudes, dtype=np.float64))
+    dphi = np.diff(lat)
+    dlambda = np.diff(lon)
+    a = (
+        np.sin(dphi / 2.0) ** 2
+        + np.cos(lat[:-1]) * np.cos(lat[1:]) * np.sin(dlambda / 2.0) ** 2
+    )
+    c = 2.0 * np.arctan2(np.sqrt(a), np.sqrt(1.0 - a))
+    segment_distances = EARTH_RADIUS_M * c
+    return np.concatenate(([0.0], np.cumsum(segment_distances)))
 
 
 def reduce_track_to_relevant_elevation_points(

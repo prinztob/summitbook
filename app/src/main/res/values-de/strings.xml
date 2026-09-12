@@ -573,11 +573,11 @@
     <string name="openandromaps_s3">S3: Rot-schwarze Balken auf Wegen heißt sehr gute Bike-Beherrschung nötig</string>
     <string name="openandromaps_s4">S4: Schwarze Balken auf Wegen heißt perfekte Bike-Beherrschung mit Trial-Techniken nötig</string>
     <string name="openandromaps_s5">S5/S6: Mehrere dünne schwarze Balken auf Wegen heißt exzellente Beherrschung spezieller Trial-Techniken nötig oder fast komplett unpassierbar</string>
-    <string name="openandromaps_uphill_0">Blaue Balken: 15% Steigung bergauf max.</string>
-    <string name="openandromaps_uphill_1">Blau-rote Balken: 20% Steigung bergauf max</string>
-    <string name="openandromaps_uphill_2">Rote Balken: 25% Steigung bergauf max</string>
-    <string name="openandromaps_uphill_3">Rot-schwarze Balken: 30% Steigung bergauf max</string>
-    <string name="openandromaps_uphill_4">Schwarze Balken: 40% Steigung bergauf max</string>
+    <string name="openandromaps_uphill_0" formatted="false">Blaue Balken: 15% Steigung bergauf max.</string>
+    <string name="openandromaps_uphill_1" formatted="false">Blau-rote Balken: 20% Steigung bergauf max</string>
+    <string name="openandromaps_uphill_2" formatted="false">Rote Balken: 25% Steigung bergauf max</string>
+    <string name="openandromaps_uphill_3" formatted="false">Rot-schwarze Balken: 30% Steigung bergauf max</string>
+    <string name="openandromaps_uphill_4" formatted="false">Schwarze Balken: 40% Steigung bergauf max</string>
     <string name="openandromaps_uphill_5">Zwei dünne schwarze Balken: bergauf fahren nicht möglich</string>
     <string name="openandromaps_track_1">Befestigter und versiegelter Weg - Asphalt, Beton oder Pflastersteine</string>
     <string name="openandromaps_track_2">Befestigter Weg - Schotter</string>
@@ -686,5 +686,16 @@
     <string name="elevation_loss">Höhenabstieg</string>
     <string name="pass_name_hint">Passname</string>
     <string name="save_mountain_pass">Pass speichern</string>
+
+    <!-- Loading panel -->
+    <string name="loading_please_wait">Bitte warten…</string>
+    <string name="loading_progress_counter">%1$d von %2$d</string>
+    <string name="analyzing_track">Track wird analysiert…</string>
+    <string name="loading_generating_heatmap_zoom">Heatmap wird erstellt (Zoomstufe %1$d von %2$d)…</string>
+    <string name="importing_backup">Backup wird importiert…</string>
+    <string name="exporting_backup">Backup wird exportiert…</string>
+    <string name="loading_canceled">Vorgang abgebrochen</string>
+    <string name="garmin_connect_failed">Verbindung zum Drittanbieter fehlgeschlagen. Bitte später erneut versuchen. Fehler: %1$s</string>
+    <string name="retry">Erneut versuchen</string>
 </resources>
 

@@ -30,9 +30,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -45,8 +43,10 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -57,6 +57,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,7 +69,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -98,6 +98,7 @@ import de.drtobiasprinz.summitbook.ui.compose.AddSummitDialogCompose
 import de.drtobiasprinz.summitbook.ui.compose.BarChartScreen
 import de.drtobiasprinz.summitbook.ui.compose.ForecastScreen
 import de.drtobiasprinz.summitbook.ui.compose.LineChartScreen
+import de.drtobiasprinz.summitbook.ui.compose.LoadingPanel
 import de.drtobiasprinz.summitbook.ui.compose.OpenStreetMapScreen
 import de.drtobiasprinz.summitbook.ui.compose.OverviewScreen
 import de.drtobiasprinz.summitbook.ui.compose.SegmentsListScreen
@@ -119,8 +120,11 @@ import de.drtobiasprinz.summitbook.ui.work.SummitUpdateWorker
 import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.utils.DataStatus
 import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -165,6 +169,18 @@ class MainActivityCompose : ComponentActivity(),
     // Loading state
     private val loadingState = mutableStateOf(false)
     private val loadingTooltip = mutableStateOf("")
+    private val loadingProgressCurrent = mutableStateOf<Int?>(null)
+    private val loadingProgressTotal = mutableStateOf<Int?>(null)
+    private var loadingJob by mutableStateOf<Job?>(null)
+    private var snackbarHostState by mutableStateOf<SnackbarHostState?>(null)
+
+    private fun resetLoadingState() {
+        loadingState.value = false
+        loadingTooltip.value = ""
+        loadingProgressCurrent.value = null
+        loadingProgressTotal.value = null
+        loadingJob = null
+    }
 
     @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -239,15 +255,18 @@ class MainActivityCompose : ComponentActivity(),
             .setRequiresBatteryNotLow(true)
             .build()
 
+        // WorkManager clamps periodic work to at least 15 minutes anyway; a
+        // frequent interval kept the CPU/Python runtime busy while the user was
+        // interacting with the app, so run it every 12 hours instead.
         val boundingBoxUpdateRequest = PeriodicWorkRequestBuilder<SummitUpdateWorker>(
-            1, TimeUnit.MINUTES
+            12, TimeUnit.HOURS
         )
             .setConstraints(constraints)
             .build()
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "BoundingBoxUpdateWork",
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.UPDATE,
             boundingBoxUpdateRequest
         )
     }
@@ -259,6 +278,7 @@ class MainActivityCompose : ComponentActivity(),
         val darkTheme = isSystemInDarkTheme()
         val coroutineScope = rememberCoroutineScope()
         val snackbarHostState = remember { SnackbarHostState() }
+        this.snackbarHostState = snackbarHostState
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
         var summitsFromDatabase by remember { mutableStateOf<List<Summit>>(emptyList()) }
@@ -300,8 +320,13 @@ class MainActivityCompose : ComponentActivity(),
         }
 
 
-        LaunchedEffect(forecastList, filteredSummits) {
-            coroutineScope.launch(Dispatchers.IO) {
+        // Recompute records; debounced so a burst of database writes (e.g. an
+        // import) only triggers one recomputation instead of one per emission
+        var recordsJob by remember { mutableStateOf<Job?>(null) }
+        LaunchedEffect(forecastList, filteredSummits, summitsFromDatabase) {
+            recordsJob?.cancel()
+            recordsJob = coroutineScope.launch(Dispatchers.IO) {
+                delay(300.milliseconds)
                 segmentsList.data?.let {
                     setRecordsOnce(summitsFromDatabase, filteredSummits, it)
                 }
@@ -320,6 +345,9 @@ class MainActivityCompose : ComponentActivity(),
             drawerState = drawerState,
             gesturesEnabled = true,
             drawerContent = {
+                // Keep the diashow lambda stable so the drawer does not recompose
+                // whenever the filtered summit list changes
+                val filteredSummitsForDiashow = rememberUpdatedState(filteredSummits)
                 NavigationDrawerContent(
                     onDestinationSelected = { destination ->
                         currentDestination = destination
@@ -334,7 +362,7 @@ class MainActivityCompose : ComponentActivity(),
                         showBookmarksOnly = true
                         coroutineScope.launch { drawerState.close() }
                     },
-                    filteredSummits = filteredSummits,
+                    onShowDiashow = { openViewer(filteredSummitsForDiashow.value) },
                     topBarPadding = if (!isMapFullscreen) {
                         WindowInsets.statusBars.asPaddingValues()
                     } else {
@@ -352,7 +380,7 @@ class MainActivityCompose : ComponentActivity(),
                         val focusRequester = remember { FocusRequester() }
 
                         // Debounced search job to prevent excessive filtering on main thread
-                        var searchJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+                        var searchJob by remember { mutableStateOf<Job?>(null) }
 
                         Box(
                             modifier = Modifier
@@ -593,22 +621,18 @@ class MainActivityCompose : ComponentActivity(),
                         }
                     }
 
-                    // Loading indicator
-                    if (loadingState.value) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.5f))
-                                .zIndex(1f)
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .align(Alignment.Center)
-                                    .size(150.dp),
-                                strokeWidth = 8.dp
-                            )
+                    // Loading panel with status text, progress and cancel
+                    LoadingPanel(
+                        visible = loadingState.value,
+                        statusText = loadingTooltip.value,
+                        progressCurrent = loadingProgressCurrent.value,
+                        progressTotal = loadingProgressTotal.value,
+                        onCancel = if (loadingJob != null) {
+                            { loadingJob?.cancel() }
+                        } else {
+                            null
                         }
-                    }
+                    )
                 }
             }
         }
@@ -618,8 +642,8 @@ class MainActivityCompose : ComponentActivity(),
     fun NavigationDrawerContent(
         onDestinationSelected: (Destination) -> Unit,
         onBookmarksSelected: () -> Unit,
+        onShowDiashow: () -> Unit,
         topBarPadding: PaddingValues = PaddingValues(0.dp),
-        filteredSummits: List<Summit>,
     ) {
         Column(
             modifier = Modifier
@@ -735,7 +759,7 @@ class MainActivityCompose : ComponentActivity(),
                 label = { Text(stringResource(R.string.nav_diashow)) },
                 selected = false,
                 onClick = {
-                    openViewer(filteredSummits)
+                    onShowDiashow()
                     onDestinationSelected(Destination.Summits)
                 },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -959,20 +983,7 @@ class MainActivityCompose : ComponentActivity(),
                     selectedDate = newSummitsSelectedDate,
                     onBack = { selectedSummits, isMerge ->
                         currentDestination = Destination.Summits
-                        // Execute download for selected summits
-                        coroutineScope.launch {
-                            val finalSummits = if (isMerge) {
-                                listOf(executeDownload(selectedSummits))
-                            } else {
-                                selectedSummits.map {
-                                    executeDownload(listOf(it))
-                                }
-                            }.filterNotNull()
-                            viewModel.saveSummits(finalSummits).invokeOnCompletion {
-                                loadingState.value = false
-                                loadingTooltip.value = ""
-                            }
-                        }
+                        downloadSelectedSummits(selectedSummits, isMerge, coroutineScope)
                     },
                     onRefresh = {
                         updateThirdPartyData(coroutineScope)
@@ -1055,14 +1066,61 @@ class MainActivityCompose : ComponentActivity(),
         }
     }
 
+    private fun downloadSelectedSummits(
+        selectedSummits: List<Summit>,
+        isMerge: Boolean,
+        scope: CoroutineScope
+    ) {
+        val job = scope.launch {
+            loadingState.value = true
+            val finalSummits = mutableListOf<Summit>()
+            try {
+                if (isMerge) {
+                    loadingTooltip.value = getString(
+                        R.string.tool_tip_progress_new_garmin_activities,
+                        selectedSummits.joinToString(", ") { it.name }
+                    )
+                    executeDownload(selectedSummits)?.let { finalSummits.add(it) }
+                } else {
+                    loadingProgressTotal.value = selectedSummits.size
+                    selectedSummits.forEachIndexed { index, summit ->
+                        loadingProgressCurrent.value = index + 1
+                        loadingTooltip.value = getString(
+                            R.string.tool_tip_progress_new_garmin_activities,
+                            summit.name
+                        )
+                        executeDownload(listOf(summit))?.let { finalSummits.add(it) }
+                    }
+                }
+                if (finalSummits.isNotEmpty()) {
+                    viewModel.saveSummits(finalSummits).join()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            this@MainActivityCompose,
+                            getString(R.string.add_new_summit_successful),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            } catch (e: CancellationException) {
+                withContext(NonCancellable) {
+                    snackbarHostState?.showSnackbar(
+                        getString(R.string.loading_canceled),
+                        duration = SnackbarDuration.Short
+                    )
+                }
+                throw e
+            } finally {
+                resetLoadingState()
+            }
+        }
+        loadingJob = job
+    }
+
     private suspend fun executeDownload(summits: List<Summit>): Summit? {
         val downloader = GarminTrackAndDataDownloader(
             summits, pythonExecutor, sharedPreferences.getBoolean(Keys.PREF_DOWNLOAD_TCX, false)
         )
-        loadingState.value = true
-        loadingTooltip.value = getString(
-            R.string.tool_tip_progress_new_garmin_activities,
-            summits.joinToString(", ") { it.name })
         return try {
             withContext(Dispatchers.IO) {
                 downloader.extractFinalSummit()
@@ -1072,29 +1130,25 @@ class MainActivityCompose : ComponentActivity(),
                 }
                 downloader.finalEntry
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: RuntimeException) {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(
-                    this@MainActivityCompose,
-                    "Connecting to third party provider failed. Please try again later. Error: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-                Log.e(
-                    "MainActivity",
-                    "Connecting to third party provider failed. Please try again later. Error: ${e.message}",
-                    e
+            Log.e(
+                "MainActivity",
+                "Connecting to third party provider failed. Please try again later. Error: ${e.message}",
+                e
+            )
+            val retry = withContext(Dispatchers.Main) {
+                snackbarHostState?.showSnackbar(
+                    getString(R.string.garmin_connect_failed, e.message ?: ""),
+                    actionLabel = getString(R.string.retry),
+                    duration = SnackbarDuration.Long
                 )
             }
-            null
-        } finally {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(
-                    this@MainActivityCompose,
-                    getString(R.string.add_new_summit_successful),
-                    Toast.LENGTH_LONG
-                ).show()
-                loadingState.value = false
+            if (retry == SnackbarResult.ActionPerformed) {
+                return executeDownload(summits)
             }
+            null
         }
     }
 
@@ -1155,53 +1209,58 @@ class MainActivityCompose : ComponentActivity(),
         resultData: Intent?
     ) {
         // Collect data from ViewModels using .asFlow().collectAsStateWithLifecycle pattern
-        lifecycleScope.launch(Dispatchers.Main.immediate) {
+        val exportJob = lifecycleScope.launch(Dispatchers.Main.immediate) {
             val summitsListDataStatus = viewModel.summitsList.asFlow().first()
             val forecastListDataStatus = viewModel.forecastList.asFlow().first()
             val segmentsListDataStatus = viewModel.segmentsList.asFlow().first()
             val entityEventsDataStatus = viewModel.entityEvents.asFlow().first()
 
             loadingState.value = true
-            val allSummits = summitsListDataStatus.data ?: emptyList()
-            val filteredSummits = if (useFilteredSummits) {
-                allSummits.let { sortFilterValues.applyForSummits(it) }
-            } else {
-                allSummits
-            }
-            val forecasts = forecastListDataStatus.data ?: emptyList()
-            val segments = segmentsListDataStatus.data ?: emptyList()
-            val entityEvents = entityEventsDataStatus.data ?: emptyList()
+            loadingTooltip.value = getString(R.string.exporting_backup)
+            try {
+                val allSummits = summitsListDataStatus.data ?: emptyList()
+                val filteredSummits = if (useFilteredSummits) {
+                    allSummits.let { sortFilterValues.applyForSummits(it) }
+                } else {
+                    allSummits
+                }
+                val forecasts = forecastListDataStatus.data ?: emptyList()
+                val segments = segmentsListDataStatus.data ?: emptyList()
+                val entityEvents = entityEventsDataStatus.data ?: emptyList()
 
-            val writer = ZipFileWriter(
-                filteredSummits,
-                segments,
-                forecasts,
-                entityEvents,
-                this@MainActivityCompose,
-                exportThirdPartyData,
-                exportCalculatedData
-            )
-            withContext(Dispatchers.IO) {
-                resultData?.data?.also { resultDataUri ->
-                    contentResolver.openOutputStream(resultDataUri)?.let {
-                        writer.writeToZipFile(it)
-                        it.close()
+                val writer = ZipFileWriter(
+                    filteredSummits,
+                    segments,
+                    forecasts,
+                    entityEvents,
+                    this@MainActivityCompose,
+                    exportThirdPartyData,
+                    exportCalculatedData
+                )
+                withContext(Dispatchers.IO) {
+                    resultData?.data?.also { resultDataUri ->
+                        contentResolver.openOutputStream(resultDataUri)?.let {
+                            writer.writeToZipFile(it)
+                            it.close()
+                        }
                     }
                 }
-            }
-            loadingState.value = false
-            androidx.appcompat.app.AlertDialog.Builder(this@MainActivityCompose)
-                .setTitle(getString(R.string.export_csv_summary_title)).setMessage(
-                    getString(
-                        R.string.export_csv_summary_text,
-                        filteredSummits.size.toString(),
-                        writer.withGpsFile.toString(),
-                        writer.withImages.toString()
+                androidx.appcompat.app.AlertDialog.Builder(this@MainActivityCompose)
+                    .setTitle(getString(R.string.export_csv_summary_title)).setMessage(
+                        getString(
+                            R.string.export_csv_summary_text,
+                            filteredSummits.size.toString(),
+                            writer.withGpsFile.toString(),
+                            writer.withImages.toString()
+                        )
                     )
-                )
-                .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
-                .setIcon(android.R.drawable.ic_dialog_info).show()
+                    .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
+                    .setIcon(android.R.drawable.ic_dialog_info).show()
+            } finally {
+                resetLoadingState()
+            }
         }
+        loadingJob = exportJob
     }
 
     private val resultLauncherForImportZip =
@@ -1217,12 +1276,15 @@ class MainActivityCompose : ComponentActivity(),
 
     private fun asyncImportZipFile(uri: Uri) {
         // Collect data from ViewModels using .asFlow().collectAsStateWithLifecycle pattern
-        lifecycleScope.launch(Dispatchers.Main.immediate) {
+        val importJob = lifecycleScope.launch(Dispatchers.Main.immediate) {
             val summitsListDataStatus = viewModel.summitsList.asFlow().first()
             val forecastListDataStatus = viewModel.forecastList.asFlow().first()
             val segmentsListDataStatus = viewModel.segmentsList.asFlow().first()
 
             loadingState.value = true
+            loadingTooltip.value = getString(R.string.importing_backup)
+            val newSummitsToSave = mutableListOf<Summit>()
+            val updatedSummits = mutableListOf<Summit>()
             val summits = summitsListDataStatus.data?.toMutableList() ?: mutableListOf()
             val forecasts =
                 forecastListDataStatus.data?.toMutableList() ?: mutableListOf()
@@ -1233,51 +1295,77 @@ class MainActivityCompose : ComponentActivity(),
             var unsuccessfulImports = 0
             var duplicateImports = 0
 
-            withContext(Dispatchers.IO) {
-                val reader = ZipFileReader(
-                    File(cacheDir, "ZipFileReader_${Date().time}"),
-                    summits,
-                    forecasts,
-                    segments
-                )
-                reader.saveSummit = { isEdit, summit ->
-                    viewModel.saveSummit(isEdit, summit)
-                }
-                reader.saveForecast = { forecast ->
-                    viewModel.saveForecast(false, forecast)
-                }
-                reader.saveSegmentDetails = { details ->
-                    viewModel.saveSegmentDetails(false, details)
-                }
-                reader.saveSegmentEntry = { entry ->
-                    viewModel.saveSegmentEntry(false, entry)
-                }
-                reader.saveEntityEvent = { entry ->
-                    viewModel.saveEntityEvent(false, entry)
-                }
-                contentResolver.openInputStream(uri)?.use { inputStream ->
-                    reader.extractAndImport(inputStream)
-                    successfulImports = reader.successful
-                    unsuccessfulImports = reader.unsuccessful
-                    duplicateImports = reader.duplicate
-                }
-                reader.cleanUp()
-            }
-            androidx.appcompat.app.AlertDialog.Builder(this@MainActivityCompose)
-                .setTitle(getString(R.string.import_string_title))
-                .setMessage(
-                    getString(
-                        R.string.import_string,
-                        (successfulImports + unsuccessfulImports + duplicateImports).toString(),
-                        successfulImports.toString(),
-                        unsuccessfulImports.toString(),
-                        duplicateImports.toString()
+            try {
+                withContext(Dispatchers.IO) {
+                    val reader = ZipFileReader(
+                        File(cacheDir, "ZipFileReader_${Date().time}"),
+                        summits,
+                        forecasts,
+                        segments
                     )
-                )
-                .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
-                .setIcon(android.R.drawable.ic_dialog_info).show()
-            loadingState.value = false
+                    // Collect summits during import so they can be saved in one
+                    // batch afterwards instead of triggering N flow re-emissions
+                    reader.saveSummit = { isEdit, summit ->
+                        if (isEdit) {
+                            synchronized(updatedSummits) { updatedSummits.add(summit) }
+                        } else {
+                            synchronized(newSummitsToSave) { newSummitsToSave.add(summit) }
+                        }
+                    }
+                    reader.saveForecast = { forecast ->
+                        viewModel.saveForecast(false, forecast)
+                    }
+                    reader.saveSegmentDetails = { details ->
+                        viewModel.saveSegmentDetails(false, details)
+                    }
+                    reader.saveSegmentEntry = { entry ->
+                        viewModel.saveSegmentEntry(false, entry)
+                    }
+                    reader.saveEntityEvent = { entry ->
+                        viewModel.saveEntityEvent(false, entry)
+                    }
+                    contentResolver.openInputStream(uri)?.use { inputStream ->
+                        reader.extractAndImport(inputStream) { current, total ->
+                            loadingProgressCurrent.value = current
+                            loadingProgressTotal.value = total
+                        }
+                        successfulImports = reader.successful
+                        unsuccessfulImports = reader.unsuccessful
+                        duplicateImports = reader.duplicate
+                    }
+                    reader.cleanUp()
+                }
+                // Batch save in one transaction, then wait until the rows are committed
+                viewModel.saveSummits(newSummitsToSave).join()
+                if (updatedSummits.isNotEmpty()) {
+                    viewModel.updateSummits(updatedSummits).join()
+                }
+                androidx.appcompat.app.AlertDialog.Builder(this@MainActivityCompose)
+                    .setTitle(getString(R.string.import_string_title))
+                    .setMessage(
+                        getString(
+                            R.string.import_string,
+                            (successfulImports + unsuccessfulImports + duplicateImports).toString(),
+                            successfulImports.toString(),
+                            unsuccessfulImports.toString(),
+                            duplicateImports.toString()
+                        )
+                    )
+                    .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
+                    .setIcon(android.R.drawable.ic_dialog_info).show()
+            } catch (e: CancellationException) {
+                withContext(NonCancellable) {
+                    snackbarHostState?.showSnackbar(
+                        getString(R.string.loading_canceled),
+                        duration = SnackbarDuration.Short
+                    )
+                }
+                throw e
+            } finally {
+                resetLoadingState()
+            }
         }
+        loadingJob = importJob
     }
 
     private suspend fun getAllImages(summits: List<Summit>?): MutableList<Poster> {
