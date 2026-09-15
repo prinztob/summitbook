@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -26,12 +29,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.WindowCompat
@@ -39,7 +44,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.data.model.GpsTrack
 import de.drtobiasprinz.summitbook.data.model.TrackColor
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling
-import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.compose.AddSummitDialogCompose
 import de.drtobiasprinz.summitbook.ui.compose.SummitBookMapView
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
@@ -78,6 +82,8 @@ class ReceiverActivityCompose : ComponentActivity() {
         }
     }
 
+    private enum class ImportState { Loading, Ready, Failed }
+
     @Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -85,11 +91,12 @@ class ReceiverActivityCompose : ComponentActivity() {
         onBackClicked: () -> Unit
     ) {
         val scope = rememberCoroutineScope()
-        var showDialog by remember { mutableStateOf(false) }
-        var isBookmark by remember { mutableStateOf(false) }
+        var showDialog by rememberSaveable { mutableStateOf(false) }
+        var isBookmark by rememberSaveable { mutableStateOf(false) }
         var gpsTrack by remember { mutableStateOf<GpsTrack?>(null) }
         var mapViewReference by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
         var gpxTrackUriState by remember { mutableStateOf<Uri?>(null) }
+        var importState by remember { mutableStateOf(ImportState.Loading) }
 
         LaunchedEffect(Unit) {
             // Initialize cache and storage directories off the main thread
@@ -102,18 +109,28 @@ class ReceiverActivityCompose : ComponentActivity() {
             }
 
             // Process intent when activity starts
-            if (Intent.ACTION_VIEW == intent.action) {
-                scope.launch {
-                    processIntent(intent) { track ->
-                        gpsTrack = track
-                        gpxTrackUriState = gpxTrackUri
-                        mapViewReference?.let { map ->
-                            drawGpxTrackOnMap(track, map)
+            when (intent.action) {
+                Intent.ACTION_VIEW, Intent.ACTION_SEND -> {
+                    importState = ImportState.Loading
+                    scope.launch {
+                        processIntent(intent) { track ->
+                            if (track != null) {
+                                importState = ImportState.Ready
+                                gpsTrack = track
+                                gpxTrackUriState = gpxTrackUri
+                                mapViewReference?.let { map ->
+                                    drawGpxTrackOnMap(track, map)
+                                }
+                            } else {
+                                importState = ImportState.Failed
+                            }
                         }
                     }
                 }
-            } else {
-                Log.i("ReceiverActivityCompose", "intent was something else: ${intent.action}")
+                else -> {
+                    Log.i("ReceiverActivityCompose", "intent was something else: ${intent.action}")
+                    importState = ImportState.Failed
+                }
             }
         }
 
@@ -132,7 +149,7 @@ class ReceiverActivityCompose : ComponentActivity() {
                 )
             },
             floatingActionButton = {
-                if (gpxTrackUriState != null) {
+                if (importState == ImportState.Ready && gpxTrackUriState != null) {
                     Column(
                         horizontalAlignment = Alignment.End,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -192,11 +209,35 @@ class ReceiverActivityCompose : ComponentActivity() {
                         }
                     }
                 )
+                when (importState) {
+                    ImportState.Loading -> Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(48.dp))
+                        Text(text = stringResource(R.string.gpx_import_loading))
+                    }
+                    ImportState.Failed -> Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.gpx_import_failed),
+                            textAlign = TextAlign.Center
+                        )
+                        Button(onClick = onBackClicked) {
+                            Text(text = stringResource(R.string.close))
+                        }
+                    }
+                    ImportState.Ready -> Unit
+                }
             }
         }
 
         // Show add summit dialog when requested
-        if (showDialog && gpxTrackUriState != null) {
+        if (showDialog && importState == ImportState.Ready && gpxTrackUriState != null) {
             AddSummitDialogCompose(
                 summitsFromDatabase = emptyList(),
                 peaks = emptyList(),
@@ -224,7 +265,12 @@ class ReceiverActivityCompose : ComponentActivity() {
         intent: Intent,
         onTrackProcessed: (GpsTrack?) -> Unit
     ) {
-        val uri = intent.data
+        val uri = when (intent.action) {
+            Intent.ACTION_SEND ->
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(Intent.EXTRA_STREAM)
+            else -> intent.data
+        }
         gpxTrackUri = uri
         Log.i(
             "ReceiverActivityCompose",
@@ -233,15 +279,20 @@ class ReceiverActivityCompose : ComponentActivity() {
 
         if (uri != null) {
             // Copying the shared file and parsing the GPX both hit the file
-            // system; keep that off the main thread (StrictMode violations)
+            // system; keep that off the main thread
             val gpsTrack = withContext(Dispatchers.IO) {
-                val file = File(AppState.cache, "input_filter_file.gpx")
-                contentResolver.openInputStream(uri)?.use { inputStream ->
-                    copyGpxFileToCache(inputStream, file)
-                }
-                if (file.exists()) {
-                    prepareGpxTrack(file.toPath(), null)
-                } else {
+                try {
+                    val file = File(AppState.cache, "input_filter_file.gpx")
+                    contentResolver.openInputStream(uri)?.use { inputStream ->
+                        copyGpxFileToCache(inputStream, file)
+                    }
+                    if (file.exists()) {
+                        prepareGpxTrack(file.toPath(), null)
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    Log.e("ReceiverActivityCompose", "Failed to read shared file: ${e.message}", e)
                     null
                 }
             }

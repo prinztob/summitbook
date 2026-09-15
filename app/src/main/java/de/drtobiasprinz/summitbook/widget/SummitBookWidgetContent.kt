@@ -54,42 +54,55 @@ fun SummitBookWidgetContent(
             modifier = GlanceModifier.fillMaxSize(),
             horizontalAlignment = Alignment.Start
         ) {
-            // Stats row
-            Row(
-                modifier = GlanceModifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top
-            ) {
-                // Yearly stats column
-                StatsColumn(
-                    title = context.getString(R.string.current_year),
-                    stats = widgetData.yearlyStats
+            if (widgetData.isError) {
+                // Loading failed — say so instead of rendering zeroed stats
+                Text(
+                    text = context.getString(R.string.widget_data_unavailable),
+                    style = TextStyle
                 )
-
-                Spacer(GlanceModifier.width(8.dp))
-
-                // Monthly stats column
-                StatsColumn(
-                    title = context.getString(R.string.current_month),
-                    stats = widgetData.monthlyStats
-                )
-            }
-
-            // Yearly chart (if available) - moved to bottom
-            if (widgetData.yearlyChartBitmap != null) {
                 Spacer(GlanceModifier.height(4.dp))
-                Image(
-                    provider = ImageProvider(widgetData.yearlyChartBitmap),
-                    contentDescription = "Yearly overview chart",
-                    modifier = GlanceModifier
-                        .fillMaxWidth()
-                        .height(175.dp)
+                Text(
+                    text = context.getString(R.string.widget_tap_to_open),
+                    style = TextStyle.copy(fontSize = 10.sp)
                 )
-            }
+            } else {
+                // Stats row
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    // Yearly stats column
+                    StatsColumn(
+                        title = context.getString(R.string.current_year),
+                        stats = widgetData.yearlyStats
+                    )
 
-            // Recent summits card
-            if (widgetData.recentSummits.isNotEmpty()) {
-                Spacer(GlanceModifier.height(8.dp))
-                RecentSummitsCard(recentSummits = widgetData.recentSummits)
+                    Spacer(GlanceModifier.width(8.dp))
+
+                    // Monthly stats column
+                    StatsColumn(
+                        title = context.getString(R.string.current_month),
+                        stats = widgetData.monthlyStats
+                    )
+                }
+
+                // Yearly chart (if available) - moved to bottom
+                if (widgetData.yearlyChartBitmap != null) {
+                    Spacer(GlanceModifier.height(4.dp))
+                    Image(
+                        provider = ImageProvider(widgetData.yearlyChartBitmap),
+                        contentDescription = "Yearly overview chart",
+                        modifier = GlanceModifier
+                            .fillMaxWidth()
+                            .height(175.dp)
+                    )
+                }
+
+                // Recent summits card
+                if (widgetData.recentSummits.isNotEmpty()) {
+                    Spacer(GlanceModifier.height(8.dp))
+                    RecentSummitsCard(recentSummits = widgetData.recentSummits)
+                }
             }
         }
     }

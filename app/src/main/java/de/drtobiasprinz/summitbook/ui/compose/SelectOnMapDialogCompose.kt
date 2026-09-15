@@ -3,7 +3,6 @@ package de.drtobiasprinz.summitbook.ui.compose
 import android.content.Context
 import android.graphics.drawable.Drawable
 import android.location.Address
-import android.os.StrictMode
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -535,9 +534,6 @@ private fun searchForAddress(
     notFound: String
 ) {
     if (searchQuery.isBlank() || mapView == null) return
-
-    val policy: StrictMode.ThreadPolicy = StrictMode.ThreadPolicy.Builder().permitAll().build()
-    StrictMode.setThreadPolicy(policy)
 
     val geoCoder = GeocoderNominatim(BuildConfig.APPLICATION_ID)
     val viewBox: BoundingBox = mapView.boundingBox

@@ -1,7 +1,6 @@
 package de.drtobiasprinz.summitbook.ui.activities
 
 import android.os.Bundle
-import android.os.StrictMode
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -76,14 +75,7 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         pageViewModel = ViewModelProvider(this)[PageViewModel::class.java]
-        // Temporarily allow disk reads and writes for OSMDroid tile configuration
-        // which involves File.exists(), File.mkdirs() and SQLite operations
-        val oldPolicy = StrictMode.allowThreadDiskWrites()
-        try {
-            CustomMapViewToAllowScrolling.setOsmConfForTiles()
-        } finally {
-            StrictMode.setThreadPolicy(oldPolicy)
-        }
+        CustomMapViewToAllowScrolling.setOsmConfForTiles()
 
         val summitEntryId = intent.extras?.getLong(SUMMIT_ID_EXTRA_IDENTIFIER)
         Log.i("SummitEntryDetails", "Summit entry ID from intent: $summitEntryId")

@@ -43,6 +43,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -70,6 +73,11 @@ import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
 import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
 import de.drtobiasprinz.summitbook.sync.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.core.utils.JsonUtils
+import de.drtobiasprinz.summitbook.ui.compose.enumSaver
+import de.drtobiasprinz.summitbook.ui.compose.fileSaver
+import de.drtobiasprinz.summitbook.ui.compose.jsonSaver
+import de.drtobiasprinz.summitbook.ui.compose.nullableJsonSaver
+import de.drtobiasprinz.summitbook.ui.compose.stringListSaver
 import de.drtobiasprinz.summitbook.data.maps.FileHelper
 import de.drtobiasprinz.summitbook.data.maps.OfflineMapAnalyzer
 import kotlinx.coroutines.Dispatchers
@@ -110,41 +118,41 @@ fun AddSummitDialogCompose(
     val isEdit = summitId > 0
 
     // State management
-    var entity by remember { mutableStateOf(createEmptySummit(isBookmark, context)) }
-    var isLoading by remember { mutableStateOf(false) }
-    var temporaryGpxFile by remember { mutableStateOf<File?>(null) }
-    var latLngHighestPoint by remember { mutableStateOf<GeoPoint?>(null) }
-    var garminDataFromGarminConnect by remember { mutableStateOf<GarminData?>(null) }
+    var entity by rememberSaveable(stateSaver = jsonSaver<Summit>()) { mutableStateOf(createEmptySummit(isBookmark, context)) }
+    var isLoading by rememberSaveable { mutableStateOf(false) }
+    var temporaryGpxFile by rememberSaveable(stateSaver = fileSaver) { mutableStateOf<File?>(null) }
+    var latLngHighestPoint by rememberSaveable(stateSaver = nullableJsonSaver<GeoPoint>()) { mutableStateOf<GeoPoint?>(null) }
+    var garminDataFromGarminConnect by rememberSaveable(stateSaver = nullableJsonSaver<GarminData>()) { mutableStateOf<GarminData?>(null) }
 
     // UI State - Basic fields
-    var summitName by remember { mutableStateOf("") }
-    var tourDate by remember { mutableStateOf("") }
-    var selectedSportType by remember { mutableStateOf(SportType.Bicycle) }
-    var kilometers by remember { mutableStateOf("") }
-    var heightMeter by remember { mutableStateOf("") }
-    var topElevation by remember { mutableStateOf("") }
-    var duration by remember { mutableStateOf("") }
-    var topSpeed by remember { mutableStateOf("") }
-    var comments by remember { mutableStateOf("") }
+    var summitName by rememberSaveable { mutableStateOf("") }
+    var tourDate by rememberSaveable { mutableStateOf("") }
+    var selectedSportType by rememberSaveable(stateSaver = enumSaver<SportType>()) { mutableStateOf(SportType.Bicycle) }
+    var kilometers by rememberSaveable { mutableStateOf("") }
+    var heightMeter by rememberSaveable { mutableStateOf("") }
+    var topElevation by rememberSaveable { mutableStateOf("") }
+    var duration by rememberSaveable { mutableStateOf("") }
+    var topSpeed by rememberSaveable { mutableStateOf("") }
+    var comments by rememberSaveable { mutableStateOf("") }
 
     // Chip groups
-    var participants by remember { mutableStateOf<List<String>>(emptyList()) }
-    var places by remember { mutableStateOf<List<String>>(emptyList()) }
-    var countries by remember { mutableStateOf<List<String>>(emptyList()) }
-    var equipments by remember { mutableStateOf<List<String>>(emptyList()) }
+    var participants by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf<List<String>>(emptyList()) }
+    var places by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf<List<String>>(emptyList()) }
+    var countries by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf<List<String>>(emptyList()) }
+    var equipments by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf<List<String>>(emptyList()) }
 
     // Connected summits (summits within 0-1 days of the current entity's date)
-    var connectedSummits by remember { mutableStateOf<List<Summit>>(emptyList()) }
+    var connectedSummits by rememberSaveable(stateSaver = jsonSaver<List<Summit>>()) { mutableStateOf<List<Summit>>(emptyList()) }
 
     // Performance data state
-    val performanceState = remember { PerformanceDataState() }
+    val performanceState = rememberSaveable(saver = PerformanceDataStateSaver) { PerformanceDataState() }
 
     // Expandable sections
-    var elevationAndSpeedExpanded by remember { mutableStateOf(false) }
-    var locationDetailsExpanded by remember { mutableStateOf(false) }
-    var commentsExpanded by remember { mutableStateOf(false) }
-    var generalMetricsExpanded by remember { mutableStateOf(false) }
-    var powerMetricsExpanded by remember { mutableStateOf(false) }
+    var elevationAndSpeedExpanded by rememberSaveable { mutableStateOf(false) }
+    var locationDetailsExpanded by rememberSaveable { mutableStateOf(false) }
+    var commentsExpanded by rememberSaveable { mutableStateOf(false) }
+    var generalMetricsExpanded by rememberSaveable { mutableStateOf(false) }
+    var powerMetricsExpanded by rememberSaveable { mutableStateOf(false) }
 
 
     // File picker launcher
@@ -236,7 +244,7 @@ fun AddSummitDialogCompose(
 
     // Checking for on-device map files queries storage via SAF; keep that off
     // the main thread (StrictMode DiskReadViolation)
-    var hasOnDeviceMapFiles by remember { mutableStateOf(false) }
+    var hasOnDeviceMapFiles by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         hasOnDeviceMapFiles = withContext(Dispatchers.IO) {
             FileHelper.getOnDeviceMapFiles(context).isNotEmpty()
@@ -1378,3 +1386,38 @@ private fun computeConnectedSummits(
         }
     }
 }
+
+/**
+ * Persists all [PerformanceDataState] text fields across rotation/process death.
+ * The fields are Compose state, so they cannot be serialized via reflection;
+ * they are saved as a flat string list instead.
+ */
+val PerformanceDataStateSaver: Saver<PerformanceDataState, List<String>> = listSaver(
+    save = { state -> listOf(it.calories, it.averageHr, it.maxHr, it.ftp, it.vo2Max, it.normPower, it.avgPower, it.power1s, it.power2s, it.power5s, it.power10s, it.power20s, it.power30s, it.power1min, it.power2min, it.power5min, it.power10min, it.power20min, it.power30min, it.power1h, it.power2h, it.power5h) },
+    restore = { values ->
+        PerformanceDataState().apply {
+            calories = values[0]
+            averageHr = values[1]
+            maxHr = values[2]
+            ftp = values[3]
+            vo2Max = values[4]
+            normPower = values[5]
+            avgPower = values[6]
+            power1s = values[7]
+            power2s = values[8]
+            power5s = values[9]
+            power10s = values[10]
+            power20s = values[11]
+            power30s = values[12]
+            power1min = values[13]
+            power2min = values[14]
+            power5min = values[15]
+            power10min = values[16]
+            power20min = values[17]
+            power30min = values[18]
+            power1h = values[19]
+            power2h = values[20]
+            power5h = values[21]
+        }
+    }
+)

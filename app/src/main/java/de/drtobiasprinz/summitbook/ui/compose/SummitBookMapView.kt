@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import android.os.StrictMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -41,17 +40,10 @@ fun SummitBookMapView(
         AndroidView(
             factory = { context ->
                 Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-                // Temporarily allow disk reads and writes for OSMDroid MapView initialization
-                // which creates a SQLite tile cache database (both reads and writes occur)
-                val oldPolicy = StrictMode.allowThreadDiskWrites()
-                try {
-                    CustomMapViewToAllowScrolling(context).apply {
-                        addDefaultSettings()
-                        mapView = this
-                        onMapCreated(this)
-                    }
-                } finally {
-                    StrictMode.setThreadPolicy(oldPolicy)
+                CustomMapViewToAllowScrolling(context).apply {
+                    addDefaultSettings()
+                    mapView = this
+                    onMapCreated(this)
                 }
             },
             update = update,

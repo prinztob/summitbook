@@ -30,7 +30,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,9 +46,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.google.gson.reflect.TypeToken
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.ui.compose.jsonSaver
 import de.drtobiasprinz.summitbook.data.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.db.entities.VelocityData
@@ -75,9 +81,9 @@ fun AddAdditionalDataDialogCompose(
     val scope = rememberCoroutineScope()
 
     // State management
-    var isLoading by remember { mutableStateOf(false) }
-    val tableEntries = remember { mutableStateListOf<TableEntry>() }
-    var summitEntry by remember { mutableStateOf(summit.clone()) }
+    var isLoading by rememberSaveable { mutableStateOf(false) }
+    val tableEntries = rememberSaveable(saver = tableEntriesSaver) { mutableStateListOf<TableEntry>() }
+    var summitEntry by rememberSaveable(stateSaver = jsonSaver<Summit>()) { mutableStateOf(summit.clone()) }
 
     // Load data when dialog opens
     LaunchedEffect(summit) {
@@ -522,3 +528,23 @@ data class TableEntry(
         }
     }
 }
+
+private val tableEntriesGson = Gson()
+
+/**
+ * Persists the additional-data table (checkbox states included) across
+ * rotation/process death. TableEntry contains enums with lambdas, which Gson
+ * stores by constant name, so a plain JSON string is safe here.
+ */
+private val tableEntriesSaver: Saver<SnapshotStateList<TableEntry>, String> = Saver(
+    save = { list -> tableEntriesGson.toJson(list.toList()) },
+    restore = { stored ->
+        try {
+            val parsed: List<TableEntry> =
+                tableEntriesGson.fromJson(stored, object : TypeToken<List<TableEntry>>() {}.type)
+            mutableStateListOf<TableEntry>().also { it.addAll(parsed) }
+        } catch (_: Exception) {
+            mutableStateListOf()
+        }
+    }
+)

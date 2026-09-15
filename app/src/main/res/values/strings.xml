@@ -693,6 +693,14 @@
     <string name="importing_backup">Importing backup…</string>
     <string name="exporting_backup">Exporting backup…</string>
     <string name="loading_canceled">Operation canceled</string>
+    <string name="gpx_import_loading">Reading file…</string>
+    <string name="gpx_import_failed">Couldn\'t read this file. Is it a valid GPX or TCX file?</string>
+    <string name="database_error">Couldn\'t load data from the database. Some entries may not be shown. Try restarting the app.</string>
+    <string name="export_failed">Export failed: %1$s</string>
+    <string name="export_failed_title">Export failed</string>
+    <string name="export_no_target">No file was selected to write the backup to.</string>
+    <string name="widget_data_unavailable">Data currently unavailable. Open the app to refresh.</string>
+    <string name="widget_tap_to_open">Tap to open SummitBook</string>
     <string name="garmin_connect_failed">Connecting to third party provider failed. Please try again later. Error: %1$s</string>
     <string name="retry">Retry</string>
 </resources>

@@ -99,7 +99,7 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
             result
         } catch (e: Exception) {
             Log.e("SummitBookGlanceWidget", "Error loading widget data", e)
-            WidgetData()
+            WidgetData(isError = true)
         }
     }
 

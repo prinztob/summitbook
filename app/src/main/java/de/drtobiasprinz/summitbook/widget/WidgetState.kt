@@ -9,7 +9,10 @@ data class WidgetData(
     val yearlyStats: YearlyStats = YearlyStats(),
     val monthlyStats: MonthlyStats = MonthlyStats(),
     val yearlyChartBitmap: Bitmap? = null,
-    val recentSummits: List<Summit> = emptyList()
+    val recentSummits: List<Summit> = emptyList(),
+    /** True when loading failed — the widget should show an error hint
+     *  instead of silently rendering zeroed stats. */
+    val isError: Boolean = false
 )
 @Immutable
 sealed class Stats {

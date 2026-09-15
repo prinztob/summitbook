@@ -1,21 +1,21 @@
 package de.drtobiasprinz.summitbook.sync
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
-import android.view.View
-import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import de.drtobiasprinz.summitbook.core.Keys
-import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.data.appstate.AppState
 import de.drtobiasprinz.summitbook.data.db.entities.DailyActivitySummary
 import de.drtobiasprinz.summitbook.data.repository.DatabaseRepository
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+
+sealed class GarminSyncResult {
+    data class Success(val hasNewActivities: Boolean) : GarminSyncResult()
+    data class Failed(val message: String?) : GarminSyncResult()
+}
 
 class GarminDataUpdater(
     val sharedPreferences: SharedPreferences,
@@ -28,16 +28,28 @@ class GarminDataUpdater(
     private var activitiesAtBeginning: Int = 0
     private var activitiesAfterUpdate: Int = 0
 
-    suspend fun update() {
+    suspend fun update(): GarminSyncResult {
         startDate = sharedPreferences.getString(Keys.PREF_THIRD_PARTY_START_DATE, null) ?: ""
         activitiesAtBeginning = AppState.activitiesDir?.listFiles()?.size ?: 0
-        try {
+        return try {
             updateActivities()
+            activitiesAfterUpdate = AppState.activitiesDir?.listFiles()?.size ?: 0
+            GarminSyncResult.Success(hasUpdates())
         } catch (ex: RuntimeException) {
             Log.e(
                 "GarminDataUpdater",
-                "Error in updating activities and daily report data: ${ex.message}. Please try later"
+                "Error in updating activities and daily report data: ${ex.message}. Please try later",
+                ex
             )
+            GarminSyncResult.Failed(ex.message)
+        }
+    }
+
+    /** Persists the new sync window. Only call this after a [GarminSyncResult.Success],
+     * otherwise failed days would be skipped in subsequent syncs. */
+    fun persistSyncWindow() {
+        sharedPreferences.edit {
+            putString(Keys.PREF_THIRD_PARTY_START_DATE, startDateForSync)
         }
     }
 
@@ -91,45 +103,16 @@ class GarminDataUpdater(
         startDate: String,
         endDate: String,
     ) {
-        try {
-            AppState.activitiesDir?.let {
-                val newActivities = pythonExecutor?.downloadActivitiesByDate(
-                    it, startDate, endDate
+        AppState.activitiesDir?.let {
+            val newActivities = pythonExecutor?.downloadActivitiesByDate(
+                it, startDate, endDate
+            )
+            newActivities?.let { activityAggregationSummary ->
+                updateDailyActivitySummary(
+                    activityAggregationSummary,
                 )
-                newActivities?.let { activityAggregationSummary ->
-                    updateDailyActivitySummary(
-                        activityAggregationSummary,
-                    )
-                }
             }
-        } catch (e: RuntimeException) {
-            Log.e("AsyncDownloadActivities", e.message ?: "")
         }
-    }
-
-    fun onFinish(progressBar: ProgressBar, context: Context, applyOnUpdates: () -> Unit = { }) {
-        progressBar.visibility = View.GONE
-        sharedPreferences.edit {
-            putString(Keys.PREF_THIRD_PARTY_START_DATE, startDateForSync)
-        }
-        Log.i("AsyncUpdateGarminData", "Done.")
-        activitiesAfterUpdate = AppState.activitiesDir?.listFiles()?.size ?: 0
-        if (hasUpdates()) {
-            Toast.makeText(
-                context,
-                context.getString(R.string.update_done_new_summits),
-                Toast.LENGTH_LONG
-            ).show()
-            applyOnUpdates()
-        } else {
-            Toast.makeText(
-                context,
-                context.getString(R.string.update_done),
-                Toast.LENGTH_LONG
-            ).show()
-        }
-
-
     }
 
     private fun hasUpdates(): Boolean {

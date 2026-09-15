@@ -39,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +52,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.ui.compose.dateSaver
+import de.drtobiasprinz.summitbook.ui.compose.enumSaver
+import de.drtobiasprinz.summitbook.ui.compose.nullableEnumSaver
+import de.drtobiasprinz.summitbook.ui.compose.rangeSliderSaver
+import de.drtobiasprinz.summitbook.ui.compose.stringListSaver
 import de.drtobiasprinz.summitbook.data.db.entities.SportType
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.filters.HasGpxTrackButtonGroup
@@ -81,36 +87,42 @@ fun SortAndFilterDialogCompose(
 ) {
 
     // State variables for UI components
-    var selectedDateSpinner by remember { mutableIntStateOf(sortFilterValues.selectedDateSpinner) }
-    var startDate by remember { mutableStateOf(sortFilterValues.startDate) }
-    var endDate by remember { mutableStateOf(sortFilterValues.endDate) }
-    var sportType by remember { mutableStateOf(sortFilterValues.sportType) }
-    var participants by remember { mutableStateOf(sortFilterValues.participants) }
+    var selectedDateSpinner by rememberSaveable { mutableIntStateOf(sortFilterValues.selectedDateSpinner) }
+    var startDate by rememberSaveable(stateSaver = dateSaver) { mutableStateOf(sortFilterValues.startDate) }
+    var endDate by rememberSaveable(stateSaver = dateSaver) { mutableStateOf(sortFilterValues.endDate) }
+    var sportType by rememberSaveable(stateSaver = nullableEnumSaver<SportType>()) { mutableStateOf(sortFilterValues.sportType) }
+    var participants by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf(sortFilterValues.participants) }
 
     // Button group states
-    var orderByAscDesc by remember { mutableStateOf(sortFilterValues.orderByAscDescButtonGroup) }
-    var orderByValue by remember { mutableStateOf(sortFilterValues.orderByValueSpinner) }
-    var hasGpxTrack by remember { mutableStateOf(sortFilterValues.hasGpxTrackButtonGroup) }
-    var hasPosition by remember { mutableStateOf(sortFilterValues.hasPositionButtonGroup) }
-    var hasImage by remember { mutableStateOf(sortFilterValues.hasImageButtonGroup) }
-    var peakFavorite by remember { mutableStateOf(sortFilterValues.peakFavoriteButtonGroup) }
+    var orderByAscDesc by rememberSaveable(stateSaver = enumSaver<OrderByAscDescButtonGroup>()) { mutableStateOf(sortFilterValues.orderByAscDescButtonGroup) }
+    var orderByValue by rememberSaveable(stateSaver = enumSaver<OrderBySpinnerEntry>()) { mutableStateOf(sortFilterValues.orderByValueSpinner) }
+    var hasGpxTrack by rememberSaveable(stateSaver = enumSaver<HasGpxTrackButtonGroup>()) { mutableStateOf(sortFilterValues.hasGpxTrackButtonGroup) }
+    var hasPosition by rememberSaveable(stateSaver = enumSaver<HasPositionButtonGroup>()) { mutableStateOf(sortFilterValues.hasPositionButtonGroup) }
+    var hasImage by rememberSaveable(stateSaver = enumSaver<HasImageButtonGroup>()) { mutableStateOf(sortFilterValues.hasImageButtonGroup) }
+    var peakFavorite by rememberSaveable(stateSaver = enumSaver<PeakFavoriteButtonGroup>()) { mutableStateOf(sortFilterValues.peakFavoriteButtonGroup) }
 
     // Range slider values
-    var kilometersSlider by remember {
+    var kilometersSlider by rememberSaveable(
+        stateSaver = rangeSliderSaver(sortFilterValues.kilometersSlider.getValue)
+    ) {
         mutableStateOf(
             sortFilterValues.kilometersSlider.apply {
                 stepSize = 5f
             }
         )
     }
-    var elevationGainSlider by remember {
+    var elevationGainSlider by rememberSaveable(
+        stateSaver = rangeSliderSaver(sortFilterValues.elevationGainSlider.getValue)
+    ) {
         mutableStateOf(
             sortFilterValues.elevationGainSlider.apply {
                 stepSize = 250f
             }
         )
     }
-    var topElevationSlider by remember {
+    var topElevationSlider by rememberSaveable(
+        stateSaver = rangeSliderSaver(sortFilterValues.topElevationSlider.getValue)
+    ) {
         mutableStateOf(
             sortFilterValues.topElevationSlider.apply {
                 stepSize = 250f
@@ -119,7 +131,7 @@ fun SortAndFilterDialogCompose(
     }
 
     // Text field for participants input
-    var participantInput by remember { mutableStateOf("") }
+    var participantInput by rememberSaveable { mutableStateOf("") }
 
     // Years for date spinner
     val years = sortFilterValues.years
@@ -231,7 +243,7 @@ fun SortAndFilterDialogCompose(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Toggle Button Groups in Collapsible Card
-                    var toggleGroupsExpanded by remember { mutableStateOf(false) }
+                    var toggleGroupsExpanded by rememberSaveable { mutableStateOf(false) }
                     CollapsibleSection(
                         title = stringResource(R.string.filter_options),
                         expanded = toggleGroupsExpanded,
@@ -252,7 +264,7 @@ fun SortAndFilterDialogCompose(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Range Sliders in Collapsible Card
-                    var rangeSlidersExpanded by remember { mutableStateOf(false) }
+                    var rangeSlidersExpanded by rememberSaveable { mutableStateOf(false) }
                     CollapsibleSection(
                         title = stringResource(R.string.range_filters),
                         expanded = rangeSlidersExpanded,

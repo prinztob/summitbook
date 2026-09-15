@@ -42,6 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -109,7 +110,7 @@ fun AddSegmentEntryScreen(
     }
     val scope = rememberCoroutineScope()
     val pointHistory = remember { mutableListOf<Pair<Int, Int>>() }
-    var canRevert by remember { mutableStateOf(false) }
+    var canRevert by rememberSaveable { mutableStateOf(false) }
 
     val isMountainPassMode = segmentId == -1L
 
@@ -342,9 +343,9 @@ fun AddSegmentEntryContent(
     onSaveMountainPass: ((SegmentEntry) -> Unit)? = null,
     existingMountainPass: SegmentEntry? = null,
 ) {
-    var selectedSummitName by remember { mutableStateOf("") }
-    var selectedSegmentName by remember { mutableStateOf(existingMountainPass?.name ?: "") }
-    var windowDistance by remember {
+    var selectedSummitName by rememberSaveable { mutableStateOf("") }
+    var selectedSegmentName by rememberSaveable { mutableStateOf(existingMountainPass?.name ?: "") }
+    var windowDistance by rememberSaveable {
         mutableStateOf(
             if (existingMountainPass != null && existingMountainPass.windowDistanceMeters > 0) existingMountainPass.windowDistanceMeters.toLong()
                 .toString() else "500"
@@ -358,9 +359,9 @@ fun AddSegmentEntryContent(
         }
     }
     var expanded by remember { mutableStateOf(false) }
-    var mapVisible by remember { mutableStateOf(true) }
-    var chartVisible by remember { mutableStateOf(true) }
-    var startSelected by remember { mutableStateOf(true) }
+    var mapVisible by rememberSaveable { mutableStateOf(true) }
+    var chartVisible by rememberSaveable { mutableStateOf(true) }
+    var startSelected by rememberSaveable { mutableStateOf(true) }
 
     val summitSuggestions = uiState.relevantSummits.map { summit ->
         "${summit.getDateAsString()} ${summit.name}"

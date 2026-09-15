@@ -10,9 +10,7 @@ import android.icu.util.Calendar
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.StrictMode
 import android.util.Log
-import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -56,6 +54,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -78,6 +77,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.chaquo.python.Python
+import com.google.gson.Gson
 import com.chaquo.python.android.AndroidPlatform
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.BuildConfig
@@ -95,6 +95,7 @@ import de.drtobiasprinz.summitbook.ui.filters.SortFilterValues
 import de.drtobiasprinz.summitbook.data.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.compose.AddSegmentEntryScreen
 import de.drtobiasprinz.summitbook.ui.compose.AddSummitDialogCompose
+import de.drtobiasprinz.summitbook.ui.compose.DatabaseErrorBanner
 import de.drtobiasprinz.summitbook.ui.compose.BarChartScreen
 import de.drtobiasprinz.summitbook.ui.compose.ForecastScreen
 import de.drtobiasprinz.summitbook.ui.compose.LineChartScreen
@@ -111,6 +112,7 @@ import de.drtobiasprinz.summitbook.ui.compose.SummitsListScreen
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
 import de.drtobiasprinz.summitbook.data.analytics.DistanceIntervalVelocity
 import de.drtobiasprinz.summitbook.sync.GarminDataUpdater
+import de.drtobiasprinz.summitbook.sync.GarminSyncResult
 import de.drtobiasprinz.summitbook.sync.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.data.analytics.TimeIntervalPower
 import de.drtobiasprinz.summitbook.data.analytics.TimeIntervalVerticalVelocity
@@ -186,10 +188,56 @@ class MainActivityCompose : ComponentActivity(),
         loadingJob = null
     }
 
+    /**
+     * Keeps the current screen, open dialogs and the summit used for segment
+     * entry across rotation/process death, so no user input context is lost.
+     */
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(STATE_DESTINATION, currentDestination.name)
+        outState.putBoolean(STATE_SHOW_BOOKMARKS_ONLY, showBookmarksOnly)
+        outState.putBoolean(STATE_SHOW_SORT_AND_FILTER_DIALOG, showSortAndFilterDialog)
+        outState.putBoolean(STATE_SHOW_ADD_SUMMIT_DIALOG, showAddSummitDialog)
+        newSummitsSelectedDate?.let { outState.putLong(STATE_NEW_SUMMITS_DATE, it.time) }
+        summitForSegmentEntry?.let {
+            outState.putString(STATE_SUMMIT_FOR_SEGMENT_ENTRY, Gson().toJson(it))
+        }
+        outState.putBoolean(
+            STATE_SHOW_ADD_SEGMENT_ENTRY_SCREEN,
+            showAddSegmentEntryScreen && summitForSegmentEntry != null
+        )
+    }
+
+    private fun restoreUiState(savedInstanceState: Bundle?) {
+        if (savedInstanceState == null) return
+        savedInstanceState.getString(STATE_DESTINATION)?.let { name ->
+            runCatching { Destination.valueOf(name) }.getOrNull()?.let {
+                currentDestination = it
+            }
+        }
+        showBookmarksOnly = savedInstanceState.getBoolean(STATE_SHOW_BOOKMARKS_ONLY, false)
+        showSortAndFilterDialog =
+            savedInstanceState.getBoolean(STATE_SHOW_SORT_AND_FILTER_DIALOG, false)
+        showAddSummitDialog = savedInstanceState.getBoolean(STATE_SHOW_ADD_SUMMIT_DIALOG, false)
+        if (savedInstanceState.containsKey(STATE_NEW_SUMMITS_DATE)) {
+            newSummitsSelectedDate = Date(savedInstanceState.getLong(STATE_NEW_SUMMITS_DATE))
+        }
+        savedInstanceState.getString(STATE_SUMMIT_FOR_SEGMENT_ENTRY)?.let { json ->
+            runCatching { Gson().fromJson(json, Summit::class.java) }.getOrNull()?.let {
+                summitForSegmentEntry = it
+            }
+        }
+        showAddSegmentEntryScreen =
+            savedInstanceState.getBoolean(STATE_SHOW_ADD_SEGMENT_ENTRY_SCREEN, false) &&
+                summitForSegmentEntry != null
+    }
+
     @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        restoreUiState(savedInstanceState)
 
         // Enable edge-to-edge
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -342,6 +390,13 @@ class MainActivityCompose : ComponentActivity(),
                 isMapFullscreen = false
             }
         }
+
+        // Surface database read errors instead of rendering them as empty lists
+        val databaseError = remember(summitsList, forecastList, segmentsList, peakList) {
+            listOf(summitsList, forecastList, segmentsList, peakList)
+                .firstOrNull { it.status == DataStatus.Status.ERROR }?.message
+        }
+        var errorBannerDismissed by rememberSaveable { mutableStateOf(false) }
 
         // Scaffold with top app bar and navigation drawer
         ModalNavigationDrawer(
@@ -512,6 +567,14 @@ class MainActivityCompose : ComponentActivity(),
                 ) {
                     // Main content based on current destination
                     MainContent(filteredSummits, summitsFromDatabase, forecasts, coroutineScope)
+
+                    if (databaseError != null && !errorBannerDismissed) {
+                        DatabaseErrorBanner(
+                            modifier = Modifier.align(Alignment.TopCenter),
+                            detail = databaseError,
+                            onDismiss = { errorBannerDismissed = true }
+                        )
+                    }
 
                     // Floating Action Button for adding a summit (only visible on Summits screen)
                     if (currentDestination == Destination.Summits) {
@@ -1041,22 +1104,38 @@ class MainActivityCompose : ComponentActivity(),
                     executor,
                     repository
                 )
-                withContext(Dispatchers.IO) {
+                val result = withContext(Dispatchers.IO) {
                     updater.update()
                 }
-                updater.onFinish(
-                    object : ProgressBar(this@MainActivityCompose) {
-                        override fun getVisibility(): Int {
-                            return if (loadingState.value) VISIBLE else GONE
+                loadingState.value = false
+                when (result) {
+                    is GarminSyncResult.Success -> {
+                        updater.persistSyncWindow()
+                        val message = getString(
+                            if (result.hasNewActivities) {
+                                R.string.update_done_new_summits
+                            } else {
+                                R.string.update_done
+                            }
+                        )
+                        snackbarHostState?.showSnackbar(
+                            message,
+                            duration = SnackbarDuration.Long
+                        )
+                        if (result.hasNewActivities) {
+                            currentDestination = Destination.NewSummits
                         }
-
-                        override fun setVisibility(visibility: Int) {
-                            loadingState.value = visibility == VISIBLE
+                    }
+                    is GarminSyncResult.Failed -> {
+                        val retry = snackbarHostState?.showSnackbar(
+                            getString(R.string.garmin_connect_failed, result.message ?: ""),
+                            actionLabel = getString(R.string.retry),
+                            duration = SnackbarDuration.Long
+                        )
+                        if (retry == SnackbarResult.ActionPerformed) {
+                            updateThirdPartyData(scope)
                         }
-                    },
-                    this@MainActivityCompose
-                ) {
-                    currentDestination = Destination.NewSummits
+                    }
                 }
             } else {
                 Toast.makeText(
@@ -1177,9 +1256,6 @@ class MainActivityCompose : ComponentActivity(),
             }.setNegativeButton(
                 android.R.string.cancel
             ) { _: DialogInterface?, _: Int ->
-                Toast.makeText(
-                    this, getString(R.string.export_csv_dialog_negative_text), Toast.LENGTH_SHORT
-                ).show()
             }.setIcon(android.R.drawable.ic_dialog_alert).show()
     }
 
@@ -1239,13 +1315,15 @@ class MainActivityCompose : ComponentActivity(),
                     exportThirdPartyData,
                     exportCalculatedData
                 )
+                val targetUri = resultData?.data
+                if (targetUri == null) {
+                    throw IllegalStateException(getString(R.string.export_no_target))
+                }
                 withContext(Dispatchers.IO) {
-                    resultData?.data?.also { resultDataUri ->
-                        contentResolver.openOutputStream(resultDataUri)?.let {
-                            writer.writeToZipFile(it)
-                            it.close()
-                        }
-                    }
+                    contentResolver.openOutputStream(targetUri)?.let {
+                        writer.writeToZipFile(it)
+                        it.close()
+                    } ?: throw IllegalStateException(getString(R.string.export_no_target))
                 }
                 androidx.appcompat.app.AlertDialog.Builder(this@MainActivityCompose)
                     .setTitle(getString(R.string.export_csv_summary_title)).setMessage(
@@ -1258,6 +1336,15 @@ class MainActivityCompose : ComponentActivity(),
                     )
                     .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
                     .setIcon(android.R.drawable.ic_dialog_info).show()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e("MainActivityCompose", "Export failed", e)
+                androidx.appcompat.app.AlertDialog.Builder(this@MainActivityCompose)
+                    .setTitle(getString(R.string.export_failed_title))
+                    .setMessage(getString(R.string.export_failed, e.message ?: ""))
+                    .setPositiveButton(R.string.accept) { _: DialogInterface?, _: Int -> }
+                    .setIcon(android.R.drawable.ic_dialog_alert).show()
             } finally {
                 resetLoadingState()
             }
@@ -1445,17 +1532,11 @@ class MainActivityCompose : ComponentActivity(),
             val password = AppState.sharedPreferences.getString(Keys.PREF_GARMIN_PASSWORD, "") ?: ""
             val garminMfaSwitch = AppState.sharedPreferences.getBoolean(Keys.PREF_GARMIN_MFA, false)
             val oauthPath = File(AppState.storage?.absolutePath, ".garminconnect")
-            // Use cached hasTrack property or allow disk read temporarily for this check
-            val oldPolicy = StrictMode.allowThreadDiskReads()
-            try {
-                if (oauthPath.exists()) {
-                    GarminPythonExecutor.instance = GarminPythonExecutor(username, password)
-                } else if (username != "" && password != "" && garminMfaSwitch) {
-                    val intent = Intent(this, PythonActivity::class.java)
-                    startActivity(intent)
-                }
-            } finally {
-                StrictMode.setThreadPolicy(oldPolicy)
+            if (oauthPath.exists()) {
+                GarminPythonExecutor.instance = GarminPythonExecutor(username, password)
+            } else if (username != "" && password != "" && garminMfaSwitch) {
+                val intent = Intent(this, PythonActivity::class.java)
+                startActivity(intent)
             }
         }
     }
@@ -1545,6 +1626,14 @@ class MainActivityCompose : ComponentActivity(),
     companion object {
         private const val KEY_IS_DIALOG_SHOWN = "IS_DIALOG_SHOWN"
         private const val KEY_CURRENT_POSITION = "CURRENT_POSITION"
+
+        private const val STATE_DESTINATION = "STATE_DESTINATION"
+        private const val STATE_SHOW_BOOKMARKS_ONLY = "STATE_SHOW_BOOKMARKS_ONLY"
+        private const val STATE_SHOW_SORT_AND_FILTER_DIALOG = "STATE_SHOW_SORT_AND_FILTER_DIALOG"
+        private const val STATE_SHOW_ADD_SUMMIT_DIALOG = "STATE_SHOW_ADD_SUMMIT_DIALOG"
+        private const val STATE_NEW_SUMMITS_DATE = "STATE_NEW_SUMMITS_DATE"
+        private const val STATE_SUMMIT_FOR_SEGMENT_ENTRY = "STATE_SUMMIT_FOR_SEGMENT_ENTRY"
+        private const val STATE_SHOW_ADD_SEGMENT_ENTRY_SCREEN = "STATE_SHOW_ADD_SEGMENT_ENTRY_SCREEN"
     }
 }
 
