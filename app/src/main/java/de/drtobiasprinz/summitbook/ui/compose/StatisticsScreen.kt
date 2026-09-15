@@ -34,18 +34,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import de.drtobiasprinz.summitbook.Keys
+import de.drtobiasprinz.summitbook.core.Keys
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.Forecast
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.StatisticEntry
-import de.drtobiasprinz.summitbook.models.StatisticEntryDefinitions
-import de.drtobiasprinz.summitbook.models.StatisticGroup
-import de.drtobiasprinz.summitbook.models.StatisticsData
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
-import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
+import de.drtobiasprinz.summitbook.data.db.entities.Forecast
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.model.StatisticEntry
+import de.drtobiasprinz.summitbook.data.model.StatisticEntryDefinitions
+import de.drtobiasprinz.summitbook.data.model.StatisticGroup
+import de.drtobiasprinz.summitbook.data.model.StatisticsData
+import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
+import de.drtobiasprinz.summitbook.data.analytics.ExtremaValuesSummits
 import java.text.NumberFormat
 import java.util.concurrent.TimeUnit
+import de.drtobiasprinz.summitbook.data.db.entities.Surface
+import de.drtobiasprinz.summitbook.data.db.entities.RoadType
 
 @Composable
 fun StatisticsScreen(

@@ -36,15 +36,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import de.drtobiasprinz.summitbook.Keys
-import de.drtobiasprinz.summitbook.models.ChartEntry
+import de.drtobiasprinz.summitbook.core.Keys
+import de.drtobiasprinz.summitbook.data.model.ChartEntry
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.Forecast
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.StatisticEntry
-import de.drtobiasprinz.summitbook.ui.GraphType
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose
-import de.drtobiasprinz.summitbook.ui.PerformanceGraphProvider
+import de.drtobiasprinz.summitbook.data.db.entities.Forecast
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.model.StatisticEntry
+import de.drtobiasprinz.summitbook.data.analytics.GraphType
+import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
+import de.drtobiasprinz.summitbook.data.analytics.PerformanceGraphProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -54,6 +54,7 @@ import java.util.Calendar
 import java.util.Date
 import kotlin.String
 import androidx.compose.ui.graphics.Color as ComposeColor
+import de.drtobiasprinz.summitbook.data.appstate.AppState
 
 @Composable
 fun OverviewScreen(
@@ -71,7 +72,7 @@ fun OverviewScreen(
     var currentYear by remember { mutableIntStateOf(Calendar.getInstance()[Calendar.YEAR]) }
     var selectedYear by remember { mutableIntStateOf(currentYear) }
 
-    val sharedPreferences = MainActivityCompose.sharedPreferences
+    val sharedPreferences = AppState.sharedPreferences
     val indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
     val numberFormat = NumberFormat.getInstance(LocalConfiguration.current.locales[0])
 
@@ -142,7 +143,7 @@ fun OverviewHeader(
             statisticEntry.calculate()
             val peaks = filteredSummits.filter { it.isPeak }
             val numberOfPeaks = peaks.size + filteredSummits.flatMap { it.places }
-                .filter { it in MainActivityCompose.peaks.map { peak -> peak.name } }.size
+                .filter { it in AppState.peaks.map { peak -> peak.name } }.size
 
             // Format the text with string resources
             "${

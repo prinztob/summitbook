@@ -35,11 +35,11 @@ import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.models.ChartEntry
-import de.drtobiasprinz.summitbook.ui.GraphType
-import de.drtobiasprinz.summitbook.ui.PerformanceGraphProvider
-import de.drtobiasprinz.summitbook.ui.utils.MyFillFormatter
-import de.drtobiasprinz.summitbook.ui.utils.MyLineLegendRenderer
+import de.drtobiasprinz.summitbook.data.model.ChartEntry
+import de.drtobiasprinz.summitbook.data.analytics.GraphType
+import de.drtobiasprinz.summitbook.data.analytics.PerformanceGraphProvider
+import de.drtobiasprinz.summitbook.ui.view.MyFillFormatter
+import de.drtobiasprinz.summitbook.ui.view.MyLineLegendRenderer
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar

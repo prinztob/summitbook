@@ -60,12 +60,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.core.graphics.createBitmap
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.Segment
-import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.ExtensionFromYaml
-import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.models.TrackColor
+import de.drtobiasprinz.summitbook.data.db.entities.Segment
+import de.drtobiasprinz.summitbook.data.db.entities.SegmentEntry
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.model.ExtensionFromYaml
+import de.drtobiasprinz.summitbook.data.model.GpsTrack
+import de.drtobiasprinz.summitbook.data.model.TrackColor
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

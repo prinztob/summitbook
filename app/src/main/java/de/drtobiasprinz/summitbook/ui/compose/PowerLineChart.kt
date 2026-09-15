@@ -38,10 +38,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.PowerData
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
-import de.drtobiasprinz.summitbook.ui.utils.TimeIntervalPower
+import de.drtobiasprinz.summitbook.data.db.entities.PowerData
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.analytics.ExtremaValuesSummits
+import de.drtobiasprinz.summitbook.data.analytics.TimeIntervalPower
 import kotlin.math.log10
 import kotlin.math.pow
 import androidx.compose.ui.graphics.Color as ComposeColor

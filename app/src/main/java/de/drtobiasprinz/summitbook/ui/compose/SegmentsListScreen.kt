@@ -52,13 +52,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SegmentEntryDetailsComposeActivity
-import de.drtobiasprinz.summitbook.db.entities.Segment
-import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
-import de.drtobiasprinz.summitbook.db.entities.SegmentEntry
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.utils.DataStatus
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import de.drtobiasprinz.summitbook.ui.activities.SegmentEntryDetailsComposeActivity
+import de.drtobiasprinz.summitbook.data.db.entities.Segment
+import de.drtobiasprinz.summitbook.data.db.entities.SegmentDetails
+import de.drtobiasprinz.summitbook.data.db.entities.SegmentEntry
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.core.DataStatus
+import de.drtobiasprinz.summitbook.ui.viewmodel.DatabaseViewModel
 import kotlin.math.roundToInt
 
 /**

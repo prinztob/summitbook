@@ -41,7 +41,7 @@ import androidx.compose.ui.window.DialogProperties
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import coil.size.Scale
-import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

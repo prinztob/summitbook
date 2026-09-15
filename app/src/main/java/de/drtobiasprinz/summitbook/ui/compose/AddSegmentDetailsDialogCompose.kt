@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.SegmentDetails
+import de.drtobiasprinz.summitbook.data.db.entities.SegmentDetails
 
 /**
  * Jetpack Compose version of AddSegmentDetailsDialog

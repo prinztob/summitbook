@@ -9,10 +9,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import de.drtobiasprinz.summitbook.db.AppDatabase
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.SortFilterValues
-import de.drtobiasprinz.summitbook.utils.Constants.DATABASE
+import de.drtobiasprinz.summitbook.data.db.AppDatabase
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.filters.SortFilterValues
+import de.drtobiasprinz.summitbook.core.Constants.DATABASE
 import java.util.concurrent.Executors
 import javax.inject.Singleton
 

@@ -65,19 +65,19 @@ import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.preference.PreferenceManager
 import de.drtobiasprinz.summitbook.BuildConfig
-import de.drtobiasprinz.summitbook.Keys
+import de.drtobiasprinz.summitbook.core.Keys
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.GroupForHeatmap
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.selectedItem
-import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonInstance
-import de.drtobiasprinz.summitbook.ui.MapProvider
-import de.drtobiasprinz.summitbook.ui.utils.FileRowType
-import de.drtobiasprinz.summitbook.utils.FileHelper
-import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
-import de.drtobiasprinz.summitbook.utils.PreferencesHelper
+import de.drtobiasprinz.summitbook.data.db.entities.GroupForHeatmap
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling.Companion.selectedItem
+import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
+import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
+import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
+import de.drtobiasprinz.summitbook.data.maps.MapProvider
+import de.drtobiasprinz.summitbook.sync.FileRowType
+import de.drtobiasprinz.summitbook.data.maps.FileHelper
+import de.drtobiasprinz.summitbook.data.maps.OfflineMapAnalyzer
+import de.drtobiasprinz.summitbook.core.preferences.PreferencesHelper
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -91,6 +91,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import de.drtobiasprinz.summitbook.data.appstate.AppState
 
 /**
  * Jetpack Compose version of SettingsFragment
@@ -284,7 +285,7 @@ fun SettingsScreen(
         garminMFASwitch = checked
         savePreference(Keys.PREF_GARMIN_MFA, checked)
 
-        val garminMFA = File(MainActivityCompose.storage?.absolutePath, ".garminconnect")
+        val garminMFA = File(AppState.storage?.absolutePath, ".garminconnect")
         if (!checked && garminMFA.exists()) {
             garminMFA.deleteRecursively()
         }
@@ -719,7 +720,7 @@ fun HeatmapManagementDialog(
             // Add entries for each sport group
             GroupForHeatmap.entries.forEach { sportGroup ->
                 val fileName = "${sportGroup.name.lowercase()}.mbtiles"
-                val heatmapFile = File(MainActivityCompose.heatmapDir, fileName)
+                val heatmapFile = File(AppState.heatmapDir, fileName)
                 val trackCount = summits.count { summit ->
                     summit.sportType in sportGroup.sportTypes && summit.hasGpsTrack()
                 }
@@ -950,7 +951,7 @@ private fun generateHeatmapForSportGroup(
                     sportGroup != null -> "${sportGroup.name.lowercase()}.mbtiles"
                     else -> "unknown.mbtiles"
                 }
-                val outputFile = File(MainActivityCompose.heatmapDir, fileName)
+                val outputFile = File(AppState.heatmapDir, fileName)
 
                 pythonInstance?.let { python ->
                     try {
@@ -1504,7 +1505,7 @@ private fun countFilesToUpdate(
     summits: List<Summit>,
     fileRowType: FileRowType
 ): Int {
-    val cacheDir = File(MainActivityCompose.cache, "file_backups")
+    val cacheDir = File(AppState.cache, "file_backups")
     return summits.count { summit ->
         val file = fileRowType.getFile(summit)
         val backupFile = File(cacheDir, file.name)
@@ -1523,7 +1524,7 @@ private fun performBulkUpdate(
     onSaveSummit: (Boolean, Summit) -> Unit,
     coroutineScope: CoroutineScope
 ) {
-    val cacheDir = File(MainActivityCompose.cache, "file_backups")
+    val cacheDir = File(AppState.cache, "file_backups")
     val summitsToUpdate = summits.filter { summit ->
         val file = fileRowType.getFile(summit)
         val backupFile = File(cacheDir, file.name)
@@ -1576,7 +1577,7 @@ private fun executeBulkUpdate(
     onSaveSummit: (Boolean, Summit) -> Unit,
     coroutineScope: CoroutineScope
 ): Job {
-    val cacheDir = File(MainActivityCompose.cache, "file_backups")
+    val cacheDir = File(AppState.cache, "file_backups")
 
     return coroutineScope.launch(Dispatchers.Main) {
         var successCount = 0

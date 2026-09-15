@@ -46,17 +46,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.EntityEvent
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.SortFilterValues
-import de.drtobiasprinz.summitbook.models.SummitEntitySummary
-import de.drtobiasprinz.summitbook.models.SummitEntityType
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose
-import de.drtobiasprinz.summitbook.utils.Constants
+import de.drtobiasprinz.summitbook.data.db.entities.EntityEvent
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.filters.SortFilterValues
+import de.drtobiasprinz.summitbook.ui.filters.SummitEntitySummary
+import de.drtobiasprinz.summitbook.ui.filters.SummitEntityType
+import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
+import de.drtobiasprinz.summitbook.core.Constants
 import java.text.NumberFormat
 import java.util.concurrent.TimeUnit
 import kotlin.math.round
 import kotlin.math.roundToInt
+import de.drtobiasprinz.summitbook.data.appstate.AppState
 
 /**
  * Main screen for displaying summit entities with tabbed interface
@@ -310,7 +311,7 @@ fun SummitEntityCard(
     val relevantEvents = entityEvents.filter { it.equipmentName == entity.name }
         .sortedByDescending { it.date }
 
-    val isActive = entity.name in MainActivityCompose.peaks.map { it.name }
+    val isActive = entity.name in AppState.peaks.map { it.name }
     val imageResourceId = if (isActive && entityType.drawableIdActive != null) {
         entityType.drawableIdActive!!
     } else {

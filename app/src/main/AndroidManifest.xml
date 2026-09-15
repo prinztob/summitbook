@@ -22,12 +22,22 @@
         android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.SummitBook"
         tools:targetApi="35">
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:exported="false"
             android:theme="@style/Theme.MaterialComponents.DayNight.WindowOptOutEdgeToEdge" />
         <activity
-            android:name="de.drtobiasprinz.summitbook.ui.MainActivityCompose"
+            android:name="de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -40,9 +50,9 @@
                 android:value="" />
         </activity>
 
-        <activity android:name=".SummitEntryDetailsComposeActivity" />
-        <activity android:name=".SegmentEntryDetailsComposeActivity" />
-        <activity android:name=".PythonActivity" />
+        <activity android:name=".ui.activities.SummitEntryDetailsComposeActivity" />
+        <activity android:name=".ui.activities.SegmentEntryDetailsComposeActivity" />
+        <activity android:name=".ui.activities.PythonActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -55,7 +65,7 @@
         </provider>
 
         <activity
-            android:name=".ReceiverActivityCompose"
+            android:name=".ui.activities.ReceiverActivityCompose"
             android:exported="true"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">
@@ -116,7 +126,7 @@
 
 
         <receiver
-            android:name=".ui.widget.SummitBookWidgetReceiver"
+            android:name=".widget.SummitBookWidgetReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

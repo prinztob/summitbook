@@ -44,11 +44,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.IgnoredActivity
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.GarminPythonExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose
-import de.drtobiasprinz.summitbook.viewmodel.DatabaseViewModel
+import de.drtobiasprinz.summitbook.data.db.entities.IgnoredActivity
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.sync.GarminPythonExecutor
+import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -56,6 +56,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import de.drtobiasprinz.summitbook.data.appstate.AppState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -650,12 +651,12 @@ private fun updateEntriesWithoutIgnored(
 
     val allEntries = if (showAll) {
         getAllActivitiesFromThirdParty(
-            MainActivityCompose.activitiesDir,
+            AppState.activitiesDir,
             activityIdsInSummitBook
         )
     } else {
         getAllActivitiesFromThirdParty(
-            MainActivityCompose.activitiesDir,
+            AppState.activitiesDir,
             activityIdsInSummitBook,
             activitiesIdIgnored
         )

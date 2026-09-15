@@ -51,12 +51,13 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.SummitEntryDetailsComposeActivity
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose
-import de.drtobiasprinz.summitbook.utils.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
+import de.drtobiasprinz.summitbook.ui.activities.SummitEntryDetailsComposeActivity
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
+import de.drtobiasprinz.summitbook.core.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import kotlinx.coroutines.Job
 import kotlin.math.roundToInt
+import de.drtobiasprinz.summitbook.data.appstate.AppState
 
 /**
  * Composable function that displays a list of summits
@@ -66,7 +67,7 @@ import kotlin.math.roundToInt
 fun SummitsListScreen(
     filteredSummits: List<Summit>,
     summitsFromDatabase: List<Summit>,
-    peaks: List<de.drtobiasprinz.summitbook.db.entities.Peak>,
+    peaks: List<de.drtobiasprinz.summitbook.data.db.entities.Peak>,
     modifier: Modifier = Modifier,
     isBookmark: Boolean = false,
     onSaveSummit: (Boolean, Summit) -> Job,
@@ -127,7 +128,7 @@ fun SummitsListScreen(
 @Composable
 fun SummitCard(
     summitsFromDatabase: List<Summit>,
-    peaks: List<de.drtobiasprinz.summitbook.db.entities.Peak>,
+    peaks: List<de.drtobiasprinz.summitbook.data.db.entities.Peak>,
     summit: Summit,
     isBookmark: Boolean,
     onDelete: (Summit) -> Unit,
@@ -598,13 +599,13 @@ fun RecordBadges(summit: Summit, modifier: Modifier = Modifier) {
     ) {
         // Power record badge
         val powerRecordColor = when (summit.activityId) {
-            in MainActivityCompose.activitiesWithPowerRecordsAll -> Color.rgb(255, 215, 0) // Gold
-            in MainActivityCompose.activitiesWithPowerRecordsLast5Years -> Color.rgb(
+            in AppState.activitiesWithPowerRecordsAll -> Color.rgb(255, 215, 0) // Gold
+            in AppState.activitiesWithPowerRecordsLast5Years -> Color.rgb(
                 192,
                 192,
                 192
             ) // Silver
-            in MainActivityCompose.activitiesWithPowerRecordsFiltered -> Color.rgb(
+            in AppState.activitiesWithPowerRecordsFiltered -> Color.rgb(
                 168,
                 112,
                 0
@@ -624,13 +625,13 @@ fun RecordBadges(summit: Summit, modifier: Modifier = Modifier) {
 
         // Vertical velocity record badge
         val verticalVelocityRecordColor = when (summit.activityId) {
-            in MainActivityCompose.activitiesWithVerticalVelocityRecordsAll -> Color.rgb(255, 215, 0) // Gold
-            in MainActivityCompose.activitiesWithVerticalVelocityRecordsLast5Years -> Color.rgb(
+            in AppState.activitiesWithVerticalVelocityRecordsAll -> Color.rgb(255, 215, 0) // Gold
+            in AppState.activitiesWithVerticalVelocityRecordsLast5Years -> Color.rgb(
                 192,
                 192,
                 192
             ) // Silver
-            in MainActivityCompose.activitiesWithVerticalVelocityRecordsFiltered -> Color.rgb(
+            in AppState.activitiesWithVerticalVelocityRecordsFiltered -> Color.rgb(
                 168,
                 112,
                 0
@@ -650,13 +651,13 @@ fun RecordBadges(summit: Summit, modifier: Modifier = Modifier) {
 
         // Average velocity record badge
         val averageVelocityRecordColor = when (summit.activityId) {
-            in MainActivityCompose.activitiesWithAverageVelocityRecordsAll -> Color.rgb(255, 215, 0) // Gold
-            in MainActivityCompose.activitiesWithAverageVelocityRecordsLast5Years -> Color.rgb(
+            in AppState.activitiesWithAverageVelocityRecordsAll -> Color.rgb(255, 215, 0) // Gold
+            in AppState.activitiesWithAverageVelocityRecordsLast5Years -> Color.rgb(
                 192,
                 192,
                 192
             ) // Silver
-            in MainActivityCompose.activitiesWithAverageVelocityRecordsFiltered -> Color.rgb(
+            in AppState.activitiesWithAverageVelocityRecordsFiltered -> Color.rgb(
                 168,
                 112,
                 0
@@ -676,7 +677,7 @@ fun RecordBadges(summit: Summit, modifier: Modifier = Modifier) {
 
         // Segment record badge
         val bestPositionInSegment =
-            MainActivityCompose.activitiesWithSegmentsRecord.firstOrNull { it.first == summit.activityId }
+            AppState.activitiesWithSegmentsRecord.firstOrNull { it.first == summit.activityId }
 
         if (bestPositionInSegment != null) {
             val segmentColor = when (bestPositionInSegment.second) {

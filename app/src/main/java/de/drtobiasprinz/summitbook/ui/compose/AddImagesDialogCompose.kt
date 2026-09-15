@@ -53,7 +53,7 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.yalantis.ucrop.UCrop
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch

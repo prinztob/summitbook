@@ -61,17 +61,17 @@ import com.chaquo.python.android.AndroidPlatform
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.ElevationData
-import de.drtobiasprinz.summitbook.db.entities.GarminData
-import de.drtobiasprinz.summitbook.db.entities.SportType
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.db.entities.VelocityData
-import de.drtobiasprinz.summitbook.ui.GpxPyExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonInstance
-import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
-import de.drtobiasprinz.summitbook.ui.utils.JsonUtils
-import de.drtobiasprinz.summitbook.utils.FileHelper
-import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
+import de.drtobiasprinz.summitbook.data.db.entities.ElevationData
+import de.drtobiasprinz.summitbook.data.db.entities.GarminData
+import de.drtobiasprinz.summitbook.data.db.entities.SportType
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.db.entities.VelocityData
+import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
+import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
+import de.drtobiasprinz.summitbook.sync.GarminTrackAndDataDownloader
+import de.drtobiasprinz.summitbook.core.utils.JsonUtils
+import de.drtobiasprinz.summitbook.data.maps.FileHelper
+import de.drtobiasprinz.summitbook.data.maps.OfflineMapAnalyzer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -85,7 +85,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import de.drtobiasprinz.summitbook.utils.Constants.CONNECTED_ACTIVITY_PREFIX
+import de.drtobiasprinz.summitbook.core.Constants.CONNECTED_ACTIVITY_PREFIX
 import java.util.concurrent.TimeUnit
 import kotlin.math.round
 import kotlin.math.roundToInt
@@ -97,7 +97,7 @@ import kotlin.math.roundToInt
 @Composable
 fun AddSummitDialogCompose(
     summitsFromDatabase: List<Summit>,
-    peaks: List<de.drtobiasprinz.summitbook.db.entities.Peak>,
+    peaks: List<de.drtobiasprinz.summitbook.data.db.entities.Peak>,
     summitId: Long = 0L,
     isBookmark: Boolean = false,
     uri: Uri? = null,
@@ -656,7 +656,7 @@ fun AdditionalDataFields(
     equipments: List<String>, onEquipmentsChange: (List<String>) -> Unit,
     comments: String, onCommentsChange: (String) -> Unit,
     summitsFromDatabase: List<Summit>,
-    peaks: List<de.drtobiasprinz.summitbook.db.entities.Peak>,
+    peaks: List<de.drtobiasprinz.summitbook.data.db.entities.Peak>,
     onPeakToggle: ((String, Boolean) -> Unit)? = null,
     elevationAndSpeedExpanded: Boolean,
     onElevationAndSpeedExpandedChange: (Boolean) -> Unit,

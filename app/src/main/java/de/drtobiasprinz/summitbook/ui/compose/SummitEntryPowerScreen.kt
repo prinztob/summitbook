@@ -37,9 +37,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.TextFieldPower
-import de.drtobiasprinz.summitbook.ui.utils.ExtremaValuesSummits
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.filters.TextFieldPower
+import de.drtobiasprinz.summitbook.data.analytics.ExtremaValuesSummits
 import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Date

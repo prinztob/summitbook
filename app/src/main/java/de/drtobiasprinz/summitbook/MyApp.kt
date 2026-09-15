@@ -2,9 +2,11 @@ package de.drtobiasprinz.summitbook
 
 import android.app.Application
 import android.os.StrictMode
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
-import de.drtobiasprinz.summitbook.repository.DatabaseRepository
-import de.drtobiasprinz.summitbook.utils.PreferencesHelper.initPreferences
+import de.drtobiasprinz.summitbook.data.repository.DatabaseRepository
+import de.drtobiasprinz.summitbook.core.preferences.PreferencesHelper.initPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -12,10 +14,18 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
-class MyApp : Application() {
+class MyApp : Application(), Configuration.Provider {
 
     @Inject
     lateinit var repository: DatabaseRepository
+
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 
     override fun onCreate() {
         // Enable StrictMode for debug builds to detect main thread violations

@@ -57,15 +57,16 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.toBitmap
-import de.drtobiasprinz.summitbook.Keys
+import de.drtobiasprinz.summitbook.core.Keys
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.SportType
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
-import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling.Companion.TAG
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
-import de.drtobiasprinz.summitbook.ui.MapCustomInfoBubble
-import de.drtobiasprinz.summitbook.ui.MapProvider
+import de.drtobiasprinz.summitbook.data.db.entities.SportType
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling
+import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling.Companion.TAG
+import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
+import de.drtobiasprinz.summitbook.ui.view.MapCustomInfoBubble
+import de.drtobiasprinz.summitbook.data.maps.MapProvider
+import de.drtobiasprinz.summitbook.data.maps.MapTilesHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -87,7 +88,7 @@ import org.osmdroid.views.overlay.TilesOverlay
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
-import de.drtobiasprinz.summitbook.utils.FileHelper
+import de.drtobiasprinz.summitbook.data.maps.FileHelper
 import java.io.File
 
 @RequiresApi(Build.VERSION_CODES.S)
@@ -668,7 +669,7 @@ private fun showOverlayIfExist(
 
 private fun getLayerFiles(): List<Pair<File, String>> {
     val fileEnding = "mbtiles"
-    val overlayFolder = File(CustomMapViewToAllowScrolling.getOsmdroidTilesFolder(), "overlays")
+    val overlayFolder = File(MapTilesHelper.getOsmdroidTilesFolder(), "overlays")
     return overlayFolder.listFiles()?.filter { it.name.endsWith(".${fileEnding}") }
         ?.mapNotNull { Pair(it, it.name.replace(".$fileEnding", "")) } ?: emptyList()
 }

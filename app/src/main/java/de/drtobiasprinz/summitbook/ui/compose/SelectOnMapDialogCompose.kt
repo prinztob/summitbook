@@ -43,18 +43,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.res.ResourcesCompat
 import de.drtobiasprinz.summitbook.BuildConfig
-import de.drtobiasprinz.summitbook.Keys
+import de.drtobiasprinz.summitbook.core.Keys
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.GpsTrack
-import de.drtobiasprinz.summitbook.models.TrackColor
-import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.pythonExecutor
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
-import de.drtobiasprinz.summitbook.ui.utils.GarminTrackAndDataDownloader
-import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.copyGpxFileToCache
-import de.drtobiasprinz.summitbook.ui.utils.GpsUtils.Companion.prepareGpxTrack
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.model.GpsTrack
+import de.drtobiasprinz.summitbook.data.model.TrackColor
+import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling
+import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
+import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
+import de.drtobiasprinz.summitbook.sync.GarminTrackAndDataDownloader
+import de.drtobiasprinz.summitbook.sync.GarminPythonExecutor
+import de.drtobiasprinz.summitbook.data.analytics.GpsUtils.Companion.copyGpxFileToCache
+import de.drtobiasprinz.summitbook.data.analytics.GpsUtils.Companion.prepareGpxTrack
 import io.ticofab.androidgpxparser.parser.GPXParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -73,6 +73,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import de.drtobiasprinz.summitbook.data.appstate.AppState
 
 /**
  * Jetpack Compose version of SelectOnOsMapActivity
@@ -108,7 +109,7 @@ fun SelectOnMapDialogCompose(
     ) { uri ->
         uri?.let {
             scope.launch {
-                val file = File(MainActivityCompose.cache, "new_gpx_track.gpx")
+                val file = File(AppState.cache, "new_gpx_track.gpx")
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
                     copyGpxFileToCache(inputStream, file)
                 }
@@ -453,7 +454,7 @@ fun SelectOnMapDialogCompose(
                                     withContext(Dispatchers.IO) {
                                         val downloader = GarminTrackAndDataDownloader(
                                             listOf(summitEntry),
-                                            pythonExecutor,
+                                            GarminPythonExecutor.instance,
                                             sharedPreferences.getBoolean(Keys.PREF_DOWNLOAD_TCX, false)
                                         )
                                         downloader.downloadTracks(forceDownload = true)

@@ -30,9 +30,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.EntityEvent
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.models.SummitEntitySummary
+import de.drtobiasprinz.summitbook.data.db.entities.EntityEvent
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.filters.SummitEntitySummary
 import java.text.ParseException
 import java.util.Date
 

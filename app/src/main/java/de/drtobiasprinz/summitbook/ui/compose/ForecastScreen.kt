@@ -41,10 +41,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.Forecast
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose.Companion.sharedPreferences
-import de.drtobiasprinz.summitbook.utils.ForecastConstants
+import de.drtobiasprinz.summitbook.data.db.entities.Forecast
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
+import de.drtobiasprinz.summitbook.core.ForecastConstants
 import kotlinx.coroutines.Job
 import java.util.Calendar
 import kotlin.math.ceil

@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.ui.CustomMapViewToAllowScrolling
+import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling
 import org.osmdroid.config.Configuration
 
 @Composable

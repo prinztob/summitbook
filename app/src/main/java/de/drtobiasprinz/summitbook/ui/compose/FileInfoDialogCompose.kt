@@ -37,10 +37,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.MainActivityCompose
-import de.drtobiasprinz.summitbook.ui.utils.FileRowType
-import de.drtobiasprinz.summitbook.utils.OfflineMapAnalyzer
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
+import de.drtobiasprinz.summitbook.sync.FileRowType
+import de.drtobiasprinz.summitbook.data.maps.OfflineMapAnalyzer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -51,6 +51,7 @@ import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import de.drtobiasprinz.summitbook.data.appstate.AppState
 
 /**
  * Jetpack Compose version of FileInfoDialog
@@ -67,7 +68,7 @@ fun FileInfoDialogCompose(
     val coroutineScope = rememberCoroutineScope()
     val cacheDir = remember {
         File(
-            MainActivityCompose.cache,
+            AppState.cache,
             "file_backups"
         ).apply { if (!exists()) mkdirs() }
     }

@@ -1,0 +1,126 @@
+package de.drtobiasprinz.summitbook.ui.viewmodel
+
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import de.drtobiasprinz.summitbook.data.db.entities.Peak
+import de.drtobiasprinz.summitbook.data.db.entities.Segment
+import de.drtobiasprinz.summitbook.data.db.entities.SegmentEntry
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.repository.DatabaseRepository
+import de.drtobiasprinz.summitbook.data.analytics.ExtremaValuesSummits
+import de.drtobiasprinz.summitbook.core.DataStatus
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class PageViewModel @Inject constructor(private val repository: DatabaseRepository) : ViewModel() {
+
+    private var _summitsList = MutableLiveData<DataStatus<List<Summit>>>()
+    val summitsList: LiveData<DataStatus<List<Summit>>>
+        get() = _summitsList
+
+    private val _segmentsList = MutableLiveData<DataStatus<List<Segment>>>()
+    val segmentsList: LiveData<DataStatus<List<Segment>>>
+        get() = _segmentsList
+
+    private val _summitToView = MutableLiveData<DataStatus<Summit>>()
+    val summitToView: LiveData<DataStatus<Summit>>
+        get() = _summitToView
+
+    private val _summitToCompare = MutableLiveData<DataStatus<Summit?>>()
+    val summitToCompare: LiveData<DataStatus<Summit?>>
+        get() = _summitToCompare
+
+    private val _extremaValuesSummits = MutableLiveData<ExtremaValuesSummits?>()
+    val extremaValuesSummits: LiveData<ExtremaValuesSummits?>
+        get() = _extremaValuesSummits
+
+    private val _peaks = MutableLiveData<DataStatus<List<Peak>>>()
+    val peaks: LiveData<DataStatus<List<Peak>>>
+        get() = _peaks
+
+    private val _mountainPasses = MutableLiveData<DataStatus<List<SegmentEntry>>>()
+    val mountainPasses: LiveData<DataStatus<List<SegmentEntry>>>
+        get() = _mountainPasses
+
+    init {
+        getAllSummits()
+        getAllSegments()
+        setSummitToCompareToNull()
+        getPeaks()
+        getAllMountainPasses()
+    }
+
+    private fun getAllSummits() = viewModelScope.launch {
+        _summitsList.postValue(DataStatus.loading())
+        repository.getAllSummits()
+            .catch { _summitsList.postValue(DataStatus.error(it.message.toString())) }
+            .collect { summits ->
+                _summitsList.postValue(DataStatus.success(summits, summits.isEmpty()))
+                // Calculate extrema values on background thread asynchronously
+                calculateExtremaValues(summits)
+            }
+    }
+
+    private fun calculateExtremaValues(summits: List<Summit>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val extrema = if (summits.isNotEmpty()) {
+                ExtremaValuesSummits(summits)
+            } else {
+                null
+            }
+            _extremaValuesSummits.postValue(extrema)
+        }
+    }
+
+    fun getSummitToView(id: Long) = viewModelScope.launch {
+        repository.getDetailsSummit(id).collect {
+            _summitToView.postValue(DataStatus.success(it, false))
+        }
+    }
+
+    fun getSummitToCompare(id: Long) = viewModelScope.launch {
+        repository.getDetailsSummit(id).collect {
+            _summitToCompare.postValue(DataStatus.success(it, false))
+        }
+    }
+
+    fun setSummitToCompareToNull() {
+        _summitToCompare.postValue(DataStatus.success(null, false))
+    }
+
+    private fun getAllSegments() = viewModelScope.launch {
+        repository.getAllSegments().collect {
+            _segmentsList.postValue(DataStatus.success(it, false))
+        }
+    }
+
+    private fun getPeaks() = viewModelScope.launch {
+        repository.getPeaks().collect {
+            _peaks.postValue(DataStatus.success(it, false))
+        }
+    }
+
+    private fun getAllMountainPasses() = viewModelScope.launch {
+        repository.getAllMountainPasses()
+            .catch { _mountainPasses.postValue(DataStatus.error(it.message.toString())) }
+            .collect { _mountainPasses.postValue(DataStatus.success(it, it.isEmpty())) }
+    }
+
+    fun saveMountainPass(mountainPass: SegmentEntry) = viewModelScope.launch {
+        repository.saveSegmentEntry(mountainPass)
+    }
+
+    fun updateMountainPass(mountainPass: SegmentEntry) = viewModelScope.launch {
+        repository.updateSegmentEntry(mountainPass)
+    }
+
+    fun deleteMountainPass(mountainPass: SegmentEntry) = viewModelScope.launch {
+        repository.deleteSegmentEntry(mountainPass)
+    }
+}

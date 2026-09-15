@@ -1,0 +1,134 @@
+package de.drtobiasprinz.summitbook.data.model
+
+import de.drtobiasprinz.summitbook.data.db.entities.SportType
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.appstate.AppState.peaks
+import de.drtobiasprinz.summitbook.core.Constants.DATE_FORMAT
+import java.text.DateFormat
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
+import de.drtobiasprinz.summitbook.data.db.entities.Surface
+import de.drtobiasprinz.summitbook.data.db.entities.RoadType
+
+class StatisticEntry {
+    private var totalActivities = 0
+    private var totalSummits = 0
+    var totalRoadSurfaceMeter: Map<Surface, Int> = emptyMap()
+    var totalRoadTypeMeter: Map<RoadType, Int> = emptyMap()
+    private var visitedCountries = 0
+    var totalHm = 0
+    var totalKm = 0.0
+    private var achievementHm = 0.0
+    private var achievementKm = 0.0
+    private var achievementActivity = 0.0
+    var expectedAchievementActivityAbsolute = 0.0
+    var expectedAchievementHmAbsolute = 0.0
+    var expectedAchievementKmAbsolute = 0.0
+    private var filteredSummitEntries: List<Summit> = emptyList()
+    private var activitiesPerYear = 50
+    private var kilometerPerYear = 1200
+    private var elevationGainPerYear = 50000
+    private var indoorHeightMeterPercent = 0
+
+
+    constructor(
+        filteredSummitEntries: List<Summit>,
+        indoorHeightMeterPercent: Int = 0
+    ) {
+        this.filteredSummitEntries = filteredSummitEntries
+        this.indoorHeightMeterPercent = indoorHeightMeterPercent
+    }
+
+    constructor(
+        filteredSummitEntries: List<Summit>,
+        activitiesPerYear: Int,
+        kilometerPerYear: Int,
+        elevationGainPerYear: Int,
+        indoorHeightMeterPercent: Int = 0,
+    ) {
+        this.filteredSummitEntries = filteredSummitEntries
+        this.elevationGainPerYear = elevationGainPerYear
+        this.activitiesPerYear = activitiesPerYear
+        this.kilometerPerYear = kilometerPerYear
+        this.indoorHeightMeterPercent = indoorHeightMeterPercent
+    }
+
+    fun calculate() {
+        totalActivities = filteredSummitEntries.size
+        totalSummits = filteredSummitEntries.filter { it.isPeak }.size + (
+                filteredSummitEntries
+                    .flatMap { it.places }
+                    .filter { it in peaks.map { peak -> peak.name } }
+                    .size
+                )
+        totalRoadSurfaceMeter = Surface.entries.associateWith { surface ->
+            filteredSummitEntries.sumOf {
+                it.distancePerSurface[surface] ?: 0
+            }
+        }
+        totalRoadTypeMeter = RoadType.entries.associateWith { roadType ->
+            filteredSummitEntries.sumOf {
+                it.distancePerRoadType[roadType] ?: 0
+            }
+        }
+        visitedCountries =
+            filteredSummitEntries.flatMap { it.countries }.toSet().filter { it != "" }.size
+        totalHm = filteredSummitEntries.sumOf {
+            if (it.sportType == SportType.IndoorTrainer) {
+                it.elevationData.elevationGain * indoorHeightMeterPercent / 100
+            } else {
+                it.elevationData.elevationGain
+            }
+        }
+        totalKm = filteredSummitEntries.sumOf { it.kilometers }
+        achievementActivity = (totalSummits * 100.0 / activitiesPerYear).roundToInt().toDouble()
+        achievementKm = totalKm * 100.0 / kilometerPerYear
+        achievementHm = totalHm * 100.0 / elevationGainPerYear
+        setExpectedAchievement()
+    }
+
+    fun setExpectedAchievement() {
+        val now = Calendar.getInstance()
+        val date = now.time
+        val currentYear = now[Calendar.YEAR].toString()
+        val df: DateFormat = SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH)
+        val beginOfYear: Date?
+        try {
+            beginOfYear = df.parse(String.format("%s-01-01", currentYear))
+            val diff = date.time - beginOfYear.time
+            expectedAchievementHmAbsolute =
+                (elevationGainPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
+            expectedAchievementKmAbsolute =
+                (kilometerPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
+            expectedAchievementActivityAbsolute =
+                (activitiesPerYear * TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) / 365.0)
+        } catch (e: ParseException) {
+            e.printStackTrace()
+        }
+    }
+
+    fun getTotalActivities(): Int {
+        return totalActivities
+    }
+
+    fun getTotalSummits(): Int {
+        return totalSummits
+    }
+
+    fun getVisitedCountries(): Int {
+        return visitedCountries
+    }
+
+    fun getAchievement(): Double {
+        return achievementHm
+    }
+
+    fun getExpectedAchievementHmPercent(): Double {
+        return expectedAchievementHmAbsolute / elevationGainPerYear * 100
+    }
+}
