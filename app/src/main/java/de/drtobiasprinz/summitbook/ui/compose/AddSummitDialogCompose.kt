@@ -5,7 +5,6 @@ package de.drtobiasprinz.summitbook.ui.compose
 import android.app.DatePickerDialog
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -43,14 +42,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -64,22 +61,19 @@ import com.chaquo.python.android.AndroidPlatform
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.core.Constants.CONNECTED_ACTIVITY_PREFIX
+import de.drtobiasprinz.summitbook.core.utils.JsonUtils
+import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
 import de.drtobiasprinz.summitbook.data.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.data.db.entities.GarminData
 import de.drtobiasprinz.summitbook.data.db.entities.SportType
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.db.entities.VelocityData
-import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
-import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
-import de.drtobiasprinz.summitbook.sync.GarminTrackAndDataDownloader
-import de.drtobiasprinz.summitbook.core.utils.JsonUtils
-import de.drtobiasprinz.summitbook.ui.compose.enumSaver
-import de.drtobiasprinz.summitbook.ui.compose.fileSaver
-import de.drtobiasprinz.summitbook.ui.compose.jsonSaver
-import de.drtobiasprinz.summitbook.ui.compose.nullableJsonSaver
-import de.drtobiasprinz.summitbook.ui.compose.stringListSaver
 import de.drtobiasprinz.summitbook.data.maps.FileHelper
 import de.drtobiasprinz.summitbook.data.maps.OfflineMapAnalyzer
+import de.drtobiasprinz.summitbook.sync.GarminTrackAndDataDownloader
+import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
+import de.drtobiasprinz.summitbook.ui.theme.RecordGreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -93,7 +87,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import de.drtobiasprinz.summitbook.core.Constants.CONNECTED_ACTIVITY_PREFIX
 import java.util.concurrent.TimeUnit
 import kotlin.math.round
 import kotlin.math.roundToInt
@@ -458,19 +451,9 @@ fun AddSummitDialogCompose(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        val cancelMessage = stringResource(
-                            if (isEdit) R.string.update_summit_cancel
-                            else R.string.add_new_summit_cancel
-                        )
-
                         Button(
                             onClick = {
                                 onDismiss()
-                                Toast.makeText(
-                                    context,
-                                    cancelMessage,
-                                    Toast.LENGTH_SHORT
-                                ).show()
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                             modifier = Modifier.weight(1f)
@@ -505,7 +488,7 @@ fun AddSummitDialogCompose(
                                 }
                             },
                             enabled = isSaveEnabled && !isLoading,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                            colors = ButtonDefaults.buttonColors(containerColor = RecordGreen),
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(if (isEdit) stringResource(R.string.update) else stringResource(R.string.saveButtonText))
@@ -1392,8 +1375,8 @@ private fun computeConnectedSummits(
  * The fields are Compose state, so they cannot be serialized via reflection;
  * they are saved as a flat string list instead.
  */
-val PerformanceDataStateSaver: Saver<PerformanceDataState, List<String>> = listSaver(
-    save = { state -> listOf(it.calories, it.averageHr, it.maxHr, it.ftp, it.vo2Max, it.normPower, it.avgPower, it.power1s, it.power2s, it.power5s, it.power10s, it.power20s, it.power30s, it.power1min, it.power2min, it.power5min, it.power10min, it.power20min, it.power30min, it.power1h, it.power2h, it.power5h) },
+val PerformanceDataStateSaver = listSaver<PerformanceDataState, String>(
+    save = { state -> listOf(state.calories, state.averageHr, state.maxHr, state.ftp, state.vo2Max, state.normPower, state.avgPower, state.power1s, state.power2s, state.power5s, state.power10s, state.power20s, state.power30s, state.power1min, state.power2min, state.power5min, state.power10min, state.power20min, state.power30min, state.power1h, state.power2h, state.power5h) },
     restore = { values ->
         PerformanceDataState().apply {
             calories = values[0]

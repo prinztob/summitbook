@@ -53,6 +53,7 @@
         <activity android:name=".ui.activities.SummitEntryDetailsComposeActivity" />
         <activity android:name=".ui.activities.SegmentEntryDetailsComposeActivity" />
         <activity android:name=".ui.activities.PythonActivity" />
+        <activity android:name=".ui.activities.GarminLoginActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.ui.activities
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +73,7 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
     private var isAnalyzingTrack by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         pageViewModel = ViewModelProvider(this)[PageViewModel::class.java]
@@ -227,7 +229,7 @@ fun SummitEntryDetailsScreen(
                     IconButton(onClick = onBackPressed) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_baseline_arrow_back_24),
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 }, colors = TopAppBarDefaults.topAppBarColors(

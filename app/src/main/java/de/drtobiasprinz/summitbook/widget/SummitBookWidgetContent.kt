@@ -5,12 +5,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.DarkGray
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.ComponentName
+import android.os.Bundle
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.actionStartActivity
+import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.background
 import androidx.glance.appwidget.cornerRadius
@@ -30,9 +33,11 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
+import de.drtobiasprinz.summitbook.core.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
+import de.drtobiasprinz.summitbook.ui.activities.SummitEntryDetailsComposeActivity
 import java.text.NumberFormat
 import kotlin.math.roundToInt
 
@@ -225,13 +230,26 @@ private fun RecentSummitsCard(
     }
 }
 
+@OptIn(androidx.glance.ExperimentalGlanceApi::class)
 @Composable
 private fun SummitItem(
     summit: Summit
 ) {
     val garminData = summit.garminData
+    val context = LocalContext.current
+    // Deep link into the summit's details; the Bundle carries the same
+    // intent extra the in-app launcher uses (SUMMIT_ID_EXTRA_IDENTIFIER)
+    val launchDetails = actionStartActivity(
+        ComponentName(context, SummitEntryDetailsComposeActivity::class.java),
+        actionParametersOf(),
+        Bundle().apply {
+            putLong(SUMMIT_ID_EXTRA_IDENTIFIER, summit.id)
+        }
+    )
     Row(
-        modifier = GlanceModifier.fillMaxWidth(),
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .clickable(launchDetails),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Sport type icon

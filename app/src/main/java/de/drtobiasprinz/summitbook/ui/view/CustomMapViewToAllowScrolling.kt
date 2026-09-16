@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.Paint
-import android.os.Environment
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
@@ -14,12 +13,20 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.edit
 import androidx.core.content.res.ResourcesCompat
 import androidx.documentfile.provider.DocumentFile
-import de.drtobiasprinz.summitbook.core.Keys
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.data.db.entities.GroupForHeatmap
+import de.drtobiasprinz.summitbook.core.Keys
+import de.drtobiasprinz.summitbook.core.preferences.PreferencesHelper
+import de.drtobiasprinz.summitbook.data.appstate.AppState.cache
+import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
+import de.drtobiasprinz.summitbook.data.db.entities.RoadType
 import de.drtobiasprinz.summitbook.data.db.entities.SportType
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.db.entities.Surface
 import de.drtobiasprinz.summitbook.data.db.entities.TrackBoundingBox
+import de.drtobiasprinz.summitbook.data.maps.FileHelper
+import de.drtobiasprinz.summitbook.data.maps.MapProvider
+import de.drtobiasprinz.summitbook.data.maps.MapTilesHelper
+import de.drtobiasprinz.summitbook.data.maps.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.data.model.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.data.model.GpsTrack
 import de.drtobiasprinz.summitbook.data.model.GpsTrack.Companion.getAnimatedPathManager
@@ -27,25 +34,13 @@ import de.drtobiasprinz.summitbook.data.model.GpsTrack.Companion.getHalfKilomete
 import de.drtobiasprinz.summitbook.data.model.GpsTrack.Companion.getKilometerManager
 import de.drtobiasprinz.summitbook.data.model.LocationInfo
 import de.drtobiasprinz.summitbook.data.model.RoadInfo
-import de.drtobiasprinz.summitbook.data.db.entities.RoadType
-import de.drtobiasprinz.summitbook.data.db.entities.Surface
 import de.drtobiasprinz.summitbook.data.model.TrackColor
-import de.drtobiasprinz.summitbook.data.appstate.AppState.cache
-import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
-import de.drtobiasprinz.summitbook.data.appstate.AppState.storage
-import de.drtobiasprinz.summitbook.data.maps.FileHelper
-import de.drtobiasprinz.summitbook.data.maps.MapProvider
-import de.drtobiasprinz.summitbook.data.maps.MapTilesHelper
-import de.drtobiasprinz.summitbook.data.maps.OfflineMapAnalyzer
-import de.drtobiasprinz.summitbook.core.preferences.PreferencesHelper
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -528,7 +523,7 @@ class CustomMapViewToAllowScrolling : MapView {
         fun showRoadInfoAtPosition(
             context: Context, geoPoint: GeoPoint, scope: CoroutineScope
         ) {
-            Toast.makeText(context, "Querying road info...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.querying_road_info), Toast.LENGTH_SHORT).show()
             scope.launch {
                 try {
                     var info: Pair<RoadInfo?, LocationInfo?>? = null
@@ -547,7 +542,7 @@ class CustomMapViewToAllowScrolling : MapView {
                 } catch (e: Exception) {
                     Log.e(TAG, "Error querying road info", e)
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.road_info_error, e.message ?: ""), Toast.LENGTH_SHORT).show()
                     }
                 }
             }

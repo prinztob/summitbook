@@ -57,6 +57,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import androidx.compose.ui.graphics.Color as ComposeColor
+import de.drtobiasprinz.summitbook.ui.theme.ChartTextLightGray
+import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
+import de.drtobiasprinz.summitbook.ui.theme.DarkCanvasDeep
 
 /**
  * Generic chart data point used by [PerformanceLineChart] and [OverviewScreen].
@@ -125,7 +128,7 @@ fun LineChartScreen(
     }
 
     val backgroundColor =
-        if (isDarkTheme) ComposeColor(0xFF121212) else ComposeColor(0xFFCCCCCC)
+        if (isDarkTheme) DarkCanvasDeep else ChartTextLightGray
     val textColor = if (isDarkTheme) ComposeColor.White else ComposeColor.Black
 
     Column(
@@ -166,7 +169,7 @@ fun LineChartScreen(
                     expanded = showDropdown,
                     onDismissRequest = { showDropdown = false },
                     properties = PopupProperties(focusable = true),
-                    containerColor = if (isDarkTheme) ComposeColor(0xFF1E1E1E) else ComposeColor.White
+                    containerColor = if (isDarkTheme) DarkCanvas else ComposeColor.White
                 ) {
                     spinnerEntries.forEach { entry ->
                         DropdownMenuItem(
@@ -311,7 +314,7 @@ fun LineChartLegendSection(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val backgroundColor = if (isDarkTheme) ComposeColor(0xFF1E1E1E) else ComposeColor.White
+    val backgroundColor = if (isDarkTheme) DarkCanvas else ComposeColor.White
     val textColor = if (isDarkTheme) ComposeColor.White else ComposeColor.Black
     val primaryColor = MaterialTheme.colorScheme.primary
 

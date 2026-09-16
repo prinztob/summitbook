@@ -103,10 +103,21 @@ class SortFilterValues(
         setInitialValues(summits, sharedPreferences)
         val filteredSummits = if (searchString != "" && searchString.length > 1) {
             summits.filter {
-                !it.isBookmark &&
+                // Parentheses are essential here: without them the
+                // &&/|| precedence would leak bookmarks matching
+                // comments/places into the search results
+                !it.isBookmark && (
                         it.name.contains(searchString, ignoreCase = true) ||
-                        it.comments.contains(searchString, ignoreCase = true) ||
-                        it.places.joinToString(";").contains(searchString, ignoreCase = true)
+                                it.comments.contains(searchString, ignoreCase = true) ||
+                                it.places.joinToString(";")
+                                    .contains(searchString, ignoreCase = true) ||
+                                it.participants.joinToString(";")
+                                    .contains(searchString, ignoreCase = true) ||
+                                it.countries.joinToString(";")
+                                    .contains(searchString, ignoreCase = true) ||
+                                it.equipments.joinToString(";")
+                                    .contains(searchString, ignoreCase = true)
+                        )
             }
         } else {
             summits.filter {

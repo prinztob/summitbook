@@ -703,7 +703,45 @@
     <string name="export_no_target">Es wurde keine Datei zum Speichern des Backups ausgewählt.</string>
     <string name="widget_data_unavailable">Daten aktuell nicht verfügbar. Öffnen Sie die App zum Aktualisieren.</string>
     <string name="widget_tap_to_open">Tippen, um SummitBook zu öffnen</string>
+    <string name="previous_month">Voriger Monat</string>
+    <string name="next_month">Nächster Monat</string>
+    <string name="previous_year">Voriges Jahr</string>
+    <string name="no_summit_cta_add">Ersten Eintrag hinzufügen</string>
+    <string name="no_summit_cta_garmin">Garmin verbinden</string>
+    <string name="no_summit_hint">Sie können GPX/TCX-Dateien auch aus anderen Apps mit SummitBook teilen.</string>
+    <string name="no_segments">Noch keine Segmente. Fügen Sie unten Segmentdetails hinzu, um Ihr erstes Segment zu erstellen.</string>
+    <string name="no_mountain_passes">Noch keine Pässe. Sie können einen Pass aus einem Gipfel mit GPS-Track erstellen.</string>
+    <string name="garmin_login_title">Garmin-Connect-Anmeldung</string>
+    <string name="garmin_login_running">Anmeldung bei Garmin Connect…</string>
+    <string name="garmin_login_done">Anmeldung abgeschlossen. Sie können diesen Bildschirm schließen.</string>
+    <string name="garmin_login_mfa_title">MFA-Einmalcode</string>
+    <string name="garmin_login_mfa_hint">Code aus Ihrer Authenticator-App</string>
     <string name="garmin_connect_failed">Verbindung zum Drittanbieter fehlgeschlagen. Bitte später erneut versuchen. Fehler: %1$s</string>
     <string name="retry">Erneut versuchen</string>
+
+    <string name="cancel">Abbrechen</string>
+    <string name="dismiss">Schließen</string>
+    <string name="change">Ändern</string>
+    <string name="generating">Wird erzeugt…</string>
+    <string name="maps_folder_error">Der Ordner für Offline-Karten muss .map-Dateien enthalten.</string>
+    <string name="cd_fullscreen">Vollbild</string>
+    <string name="cd_show_all_tracks">Alle Tracks anzeigen</string>
+    <string name="cd_change_map">Karte wechseln</string>
+    <string name="cd_center_on_location">Auf Standort zentrieren</string>
+    <string name="cd_center_on_summits">Auf Gipfel zentrieren</string>
+    <string name="cd_show_bookmarks">Lesezeichen anzeigen</string>
+    <string name="cd_show_summits">Gipfel anzeigen</string>
+    <string name="cd_follow_location">Standort folgen</string>
+    <string name="cd_toggle_overlay_sliders">Overlay-Regler ein-/ausblenden</string>
+    <string name="cd_toggle_heatmap">Heatmap ein-/ausblenden</string>
+    <string name="cd_select_date">Datum auswählen</string>
+    <string name="cd_close_search">Suche schließen</string>
+    <string name="cd_menu">Menü</string>
+    <string name="cd_reset_zoom">Zoom zurücksetzen</string>
+    <string name="cd_fullscreen_image">Vollbild-Ansicht</string>
+    <string name="summit_image_cd">Gipfel-Bild %1$d</string>
+    <string name="querying_road_info">Straßeninformationen werden abgefragt…</string>
+    <string name="road_info_error">Fehler: %1$s</string>
+    <string name="new_summit_marker">Neuer Gipfel</string>
 </resources>
 

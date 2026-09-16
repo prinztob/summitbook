@@ -17,7 +17,8 @@ import java.util.Date
  * Bundle-compatible primitives; complex domain objects go through Gson.
  */
 
-private val formStateGson = Gson()
+@PublishedApi
+internal val formStateGson = Gson()
 
 /**
  * Gson-based saver for non-null domain objects. Restore failures (e.g. a
@@ -71,9 +72,9 @@ val dateSaver: Saver<Date?, Long> = Saver(
 )
 
 /** Saver for List<String>. */
-val stringListSaver: Saver<List<String>, List<String>> = listSaver(
-    save = { it.toList() },
-    restore = { it }
+val stringListSaver = listSaver<List<String>, String>(
+    save = { list: List<String> -> list.toList() },
+    restore = { stored: List<String> -> stored }
 )
 
 /** Saver for a nullable File stored as its absolute path. */

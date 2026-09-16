@@ -26,7 +26,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -46,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -53,16 +57,17 @@ import coil.request.ImageRequest
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.ui.activities.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
-import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
 import de.drtobiasprinz.summitbook.core.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import kotlinx.coroutines.Job
 import kotlin.math.roundToInt
 import de.drtobiasprinz.summitbook.data.appstate.AppState
+import de.drtobiasprinz.summitbook.ui.theme.Scrim
 
 /**
  * Composable function that displays a list of summits
  * This replaces the RecyclerView-based SummitsAdapter
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SummitsListScreen(
     filteredSummits: List<Summit>,
@@ -74,6 +79,59 @@ fun SummitsListScreen(
     onDelete: (Summit) -> Unit = {},
     onPeakToggle: ((String, Boolean) -> Unit)? = null,
     onAddSegmentEntry: ((Summit) -> Unit)? = null,
+    onAddEntry: (() -> Unit)? = null,
+    onOpenSettings: (() -> Unit)? = null,
+    onRefresh: (() -> Unit)? = null,
+    isRefreshing: Boolean = false,
+) {
+    if (onRefresh != null) {
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            modifier = modifier.fillMaxSize()
+        ) {
+            SummitsListContent(
+                filteredSummits = filteredSummits,
+                summitsFromDatabase = summitsFromDatabase,
+                peaks = peaks,
+                isBookmark = isBookmark,
+                onSaveSummit = onSaveSummit,
+                onDelete = onDelete,
+                onPeakToggle = onPeakToggle,
+                onAddSegmentEntry = onAddSegmentEntry,
+                onAddEntry = onAddEntry,
+                onOpenSettings = onOpenSettings
+            )
+        }
+    } else {
+        SummitsListContent(
+            filteredSummits = filteredSummits,
+            summitsFromDatabase = summitsFromDatabase,
+            peaks = peaks,
+            isBookmark = isBookmark,
+            onSaveSummit = onSaveSummit,
+            onDelete = onDelete,
+            onPeakToggle = onPeakToggle,
+            onAddSegmentEntry = onAddSegmentEntry,
+            onAddEntry = onAddEntry,
+            onOpenSettings = onOpenSettings
+        )
+    }
+}
+
+@Composable
+private fun SummitsListContent(
+    modifier: Modifier = Modifier,
+    filteredSummits: List<Summit>,
+    summitsFromDatabase: List<Summit>,
+    peaks: List<de.drtobiasprinz.summitbook.data.db.entities.Peak>,
+    isBookmark: Boolean,
+    onSaveSummit: (Boolean, Summit) -> Job,
+    onDelete: (Summit) -> Unit,
+    onPeakToggle: ((String, Boolean) -> Unit)?,
+    onAddSegmentEntry: ((Summit) -> Unit)?,
+    onAddEntry: (() -> Unit)?,
+    onOpenSettings: (() -> Unit)?,
 ) {
     if (filteredSummits.isEmpty()) {
         // Show app icon and "no summit" message when list is empty
@@ -95,6 +153,24 @@ fun SummitsListScreen(
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onBackground
             )
+            if (!isBookmark && onAddEntry != null && onOpenSettings != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(onClick = onAddEntry) {
+                    Text(stringResource(R.string.no_summit_cta_add))
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(onClick = onOpenSettings) {
+                    Text(stringResource(R.string.no_summit_cta_garmin))
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.no_summit_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 32.dp)
+                )
+            }
         }
     } else {
         LazyColumn(
@@ -194,7 +270,7 @@ fun SummitCard(
                         .align(Alignment.BottomStart)
                         .background(
                             if (currentSummit.hasImagePath()) {
-                                androidx.compose.ui.graphics.Color(0x55000000)
+                                Scrim
                             } else {
                                 androidx.compose.ui.graphics.Color.Transparent
                             }

@@ -316,7 +316,7 @@ class ReceiverActivityCompose : ComponentActivity() {
                 R.drawable.ic_outline_location_green_48,
                 null
             )
-            marker.title = "New summit"
+            marker.title = getString(R.string.new_summit_marker)
             mapView.overlays.add(marker)
         }
 

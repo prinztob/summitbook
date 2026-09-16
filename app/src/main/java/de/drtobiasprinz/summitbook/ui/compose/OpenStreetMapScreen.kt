@@ -633,7 +633,7 @@ fun MapTypeSelectionDialog(
         confirmButton = {},
         dismissButton = {
             Button(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -1097,7 +1097,7 @@ fun MapControlButtons(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_baseline_arrow_back_24),
-                    contentDescription = "Back"
+                    contentDescription = stringResource(R.string.back)
                 )
             }
         }
@@ -1115,7 +1115,7 @@ fun MapControlButtons(
                     if (fullscreenEnabled) R.drawable.baseline_fullscreen_exit_24
                     else R.drawable.baseline_fullscreen_24
                 ),
-                contentDescription = "Fullscreen"
+                contentDescription = stringResource(R.string.cd_fullscreen)
             )
         }
 
@@ -1127,7 +1127,7 @@ fun MapControlButtons(
         ) {
             Icon(
                 painterResource(R.drawable.ic_baseline_route_24),
-                contentDescription = "Show all tracks"
+                contentDescription = stringResource(R.string.cd_show_all_tracks)
             )
         }
 
@@ -1139,7 +1139,7 @@ fun MapControlButtons(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.baseline_more_vert_black_24dp),
-                contentDescription = "Change map"
+                contentDescription = stringResource(R.string.cd_change_map)
             )
         }
 
@@ -1151,7 +1151,7 @@ fun MapControlButtons(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.baseline_my_location_24),
-                contentDescription = "Center on location"
+                contentDescription = stringResource(R.string.cd_center_on_location)
             )
         }
 
@@ -1163,7 +1163,7 @@ fun MapControlButtons(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.baseline_center_focus_strong_24),
-                contentDescription = "Center on summits"
+                contentDescription = stringResource(R.string.cd_center_on_summits)
             )
         }
 
@@ -1176,7 +1176,7 @@ fun MapControlButtons(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_baseline_bookmarks_24),
-                contentDescription = "Show bookmarks"
+                contentDescription = stringResource(R.string.cd_show_bookmarks)
             )
         }
 
@@ -1189,7 +1189,7 @@ fun MapControlButtons(
         ) {
             Icon(
                 painterResource(R.drawable.baseline_directions_run_24),
-                contentDescription = "Show summits"
+                contentDescription = stringResource(R.string.cd_show_summits)
             )
         }
 
@@ -1204,7 +1204,7 @@ fun MapControlButtons(
                 painter = if (followLocationEnabled) painterResource(id = R.drawable.baseline_stop_circle_24) else painterResource(
                     id = R.drawable.baseline_play_circle_filled_24
                 ),
-                contentDescription = "Follow location"
+                contentDescription = stringResource(R.string.cd_follow_location)
             )
         }
         // Toggle overlay sliders button (only shown if overlay layers exist)
@@ -1217,7 +1217,7 @@ fun MapControlButtons(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_map_black_24dp),
-                    contentDescription = "Toggle overlay sliders"
+                    contentDescription = stringResource(R.string.cd_toggle_overlay_sliders)
                 )
             }
         }
@@ -1233,7 +1233,7 @@ fun MapControlButtons(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_terrain_24),
-                    contentDescription = "Toggle heatmap"
+                    contentDescription = stringResource(R.string.cd_toggle_heatmap)
                 )
             }
         }

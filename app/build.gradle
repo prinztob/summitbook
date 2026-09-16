@@ -95,6 +95,7 @@ dependencies {
     ksp libs.hilt.compiler
     //AndroidX Hilt (worker/navigation support)
     implementation libs.androidx.hilt.navigation.compose
+    implementation libs.androidx.navigation.compose
     implementation libs.androidx.hilt.work
     ksp libs.androidx.hilt.compiler
     //Room

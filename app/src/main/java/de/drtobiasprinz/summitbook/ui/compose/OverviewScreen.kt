@@ -36,15 +36,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import de.drtobiasprinz.summitbook.core.Keys
-import de.drtobiasprinz.summitbook.data.model.ChartEntry
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.core.Keys
+import de.drtobiasprinz.summitbook.data.analytics.GraphType
+import de.drtobiasprinz.summitbook.data.analytics.PerformanceGraphProvider
+import de.drtobiasprinz.summitbook.data.appstate.AppState
 import de.drtobiasprinz.summitbook.data.db.entities.Forecast
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.model.ChartEntry
 import de.drtobiasprinz.summitbook.data.model.StatisticEntry
-import de.drtobiasprinz.summitbook.data.analytics.GraphType
-import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
-import de.drtobiasprinz.summitbook.data.analytics.PerformanceGraphProvider
+import de.drtobiasprinz.summitbook.ui.theme.ChartBlue
+import de.drtobiasprinz.summitbook.ui.theme.ChartGold
+import de.drtobiasprinz.summitbook.ui.theme.ChartLime
+import de.drtobiasprinz.summitbook.ui.theme.ChartRed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -52,9 +56,6 @@ import java.text.DateFormatSymbols
 import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Date
-import kotlin.String
-import androidx.compose.ui.graphics.Color as ComposeColor
-import de.drtobiasprinz.summitbook.data.appstate.AppState
 
 @Composable
 fun OverviewScreen(
@@ -366,11 +367,12 @@ fun MonthChart(
                             onMonthChanged(currentMonth - 1)
                         }
                     },
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_chevron_left),
-                        contentDescription = null
+                        contentDescription = stringResource(R.string.previous_month),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
@@ -386,11 +388,12 @@ fun MonthChart(
                             onMonthChanged(currentMonth + 1)
                         }
                     },
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_chevron_right),
-                        contentDescription = null
+                        contentDescription = stringResource(R.string.next_month),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -442,11 +445,12 @@ fun YearChart(
                             onYearChanged(selectedYear - 1)
                         }
                     },
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_chevron_left),
-                        contentDescription = null
+                        contentDescription = stringResource(R.string.previous_year),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
@@ -465,11 +469,12 @@ fun YearChart(
                             onYearChanged(selectedYear + 1)
                         }
                     },
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_chevron_right),
-                        contentDescription = null
+                        contentDescription = stringResource(R.string.next_year),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -631,10 +636,10 @@ private fun buildChartSeries(
                 ChartSeries(
                     name = "Max 5 yrs",
                     data = convertEntriesToChartDataPoints(maxData),
-                    color = ComposeColor(0xFF0000FF), // Blue
+                    color = ChartBlue, // Blue
                     lineWidth = 2f,
                     filled = true,
-                    fillColor = ComposeColor(0xFF0000FF),
+                    fillColor = ChartBlue,
                     fillAlpha = 0.2f,
                     fillBetweenSeries = convertEntriesToChartDataPoints(minData)
                 )
@@ -643,7 +648,7 @@ private fun buildChartSeries(
                 ChartSeries(
                     name = "Min 5 yrs",
                     data = convertEntriesToChartDataPoints(minData),
-                    color = ComposeColor(0xFF0000FF), // Blue
+                    color = ChartBlue, // Blue
                     lineWidth = 2f,
                     filled = false
                 )
@@ -654,7 +659,7 @@ private fun buildChartSeries(
                 ChartSeries(
                     name = "Max 5 yrs",
                     data = convertEntriesToChartDataPoints(maxData),
-                    color = ComposeColor(0xFF0000FF), // Blue
+                    color = ChartBlue, // Blue
                     lineWidth = 2f,
                     filled = false
                 )
@@ -668,7 +673,7 @@ private fun buildChartSeries(
             ChartSeries(
                 name = "Forecast",
                 data = convertEntriesToChartDataPoints(chartEntriesForecast),
-                color = ComposeColor(0xFFFF0000), // Red
+                color = ChartRed, // Red
                 lineWidth = 2f,
                 filled = false
             )
@@ -692,9 +697,9 @@ private fun buildChartSeries(
             val minMaxValue = minMax.second.firstOrNull { it.x == entry.x }?.y ?: 0f
             val forecastValue = chartEntriesForecast.firstOrNull { it.x == entry.x }?.y ?: 0f
             when {
-                entry.y > minMaxValue -> ComposeColor(0xFFFFD700) // Gold - new record
-                graphType.hasForecast && entry.y > forecastValue -> ComposeColor(0xFF00FF00) // Green
-                else -> ComposeColor(0xFFFF0000) // Red
+                entry.y > minMaxValue -> ChartGold // Gold - new record
+                graphType.hasForecast && entry.y > forecastValue -> ChartLime // Green
+                else -> ChartRed // Red
             }
         }
 
@@ -702,7 +707,7 @@ private fun buildChartSeries(
             ChartSeries(
                 name = "Actual",
                 data = convertEntriesToChartDataPoints(filteredEntries),
-                color = ComposeColor(0xFFFF0000), // Default red
+                color = ChartRed, // Default red
                 lineWidth = 5f,
                 filled = false,
                 drawCircles = false,

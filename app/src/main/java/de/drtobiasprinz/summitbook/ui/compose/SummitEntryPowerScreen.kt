@@ -47,6 +47,7 @@ import java.util.GregorianCalendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
+import de.drtobiasprinz.summitbook.ui.theme.ChartOrange
 
 @Composable
 fun SummitEntryPowerScreen(
@@ -169,7 +170,6 @@ fun TimeRangeSelector(
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = {
-            @Suppress("AssignedValueIsNeverRead")
             expanded = it
         }
     ) {
@@ -234,7 +234,7 @@ fun PowerDataFieldRow(
 
             when {
                 percent <= 0.2 -> androidx.compose.ui.graphics.Color.Red
-                percent <= 0.4 -> androidx.compose.ui.graphics.Color(0xFFFF9800) // Orange
+                percent <= 0.4 -> ChartOrange // Orange
                 percent <= 0.6 -> androidx.compose.ui.graphics.Color.Yellow
                 percent <= 0.8 -> androidx.compose.ui.graphics.Color.Blue
                 else -> androidx.compose.ui.graphics.Color.Green

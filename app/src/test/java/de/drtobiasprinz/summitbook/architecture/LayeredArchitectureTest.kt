@@ -19,8 +19,9 @@ import org.junit.Test
  * ui    -> data, sync, work, core
  * di    -> may access all layers
  *
- * The only cross-layer exception: widget may reference ui.activities.MainActivityCompose,
- * because Glance widgets must be able to launch the app's entry activity.
+ * The only cross-layer exception: widget may reference ui.activities.MainActivityCompose
+ * (to launch the app) and ui.activities.SummitEntryDetailsComposeActivity
+ * (to deep-link a recent summit row straight to its details screen).
  */
 class LayeredArchitectureTest {
 
@@ -97,20 +98,21 @@ class LayeredArchitectureTest {
     }
 
     @Test
-    fun `widget may only reference ui to launch MainActivityCompose`() {
+    fun `widget may only reference ui to launch activities`() {
+        val launchableActivities = listOf(
+            "de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose",
+            "de.drtobiasprinz.summitbook.ui.activities.SummitEntryDetailsComposeActivity"
+        )
+        val isLaunchableActivity = launchableActivities
+            .map { HasName.Predicates.name(it) }
+            .reduce { acc, next -> acc.or(next) }
         noClasses()
             .that(JavaClass.Predicates.resideInAPackage("de.drtobiasprinz.summitbook.widget.."))
             .should().dependOnClassesThat(
                 JavaClass.Predicates.resideInAPackage("de.drtobiasprinz.summitbook.ui..")
-                    .and(
-                        DescribedPredicate.not(
-                            HasName.Predicates.name(
-                                "de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose"
-                            )
-                        )
-                    )
+                    .and(DescribedPredicate.not(isLaunchableActivity))
             )
-            .because("widgets may only reference the app entry activity, not arbitrary ui classes")
+            .because("widgets may only reference launchable ui activities, not arbitrary ui classes")
             .check(classes)
     }
 

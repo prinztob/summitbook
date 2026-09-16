@@ -44,11 +44,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import de.drtobiasprinz.summitbook.R
@@ -60,19 +60,25 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.core.DataStatus
 import de.drtobiasprinz.summitbook.ui.viewmodel.DatabaseViewModel
 import kotlin.math.roundToInt
+import de.drtobiasprinz.summitbook.ui.theme.Scrim
 
 /**
  * Composable function that displays a list of segments
  * This replaces the RecyclerView-based SegmentsViewAdapter
+ *
+ * The [viewModel] is passed in from the activity instead of being created via
+ * `viewModel()` here: inside a NavHost destination the LocalViewModelStoreOwner
+ * is the NavBackStackEntry, whose default factory cannot build the Hilt-injected
+ * DatabaseViewModel.
  */
 @Composable
 fun SegmentsListScreen(
+    viewModel: DatabaseViewModel,
     segments: List<Segment>,
     summits: List<Summit>,
     modifier: Modifier = Modifier,
     onDeleteSegment: (Segment) -> Unit = {}
 ) {
-    val viewModel: DatabaseViewModel = viewModel()
     val mountainPassesState by viewModel.mountainPasses.asFlow()
         .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
     val mountainPasses = mountainPassesState.data ?: emptyList()
@@ -121,6 +127,11 @@ fun SegmentsListScreen(
         }
 
         if (showMountainPasses) {
+            if (mountainPasses.isEmpty()) {
+                item {
+                    EmptyListHint(text = stringResource(R.string.no_mountain_passes))
+                }
+            }
             items(
                 items = mountainPasses,
                 key = { pass -> pass.entryId }
@@ -131,6 +142,11 @@ fun SegmentsListScreen(
                 )
             }
         } else {
+            if (segments.isEmpty()) {
+                item {
+                    EmptyListHint(text = stringResource(R.string.no_segments))
+                }
+            }
             items(
                 items = segments,
                 key = { segment -> segment.segmentDetails.segmentDetailsId }
@@ -265,7 +281,7 @@ fun SegmentCard(
                         .align(Alignment.BottomStart)
                         .background(
                             if (hasMapScreenshot) {
-                                androidx.compose.ui.graphics.Color(0x55000000)
+                                Scrim
                             } else {
                                 androidx.compose.ui.graphics.Color.Transparent
                             }
@@ -644,4 +660,17 @@ private fun navigateToSegmentDetails(context: Context, segmentDetailsId: Long) {
     val intent = Intent(context, SegmentEntryDetailsComposeActivity::class.java)
     intent.putExtra(SegmentDetails.SEGMENT_DETAILS_ID_EXTRA_IDENTIFIER, segmentDetailsId)
     context.startActivity(intent)
+}
+
+@Composable
+private fun EmptyListHint(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp, vertical = 24.dp)
+    )
 }

@@ -49,6 +49,7 @@ import kotlinx.coroutines.Job
 import java.util.Calendar
 import kotlin.math.ceil
 import kotlin.math.roundToInt
+import de.drtobiasprinz.summitbook.ui.theme.RecordGreen
 
 @Composable
 fun ForecastScreen(
@@ -272,7 +273,7 @@ fun ForecastScreen(
                                 onNavigateBack()
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        colors = ButtonDefaults.buttonColors(containerColor = RecordGreen),
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(

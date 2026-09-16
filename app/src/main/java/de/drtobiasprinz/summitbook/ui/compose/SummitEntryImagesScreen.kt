@@ -1,5 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
+import de.drtobiasprinz.summitbook.R
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -27,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -164,7 +167,7 @@ fun ImageCarousel(
                     .memoryCacheKey(imageFiles[page].absolutePath)
                     .diskCacheKey(imageFiles[page].absolutePath)
                     .build(),
-                contentDescription = "Summit image ${page + 1}",
+                contentDescription = stringResource(R.string.summit_image_cd, page + 1),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
                 loading = {
@@ -307,7 +310,7 @@ fun ZoomableImage(
                 .memoryCacheKey(imageFile.absolutePath)
                 .diskCacheKey(imageFile.absolutePath)
                 .build(),
-            contentDescription = "Fullscreen image",
+            contentDescription = stringResource(R.string.cd_fullscreen_image),
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxSize()

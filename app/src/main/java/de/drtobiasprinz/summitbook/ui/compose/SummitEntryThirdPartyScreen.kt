@@ -44,6 +44,7 @@ import de.drtobiasprinz.summitbook.data.analytics.ExtremaValuesSummits
 import java.text.NumberFormat
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
+import de.drtobiasprinz.summitbook.ui.theme.ChartOrange
 
 @Composable
 fun SummitEntryThirdPartyScreen(
@@ -247,7 +248,7 @@ fun ThirdPartyDataFieldRow(
 
             when {
                 percent <= 0.2 -> Color.Red
-                percent <= 0.4 -> Color(0xFFFF9800) // Orange
+                percent <= 0.4 -> ChartOrange // Orange
                 percent <= 0.6 -> Color.Yellow
                 percent <= 0.8 -> Color.Blue
                 else -> Color.Green

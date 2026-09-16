@@ -45,6 +45,12 @@ import de.drtobiasprinz.summitbook.data.analytics.TimeIntervalPower
 import kotlin.math.log10
 import kotlin.math.pow
 import androidx.compose.ui.graphics.Color as ComposeColor
+import de.drtobiasprinz.summitbook.ui.theme.ChartGold
+import de.drtobiasprinz.summitbook.ui.theme.ChartTextDarkGray
+import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
+import de.drtobiasprinz.summitbook.ui.theme.DarkGrid
+import de.drtobiasprinz.summitbook.ui.theme.RecordGreen
+import de.drtobiasprinz.summitbook.ui.theme.SurfaceLightGray
 
 /**
  * Data class representing a data point in the power chart
@@ -107,7 +113,7 @@ fun PowerLineChart(
             val minEntry = minPowerData.getOrNull(index)
             if (maxEntry != null && minEntry != null) {
                 when {
-                    chartEntry.y >= maxEntry.y -> ComposeColor(0xFFFFD700) // Gold
+                    chartEntry.y >= maxEntry.y -> ChartGold // Gold
                     chartEntry.y < minEntry.y -> ComposeColor.Red
                     else -> {
                         val fraction =
@@ -122,8 +128,8 @@ fun PowerLineChart(
     }
 
     val textColor = if (isDark) ComposeColor.White else ComposeColor.Black
-    val gridColor = if (isDark) ComposeColor(0xFF444444) else ComposeColor.LightGray
-    val chartBackgroundColor = if (isDark) ComposeColor(0xFF1E1E1E) else ComposeColor.White
+    val gridColor = if (isDark) ChartTextDarkGray else ComposeColor.LightGray
+    val chartBackgroundColor = if (isDark) DarkCanvas else ComposeColor.White
 
     // State for selected data point - reset when chart data or bounds change
     var selectedPointIndex by remember(mainPowerData, extremaValuesAllSummits) { mutableStateOf<Int?>(null) }
@@ -254,7 +260,7 @@ fun PowerLineChart(
                         comparePoint = comparePoint,
                         secLabel = secLabel,
                         textColor = textColor,
-                        backgroundColor = if (isDark) ComposeColor(0xFF333333) else ComposeColor(0xFFF5F5F5),
+                        backgroundColor = if (isDark) DarkGrid else SurfaceLightGray,
                         modifier = Modifier.align(Alignment.TopCenter)
                     )
                 }
@@ -568,7 +574,7 @@ fun PowerChartTooltip(
             maxPoint?.let {
                 Text(
                     text = "$maxLabel: ${it.y.toInt()} $wattLabel",
-                    color = ComposeColor(0xFF4CAF50),
+                    color = RecordGreen,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -604,7 +610,7 @@ fun PowerChartLegend(
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
-    val backgroundColor = if (isDark) ComposeColor(0xFF1E1E1E) else ComposeColor.White
+    val backgroundColor = if (isDark) DarkCanvas else ComposeColor.White
 
     Surface(
         modifier = modifier.padding(8.dp),

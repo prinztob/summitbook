@@ -48,6 +48,8 @@ import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlin.math.abs
 import kotlin.math.roundToLong
 import androidx.compose.ui.graphics.Color as ComposeColor
+import de.drtobiasprinz.summitbook.ui.theme.ChartTextDarkGray
+import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
 
 /**
  * A Compose-based line chart view for displaying track data
@@ -119,8 +121,8 @@ fun LineChartView(
     }
 
     val textColor = if (isDark) ComposeColor.White else ComposeColor.Black
-    val gridColor = if (isDark) ComposeColor(0xFF444444) else ComposeColor.LightGray
-    val chartBackgroundColor = if (isDark) ComposeColor(0xFF1E1E1E) else ComposeColor.White
+    val gridColor = if (isDark) ChartTextDarkGray else ComposeColor.LightGray
+    val chartBackgroundColor = if (isDark) DarkCanvas else ComposeColor.White
 
     Column(
         modifier = modifier
@@ -290,7 +292,7 @@ fun LineChartLegend(
     Surface(
         modifier = modifier.padding(8.dp),
         shape = RoundedCornerShape(8.dp),
-        color = if (isSystemInDarkTheme()) ComposeColor(0xFF1E1E1E) else ComposeColor.White
+        color = if (isSystemInDarkTheme()) DarkCanvas else ComposeColor.White
     ) {
         Row(
             modifier = Modifier
@@ -499,8 +501,8 @@ fun InteractiveLineChartView(
     }
 
     val textColor = if (isDark) ComposeColor.White else ComposeColor.Black
-    val gridColor = if (isDark) ComposeColor(0xFF444444) else ComposeColor.LightGray
-    val chartBackgroundColor = if (isDark) ComposeColor(0xFF1E1E1E) else ComposeColor.White
+    val gridColor = if (isDark) ChartTextDarkGray else ComposeColor.LightGray
+    val chartBackgroundColor = if (isDark) DarkCanvas else ComposeColor.White
 
     // Colors for start/end markers
     val startMarkerColor = ComposeColor(android.graphics.Color.GREEN)
@@ -683,7 +685,7 @@ fun HorizontalBarChartView(
             modifier = modifier
                 .fillMaxWidth()
                 .background(
-                    if (isDark) ComposeColor(0xFF1E1E1E) else ComposeColor.White
+                    if (isDark) DarkCanvas else ComposeColor.White
                 ),
             contentAlignment = Alignment.Center
         ) {
@@ -740,7 +742,7 @@ fun HorizontalBarChartView(
     }
 
     val textColor = if (isDark) ComposeColor.White else ComposeColor.Black
-    val chartBackgroundColor = if (isDark) ComposeColor(0xFF1E1E1E) else ComposeColor.White
+    val chartBackgroundColor = if (isDark) DarkCanvas else ComposeColor.White
 
     if (chartData.isEmpty()) {
         Box(

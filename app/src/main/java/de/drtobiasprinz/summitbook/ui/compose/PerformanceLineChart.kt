@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
@@ -45,6 +46,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import androidx.compose.ui.graphics.Color as ComposeColor
+import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
 
 /**
  * Data class representing a data series in the chart
@@ -95,7 +97,7 @@ fun PerformanceLineChart(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(if (isDark) androidx.compose.ui.graphics.Color(0xFF1E1E1E) else androidx.compose.ui.graphics.Color.White)
+            .background(if (isDark) DarkCanvas else androidx.compose.ui.graphics.Color.White)
     ) {
         // Refresh button row
         Row(
@@ -111,7 +113,7 @@ fun PerformanceLineChart(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_refresh_24),
-                    contentDescription = "Reset zoom",
+                    contentDescription = stringResource(R.string.cd_reset_zoom),
                     tint = if (isDark) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color.Black,
                     modifier = Modifier.size(20.dp)
                 )

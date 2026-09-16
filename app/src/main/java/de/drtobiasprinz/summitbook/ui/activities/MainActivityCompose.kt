@@ -2,7 +2,6 @@
 
 package de.drtobiasprinz.summitbook.ui.activities
 
-import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
@@ -34,6 +33,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
@@ -50,6 +51,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -79,12 +82,15 @@ import androidx.work.WorkManager
 import com.chaquo.python.Python
 import com.google.gson.Gson
 import com.chaquo.python.android.AndroidPlatform
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.core.Keys
-import de.drtobiasprinz.summitbook.ui.activities.PythonActivity
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.ui.activities.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.data.db.entities.Forecast
 import de.drtobiasprinz.summitbook.data.db.entities.Peak
 import de.drtobiasprinz.summitbook.data.db.entities.Segment
@@ -189,30 +195,22 @@ class MainActivityCompose : ComponentActivity(),
     }
 
     /**
-     * Keeps the current screen, open dialogs and the summit used for segment
-     * entry across rotation/process death, so no user input context is lost.
+     * Navigation indirection: composables and activity methods call
+     * [navigateTo], while the actual [androidx.navigation.NavController]
+     * lives inside MainScreen and registers its implementation here.
      */
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putString(STATE_DESTINATION, currentDestination.name)
-        outState.putBoolean(STATE_SHOW_BOOKMARKS_ONLY, showBookmarksOnly)
-        outState.putBoolean(STATE_SHOW_SORT_AND_FILTER_DIALOG, showSortAndFilterDialog)
-        outState.putBoolean(STATE_SHOW_ADD_SUMMIT_DIALOG, showAddSummitDialog)
-        newSummitsSelectedDate?.let { outState.putLong(STATE_NEW_SUMMITS_DATE, it.time) }
-        summitForSegmentEntry?.let {
-            outState.putString(STATE_SUMMIT_FOR_SEGMENT_ENTRY, Gson().toJson(it))
-        }
-        outState.putBoolean(
-            STATE_SHOW_ADD_SEGMENT_ENTRY_SCREEN,
-            showAddSegmentEntryScreen && summitForSegmentEntry != null
-        )
-    }
+    private var navigateToDestination: (Destination) -> Unit = {}
+
+    private fun navigateTo(destination: Destination) = navigateToDestination(destination)
+
+    /** Destination to navigate to once the NavHost is composed (state restore). */
+    private var destinationToRestore: Destination? = null
 
     private fun restoreUiState(savedInstanceState: Bundle?) {
         if (savedInstanceState == null) return
         savedInstanceState.getString(STATE_DESTINATION)?.let { name ->
             runCatching { Destination.valueOf(name) }.getOrNull()?.let {
-                currentDestination = it
+                destinationToRestore = it
             }
         }
         showBookmarksOnly = savedInstanceState.getBoolean(STATE_SHOW_BOOKMARKS_ONLY, false)
@@ -332,6 +330,39 @@ class MainActivityCompose : ComponentActivity(),
         this.snackbarHostState = snackbarHostState
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
+        // Navigation: the NavHost owns the back stack; the activity's
+        // currentDestination property is kept in sync via a listener so all
+        // existing readers (FAB, drawer) keep working unchanged.
+        val navController = rememberNavController()
+        DisposableEffect(navController) {
+            val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+                destination.route?.let { route ->
+                    runCatching { Destination.valueOf(route) }.getOrNull()?.let {
+                        currentDestination = it
+                    }
+                }
+            }
+            navController.addOnDestinationChangedListener(listener)
+            onDispose { navController.removeOnDestinationChangedListener(listener) }
+        }
+        val navigateImpl = remember {
+            { destination: Destination ->
+                navController.navigate(destination.name) {
+                    popUpTo(Destination.Summits.name) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+        SideEffect { navigateToDestination = navigateImpl }
+        // Navigate once to a destination saved before a configuration change
+        LaunchedEffect(Unit) {
+            destinationToRestore?.let { destination ->
+                navController.navigate(destination.name) { launchSingleTop = true }
+                destinationToRestore = null
+            }
+        }
+
         var summitsFromDatabase by remember { mutableStateOf<List<Summit>>(emptyList()) }
         var filteredSummits by remember { mutableStateOf<List<Summit>>(emptyList()) }
         var forecasts by remember { mutableStateOf<List<Forecast>>(emptyList()) }
@@ -408,7 +439,7 @@ class MainActivityCompose : ComponentActivity(),
                 val filteredSummitsForDiashow = rememberUpdatedState(filteredSummits)
                 NavigationDrawerContent(
                     onDestinationSelected = { destination ->
-                        currentDestination = destination
+                        navigateTo(destination)
                         showBookmarksOnly = false
                         isMapFullscreen = false
                         coroutineScope.launch {
@@ -416,7 +447,7 @@ class MainActivityCompose : ComponentActivity(),
                         }
                     },
                     onBookmarksSelected = {
-                        currentDestination = Destination.Summits
+                        navigateTo(Destination.Summits)
                         showBookmarksOnly = true
                         coroutineScope.launch { drawerState.close() }
                     },
@@ -495,7 +526,7 @@ class MainActivityCompose : ComponentActivity(),
                                                 }) {
                                                     Icon(
                                                         painter = painterResource(R.drawable.baseline_cancel_24),
-                                                        contentDescription = "Close search"
+                                                        contentDescription = stringResource(R.string.cd_close_search)
                                                     )
                                                 }
                                             },
@@ -510,7 +541,7 @@ class MainActivityCompose : ComponentActivity(),
                                     IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
                                         Icon(
                                             painter = painterResource(R.drawable.baseline_menu_24),
-                                            contentDescription = "Menu"
+                                            contentDescription = stringResource(R.string.cd_menu)
                                         )
                                     }
                                 },
@@ -558,6 +589,14 @@ class MainActivityCompose : ComponentActivity(),
                 },
                 snackbarHost = {
                     SnackbarHost(hostState = snackbarHostState)
+                },
+                bottomBar = {
+                    if (!isMapFullscreen) {
+                        SummitBookBottomBar(
+                            currentDestination = currentDestination,
+                            onDestinationSelected = { destination -> navigateTo(destination) }
+                        )
+                    }
                 }
             ) { padding ->
                 Box(
@@ -566,7 +605,7 @@ class MainActivityCompose : ComponentActivity(),
                         .padding(padding)
                 ) {
                     // Main content based on current destination
-                    MainContent(filteredSummits, summitsFromDatabase, forecasts, coroutineScope)
+                    MainContent(filteredSummits, summitsFromDatabase, forecasts, coroutineScope, navController)
 
                     if (databaseError != null && !errorBannerDismissed) {
                         DatabaseErrorBanner(
@@ -931,10 +970,14 @@ class MainActivityCompose : ComponentActivity(),
         filteredSummits: List<Summit>,
         summitsFromDatabase: List<Summit>,
         forecasts: List<Forecast>,
-        coroutineScope: CoroutineScope
+        coroutineScope: CoroutineScope,
+        navController: NavHostController
     ) {
-        when (currentDestination) {
-            Destination.Summits -> {
+        NavHost(
+            navController = navController,
+            startDestination = Destination.Summits.name
+        ) {
+            composable(Destination.Summits.name) {
                 Column(
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -974,12 +1017,16 @@ class MainActivityCompose : ComponentActivity(),
                         onAddSegmentEntry = { summit ->
                             summitForSegmentEntry = summit
                             showAddSegmentEntryScreen = true
-                        }
+                        },
+                        onAddEntry = { showAddSummitDialog() },
+                        onOpenSettings = { navigateTo(Destination.Settings) },
+                        onRefresh = { updateThirdPartyData(coroutineScope) },
+                        isRefreshing = loadingState.value
                     )
                 }
             }
 
-            Destination.Overview -> {
+            composable(Destination.Overview.name) {
                 OverviewScreen(
                     filteredSummits,
                     summitsFromDatabase,
@@ -988,10 +1035,11 @@ class MainActivityCompose : ComponentActivity(),
                 )
             }
 
-            Destination.Routes -> {
+            composable(Destination.Routes.name) {
                 val segmentsList by viewModel.segmentsList.asFlow()
                     .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
                 SegmentsListScreen(
+                    viewModel = viewModel,
                     segments = sortFilterValues.applyForSegments(segmentsList.data ?: emptyList()),
                     summits = summitsFromDatabase,
                     onDeleteSegment = { segment ->
@@ -1000,20 +1048,20 @@ class MainActivityCompose : ComponentActivity(),
                 )
             }
 
-            Destination.Statistics -> {
+            composable(Destination.Statistics.name) {
                 StatisticsScreen(
                     filteredSummits = filteredSummits,
                     forecasts = forecasts,
                     onNavigateToSummitDetails = { startSummitEntryDetailsComposeActivity(it) })
             }
 
-            Destination.Diagrams -> {
+            composable(Destination.Diagrams.name) {
                 LineChartScreen(
                     filteredSummits = filteredSummits
                 )
             }
 
-            Destination.BarCharts -> {
+            composable(Destination.BarCharts.name) {
                 val dailyActivitySummary by viewModel.dailyActivitySummary.asFlow()
                     .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
                 BarChartScreen(
@@ -1024,7 +1072,7 @@ class MainActivityCompose : ComponentActivity(),
                 )
             }
 
-            Destination.Map -> {
+            composable(Destination.Map.name) {
                 OpenStreetMapScreen(
                     filteredSummits,
                     summitsFromDatabase.filter { it.isBookmark },
@@ -1034,21 +1082,21 @@ class MainActivityCompose : ComponentActivity(),
                 )
             }
 
-            Destination.Forecast -> {
+            composable(Destination.Forecast.name) {
                 ForecastScreen(
                     summitsFromDatabase,
                     forecasts as MutableList<Forecast>,
-                    { currentDestination = Destination.Summits },
+                    { navigateTo(Destination.Summits) },
                     { isEdit, forecasts -> viewModel.saveForecasts(isEdit, forecasts) })
             }
 
-            Destination.NewSummits -> {
+            composable(Destination.NewSummits.name) {
                 ShowNewSummitsFromGarminScreen(
                     viewModel = viewModel,
                     summits = summitsFromDatabase,
                     selectedDate = newSummitsSelectedDate,
                     onBack = { selectedSummits, isMerge ->
-                        currentDestination = Destination.Summits
+                        navigateTo(Destination.Summits)
                         downloadSelectedSummits(selectedSummits, isMerge, coroutineScope)
                     },
                     onRefresh = {
@@ -1057,7 +1105,7 @@ class MainActivityCompose : ComponentActivity(),
                 )
             }
 
-            Destination.AdditionalData -> {
+            composable(Destination.AdditionalData.name) {
                 val entityEvents by viewModel.entityEvents.asFlow()
                     .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
                 SummitEntitiesScreen(
@@ -1071,11 +1119,79 @@ class MainActivityCompose : ComponentActivity(),
                 )
             }
 
-            Destination.Settings -> {
+            composable(Destination.Settings.name) {
                 SettingsScreen(summitsFromDatabase, { key ->
                     onSharedPreferenceChanged(AppState.sharedPreferences, key)
                 }, onSaveSummit = { isEdit, summit -> viewModel.saveSummit(isEdit, summit) })
             }
+        }
+    }
+
+    /**
+     * Primary destinations reachable from the bottom bar; everything else
+     * stays in the navigation drawer.
+     */
+    @Composable
+    private fun SummitBookBottomBar(
+        currentDestination: Destination,
+        onDestinationSelected: (Destination) -> Unit
+    ) {
+        NavigationBar {
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        painter = painterResource(R.drawable.outline_landscape_2_24),
+                        contentDescription = null
+                    )
+                },
+                label = { Text(stringResource(R.string.nav_summits)) },
+                selected = currentDestination == Destination.Summits && !showBookmarksOnly,
+                onClick = { onDestinationSelected(Destination.Summits) }
+            )
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_baseline_route_24),
+                        contentDescription = null
+                    )
+                },
+                label = { Text(stringResource(R.string.segments)) },
+                selected = currentDestination == Destination.Routes,
+                onClick = { onDestinationSelected(Destination.Routes) }
+            )
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_baseline_pie_chart_24),
+                        contentDescription = null
+                    )
+                },
+                label = { Text(stringResource(R.string.nav_statistics)) },
+                selected = currentDestination == Destination.Statistics,
+                onClick = { onDestinationSelected(Destination.Statistics) }
+            )
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_map_black_24dp),
+                        contentDescription = null
+                    )
+                },
+                label = { Text(stringResource(R.string.nav_osmap)) },
+                selected = currentDestination == Destination.Map,
+                onClick = { onDestinationSelected(Destination.Map) }
+            )
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_settings_white_24dp),
+                        contentDescription = null
+                    )
+                },
+                label = { Text(stringResource(R.string.action_settings)) },
+                selected = currentDestination == Destination.Settings,
+                onClick = { onDestinationSelected(Destination.Settings) }
+            )
         }
     }
 
@@ -1095,6 +1211,12 @@ class MainActivityCompose : ComponentActivity(),
 
     fun updateThirdPartyData(scope: CoroutineScope) {
         scope.launch {
+            // If the executor is missing but OAuth tokens now exist (e.g.
+            // the user just completed the MFA login), create it on the fly
+            // instead of showing a misleading "set credentials" message.
+            if (GarminPythonExecutor.instance == null) {
+                updatePythonExecutor()
+            }
             val executor = GarminPythonExecutor.instance
             if (executor != null) {
                 loadingState.value = true
@@ -1123,7 +1245,7 @@ class MainActivityCompose : ComponentActivity(),
                             duration = SnackbarDuration.Long
                         )
                         if (result.hasNewActivities) {
-                            currentDestination = Destination.NewSummits
+                            navigateTo(Destination.NewSummits)
                         }
                     }
                     is GarminSyncResult.Failed -> {
@@ -1497,6 +1619,22 @@ class MainActivityCompose : ComponentActivity(),
         super.onSaveInstanceState(outState)
         outState.putBoolean(KEY_IS_DIALOG_SHOWN, fullscreenImageViewer?.isShowing() ?: false)
         outState.putInt(KEY_CURRENT_POSITION, fullscreenImageViewer?.currentPosition ?: 0)
+
+        // Keep the current screen, open dialogs and the summit used for
+        // segment entry across rotation/process death, so no user input
+        // context is lost
+        outState.putString(STATE_DESTINATION, currentDestination.name)
+        outState.putBoolean(STATE_SHOW_BOOKMARKS_ONLY, showBookmarksOnly)
+        outState.putBoolean(STATE_SHOW_SORT_AND_FILTER_DIALOG, showSortAndFilterDialog)
+        outState.putBoolean(STATE_SHOW_ADD_SUMMIT_DIALOG, showAddSummitDialog)
+        newSummitsSelectedDate?.let { outState.putLong(STATE_NEW_SUMMITS_DATE, it.time) }
+        summitForSegmentEntry?.let {
+            outState.putString(STATE_SUMMIT_FOR_SEGMENT_ENTRY, Gson().toJson(it))
+        }
+        outState.putBoolean(
+            STATE_SHOW_ADD_SEGMENT_ENTRY_SCREEN,
+            showAddSegmentEntryScreen && summitForSegmentEntry != null
+        )
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
@@ -1535,7 +1673,7 @@ class MainActivityCompose : ComponentActivity(),
             if (oauthPath.exists()) {
                 GarminPythonExecutor.instance = GarminPythonExecutor(username, password)
             } else if (username != "" && password != "" && garminMfaSwitch) {
-                val intent = Intent(this, PythonActivity::class.java)
+                val intent = Intent(this, GarminLoginActivity::class.java)
                 startActivity(intent)
             }
         }

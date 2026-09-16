@@ -74,6 +74,9 @@ import java.util.Date
 import java.util.GregorianCalendar
 import java.util.TimeZone
 import kotlin.math.floor
+import de.drtobiasprinz.summitbook.ui.theme.ChartTextLightGray
+import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
+import de.drtobiasprinz.summitbook.ui.theme.DarkCanvasDeep
 
 @Composable
 fun BarChartScreen(
@@ -192,9 +195,9 @@ fun BarChartScreen(
     }
 
     val backgroundColor = if (isDark) {
-        androidx.compose.ui.graphics.Color(0xFF121212)
+        DarkCanvasDeep
     } else {
-        androidx.compose.ui.graphics.Color(0xFFCCCCCC)
+        ChartTextLightGray
     }
 
     Column(
@@ -360,7 +363,7 @@ fun SpinnerSection(
     val textColor =
         if (isDarkTheme) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color.Black
     val backgroundColor =
-        if (isDarkTheme) androidx.compose.ui.graphics.Color(0xFF1E1E1E) else androidx.compose.ui.graphics.Color.White
+        if (isDarkTheme) DarkCanvas else androidx.compose.ui.graphics.Color.White
 
     Column(
         modifier = Modifier
@@ -898,7 +901,7 @@ fun ChartMarkerCompose(
         }
     }
 
-    val backgroundColor = if (isDark) androidx.compose.ui.graphics.Color(0xFF1E1E1E) else androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.8f)
+    val backgroundColor = if (isDark) DarkCanvas else androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.8f)
     val textColor = androidx.compose.ui.graphics.Color.White
 
     Surface(

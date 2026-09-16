@@ -30,15 +30,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,17 +48,21 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.google.gson.reflect.TypeToken
 import com.google.gson.JsonParser
+import com.google.gson.reflect.TypeToken
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.ui.compose.jsonSaver
+import de.drtobiasprinz.summitbook.core.utils.JsonUtils
+import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
 import de.drtobiasprinz.summitbook.data.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.data.model.AdditionalDataTableEntry
 import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
-import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
-import de.drtobiasprinz.summitbook.core.utils.JsonUtils
+import de.drtobiasprinz.summitbook.ui.theme.DarkCard
+import de.drtobiasprinz.summitbook.ui.theme.IconGray
+import de.drtobiasprinz.summitbook.ui.theme.RecordGreen
+import de.drtobiasprinz.summitbook.ui.theme.SurfaceLightGray
+import de.drtobiasprinz.summitbook.ui.theme.SurfaceMidGray
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -66,7 +70,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import androidx.compose.ui.platform.LocalConfiguration
 
 /**
  * Jetpack Compose version of AddAdditionalDataFromExternalResourcesDialog
@@ -215,9 +218,9 @@ fun AddAdditionalDataDialogCompose(
 private fun TableHeader() {
     val isDarkTheme = isSystemInDarkTheme()
     val headerBackgroundColor = if (isDarkTheme) {
-        Color(0xFF424242)
+        IconGray
     } else {
-        Color(0xFFE0E0E0)
+        SurfaceMidGray
     }
 
     Row(
@@ -258,7 +261,7 @@ private fun TableEntryRow(
     val locale = LocalConfiguration.current.locales[0]
     val isDarkTheme = isSystemInDarkTheme()
     val defaultBackground = MaterialTheme.colorScheme.surface
-    val greenBackground = Color(0xFF4CAF50)
+    val greenBackground = RecordGreen
 
     val currentValue = entry.tableEntry.getValue(summit)
 
@@ -282,9 +285,9 @@ private fun TableEntryRow(
 
     val backgroundColor = if (index % 2 == 1) {
         if (isDarkTheme) {
-            Color(0xFF2C2C2C)
+            DarkCard
         } else {
-            Color(0xFFF5F5F5)
+            SurfaceLightGray
         }
     } else {
         Color.Transparent
@@ -367,7 +370,7 @@ private fun ActionButtons(
             Button(
                 onClick = onSave,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                colors = ButtonDefaults.buttonColors(containerColor = RecordGreen)
             ) {
                 Text(stringResource(R.string.saveButtonText))
             }

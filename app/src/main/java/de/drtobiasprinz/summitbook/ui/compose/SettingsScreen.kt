@@ -71,7 +71,6 @@ import de.drtobiasprinz.summitbook.data.db.entities.GroupForHeatmap
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling.Companion.selectedItem
 import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
-import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
 import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
 import de.drtobiasprinz.summitbook.data.maps.MapProvider
 import de.drtobiasprinz.summitbook.sync.FileRowType
@@ -609,10 +608,10 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showEmptyFolderError = false },
             title = { Text(stringResource(R.string.error)) },
-            text = { Text("The folder used for on-device maps must contain .map files.") },
+            text = { Text(stringResource(R.string.maps_folder_error)) },
             confirmButton = {
                 TextButton(onClick = { showEmptyFolderError = false }) {
-                    Text("Dismiss")
+                    Text(stringResource(R.string.dismiss))
                 }
             }
         )
@@ -1164,7 +1163,7 @@ fun EditTextSetting(
                 .padding(start = 56.dp, end = 8.dp, bottom = 8.dp)
         ) {
             TextButton(onClick = onClick) {
-                Text("Change")
+                Text(stringResource(R.string.change))
             }
         }
     }
@@ -1381,7 +1380,7 @@ fun DateSetting(
             }) {
                 Icon(
                     painter = painterResource(R.drawable.baseline_today_black_24dp),
-                    contentDescription = "Select date"
+                    contentDescription = stringResource(R.string.cd_select_date)
                 )
             }
         },
@@ -1437,7 +1436,7 @@ fun BulkUpdateSetting(
         IconButton(onClick = onClick) {
             Icon(
                 painter = painterResource(R.drawable.baseline_refresh_24),
-                contentDescription = "Update",
+                contentDescription = stringResource(R.string.update),
                 tint = MaterialTheme.colorScheme.primary
             )
         }
@@ -1491,7 +1490,7 @@ fun ActionButtonSetting(
             enabled = !isLoading
         ) {
             if (isLoading) {
-                Text("Generating...")
+                Text(stringResource(R.string.generating))
             } else {
                 Text(buttonText)
             }
