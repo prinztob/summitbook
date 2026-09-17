@@ -36,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.res.ResourcesCompat
@@ -150,6 +152,8 @@ class ReceiverActivityCompose : ComponentActivity() {
             },
             floatingActionButton = {
                 if (importState == ImportState.Ready && gpxTrackUriState != null) {
+                    val addAsBookmarkLabel = stringResource(R.string.add_to_bookmarks)
+                    val addAsSummitLabel = stringResource(R.string.add_to_summits)
                     Column(
                         horizontalAlignment = Alignment.End,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -158,6 +162,9 @@ class ReceiverActivityCompose : ComponentActivity() {
                             onClick = {
                                 isBookmark = true
                                 showDialog = true
+                            },
+                            modifier = Modifier.semantics {
+                                contentDescription = addAsBookmarkLabel
                             },
                             icon = {
                                 Icon(
@@ -174,6 +181,9 @@ class ReceiverActivityCompose : ComponentActivity() {
                             onClick = {
                                 isBookmark = false
                                 showDialog = true
+                            },
+                            modifier = Modifier.semantics {
+                                contentDescription = addAsSummitLabel
                             },
                             icon = {
                                 Icon(
@@ -287,7 +297,8 @@ class ReceiverActivityCompose : ComponentActivity() {
                         copyGpxFileToCache(inputStream, file)
                     }
                     if (file.exists()) {
-                        prepareGpxTrack(file.toPath(), null)
+                        val track = prepareGpxTrack(file.toPath(), null)
+                        if (track != null && !track.hasNoTrackPoints()) track else null
                     } else {
                         null
                     }

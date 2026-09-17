@@ -85,7 +85,7 @@ fun ForecastScreen(
 
     // Update forecasts if needed
     LaunchedEffect(summits, forecasts) {
-        if (!forecastsUpdated && summits.isNotEmpty()) {
+        if (!forecastsUpdated) {
             forecastsUpdated = true
             val yearsWithForecasts = listOf(currentYear, currentYear + 1)
             updateMissingForecasts(yearsWithForecasts, forecasts, summits, onSaveForecasts)
@@ -116,7 +116,7 @@ fun ForecastScreen(
             }
         }
 
-        forecasts.isEmpty() || summits.isEmpty() -> {
+        forecasts.isEmpty() -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center

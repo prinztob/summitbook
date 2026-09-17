@@ -137,6 +137,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.osmdroid.mapsforge.MapsForgeTileSource
 import java.io.File
 import java.time.LocalDate
@@ -358,7 +359,14 @@ class MainActivityCompose : ComponentActivity(),
         // Navigate once to a destination saved before a configuration change
         LaunchedEffect(Unit) {
             destinationToRestore?.let { destination ->
-                navController.navigate(destination.name) { launchSingleTop = true }
+                if (destination != Destination.Summits) {
+                    withTimeout(10_000.milliseconds) {
+                        while (navController.currentDestination == null) {
+                            delay(50.milliseconds)
+                        }
+                    }
+                    navController.navigate(destination.name) { launchSingleTop = true }
+                }
                 destinationToRestore = null
             }
         }
@@ -1085,7 +1093,7 @@ class MainActivityCompose : ComponentActivity(),
             composable(Destination.Forecast.name) {
                 ForecastScreen(
                     summitsFromDatabase,
-                    forecasts as MutableList<Forecast>,
+                    forecasts.toMutableList(),
                     { navigateTo(Destination.Summits) },
                     { isEdit, forecasts -> viewModel.saveForecasts(isEdit, forecasts) })
             }

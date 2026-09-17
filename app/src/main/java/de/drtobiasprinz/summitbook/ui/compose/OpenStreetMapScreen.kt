@@ -69,6 +69,8 @@ import de.drtobiasprinz.summitbook.data.maps.MapProvider
 import de.drtobiasprinz.summitbook.data.maps.MapTilesHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
@@ -898,7 +900,20 @@ private fun addAllMarkers(
     onRequestLocationPermission: (() -> Unit)? = null
 ) {
     mapView?.let { map ->
-        var mReceive: MapEventsReceiver
+        val mReceive = object : MapEventsReceiver {
+            override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+                return false
+            }
+
+            override fun longPressHelper(arg0: GeoPoint): Boolean {
+                mMarkers.forEach {
+                    if (it?.isInfoWindowShown == true) {
+                        it.infoWindow.close()
+                    }
+                }
+                return false
+            }
+        }
         val markers = RadiusMarkerClusterer(context)
         map.overlays?.clear()
         showMyLocation(
@@ -917,24 +932,13 @@ private fun addAllMarkers(
                 mGeoPoints.clear()
                 mMarkers.clear()
                 summits.forEach { pair ->
+                    if (!currentCoroutineContext().isActive || !map.isAttachedToWindow) {
+                        return@withContext
+                    }
                     mGeoPoints.add(pair.second)
                     val marker = getMarker(map, pair.first, pair.second, context)
                     markers.add(marker)
                     mMarkers.add(marker)
-                }
-                mReceive = object : MapEventsReceiver {
-                    override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
-                        return false
-                    }
-
-                    override fun longPressHelper(arg0: GeoPoint): Boolean {
-                        mMarkers.forEach {
-                            if (it?.isInfoWindowShown == true) {
-                                it.infoWindow.close()
-                            }
-                        }
-                        return false
-                    }
                 }
             }
             val eventsOverlay = MapEventsOverlay(mReceive)
