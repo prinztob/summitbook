@@ -54,13 +54,14 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         Log.i("SummitBookGlanceWidget", "provideGlance started")
-        val widgetData = loadWidgetData(context)
-        Log.i("SummitBookGlanceWidget", "provideGlance data loaded, providing content")
+        // Render immediately with a loading state; data is loaded inside composition.
+        // Blocking here before provideContent caused the widget to stay on the
+        // initial layout when the process is cold (e.g. right after device boot).
         provideContent {
             val prefs = currentState<Preferences>()
             val now = prefs[longPreferencesKey("now")] ?: System.currentTimeMillis()
             Log.i("SummitBookGlanceWidget", "provideGlance at $now")
-            val widgetData by produceState(widgetData, now) {
+            val widgetData by produceState(WidgetData(isLoading = true), now) {
                 value = loadWidgetData(context)
             }
             GlanceTheme(
@@ -97,6 +98,8 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
             }
             Log.d("SummitBookGlanceWidget", "Widget data loaded successfully")
             result
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("SummitBookGlanceWidget", "Error loading widget data", e)
             WidgetData(isError = true)

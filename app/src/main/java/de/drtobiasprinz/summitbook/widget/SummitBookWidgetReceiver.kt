@@ -27,5 +27,15 @@ class SummitBookWidgetReceiver : GlanceAppWidgetReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         Log.d("SummitBookWidgetReceiver", "onReceive: ${intent.action}")
+        // GlanceAppWidgetReceiver ignores non-widget actions, so refresh the
+        // widget ourselves when the device has just booted or the app was
+        // updated — otherwise the widget keeps its initial layout until the
+        // app is opened.
+        when (intent.action) {
+            Intent.ACTION_BOOT_COMPLETED,
+            "android.intent.action.QUICKBOOT_POWERON",
+            "android.intent.action.REBOOT",
+            Intent.ACTION_MY_PACKAGE_REPLACED -> WidgetRefreshWorker.schedule(context)
+        }
     }
 }

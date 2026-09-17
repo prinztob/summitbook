@@ -10,6 +10,9 @@ data class WidgetData(
     val monthlyStats: MonthlyStats = MonthlyStats(),
     val yearlyChartBitmap: Bitmap? = null,
     val recentSummits: List<Summit> = emptyList(),
+    /** True while data is still being loaded — the widget shows a loading hint
+     *  instead of zeroed stats. */
+    val isLoading: Boolean = false,
     /** True when loading failed — the widget should show an error hint
      *  instead of silently rendering zeroed stats. */
     val isError: Boolean = false

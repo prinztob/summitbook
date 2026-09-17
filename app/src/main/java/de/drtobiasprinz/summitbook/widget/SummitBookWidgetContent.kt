@@ -59,7 +59,13 @@ fun SummitBookWidgetContent(
             modifier = GlanceModifier.fillMaxSize(),
             horizontalAlignment = Alignment.Start
         ) {
-            if (widgetData.isError) {
+            if (widgetData.isLoading) {
+                // Data not loaded yet (e.g. cold process right after boot)
+                Text(
+                    text = context.getString(R.string.will_be_updated_soon),
+                    style = TextStyle
+                )
+            } else if (widgetData.isError) {
                 // Loading failed — say so instead of rendering zeroed stats
                 Text(
                     text = context.getString(R.string.widget_data_unavailable),
@@ -184,11 +190,16 @@ private fun StatRow(
         Spacer(GlanceModifier.width(8.dp))
 
         val numberFormat = NumberFormat.getIntegerInstance()
+        val percentOfExpected = if (statItem.expectedValue == 0) {
+            100
+        } else {
+            (statItem.actualValue * 100f / statItem.expectedValue).roundToInt()
+        }
         Text(
             text = if (label.isEmpty()) {
-                "${numberFormat.format(statItem.actualValue)} ${LocalContext.current.getString(R.string.of)} ${numberFormat.format(statItem.expectedValue)}"
+                "${numberFormat.format(statItem.actualValue)} ($percentOfExpected %)"
             } else {
-                "${numberFormat.format(statItem.actualValue)} ${LocalContext.current.getString(R.string.of)} ${numberFormat.format(statItem.expectedValue)} $label"
+                "${numberFormat.format(statItem.actualValue)} $label ($percentOfExpected %)"
             },
             style = TextStyle
         )
