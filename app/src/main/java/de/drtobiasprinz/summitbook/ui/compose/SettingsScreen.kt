@@ -11,7 +11,6 @@ import android.os.Build
 import android.provider.Settings
 import android.view.WindowManager
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -27,6 +26,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -54,10 +55,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -101,7 +106,8 @@ import de.drtobiasprinz.summitbook.data.appstate.AppState
 fun SettingsScreen(
     summits: List<Summit>,
     onSharedPreferenceChanged: (String) -> Unit = {},
-    onSaveSummit: (Boolean, Summit) -> Unit
+    onSaveSummit: (Boolean, Summit) -> Unit,
+    onShowSnackbar: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -232,11 +238,7 @@ fun SettingsScreen(
                 folderPickerLauncher.launch(intent)
             } catch (exception: Exception) {
                 Log.e("SettingsScreen", "Unable to select a on-device maps folder.\n$exception")
-                Toast.makeText(
-                    context,
-                    R.string.toast_message_install_file_helper,
-                    Toast.LENGTH_LONG
-                ).show()
+                onShowSnackbar(context.getString(R.string.toast_message_install_file_helper))
             }
         } else {
             Log.i("SettingsScreen", "This is not supported in your Android Version")
@@ -314,6 +316,7 @@ fun SettingsScreen(
                 summary = stringResource(R.string.annual_target_activities_summary),
                 icon = R.drawable.baseline_directions_walk_black_24dp,
                 value = annualTargetActivities,
+                numeric = true,
                 onValueChange = {
                     annualTargetActivities = it
                     savePreference(Keys.PREF_ANNUAL_TARGET_ACTIVITIES, it)
@@ -325,6 +328,7 @@ fun SettingsScreen(
                 summary = stringResource(R.string.annual_target_summits_summary),
                 icon = R.drawable.outline_landscape_2_24,
                 value = annualTargetSummits,
+                numeric = true,
                 onValueChange = {
                     annualTargetSummits = it
                     savePreference(Keys.PREF_ANNUAL_TARGET_SUMMITS, it)
@@ -336,6 +340,7 @@ fun SettingsScreen(
                 summary = stringResource(R.string.annual_target_height_meter_summary),
                 icon = R.drawable.baseline_trending_up_black_24dp,
                 value = annualTargetHeightMeter,
+                numeric = true,
                 onValueChange = {
                     annualTargetHeightMeter = it
                     savePreference(Keys.PREF_ANNUAL_TARGET, it)
@@ -347,6 +352,7 @@ fun SettingsScreen(
                 summary = stringResource(R.string.annual_target_kilometer_summary),
                 icon = R.drawable.outline_distance_24,
                 value = annualTargetKilometer,
+                numeric = true,
                 onValueChange = {
                     annualTargetKilometer = it
                     savePreference(Keys.PREF_ANNUAL_TARGET_KM, it)
@@ -358,6 +364,7 @@ fun SettingsScreen(
                 icon = R.drawable.baseline_other_houses_24,
                 value = indoorHeightMeterPerCent.toFloat(),
                 valueRange = 0f..100f,
+                valueSuffix = " %",
                 onValueChange = {
                     indoorHeightMeterPerCent = it.toInt()
                     savePreference(Keys.PREF_INDOOR_HEIGHT_METER, it.toInt())
@@ -370,6 +377,8 @@ fun SettingsScreen(
                 icon = R.drawable.baseline_trending_flat_24,
                 value = forecastAverageOfLastXYears.toFloat(),
                 valueRange = 0f..20f,
+                valueSuffix = " ${stringResource(R.string.years)}",
+                showDivider = false,
                 onValueChange = {
                     forecastAverageOfLastXYears = it.toInt()
                     savePreference(Keys.PREF_FORECAST_AVERAGE, it.toInt())
@@ -427,6 +436,7 @@ fun SettingsScreen(
                 summary = stringResource(R.string.max_number_points),
                 icon = R.drawable.baseline_map_black_24dp,
                 value = maxPointsOnTrack,
+                numeric = true,
                 onValueChange = {
                     maxPointsOnTrack = it
                     savePreference(Keys.PREF_MAX_NUMBER_POINT, it)
@@ -439,6 +449,7 @@ fun SettingsScreen(
                 summary = stringResource(R.string.manage_heatmaps_summary),
                 icon = R.drawable.baseline_map_black_24dp,
                 buttonText = stringResource(R.string.manage_heatmaps),
+                showDivider = false,
                 onClick = { showHeatmapDialog = true }
             )
         }
@@ -490,6 +501,7 @@ fun SettingsScreen(
                 title = stringResource(R.string.start_date_sync_garmin),
                 icon = R.drawable.baseline_calendar_today_24,
                 date = garminSyncStartDate,
+                showDivider = false,
                 onDateChange = {
                     garminSyncStartDate = it
                     savePreference(Keys.PREF_THIRD_PARTY_START_DATE, dateFormat.format(it))
@@ -526,6 +538,7 @@ fun SettingsScreen(
                 summary = stringResource(R.string.debug_switch),
                 icon = R.drawable.baseline_do_not_disturb_on_total_silence_24,
                 checked = disableStartUpTasks,
+                showDivider = false,
                 onCheckedChange = {
                     disableStartUpTasks = it
                     savePreference(Keys.PREF_DEBUG, it)
@@ -537,8 +550,13 @@ fun SettingsScreen(
         SettingsCategory(title = stringResource(R.string.pref_bulk_file_management_title)) {
             val bulkUpdateComplete = stringResource(R.string.bulk_update_complete)
             val loadingCanceled = stringResource(R.string.loading_canceled)
+            val fileCounts = FileRowType.entries.associateWith { countFilesToUpdate(summits, it) }
+            val missingSimplifiedCount = summits.count { isSimplifiedTrackMissing(it) }
+            val lastVisibleFileRowType =
+                fileCounts.filterValues { it > 0 }.keys.lastOrNull()
+
             FileRowType.entries.forEach { fileRowType ->
-                val fileCount = countFilesToUpdate(summits, fileRowType)
+                val fileCount = fileCounts[fileRowType] ?: 0
 
                 if (fileCount > 0) {
                     BulkUpdateSetting(
@@ -561,11 +579,13 @@ fun SettingsScreen(
                         },
                         summary = stringResource(R.string.bulk_update_file_count, fileCount),
                         icon = R.drawable.baseline_refresh_24,
+                        showDivider = fileRowType != lastVisibleFileRowType || missingSimplifiedCount > 0,
                         onClick = {
                             performBulkUpdate(
                                 summits = summits,
                                 fileRowType = fileRowType,
                                 context = context,
+                                onShowSnackbar = onShowSnackbar,
                                 onProgressUpdate = { message, current, total ->
                                     progressDialogMessage = message
                                     progressDialogCurrent = current
@@ -576,29 +596,65 @@ fun SettingsScreen(
                                 }, onComplete = { successCount, failCount ->
                                     showProgressDialog = false
                                     progressDialogJob = null
-                                    Toast.makeText(
-                                        context,
+                                    onShowSnackbar(
                                         String.format(
                                             bulkUpdateComplete,
                                             successCount,
                                             failCount
-                                        ),
-                                        Toast.LENGTH_LONG
-                                    ).show()
+                                        )
+                                    )
                                 }, onCanceled = {
                                     showProgressDialog = false
                                     progressDialogJob = null
-                                    Toast.makeText(
-                                        context,
-                                        loadingCanceled,
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    onShowSnackbar(loadingCanceled)
                                 }, onSaveSummit = onSaveSummit,
                                 coroutineScope = coroutineScope
                             )
                         }
                     )
                 }
+            }
+
+            // Missing simplified tracks: summits with a full GPX track but no simplified one
+            if (missingSimplifiedCount > 0) {
+                BulkUpdateSetting(
+                    title = stringResource(R.string.bulk_update_missing_simplified_tracks),
+                    summary = stringResource(R.string.bulk_update_file_count, missingSimplifiedCount),
+                    icon = R.drawable.baseline_refresh_24,
+                    showDivider = false,
+                    onClick = {
+                        performBulkUpdate(
+                            summits = summits,
+                            fileRowType = FileRowType.GPX_SIMPLIFIED,
+                            context = context,
+                            onShowSnackbar = onShowSnackbar,
+                            onProgressUpdate = { message, current, total ->
+                                progressDialogMessage = message
+                                progressDialogCurrent = current
+                                progressDialogTotal = total
+                                showProgressDialog = true
+                            }, onJobStarted = { job ->
+                                progressDialogJob = job
+                            }, onComplete = { successCount, failCount ->
+                                showProgressDialog = false
+                                progressDialogJob = null
+                                onShowSnackbar(
+                                    String.format(
+                                        bulkUpdateComplete,
+                                        successCount,
+                                        failCount
+                                    )
+                                )
+                            }, onCanceled = {
+                                showProgressDialog = false
+                                progressDialogJob = null
+                                onShowSnackbar(loadingCanceled)
+                            }, onSaveSummit = onSaveSummit,
+                            coroutineScope = coroutineScope,
+                            filter = { isSimplifiedTrackMissing(it) }
+                        )
+                    }
+                )
             }
         }
     }
@@ -648,17 +704,13 @@ fun SettingsScreen(
             onComplete = { message ->
                 showProgressDialog = false
                 progressDialogJob = null
-                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                onShowSnackbar(message)
                 Log.i("Settings", message)
             },
             onCanceled = {
                 showProgressDialog = false
                 progressDialogJob = null
-                Toast.makeText(
-                    context,
-                    loadingCanceled,
-                    Toast.LENGTH_SHORT
-                ).show()
+                onShowSnackbar(loadingCanceled)
             },
             coroutineScope = coroutineScope
         )
@@ -1035,6 +1087,7 @@ fun SwitchSetting(
     summary: String? = null,
     icon: Int,
     checked: Boolean,
+    showDivider: Boolean = true,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
@@ -1074,7 +1127,9 @@ fun SwitchSetting(
         )
     }
 
-    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+    if (showDivider) {
+        HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+    }
 }
 
 @Suppress("AssignedValueIsNeverRead")
@@ -1085,13 +1140,23 @@ fun EditTextSetting(
     icon: Int,
     value: String,
     readOnly: Boolean = false,
+    numeric: Boolean = false,
+    showDivider: Boolean = true,
     onValueChange: (String) -> Unit = {},
     onClick: () -> Unit = {}
 ) {
     var text by remember { mutableStateOf(value) }
+    var wasFocused by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(value) {
         text = value
+    }
+
+    fun commit() {
+        if (text != value) {
+            onValueChange(text)
+        }
     }
 
     Row(
@@ -1145,18 +1210,33 @@ fun EditTextSetting(
     } else {
         OutlinedTextField(
             value = text,
-            onValueChange = {
-                text = it
-                onValueChange(it)
+            onValueChange = { input ->
+                text = if (numeric) input.filter { it.isDigit() } else input
             },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    commit()
+                    focusManager.clearFocus()
+                }
+            ),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 56.dp, end = 8.dp, bottom = 8.dp),
+                .padding(start = 56.dp, end = 8.dp, bottom = 8.dp)
+                .onFocusChanged { focusState ->
+                    if (wasFocused && !focusState.isFocused) {
+                        commit()
+                    }
+                    wasFocused = focusState.isFocused
+                },
             singleLine = true
         )
     }
 
-    if (onClick != {}) {
+    if (readOnly) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1168,7 +1248,9 @@ fun EditTextSetting(
         }
     }
 
-    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+    if (showDivider) {
+        HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+    }
 }
 
 @Composable
@@ -1177,6 +1259,7 @@ fun PasswordSetting(
     summary: String? = null,
     icon: Int,
     value: String,
+    showDivider: Boolean = true,
     onValueChange: (String) -> Unit
 ) {
     var text by remember { mutableStateOf(value) }
@@ -1241,13 +1324,15 @@ fun PasswordSetting(
                     painter = painterResource(
                         if (passwordVisible) R.drawable.baseline_visibility_24 else R.drawable.baseline_visibility_off_24
                     ),
-                    contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                    contentDescription = if (passwordVisible) stringResource(R.string.hide_password) else stringResource(R.string.show_password)
                 )
             }
         }
     )
 
-    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+    if (showDivider) {
+        HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+    }
 }
 
 @Composable
@@ -1257,6 +1342,8 @@ fun SliderSetting(
     icon: Int,
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
+    valueSuffix: String? = null,
+    showDivider: Boolean = true,
     onValueChange: (Float) -> Unit
 ) {
     var sliderValue by remember { mutableFloatStateOf(value) }
@@ -1295,7 +1382,7 @@ fun SliderSetting(
                 )
             }
             Text(
-                text = sliderValue.toInt().toString(),
+                text = "${sliderValue.toInt()}$valueSuffix",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -1306,7 +1393,9 @@ fun SliderSetting(
         value = sliderValue,
         onValueChange = {
             sliderValue = it
-            onValueChange(it)
+        },
+        onValueChangeFinished = {
+            onValueChange(sliderValue)
         },
         valueRange = valueRange,
         modifier = Modifier
@@ -1314,7 +1403,9 @@ fun SliderSetting(
             .padding(start = 56.dp, end = 8.dp, bottom = 8.dp)
     )
 
-    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+    if (showDivider) {
+        HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+    }
 }
 
 @Composable
@@ -1322,6 +1413,7 @@ fun DateSetting(
     title: String,
     icon: Int,
     date: Date?,
+    showDivider: Boolean = true,
     onDateChange: (Date) -> Unit
 ) {
     val context = LocalContext.current
@@ -1356,6 +1448,7 @@ fun DateSetting(
         value = date?.let { dateFormat.format(it) } ?: "",
         onValueChange = {},
         readOnly = true,
+        placeholder = { Text("2024-01-01") },
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 56.dp, end = 8.dp, bottom = 8.dp),
@@ -1401,6 +1494,7 @@ fun BulkUpdateSetting(
     title: String,
     summary: String,
     icon: Int,
+    showDivider: Boolean = true,
     onClick: () -> Unit
 ) {
     Row(
@@ -1442,7 +1536,9 @@ fun BulkUpdateSetting(
         }
     }
 
-    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+    if (showDivider) {
+        HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+    }
 }
 
 @Composable
@@ -1452,6 +1548,7 @@ fun ActionButtonSetting(
     icon: Int,
     buttonText: String,
     isLoading: Boolean = false,
+    showDivider: Boolean = true,
     onClick: () -> Unit
 ) {
     Row(
@@ -1497,7 +1594,9 @@ fun ActionButtonSetting(
         }
     }
 
-    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+    if (showDivider) {
+        HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+    }
 }
 
 private fun countFilesToUpdate(
@@ -1512,30 +1611,34 @@ private fun countFilesToUpdate(
     }
 }
 
+private fun isSimplifiedTrackMissing(summit: Summit): Boolean {
+    val fullTrack = summit.getGpsTrackPath().toFile()
+    val simplifiedTrack = summit.getGpsTrackPath(simplified = true).toFile()
+    return fullTrack.exists() && !simplifiedTrack.exists()
+}
+
 private fun performBulkUpdate(
     summits: List<Summit>,
     fileRowType: FileRowType,
     context: Context,
+    onShowSnackbar: (String) -> Unit,
     onProgressUpdate: (String, Int?, Int?) -> Unit,
     onJobStarted: (Job) -> Unit,
     onComplete: (Int, Int) -> Unit,
     onCanceled: () -> Unit,
     onSaveSummit: (Boolean, Summit) -> Unit,
-    coroutineScope: CoroutineScope
-) {
-    val cacheDir = File(AppState.cache, "file_backups")
-    val summitsToUpdate = summits.filter { summit ->
+    coroutineScope: CoroutineScope,
+    filter: (Summit) -> Boolean = { summit ->
+        val cacheDir = File(AppState.cache, "file_backups")
         val file = fileRowType.getFile(summit)
         val backupFile = File(cacheDir, file.name)
         file.exists() && !backupFile.exists()
     }
+) {
+    val summitsToUpdate = summits.filter(filter)
 
     if (summitsToUpdate.isEmpty()) {
-        Toast.makeText(
-            context,
-            context.getString(R.string.no_files_to_update),
-            Toast.LENGTH_SHORT
-        ).show()
+        onShowSnackbar(context.getString(R.string.no_files_to_update))
         return
     }
 

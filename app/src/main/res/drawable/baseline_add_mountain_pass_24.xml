@@ -6,12 +6,12 @@
     android:viewportWidth="24.0"
     android:viewportHeight="24.0">
 
-    <!-- Two mountain peaks with a pass (saddle) between them -->
+    <!-- Two mountain peaks with a pass (saddle) between them; taller left peak gets a snowcap notch -->
     <path
         android:fillColor="@color/icon_default"
-        android:pathData="M2,20L8,4L12,12L18,6L22,20Z" />
+        android:pathData="M1.5,20 L6,7 L7,9.2 L8,7.4 L11.2,12.6 L13.4,9.4 L21,20 Z" />
 
-    <!-- Plus sign in top-right corner -->
+    <!-- Plus sign in top-right corner, clear of the lower right peak -->
     <path
         android:fillColor="@color/icon_default"
         android:pathData="M19,1v3h3v2h-3v3h-2V6h-3V4h3V1h2z" />

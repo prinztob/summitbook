@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.ui.compose
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,19 +27,23 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.core.Keys
 import de.drtobiasprinz.summitbook.data.analytics.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
+import de.drtobiasprinz.summitbook.data.db.entities.DailyActivityHelper.findDailyActivitySummariesWhichWasNotAddedToSummits
+import de.drtobiasprinz.summitbook.data.db.entities.DailyActivityHelper.parseAsSummit
+import de.drtobiasprinz.summitbook.data.db.entities.DailyActivitySummary
 import de.drtobiasprinz.summitbook.data.db.entities.Forecast
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.model.StatisticEntry
@@ -44,6 +51,8 @@ import de.drtobiasprinz.summitbook.data.model.StatisticEntryDefinitions
 import de.drtobiasprinz.summitbook.data.model.StatisticGroup
 import de.drtobiasprinz.summitbook.data.model.StatisticsData
 import de.drtobiasprinz.summitbook.ui.theme.ChartTextLightGray
+import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
+import de.drtobiasprinz.summitbook.ui.theme.SurfaceMidGray
 import java.text.NumberFormat
 import java.util.concurrent.TimeUnit
 
@@ -51,19 +60,43 @@ import java.util.concurrent.TimeUnit
 fun StatisticsScreen(
     filteredSummits: List<Summit>,
     forecasts: List<Forecast>,
+    dailyActivitySummaryList: List<DailyActivitySummary>,
     onNavigateToSummitDetails: (Long) -> Unit
 ) {
     val configuration = LocalConfiguration.current
-    val numberFormat = NumberFormat.getInstance(configuration.locales[0])
+    val locale = configuration.locales[0]
+    val intFormat = NumberFormat.getInstance(locale).apply {
+        maximumFractionDigits = 0
+    }
+    val distanceFormat = NumberFormat.getInstance(locale).apply {
+        maximumFractionDigits = 1
+    }
     val annualTargetActivity =
         sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_ACTIVITIES, "52") ?: "52"
     val annualTargetKm = sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_KM, "1200") ?: "1200"
     val annualTargetHm = sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET, "50000") ?: "50000"
     val indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
     var statisticsData by remember { mutableStateOf(StatisticsData()) }
-    LaunchedEffect(filteredSummits, forecasts) {
+    var includeNotPersistedActivities by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(
+        filteredSummits,
+        forecasts,
+        dailyActivitySummaryList,
+        includeNotPersistedActivities
+    ) {
+        val summitsToUse = if (includeNotPersistedActivities) {
+            val notPersistedSummits = findDailyActivitySummariesWhichWasNotAddedToSummits(
+                dailyActivitySummaryList,
+                filteredSummits
+            )
+            filteredSummits + parseAsSummit(notPersistedSummits)
+        } else {
+            filteredSummits
+        }
+
         val statisticEntry = StatisticEntry(
-            filteredSummits,
+            summitsToUse,
             annualTargetActivity.toIntOrNull() ?: 52,
             annualTargetKm.toIntOrNull() ?: 1200,
             annualTargetHm.toIntOrNull() ?: 50000,
@@ -72,7 +105,7 @@ fun StatisticsScreen(
         statisticEntry.calculate()
 
         val extremaValuesSummits = ExtremaValuesSummits(
-            filteredSummits, shouldIndoorActivityBeExcluded = true
+            summitsToUse, shouldIndoorActivityBeExcluded = true
         )
 
         statisticsData = StatisticsData(
@@ -86,7 +119,7 @@ fun StatisticsScreen(
             totalRoadTypeMeter = statisticEntry.totalRoadTypeMeter,
             extremaValuesSummits = extremaValuesSummits,
             forecasts = forecasts,
-            summits = filteredSummits
+            summits = summitsToUse
         )
     }
 
@@ -97,125 +130,180 @@ fun StatisticsScreen(
             .padding(8.dp)
     ) {
 
-        // Summary section
+        // Toggle for including not persisted activities
         item {
-            SummarySection(statisticsData, numberFormat)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                IncludeNotPersistedActivitiesChip(
+                    selected = includeNotPersistedActivities,
+                    onCheckedChange = { includeNotPersistedActivities = it }
+                )
+            }
         }
 
-        // Road surface section
+        // Summary grid: activities, summits, km, height meters, achievement, countries
         item {
-            RoadSurfaceSection(statisticsData, numberFormat)
+            SummaryGridSection(statisticsData, intFormat, distanceFormat)
         }
 
-        // Road type section
+        // Road data section (surface + type), below the achievement tile
         item {
-            RoadTypeSection(statisticsData, numberFormat)
-        }
-
-        // Height meters section
-        item {
-            HeightMetersSection(statisticsData, numberFormat)
-        }
-
-        // Achievement section
-        item {
-            AchievementSection(statisticsData, numberFormat)
+            RoadDataSection(statisticsData, distanceFormat)
         }
 
         // Extrema values sections
         item {
-            ExtremaValuesSection(statisticsData, onNavigateToSummitDetails, numberFormat)
-        }
-
-        // Visited countries section
-        item {
-            VisitedCountriesSection(statisticsData, numberFormat)
+            ExtremaValuesSection(
+                statisticsData,
+                onNavigateToSummitDetails,
+                distanceFormat,
+                intFormat
+            )
         }
     }
 }
 
 @Composable
-fun SummarySection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
-    Card(
+fun SummaryGridSection(
+    statisticsData: StatisticsData,
+    intFormat: NumberFormat,
+    distanceFormat: NumberFormat
+) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(5.dp),
-        shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .padding(5.dp)
+    ) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            StatTile(
+                label = stringResource(R.string.total_activities),
+                value = intFormat.format(statisticsData.totalActivities),
+                modifier = Modifier.weight(1f)
+            )
+            StatTile(
+                label = stringResource(R.string.total_summits),
+                value = intFormat.format(statisticsData.totalSummits),
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Row(modifier = Modifier.fillMaxWidth()) {
+            StatTile(
+                label = stringResource(R.string.total_kilometers),
+                value = "${distanceFormat.format(statisticsData.totalKm)} km",
+                modifier = Modifier.weight(1f)
+            )
+            StatTile(
+                label = stringResource(R.string.total_height_meters),
+                value = "${intFormat.format(statisticsData.totalHm)} hm",
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Row(modifier = Modifier.fillMaxWidth()) {
+            StatTile(
+                label = stringResource(R.string.achievement),
+                value = if (statisticsData.totalActivities > 0) {
+                    "${intFormat.format(statisticsData.achievement)} %"
+                } else {
+                    "-"
+                },
+                modifier = Modifier.weight(1f)
+            )
+            StatTile(
+                label = stringResource(R.string.visited_countries),
+                value = if (statisticsData.visitedCountries > 0) {
+                    intFormat.format(statisticsData.visitedCountries)
+                } else {
+                    "-"
+                },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(8.dp)
     ) {
         Column(
             modifier = Modifier
-                .padding(20.dp)
-                .align(Alignment.CenterHorizontally),
+                .fillMaxWidth()
+                .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = stringResource(R.string.total_activities),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
             Text(
-                text = numberFormat.format(statisticsData.totalActivities),
-                style = MaterialTheme.typography.headlineLarge,
+                text = value,
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                fontSize = 35.sp
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = stringResource(R.string.total_summits),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            Text(
-                text = numberFormat.format(statisticsData.totalSummits),
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                fontSize = 35.sp
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = stringResource(R.string.total_kilometers),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            Text(
-                text = "${numberFormat.format(statisticsData.totalKm)} km",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                fontSize = 35.sp
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
             )
         }
     }
 }
 
 @Composable
-fun RoadSurfaceSection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
+fun RoadDataSection(statisticsData: StatisticsData, distanceFormat: NumberFormat) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(5.dp),
         shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = stringResource(R.string.road_surface),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 8.dp)
             )
-
-            // Horizontal scrollable row for road surfaces
             HorizontalScrollbarContainer {
                 statisticsData.totalRoadSurfaceMeter.forEach { (surface, meters) ->
-                    SurfaceCard(surface.name.replace("_", " "), meters / 1000.0, numberFormat)
+                    SurfaceCard(
+                        surface.name.replace("_", " "),
+                        meters / 1000.0,
+                        distanceFormat
+                    )
+                }
+            }
+
+            Text(
+                text = stringResource(R.string.road_type),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+            )
+            HorizontalScrollbarContainer {
+                statisticsData.totalRoadTypeMeter.forEach { (roadType, meters) ->
+                    SurfaceCard(
+                        roadType.name.replace("_", " "),
+                        meters / 1000.0,
+                        distanceFormat
+                    )
                 }
             }
         }
@@ -260,7 +348,6 @@ fun SurfaceCard(title: String, value: Double, numberFormat: NumberFormat) {
                 modifier = Modifier
                     .padding(bottom = 8.dp)
                     .fillMaxWidth()
-                    .height(48.dp)
             )
             Text(
                 text = "${numberFormat.format(value)} km",
@@ -304,7 +391,6 @@ fun StatItemCard(
                 text = value,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
                 textAlign = TextAlign.Center
             )
             Text(
@@ -317,13 +403,26 @@ fun StatItemCard(
     }
 }
 
+private fun formatDurationHHms(value: Double, locale: java.util.Locale): String {
+    val valueInMs = (value * 3600000.0).toLong()
+    return String.format(
+        locale,
+        "%02d:%02d:%02d",
+        TimeUnit.MILLISECONDS.toHours(valueInMs),
+        TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(1),
+        TimeUnit.MILLISECONDS.toSeconds(valueInMs) % TimeUnit.MINUTES.toSeconds(1),
+    )
+}
+
 @Composable
 fun ExtremaValuesSection(
     statisticsData: StatisticsData,
     onNavigateToSummitDetails: (Long) -> Unit,
-    numberFormat: NumberFormat
+    distanceFormat: NumberFormat,
+    intFormat: NumberFormat
 ) {
     val extremaValues = statisticsData.extremaValuesSummits
+    val locale = LocalConfiguration.current.locales[0]
 
     if (extremaValues != null) {
         Card(
@@ -331,12 +430,12 @@ fun ExtremaValuesSection(
                 .fillMaxWidth()
                 .padding(5.dp),
             shape = RoundedCornerShape(8.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(
                 modifier = Modifier
                     .padding(20.dp)
-                    .align(Alignment.CenterHorizontally),
+                    .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -366,20 +465,9 @@ fun ExtremaValuesSection(
                             if (summit != null) {
                                 val value = entry.getValue(summit)
                                 val formattedValue = if (entry.toHHms) {
-                                    val valueInMs = (value * 3600000.0).toLong()
-                                    String.format(
-                                        LocalConfiguration.current.locales[0],
-                                        "%02d:%02d:%02d",
-                                        TimeUnit.MILLISECONDS.toHours(valueInMs),
-                                        TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(
-                                            1
-                                        ),
-                                        TimeUnit.MILLISECONDS.toSeconds(valueInMs) % TimeUnit.MINUTES.toSeconds(
-                                            1
-                                        ),
-                                    )
+                                    formatDurationHHms(value, locale)
                                 } else {
-                                    numberFormat.format(value * entry.factor)
+                                    distanceFormat.format(value * entry.factor)
                                 }
 
                                 StatItemCard(
@@ -412,20 +500,9 @@ fun ExtremaValuesSection(
                             if (summit != null) {
                                 val value = entry.getValue(summit)
                                 val formattedValue = if (entry.toHHms) {
-                                    val valueInMs = (value * 3600000.0).toLong()
-                                    String.format(
-                                        LocalConfiguration.current.locales[0],
-                                        "%02d:%02d:%02d",
-                                        TimeUnit.MILLISECONDS.toHours(valueInMs),
-                                        TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(
-                                            1
-                                        ),
-                                        TimeUnit.MILLISECONDS.toSeconds(valueInMs) % TimeUnit.MINUTES.toSeconds(
-                                            1
-                                        ),
-                                    )
+                                    formatDurationHHms(value, locale)
                                 } else {
-                                    numberFormat.format(value * entry.factor)
+                                    distanceFormat.format(value * entry.factor)
                                 }
 
                                 StatItemCard(
@@ -458,20 +535,9 @@ fun ExtremaValuesSection(
                             if (summit != null) {
                                 val value = entry.getValue(summit)
                                 val formattedValue = if (entry.toHHms) {
-                                    val valueInMs = (value * 3600000.0).toLong()
-                                    String.format(
-                                        LocalConfiguration.current.locales[0],
-                                        "%02d:%02d:%02d",
-                                        TimeUnit.MILLISECONDS.toHours(valueInMs),
-                                        TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(
-                                            1
-                                        ),
-                                        TimeUnit.MILLISECONDS.toSeconds(valueInMs) % TimeUnit.MINUTES.toSeconds(
-                                            1
-                                        ),
-                                    )
+                                    formatDurationHHms(value, locale)
                                 } else {
-                                    numberFormat.format(value * entry.factor)
+                                    intFormat.format(value * entry.factor)
                                 }
 
                                 StatItemCard(
@@ -495,20 +561,9 @@ fun ExtremaValuesSection(
                         if (summit != null) {
                             val value = entry.getValue(summit)
                             val formattedValue = if (entry.toHHms) {
-                                val valueInMs = (value * 3600000.0).toLong()
-                                String.format(
-                                    LocalConfiguration.current.locales[0],
-                                    "%02d:%02d:%02d",
-                                    TimeUnit.MILLISECONDS.toHours(valueInMs),
-                                    TimeUnit.MILLISECONDS.toMinutes(valueInMs) % TimeUnit.HOURS.toMinutes(
-                                        1
-                                    ),
-                                    TimeUnit.MILLISECONDS.toSeconds(valueInMs) % TimeUnit.MINUTES.toSeconds(
-                                        1
-                                    ),
-                                )
+                                formatDurationHHms(value, locale)
                             } else {
-                                numberFormat.format(value * entry.factor)
+                                distanceFormat.format(value * entry.factor)
                             }
 
                             Card(
@@ -523,7 +578,7 @@ fun ExtremaValuesSection(
                                 Column(
                                     modifier = Modifier
                                         .padding(16.dp)
-                                        .align(Alignment.CenterHorizontally),
+                                        .fillMaxWidth(),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Text(
@@ -534,8 +589,7 @@ fun ExtremaValuesSection(
                                     Text(
                                         text = formattedValue,
                                         style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 25.sp
+                                        fontWeight = FontWeight.Bold
                                     )
                                     Text(
                                         text = "${summit.name}\n${summit.getDateAsString()}",
@@ -559,127 +613,23 @@ fun ExtremaValuesSummits.getSummitForEntry(entry: StatisticEntryDefinitions): Su
 }
 
 @Composable
-fun RoadTypeSection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(5.dp),
-        shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(20.dp)
-                .align(Alignment.CenterHorizontally),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.road_type),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            // Horizontal scrollable row for road types
-            HorizontalScrollbarContainer {
-                statisticsData.totalRoadTypeMeter.forEach { (roadType, meters) ->
-                    SurfaceCard(roadType.name.replace("_", " "), meters / 1000.0, numberFormat)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun HeightMetersSection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(5.dp),
-        shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(20.dp)
-                .align(Alignment.CenterHorizontally),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.total_height_meters),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            Text(
-                text = "${numberFormat.format(statisticsData.totalHm)} hm",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                fontSize = 35.sp
-            )
-        }
-    }
-}
-
-@Composable
-fun AchievementSection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
-    if (statisticsData.totalActivities > 0) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(5.dp),
-            shape = RoundedCornerShape(8.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .align(Alignment.CenterHorizontally),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(R.string.achievement),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-                Text(
-                    text = "${numberFormat.format(statisticsData.achievement)}%",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 35.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun VisitedCountriesSection(statisticsData: StatisticsData, numberFormat: NumberFormat) {
-    if (statisticsData.visitedCountries > 0) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(5.dp),
-            shape = RoundedCornerShape(8.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .align(Alignment.CenterHorizontally),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(R.string.visited_countries),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-                Text(
-                    text = numberFormat.format(statisticsData.visitedCountries),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 35.sp
-                )
-            }
-        }
-    }
+fun IncludeNotPersistedActivitiesChip(
+    selected: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isDark = isSystemInDarkTheme()
+    val contentColor = if (isDark) Color.White else Color.Black
+    FilterChip(
+        selected = selected,
+        onClick = { onCheckedChange(!selected) },
+        label = { Text(stringResource(R.string.include_not_persisted_activities)) },
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = if (isDark) DarkCanvas else SurfaceMidGray,
+            labelColor = contentColor,
+            selectedContainerColor = MaterialTheme.colorScheme.primary,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+        ),
+        modifier = modifier
+    )
 }

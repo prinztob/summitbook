@@ -101,38 +101,48 @@ object MapTilesHelper {
      * @param context Android context
      * @param mapFiles List of map files to use
      * @param item MapProvider configuration
+     * @param plainTheme When true, no additional render theme (Elevate) and no hill shading
+     * are applied; the built-in default theme is used instead. This keeps the base map
+     * uncluttered so an overlaid heatmap is clearly visible.
      * @return MapsForgeTileProvider, or null if setup fails
      */
     fun getOfflineMapProviderWithHillShading(
-        context: Context, mapFiles: List<DocumentFile>, item: MapProvider
+        context: Context, mapFiles: List<DocumentFile>, item: MapProvider,
+        plainTheme: Boolean = false
     ): MapsForgeTileProvider? {
         try {
-            val theme = AssetsRenderTheme(
-                context.assets, "rendertheme/", "Elevate.xml", XmlRenderThemeMenuCallback { style ->
-                    val renderThemeStyleLayer = style.getLayer(item.offlineStyle)
-                    if (renderThemeStyleLayer == null) {
-                        Log.w("AssetsRenderTheme", "Invalid style")
-                        return@XmlRenderThemeMenuCallback null
-                    }
+            val theme = if (plainTheme) {
+                // No additional render theme: pass null so the built-in default
+                // (MapsforgeThemes.OSMARENDER) is used.
+                null
+            } else {
+                AssetsRenderTheme(
+                    context.assets, "rendertheme/", "Elevate.xml", XmlRenderThemeMenuCallback { style ->
+                        val renderThemeStyleLayer = style.getLayer(item.offlineStyle)
+                        if (renderThemeStyleLayer == null) {
+                            Log.w("AssetsRenderTheme", "Invalid style")
+                            return@XmlRenderThemeMenuCallback null
+                        }
 
-                    val categories: MutableSet<String> = renderThemeStyleLayer.categories
+                        val categories: MutableSet<String> = renderThemeStyleLayer.categories
 
-                    for (overlay in renderThemeStyleLayer.overlays) {
-                        if (overlay.isEnabled) categories.addAll(overlay.categories)
-                    }
-                    categories
-                })
+                        for (overlay in renderThemeStyleLayer.overlays) {
+                            if (overlay.isEnabled) categories.addAll(overlay.categories)
+                        }
+                        categories
+                    })
+            }
             val mapFileInputStreams: Array<FileInputStream> =
                 FileHelper.getOnDeviceMapFileInputStreams(context, mapFiles)
             val demFolder = getDemFolder()
-            val hillsRenderConfig = if (demFolder != null) createHillShadingConfig(
+            val hillsRenderConfig = if (plainTheme || demFolder == null) null else createHillShadingConfig(
                 demFolder, AndroidGraphicFactory.INSTANCE
-            ) else null
+            )
             val mapsForgeTileSource: MapsForgeTileSource =
                 MapsForgeTileSource.createFromFileInputStream(
                     mapFileInputStreams,
                     theme,
-                    "Elevate.xml",
+                    if (plainTheme) "default" else "Elevate.xml",
                     MultiMapDataStore.DataPolicy.RETURN_ALL,
                     hillsRenderConfig
                 )

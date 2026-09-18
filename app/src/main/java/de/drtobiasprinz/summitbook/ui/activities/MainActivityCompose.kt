@@ -579,17 +579,6 @@ class MainActivityCompose : ComponentActivity(),
                                         )
                                     }
 
-                                    // Update action
-                                    IconButton(onClick = {
-                                        updateThirdPartyData(
-                                            coroutineScope
-                                        )
-                                    }) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_baseline_sync_24),
-                                            contentDescription = stringResource(R.string.update_3rd_part)
-                                        )
-                                    }
                                 }
                             )
                         }
@@ -607,17 +596,32 @@ class MainActivityCompose : ComponentActivity(),
                     }
                 }
             ) { padding ->
+                // On the Map screen the map draws edge to edge behind the
+                // (semi-transparent) top bar and bottom bar instead of being
+                // inset by them.
+                val isMapDestination = currentDestination == Destination.Map
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding)
+                        .then(
+                            if (isMapDestination) Modifier
+                            else Modifier.padding(padding)
+                        )
                 ) {
                     // Main content based on current destination
                     MainContent(filteredSummits, summitsFromDatabase, forecasts, coroutineScope, navController)
 
                     if (databaseError != null && !errorBannerDismissed) {
                         DatabaseErrorBanner(
-                            modifier = Modifier.align(Alignment.TopCenter),
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .then(
+                                    if (isMapDestination) {
+                                        Modifier.padding(top = padding.calculateTopPadding())
+                                    } else {
+                                        Modifier
+                                    }
+                                ),
                             detail = databaseError,
                             onDismiss = { errorBannerDismissed = true }
                         )
@@ -1057,9 +1061,12 @@ class MainActivityCompose : ComponentActivity(),
             }
 
             composable(Destination.Statistics.name) {
+                val dailyActivitySummary by viewModel.dailyActivitySummary.asFlow()
+                    .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
                 StatisticsScreen(
                     filteredSummits = filteredSummits,
                     forecasts = forecasts,
+                    dailyActivitySummaryList = dailyActivitySummary.data ?: emptyList(),
                     onNavigateToSummitDetails = { startSummitEntryDetailsComposeActivity(it) })
             }
 
@@ -1130,7 +1137,12 @@ class MainActivityCompose : ComponentActivity(),
             composable(Destination.Settings.name) {
                 SettingsScreen(summitsFromDatabase, { key ->
                     onSharedPreferenceChanged(AppState.sharedPreferences, key)
-                }, onSaveSummit = { isEdit, summit -> viewModel.saveSummit(isEdit, summit) })
+                }, onSaveSummit = { isEdit, summit -> viewModel.saveSummit(isEdit, summit) },
+                    onShowSnackbar = { message ->
+                        coroutineScope.launch {
+                            snackbarHostState?.showSnackbar(message)
+                        }
+                    })
             }
         }
     }

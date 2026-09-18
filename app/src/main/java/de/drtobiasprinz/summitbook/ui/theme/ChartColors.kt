@@ -32,3 +32,7 @@ val SurfaceMidGray = Color(0xFFE0E0E0)
 
 // Translucent scrim over map/chart backgrounds
 val Scrim = Color(0x55000000)
+
+// Void shown by the map screen where no tiles are rendered; matches the
+// render themes' map-background-outside so it does not vary per map type
+val MapVoidBackground = Color(0xFFEEEEEE)

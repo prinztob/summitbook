@@ -39,7 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.graphics.toColorInt
+import androidx.compose.ui.graphics.toArgb
 import androidx.preference.PreferenceManager
 import com.github.mikephil.charting.charts.CombinedChart
 import com.github.mikephil.charting.charts.CombinedChart.DrawOrder
@@ -74,6 +74,7 @@ import java.util.Date
 import java.util.GregorianCalendar
 import java.util.TimeZone
 import kotlin.math.floor
+import de.drtobiasprinz.summitbook.ui.theme.ChartTextDarkGray
 import de.drtobiasprinz.summitbook.ui.theme.ChartTextLightGray
 import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
 import de.drtobiasprinz.summitbook.ui.theme.DarkCanvasDeep
@@ -107,9 +108,8 @@ fun BarChartScreen(
     var minDate by remember { mutableStateOf(Date()) }
     var intervalHelper by remember { mutableStateOf<IntervalHelper?>(null) }
     var unit by remember { mutableStateOf("hm") }
-    var label by remember { mutableStateOf("Height meters") }
+    var label by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
-    var combinedChart by remember { mutableStateOf<CombinedChart?>(null) }
 
     val indoorHeightMeterPercent = remember {
         sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
@@ -120,6 +120,7 @@ fun BarChartScreen(
     val zAxisEntries = remember { BarChartZAxisSelector.entries.toList() }
     val unitLabel = stringResource(selectedYAxisSpinnerEntry.unitId)
     val labelLabel = stringResource(selectedYAxisSpinnerEntry.nameId)
+    val forecastLabel = stringResource(R.string.forecast)
     val allLabel = stringResource(R.string.all)
     val symbols = DateFormatSymbols()
     val monthNames = remember {
@@ -129,8 +130,9 @@ fun BarChartScreen(
     }
 
     val textColor = if (isDark) Color.WHITE else Color.BLACK
-    val gridColor = if (isDark) "#444444".toColorInt() else Color.LTGRAY
-    val chartBackgroundColor = if (isDark) "#1E1E1E".toColorInt() else Color.WHITE
+    val gridColor = if (isDark) ChartTextDarkGray.toArgb() else Color.LTGRAY
+    val chartBackgroundColor = if (isDark) DarkCanvas.toArgb() else Color.WHITE
+    val forecastLineColor = if (isDark) Color.LTGRAY else Color.DKGRAY
 
     // Process data when summits or filters change
     LaunchedEffect(
@@ -269,8 +271,6 @@ fun BarChartScreen(
                             description.isEnabled = false
                             setTouchEnabled(true)
                             setDrawValueAboveBar(false)
-
-                            combinedChart = this
                         }
                     },
                     modifier = Modifier.fillMaxSize(),
@@ -289,6 +289,8 @@ fun BarChartScreen(
                             textColor = textColor,
                             gridColor = gridColor,
                             chartBackgroundColor = chartBackgroundColor,
+                            forecastLineColor = forecastLineColor,
+                            forecastLabel = forecastLabel,
                             context = context,
                             onEntrySelected = { entry, highlight ->
                                 selectedEntry = entry
@@ -321,13 +323,13 @@ fun BarChartScreen(
                         }
                     }
                 }
-            } else {
+                } else {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No data available",
+                        text = stringResource(R.string.no_data_available),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isDark) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color.Black
                     )
@@ -599,24 +601,11 @@ fun SpinnerSection(
             }
         }
 
-        // Include filtered daily activity summaries checkbox
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            androidx.compose.material3.Checkbox(
-                checked = includeFilteredDailyActivitySummaries,
-                onCheckedChange = onIncludeFilteredChanged,
-                modifier = Modifier.size(12.dp)
-            )
-            Text(
-                text = stringResource(id = R.string.include_not_persisted_activities),
-                style = MaterialTheme.typography.bodySmall,
-                color = textColor,
-                modifier = Modifier.padding(start = 4.dp),
-                fontSize = 10.sp
-            )
-        }
+        // Include filtered daily activity summaries toggle
+        IncludeNotPersistedActivitiesChip(
+            selected = includeFilteredDailyActivitySummaries,
+            onCheckedChange = onIncludeFilteredChanged
+        )
     }
 }
 
@@ -635,6 +624,8 @@ private fun updateCombinedChart(
     textColor: Int,
     gridColor: Int,
     chartBackgroundColor: Int,
+    forecastLineColor: Int,
+    forecastLabel: String,
     context: android.content.Context,
     onEntrySelected: (BarEntry, Highlight) -> Unit,
     onNothingSelected: () -> Unit
@@ -661,11 +652,11 @@ private fun updateCombinedChart(
 
     // Set line data for forecast
     if (lineChartEntriesForecast.isNotEmpty()) {
-        val lineDataSet = LineDataSet(lineChartEntriesForecast, "Forecast").apply {
+        val lineDataSet = LineDataSet(lineChartEntriesForecast, forecastLabel).apply {
             setDrawValues(false)
             setDrawCircles(false)
             isHighlightEnabled = false
-            color = Color.DKGRAY
+            color = forecastLineColor
             circleHoleColor = Color.RED
             highLightColor = Color.RED
             lineWidth = 2f
@@ -878,7 +869,7 @@ fun ChartMarkerCompose(
     val unitString = if (unit == "") "" else " $unit"
     val forecastValue = lineChartEntriesForecast.find { it.x == entry.x }?.y?.toInt() ?: 0
 
-    val text = remember(selectedValue, forecastValue, value, unitString, forecastAbbreviation, zAxisLabel) {
+    val text = remember(selectedValue, forecastValue, value, unitString, forecastAbbreviation, zAxisLabel, entry.y) {
         if (selectedValue == 0 && forecastValue > 0) {
             String.format(
                 "%s%s\n%s\n%s: %s%s",

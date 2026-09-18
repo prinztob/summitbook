@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import android.content.res.Configuration
 import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -31,14 +30,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.drtobiasprinz.summitbook.R
-import de.drtobiasprinz.summitbook.data.db.entities.PowerData
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.analytics.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.data.analytics.TimeIntervalPower
@@ -77,20 +75,21 @@ fun PowerLineChart(
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
-    val configuration = LocalConfiguration.current
 
-    val power = summit.garminData?.power ?: return
+    if (summit.garminData?.power == null) return
 
     val secLabel = stringResource(R.string.sec)
+    val minLabel = stringResource(R.string.min)
+    val hLabel = stringResource(R.string.h)
     val powerProfileLabel = stringResource(R.string.power_profile_label)
     val powerProfileCompareLabel = stringResource(R.string.power_profile_compare_label)
     val powerProfileMaxLabel = stringResource(R.string.power_profile_max_label)
     val powerProfileMinLabel = stringResource(R.string.power_profile_min_label)
 
     // Get chart data for all series
-    val mainPowerData = remember(power) { getPowerChartDataPoints(power) }
-    val comparePowerData = remember(summitToCompare?.garminData?.power) {
-        summitToCompare?.garminData?.power?.let { getPowerChartDataPoints(it) } ?: emptyList()
+    val mainPowerData = remember(summit) { getPowerChartDataPoints(summit) }
+    val comparePowerData = remember(summitToCompare) {
+        summitToCompare?.let { getPowerChartDataPoints(it) } ?: emptyList()
     }
     val maxPowerData = remember(extremaValuesAllSummits) {
         getExtremaChartDataPointsMax(extremaValuesAllSummits)
@@ -101,10 +100,22 @@ fun PowerLineChart(
 
     // Calculate chart bounds
     val allDataPoints = mainPowerData + comparePowerData + maxPowerData + minPowerData
-    val minX = scaleCbr(1.0)
-    val maxX = scaleCbr(100000.0)
+    val minX = scaleLog(1.0)
+    val maxX = scaleLog(100000.0)
     val maxY = (allDataPoints.maxOfOrNull { it.y } ?: 0f) * 1.1f
     val minY = 0f
+
+    // Clean, human-readable x-axis ticks (seconds -> label)
+    val xTicks = remember(secLabel, minLabel, hLabel) {
+        listOf(1, 10, 60, 600, 3600, 18000).map { seconds ->
+            val label = when {
+                seconds < 60 -> "$seconds $secLabel"
+                seconds < 3600 -> "${seconds / 60} $minLabel"
+                else -> "${seconds / 3600} $hLabel"
+            }
+            scaleLog(seconds.toDouble()) to label
+        }
+    }
 
     // Calculate colors for each point based on performance
     val pointColors = remember(mainPowerData, maxPowerData, minPowerData) {
@@ -118,7 +129,7 @@ fun PowerLineChart(
                     else -> {
                         val fraction =
                             1f - ((chartEntry.y - minEntry.y) / (maxEntry.y - minEntry.y))
-                        interpolateColor(ComposeColor.Green, ComposeColor.Red, fraction)
+                        lerp(ComposeColor.Green, ComposeColor.Red, fraction)
                     }
                 }
             } else {
@@ -155,6 +166,7 @@ fun PowerLineChart(
                             val chartHeight = size.height
                             val bottomPadding = 40f
                             val effectiveChartHeight = chartHeight - bottomPadding
+                            val tapTolerancePx = 50.dp.toPx()
 
                             var closestIndex = -1
                             var closestDistance = Float.MAX_VALUE
@@ -165,7 +177,7 @@ fun PowerLineChart(
                                 val distance = kotlin.math.sqrt(
                                     (offset.x - screenX).pow(2) + (offset.y - screenY).pow(2)
                                 )
-                                if (distance < closestDistance && distance < 50f) { // 50f is tap tolerance
+                                if (distance < closestDistance && distance < tapTolerancePx) {
                                     closestDistance = distance
                                     closestIndex = index
                                 }
@@ -187,8 +199,7 @@ fun PowerLineChart(
                     maxX = maxX,
                     minY = minY,
                     maxY = maxY,
-                    configuration = configuration,
-                    secLabel = secLabel,
+                    xTicks = xTicks,
                     gridColor = gridColor,
                     textColor = textColor,
                     bottomPadding = bottomPadding,
@@ -236,7 +247,7 @@ fun PowerLineChart(
                     maxY = maxY,
                     chartWidth = chartWidth,
                     chartHeight = effectiveChartHeight,
-                    color = ComposeColor.Black,
+                    color = textColor,
                     lineWidth = 4.8f,
                     filled = false,
                     drawCircles = true,
@@ -270,7 +281,7 @@ fun PowerLineChart(
         // Legend
         PowerChartLegend(
             series = listOfNotNull(
-                LegendItemData(powerProfileLabel, ComposeColor.Black),
+                LegendItemData(powerProfileLabel, textColor),
                 if (comparePowerData.isNotEmpty()) LegendItemData(
                     powerProfileCompareLabel,
                     ComposeColor.Gray
@@ -449,8 +460,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPowerGridAndLab
     maxX: Float,
     minY: Float,
     maxY: Float,
-    configuration: Configuration,
-    secLabel: String,
+    xTicks: List<Pair<Float, String>>,
     gridColor: ComposeColor,
     textColor: ComposeColor,
     bottomPadding: Float,
@@ -458,11 +468,24 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPowerGridAndLab
 ) {
     val chartWidth = size.width
 
-    // Draw X axis labels (logarithmic time scale)
-    val xSteps = 6
-    for (i in 0..xSteps) {
-        val xValue = minX + (maxX - minX) * i / xSteps
-        val xPos = i * chartWidth / xSteps
+    val xLabelPaint = Paint().apply {
+        color = textColor.toArgb()
+        textSize = 24f
+        textAlign = Paint.Align.CENTER
+    }
+    val yLabelPaint = Paint().apply {
+        color = textColor.toArgb()
+        textSize = 24f
+        textAlign = Paint.Align.LEFT
+    }
+
+    // Draw X axis grid lines and labels (logarithmic time scale)
+    xTicks.forEach { (xLog, label) ->
+        val xPos = if (maxX > minX) {
+            (xLog - minX) / (maxX - minX) * chartWidth
+        } else {
+            chartWidth / 2f
+        }
 
         // Draw grid line
         drawLine(
@@ -473,18 +496,11 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPowerGridAndLab
         )
 
         // Draw label
-        val unscaled = unScaleCbr(xValue.toDouble()).toInt()
-        val label = String.format(configuration.locales[0], "%s $secLabel", unscaled)
-
         drawContext.canvas.nativeCanvas.drawText(
             label,
             xPos,
             effectiveChartHeight + bottomPadding - 5,
-            Paint().apply {
-                color = textColor.toArgb()
-                textSize = 24f
-                textAlign = Paint.Align.CENTER
-            }
+            xLabelPaint
         )
     }
 
@@ -509,11 +525,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPowerGridAndLab
             label,
             10f,
             yPos - 5,
-            Paint().apply {
-                color = textColor.toArgb()
-                textSize = 24f
-                textAlign = Paint.Align.LEFT
-            }
+            yLabelPaint
         )
     }
 }
@@ -672,130 +684,21 @@ private fun PowerLegendItem(
 }
 
 /**
- * Get chart data points from PowerData
+ * Get chart data points from a summit's power profile
  */
-private fun getPowerChartDataPoints(power: PowerData): List<PowerChartDataPoint> {
-    val dataPoints = mutableListOf<PowerChartDataPoint>()
-    if (power.oneSec > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(1.0),
-            power.oneSec.toFloat(),
-            1.0
-        )
-    )
-    if (power.twoSec > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(2.0),
-            power.twoSec.toFloat(),
-            2.0
-        )
-    )
-    if (power.fiveSec > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(5.0),
-            power.fiveSec.toFloat(),
-            5.0
-        )
-    )
-    if (power.tenSec > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(10.0),
-            power.tenSec.toFloat(),
-            10.0
-        )
-    )
-    if (power.twentySec > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(20.0),
-            power.twentySec.toFloat(),
-            20.0
-        )
-    )
-    if (power.thirtySec > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(30.0),
-            power.thirtySec.toFloat(),
-            30.0
-        )
-    )
-    if (power.oneMin > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(60.0),
-            power.oneMin.toFloat(),
-            60.0
-        )
-    )
-    if (power.twoMin > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(120.0),
-            power.twoMin.toFloat(),
-            120.0
-        )
-    )
-    if (power.fiveMin > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(300.0),
-            power.fiveMin.toFloat(),
-            300.0
-        )
-    )
-    if (power.tenMin > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(600.0),
-            power.tenMin.toFloat(),
-            600.0
-        )
-    )
-    if (power.twentyMin > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(1200.0),
-            power.twentyMin.toFloat(),
-            1200.0
-        )
-    )
-    if (power.thirtyMin > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(1800.0),
-            power.thirtyMin.toFloat(),
-            1800.0
-        )
-    )
-    if (power.oneHour > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(3600.0),
-            power.oneHour.toFloat(),
-            3600.0
-        )
-    )
-    if (power.twoHours > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(7200.0),
-            power.twoHours.toFloat(),
-            7200.0
-        )
-    )
-    if (power.threeHours > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(10800.0),
-            power.threeHours.toFloat(),
-            10800.0
-        )
-    )
-    if (power.fourHours > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(14400.0),
-            power.fourHours.toFloat(),
-            14400.0
-        )
-    )
-    if (power.fiveHours > 0) dataPoints.add(
-        PowerChartDataPoint(
-            scaleCbr(18000.0),
-            power.fiveHours.toFloat(),
-            18000.0
-        )
-    )
-    return dataPoints
+private fun getPowerChartDataPoints(summit: Summit): List<PowerChartDataPoint> {
+    return TimeIntervalPower.entries.mapNotNull { interval ->
+        val watts = interval.value(summit)
+        if (watts > 0) {
+            PowerChartDataPoint(
+                scaleLog(interval.seconds.toDouble()),
+                watts.toFloat(),
+                interval.seconds.toDouble()
+            )
+        } else {
+            null
+        }
+    }
 }
 
 /**
@@ -804,7 +707,7 @@ private fun getPowerChartDataPoints(power: PowerData): List<PowerChartDataPoint>
 private fun getExtremaChartDataPointsMax(extremaValuesSummits: ExtremaValuesSummits): List<PowerChartDataPoint> {
     return TimeIntervalPower.entries.map {
         PowerChartDataPoint(
-            scaleCbr(it.seconds.toDouble()),
+            scaleLog(it.seconds.toDouble()),
             it.maxPower(extremaValuesSummits),
             it.seconds.toDouble()
         )
@@ -817,7 +720,7 @@ private fun getExtremaChartDataPointsMax(extremaValuesSummits: ExtremaValuesSumm
 private fun getExtremaChartDataPointsMin(extremaValuesSummits: ExtremaValuesSummits): List<PowerChartDataPoint> {
     return TimeIntervalPower.entries.map {
         PowerChartDataPoint(
-            scaleCbr(it.seconds.toDouble()),
+            scaleLog(it.seconds.toDouble()),
             it.minPower(extremaValuesSummits),
             it.seconds.toDouble()
         )
@@ -825,39 +728,8 @@ private fun getExtremaChartDataPointsMin(extremaValuesSummits: ExtremaValuesSumm
 }
 
 /**
- * Scale value using cube root logarithm (for logarithmic X-axis)
+ * Scale value using logarithm (for logarithmic X-axis)
  */
-private fun scaleCbr(cbr: Double): Float {
-    return log10(cbr).toFloat()
-}
-
-/**
- * Unscale value from cube root logarithm
- */
-private fun unScaleCbr(cbr: Double): Float {
-    val calcVal = 10.0.pow(cbr)
-    return calcVal.toFloat()
-}
-
-/**
- * Interpolate between two colors
- */
-private fun interpolateColor(
-    color1: ComposeColor,
-    color2: ComposeColor,
-    fraction: Float
-): ComposeColor {
-    val r1 = android.graphics.Color.red(color1.toArgb())
-    val g1 = android.graphics.Color.green(color1.toArgb())
-    val b1 = android.graphics.Color.blue(color1.toArgb())
-
-    val r2 = android.graphics.Color.red(color2.toArgb())
-    val g2 = android.graphics.Color.green(color2.toArgb())
-    val b2 = android.graphics.Color.blue(color2.toArgb())
-
-    val r = (r1 + (r2 - r1) * fraction).toInt()
-    val g = (g1 + (g2 - g1) * fraction).toInt()
-    val b = (b1 + (b2 - b1) * fraction).toInt()
-
-    return ComposeColor(android.graphics.Color.rgb(r, g, b))
+private fun scaleLog(value: Double): Float {
+    return log10(value).toFloat()
 }

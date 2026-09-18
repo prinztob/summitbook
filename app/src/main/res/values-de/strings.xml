@@ -219,6 +219,9 @@
 
     <string name="garmin_pwd_summary">Füge dein Garmin Passwort hinzu um GPX Tracks von Garmin connect abzufragen</string>
     <string name="garmin_pwd_title">Garmin Passwort</string>
+    <string name="show_password">Passwort anzeigen</string>
+    <string name="hide_password">Passwort verbergen</string>
+    <string name="years">Jahre</string>
     <string name="garmin_user_summary">Füge deinen Garmin Benützername hinzu um GPX Tracks von Garmin connect abzufragen</string>
     <string name="garmin_user_title">Garmin Benutzername</string>
     <string name="max_number_points_title">Maximale Anzahl an Punkten auf Karte</string>
@@ -612,6 +615,7 @@
     <string name="bulk_update_gpx_simplified">Alle vereinfachten GPX-Tracks aktualisieren</string>
     <string name="bulk_update_yaml_extensions">Alle YAML-Erweiterungen aktualisieren</string>
     <string name="bulk_update_gpxpy_json">Alle GPXPy-JSON-Dateien aktualisieren</string>
+    <string name="bulk_update_missing_simplified_tracks">Fehlende vereinfachte GPX-Tracks erstellen</string>
     <string name="bulk_update_file_count">%d Dateien zu aktualisieren</string>
     <string name="no_files_to_update">Keine Dateien zu aktualisieren</string>
     <string name="bulk_update_confirm_title">Massenaktualisierung bestätigen</string>

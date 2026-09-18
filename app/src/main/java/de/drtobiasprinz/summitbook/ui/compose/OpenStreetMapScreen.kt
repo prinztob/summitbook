@@ -8,17 +8,20 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
 import android.util.Log
-import android.view.WindowInsets
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,6 +41,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -64,6 +68,7 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling.Companion.TAG
 import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
+import de.drtobiasprinz.summitbook.ui.theme.MapVoidBackground
 import de.drtobiasprinz.summitbook.ui.view.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.data.maps.MapProvider
 import de.drtobiasprinz.summitbook.data.maps.MapTilesHelper
@@ -246,7 +251,21 @@ fun OpenStreetMapScreen(
     LaunchedEffect(mapProviderInitialized, mapView) {
         if (mapProviderInitialized && mapView != null) {
             Log.i("OpenStreetMapScreen", "Updating tile provider after initialization")
+            CustomMapViewToAllowScrolling.usePlainMapTheme = heatmapEnabled
             mapView?.setTileProvider()
+            // The toggle state can be restored while the overlay is not yet
+            // attached (e.g. after process death or returning to this screen).
+            if (heatmapEnabled) {
+                heatmapOverlay = showHeatmapOverlay(mapView, context, heatmapOverlay)
+            }
+        }
+    }
+
+    // Reset the base map style when leaving this screen so other map views
+    // (e.g. the track detail screen) use the full render theme again.
+    DisposableEffect(Unit) {
+        onDispose {
+            CustomMapViewToAllowScrolling.usePlainMapTheme = false
         }
     }
 
@@ -255,16 +274,16 @@ fun OpenStreetMapScreen(
         val activity = context as? Activity
         activity?.window?.let { window ->
             if (fullscreenEnabled) {
-                window.insetsController?.hide(WindowInsets.Type.systemBars())
+                window.insetsController?.hide(android.view.WindowInsets.Type.systemBars())
                 // Re-hide system bars immediately when they become visible (e.g., from edge swipe)
                 @Suppress("DEPRECATION")
                 window.decorView.setOnSystemUiVisibilityChangeListener { _ ->
                     if (fullscreenEnabled) {
-                        window.insetsController?.hide(WindowInsets.Type.systemBars())
+                        window.insetsController?.hide(android.view.WindowInsets.Type.systemBars())
                     }
                 }
             } else {
-                window.insetsController?.show(WindowInsets.Type.systemBars())
+                window.insetsController?.show(android.view.WindowInsets.Type.systemBars())
                 @Suppress("DEPRECATION")
                 window.decorView.setOnSystemUiVisibilityChangeListener(null)
             }
@@ -306,13 +325,20 @@ fun OpenStreetMapScreen(
         )
     }
 
+    // contentWindowInsets is zeroed so the map draws behind the system bars;
+    // the padding parameter is intentionally unused.
+    @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
     Scaffold(
-        snackbarHost = { SnackbarHost(snackBarHostState) }
-    ) { paddingValues ->
+        snackbarHost = {
+            SnackbarHost(
+                snackBarHostState,
+                modifier = Modifier.navigationBarsPadding()
+            )
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { _ ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier = Modifier.fillMaxSize()
         ) {
             // Main content
             Column(modifier = Modifier.fillMaxSize()) {
@@ -329,9 +355,15 @@ fun OpenStreetMapScreen(
                 // Map view
                 Box(modifier = Modifier.weight(1f)) {
                     SummitBookMapView(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MapVoidBackground),
                         onMapCreated = { map ->
                             mapView = map
                             map.updateBoundingBox = true
+                            // Heatmap state may be restored (e.g. after process death);
+                            // apply the matching base map style before the first tiles load.
+                            CustomMapViewToAllowScrolling.usePlainMapTheme = heatmapEnabled
                             map.setTileProvider()
                             
                             // Setup polyline for follow location
@@ -511,14 +543,19 @@ fun OpenStreetMapScreen(
                 hasHeatmap = hasHeatmap,
                 onToggleHeatmap = {
                     heatmapEnabled = !heatmapEnabled
+                    // Render the offline base map with the plain built-in theme
+                    // while the heatmap is shown so it is clearly visible.
+                    CustomMapViewToAllowScrolling.usePlainMapTheme = heatmapEnabled
                     heatmapOverlay = if (heatmapEnabled) {
                         showHeatmapOverlay(mapView, context, heatmapOverlay)
                     } else {
                         removeHeatmapOverlay(mapView, heatmapOverlay)
                     }
+                    mapView?.setTileProvider()
                 },
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
+                    .safeDrawingPadding()
                     .padding(16.dp)
             )
 
@@ -537,6 +574,7 @@ fun OpenStreetMapScreen(
                     },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
+                        .safeDrawingPadding()
                         .padding(16.dp)
                 )
             }
@@ -1236,7 +1274,7 @@ fun MapControlButtons(
                 containerColor = if (heatmapEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.baseline_terrain_24),
+                    painter = painterResource(id = R.drawable.baseline_heatmap_24),
                     contentDescription = stringResource(R.string.cd_toggle_heatmap)
                 )
             }

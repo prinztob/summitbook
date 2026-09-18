@@ -1,9 +1,9 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import android.content.res.Configuration
 import android.graphics.Color
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -78,7 +79,6 @@ fun LineChartScreen(
     filteredSummits: List<Summit>
 ) {
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
 
     var lineChartSpinnerEntry by remember { mutableStateOf(OrderBySpinnerEntry.HeightMeter) }
     var lineChartEntries by remember { mutableStateOf<List<Entry>>(emptyList()) }
@@ -122,10 +122,7 @@ fun LineChartScreen(
         }
     }
 
-    val isDarkTheme = when (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
-        Configuration.UI_MODE_NIGHT_YES -> true
-        else -> false
-    }
+    val isDarkTheme = isSystemInDarkTheme()
 
     val backgroundColor =
         if (isDarkTheme) DarkCanvasDeep else ChartTextLightGray
@@ -194,6 +191,9 @@ fun LineChartScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
+                .clip(RoundedCornerShape(8.dp))
+                .background(if (isDarkTheme) DarkCanvas else ComposeColor.White)
+                .padding(8.dp, top = 0.dp)
         ) {
             MPLineChart(
                 entries = lineChartEntries,
@@ -207,7 +207,7 @@ fun LineChartScreen(
         // Legend section
         LineChartLegendSection(
             lineChartSpinnerEntry = lineChartSpinnerEntry,
-            sportTypes = SportType.entries.toList(),
+            sportTypes = filteredSummits.map { it.sportType }.distinct(),
             isDarkTheme = isDarkTheme
         )
     }
@@ -288,7 +288,7 @@ fun MPLineChart(
                 setDrawFilled(true)
                 fillAlpha = 60
                 color = lineColor
-                fillColor = Color.WHITE
+                fillColor = lineColor
             }
 
             val dataSets: MutableList<ILineDataSet> = mutableListOf(dataSet)

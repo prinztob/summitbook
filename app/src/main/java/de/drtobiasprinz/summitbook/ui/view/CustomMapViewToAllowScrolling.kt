@@ -445,7 +445,8 @@ class CustomMapViewToAllowScrolling : MapView {
             val provider = MapTilesHelper.getOfflineMapProviderWithHillShading(
                 context,
                 mapFiles,
-                selectedItem
+                selectedItem,
+                plainTheme = usePlainMapTheme
             )
             if (provider != null) {
                 Log.i(TAG, "Use offline map")
@@ -502,6 +503,14 @@ class CustomMapViewToAllowScrolling : MapView {
         const val LINE_WIDTH_BIG = 16f
         const val COLOR_POLYLINE_STATIC = Color.BLUE
         var selectedItem = MapProvider.OPENTOPO
+
+        /**
+         * When true, offline MapsForge maps are rendered with the plain built-in
+         * theme (no Elevate render theme, no hill shading) so that an overlaid
+         * heatmap is clearly visible. Set by the map screen whenever the heatmap
+         * overlay is toggled.
+         */
+        var usePlainMapTheme = false
 
         private fun getTrackPointsFrom(trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>): List<GeoPoint> {
             return trackPoints.filter { it.first.latitude != 0.0 && it.first.longitude != 0.0 }
