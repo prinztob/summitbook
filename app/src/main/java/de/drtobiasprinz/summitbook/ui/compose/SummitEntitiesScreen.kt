@@ -51,8 +51,6 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.filters.SortFilterValues
 import de.drtobiasprinz.summitbook.ui.filters.SummitEntitySummary
 import de.drtobiasprinz.summitbook.ui.filters.SummitEntityType
-import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
-import de.drtobiasprinz.summitbook.core.Constants
 import java.text.NumberFormat
 import java.util.concurrent.TimeUnit
 import kotlin.math.round
@@ -239,7 +237,7 @@ private fun calculateEntitySummaries(
     )
 
     val entityNames = filteredSummits.flatMap { entityType.getRelevantValueFromSummit(it) }
-        .filter { it.isNotBlank() && !it.startsWith(Constants.CONNECTED_ACTIVITY_PREFIX) }
+        .filter { it.isNotBlank() }
         .toSet()
         .toList()
 

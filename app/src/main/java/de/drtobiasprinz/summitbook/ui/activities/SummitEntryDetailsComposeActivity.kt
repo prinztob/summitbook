@@ -18,6 +18,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -68,7 +70,6 @@ import de.drtobiasprinz.summitbook.R
 class SummitEntryDetailsComposeActivity : ComponentActivity() {
 
     lateinit var pageViewModel: PageViewModel
-    private var summitEntry: Summit? = null
     private var hasLoadedSummit = false
     private var isAnalyzingTrack by mutableStateOf(false)
 
@@ -95,7 +96,6 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
                         if (!hasLoadedSummit) {
                             Log.i("SummitEntryDetails", "Loading summit: ${summit.activityId}")
                             hasLoadedSummit = true
-                            summitEntry = summit
                             coroutineScope.launch {
                                 val needsAnalysis = withContext(Dispatchers.IO) {
                                     val useSimplifiedTracks = sharedPreferences.getBoolean(
@@ -170,12 +170,6 @@ class SummitEntryDetailsComposeActivity : ComponentActivity() {
     }
 
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        summitEntry?.let {
-            outState.putLong(SUMMIT_ID_EXTRA_IDENTIFIER, it.id)
-        }
-    }
 }
 
 /**
@@ -195,8 +189,9 @@ fun SummitEntryDetailsScreen(
     isAnalyzingTrack: Boolean,
     onSummitLoaded: (Summit) -> Unit
 ) {
-    Log.i("SummitEntryDetails", "SummitEntryDetailsScreen recomposing")
     val summitToView by pageViewModel.summitToView.observeAsState()
+    val snackBarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     // Hoist state: Use stable UI state to prevent recomposition loops
     var summitUiState by remember { mutableStateOf<SummitUiState?>(null) }
@@ -204,13 +199,8 @@ fun SummitEntryDetailsScreen(
 
     // Process summit only when we get a new one with different ID
     LaunchedEffect(summitToView) {
-        Log.i(
-            "SummitEntryDetails",
-            "LaunchedEffect triggered, summitToView: ${summitToView?.data?.activityId}"
-        )
         val newSummit = summitToView?.data
         if (newSummit != null && newSummit.id != lastProcessedId) {
-            Log.i("SummitEntryDetails", "Processing new summit: ${newSummit.activityId}")
             lastProcessedId = newSummit.id
             summitUiState = SummitUiState(
                 summitId = newSummit.id,
@@ -221,8 +211,8 @@ fun SummitEntryDetailsScreen(
         }
     }
 
-    Log.i("SummitEntryDetails", "Rendering Scaffold with summit: ${summitUiState?.summitId}")
     Scaffold(
+        snackbarHost = { SnackbarHost(snackBarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(summitUiState?.summitName ?: "") }, navigationIcon = {
@@ -240,16 +230,17 @@ fun SummitEntryDetailsScreen(
             )
         }) { paddingValues ->
         if (summitUiState != null) {
-            Log.i("SummitEntryDetails", "Showing tabs for summit: ${summitUiState!!.summitId}")
             SummitEntryDetailsTabs(
                 summitId = summitUiState!!.summitId,
                 tabs = summitUiState!!.tabs,
                 pageViewModel = pageViewModel,
                 isAnalyzingTrack = isAnalyzingTrack,
+                onShowSnackbar = { message ->
+                    coroutineScope.launch { snackBarHostState.showSnackbar(message) }
+                },
                 modifier = Modifier.padding(paddingValues)
             )
         } else {
-            Log.i("SummitEntryDetails", "Showing loading indicator")
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -268,19 +259,11 @@ fun SummitEntryDetailsTabs(
     tabs: List<SummitTab>,
     pageViewModel: PageViewModel,
     isAnalyzingTrack: Boolean,
+    onShowSnackbar: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Log.i(
-        "SummitEntryDetails",
-        "SummitEntryDetailsTabs recomposing for summit: $summitId, tabs: ${tabs.size}"
-    )
-
     val pagerState = rememberPagerState(
         initialPage = 0, pageCount = { tabs.size })
-    Log.i(
-        "SummitEntryDetails",
-        "Pager state with ${tabs.size} pages, current: ${pagerState.currentPage}"
-    )
     val coroutineScope = rememberCoroutineScope()
 
     // Observe state once at this level and extract data to prevent unnecessary recompositions
@@ -318,21 +301,14 @@ fun SummitEntryDetailsTabs(
         { pageViewModel.setSummitToCompareToNull() }
     }
 
-    Log.i("SummitEntryDetails", "Rendering Column for tabs with ${tabs.size} tabs")
     Column(modifier = modifier.fillMaxSize()) {
-        Log.i(
-            "SummitEntryDetails",
-            "Rendering PrimaryTabRow with ${tabs.size} tabs, current page: ${pagerState.currentPage}"
-        )
         PrimaryTabRow(
             selectedTabIndex = pagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) {
             tabs.forEachIndexed { index, tab ->
-                Log.i("SummitEntryDetails", "Rendering tab $index: ${tab.name}")
                 Tab(selected = pagerState.currentPage == index, onClick = {
-                    Log.i("SummitEntryDetails", "Clicking tab $index: ${tab.name}")
                     coroutineScope.launch(Dispatchers.Main.immediate) {
                         pagerState.animateScrollToPage(index)
                     }
@@ -350,10 +326,8 @@ fun SummitEntryDetailsTabs(
             modifier = Modifier.fillMaxSize(),
             beyondViewportPageCount = tabs.size, // Keep all pages loaded
             key = { page -> "${summitId}_${tabs[page].name}_$page" }) { page ->
-            Log.i("SummitEntryDetails", "Rendering page $page for summit: $summitId")
             when (tabs[page]) {
                 SummitTab.DATA -> {
-                    Log.i("SummitEntryDetails", "Rendering DATA tab for page $page")
                     SummitEntryDataScreen(
                         summit = summit,
                         allSummits = allSummits,
@@ -376,7 +350,6 @@ fun SummitEntryDetailsTabs(
                 }
 
                 SummitTab.THIRD_PARTY -> {
-                    Log.i("SummitEntryDetails", "Rendering THIRD_PARTY tab for page $page")
                     SummitEntryThirdPartyScreen(
                         summit = summit,
                         summitsToCompare = summitsToCompare,
@@ -388,27 +361,25 @@ fun SummitEntryDetailsTabs(
                 }
 
                 SummitTab.IMAGES -> {
-                    Log.i("SummitEntryDetails", "Rendering IMAGES tab for page $page")
                     SummitEntryImagesScreen(
                         summit = summit
                     )
                 }
 
                 SummitTab.TRACK -> {
-                    Log.i("SummitEntryDetails", "Rendering TRACK tab for page $page")
                     SummitEntryTrackScreen(
                         summit = summit,
                         allSummits = allSummits,
                         summitsToCompare = summitsToCompare,
                         compareSummit = compareSummit,
                         isAnalyzingTrack = isAnalyzingTrack,
+                        onShowSnackbar = onShowSnackbar,
                         onGetSummitToCompare = onGetSummitToCompare,
                         onSetSummitToCompareToNull = onSetSummitToCompareToNull
                     )
                 }
 
                 SummitTab.POWER -> {
-                    Log.i("SummitEntryDetails", "Rendering POWER tab for page $page")
                     SummitEntryPowerScreen(
                         summit = summit,
                         allSummits = allSummits,
@@ -482,7 +453,6 @@ enum class SummitTab(val titleResId: Int) {
 }
 
 fun getTabsForSummit(summit: Summit): List<SummitTab> {
-    Log.i("SummitEntryDetails", "Getting tabs for summit: ${summit.activityId}")
     val tabs = mutableListOf(SummitTab.DATA)
 
     if (summit.garminData != null) {
@@ -507,33 +477,30 @@ fun getSummitsToCompare(
     onlyWithGpxTrack: Boolean = false,
     onlyWithPowerData: Boolean = false,
 ): List<Summit> {
-    Log.i("SummitEntryDetailsComposeActivity", "getSummitsToCompare")
-    if (summits?.isNotEmpty() != null && summitEntry != null) {
-        summits.let { summits ->
-            val sportGroup =
-                SportGroup.entries
-                    .filter { summitEntry.sportType in it.sportTypes }
-            val filtered = if (sportGroup.size == 1) {
-                summits.filter {
-                    it.id != summitEntry.id && it.hasGpsTrack() &&
-                            it.sportType in sportGroup.first().sportTypes
-                }
-            } else {
-                summits.filter {
-                    it.id != summitEntry.id &&
-                            (if (onlyWithGpxTrack) it.hasGpsTrack() else true) &&
-                            (if (onlyWithPowerData) it.garminData?.power != null else true) &&
-                            it.sportType == summitEntry.sportType
-                }
+    if (!summits.isNullOrEmpty() && summitEntry != null) {
+        val sportGroup =
+            SportGroup.entries
+                .filter { summitEntry.sportType in it.sportTypes }
+        val filtered = if (sportGroup.size == 1) {
+            summits.filter {
+                it.id != summitEntry.id && it.hasGpsTrack() &&
+                        it.sportType in sportGroup.first().sportTypes
             }
-            val similarSummits =
-                filtered.filter { it.name == summitEntry.name }
-                    .sortedByDescending { it.date }
-            val otherSummits =
-                filtered.filter { it.name != summitEntry.name }
-                    .sortedByDescending { it.date }
-            return similarSummits + otherSummits
+        } else {
+            summits.filter {
+                it.id != summitEntry.id &&
+                        (if (onlyWithGpxTrack) it.hasGpsTrack() else true) &&
+                        (if (onlyWithPowerData) it.garminData?.power != null else true) &&
+                        it.sportType == summitEntry.sportType
+            }
         }
+        val similarSummits =
+            filtered.filter { it.name == summitEntry.name }
+                .sortedByDescending { it.date }
+        val otherSummits =
+            filtered.filter { it.name != summitEntry.name }
+                .sortedByDescending { it.date }
+        return similarSummits + otherSummits
     }
     return emptyList()
 }

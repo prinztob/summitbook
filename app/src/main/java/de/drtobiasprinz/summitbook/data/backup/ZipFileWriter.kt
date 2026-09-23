@@ -90,8 +90,9 @@ class ZipFileWriter(
                     entryNumber += 1
                     if (summit.hasGpsTrack()) {
                         val file = summit.getGpsTrackPath().toFile()
-                        addFileToZip(file, summit.getExportTrackPath(), out)
-                        withGpsFile += 1
+                        if (addFileToZip(file, summit.getExportTrackPath(), out)) {
+                            withGpsFile += 1
+                        }
                     }
                     if (summit.getYamlExtensionsFile().exists()) {
                         val file = summit.getYamlExtensionsFile()
@@ -100,8 +101,9 @@ class ZipFileWriter(
                     if (summit.hasImagePath()) {
                         for ((i, imageId) in summit.imageIds.withIndex()) {
                             val file = summit.getImagePath(imageId).toFile()
-                            addFileToZip(file, summit.getExportImagePath(1001 + i), out)
-                            withImages += 1
+                            if (addFileToZip(file, summit.getExportImagePath(1001 + i), out)) {
+                                withImages += 1
+                            }
                         }
                     }
                 }
@@ -279,16 +281,22 @@ class ZipFileWriter(
         return file
     }
 
-    private fun addFileToZip(file: File?, fileName: String, out: ZipOutputStream) {
-        if (file != null) {
-            FileInputStream(file).use { fi ->
-                BufferedInputStream(fi).use { origin ->
-                    val entry = ZipEntry(fileName)
-                    out.putNextEntry(entry)
-                    origin.copyTo(out, 1024)
-                }
+    private fun addFileToZip(file: File?, fileName: String, out: ZipOutputStream): Boolean {
+        if (file == null) {
+            return false
+        }
+        if (!file.exists()) {
+            Log.w("ZipFileWriter", "Skipping missing file for zip entry $fileName: $file")
+            return false
+        }
+        FileInputStream(file).use { fi ->
+            BufferedInputStream(fi).use { origin ->
+                val entry = ZipEntry(fileName)
+                out.putNextEntry(entry)
+                origin.copyTo(out, 1024)
             }
         }
+        return true
     }
 
 }

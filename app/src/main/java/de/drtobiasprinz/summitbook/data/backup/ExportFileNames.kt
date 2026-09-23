@@ -3,7 +3,7 @@ package de.drtobiasprinz.summitbook.data.backup
 /** File names of the CSV files inside a Summitbook export zip. */
 object ExportFileNames {
     const val CSV_FILE_NAME_VERSION = "de-prinz-summitbook-export.version"
-    const val CSV_FILE_VERSION = "v1"
+    const val CSV_FILE_VERSION = "v2"
     const val CSV_FILE_NAME_SUMMITS = "de-prinz-summitbook-export.csv"
     const val CSV_FILE_NAME_THIRD_PARTY_DATA =
         "de-prinz-summitbook-export-third-party-data.csv"

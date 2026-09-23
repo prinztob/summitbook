@@ -27,12 +27,12 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -41,10 +41,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import coil.compose.SubcomposeAsyncImage
+import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
-import coil.size.Scale
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.ui.theme.ChartTextLightGray
+import de.drtobiasprinz.summitbook.ui.theme.DarkCanvasDeep
+import de.drtobiasprinz.summitbook.ui.theme.Scrim
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -67,12 +70,13 @@ fun SummitEntryImagesScreen(
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
 
-    var showFullscreenViewer by remember { mutableStateOf(false) }
-    var selectedImageIndex by remember { mutableIntStateOf(0) }
+    var showFullscreenViewer by rememberSaveable { mutableStateOf(false) }
+    var selectedImageIndex by rememberSaveable { mutableIntStateOf(0) }
     var imageFiles by remember { mutableStateOf<List<File>?>(null) }
 
     // Asynchronously prepare the list of files to avoid blocking the UI thread.
-    LaunchedEffect(summit.id) {
+    // Key on imageIds too, so re-analyzed summits with changed images reload.
+    LaunchedEffect(summit.id, summit.imageIds) {
         imageFiles = null // Reset on new summit
         withContext(Dispatchers.IO) {
             imageFiles = if (summit.hasImagePath()) {
@@ -118,7 +122,7 @@ fun SummitEntryImagesScreen(
                 // Empty list, no images available
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = "No images available",
+                        text = stringResource(R.string.no_images_available),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -127,11 +131,13 @@ fun SummitEntryImagesScreen(
         }
     }
 
-    // Fullscreen image viewer dialog
-    if (showFullscreenViewer && summit.hasImagePath()) {
+    // Fullscreen image viewer dialog (uses the already IO-loaded file list)
+    val fullscreenFiles = imageFiles
+    if (showFullscreenViewer && !fullscreenFiles.isNullOrEmpty()) {
         FullscreenImageViewer(
             summit = summit,
-            startPosition = selectedImageIndex,
+            imageFiles = fullscreenFiles,
+            startPosition = selectedImageIndex.coerceIn(0, fullscreenFiles.size - 1),
             onDismiss = { showFullscreenViewer = false }
         )
     }
@@ -158,38 +164,31 @@ fun ImageCarousel(
             contentAlignment = Alignment.Center
         ) {
             val context = LocalContext.current
-            SubcomposeAsyncImage(
+            var imageState by remember(imageFiles[page]) {
+                mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty)
+            }
+            AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(imageFiles[page])
                     .crossfade(true)
-                    .size(width = 1920, height = 1920) // Limit max size to prevent memory issues
-                    .scale(Scale.FIT)
+                    // Match the decode size to the carousel display size
+                    .size(width = 1080, height = 1080)
                     .memoryCacheKey(imageFiles[page].absolutePath)
                     .diskCacheKey(imageFiles[page].absolutePath)
                     .build(),
                 contentDescription = stringResource(R.string.summit_image_cd, page + 1),
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-                loading = {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                },
-                error = {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Failed to load image",
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
+                onState = { imageState = it },
+                modifier = Modifier.fillMaxSize()
             )
+            when (imageState) {
+                is AsyncImagePainter.State.Loading -> CircularProgressIndicator()
+                is AsyncImagePainter.State.Error -> Text(
+                    text = stringResource(R.string.failed_to_load_image),
+                    color = MaterialTheme.colorScheme.error
+                )
+                else -> Unit
+            }
         }
     }
 }
@@ -197,15 +196,10 @@ fun ImageCarousel(
 @Composable
 fun FullscreenImageViewer(
     summit: Summit,
+    imageFiles: List<File>,
     startPosition: Int,
     onDismiss: () -> Unit
 ) {
-    val imageFiles: List<File> = remember(summit.id) {
-        summit.imageIds.map { imageId ->
-            summit.getImagePath(imageId).toFile()
-        }
-    }
-
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -215,7 +209,7 @@ fun FullscreenImageViewer(
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = Color.Black
+            color = DarkCanvasDeep
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 val pagerState = rememberPagerState(
@@ -240,7 +234,7 @@ fun FullscreenImageViewer(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
-                        .background(Color.Black.copy(alpha = 0.5f))
+                        .background(Scrim)
                         .padding(16.dp)
                 ) {
                     Text(
@@ -249,7 +243,7 @@ fun FullscreenImageViewer(
                             pagerState.currentPage
                         ),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White
+                        color = ChartTextLightGray
                     )
                 }
             }
@@ -301,17 +295,20 @@ fun ZoomableImage(
         contentAlignment = Alignment.Center
     ) {
         val context = LocalContext.current
-        SubcomposeAsyncImage(
+        var imageState by remember(imageFile) {
+            mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty)
+        }
+        AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(imageFile)
                 .crossfade(true)
                 .size(width = 2560, height = 2560) // Limit max size for fullscreen
-                .scale(Scale.FIT)
                 .memoryCacheKey(imageFile.absolutePath)
                 .diskCacheKey(imageFile.absolutePath)
                 .build(),
             contentDescription = stringResource(R.string.cd_fullscreen_image),
             contentScale = ContentScale.Fit,
+            onState = { imageState = it },
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer(
@@ -320,26 +317,17 @@ fun ZoomableImage(
                     translationX = offset.x,
                     translationY = offset.y
                 )
-                .transformable(state = state),
-            loading = {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Color.White)
-                }
-            },
-            error = {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Failed to load image",
-                        color = Color.White
-                    )
-                }
-            }
+                .transformable(state = state)
         )
+        when (imageState) {
+            is AsyncImagePainter.State.Loading -> CircularProgressIndicator(
+                color = ChartTextLightGray
+            )
+            is AsyncImagePainter.State.Error -> Text(
+                text = stringResource(R.string.failed_to_load_image),
+                color = MaterialTheme.colorScheme.error
+            )
+            else -> Unit
+        }
     }
 }

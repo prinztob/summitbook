@@ -152,6 +152,8 @@
     <string name="set_date">Setzte Datum</string>
     <string name="set_activity">Setzte Aktivität</string>
     <string name="end_of">Ende von</string>
+    <string name="connected_activities">Verbundene Aktivitäten</string>
+    <string name="deleted_activity">Gelöschte Aktivität</string>
 
     <string-array name="date_array">
         <item>Gesamt</item>
@@ -275,7 +277,7 @@
     <string name="bouldern">Bouldern</string>
     <string name="cardio">Indoor Cardio</string>
     <string name="of">von</string>
-    <string name="show_all_tracks">Show all tracks</string>
+    <string name="show_all_tracks">Alle Tracks anzeigen</string>
     <string name="info">Info</string>
     <string name="highest_VO2MAX">Höchstes Vo2max</string>
     <string name="highest_FTP">Höchste FTP</string>
@@ -738,6 +740,7 @@
     <string name="cd_follow_location">Standort folgen</string>
     <string name="cd_toggle_overlay_sliders">Overlay-Regler ein-/ausblenden</string>
     <string name="cd_toggle_heatmap">Heatmap ein-/ausblenden</string>
+    <string name="cd_toggle_map_controls">Kartensteuerung ein- oder ausblenden</string>
     <string name="cd_select_date">Datum auswählen</string>
     <string name="cd_close_search">Suche schließen</string>
     <string name="cd_menu">Menü</string>
@@ -747,5 +750,19 @@
     <string name="querying_road_info">Straßeninformationen werden abgefragt…</string>
     <string name="road_info_error">Fehler: %1$s</string>
     <string name="new_summit_marker">Neuer Gipfel</string>
+    <string name="cd_peak_in_database">Gipfel in der Datenbank</string>
+    <string name="cd_place">Ort</string>
+    <string name="grade_in_window">%1$s m: %2$s %%</string>
+    <string name="no_images_available">Keine Bilder vorhanden</string>
+    <string name="failed_to_load_image">Bild konnte nicht geladen werden</string>
+    <string name="view_on_garmin_connect">Auf Garmin Connect ansehen</string>
+    <plurals name="overview_activities">
+        <item quantity="one">%1$d Aktivität, %2$s km, %3$s hm</item>
+        <item quantity="other">%1$d Aktivitäten, %2$s km, %3$s hm</item>
+    </plurals>
+    <plurals name="overview_summits">
+        <item quantity="one">%1$d Gipfel, %2$s km, %3$s hm</item>
+        <item quantity="other">%1$d Gipfel, %2$s km, %3$s hm</item>
+    </plurals>
 </resources>
 

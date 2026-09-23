@@ -77,6 +77,12 @@ val stringListSaver = listSaver<List<String>, String>(
     restore = { stored: List<String> -> stored }
 )
 
+/** Saver for List<Long>. */
+val longListSaver = listSaver<List<Long>, Long>(
+    save = { list: List<Long> -> list.toList() },
+    restore = { stored: List<Long> -> stored }
+)
+
 /** Saver for a nullable File stored as its absolute path. */
 val fileSaver: Saver<File?, String> = Saver(
     save = { it?.absolutePath ?: "" },

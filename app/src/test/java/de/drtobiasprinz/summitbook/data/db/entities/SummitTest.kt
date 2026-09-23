@@ -4,6 +4,7 @@ import com.google.gson.JsonParser
 import org.junit.Assert.*
 import org.junit.Test
 import de.drtobiasprinz.summitbook.core.utils.TestUtils
+import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_VERSION
 
 class SummitTest {
 
@@ -33,7 +34,7 @@ class SummitTest {
             activityId = 12345
         )
         
-        val expected = "2025-09-21;Test Summit;Hike;12345;10.5;0;500;1000;5.0;;;0;0;;;;;\n"
+        val expected = "2025-09-21;Test Summit;Hike;12345;10.5;0;500;1000;5.0;;;0;0;;;;;;\n"
         assertEquals(expected, summit.toString())
     }
 
@@ -56,8 +57,25 @@ class SummitTest {
             sportType = SportType.Hike,
             activityId = 12345
         )
-        
+
         val result = summit.getStringRepresentation()
         assertTrue(result.startsWith("2025-09-21;Test Summit;Hike;12345"))
+    }
+
+    @Test
+    fun testConnectedActivityIdsCsvRoundTrip() {
+        val summit = Summit(
+            date = Summit.parseDate("2025-09-21"),
+            name = "Test Summit",
+            sportType = SportType.Hike,
+            activityId = 12345,
+            connectedActivityIds = listOf(111L, 222L)
+        )
+
+        val result = summit.getStringRepresentation()
+        assertTrue(result.endsWith(";;111,222\n"))
+        val parsed = Summit.parseFromCsvFileLine(result, CSV_FILE_VERSION)
+        assertEquals(listOf(111L, 222L), parsed.connectedActivityIds)
+        assertEquals(summit.places, parsed.places)
     }
 }

@@ -16,8 +16,6 @@ import de.drtobiasprinz.summitbook.data.db.entities.SportType.Other
 import de.drtobiasprinz.summitbook.data.db.entities.Summit.Companion.convertMeterToKm
 import de.drtobiasprinz.summitbook.data.db.entities.Summit.Companion.parseSportType
 import de.drtobiasprinz.summitbook.data.model.GpsTrack
-import de.drtobiasprinz.summitbook.data.db.entities.RoadType
-import de.drtobiasprinz.summitbook.data.db.entities.Surface
 import de.drtobiasprinz.summitbook.data.garmin.GarminJsonParser.getJsonObjectEntryNotNull
 import de.drtobiasprinz.summitbook.data.garmin.GarminJsonParser.roundToTwoDigits
 import de.drtobiasprinz.summitbook.data.appstate.AppState.activitiesDir
@@ -78,6 +76,7 @@ class Summit(
     @ColumnInfo(defaultValue = "false") var ignoreSimplifyingTrack: Boolean = false,
     @ColumnInfo(defaultValue = "") var distancePerRoadType: Map<RoadType, Int> = mapOf(),
     @ColumnInfo(defaultValue = "") var distancePerSurface: Map<Surface, Int> = mapOf(),
+    @ColumnInfo(defaultValue = "") var connectedActivityIds: List<Long> = mutableListOf(),
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0
@@ -325,35 +324,17 @@ class Summit(
             ","
         ).replace("\n", ",") + ';' + participants.joinToString(",") + ';' + equipments.joinToString(
             ","
-        ) + ';' + places.joinToString(",") + ';' + countries.joinToString(",") + '\n'
+        ) + ';' + places.joinToString(",") + ';' + countries.joinToString(",") + ';' + connectedActivityIds.joinToString(
+            ","
+        ) + '\n'
     }
 
     fun getConnectedEntryString(context: Context): String {
         return "${context.getString(R.string.end_of)} $name"
     }
 
-
-    fun getPlacesWithConnectedEntryString(context: Context, summits: List<Summit>): List<String> {
-        val updatedPlaces = mutableListOf<String>()
-        for (place in places) {
-            val matchResult = "$CONNECTED_ACTIVITY_PREFIX(\\d*)".toRegex().find(place)
-            if (matchResult?.groupValues != null) {
-                val connectedSummit =
-                    summits.firstOrNull { it.activityId == matchResult.groupValues[1].toLong() }
-                if (connectedSummit != null) {
-                    updatedPlaces.add(connectedSummit.getConnectedEntryString(context))
-                } else {
-                    updatedPlaces.add(place)
-                }
-            } else {
-                updatedPlaces.add(place)
-            }
-        }
-        return updatedPlaces
-    }
-
     fun getConnectedEntries(summits: List<Summit>?): MutableList<Summit> {
-        val connectedEntries = getConnectedEntriesFromPlaces(summits)
+        val connectedEntries = getConnectedEntriesFromActivityIds(summits)
         connectedEntries.addAll(getConnectedEntriesWhichReferenceThisEntry(summits))
         return connectedEntries
     }
@@ -361,7 +342,7 @@ class Summit(
     private fun getConnectedEntriesWhichReferenceThisEntry(summits: List<Summit>?): MutableList<Summit> {
         val connectedEntries = mutableListOf<Summit>()
         val connectedSummit =
-            summits?.firstOrNull { it.places.contains("$CONNECTED_ACTIVITY_PREFIX${activityId}") }
+            summits?.firstOrNull { it.connectedActivityIds.contains(activityId) }
         if (connectedSummit != null) {
             connectedEntries.add(connectedSummit)
             connectedEntries.addAll(
@@ -377,22 +358,22 @@ class Summit(
         return connectedEntries
     }
 
-    private fun getConnectedEntriesFromPlaces(summits: List<Summit>?): MutableList<Summit> {
+    private fun getConnectedEntriesFromActivityIds(summits: List<Summit>?): MutableList<Summit> {
         val connectedEntries = mutableListOf<Summit>()
-        for (place in places) {
-            val matchResult = "$CONNECTED_ACTIVITY_PREFIX(\\d*)".toRegex().find(place)
-            if (matchResult?.groupValues != null) {
-                val connectedSummit =
-                    summits?.firstOrNull { it.activityId == (matchResult.groupValues[1].toLong()) }
-                if (connectedSummit != null) {
-                    connectedEntries.add(connectedSummit)
-                    connectedEntries.addAll(connectedSummit.getConnectedEntriesFromPlaces(summits.filter { it.activityId != connectedSummit.activityId }))
-                }
+        for (connectedActivityId in connectedActivityIds) {
+            val connectedSummit = summits?.firstOrNull { it.activityId == connectedActivityId }
+            if (connectedSummit != null) {
+                connectedEntries.add(connectedSummit)
+                connectedEntries.addAll(
+                    connectedSummit.getConnectedEntriesFromActivityIds(
+                        summits.filter { it.activityId != connectedSummit.activityId }
+                    )
+                )
             }
         }
         Log.i(
             "Summit",
-            "getConnectedEntriesFromPlaces for summit ${getDateAsString()}_${name} is $connectedEntries"
+            "getConnectedEntriesFromActivityIds for summit ${getDateAsString()}_${name} is $connectedEntries"
         )
         return connectedEntries
     }
@@ -492,6 +473,7 @@ class Summit(
         if (imageIds != other.imageIds) return false
         if (garminData != other.garminData) return false
         if (activityId != other.activityId) return false
+        if (connectedActivityIds != other.connectedActivityIds) return false
         if (isBookmark != other.isBookmark) return false
         if (hasTrack != other.hasTrack) return false
         if (latLng != other.latLng) return false
@@ -525,7 +507,8 @@ class Summit(
             duration,
             isBookmark,
             hasTrack,
-            ignoreSimplifyingTrack
+            ignoreSimplifyingTrack,
+            connectedActivityIds = connectedActivityIds
         )
         summit.id = id
         return summit
@@ -543,6 +526,25 @@ class Summit(
         fun parseFromCsvFileLine(line: String, version: String): Summit {
             val zipFileVersions = ZipFileVersions.entries.find { it.versionName == version }
             return zipFileVersions?.getSummit?.let { it(line) } ?: parseFromCsvFileLine(line)
+        }
+
+        /**
+         * Splits legacy `ac_id:XXXXX` entries out of a places list.
+         * Returns the cleaned places and the parsed connected activity ids.
+         */
+        fun splitConnectedActivityTokens(places: List<String>): Pair<List<String>, List<Long>> {
+            val cleanPlaces = mutableListOf<String>()
+            val connectedIds = mutableListOf<Long>()
+            for (place in places) {
+                if (place.startsWith(CONNECTED_ACTIVITY_PREFIX)) {
+                    place.removePrefix(CONNECTED_ACTIVITY_PREFIX).toLongOrNull()?.let {
+                        connectedIds.add(it)
+                    }
+                } else {
+                    cleanPlaces.add(place)
+                }
+            }
+            return cleanPlaces to connectedIds
         }
 
         @Throws(Exception::class)
@@ -614,6 +616,13 @@ class Summit(
             }
             if (equipments.isNotEmpty() && equipments[0] != "") {
                 summit.equipments = equipments
+            }
+            val (cleanPlaces, connectedIds) = splitConnectedActivityTokens(places)
+            if (cleanPlaces != places) {
+                summit.places = cleanPlaces
+            }
+            if (connectedIds.isNotEmpty()) {
+                summit.connectedActivityIds = connectedIds
             }
             return summit
         }

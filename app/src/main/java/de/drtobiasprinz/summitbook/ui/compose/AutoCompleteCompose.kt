@@ -134,7 +134,13 @@ fun AutoCompleteComposeChipField(
     peakIcon: Int? = null,
     nonPeakIcon: Int? = null,
     peaksList: List<String> = emptyList(),
-    onPeakToggle: ((String, Boolean) -> Unit)? = null
+    onPeakToggle: ((String, Boolean) -> Unit)? = null,
+    // Optional value mode: suggestions are display labels, chips hold opaque
+    // values (e.g. activity ids). suggestionToValue maps label -> value on
+    // selection; chipLabel resolves a stored value back to its display text.
+    // In value mode free-text entries are not allowed.
+    suggestionToValue: ((String) -> String)? = null,
+    chipLabel: ((String) -> String)? = null
 ) {
     var inputText by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
@@ -142,10 +148,12 @@ fun AutoCompleteComposeChipField(
     // Track icon state for each chip (true = peak icon, false = non-peak icon)
     val chipIconStates = remember { mutableStateMapOf<String, Boolean>() }
 
-    val filteredOptions = remember(inputText) {
+    val filteredOptions = remember(inputText, chips) {
         if (inputText.length > 1) {
-            suggestions.fastFilter { it.contains(inputText, ignoreCase = true) && it !in chips }
-                .take(5)
+            suggestions.fastFilter {
+                it.contains(inputText, ignoreCase = true) &&
+                        (suggestionToValue?.invoke(it) ?: it) !in chips
+            }.take(5)
         } else {
             emptyList()
         }
@@ -193,15 +201,18 @@ fun AutoCompleteComposeChipField(
                     keyboardActions = KeyboardActions(
                         onDone = {
                             // Add custom entry when Enter is pressed
-                            val trimmedInput = inputText.trim()
-                            if (trimmedInput.isNotEmpty() && trimmedInput !in chips) {
-                                onChipsChange(chips + trimmedInput)
-                                // Initialize icon state based on whether it's a peak
-                                if (trimmedInput in peaksList) {
-                                    chipIconStates[trimmedInput] = true
+                            // (not allowed in value mode, only suggestions are valid)
+                            if (suggestionToValue == null) {
+                                val trimmedInput = inputText.trim()
+                                if (trimmedInput.isNotEmpty() && trimmedInput !in chips) {
+                                    onChipsChange(chips + trimmedInput)
+                                    // Initialize icon state based on whether it's a peak
+                                    if (trimmedInput in peaksList) {
+                                        chipIconStates[trimmedInput] = true
+                                    }
+                                    inputText = ""
+                                    expanded = false
                                 }
-                                inputText = ""
-                                expanded = false
                             }
                         }
                     ),
@@ -220,10 +231,11 @@ fun AutoCompleteComposeChipField(
                             modifier = Modifier.fillMaxWidth(),
                             text = { Text(text = option) },
                             onClick = {
-                                onChipsChange(chips + option)
+                                onChipsChange(chips + (suggestionToValue?.invoke(option) ?: option))
                                 // Initialize icon state based on whether it's a peak
-                                if (option in peaksList) {
-                                    chipIconStates[option] = true
+                                val chipValue = suggestionToValue?.invoke(option) ?: option
+                                if (chipValue in peaksList) {
+                                    chipIconStates[chipValue] = true
                                 }
                                 inputText = ""
                                 expanded = false
@@ -262,7 +274,7 @@ fun AutoCompleteComposeChipField(
                                 onPeakToggle?.invoke(chip, newState)
                             }
                         },
-                        label = { Text(chip) },
+                        label = { Text(chipLabel?.invoke(chip) ?: chip) },
                         leadingIcon = if (chipIcon != null) {
                             {
                                 Icon(

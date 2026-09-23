@@ -5,6 +5,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,7 +21,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,11 +63,17 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.filters.TextField
 import de.drtobiasprinz.summitbook.ui.filters.TextFieldGroup
 import de.drtobiasprinz.summitbook.data.analytics.ExtremaValuesSummits
+import de.drtobiasprinz.summitbook.ui.theme.ChartBlue
+import de.drtobiasprinz.summitbook.ui.theme.ChartGold
+import de.drtobiasprinz.summitbook.ui.theme.ChartLime
+import de.drtobiasprinz.summitbook.ui.theme.ChartOrange
+import de.drtobiasprinz.summitbook.ui.theme.ChartRed
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
-import de.drtobiasprinz.summitbook.ui.theme.ChartOrange
 
 @Composable
 fun SummitEntryDataScreen(
@@ -83,7 +93,8 @@ fun SummitEntryDataScreen(
 ) {
 
     val configuration = LocalConfiguration.current
-    val numberFormat = remember { NumberFormat.getInstance(configuration.locales[0]) }
+    val locale = configuration.locales[0]
+    val numberFormat = remember(locale) { NumberFormat.getInstance(locale) }
 
     if (summit == null) {
         Box(
@@ -95,9 +106,22 @@ fun SummitEntryDataScreen(
         return
     }
 
-    var showMoreSpeedData by remember { mutableStateOf(false) }
-    var showSurfaceData by remember { mutableStateOf(false) }
-    var showRoadTypeData by remember { mutableStateOf(false) }
+    var showMoreSpeedData by rememberSaveable { mutableStateOf(false) }
+    var showSurfaceData by rememberSaveable { mutableStateOf(false) }
+    var showRoadTypeData by rememberSaveable { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val countries = remember(summit.id) { summit.countries.filter { it != "" } }
+    val participants = remember(summit.id) { summit.participants.filter { it != "" } }
+    val equipments = remember(summit.id) { summit.equipments.filter { it != "" } }
+    val places = remember(summit.id) { summit.places.filter { it.isNotBlank() } }
+    val deletedActivityLabel = stringResource(R.string.deleted_activity)
+    val connectedActivities = remember(summit.id, allSummits, deletedActivityLabel) {
+        val summitsById = (allSummits ?: emptyList()).associateBy { it.activityId }
+        summit.connectedActivityIds.map { id ->
+            summitsById[id]?.getConnectedEntryString(context) ?: deletedActivityLabel
+        }
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -302,8 +326,7 @@ fun SummitEntryDataScreen(
         }
 
         // Countries chips
-        val countries = summit.countries.filter { it != "" }
-        if (countries.isNotEmpty() && countries.first().isNotEmpty()) {
+        if (countries.isNotEmpty()) {
             item {
                 ChipSection(
                     title = stringResource(R.string.country_hint),
@@ -314,8 +337,7 @@ fun SummitEntryDataScreen(
         }
 
         // Participants chips
-        val participants = summit.participants.filter { it != "" }
-        if (participants.isNotEmpty() && participants.first().isNotEmpty()) {
+        if (participants.isNotEmpty()) {
             item {
                 ChipSection(
                     title = stringResource(R.string.participants),
@@ -326,8 +348,7 @@ fun SummitEntryDataScreen(
         }
 
         // Equipment chips
-        val equipments = summit.equipments.filter { it != "" }
-        if (equipments.isNotEmpty() && equipments.first().isNotEmpty()) {
+        if (equipments.isNotEmpty()) {
             item {
                 ChipSection(
                     title = stringResource(R.string.equipments),
@@ -338,16 +359,23 @@ fun SummitEntryDataScreen(
         }
 
         // Places chips
-        item {
-            val context = LocalContext.current
-            val places = remember(summit.id, allSummits) {
-                summit.getPlacesWithConnectedEntryString(context, allSummits ?: emptyList())
-            }
-            if (places.isNotEmpty() && places.first().isNotEmpty()) {
+        if (places.isNotEmpty()) {
+            item {
                 PlacesChipSection(
                     title = stringResource(R.string.place_hint),
                     items = places,
                     peaks = peaks
+                )
+            }
+        }
+
+        // Connected activities chips
+        if (connectedActivities.isNotEmpty()) {
+            item {
+                ChipSection(
+                    title = stringResource(R.string.connected_activities),
+                    items = connectedActivities,
+                    icon = R.drawable.ic_baseline_directions_run_24
                 )
             }
         }
@@ -411,17 +439,15 @@ fun CompareDropdown(
     currentCompare: Summit?,
     onSummitSelected: (Summit?) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    val items = remember(summitsToCompare) {
-        summitsToCompare
-    }
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val items = summitsToCompare
 
     // Pagination state
     val pageSize = 50
     val totalPages = remember(items.size) {
         (items.size + pageSize - 1) / pageSize
     }
-    var currentPage by remember { mutableIntStateOf(0) }
+    var currentPage by rememberSaveable { mutableIntStateOf(0) }
 
     // Get paginated items
     val paginatedItems = remember(items, currentPage, pageSize) {
@@ -458,37 +484,11 @@ fun CompareDropdown(
             onDismissRequest = { expanded = false }
         ) {
             // Pagination controls at top
-            if (totalPages > 1) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(
-                        onClick = { currentPage = (currentPage - 1).coerceAtLeast(0) },
-                        enabled = currentPage > 0
-                    ) {
-                        Text(text = stringResource(R.string.previous))
-                    }
-                    Text(
-                        text = String.format(
-                            LocalConfiguration.current.locales[0],
-                            stringResource(R.string.page_of),
-                            currentPage + 1,
-                            totalPages
-                        ),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    TextButton(
-                        onClick = { currentPage = (currentPage + 1).coerceAtMost(totalPages - 1) },
-                        enabled = currentPage < totalPages - 1
-                    ) {
-                        Text(text = stringResource(R.string.next))
-                    }
-                }
-            }
+            DropdownPaginationControls(
+                totalPages = totalPages,
+                currentPage = currentPage,
+                onPageChanged = { currentPage = it }
+            )
 
             // Paginated items
             paginatedItems.forEach { summit ->
@@ -506,39 +506,78 @@ fun CompareDropdown(
             }
 
             // Pagination controls at bottom
-            if (totalPages > 1) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(
-                        onClick = { currentPage = (currentPage - 1).coerceAtLeast(0) },
-                        enabled = currentPage > 0
-                    ) {
-                        Text(text = stringResource(R.string.previous))
-                    }
-                    Text(
-                        text = String.format(
-                            LocalConfiguration.current.locales[0],
-                            stringResource(R.string.page_of),
-                            currentPage + 1,
-                            totalPages
-                        ),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    TextButton(
-                        onClick = { currentPage = (currentPage + 1).coerceAtMost(totalPages - 1) },
-                        enabled = currentPage < totalPages - 1
-                    ) {
-                        Text(text = stringResource(R.string.next))
-                    }
-                }
-            }
+            DropdownPaginationControls(
+                totalPages = totalPages,
+                currentPage = currentPage,
+                onPageChanged = { currentPage = it }
+            )
         }
     }
+}
+
+@Composable
+private fun DropdownPaginationControls(
+    totalPages: Int,
+    currentPage: Int,
+    onPageChanged: (Int) -> Unit
+) {
+    if (totalPages <= 1) return
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TextButton(
+            onClick = { onPageChanged((currentPage - 1).coerceAtLeast(0)) },
+            enabled = currentPage > 0
+        ) {
+            Text(text = stringResource(R.string.previous))
+        }
+        Text(
+            text = String.format(
+                LocalConfiguration.current.locales[0],
+                stringResource(R.string.page_of),
+                currentPage + 1,
+                totalPages
+            ),
+            style = MaterialTheme.typography.bodySmall
+        )
+        TextButton(
+            onClick = { onPageChanged((currentPage + 1).coerceAtMost(totalPages - 1)) },
+            enabled = currentPage < totalPages - 1
+        ) {
+            Text(text = stringResource(R.string.next))
+        }
+    }
+}
+
+/**
+ * Relative position of [value] between [min] and [max], or null when the range
+ * is degenerate (all summits share the same value). Clamped to 0..1.
+ */
+fun indicatorPercent(value: Double, min: Double, max: Double, reverse: Boolean): Float? {
+    if (max <= min) return null
+    val raw = if (reverse) {
+        (max - value) / (max - min)
+    } else {
+        (value - min) / (max - min)
+    }
+    return raw.toFloat().coerceIn(0f, 1f)
+}
+
+/**
+ * Maps an indicator [percent] (0..1, or null for "no data") to the shared
+ * chart palette used for the data-row indicator dots.
+ */
+fun indicatorColor(percent: Float?): Color? = when {
+    percent == null -> null
+    percent <= 0.2f -> ChartRed
+    percent <= 0.4f -> ChartOrange
+    percent <= 0.6f -> ChartGold
+    percent <= 0.8f -> ChartBlue
+    else -> ChartLime
 }
 
 @Composable
@@ -559,27 +598,23 @@ fun DataFieldRow(
 
     // Calculate indicator color - use valueDouble instead of summit to avoid recomposition
     val indicatorColor = remember(field, valueDouble, extrema) {
-        val minSummit = field.getMinMaxSummit(extrema)?.first
-        val maxSummit = field.getMinMaxSummit(extrema)?.second
+        val minMaxSummit = field.getMinMaxSummit(extrema)
+        val minSummit = minMaxSummit?.first
+        val maxSummit = minMaxSummit?.second
 
         if (minSummit != null && maxSummit != null) {
             val min = field.getValue(minSummit)?.toDouble() ?: 0.0
             val max = field.getValue(maxSummit)?.toDouble() ?: valueDouble
-            val percent = if (field.reverse) {
-                (max - valueDouble) / (max - min)
-            } else {
-                (valueDouble - min) / (max - min)
-            }
-
-            when {
-                percent <= 0.2 -> Color.Red
-                percent <= 0.4 -> ChartOrange // Orange
-                percent <= 0.6 -> Color.Yellow
-                percent <= 0.8 -> Color.Blue
-                else -> Color.Green
-            }
+            indicatorColor(
+                indicatorPercent(
+                    value = valueDouble,
+                    min = min,
+                    max = max,
+                    reverse = field.reverse
+                )
+            )
         } else {
-            Color.Transparent
+            null
         }
     }
 
@@ -610,7 +645,7 @@ fun DataFieldRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (indicatorColor != Color.Transparent) {
+            if (indicatorColor != null) {
                 Box(
                     modifier = Modifier
                         .size(12.dp)
@@ -619,7 +654,10 @@ fun DataFieldRow(
             }
 
             Text(
-                text = formatValue(valueDouble, compareDouble, field, numberFormat),
+                text = formatValue(
+                    valueDouble, compareDouble, field, numberFormat,
+                    LocalConfiguration.current.locales[0]
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -631,9 +669,13 @@ fun formatValue(
     value: Double,
     compareValue: Double?,
     field: TextField,
-    numberFormat: NumberFormat
+    numberFormat: NumberFormat,
+    locale: Locale = Locale.getDefault()
 ): String {
-    numberFormat.maximumFractionDigits = field.digits
+    // Clone so the shared, screen-level formatter is not mutated per row
+    val fmt = (numberFormat.clone() as NumberFormat).apply {
+        maximumFractionDigits = field.digits
+    }
 
     return if (field.toHHms) {
         val valueInMs = (value * 1000.0).toLong()
@@ -646,7 +688,7 @@ fun formatValue(
             val compareHours = TimeUnit.MILLISECONDS.toHours(compareInMs)
             val compareMinutes = TimeUnit.MILLISECONDS.toMinutes(compareInMs) % 60
             String.format(
-                Locale.getDefault(),
+                locale,
                 "%02d:%02d (%02d:%02d)",
                 hours,
                 minutes,
@@ -654,16 +696,47 @@ fun formatValue(
                 compareMinutes
             )
         } else {
-            String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds)
+            String.format(locale, "%02d:%02d:%02d", hours, minutes, seconds)
         }
     } else {
-        val formattedValue = numberFormat.format(value * field.factor)
+        val formattedValue = fmt.format(value * field.factor)
         if (compareValue != null && compareValue > 0) {
-            val formattedCompare = numberFormat.format(compareValue * field.factor)
+            val formattedCompare = fmt.format(compareValue * field.factor)
             "$formattedValue ($formattedCompare) ${field.unit}"
         } else {
             "$formattedValue ${field.unit}"
         }
+    }
+}
+
+/**
+ * Read-only chip look (M3 AssistChip visual) without the misleading
+ * click affordance of `AssistChip(onClick = {})`.
+ */
+@Composable
+fun InfoChip(
+    text: String,
+    icon: Int,
+    iconContentDescription: String? = null
+) {
+    Row(
+        modifier = Modifier
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outline,
+                RoundedCornerShape(50)
+            )
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painter = painterResource(id = icon),
+            contentDescription = iconContentDescription,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(text = text, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -687,17 +760,7 @@ fun ChipSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(items) { item ->
-                AssistChip(
-                    onClick = { },
-                    label = { Text(item) },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(id = icon),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                )
+                InfoChip(text = item, icon = icon)
             }
         }
     }
@@ -726,18 +789,12 @@ fun PlacesChipSection(
         ) {
             items(items) { item ->
                 val isPeak = peakNames.contains(item)
-                AssistChip(
-                    onClick = { },
-                    label = { Text(item) },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(
-                                id = if (isPeak) R.drawable.baseline_terrain_24 else R.drawable.outline_landscape_2_off_24
-                            ),
-                            contentDescription = if (isPeak) "Peak in database" else "Place",
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                InfoChip(
+                    text = item,
+                    icon = if (isPeak) R.drawable.baseline_terrain_24 else R.drawable.outline_landscape_2_off_24,
+                    iconContentDescription = stringResource(
+                        if (isPeak) R.string.cd_peak_in_database else R.string.cd_place
+                    )
                 )
             }
         }
@@ -749,11 +806,15 @@ fun SegmentsSection(
     summit: Summit,
     segments: List<*>?
 ) {
-    // Use remember to ensure updateSegmentInfo is only called once per summit/segments combination
-    val segmentInfo = remember(summit.id, segments) {
-        @Suppress("UNCHECKED_CAST")
-        segments?.let { summit.updateSegmentInfo(it as List<Segment>) }
-        summit.segmentInfo
+    // updateSegmentInfo() sorts segment entry lists and writes back into the
+    // entity; keep that side effect out of composition and off the main thread
+    var segmentInfo by remember { mutableStateOf(summit.segmentInfo) }
+    LaunchedEffect(summit.id, segments) {
+        withContext(Dispatchers.IO) {
+            @Suppress("UNCHECKED_CAST")
+            segments?.let { summit.updateSegmentInfo(it as List<Segment>) }
+        }
+        segmentInfo = summit.segmentInfo
     }
 
     if (segmentInfo.isEmpty()) return
@@ -773,7 +834,12 @@ fun SegmentsSection(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(segmentInfo, key = { "${it.first.entryId}-${it.second.segmentDetailsId}" }) { entry ->
+            itemsIndexed(
+                segmentInfo,
+                // One activity can have multiple entries on the same segment,
+                // so entryId+segmentDetailsId alone is not unique — include the index
+                key = { index, entry -> "${entry.first.entryId}-${entry.second.segmentDetailsId}-$index" }
+            ) { _, entry ->
                 AssistChip(
                     onClick = { selectedSegment = entry },
                     label = {
@@ -829,6 +895,8 @@ fun MountainPassesSection(
     }
 
     if (summitPasses.isEmpty()) return
+
+    val locale = LocalConfiguration.current.locales[0]
 
     var selectedPass by remember { mutableStateOf<SegmentEntry?>(null) }
 
@@ -929,7 +997,10 @@ fun MountainPassesSection(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(LocalConfiguration.current.locales[0], "%.1f km", pass.kilometers),
+                                    text = stringResource(
+                                        R.string.value_with_km,
+                                        String.format(locale, "%.1f", pass.kilometers)
+                                    ),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -946,7 +1017,10 @@ fun MountainPassesSection(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(LocalConfiguration.current.locales[0], "%.0f hm", pass.heightMetersUp),
+                                    text = stringResource(
+                                        R.string.value_with_hm,
+                                        String.format(locale, "%.0f", pass.heightMetersUp)
+                                    ),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -963,7 +1037,10 @@ fun MountainPassesSection(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(LocalConfiguration.current.locales[0], "%.0f hm", pass.heightMetersDown),
+                                    text = stringResource(
+                                        R.string.value_with_hm,
+                                        String.format(locale, "%.0f", pass.heightMetersDown)
+                                    ),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -985,7 +1062,10 @@ fun MountainPassesSection(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(LocalConfiguration.current.locales[0], "%.1f%%", pass.avgGradient),
+                                    text = stringResource(
+                                        R.string.value_with_per_cent,
+                                        String.format(locale, "%.1f", pass.avgGradient)
+                                    ),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -1003,11 +1083,10 @@ fun MountainPassesSection(
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
-                                        text = String.format(
-                                            LocalConfiguration.current.locales[0],
-                                            "%.0fm: %.1f%%",
-                                            pass.windowDistanceMeters,
-                                            pass.maxGradeInWindow
+                                        text = stringResource(
+                                            R.string.grade_in_window,
+                                            String.format(locale, "%.0f", pass.windowDistanceMeters),
+                                            String.format(locale, "%.1f", pass.maxGradeInWindow)
                                         ),
                                         style = MaterialTheme.typography.bodyMedium
                                     )

@@ -28,7 +28,7 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
 @Database(
     entities = [Summit::class, Forecast::class, IgnoredActivity::class,
         SegmentDetails::class, SegmentEntry::class, EntityEvent::class, Peak::class, DailyActivitySummary::class],
-    version = 13,
+    version = 14,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -43,6 +43,7 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
         AutoMigration(from = 10, to = 11, spec = AppDatabase.AutoMigration10to11::class),
         AutoMigration(from = 11, to = 12, spec = AppDatabase.AutoMigration11to12::class),
         AutoMigration(from = 12, to = 13),
+        AutoMigration(from = 13, to = 14),
     ]
 )
 

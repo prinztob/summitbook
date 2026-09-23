@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import android.content.res.Resources
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,10 +24,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,8 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.filters.TextFieldPower
 import de.drtobiasprinz.summitbook.data.analytics.ExtremaValuesSummits
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Date
@@ -47,7 +50,6 @@ import java.util.GregorianCalendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
-import de.drtobiasprinz.summitbook.ui.theme.ChartOrange
 
 @Composable
 fun SummitEntryPowerScreen(
@@ -62,9 +64,10 @@ fun SummitEntryPowerScreen(
 ) {
 
     val configuration = LocalConfiguration.current
-    val numberFormat = remember { NumberFormat.getInstance(configuration.locales[0]) }
+    val locale = configuration.locales[0]
+    val numberFormat = remember(locale) { NumberFormat.getInstance(locale) }
 
-    var selectedTimeRange by remember { mutableIntStateOf(0) }
+    var selectedTimeRange by rememberSaveable { mutableIntStateOf(0) }
 
     if (summit == null) {
         Box(
@@ -76,13 +79,22 @@ fun SummitEntryPowerScreen(
         return
     }
 
-    val filteredSummits = remember(summit.id, allSummits?.size, selectedTimeRange) {
-        getFilteredSummits(summit, allSummits ?: emptyList(), selectedTimeRange)
+    // ExtremaValuesSummits eagerly scans every field over the filtered list
+    // (~65 passes); keep that off the main thread
+    var extremaValuesAllSummits by remember {
+        mutableStateOf<ExtremaValuesSummits?>(
+            ExtremaValuesSummits(emptyList(), excludeZeroValueFromMin = true)
+        )
+    }
+    LaunchedEffect(summit.id, allSummits, selectedTimeRange) {
+        extremaValuesAllSummits = withContext(Dispatchers.Default) {
+            val filteredSummits =
+                getFilteredSummits(summit, allSummits ?: emptyList(), selectedTimeRange)
+            ExtremaValuesSummits(filteredSummits, excludeZeroValueFromMin = true)
+        }
     }
 
-    val extremaValuesAllSummits = remember(filteredSummits) {
-        ExtremaValuesSummits(filteredSummits, excludeZeroValueFromMin = true)
-    }
+    val chartHeight = (configuration.screenHeightDp * 0.65f).dp
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -118,14 +130,16 @@ fun SummitEntryPowerScreen(
         // Power chart
         if (summit.garminData?.power != null) {
             item {
-                PowerLineChart(
-                    summit = summit,
-                    summitToCompare = compareSummit,
-                    extremaValuesAllSummits = extremaValuesAllSummits,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height((Resources.getSystem().displayMetrics.heightPixels * 0.65 / Resources.getSystem().displayMetrics.density).dp)
-                )
+                extremaValuesAllSummits?.let { extremaForChart ->
+                    PowerLineChart(
+                        summit = summit,
+                        summitToCompare = compareSummit,
+                        extremaValuesAllSummits = extremaForChart,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(chartHeight)
+                    )
+                }
             }
         }
 
@@ -159,7 +173,7 @@ fun TimeRangeSelector(
     selectedTimeRange: Int,
     onTimeRangeSelected: (Int) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
     val timeRangeOptions = listOf(
         stringResource(R.string.all),
         stringResource(R.string.current_year),
@@ -220,27 +234,23 @@ fun PowerDataFieldRow(
 
     // Calculate indicator color - use valueDouble instead of summit to avoid recomposition
     val indicatorColor = remember(field, valueDouble, extrema) {
-        val minSummit = field.getMinMaxSummit(extrema)?.first
-        val maxSummit = field.getMinMaxSummit(extrema)?.second
+        val minMaxSummit = field.getMinMaxSummit(extrema)
+        val minSummit = minMaxSummit?.first
+        val maxSummit = minMaxSummit?.second
 
         if (minSummit != null && maxSummit != null) {
             val min = field.getValue(minSummit)?.toDouble() ?: 0.0
             val max = field.getValue(maxSummit)?.toDouble() ?: valueDouble
-            val percent = if (field.reverse) {
-                (max - valueDouble) / (max - min)
-            } else {
-                (valueDouble - min) / (max - min)
-            }
-
-            when {
-                percent <= 0.2 -> androidx.compose.ui.graphics.Color.Red
-                percent <= 0.4 -> ChartOrange // Orange
-                percent <= 0.6 -> androidx.compose.ui.graphics.Color.Yellow
-                percent <= 0.8 -> androidx.compose.ui.graphics.Color.Blue
-                else -> androidx.compose.ui.graphics.Color.Green
-            }
+            indicatorColor(
+                indicatorPercent(
+                    value = valueDouble,
+                    min = min,
+                    max = max,
+                    reverse = field.reverse
+                )
+            )
         } else {
-            androidx.compose.ui.graphics.Color.Transparent
+            null
         }
     }
 
@@ -259,7 +269,7 @@ fun PowerDataFieldRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (indicatorColor != androidx.compose.ui.graphics.Color.Transparent) {
+            if (indicatorColor != null) {
                 Box(
                     modifier = Modifier
                         .size(12.dp)
@@ -268,7 +278,10 @@ fun PowerDataFieldRow(
             }
 
             Text(
-                text = formatPowerValue(valueDouble, compareDouble, field, numberFormat),
+                text = formatPowerValue(
+                    valueDouble, compareDouble, field, numberFormat,
+                    LocalConfiguration.current.locales[0]
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -276,13 +289,17 @@ fun PowerDataFieldRow(
     }
 }
 
-fun formatPowerValue(
+private fun formatPowerValue(
     value: Double,
     compareValue: Double?,
     field: TextFieldPower,
-    numberFormat: NumberFormat
+    numberFormat: NumberFormat,
+    locale: Locale
 ): String {
-    numberFormat.maximumFractionDigits = field.digits
+    // Clone so the shared, screen-level formatter is not mutated per row
+    val fmt = (numberFormat.clone() as NumberFormat).apply {
+        maximumFractionDigits = field.digits
+    }
 
     return if (field.toHHms) {
         val valueInMs = (value * 3600000.0).toLong()
@@ -294,7 +311,7 @@ fun formatPowerValue(
             val compareHours = TimeUnit.MILLISECONDS.toHours(compareInMs)
             val compareMinutes = TimeUnit.MILLISECONDS.toMinutes(compareInMs) % 60
             String.format(
-                Locale.getDefault(),
+                locale,
                 "%02d:%02d (%02d:%02d)",
                 hours,
                 minutes,
@@ -302,12 +319,12 @@ fun formatPowerValue(
                 compareMinutes
             )
         } else {
-            String.format(Locale.getDefault(), "%02d:%02d", hours, minutes)
+            String.format(locale, "%02d:%02d", hours, minutes)
         }
     } else {
-        val formattedValue = numberFormat.format(value * field.factor)
+        val formattedValue = fmt.format(value * field.factor)
         if (compareValue != null && compareValue > 0) {
-            val formattedCompare = numberFormat.format(compareValue * field.factor)
+            val formattedCompare = fmt.format(compareValue * field.factor)
             "$formattedValue ($formattedCompare) ${field.unit}"
         } else {
             "$formattedValue ${field.unit}"
@@ -321,20 +338,14 @@ private fun getFilteredSummits(
     summits: List<Summit>,
     selectedTimeRangeSpinner: Int
 ): List<Summit> {
-    var filtered = listOf<Summit>()
-    if (selectedTimeRangeSpinner != 0) {
-        filtered = summits.filter { summit ->
-            val diff = Date().time - summit.date.time
-
-            when (selectedTimeRangeSpinner) {
-                1 -> getYear(summit.date) == getYear(Date())
-                2 -> diff < 3 * 30 * 24 * 3600000L
-                3 -> diff < 12 * 30 * 24 * 3600000L
-                else -> true
-            }
-        }
+    val now = Date()
+    val filtered = when (selectedTimeRangeSpinner) {
+        1 -> summits.filter { getYear(it.date) == getYear(now) }
+        2 -> summits.filter { now.time - it.date.time < 3 * 30 * 24 * 3600000L }
+        3 -> summits.filter { now.time - it.date.time < 12 * 30 * 24 * 3600000L }
+        else -> summits
     }
-    return filtered.ifEmpty { summits }.filter { !it.equalsInBaseProperties(summitToView) }
+    return filtered.filter { !it.equalsInBaseProperties(summitToView) }
 }
 
 private fun getYear(date: Date): Int {

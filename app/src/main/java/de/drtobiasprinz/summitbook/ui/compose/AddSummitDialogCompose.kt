@@ -88,7 +88,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import kotlin.math.round
 import kotlin.math.roundToInt
 
 /**
@@ -134,8 +133,8 @@ fun AddSummitDialogCompose(
     var countries by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf<List<String>>(emptyList()) }
     var equipments by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf<List<String>>(emptyList()) }
 
-    // Connected summits (summits within 0-1 days of the current entity's date)
-    var connectedSummits by rememberSaveable(stateSaver = jsonSaver<List<Summit>>()) { mutableStateOf<List<Summit>>(emptyList()) }
+    // Connected activities: persisted in the DB column, canonical ids in dialog state
+    var connectedActivityIds by rememberSaveable(stateSaver = longListSaver) { mutableStateOf<List<Long>>(emptyList()) }
 
     // Performance data state
     val performanceState = rememberSaveable(saver = PerformanceDataStateSaver) { PerformanceDataState() }
@@ -187,31 +186,29 @@ fun AddSummitDialogCompose(
                 if (entity.velocityData.maxVelocity > 0.0) entity.velocityData.maxVelocity.toString() else ""
             comments = entity.comments
             participants = entity.participants
-            // Convert ac_id:XXXXX entries to display strings for the UI
-            places = entity.getPlacesWithConnectedEntryString(context, summitsFromDatabase)
+            places = entity.places
             countries = entity.countries
             equipments = entity.equipments
+            connectedActivityIds = entity.connectedActivityIds
             garminDataFromGarminConnect = entity.garminData
             performanceState.loadFromGarminData(entity.garminData)
         }
-        // Compute connected summits based on entity date when editing
-        connectedSummits = computeConnectedSummits(entity, summitsFromDatabase)
     }
 
-    // Recompute connected summits when tourDate changes (for new summits)
-    LaunchedEffect(tourDate, summitsFromDatabase) {
+    // Connected-activity suggestions: summits on the same calendar day as the
+    // tour date or the day before. Derived state only — the selection itself
+    // lives in connectedActivityIds.
+    val connectedCandidates = remember(tourDate, summitsFromDatabase, entity.activityId) {
         if (tourDate.isNotBlank()) {
             try {
                 val parsedDate = Summit.parseDate(tourDate)
-                val tempEntity = entity.clone()
-                tempEntity.date = parsedDate
-                connectedSummits = computeConnectedSummits(tempEntity, summitsFromDatabase)
+                val tempEntity = entity.clone().apply { date = parsedDate }
+                computeConnectedSummits(tempEntity, summitsFromDatabase)
             } catch (_: Exception) {
-                // If date parsing fails, keep existing connected summits
+                emptyList()
             }
-        } else if (!isEdit) {
-            // For new summits with no date, clear connected summits
-            connectedSummits = emptyList()
+        } else {
+            emptyList()
         }
     }
 
@@ -406,15 +403,13 @@ fun AddSummitDialogCompose(
 
                     // Additional data section (expandable)
                     if (!isBookmark) {
-                        // Build places suggestions including connected summit entries
+                        // Build places suggestions (real places only; connected
+                        // activities are managed in their own section below)
                         val placesSuggestions = summitsFromDatabase.flatMap {
                             it.places + it.name
                         }.filter {
                             it.isNotEmpty() && !it.startsWith(CONNECTED_ACTIVITY_PREFIX)
-                        }.distinct().toMutableList()
-                        for (entry in connectedSummits) {
-                            placesSuggestions.add(entry.getConnectedEntryString(context))
-                        }
+                        }.distinct()
 
                         AdditionalDataFields(
                             topElevation, { topElevation = it },
@@ -432,6 +427,13 @@ fun AddSummitDialogCompose(
                             locationDetailsExpanded, { locationDetailsExpanded = it },
                             commentsExpanded, { commentsExpanded = it },
                             placesSuggestions = placesSuggestions
+                        )
+
+                        ConnectedActivitiesField(
+                            connectedActivityIds = connectedActivityIds,
+                            onConnectedActivityIdsChange = { connectedActivityIds = it },
+                            candidates = connectedCandidates,
+                            summitsFromDatabase = summitsFromDatabase
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -470,7 +472,7 @@ fun AddSummitDialogCompose(
                                         kilometers, heightMeter, topElevation, duration, topSpeed,
                                         comments, participants, places, countries, equipments,
                                         performanceState, isBookmark, latLngHighestPoint,
-                                        garminDataFromGarminConnect, connectedSummits, context
+                                        garminDataFromGarminConnect, connectedActivityIds
                                     )
 
                                     onSaveSummit(isEdit, entity).invokeOnCompletion {
@@ -799,6 +801,50 @@ fun AdditionalDataFields(
             }
         }
     }
+}
+
+/**
+ * Chip field for connected activities. Chips store the connected activityIds
+ * (persisted in the dedicated DB column); suggestions come from the date
+ * heuristic ([candidates]) and display "End of X" labels. Ids that no longer
+ * resolve to a summit in the DB render as a placeholder.
+ */
+@Composable
+fun ConnectedActivitiesField(
+    connectedActivityIds: List<Long>,
+    onConnectedActivityIdsChange: (List<Long>) -> Unit,
+    candidates: List<Summit>,
+    summitsFromDatabase: List<Summit>
+) {
+    val context = LocalContext.current
+    val deletedActivityLabel = stringResource(R.string.deleted_activity)
+    val summitsById = remember(summitsFromDatabase) {
+        summitsFromDatabase.associateBy { it.activityId }
+    }
+
+    val suggestionLabels = remember(candidates, context) {
+        candidates.map { it.getConnectedEntryString(context) }
+    }
+    val labelToValue = remember(suggestionLabels, candidates) {
+        suggestionLabels.zip(candidates.map { it.activityId.toString() }).toMap()
+    }
+    val chipLabels = remember(connectedActivityIds, summitsById, deletedActivityLabel) {
+        connectedActivityIds.associateWith { id ->
+            summitsById[id]?.getConnectedEntryString(context) ?: deletedActivityLabel
+        }
+    }
+
+    AutoCompleteComposeChipField(
+        label = stringResource(R.string.connected_activities),
+        icon = R.drawable.ic_baseline_directions_run_24,
+        chips = connectedActivityIds.map(Long::toString),
+        onChipsChange = { chips ->
+            onConnectedActivityIdsChange(chips.mapNotNull { it.toLongOrNull() })
+        },
+        suggestions = suggestionLabels,
+        suggestionToValue = { label -> labelToValue[label] ?: label },
+        chipLabel = { chip -> chipLabels[chip.toLongOrNull()] ?: deletedActivityLabel }
+    )
 }
 
 
@@ -1272,27 +1318,15 @@ private fun saveSummit(
     isBookmark: Boolean,
     latLngHighestPoint: GeoPoint?,
     garminDataFromGarminConnect: GarminData?,
-    connectedSummits: List<Summit> = emptyList(),
-    context: Context? = null
+    connectedActivityIds: List<Long> = emptyList()
 ) {
     try {
         entity.date = if (isBookmark) Date() else Summit.parseDate(tourDate)
         entity.name = summitName
         entity.sportType = selectedSportType
-        // Convert connected entry display strings (e.g. "End of SummitName") back to ac_id:XXXXX format
-        val resolvedPlaces = places.map { place ->
-            var resolved: String? = null
-            for (connectedSummit in connectedSummits) {
-                val connectedEntryString = context?.let { connectedSummit.getConnectedEntryString(it) }
-                if (place == connectedEntryString) {
-                    resolved = "$CONNECTED_ACTIVITY_PREFIX${connectedSummit.activityId}"
-                    break
-                }
-            }
-            resolved ?: place
-        }
         // Filter out empty strings from lists before saving
-        entity.places = resolvedPlaces.filter { it.isNotEmpty() }.toMutableList()
+        entity.places = places.filter { it.isNotEmpty() }.toMutableList()
+        entity.connectedActivityIds = connectedActivityIds.toMutableList()
         entity.countries = countries.filter { it.isNotEmpty() }.toMutableList()
         entity.comments = comments
         entity.elevationData.elevationGain = heightMeter.toIntOrNull() ?: 0
@@ -1361,11 +1395,21 @@ private fun computeConnectedSummits(
     entity: Summit,
     summitsFromDatabase: List<Summit>
 ): List<Summit> {
+    fun startOfDay(date: Date): Calendar = Calendar.getInstance().apply {
+        time = date
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+    val entityDay = startOfDay(entity.date)
     return summitsFromDatabase.filter { entry ->
         entry.activityId != entity.activityId && run {
-            val differenceInMilliSec = entity.date.time - entry.date.time
-            val differenceInDays = round(TimeUnit.MILLISECONDS.toDays(differenceInMilliSec).toDouble())
-            0.0 < differenceInDays && differenceInDays <= 1.0
+            val differenceInDays = TimeUnit.MILLISECONDS
+                .toDays(entityDay.timeInMillis - startOfDay(entry.date).timeInMillis)
+                .toDouble()
+            // Same calendar day or the day before
+            0.0 <= differenceInDays && differenceInDays <= 1.0
         }
     }
 }

@@ -28,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
@@ -41,10 +40,11 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.filters.TextFieldGroupThirdParty
 import de.drtobiasprinz.summitbook.ui.filters.TextFieldThirdParty
 import de.drtobiasprinz.summitbook.data.analytics.ExtremaValuesSummits
+import androidx.compose.runtime.saveable.rememberSaveable
 import java.text.NumberFormat
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
-import de.drtobiasprinz.summitbook.ui.theme.ChartOrange
 
 @Composable
 fun SummitEntryThirdPartyScreen(
@@ -58,7 +58,8 @@ fun SummitEntryThirdPartyScreen(
 ) {
 
     val configuration = LocalConfiguration.current
-    val numberFormat = remember { NumberFormat.getInstance(configuration.locales[0]) }
+    val locale = configuration.locales[0]
+    val numberFormat = remember(locale) { NumberFormat.getInstance(locale) }
 
     if (summit == null) {
         Box(
@@ -71,20 +72,23 @@ fun SummitEntryThirdPartyScreen(
     }
 
     // Check if summit has Garmin data
-    if (summit.garminData == null) {
+    val garminData = summit.garminData
+    if (garminData == null) {
         Box(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = stringResource(R.string.delete),
+                text = stringResource(R.string.no_garmin_data),
                 style = MaterialTheme.typography.bodyLarge
             )
         }
         return
     }
 
-    var showMoreCyclingDynamics by remember { mutableStateOf(false) }
+    var showMoreCyclingDynamics by rememberSaveable { mutableStateOf(false) }
+
+    val hasCyclingDynamicsData = garminData.power.oneSec.let { it > 0 }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -93,9 +97,7 @@ fun SummitEntryThirdPartyScreen(
     ) {
         // Garmin link
         item {
-            summit.garminData?.url?.let { url ->
-                GarminLink(url = url)
-            }
+            GarminLink(url = garminData.url)
         }
 
         // Compare dropdown (if not bookmark)
@@ -145,9 +147,7 @@ fun SummitEntryThirdPartyScreen(
         }
 
         // Additional cycling dynamics data (expandable)
-        if (summit.garminData?.power?.oneSec != null && (summit.garminData?.power?.oneSec
-                ?: 0) > 0
-        ) {
+        if (hasCyclingDynamicsData) {
             item {
                 Card {
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -201,7 +201,7 @@ fun GarminLink(url: String) {
     val uriHandler = LocalUriHandler.current
 
     Text(
-        text = stringResource(R.string.sensor_data),
+        text = stringResource(R.string.view_on_garmin_connect),
         style = MaterialTheme.typography.bodyMedium.copy(
             color = MaterialTheme.colorScheme.primary,
             textDecoration = TextDecoration.Underline
@@ -232,29 +232,27 @@ fun ThirdPartyDataFieldRow(
     val rangeValue = field.getValueRange(summit)
     val rangeDouble = rangeValue?.toDouble()
 
+    val locale = LocalConfiguration.current.locales[0]
+
     // Calculate indicator color - use valueDouble instead of summit to avoid recomposition
     val indicatorColor = remember(field, valueDouble, extrema) {
-        val minSummit = field.getMinMaxSummit(extrema)?.first
-        val maxSummit = field.getMinMaxSummit(extrema)?.second
+        val minMaxSummit = field.getMinMaxSummit(extrema)
+        val minSummit = minMaxSummit?.first
+        val maxSummit = minMaxSummit?.second
 
         if (minSummit != null && maxSummit != null) {
             val min = field.getValue(minSummit)?.toDouble() ?: 0.0
             val max = field.getValue(maxSummit)?.toDouble() ?: valueDouble
-            val percent = if (field.reverse) {
-                (max - valueDouble) / (max - min)
-            } else {
-                (valueDouble - min) / (max - min)
-            }
-
-            when {
-                percent <= 0.2 -> Color.Red
-                percent <= 0.4 -> ChartOrange // Orange
-                percent <= 0.6 -> Color.Yellow
-                percent <= 0.8 -> Color.Blue
-                else -> Color.Green
-            }
+            indicatorColor(
+                indicatorPercent(
+                    value = valueDouble,
+                    min = min,
+                    max = max,
+                    reverse = field.reverse
+                )
+            )
         } else {
-            Color.Transparent
+            null
         }
     }
 
@@ -285,7 +283,7 @@ fun ThirdPartyDataFieldRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (indicatorColor != Color.Transparent) {
+            if (indicatorColor != null) {
                 Box(
                     modifier = Modifier
                         .size(12.dp)
@@ -299,7 +297,9 @@ fun ThirdPartyDataFieldRow(
                     compareDouble,
                     rangeDouble,
                     field,
-                    numberFormat
+                    numberFormat,
+                    stringResource(field.unitWithPlaceHolder),
+                    locale
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
@@ -308,15 +308,19 @@ fun ThirdPartyDataFieldRow(
     }
 }
 
-@Composable
-fun formatThirdPartyValue(
+private fun formatThirdPartyValue(
     value: Double,
     compareValue: Double?,
     rangeValue: Double?,
     field: TextFieldThirdParty,
-    numberFormat: NumberFormat
+    numberFormat: NumberFormat,
+    unitTemplate: String,
+    locale: Locale
 ): String {
-    numberFormat.maximumFractionDigits = field.digits
+    // Clone so the shared, screen-level formatter is not mutated per row
+    val fmt = (numberFormat.clone() as NumberFormat).apply {
+        maximumFractionDigits = field.digits
+    }
 
     return if (field.toMinSec) {
         val valueInSec = value.toLong()
@@ -324,7 +328,7 @@ fun formatThirdPartyValue(
 
         if (compareInSec > 0) {
             String.format(
-                LocalConfiguration.current.locales[0],
+                locale,
                 "%02d:%02d (%02d:%02d)",
                 TimeUnit.SECONDS.toMinutes(valueInSec),
                 valueInSec % TimeUnit.MINUTES.toSeconds(1),
@@ -333,29 +337,28 @@ fun formatThirdPartyValue(
             )
         } else {
             String.format(
-                LocalConfiguration.current.locales[0],
+                locale,
                 "%02d:%02d",
                 TimeUnit.SECONDS.toMinutes(valueInSec),
                 valueInSec % TimeUnit.MINUTES.toSeconds(1)
             )
         }
     } else {
-        val formattedValue = numberFormat.format(value * field.factor)
+        val formattedValue = fmt.format(value * field.factor)
 
         val result = StringBuilder(formattedValue)
 
         if (rangeValue != null && rangeValue > 0) {
-            val formattedRange = numberFormat.format(rangeValue * field.factor)
+            val formattedRange = fmt.format(rangeValue * field.factor)
             result.append(" - ").append(formattedRange)
         }
 
         if (compareValue != null && compareValue > 0) {
-            val formattedCompare = numberFormat.format(compareValue * field.factor)
+            val formattedCompare = fmt.format(compareValue * field.factor)
             result.append(" (").append(formattedCompare).append(")")
         }
 
-        val unitString = stringResource(field.unitWithPlaceHolder)
-        val unit = String.format(LocalConfiguration.current.locales[0], unitString, "")
+        val unit = String.format(locale, unitTemplate, "")
         if (unit.isNotBlank()) {
             result.append(" ").append(unit.trim())
         }

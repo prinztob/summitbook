@@ -1,9 +1,8 @@
 package de.drtobiasprinz.summitbook.sync
 
 import android.util.Log
-import de.drtobiasprinz.summitbook.data.db.entities.Summit
-import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
 import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
+import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import java.io.File
 
 
@@ -41,7 +40,19 @@ enum class FileRowType(
     GPX_SIMPLIFIED(
         { it.getGpsTrackPath(simplified = true).toFile() },
         updateAction = { summit, _ ->
-            pythonInstance?.let { GpxPyExecutor(it).createSimplifiedGpxTrack(summit.getGpsTrackPath()) }
+            try {
+                pythonInstance?.let { GpxPyExecutor(it).createSimplifiedGpxTrack(summit.getGpsTrackPath()) }
+                Log.i(
+                    "GPX_SIMPLIFIED",
+                    "Successfully created a simplified gpx track for ${summit.getDateAsString()}_${summit.name}."
+                )
+            } catch (e: RuntimeException) {
+                Log.e(
+                    "GPX_SIMPLIFIED",
+                    "Simplifying a gpx track failed for ${summit.getDateAsString()}_${summit.name}.",
+                    e
+                )
+            }
         }),
     YAML_EXTENSIONS(
         { it.getYamlExtensionsFile() },
@@ -71,8 +82,20 @@ enum class FileRowType(
     GPXPY_JSON(
         { it.getGpxPyPath().toFile() },
         updateAction = { summit, _ ->
-            pythonInstance?.let { python ->
-                GpxPyExecutor(python).analyzeGpxTrackAndCreateGpxPyDataFile(summit)
+            try {
+                pythonInstance?.let { python ->
+                    GpxPyExecutor(python).analyzeGpxTrackAndCreateGpxPyDataFile(summit)
+                }
+                Log.i(
+                    "GPXPY_JSON",
+                    "Successfully analyzed gpx track for ${summit.getDateAsString()}_${summit.name}."
+                )
+            } catch (e: RuntimeException) {
+                Log.e(
+                    "GPXPY_JSON",
+                    "analyzeGpxTrackAndCreateGpxPyDataFile failed for ${summit.getDateAsString()}_${summit.name}.",
+                    e
+                )
             }
         });
 }

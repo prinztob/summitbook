@@ -42,7 +42,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -61,6 +64,7 @@ import de.drtobiasprinz.summitbook.core.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import kotlinx.coroutines.Job
 import kotlin.math.roundToInt
 import de.drtobiasprinz.summitbook.data.appstate.AppState
+import de.drtobiasprinz.summitbook.ui.theme.ConnectedGroupColors
 import de.drtobiasprinz.summitbook.ui.theme.Scrim
 
 /**
@@ -173,6 +177,9 @@ private fun SummitsListContent(
             }
         }
     } else {
+        val connectedFrames = remember(filteredSummits, summitsFromDatabase) {
+            buildConnectedFrames(filteredSummits, summitsFromDatabase)
+        }
         LazyColumn(
             modifier = modifier
                 .fillMaxSize()
@@ -191,7 +198,8 @@ private fun SummitsListContent(
                     onDelete = onDelete,
                     onSaveSummit = onSaveSummit,
                     onPeakToggle = onPeakToggle,
-                    onAddSegmentEntry = onAddSegmentEntry
+                    onAddSegmentEntry = onAddSegmentEntry,
+                    connectedFrame = connectedFrames[summit.id]
                 )
             }
         }
@@ -211,6 +219,7 @@ fun SummitCard(
     onSaveSummit: (Boolean, Summit) -> Job,
     onPeakToggle: ((String, Boolean) -> Unit)? = null,
     onAddSegmentEntry: ((Summit) -> Unit)? = null,
+    connectedFrame: ConnectedSummitFrame? = null,
 ) {
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -228,17 +237,35 @@ fun SummitCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(
+                top = if (connectedFrame == null || connectedFrame.isFirst) 6.dp else 0.dp,
+                bottom = if (connectedFrame == null || connectedFrame.isLast) 6.dp else 0.dp
+            )
             .clickable {
                 navigateToSummitDetails(context, currentSummit.id)
             },
-        shape = RoundedCornerShape(12.dp),
+        shape = if (connectedFrame == null) {
+            RoundedCornerShape(12.dp)
+        } else {
+            RoundedCornerShape(
+                topStart = if (connectedFrame.isFirst) 12.dp else 0.dp,
+                topEnd = if (connectedFrame.isFirst) 12.dp else 0.dp,
+                bottomStart = if (connectedFrame.isLast) 12.dp else 0.dp,
+                bottomEnd = if (connectedFrame.isLast) 12.dp else 0.dp
+            )
+        },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
-        Column {
+        Column(
+            modifier = if (connectedFrame != null) {
+                Modifier.connectedSummitFrame(connectedFrame)
+            } else {
+                Modifier
+            }
+        ) {
             // Image and title section
             Box(
                 modifier = if (currentSummit.hasImagePath()) {
@@ -620,6 +647,120 @@ fun SummitCard(
         )
     }
 }
+
+data class ConnectedSummitFrame(
+    val color: androidx.compose.ui.graphics.Color,
+    val isFirst: Boolean,
+    val isLast: Boolean
+)
+
+private fun buildConnectedFrames(
+    visibleSummits: List<Summit>,
+    allSummits: List<Summit>
+): Map<Long, ConnectedSummitFrame> {
+    if (visibleSummits.size < 2) {
+        return emptyMap()
+    }
+
+    val parent = HashMap<Long, Long>()
+    fun rootOf(activityId: Long): Long {
+        var root = activityId
+        while (parent[root] != root) {
+            root = parent.getValue(root)
+        }
+        return root
+    }
+
+    fun union(first: Long, second: Long) {
+        if (first !in parent) parent[first] = first
+        if (second !in parent) parent[second] = second
+        val firstRoot = rootOf(first)
+        val secondRoot = rootOf(second)
+        if (firstRoot != secondRoot) {
+            parent[firstRoot] = secondRoot
+        }
+    }
+
+    val knownActivityIds = HashSet<Long>(allSummits.size)
+    allSummits.forEach { knownActivityIds.add(it.activityId) }
+    allSummits.forEach { summit ->
+        summit.connectedActivityIds.forEach { connectedActivityId ->
+            if (connectedActivityId in knownActivityIds) {
+                union(summit.activityId, connectedActivityId)
+            }
+        }
+    }
+
+    val visibleMemberCountByRoot = HashMap<Long, Int>()
+    visibleSummits.forEach { summit ->
+        if (summit.activityId in parent) {
+            val root = rootOf(summit.activityId)
+            visibleMemberCountByRoot[root] = (visibleMemberCountByRoot[root] ?: 0) + 1
+        }
+    }
+    val framedRoots = visibleMemberCountByRoot.filterValues { it >= 2 }.keys
+    if (framedRoots.isEmpty()) {
+        return emptyMap()
+    }
+
+    fun rootOfVisibleSummitAt(index: Int): Long? {
+        val activityId = visibleSummits[index].activityId
+        return if (activityId in parent) rootOf(activityId) else null
+    }
+
+    val groupIndexByRoot = HashMap<Long, Int>()
+    val frames = HashMap<Long, ConnectedSummitFrame>()
+    visibleSummits.forEachIndexed { index, summit ->
+        val root = rootOfVisibleSummitAt(index) ?: return@forEachIndexed
+        if (root !in framedRoots) {
+            return@forEachIndexed
+        }
+        val groupIndex = groupIndexByRoot.getOrPut(root) { groupIndexByRoot.size }
+        val previousIsSameGroup = index > 0 && rootOfVisibleSummitAt(index - 1) == root
+        val nextIsSameGroup =
+            index < visibleSummits.size - 1 && rootOfVisibleSummitAt(index + 1) == root
+        frames[summit.id] = ConnectedSummitFrame(
+            color = ConnectedGroupColors[groupIndex % ConnectedGroupColors.size],
+            isFirst = !previousIsSameGroup,
+            isLast = !nextIsSameGroup
+        )
+    }
+    return frames
+}
+
+private fun Modifier.connectedSummitFrame(frame: ConnectedSummitFrame): Modifier =
+    drawWithContent {
+        drawContent()
+        val strokePx = 2.dp.toPx()
+        val halfStroke = strokePx / 2f
+        val radius = 12.dp.toPx()
+        val width = size.width
+        val height = size.height
+        val topY = if (frame.isFirst) radius else halfStroke
+        val bottomY = height - if (frame.isLast) radius else halfStroke
+        val path = Path()
+        path.moveTo(halfStroke, topY)
+        path.lineTo(halfStroke, bottomY)
+        path.moveTo(width - halfStroke, topY)
+        path.lineTo(width - halfStroke, bottomY)
+        if (frame.isFirst) {
+            path.moveTo(radius, halfStroke)
+            path.lineTo(width - radius, halfStroke)
+            path.moveTo(radius, halfStroke)
+            path.quadraticTo(halfStroke, halfStroke, halfStroke, radius)
+            path.moveTo(width - radius, halfStroke)
+            path.quadraticTo(width - halfStroke, halfStroke, width - halfStroke, radius)
+        }
+        if (frame.isLast) {
+            path.moveTo(radius, height - halfStroke)
+            path.lineTo(width - radius, height - halfStroke)
+            path.moveTo(halfStroke, bottomY)
+            path.quadraticTo(halfStroke, height - halfStroke, radius, height - halfStroke)
+            path.moveTo(width - halfStroke, bottomY)
+            path.quadraticTo(width - halfStroke, height - halfStroke, width - radius, height - halfStroke)
+        }
+        drawPath(path, frame.color, style = Stroke(width = strokePx))
+    }
 
 private fun getThirdEntryValues(summit: Summit): Triple<Number, Int, Int> {
     val power = summit.garminData?.power?.avgPower ?: 0f

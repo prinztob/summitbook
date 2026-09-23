@@ -198,6 +198,7 @@ fun SettingsScreen(
     }
 
     // Launcher for selecting on-device maps folder
+    val installFileHelperMessage = stringResource(R.string.toast_message_install_file_helper)
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -238,7 +239,7 @@ fun SettingsScreen(
                 folderPickerLauncher.launch(intent)
             } catch (exception: Exception) {
                 Log.e("SettingsScreen", "Unable to select a on-device maps folder.\n$exception")
-                onShowSnackbar(context.getString(R.string.toast_message_install_file_helper))
+                onShowSnackbar(installFileHelperMessage)
             }
         } else {
             Log.i("SettingsScreen", "This is not supported in your Android Version")
@@ -501,7 +502,6 @@ fun SettingsScreen(
                 title = stringResource(R.string.start_date_sync_garmin),
                 icon = R.drawable.baseline_calendar_today_24,
                 date = garminSyncStartDate,
-                showDivider = false,
                 onDateChange = {
                     garminSyncStartDate = it
                     savePreference(Keys.PREF_THIRD_PARTY_START_DATE, dateFormat.format(it))
@@ -1413,7 +1413,6 @@ fun DateSetting(
     title: String,
     icon: Int,
     date: Date?,
-    showDivider: Boolean = true,
     onDateChange: (Date) -> Unit
 ) {
     val context = LocalContext.current

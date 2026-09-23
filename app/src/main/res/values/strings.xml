@@ -148,6 +148,8 @@
     <string name="set_date">Set date</string>
     <string name="set_activity">Set activity</string>
     <string name="end_of">End of</string>
+    <string name="connected_activities">Connected activities</string>
+    <string name="deleted_activity">Deleted activity</string>
 
     <string-array name="date_array">
         <item>Total</item>
@@ -736,6 +738,7 @@
     <string name="cd_follow_location">Follow location</string>
     <string name="cd_toggle_overlay_sliders">Toggle overlay sliders</string>
     <string name="cd_toggle_heatmap">Toggle heatmap</string>
+    <string name="cd_toggle_map_controls">Show or hide map controls</string>
     <string name="cd_select_date">Select date</string>
     <string name="cd_close_search">Close search</string>
     <string name="cd_menu">Menu</string>
@@ -745,4 +748,18 @@
     <string name="querying_road_info">Querying road info…</string>
     <string name="road_info_error">Error: %1$s</string>
     <string name="new_summit_marker">New summit</string>
+    <string name="cd_peak_in_database">Peak in database</string>
+    <string name="cd_place">Place</string>
+    <string name="grade_in_window">%1$s m: %2$s %%</string>
+    <string name="no_images_available">No images available</string>
+    <string name="failed_to_load_image">Failed to load image</string>
+    <string name="view_on_garmin_connect">View on Garmin Connect</string>
+    <plurals name="overview_activities">
+        <item quantity="one">%1$d activity, %2$s km, %3$s hm</item>
+        <item quantity="other">%1$d activities, %2$s km, %3$s hm</item>
+    </plurals>
+    <plurals name="overview_summits">
+        <item quantity="one">%1$d summit, %2$s km, %3$s hm</item>
+        <item quantity="other">%1$d summits, %2$s km, %3$s hm</item>
+    </plurals>
 </resources>

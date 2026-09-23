@@ -1,7 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
+import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,14 +10,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,12 +28,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -50,7 +54,6 @@ import de.drtobiasprinz.summitbook.ui.theme.ChartGold
 import de.drtobiasprinz.summitbook.ui.theme.ChartLime
 import de.drtobiasprinz.summitbook.ui.theme.ChartRed
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.DateFormatSymbols
 import java.text.NumberFormat
@@ -65,17 +68,21 @@ fun OverviewScreen(
     years: List<String>
 ) {
     // State variables
-    var selectedGraphType by remember { mutableStateOf(GraphType.ElevationGain) }
-    var graphIsVisible by remember { mutableStateOf(false) }
-    var showMonths by remember { mutableStateOf(false) }
-    var showYears by remember { mutableStateOf(false) }
-    var currentMonth by remember { mutableIntStateOf(Calendar.getInstance()[Calendar.MONTH] + 1) }
-    var currentYear by remember { mutableIntStateOf(Calendar.getInstance()[Calendar.YEAR]) }
-    var selectedYear by remember { mutableIntStateOf(currentYear) }
+    var selectedGraphType by rememberSaveable(stateSaver = enumSaver<GraphType>()) {
+        mutableStateOf(GraphType.ElevationGain)
+    }
+    var showMonths by rememberSaveable { mutableStateOf(false) }
+    var showYears by rememberSaveable { mutableStateOf(false) }
+    var currentMonth by rememberSaveable { mutableIntStateOf(Calendar.getInstance()[Calendar.MONTH] + 1) }
+    var currentYear by rememberSaveable { mutableIntStateOf(Calendar.getInstance()[Calendar.YEAR]) }
+    var selectedYear by rememberSaveable { mutableIntStateOf(currentYear) }
 
     val sharedPreferences = AppState.sharedPreferences
     val indoorHeightMeterPercent = sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
     val numberFormat = NumberFormat.getInstance(LocalConfiguration.current.locales[0])
+    val summitsWithoutBookmarks = remember(summitsFromDatabase) {
+        summitsFromDatabase.filter { !it.isBookmark }
+    }
 
     Column(
         modifier = Modifier
@@ -92,14 +99,13 @@ fun OverviewScreen(
             showYears = showYears,
             onToggleMonths = { showMonths = true; showYears = false },
             onToggleYears = { showYears = true; showMonths = false },
-            onToggleNone = { showMonths = false; showYears = false },
-            onToggleGraphVisibility = { graphIsVisible = !graphIsVisible }
+            onToggleNone = { showMonths = false; showYears = false }
         )
 
         // Chart section (conditionally visible)
-        if ((showMonths || showYears) && filteredSummits.isNotEmpty() && forecasts.isNotEmpty()) {
+        if ((showMonths || showYears) && filteredSummits.isNotEmpty()) {
             ChartSection(
-                summits = summitsFromDatabase.filter { !it.isBookmark },
+                summits = summitsWithoutBookmarks,
                 forecasts = forecasts,
                 selectedGraphType = selectedGraphType,
                 onGraphTypeSelected = { selectedGraphType = it },
@@ -128,9 +134,10 @@ fun OverviewHeader(
     showYears: Boolean,
     onToggleMonths: () -> Unit,
     onToggleYears: () -> Unit,
-    onToggleNone: () -> Unit,
-    onToggleGraphVisibility: () -> Unit
+    onToggleNone: () -> Unit
 ) {
+    val context = LocalContext.current
+
     // Calculate statistics text
     var activitiesText by remember { mutableStateOf("") }
     var summitsText by remember { mutableStateOf("") }
@@ -143,21 +150,24 @@ fun OverviewHeader(
             val statisticEntry = StatisticEntry(filteredSummits, indoorHeightMeterPercent)
             statisticEntry.calculate()
             val peaks = filteredSummits.filter { it.isPeak }
+            val peakNames = AppState.peaks.map { peak -> peak.name }.toHashSet()
             val numberOfPeaks = peaks.size + filteredSummits.flatMap { it.places }
-                .filter { it in AppState.peaks.map { peak -> peak.name } }.size
+                .filter { it in peakNames }.size
 
-            // Format the text with string resources
-            "${
-                filteredSummits.size
-            } activities, ${
-                numberFormat.format(statisticEntry.totalKm)
-            } km, ${
+            val resources = context.resources
+            resources.getQuantityString(
+                R.plurals.overview_activities,
+                filteredSummits.size,
+                filteredSummits.size,
+                numberFormat.format(statisticEntry.totalKm),
                 numberFormat.format(statisticEntry.totalHm)
-            } hm" to "$numberOfPeaks summits, ${
-                numberFormat.format(peaks.sumOf { it.kilometers })
-            } km, ${
+            ) to resources.getQuantityString(
+                R.plurals.overview_summits,
+                numberOfPeaks,
+                numberOfPeaks,
+                numberFormat.format(peaks.sumOf { it.kilometers }),
                 numberFormat.format(peaks.sumOf { it.elevationData.elevationGain })
-            } hm"
+            )
         }
         activitiesText = activities
         summitsText = summits
@@ -166,8 +176,7 @@ fun OverviewHeader(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable { onToggleGraphVisibility() },
+            .clip(RoundedCornerShape(8.dp)),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -347,55 +356,50 @@ fun MonthChart(
     numberFormat: NumberFormat,
 ) {
     if (performanceGraphProvider == null) return
+    val monthNames = remember { DateFormatSymbols().months }
 
     Column {
         // Month navigation
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 8.dp)
+            IconButton(
+                onClick = {
+                    if (currentMonth > 1) {
+                        onMonthChanged(currentMonth - 1)
+                    }
+                },
+                modifier = Modifier.size(48.dp)
             ) {
-                IconButton(
-                    onClick = {
-                        if (currentMonth > 1) {
-                            onMonthChanged(currentMonth - 1)
-                        }
-                    },
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_chevron_left),
-                        contentDescription = stringResource(R.string.previous_month),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                Text(
-                    text = "${DateFormatSymbols().months[currentMonth - 1]} $selectedYear",
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f)
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_chevron_left),
+                    contentDescription = stringResource(R.string.previous_month),
+                    modifier = Modifier.size(20.dp)
                 )
+            }
 
-                IconButton(
-                    onClick = {
-                        if (currentMonth < 12) {
-                            onMonthChanged(currentMonth + 1)
-                        }
-                    },
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_chevron_right),
-                        contentDescription = stringResource(R.string.next_month),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+            Text(
+                text = "${monthNames[currentMonth - 1]} $selectedYear",
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
+            )
+
+            IconButton(
+                onClick = {
+                    if (currentMonth < 12) {
+                        onMonthChanged(currentMonth + 1)
+                    }
+                },
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_chevron_right),
+                    contentDescription = stringResource(R.string.next_month),
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
 
@@ -426,57 +430,51 @@ fun YearChart(
     Column {
         // Year navigation
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 8.dp)
+            IconButton(
+                onClick = {
+                    val minYear = years.minOfOrNull { year -> year.toInt() }
+                        ?: selectedYear
+
+                    if (selectedYear > minYear) {
+                        onYearChanged(selectedYear - 1)
+                    }
+                },
+                modifier = Modifier.size(48.dp)
             ) {
-                IconButton(
-                    onClick = {
-                        val minYear = years.minOfOrNull { year -> year.toInt() }
-                            ?: selectedYear
-
-                        if (selectedYear > minYear) {
-                            onYearChanged(selectedYear - 1)
-                        }
-                    },
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_chevron_left),
-                        contentDescription = stringResource(R.string.previous_year),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                Text(
-                    text = selectedYear.toString(),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f)
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_chevron_left),
+                    contentDescription = stringResource(R.string.previous_year),
+                    modifier = Modifier.size(20.dp)
                 )
+            }
 
-                IconButton(
-                    onClick = {
-                        val maxYear = years.maxOfOrNull { year -> year.toInt() }
-                            ?: selectedYear
+            Text(
+                text = selectedYear.toString(),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
+            )
 
-                        if (selectedYear < maxYear) {
-                            onYearChanged(selectedYear + 1)
-                        }
-                    },
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_chevron_right),
-                        contentDescription = stringResource(R.string.next_year),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+            IconButton(
+                onClick = {
+                    val maxYear = years.maxOfOrNull { year -> year.toInt() }
+                        ?: selectedYear
+
+                    if (selectedYear < maxYear) {
+                        onYearChanged(selectedYear + 1)
+                    }
+                },
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_chevron_right),
+                    contentDescription = stringResource(R.string.next_year),
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
 
@@ -500,32 +498,27 @@ fun ChartControls(
     onToggleYears: () -> Unit,
     onToggleNone: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
+    SingleChoiceSegmentedButtonRow(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        FilterChip(
-            selected = showMonths,
-            onClick = onToggleMonths,
-            label = { Text(stringResource(R.string.monthly), fontSize = 11.sp) }
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        FilterChip(
+        SegmentedButton(
             selected = !showMonths && !showYears,
             onClick = onToggleNone,
-            label = { Text(stringResource(R.string.none), fontSize = 11.sp) }
+            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3),
+            label = { Text(stringResource(R.string.none)) }
         )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        FilterChip(
+        SegmentedButton(
+            selected = showMonths,
+            onClick = onToggleMonths,
+            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3),
+            label = { Text(stringResource(R.string.monthly)) }
+        )
+        SegmentedButton(
             selected = showYears,
             onClick = onToggleYears,
-            label = { Text(stringResource(R.string.yearly), fontSize = 11.sp) }
+            shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3),
+            label = { Text(stringResource(R.string.yearly)) }
         )
-
     }
 }
 
@@ -537,8 +530,6 @@ fun PerformanceChartView(
     month: String? = null,
     numberFormat: NumberFormat
 ) {
-    val scope = rememberCoroutineScope()
-
     var chartEntries by remember { mutableStateOf<List<ChartEntry>>(emptyList()) }
     var chartEntriesForecast by remember { mutableStateOf<List<ChartEntry>>(emptyList()) }
     var minMax by remember {
@@ -549,43 +540,46 @@ fun PerformanceChartView(
             )
         )
     }
+    var isLoading by remember { mutableStateOf(true) }
 
-    // Load chart data when parameters change
+    // Load chart data when parameters change; runs in the effect's coroutine
+    // so a restart cancels the previous load instead of racing it
     LaunchedEffect(performanceGraphProvider, graphType, year, month) {
+        isLoading = true
         // Reset data to trigger loading state
         chartEntries = emptyList()
         chartEntriesForecast = emptyList()
+        minMax = Pair(emptyList(), emptyList())
 
-        scope.launch(Dispatchers.IO) {
-            try {
-                val actualEntries = performanceGraphProvider.getActualGraphForSummits(
-                    graphType,
-                    year,
-                    month,
-                    if (year == Calendar.getInstance()[Calendar.YEAR].toString() &&
-                        (month == null || (month.toInt() == Calendar.getInstance()[Calendar.MONTH] + 1))
-                    ) {
-                        Date()
-                    } else {
-                        null
-                    }
-                )
-                val forecastEntries = performanceGraphProvider.getForecastGraphForSummits(
-                    graphType, year, month, allDays = true
-                )
-                val minMaxData =
+        try {
+            val (actualEntries, forecastEntries, minMaxData) = withContext(Dispatchers.IO) {
+                Triple(
+                    performanceGraphProvider.getActualGraphForSummits(
+                        graphType,
+                        year,
+                        month,
+                        if (year == Calendar.getInstance()[Calendar.YEAR].toString() &&
+                            (month == null || (month.toInt() == Calendar.getInstance()[Calendar.MONTH] + 1))
+                        ) {
+                            Date()
+                        } else {
+                            null
+                        }
+                    ),
+                    performanceGraphProvider.getForecastGraphForSummits(
+                        graphType, year, month, allDays = true
+                    ),
                     performanceGraphProvider.getActualGraphMinMaxForSummits(graphType, year, month)
-
-                // Update state on main thread
-                withContext(Dispatchers.Main) {
-                    chartEntries = actualEntries
-                    chartEntriesForecast = forecastEntries
-                    minMax = minMaxData
-                }
-            } catch (e: Exception) {
-                // Handle error silently or log it
-                e.printStackTrace()
+                )
             }
+
+            chartEntries = actualEntries
+            chartEntriesForecast = forecastEntries
+            minMax = minMaxData
+        } catch (e: Exception) {
+            Log.e("OverviewScreen", "Failed to load chart data", e)
+        } finally {
+            isLoading = false
         }
     }
 
@@ -606,6 +600,12 @@ fun PerformanceChartView(
             year = year,
             month = month,
             numberFormat = numberFormat
+        )
+    } else if (isLoading) {
+        LinearProgressIndicator(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp)
         )
     }
 }

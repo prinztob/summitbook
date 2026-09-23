@@ -1,12 +1,12 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Resources
-import android.graphics.Color
 import android.util.Log
 import android.widget.FrameLayout
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +24,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,14 +34,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
@@ -52,6 +56,10 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.model.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.data.model.GpsTrack
 import de.drtobiasprinz.summitbook.data.model.TrackColor
+import de.drtobiasprinz.summitbook.ui.theme.ChartTextLightGray
+import de.drtobiasprinz.summitbook.ui.theme.CompareTrackColor
+import de.drtobiasprinz.summitbook.ui.theme.HighlightYellow
+import de.drtobiasprinz.summitbook.ui.theme.Scrim
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling.Companion.getSportTypeForMapProviders
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling.Companion.selectedItem
@@ -77,6 +85,7 @@ fun SummitEntryTrackScreen(
     compareSummit: Summit?,
     modifier: Modifier = Modifier,
     isAnalyzingTrack: Boolean = false,
+    onShowSnackbar: (String) -> Unit = {},
     onGetSummitToCompare: (Long) -> Unit,
     onSetSummitToCompareToNull: () -> Unit
 ) {
@@ -94,17 +103,18 @@ fun SummitEntryTrackScreen(
     }
     var connectedTrackPoints by remember {
         mutableStateOf<List<List<Pair<TrackPoint, ExtensionFromYaml>>>>(
-            mutableListOf()
+            emptyList()
         )
     }
-    var selectedCustomizeTrackItem by remember { mutableStateOf(TrackColor.Elevation) }
+    var selectedCustomizeTrackItem by rememberSaveable(stateSaver = enumSaver<TrackColor>()) {
+        mutableStateOf(TrackColor.Elevation)
+    }
     var usedItemsForColorCode by remember { mutableStateOf<List<TrackColor>>(emptyList()) }
-    var alreadyZoomedOnTrack by remember { mutableStateOf(false) }
-    var showColorDialog by remember { mutableStateOf(false) }
-    var trackInfoText by remember { mutableStateOf<String?>(null) }
+    var alreadyZoomedOnTrack by rememberSaveable { mutableStateOf(false) }
+    var showColorDialog by rememberSaveable { mutableStateOf(false) }
     var mapViewRef by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
     var locationOverlayRef by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
-    var selectedTrackPointIndex by remember { mutableStateOf<Int?>(null) }
+    var selectedTrackPointIndex by rememberSaveable { mutableStateOf<Int?>(null) }
 
     if (summit == null) {
         Box(
@@ -116,9 +126,11 @@ fun SummitEntryTrackScreen(
     }
 
     // Initialize GPS track - use summit.id to avoid infinite recomposition.
-    // Load the simplified track if available (fast), otherwise parse the full one.
-    // Previously this launched twice (simplified + forced full parse), making the
-    // spinner reappear and the simplified tracks pointless.
+    // Load the simplified track first (fast) so the map shows quickly, then
+    // upgrade to the full track in the background: only the full track has
+    // the YAML extension data (heart rate, power, ...) needed for track
+    // coloring. The spinner is shown for the first load only, so it does not
+    // reappear when the simplified points are replaced by the full ones.
     LaunchedEffect(summit.id) {
         isLoading = true
         withContext(Dispatchers.IO) {
@@ -126,6 +138,10 @@ fun SummitEntryTrackScreen(
                 sharedPreferences.getBoolean("pref_use_simplified_tracks", true)
             if (useSimplifiedTracks && summit.hasGpsTrack(simplified = true)) {
                 setGpsTrack(summit, useSimplifiedTrack = true) { track ->
+                    trackPoints = track?.trackPoints ?: emptyList()
+                }
+                isLoading = false
+                setGpsTrack(summit, forceUpdate = true) { track ->
                     trackPoints = track?.trackPoints ?: emptyList()
                 }
             } else {
@@ -141,7 +157,7 @@ fun SummitEntryTrackScreen(
     LaunchedEffect(compareSummit?.id) {
         if (compareSummit != null) {
             withContext(Dispatchers.IO) {
-                setGpsTrack(compareSummit, useSimplifiedTrack = true) { track ->
+                setGpsTrackWithFullTrackFallback(compareSummit) { track ->
                     compareTrackPoints = track?.trackPoints ?: emptyList()
                 }
             }
@@ -151,21 +167,20 @@ fun SummitEntryTrackScreen(
     }
 
     // Load connected tracks asynchronously
-    LaunchedEffect(summit.id, allSummits?.size) {
+    LaunchedEffect(summit.id, allSummits?.size, summit.connectedActivityIds) {
         if (allSummits != null) {
             withContext(Dispatchers.IO) {
                 val connectedEntries = summit.getConnectedEntries(allSummits)
                 val trackPointList: MutableList<List<Pair<TrackPoint, ExtensionFromYaml>>> = mutableListOf()
                 for (entry in connectedEntries) {
-                    setGpsTrack(entry, useSimplifiedTrack = true) { track ->
+                    setGpsTrackWithFullTrackFallback(entry) { track ->
                         trackPointList.add(track?.trackPoints ?: emptyList())
                     }
                 }
-                Log.i("Summit", "getConnectedEntriesSummary for summit ${summit.getDateAsString()}_${summit.name} is $connectedEntries with ${trackPoints.size} points.")
                 connectedTrackPoints = trackPointList
             }
         } else {
-            connectedTrackPoints = mutableListOf()
+            connectedTrackPoints = emptyList()
         }
     }
 
@@ -176,16 +191,19 @@ fun SummitEntryTrackScreen(
                 val value = trackColorEntry.f(it)
                 value != null && value != 0.0
             }
-        }.mapIndexed { i, entry ->
-            entry.spinnerId = i
-            entry
         }
 
-        if (TrackColor.Elevation !in usedItemsForColorCode) {
-            selectedCustomizeTrackItem = TrackColor.None
-        } else if (TrackColor.Elevation in usedItemsForColorCode) {
-            selectedCustomizeTrackItem = TrackColor.Elevation
-        }
+        selectedCustomizeTrackItem =
+            if (TrackColor.Elevation in usedItemsForColorCode) {
+                TrackColor.Elevation
+            } else {
+                TrackColor.None
+            }
+    }
+
+    // Track point bookkeeping: O(n) scan, so compute it once per track
+    val trackHasOnlyZeroCoordinates = remember(trackPoints) {
+        hasOnlyZeroCoordinates(trackPoints)
     }
 
     Column(
@@ -219,7 +237,7 @@ fun SummitEntryTrackScreen(
                 )
             )
         } else {
-            if (isAnalyzingTrack && hasOnlyZeroCoordinates(trackPoints) && summit.latLng == null) {
+            if (isAnalyzingTrack && trackHasOnlyZeroCoordinates && summit.latLng == null) {
                 // Track data is still being generated in the background
                 Text(
                     text = stringResource(R.string.analyzing_track),
@@ -228,7 +246,7 @@ fun SummitEntryTrackScreen(
                         .padding(16.dp)
                 )
             }
-            if (!hasOnlyZeroCoordinates(trackPoints) || summit.latLng != null) {
+            if (!trackHasOnlyZeroCoordinates || summit.latLng != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -250,9 +268,9 @@ fun SummitEntryTrackScreen(
                         onTrackPointSelected = { index -> selectedTrackPointIndex = index }
                     )
 
-                    // Track info display (shows track points count or clicked track point info)
+                    // Track info display (shows track points count)
                     val displayText =
-                        trackInfoText ?: if (trackPoints.isNotEmpty()) {
+                        if (trackPoints.isNotEmpty()) {
                             "${trackPoints.size} ${stringResource(R.string.pts)}"
                         } else {
                             null
@@ -266,28 +284,31 @@ fun SummitEntryTrackScreen(
                                 .padding(8.dp)
                                 .shadow(4.dp, RoundedCornerShape(4.dp))
                                 .background(
-                                    androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
+                                    Scrim,
                                     RoundedCornerShape(4.dp)
                                 )
                                 .border(
                                     1.dp,
-                                    androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
+                                    ChartTextLightGray.copy(alpha = 0.5f),
                                     RoundedCornerShape(4.dp)
                                 )
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                            color = androidx.compose.ui.graphics.Color.White,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = ChartTextLightGray,
+                            fontWeight = FontWeight.Bold
                         )
                     }
 
                     // Map control buttons
-                    MapControlButtons(
+                    TrackMapControlButtons(
                         summit = summit,
                         trackPoints = trackPoints,
                         allSummits = allSummits,
                         mapView = mapViewRef,
                         locationOverlay = locationOverlayRef,
+                        compareTrackPoints = compareTrackPoints,
+                        summitToCompare = compareSummit,
+                        onShowSnackbar = onShowSnackbar,
                         onCustomizeTrack = { showColorDialog = true },
                         modifier = Modifier.align(Alignment.TopEnd)
                     )
@@ -296,7 +317,7 @@ fun SummitEntryTrackScreen(
 
             // Chart view
             if (selectedCustomizeTrackItem.discreteInput) {
-                BarChartView(
+                HorizontalBarChartView(
                     summit = summit,
                     trackColor = selectedCustomizeTrackItem,
                     modifier = Modifier
@@ -349,6 +370,7 @@ fun SummitEntryTrackMapView(
     onTrackPointSelected: (Int) -> Unit = {}
 ) {
     var mLocationOverlay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
+    var mapCreatedView by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -356,29 +378,52 @@ fun SummitEntryTrackMapView(
         }
     }
 
+    // Discovering on-device maps reads preferences and SAF folder listings
+    // (disk access); keep that off the main thread and apply the tile provider
+    // once the results are in.
+    LaunchedEffect(mapCreatedView) {
+        val view = mapCreatedView ?: return@LaunchedEffect
+        val ctx = view.context
+        val provider = withContext(Dispatchers.IO) {
+            if (PreferencesHelper.loadOnDeviceMaps() &&
+                FileHelper.getOnDeviceMapFiles(ctx).isNotEmpty()
+            ) {
+                getSportTypeForMapProviders(summit.sportType, ctx)
+            } else if (FileHelper.getOnDeviceMbtilesFiles(ctx).isNotEmpty()) {
+                MapProvider.MBTILES
+            } else {
+                null
+            }
+        }
+        provider?.let { selectedItem = it }
+        view.setTileProvider()
+    }
+
     SummitBookMapView(
         onMapCreated = { view ->
             val ctx = view.context
-            // Initialize location overlay
+            // Initialize location overlay (only if the permission is granted;
+            // this detail screen has no permission-request flow of its own)
             val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(ctx), view)
-            locationOverlay.enableMyLocation()
+            if (ContextCompat.checkSelfPermission(
+                    ctx, Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(
+                    ctx, Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                locationOverlay.enableMyLocation()
+            }
             view.overlays.add(locationOverlay)
             mLocationOverlay = locationOverlay
 
             // Notify that location overlay is created
             onLocationOverlayCreated(locationOverlay)
 
-            if (PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(ctx)
-                    .isNotEmpty()
-            ) {
-                selectedItem = getSportTypeForMapProviders(summit.sportType, ctx)
-            } else if (FileHelper.getOnDeviceMbtilesFiles(ctx).isNotEmpty()) {
-                selectedItem = MapProvider.MBTILES
-            }
-            view.setTileProvider()
-
-            // Notify that map view is created
+            // Notify that map view is created; tile-provider setup happens in
+            // the LaunchedEffect above once map files have been discovered
             onMapViewCreated(view)
+            mapCreatedView = view
         },
         update = { view ->
             // Ensure the view fills its allocated space
@@ -405,13 +450,13 @@ fun SummitEntryTrackMapView(
             if (summitToCompare != null) {
                 view.addAdditionalGpsTrack(
                     trackPoints = compareTrackPoints,
-                    color = Color.BLACK
+                    color = CompareTrackColor.toArgb()
                 )
             } else {
                 connectedTrackPoints.forEach {
                     view.addAdditionalGpsTrack(
                         trackPoints = it,
-                        color = Color.BLACK
+                        color = CompareTrackColor.toArgb()
                     )
                 }
             }
@@ -436,14 +481,16 @@ fun SummitEntryTrackMapView(
                         trackPoint.longitude,
                         trackPoint.elevation
                     )
+                    val markerSizePx =
+                        (20 * view.resources.displayMetrics.density).toInt()
                     val marker = Marker(view).apply {
                         position = geoPoint
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                        icon = createBitmap(20, 20).apply {
-                            eraseColor(Color.YELLOW)
+                        icon = createBitmap(markerSizePx, markerSizePx).apply {
+                            eraseColor(HighlightYellow.toArgb())
                         }.toDrawable(view.resources)
                         setOnMarkerClickListener { _, _ ->
-                            true // Don't consume the click event
+                            true // Consume the click so the map doesn't treat it as a track-point tap
                         }
                     }
                     view.overlays.add(marker)
@@ -462,19 +509,22 @@ fun SummitEntryTrackMapView(
 }
 
 @Composable
-fun MapControlButtons(
+fun TrackMapControlButtons(
     summit: Summit,
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
     allSummits: List<Summit>?,
     mapView: CustomMapViewToAllowScrolling?,
     locationOverlay: MyLocationNewOverlay?,
+    compareTrackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+    summitToCompare: Summit?,
+    onShowSnackbar: (String) -> Unit,
     onCustomizeTrack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val buttonColors = IconButtonDefaults.iconButtonColors(
-        containerColor = androidx.compose.ui.graphics.Color.Gray.copy(alpha = 0.7f)
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
     )
 
     Column(
@@ -498,7 +548,11 @@ fun MapControlButtons(
                             summit = summit,
                             trackPoints = trackPoints,
                             allSummits = allSummits,
-                            sharedPreferences = sharedPreferences
+                            compareTrackPoints = compareTrackPoints,
+                            summitToCompare = summitToCompare,
+                            locationOverlay = locationOverlay,
+                            sharedPreferences = sharedPreferences,
+                            onShowSnackbar = onShowSnackbar
                         )
                     }
                 }
@@ -530,7 +584,7 @@ fun MapControlButtons(
                 coroutineScope.launch {
                     // hasGpsTrack() and copying the file hit the disk
                     if (withContext(Dispatchers.IO) { summit.hasGpsTrack() }) {
-                        shareGpsTrack(context, summit)
+                        shareGpsTrack(context, summit, onShowSnackbar)
                     }
                 }
             },
@@ -548,7 +602,7 @@ fun MapControlButtons(
                 coroutineScope.launch {
                     // hasGpsTrack() and copying the file hit the disk
                     if (withContext(Dispatchers.IO) { summit.hasGpsTrack() }) {
-                        openGpsTrack(context, summit)
+                        openGpsTrack(context, summit, onShowSnackbar)
                     }
                 }
             },
@@ -591,17 +645,6 @@ fun MapControlButtons(
 }
 
 @Composable
-fun BarChartView(
-    summit: Summit, trackColor: TrackColor, modifier: Modifier = Modifier
-) {
-    HorizontalBarChartView(
-        summit = summit,
-        trackColor = trackColor,
-        modifier = modifier
-    )
-}
-
-@Composable
 fun TrackColorDialog(
     usedItems: List<TrackColor>, onItemSelected: (TrackColor) -> Unit, onDismiss: () -> Unit
 ) {
@@ -623,7 +666,7 @@ fun TrackColorDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(android.R.string.cancel))
+                Text(stringResource(R.string.cancel))
             }
         })
 }
@@ -649,7 +692,34 @@ private fun setGpsTrack(
     }
 }
 
-private suspend fun shareGpsTrack(context: android.content.Context, summit: Summit) {
+/**
+ * Loads a secondary track (compare/connected): prefers the simplified track
+ * (fast), but falls back to the full one — manually imported activities have
+ * no simplified file, and without the fallback their track would be missing.
+ */
+private fun setGpsTrackWithFullTrackFallback(
+    summit: Summit,
+    onTrackLoaded: (GpsTrack?) -> Unit
+) {
+    val hasSimplifiedTrack = summit.hasGpsTrack(simplified = true)
+    if (hasSimplifiedTrack || summit.hasGpsTrack()) {
+        setGpsTrack(
+            summit,
+            useSimplifiedTrack = hasSimplifiedTrack,
+            forceUpdate = !hasSimplifiedTrack
+        ) { track ->
+            onTrackLoaded(track)
+        }
+    } else {
+        onTrackLoaded(null)
+    }
+}
+
+private suspend fun shareGpsTrack(
+    context: android.content.Context,
+    summit: Summit,
+    onShowSnackbar: (String) -> Unit
+) {
     try {
         // Copying the GPX file to the external cache dir hits the disk
         val uri = withContext(Dispatchers.IO) {
@@ -660,8 +730,9 @@ private suspend fun shareGpsTrack(context: android.content.Context, summit: Summ
             }
         }
         val intentShareFile = Intent(Intent.ACTION_SEND)
-        intentShareFile.type = "application/pdf"
+        intentShareFile.type = "application/gpx+xml"
         intentShareFile.putExtra(Intent.EXTRA_STREAM, uri)
+        intentShareFile.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         intentShareFile.putExtra(
             Intent.EXTRA_SUBJECT, context.getString(R.string.shared_gpx_subject)
         )
@@ -675,18 +746,20 @@ private suspend fun shareGpsTrack(context: android.content.Context, summit: Summ
             )
         )
         context.startActivity(intentShareFile)
-    } catch (_: IOException) {
-        Toast.makeText(
-            context, context.getString(R.string.no_email_program_installed), Toast.LENGTH_LONG
-        ).show()
-    } catch (_: ActivityNotFoundException) {
-        Toast.makeText(
-            context, context.getString(R.string.no_email_program_installed), Toast.LENGTH_LONG
-        ).show()
+    } catch (e: IOException) {
+        Log.e("SummitEntryTrackScreen", "Failed to share GPX track", e)
+        onShowSnackbar(context.getString(R.string.gpx_file_not_copied))
+    } catch (e: ActivityNotFoundException) {
+        Log.e("SummitEntryTrackScreen", "No app to share GPX track", e)
+        onShowSnackbar(context.getString(R.string.no_email_program_installed))
     }
 }
 
-private suspend fun openGpsTrack(context: android.content.Context, summit: Summit) {
+private suspend fun openGpsTrack(
+    context: android.content.Context,
+    summit: Summit,
+    onShowSnackbar: (String) -> Unit
+) {
     try {
         // Copying the GPX file to the external cache dir hits the disk
         val uri = withContext(Dispatchers.IO) {
@@ -701,14 +774,12 @@ private suspend fun openGpsTrack(context: android.content.Context, summit: Summi
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
         context.startActivity(intent)
-    } catch (_: IOException) {
-        Toast.makeText(
-            context, context.getString(R.string.gpx_file_not_copied), Toast.LENGTH_LONG
-        ).show()
-    } catch (_: ActivityNotFoundException) {
-        Toast.makeText(
-            context, context.getString(R.string.gpx_viewer_not_installed), Toast.LENGTH_LONG
-        ).show()
+    } catch (e: IOException) {
+        Log.e("SummitEntryTrackScreen", "Failed to open GPX track", e)
+        onShowSnackbar(context.getString(R.string.gpx_file_not_copied))
+    } catch (e: ActivityNotFoundException) {
+        Log.e("SummitEntryTrackScreen", "No GPX viewer installed", e)
+        onShowSnackbar(context.getString(R.string.gpx_viewer_not_installed))
     }
 }
 
@@ -718,13 +789,28 @@ private suspend fun showAllTracksOfSummitInBoundingBox(
     summit: Summit,
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
     allSummits: List<Summit>,
-    sharedPreferences: android.content.SharedPreferences
+    compareTrackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
+    summitToCompare: Summit?,
+    locationOverlay: MyLocationNewOverlay?,
+    sharedPreferences: android.content.SharedPreferences,
+    onShowSnackbar: (String) -> Unit
 ) {
     val maxPointsToShow = sharedPreferences
         .getString(Keys.PREF_MAX_NUMBER_POINT, "10000")?.toInt() ?: 10000
 
     withContext(Dispatchers.Main) {
         mapView.overlays.clear()
+        // Keep the location dot and default gesture/settings overlays alive;
+        // the clear above removed them along with the previous tracks
+        locationOverlay?.let { mapView.overlays.add(it) }
+        mapView.addDefaultSettings()
+
+        if (summitToCompare != null) {
+            mapView.addAdditionalGpsTrack(
+                trackPoints = compareTrackPoints,
+                color = CompareTrackColor.toArgb()
+            )
+        }
 
         val summitsWithSameBoundingBox = allSummits.filter {
             it.activityId != summit.activityId && mapView.boundingBox?.let { boundingBox ->
@@ -771,15 +857,13 @@ private suspend fun showAllTracksOfSummitInBoundingBox(
         )
 
         if (pointsShown > maxPointsToShow) {
-            Toast.makeText(
-                context,
+            onShowSnackbar(
                 context.getString(
                     R.string.summits_shown,
                     summitsShown.toString(),
                     summitsWithSameBoundingBox.size.toString()
-                ),
-                Toast.LENGTH_LONG
-            ).show()
+                )
+            )
         }
     }
 }

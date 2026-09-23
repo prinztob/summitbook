@@ -8,13 +8,15 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
 import android.util.Log
-import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,6 +37,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
@@ -111,6 +114,12 @@ fun OpenStreetMapScreen(
     val coroutineScope = rememberCoroutineScope()
     val showSummitDisabledMessage = stringResource(R.string.show_summit_disabled)
 
+    fun showSnackbar(message: String) {
+        coroutineScope.launch {
+            snackBarHostState.showSnackbar(message)
+        }
+    }
+
     // State variables
     var sharedPreferences by remember { mutableStateOf<SharedPreferences?>(null) }
     var maxPointsToShow by remember { mutableIntStateOf(10000) }
@@ -169,11 +178,7 @@ fun OpenStreetMapScreen(
             mLocationOverlay?.enableMyLocation()
         } else {
             Log.w("OpenStreetMapScreen", "Location permission denied")
-            Toast.makeText(
-                context,
-                locationPermissionDeniedMessage,
-                Toast.LENGTH_LONG
-            ).show()
+            showSnackbar(locationPermissionDeniedMessage)
         }
     }
 
@@ -305,7 +310,9 @@ fun OpenStreetMapScreen(
                 context,
                 coroutineScope,
                 hasLocationPermission = hasLocationPermission,
-                onRequestLocationPermission = { requestLocationPermission() }
+                onRequestLocationPermission = { requestLocationPermission() },
+                onShowSnackbar = { showSnackbar(it) },
+                onLoadingChange = { isLoading = it }
             )
         }
     }
@@ -401,7 +408,7 @@ fun OpenStreetMapScreen(
                             // Update map when state changes
                             map.updateBoundingBox = true
 
-                            Log.e(TAG, "Updated $osMapBoundingBox")
+                            Log.d(TAG, "Updated $osMapBoundingBox")
                             if (osMapBoundingBox.size == 6) {
                                 try {
                                     val boundingBox = BoundingBox()
@@ -433,7 +440,8 @@ fun OpenStreetMapScreen(
                                 map,
                                 map.overlays.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay,
                                 hasPermission = hasLocationPermission,
-                                onRequestPermission = { requestLocationPermission() }
+                                onRequestPermission = { requestLocationPermission() },
+                                onShowSnackbar = { showSnackbar(it) }
                             )
 
                             map.onResume()
@@ -456,7 +464,9 @@ fun OpenStreetMapScreen(
                         mMarkersShown,
                         maxPointsToShow,
                         context,
-                        coroutineScope
+                        coroutineScope,
+                        onShowSnackbar = { showSnackbar(it) },
+                        onLoadingChange = { isLoading = it }
                     )
                 },
                 onChangeMapType = {
@@ -495,7 +505,9 @@ fun OpenStreetMapScreen(
                             context,
                             coroutineScope,
                             hasLocationPermission = hasLocationPermission,
-                            onRequestLocationPermission = { requestLocationPermission() }
+                            onRequestLocationPermission = { requestLocationPermission() },
+                            onShowSnackbar = { showSnackbar(it) },
+                            onLoadingChange = { isLoading = it }
                         )
                     }
                 },
@@ -518,7 +530,9 @@ fun OpenStreetMapScreen(
                             context,
                             coroutineScope,
                             hasLocationPermission = hasLocationPermission,
-                            onRequestLocationPermission = { requestLocationPermission() }
+                            onRequestLocationPermission = { requestLocationPermission() },
+                            onShowSnackbar = { showSnackbar(it) },
+                            onLoadingChange = { isLoading = it }
                         )
                     } else {
                         coroutineScope.launch {
@@ -649,24 +663,29 @@ fun MapTypeSelectionDialog(
             LazyColumn {
                 items(mapProviders) { provider ->
                     val isSelected = provider == currentProvider
-                    Text(
-                        text = stringResource(provider.textId) + if (isSelected) " ✓" else "",
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
                                 onMapTypeSelected(provider)
                                 onDismiss()
                             }
-                            .padding(16.dp),
-                        style = if (isSelected) {
-                            MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                            )
-                        } else {
-                            MaterialTheme.typography.bodyLarge
-                        }
-                    )
+                            .padding(vertical = 8.dp)
+                    ) {
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = {
+                                onMapTypeSelected(provider)
+                                onDismiss()
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(provider.textId),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
             }
         },
@@ -822,11 +841,13 @@ private fun showSummitsAndBookmarksIfEnabled(
     context: Context,
     coroutineScope: CoroutineScope,
     hasLocationPermission: Boolean = false,
-    onRequestLocationPermission: (() -> Unit)? = null
+    onRequestLocationPermission: (() -> Unit)? = null,
+    onShowSnackbar: ((String) -> Unit)? = null,
+    onLoadingChange: ((Boolean) -> Unit)? = null
 ) {
     if (showSummits || showBookmarks) {
-        // In a real implementation, we would set isLoading = true here
         mapView?.enableRoadInfoOnMapClick(coroutineScope)
+        onLoadingChange?.invoke(true)
         coroutineScope.launch {
             var filteredSummits: List<Pair<Summit, GeoPoint>> = listOf()
             withContext(Dispatchers.IO) {
@@ -842,8 +863,18 @@ private fun showSummitsAndBookmarksIfEnabled(
                                 && it.lng != 0.0
                     }.map { Pair(it, GeoPoint(it.lat!!, it.lng!!)) }
             }
-            addAllMarkers(mapView, filteredSummits, context, mGeoPoints, mMarkers, coroutineScope, hasLocationPermission, onRequestLocationPermission)
-            // In a real implementation, we would set isLoading = false here
+            addAllMarkers(
+                mapView,
+                filteredSummits,
+                context,
+                mGeoPoints,
+                mMarkers,
+                coroutineScope,
+                hasLocationPermission,
+                onRequestLocationPermission,
+                onShowSnackbar,
+                onLoadingChange
+            )
         }
     } else {
         mapView?.overlays?.clear()
@@ -851,7 +882,8 @@ private fun showSummitsAndBookmarksIfEnabled(
             mapView,
             mapView?.overlays?.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay,
             hasPermission = hasLocationPermission,
-            onRequestPermission = onRequestLocationPermission)
+            onRequestPermission = onRequestLocationPermission,
+            onShowSnackbar = onShowSnackbar)
         mapView?.invalidate()
     }
 }
@@ -861,20 +893,21 @@ private fun showMyLocation(
     mLocationOverlay: MyLocationNewOverlay?,
     zoom: Boolean = false,
     hasPermission: Boolean = false,
-    onRequestPermission: (() -> Unit)? = null
+    onRequestPermission: (() -> Unit)? = null,
+    onShowSnackbar: ((String) -> Unit)? = null
 ) {
     if (mapView == null || mLocationOverlay == null) {
         Log.w("OpenStreetMapScreen", "showMyLocation: mapView or locationOverlay is null")
         return
     }
-    
+
     // Check if we have location permission
     if (!hasPermission) {
         Log.w("OpenStreetMapScreen", "No location permission, requesting...")
         onRequestPermission?.invoke()
         return
     }
-    
+
     mLocationOverlay.apply {
         // Enable location if not already enabled
         if (!isMyLocationEnabled) {
@@ -882,15 +915,11 @@ private fun showMyLocation(
                 enableMyLocation()
             } catch (e: SecurityException) {
                 Log.e("OpenStreetMapScreen", "Failed to enable location: ${e.message}")
-                Toast.makeText(
-                    mapView.context,
-                    mapView.context.getString(R.string.location_permission_denied),
-                    Toast.LENGTH_LONG
-                ).show()
+                onShowSnackbar?.invoke(mapView.context.getString(R.string.location_permission_denied))
                 return
             }
         }
-        
+
         // Set the person icon
         val arrow = ResourcesCompat.getDrawable(
             mapView.context.resources, R.drawable.baseline_my_location_24,
@@ -900,12 +929,12 @@ private fun showMyLocation(
         setPersonAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
         setDirectionIcon(arrow)
         setDirectionAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-        
+
         // Only add overlay if not already in the list
         if (!mapView.overlays.contains(this)) {
             mapView.overlays.add(this)
         }
-        
+
         if (zoom) {
             // Try to get the current location
             val myLocationGeoPoint = myLocation
@@ -916,11 +945,7 @@ private fun showMyLocation(
                 Log.w("OpenStreetMapScreen", "Location not yet available, waiting for fix...")
                 // Location not available yet - we need to wait for the first fix
                 // The overlay will automatically update when location becomes available
-                Toast.makeText(
-                    mapView.context,
-                    mapView.context.getString(R.string.waiting_for_location),
-                    Toast.LENGTH_SHORT
-                ).show()
+                onShowSnackbar?.invoke(mapView.context.getString(R.string.waiting_for_location))
             }
         }
         mapView.invalidate()
@@ -935,7 +960,9 @@ private fun addAllMarkers(
     mMarkers: SnapshotStateList<Marker?>,
     coroutineScope: CoroutineScope,
     hasLocationPermission: Boolean = false,
-    onRequestLocationPermission: (() -> Unit)? = null
+    onRequestLocationPermission: (() -> Unit)? = null,
+    onShowSnackbar: ((String) -> Unit)? = null,
+    onLoadingChange: ((Boolean) -> Unit)? = null
 ) {
     mapView?.let { map ->
         val mReceive = object : MapEventsReceiver {
@@ -958,7 +985,8 @@ private fun addAllMarkers(
             map,
             map.overlays?.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay,
             hasPermission = hasLocationPermission,
-            onRequestPermission = onRequestLocationPermission)
+            onRequestPermission = onRequestLocationPermission,
+            onShowSnackbar = onShowSnackbar)
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
                 val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(
@@ -971,6 +999,7 @@ private fun addAllMarkers(
                 mMarkers.clear()
                 summits.forEach { pair ->
                     if (!currentCoroutineContext().isActive || !map.isAttachedToWindow) {
+                        onLoadingChange?.invoke(false)
                         return@withContext
                     }
                     mGeoPoints.add(pair.second)
@@ -983,6 +1012,7 @@ private fun addAllMarkers(
             map.overlays?.add(markers)
             map.overlays?.add(eventsOverlay)
             map.invalidate()
+            onLoadingChange?.invoke(false)
         }
     }
 }
@@ -1028,76 +1058,81 @@ private fun showAllTracksOfSummitInBoundingBox(
     mMarkersShown: SnapshotStateList<Marker?>,
     maxPointsToShow: Int,
     context: Context,
-    coroutineScope: CoroutineScope
+    coroutineScope: CoroutineScope,
+    onShowSnackbar: ((String) -> Unit)? = null,
+    onLoadingChange: ((Boolean) -> Unit)? = null
 ) {
     val boundingBox = mapView?.boundingBox ?: return
+    onLoadingChange?.invoke(true)
     coroutineScope.launch {
-        // Summit.isInBoundingBox() checks the track file's existence; keep that
-        // file system access off the main thread (StrictMode DiskReadViolation)
-        val markersInBoundingBox: Set<Marker?> = withContext(Dispatchers.IO) {
-            mMarkers.filterTo(HashSet()) { marker ->
-                (marker?.infoWindow as? MapCustomInfoBubble)?.entry
-                    ?.isInBoundingBox(boundingBox) == true
+        try {
+            // Summit.isInBoundingBox() checks the track file's existence; keep that
+            // file system access off the main thread (StrictMode DiskReadViolation)
+            val markersInBoundingBox: Set<Marker?> = withContext(Dispatchers.IO) {
+                mMarkers.filterTo(HashSet()) { marker ->
+                    (marker?.infoWindow as? MapCustomInfoBubble)?.entry
+                        ?.isInBoundingBox(boundingBox) == true
+                }
             }
-        }
-        var pointsShown = mMarkersShown.sumOf {
-            (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size ?: 0
-        }
-        val summitsInBoundingBox = mMarkers.filter {
-            val mapCustomInfoBubble: MapCustomInfoBubble = it?.infoWindow as MapCustomInfoBubble
-            val shouldBeShown = it in markersInBoundingBox
-            if (!shouldBeShown && it in mMarkersShown) {
-                Log.i(
-                    "trackPoints",
-                    "trackPoints --: ${mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0}"
-                )
-                pointsShown -= mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0
-                mapCustomInfoBubble.updateGpxTrack(forceRemove = true)
-                mMarkersShown.remove(it)
+            var pointsShown = mMarkersShown.sumOf {
+                (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size ?: 0
             }
-            shouldBeShown
-        }
-        var boxAlreadyShown = false
-        summitsInBoundingBox.forEach {
-            if (it != null) {
-                val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
-                if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
-                    if (infoWindow.entry.hasGpsTrack()) {
-                        coroutineScope.launch {
-                            var show = false
-                            withContext(Dispatchers.Default) {
-                                if (pointsShown < maxPointsToShow) {
-                                    show = true
-                                    infoWindow.entry.setGpsTrack()
-                                    pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0
+            val summitsInBoundingBox = mMarkers.filter {
+                val mapCustomInfoBubble: MapCustomInfoBubble = it?.infoWindow as MapCustomInfoBubble
+                val shouldBeShown = it in markersInBoundingBox
+                if (!shouldBeShown && it in mMarkersShown) {
+                    Log.i(
+                        "trackPoints",
+                        "trackPoints --: ${mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0}"
+                    )
+                    pointsShown -= mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0
+                    mapCustomInfoBubble.updateGpxTrack(forceRemove = true)
+                    mMarkersShown.remove(it)
+                }
+                shouldBeShown
+            }
+            var boxAlreadyShown = false
+            summitsInBoundingBox.forEach {
+                if (it != null) {
+                    val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
+                    if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
+                        if (infoWindow.entry.hasGpsTrack()) {
+                            launch {
+                                var show = false
+                                withContext(Dispatchers.Default) {
+                                    if (pointsShown < maxPointsToShow) {
+                                        show = true
+                                        infoWindow.entry.setGpsTrack()
+                                        pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0
+                                    }
                                 }
+                                if (show) {
+                                    infoWindow.updateGpxTrack(forceShow = true)
+                                    Log.i(
+                                        "trackPoints",
+                                        "trackPoints ${pointsShown}++: ${infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0}"
+                                    )
+                                    mMarkersShown.add(it)
+                                } else if (!boxAlreadyShown) {
+                                    onShowSnackbar?.invoke(
+                                        String.format(
+                                            context.resources.getString(
+                                                R.string.summits_shown
+                                            ),
+                                            mMarkersShown.size.toString(),
+                                            summitsInBoundingBox.size.toString()
+                                        )
+                                    )
+                                    boxAlreadyShown = true
+                                }
+                                mapView.invalidate()
                             }
-                            if (show) {
-                                infoWindow.updateGpxTrack(forceShow = true)
-                                Log.e(
-                                    "trackPoints",
-                                    "trackPoints ${pointsShown}++: ${infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0}"
-                                )
-                                mMarkersShown.add(it)
-                            } else if (!boxAlreadyShown) {
-                                Toast.makeText(
-                                    context,
-                                    String.format(
-                                        context.resources.getString(
-                                            R.string.summits_shown
-                                        ),
-                                        mMarkersShown.size.toString(),
-                                        summitsInBoundingBox.size.toString()
-                                    ),
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                boxAlreadyShown = true
-                            }
-                            mapView.invalidate()
                         }
                     }
                 }
             }
+        } finally {
+            onLoadingChange?.invoke(false)
         }
     }
 }
@@ -1125,6 +1160,7 @@ fun MapControlButtons(
     hasHeatmap: Boolean = false,
     onToggleHeatmap: () -> Unit = {}
 ) {
+    var controlsExpanded by rememberSaveable { mutableStateOf(false) }
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.End
@@ -1144,8 +1180,7 @@ fun MapControlButtons(
             }
         }
 
-
-
+        // Fullscreen toggle is always visible
         FloatingActionButton(
             onClick = onFullscreenToggle,
             modifier = Modifier
@@ -1161,123 +1196,144 @@ fun MapControlButtons(
             )
         }
 
-        FloatingActionButton(
-            onClick = onShowAllTracks,
-            modifier = Modifier
-                .size(40.dp)
-                .padding(bottom = 8.dp)
-        ) {
-            Icon(
-                painterResource(R.drawable.ic_baseline_route_24),
-                contentDescription = stringResource(R.string.cd_show_all_tracks)
-            )
+        // Remaining controls are only visible when the menu is expanded
+        AnimatedVisibility(visible = controlsExpanded) {
+            Column(horizontalAlignment = Alignment.End) {
+                FloatingActionButton(
+                    onClick = onShowAllTracks,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(bottom = 8.dp)
+                ) {
+                    Icon(
+                        painterResource(R.drawable.ic_baseline_route_24),
+                        contentDescription = stringResource(R.string.cd_show_all_tracks)
+                    )
+                }
+
+                FloatingActionButton(
+                    onClick = onChangeMapType,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(bottom = 8.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_more_vert_black_24dp),
+                        contentDescription = stringResource(R.string.cd_change_map)
+                    )
+                }
+
+                FloatingActionButton(
+                    onClick = onCenterOnLocation,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(bottom = 8.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_my_location_24),
+                        contentDescription = stringResource(R.string.cd_center_on_location)
+                    )
+                }
+
+                FloatingActionButton(
+                    onClick = onCenterOnSummits,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(bottom = 8.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_center_focus_strong_24),
+                        contentDescription = stringResource(R.string.cd_center_on_summits)
+                    )
+                }
+
+                FloatingActionButton(
+                    onClick = onShowBookmarksToggle,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(bottom = 8.dp),
+                    containerColor = if (showBookmarks) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_baseline_bookmarks_24),
+                        contentDescription = stringResource(R.string.cd_show_bookmarks)
+                    )
+                }
+
+                FloatingActionButton(
+                    onClick = onShowSummitsToggle,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(bottom = 8.dp),
+                    containerColor = if (showSummits) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Icon(
+                        painterResource(R.drawable.baseline_directions_run_24),
+                        contentDescription = stringResource(R.string.cd_show_summits)
+                    )
+                }
+
+                FloatingActionButton(
+                    onClick = onFollowLocationToggle,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(bottom = 8.dp),
+                    containerColor = if (followLocationEnabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Icon(
+                        painter = if (followLocationEnabled) painterResource(id = R.drawable.baseline_stop_circle_24) else painterResource(
+                            id = R.drawable.baseline_play_circle_filled_24
+                        ),
+                        contentDescription = stringResource(R.string.cd_follow_location)
+                    )
+                }
+
+                // Toggle overlay sliders button (only shown if overlay layers exist)
+                if (hasOverlayLayers) {
+                    FloatingActionButton(
+                        onClick = onToggleOverlaySliders,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .padding(bottom = 8.dp),
+                        containerColor = if (showOverlaySliders) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_map_black_24dp),
+                            contentDescription = stringResource(R.string.cd_toggle_overlay_sliders)
+                        )
+                    }
+                }
+
+                // Toggle heatmap button (only shown if heatmap exists)
+                if (hasHeatmap) {
+                    FloatingActionButton(
+                        onClick = onToggleHeatmap,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .padding(bottom = 8.dp),
+                        containerColor = if (heatmapEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_heatmap_24),
+                            contentDescription = stringResource(R.string.cd_toggle_heatmap)
+                        )
+                    }
+                }
+            }
         }
 
+        // Expand/collapse the map controls
         FloatingActionButton(
-            onClick = onChangeMapType,
-            modifier = Modifier
-                .size(40.dp)
-                .padding(bottom = 8.dp)
+            onClick = { controlsExpanded = !controlsExpanded },
+            modifier = Modifier.size(40.dp)
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.baseline_more_vert_black_24dp),
-                contentDescription = stringResource(R.string.cd_change_map)
-            )
-        }
-
-        FloatingActionButton(
-            onClick = onCenterOnLocation,
-            modifier = Modifier
-                .size(40.dp)
-                .padding(bottom = 8.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.baseline_my_location_24),
-                contentDescription = stringResource(R.string.cd_center_on_location)
-            )
-        }
-
-        FloatingActionButton(
-            onClick = onCenterOnSummits,
-            modifier = Modifier
-                .size(40.dp)
-                .padding(bottom = 8.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.baseline_center_focus_strong_24),
-                contentDescription = stringResource(R.string.cd_center_on_summits)
-            )
-        }
-
-        FloatingActionButton(
-            onClick = onShowBookmarksToggle,
-            modifier = Modifier
-                .size(40.dp)
-                .padding(bottom = 8.dp),
-            containerColor = if (showBookmarks) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_baseline_bookmarks_24),
-                contentDescription = stringResource(R.string.cd_show_bookmarks)
-            )
-        }
-
-        FloatingActionButton(
-            onClick = onShowSummitsToggle,
-            modifier = Modifier
-                .size(40.dp)
-                .padding(bottom = 8.dp),
-            containerColor = if (showSummits) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
-        ) {
-            Icon(
-                painterResource(R.drawable.baseline_directions_run_24),
-                contentDescription = stringResource(R.string.cd_show_summits)
-            )
-        }
-
-        FloatingActionButton(
-            onClick = onFollowLocationToggle,
-            modifier = Modifier
-                .size(40.dp)
-                .padding(bottom = 8.dp),
-            containerColor = if (followLocationEnabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondaryContainer
-        ) {
-            Icon(
-                painter = if (followLocationEnabled) painterResource(id = R.drawable.baseline_stop_circle_24) else painterResource(
-                    id = R.drawable.baseline_play_circle_filled_24
+                painter = painterResource(
+                    if (controlsExpanded) R.drawable.baseline_keyboard_double_arrow_down_black_24dp
+                    else R.drawable.baseline_keyboard_double_arrow_up_black_24dp
                 ),
-                contentDescription = stringResource(R.string.cd_follow_location)
+                contentDescription = stringResource(R.string.cd_toggle_map_controls)
             )
-        }
-        // Toggle overlay sliders button (only shown if overlay layers exist)
-        if (hasOverlayLayers) {
-            FloatingActionButton(
-                onClick = onToggleOverlaySliders,
-                modifier = Modifier
-                    .size(40.dp),
-                containerColor = if (showOverlaySliders) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_map_black_24dp),
-                    contentDescription = stringResource(R.string.cd_toggle_overlay_sliders)
-                )
-            }
-        }
-        
-        // Toggle heatmap button (only shown if heatmap exists)
-        if (hasHeatmap) {
-            FloatingActionButton(
-                onClick = onToggleHeatmap,
-                modifier = Modifier
-                    .size(40.dp)
-                    .padding(top = 8.dp),
-                containerColor = if (heatmapEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_heatmap_24),
-                    contentDescription = stringResource(R.string.cd_toggle_heatmap)
-                )
-            }
         }
     }
 }

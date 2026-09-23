@@ -33,6 +33,17 @@ val SurfaceMidGray = Color(0xFFE0E0E0)
 // Translucent scrim over map/chart backgrounds
 val Scrim = Color(0x55000000)
 
+// Track overlay accents on the map screens (osmdroid polylines/markers)
+val CompareTrackColor = Color(0xFF000000)
+val HighlightYellow = Color(0xFFFFFF00)
+
 // Void shown by the map screen where no tiles are rendered; matches the
 // render themes' map-background-outside so it does not vary per map type
 val MapVoidBackground = Color(0xFFEEEEEE)
+
+// Accents used to frame groups of connected activities in the summits list
+val ConnectedGroupBlue = Color(0xFF2196F3)
+val ConnectedGroupTeal = Color(0xFF009688)
+val ConnectedGroupPurple = Color(0xFF9C27B0)
+
+val ConnectedGroupColors = listOf(ConnectedGroupBlue, ConnectedGroupTeal, ConnectedGroupPurple)

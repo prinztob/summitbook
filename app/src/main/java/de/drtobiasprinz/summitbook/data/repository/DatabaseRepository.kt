@@ -1,9 +1,11 @@
 package de.drtobiasprinz.summitbook.data.repository
 
+import de.drtobiasprinz.summitbook.core.Constants.CONNECTED_ACTIVITY_PREFIX
 import de.drtobiasprinz.summitbook.data.db.dao.*
 import de.drtobiasprinz.summitbook.data.db.entities.*
 import de.drtobiasprinz.summitbook.data.db.entities.RoadType
 import de.drtobiasprinz.summitbook.data.db.entities.Surface
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class DatabaseRepository @Inject constructor(
@@ -28,6 +30,26 @@ class DatabaseRepository @Inject constructor(
     fun getDetailsSummit(id: Long) = summitsDao.getSummit(id)
     fun getAllSummits() = summitsDao.getAllSummits()
     fun getSummitsPaginated(limit: Int, offset: Int) = summitsDao.getSummitsPaginated(limit, offset)
+
+    /**
+     * Moves legacy `ac_id:XXXXX` entries from the places column into the
+     * connectedActivityIds column. Idempotent: no-op once no prefixed places remain.
+     */
+    suspend fun migrateConnectedActivityPrefixesToColumn() {
+        val summits = getAllSummits().first()
+        val toUpdate = mutableListOf<Summit>()
+        for (summit in summits) {
+            if (summit.places.any { it.startsWith(CONNECTED_ACTIVITY_PREFIX) }) {
+                val (cleanPlaces, connectedIds) = Summit.splitConnectedActivityTokens(summit.places)
+                summit.places = cleanPlaces
+                summit.connectedActivityIds = (summit.connectedActivityIds + connectedIds).distinct()
+                toUpdate.add(summit)
+            }
+        }
+        if (toUpdate.isNotEmpty()) {
+            updateSummits(toUpdate)
+        }
+    }
     fun getAllSegments() = segmentDao.getAllSegments()
     suspend fun deleteSegmentEntry(entity: SegmentEntry) = segmentDao.deleteSegmentEntry(entity)
     suspend fun deleteSegment(entity: Segment) = segmentDao.deleteSegment(entity)

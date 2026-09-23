@@ -133,6 +133,31 @@ class SummitTest {
             parseFromCsvFileLine(entryNotInList.toString(), CSV_FILE_VERSION)
         )
     }
+
+    @Test
+    @Throws(Exception::class)
+    fun parseConnectedActivityIdsFromLegacyPlacesAndV2Field() {
+        // Legacy v1 line: connected activity referenced via an ac_id: token in places
+        val legacyLine =
+            "2024-03-03;Große Reibn Tag 2;Skitour;1709566527019;28.46;35452;2340;2368;40.7;47.4718857742846;12.973065488040447;0;1;;Part1,Part2;K2-Ski;ac_id:1709566524164,Schneidstein,Windschattenkopf;Deutschland,Österreich"
+        val fromLegacy = parseFromCsvFileLine(legacyLine, "v1")
+        Assert.assertEquals(
+            listOf("Schneidstein", "Windschattenkopf"),
+            fromLegacy.places
+        )
+        Assert.assertEquals(listOf(1709566524164L), fromLegacy.connectedActivityIds)
+
+        // v2 line: explicit trailing connectedActivityIds field (kept) plus a
+        // legacy token in places (stripped and merged)
+        val v2Line =
+            "2024-03-03;Große Reibn Tag 2;Skitour;1709566527019;28.46;35452;2340;2368;40.7;47.4718857742846;12.973065488040447;0;1;;Part1,Part2;K2-Ski;ac_id:1709566524164,Schneidstein,Windschattenkopf;Deutschland,Österreich;999"
+        val fromV2 = parseFromCsvFileLine(v2Line, "v2")
+        Assert.assertEquals(listOf("Schneidstein", "Windschattenkopf"), fromV2.places)
+        Assert.assertEquals(
+            listOf(1709566524164L, 999L),
+            fromV2.connectedActivityIds
+        )
+    }
     @Test
     @Throws(Exception::class)
     fun parseGarminDataFromCsvFileLineWithNegativeCoordinates() {

@@ -34,6 +34,17 @@ class Converters {
     }
 
     @TypeConverter
+    fun fromLongList(list: List<Long>?): String? {
+        return list?.joinToString(",")
+    }
+
+    @TypeConverter
+    fun stringToLongList(listAsString: String?): List<Long> {
+        return if (listAsString.isNullOrEmpty()) mutableListOf() else listAsString.split(",")
+            .map { it.toLong() }
+    }
+
+    @TypeConverter
     fun fromIntArrayList(list: MutableList<Int>?): String? {
         return list?.joinToString(",")
     }
