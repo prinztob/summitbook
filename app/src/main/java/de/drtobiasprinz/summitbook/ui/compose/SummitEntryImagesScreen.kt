@@ -36,7 +36,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -67,8 +68,8 @@ fun SummitEntryImagesScreen(
         return
     }
 
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp.dp
+    val containerSize = LocalWindowInfo.current.containerSize
+    val screenHeight = with(LocalDensity.current) { containerSize.height.toDp() }
 
     var showFullscreenViewer by rememberSaveable { mutableStateOf(false) }
     var selectedImageIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -229,7 +230,12 @@ fun FullscreenImageViewer(
                 }
 
                 // Image description overlay at the bottom
-                val context = LocalContext.current
+                val maslText = stringResource(R.string.masl)
+                val hmText = stringResource(R.string.hm)
+                val kmText = stringResource(R.string.km)
+                val imageDescription = remember(summit, pagerState.currentPage, maslText, hmText, kmText) {
+                    summit.getImageDescription(maslText, hmText, kmText, pagerState.currentPage)
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -238,10 +244,7 @@ fun FullscreenImageViewer(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = summit.getImageDescription(
-                            context.resources,
-                            pagerState.currentPage
-                        ),
+                        text = imageDescription,
                         style = MaterialTheme.typography.bodyLarge,
                         color = ChartTextLightGray
                     )

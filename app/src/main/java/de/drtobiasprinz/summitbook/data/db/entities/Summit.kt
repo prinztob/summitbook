@@ -302,16 +302,15 @@ class Summit(
         }
     }
 
-    fun getImageDescription(resources: Resources, index: Int): String {
-        return "${getDateAsString()}\n$name\n" + (if (elevationData.maxElevation != 0) "${elevationData.maxElevation} ${
-            resources.getString(
-                R.string.masl
-            )
-        }\n" else "") + (if (elevationData.elevationGain != 0) "${elevationData.elevationGain} ${
-            resources.getString(
-                R.string.hm
-            )
-        }\n" else "") + (if (kilometers != 0.0) "$kilometers ${resources.getString(R.string.km)}\n" else "") + "#${index + 1}\n"
+    fun getImageDescription(resources: Resources, index: Int): String = getImageDescription(
+        masl = resources.getString(R.string.masl),
+        hm = resources.getString(R.string.hm),
+        km = resources.getString(R.string.km),
+        index = index
+    )
+
+    fun getImageDescription(masl: String, hm: String, km: String, index: Int): String {
+        return "${getDateAsString()}\n$name\n" + (if (elevationData.maxElevation != 0) "${elevationData.maxElevation} $masl\n" else "") + (if (elevationData.elevationGain != 0) "${elevationData.elevationGain} $hm\n" else "") + (if (kilometers != 0.0) "$kilometers $km\n" else "") + "#${index + 1}\n"
     }
 
     override fun toString(): String {

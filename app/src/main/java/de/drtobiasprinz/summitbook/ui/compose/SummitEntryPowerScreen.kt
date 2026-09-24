@@ -34,6 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -94,7 +96,9 @@ fun SummitEntryPowerScreen(
         }
     }
 
-    val chartHeight = (configuration.screenHeightDp * 0.65f).dp
+    val chartHeight = with(LocalDensity.current) {
+        (LocalWindowInfo.current.containerSize.height * 0.65f).toDp()
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),

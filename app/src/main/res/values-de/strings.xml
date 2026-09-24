@@ -475,6 +475,9 @@
     <string name="sec">sec</string>
     <string name="delete_coordinates">Lösche Koordinaten und GPS Track</string>
     <string name="delete_coordinates_message">Sind Sie sicher, dass sie die selectierten Koordinaten und den hinzugefügten GPS Track löschen möchten ?</string>
+    <string name="search_address_hint">Ort oder Adresse suchen</string>
+    <string name="garmin_download_failed">Download von Garmin fehlgeschlagen</string>
+    <string name="error_loading_gpx">Die ausgewählte GPX-Datei konnte nicht geladen werden</string>
     <string name="apply">Anwenden</string>
     <string name="set_to_default">Auf Default setzen</string>
     <string name="set_user_pwd">Bitte setzen Sie Benutzername und Passowrt für Garmin connect in den Settings</string>
@@ -645,6 +648,9 @@
     <string name="no_additional_data_available">Keine zusätzlichen Date vorhanden</string>
     <string name="new_value">Neuer Wert</string>
     <string name="old_value">Alter Wert</string>
+    <string name="recalculate_failed">Erneute Berechnung fehlgeschlagen</string>
+    <string name="delete_gpx_data_title">Daten löschen?</string>
+    <string name="delete_gpx_data_message">Die gespeicherten Analysedaten dieser Aktivität werden gelöscht und die zusätzlichen Werte zurückgesetzt.</string>
     <string name="start">Start</string>
     <string name="stop">Stop</string>
     <string name="update_segment_entry">Update segment entry</string>

@@ -62,6 +62,10 @@ class CustomMapViewToAllowScrolling : MapView {
 
     var osMapRoute: Polyline? = null
 
+    private var summitMarker: Marker? = null
+
+    private var boundingBoxPolyline: Polyline? = null
+
     /**
      * Adds a marker and optional GPS track to the map for a summit entry.
      *
@@ -113,8 +117,11 @@ class CustomMapViewToAllowScrolling : MapView {
             onTrackPointSelected = onTrackPointSelected
         )
 
-        // Add marker to overlays after track to ensure it's drawn on top
+        // Add marker to overlays after track to ensure it's drawn on top;
+        // replace the previous one so repeated calls do not stack markers
+        summitMarker?.let { overlays.remove(it) }
         marker?.let { overlays.add(it) }
+        summitMarker = marker
 
         return marker
     }
@@ -128,6 +135,8 @@ class CustomMapViewToAllowScrolling : MapView {
         polyline.outlinePaint?.color = Color.BLACK
         polyline.outlinePaint?.strokeWidth = 6f
         polyline.setPoints(trackBoundingBox.getGeoPoints())
+        boundingBoxPolyline?.let { overlayManager?.remove(it) }
+        boundingBoxPolyline = polyline
         this.overlayManager?.add(polyline)
     }
 
