@@ -1257,23 +1257,26 @@ class MainActivityCompose : ComponentActivity(),
                 }
                 loadingState.value = false
                 when (result) {
-                    is GarminSyncResult.Success -> {
-                        updater.persistSyncWindow()
-                        val message = getString(
-                            if (result.hasNewActivities) {
-                                R.string.update_done_new_summits
-                            } else {
-                                R.string.update_done
-                            }
-                        )
-                        snackbarHostState?.showSnackbar(
-                            message,
-                            duration = SnackbarDuration.Long
-                        )
-                        if (result.hasNewActivities) {
-                            navigateTo(Destination.NewSummits)
-                        }
+                is GarminSyncResult.Success -> {
+                    updater.persistSyncWindow()
+                    // Navigate before showing the snackbar: showSnackbar suspends
+                    // until the snackbar is dismissed/timed out, which would
+                    // otherwise delay showing the new activities.
+                    if (result.hasNewActivities) {
+                        navigateTo(Destination.NewSummits)
                     }
+                    val message = getString(
+                        if (result.hasNewActivities) {
+                            R.string.update_done_new_summits
+                        } else {
+                            R.string.update_done
+                        }
+                    )
+                    snackbarHostState?.showSnackbar(
+                        message,
+                        duration = SnackbarDuration.Long
+                    )
+                }
                     is GarminSyncResult.Failed -> {
                         val retry = snackbarHostState?.showSnackbar(
                             getString(R.string.garmin_connect_failed, result.message ?: ""),
@@ -1462,9 +1465,7 @@ class MainActivityCompose : ComponentActivity(),
                     exportCalculatedData
                 )
                 val targetUri = resultData?.data
-                if (targetUri == null) {
-                    throw IllegalStateException(getString(R.string.export_no_target))
-                }
+                    ?: throw IllegalStateException(getString(R.string.export_no_target))
                 withContext(Dispatchers.IO) {
                     contentResolver.openOutputStream(targetUri)?.let {
                         writer.writeToZipFile(it)
@@ -1539,7 +1540,7 @@ class MainActivityCompose : ComponentActivity(),
                         segments
                     )
                     // Collect summits during import so they can be saved in one
-                    // batch afterwards instead of triggering N flow re-emissions
+                    // batch afterward instead of triggering N flow re-emissions
                     reader.saveSummit = { isEdit, summit ->
                         if (isEdit) {
                             synchronized(updatedSummits) { updatedSummits.add(summit) }

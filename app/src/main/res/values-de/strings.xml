@@ -73,8 +73,8 @@
     <string name="value_with_kmh">%1$s km/h</string>
     <string name="value_with_m">%1$s m</string>
     <string name="value_with_h">%1$s Std.</string>
-    <string name="total_height_meters">Gesammte Höhenmeter</string>
-    <string name="total_kilometers">Gesammte Kilometer</string>
+    <string name="total_height_meters">Höhenmeter</string>
+    <string name="total_kilometers">Kilometer</string>
     <string name="total_activities">Anzahl Aktivitäten</string>
     <string name="total_summits">Anzahl Gipfel</string>
     <string name="achievement">Zielerreichung im gewählten Jahr</string>
@@ -148,6 +148,8 @@
     <string name="grit">Grit (Schwierigkeit)</string>
     <string name="trainingLoad">Traingbelastung</string>
     <string name="add_image">Füge Bild hinzu</string>
+    <string name="add_images">Füge Bilder hinzu</string>
+    <string name="error_first_image_must_be_landscape">Das erste Bild muss im Querformat sein</string>
     <string name="with_image">Mit Bild</string>
     <string name="set_date">Setzte Datum</string>
     <string name="set_activity">Setzte Aktivität</string>
@@ -217,7 +219,6 @@
     <string name="power_profile_compare_label">"Vergleichsgipfel"</string>
     <string name="power_profile_max_label">"Rekord"</string>
     <string name="power_profile_min_label">"Negativrekord"</string>
-    <string name="delete_image">"Lösche Bild von Gipfel %1$s."</string>
     <string name="delete_image_text">"Sind Sie sicher, dass sie das Bild löschen möchten?"</string>
     <string name="delete_image_done">"Bild wurde gelöscht."</string>
 
@@ -445,8 +446,6 @@
     <string name="add_image_canceled">Bildauswahl abgebrochen</string>
     <string name="summits_shown">Nur %1$s von %2$s Gipfel werden gezeigt, da das Limit an Trackpunkten überschritten wurde.</string>
     <string name="close">Schließen</string>
-    <string name="horizontal">Horizontal</string>
-    <string name="vertical">Vertikal</string>
     <string name="move_up">Nach oben</string>
     <string name="move_down">Nach unten</string>
     <string name="no_image_selected">Kein Bild ausgewählt</string>
@@ -652,7 +651,6 @@
     <string name="bulk_update_progress_title">Dateien werden aktualisiert</string>
     <string name="bulk_update_progress_message">Verarbeite %1$d von %2$d Dateien…</string>
     <string name="bulk_update_complete">Massenaktualisierung abgeschlossen: %1$d erfolgreich, %2$d fehlgeschlagen</string>
-    <string name="road_type_country_road">Nicht ehr benützt</string>
     <string name="time_interval">Interval</string>
     <string name="filter_options">Filter Optione</string>
     <string name="range_filters">Filter Bereiche</string>
@@ -786,6 +784,12 @@
     <string name="no_images_available">Keine Bilder vorhanden</string>
     <string name="failed_to_load_image">Bild konnte nicht geladen werden</string>
     <string name="view_on_garmin_connect">Auf Garmin Connect ansehen</string>
+    <string name="delete_image_action">Bild löschen</string>
+    <string name="delete_image_title">Bild von %1$s löschen?</string>
+    <string name="error_cropping_image">Bild konnte nicht zugeschnitten werden</string>
+    <string name="error_delete_image">Bild konnte nicht gelöscht werden</string>
+    <string name="no_images_yet">Dieser Gipfel hat noch keine Bilder</string>
+    <string name="max_images_notice">Es können nur die ersten %1$d Bilder ausgewählt werden</string>
     <plurals name="overview_activities">
         <item quantity="one">%1$d Aktivität, %2$s km, %3$s hm</item>
         <item quantity="other">%1$d Aktivitäten, %2$s km, %3$s hm</item>
@@ -793,6 +797,10 @@
     <plurals name="overview_summits">
         <item quantity="one">%1$d Gipfel, %2$s km, %3$s hm</item>
         <item quantity="other">%1$d Gipfel, %2$s km, %3$s hm</item>
+    </plurals>
+    <plurals name="images_added">
+        <item quantity="one">Bild hinzugefügt</item>
+        <item quantity="other">%1$d Bilder hinzugefügt</item>
     </plurals>
 </resources>
 

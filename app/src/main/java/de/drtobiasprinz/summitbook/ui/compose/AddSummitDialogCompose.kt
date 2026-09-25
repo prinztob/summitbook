@@ -34,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -558,6 +559,9 @@ fun DatePickerField(
             onClickLabel = stringResource(R.string.tour_date)
         ) { showDatePicker() }
     ) {
+        // A readOnly TextField is still focusable and consumes tap events, which
+        // would prevent the Box clickable above from ever firing. A disabled
+        // field is fully non-interactive, so taps pass through to the Box.
         OutlinedTextField(
             value = value,
             onValueChange = { },
@@ -565,7 +569,13 @@ fun DatePickerField(
             leadingIcon = {
                 Icon(painterResource(R.drawable.baseline_today_black_24dp), null)
             },
-            readOnly = true,
+            enabled = false,
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
             modifier = Modifier.fillMaxWidth()
         )
     }

@@ -14,6 +14,7 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -1224,10 +1225,13 @@ fun EditTextSetting(
         OutlinedTextField(
             value = text,
             onValueChange = {},
-            readOnly = true,
+            // A disabled field is fully non-interactive, so the clickable
+            // modifier receives taps; the colors keep the normal enabled look.
+            enabled = false,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 56.dp, end = 8.dp, bottom = 8.dp),
+                .padding(start = 56.dp, end = 8.dp, bottom = 8.dp)
+                .clickable { onClick() },
             colors = OutlinedTextFieldDefaults.colors(
                 disabledTextColor = MaterialTheme.colorScheme.onSurface,
                 disabledBorderColor = MaterialTheme.colorScheme.outline,

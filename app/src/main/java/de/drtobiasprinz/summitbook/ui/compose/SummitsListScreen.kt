@@ -614,8 +614,7 @@ fun SummitCard(
                     refreshTrigger++
                 }
                 job
-            },
-            onShowSnackbar = onShowSnackbar
+            }
         )
     }
 
