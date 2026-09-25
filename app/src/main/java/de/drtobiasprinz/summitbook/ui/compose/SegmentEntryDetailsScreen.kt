@@ -6,8 +6,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,10 +40,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,6 +66,8 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.model.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.data.model.GpsTrack
 import de.drtobiasprinz.summitbook.data.model.TrackColor
+import de.drtobiasprinz.summitbook.ui.theme.SegmentEndRed
+import de.drtobiasprinz.summitbook.ui.theme.SegmentStartGreen
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -93,16 +95,15 @@ fun SegmentEntryDetailsScreen(
     showMountainPasses: Boolean = false,
     onNavigateBack: () -> Unit,
     onDeleteEntry: (SegmentEntry) -> Unit,
-    onEditEntry: (SegmentEntry) -> Unit  // Add this parameter
+    onEditEntry: (SegmentEntry) -> Unit,  // Add this parameter
+    onShowSnackbar: (String) -> Unit = {}
 ) {
     var uiState by remember { mutableStateOf(SegmentEntryDetailsUiState()) }
-    var trackPoints by remember {
-        mutableStateOf<List<Pair<TrackPoint, ExtensionFromYaml>>>(
-            emptyList()
-        )
-    }
+    var selectedEntryId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDeleteDialog by remember { mutableStateOf<SegmentEntry?>(null) }
-    val scope = rememberCoroutineScope()
+    var selectedSortOption by rememberSaveable(stateSaver = enumSaver<SegmentSortOptions>()) {
+        mutableStateOf(SegmentSortOptions.AverageVelocity)
+    }
 
     // Process data when it changes
     LaunchedEffect(
@@ -110,93 +111,91 @@ fun SegmentEntryDetailsScreen(
         summits,
         segmentDetailsId,
         segmentEntryId,
-        uiState.selectedSortOption,
+        selectedEntryId,
+        selectedSortOption,
         showMountainPasses,
         mountainPasses
     ) {
         if (showMountainPasses) {
-            val sortedPasses = when (uiState.selectedSortOption) {
-                SegmentSortOptions.AverageVelocity -> mountainPasses.sortedBy { it.kilometers / it.duration }.reversed()
+            val sortedPasses = when (selectedSortOption) {
+                SegmentSortOptions.AverageVelocity -> mountainPasses.sortedBy { it.speedKmh() }.reversed()
                 SegmentSortOptions.Date -> mountainPasses.sortedBy { it.getDateAsString() }.reversed()
                 SegmentSortOptions.AverageHeartRate -> mountainPasses.sortedBy { it.averageHeartRate }.reversed()
                 SegmentSortOptions.Power -> mountainPasses.sortedBy { it.averagePower }.reversed()
             }
-            val currentEntryId = if (segmentEntryId == -1L) {
-                sortedPasses.firstOrNull()?.entryId ?: -1L
-            } else {
-                segmentEntryId
-            }
+            val currentEntryId = selectedEntryId
+                ?: segmentEntryId.takeIf { it != -1L }
+                ?: sortedPasses.firstOrNull()?.entryId
+                ?: -1L
             val currentEntry = sortedPasses.firstOrNull { it.entryId == currentEntryId }
+                ?: sortedPasses.firstOrNull()
             val relevantSummits = mountainPasses.mapNotNull { entry ->
                 summits.firstOrNull { it.activityId == entry.activityId }
             }
             val currentSummit = relevantSummits.firstOrNull { it.activityId == currentEntry?.activityId }
 
-            if (currentSummit != null) {
-                withContext(Dispatchers.IO) {
-                    currentSummit.setGpsTrack(useSimplifiedTrack = false)
-                    trackPoints = currentSummit.gpsTrack?.trackPoints ?: emptyList()
-                }
-            }
             uiState = uiState.copy(
                 segment = null,
                 currentEntry = currentEntry,
                 relevantSummits = relevantSummits,
                 currentSummit = currentSummit,
-                trackPoints = trackPoints,
-                isLoading = false
+                isLoading = if (currentEntry != null && currentSummit != null) uiState.isLoading else false
             )
         } else {
             val segmentToUse =
                 segments.firstOrNull { it.segmentDetails.segmentDetailsId == segmentDetailsId }
 
             if (segmentToUse != null) {
-                val currentEntryId = if (segmentEntryId == -1L) {
-                    // Get first entry based on current sorting
-                    segmentToUse.segmentEntries.let {
-                        when (uiState.selectedSortOption) {
-                            SegmentSortOptions.AverageVelocity -> it.sortedBy { entry -> entry.kilometers / entry.duration }
-                                .reversed()
+                val sortedEntries = segmentToUse.segmentEntries.let {
+                    when (selectedSortOption) {
+                        SegmentSortOptions.AverageVelocity -> it.sortedBy { entry -> entry.speedKmh() }
+                            .reversed()
 
-                            SegmentSortOptions.Date -> it.sortedBy { entry -> entry.getDateAsString() }
-                                .reversed()
+                        SegmentSortOptions.Date -> it.sortedBy { entry -> entry.getDateAsString() }
+                            .reversed()
 
-                            SegmentSortOptions.AverageHeartRate -> it.sortedBy { entry -> entry.averageHeartRate }
-                                .reversed()
+                        SegmentSortOptions.AverageHeartRate -> it.sortedBy { entry -> entry.averageHeartRate }
+                            .reversed()
 
-                            SegmentSortOptions.Power -> it.sortedBy { entry -> entry.averagePower }
-                                .reversed()
-                        }
-                    }.firstOrNull()?.entryId ?: -1L
-                } else {
-                    segmentEntryId
+                        SegmentSortOptions.Power -> it.sortedBy { entry -> entry.averagePower }
+                            .reversed()
+                    }
                 }
 
-                val currentEntry =
-                    segmentToUse.segmentEntries.firstOrNull { it.entryId == currentEntryId }
+                val currentEntryId = selectedEntryId
+                    ?: segmentEntryId.takeIf { it != -1L }
+                    ?: sortedEntries.firstOrNull()?.entryId
+                    ?: -1L
+
+                val currentEntry = sortedEntries.firstOrNull { it.entryId == currentEntryId }
+                    ?: sortedEntries.firstOrNull()
                 val relevantSummits = segmentToUse.segmentEntries.mapNotNull { entry ->
                     summits.firstOrNull { it.activityId == entry.activityId }
                 }
                 val currentSummit =
                     relevantSummits.firstOrNull { it.activityId == currentEntry?.activityId }
 
-                // Load track points for the current summit
-                if (currentSummit != null) {
-                    withContext(Dispatchers.IO) {
-                        currentSummit.setGpsTrack(useSimplifiedTrack = false)
-                        trackPoints = currentSummit.gpsTrack?.trackPoints ?: emptyList()
-                    }
-                }
                 uiState = uiState.copy(
                     segment = segmentToUse,
                     currentEntry = currentEntry,
                     relevantSummits = relevantSummits,
                     currentSummit = currentSummit,
-                    trackPoints = trackPoints,
-                    isLoading = false
+                    isLoading = if (currentEntry != null && currentSummit != null) uiState.isLoading else false
                 )
             }
         }
+    }
+
+    LaunchedEffect(uiState.currentEntry?.entryId, uiState.currentSummit?.activityId) {
+        uiState = uiState.copy(trackPoints = emptyList())
+        val currentSummit = uiState.currentSummit ?: return@LaunchedEffect
+        withContext(Dispatchers.IO) {
+            currentSummit.setGpsTrack(useSimplifiedTrack = false)
+        }
+        uiState = uiState.copy(
+            trackPoints = currentSummit.gpsTrack?.trackPoints ?: emptyList(),
+            isLoading = false
+        )
     }
 
     Scaffold(
@@ -244,30 +243,17 @@ fun SegmentEntryDetailsScreen(
                 uiState = uiState,
                 showMountainPasses = showMountainPasses,
                 mountainPasses = mountainPasses,
+                selectedSortOption = selectedSortOption,
                 onDeleteEntry = { entry -> showDeleteDialog = entry },
                 onEditEntry = onEditEntry,  // Pass the edit function
                 onSortOptionSelected = { option ->
-                    uiState = uiState.copy(selectedSortOption = option)
+                    selectedSortOption = option
                 },
                 onEntrySelected = { entry ->
-                    uiState = uiState.copy(currentEntry = entry, isLoading = true)
-                    val currentSummit =
-                        uiState.relevantSummits.firstOrNull { it.activityId == entry.activityId }
-                    uiState = uiState.copy(currentSummit = currentSummit)
-
-                    scope.launch {
-                        withContext(Dispatchers.IO) {
-                            currentSummit?.setGpsTrack(
-                                useSimplifiedTrack = false,
-                                updateTrack = true
-                            )
-                        }
-                        uiState = uiState.copy(
-                            trackPoints = currentSummit?.gpsTrack?.trackPoints ?: emptyList(),
-                            isLoading = false
-                        )
-                    }
+                    selectedEntryId = entry.entryId
+                    uiState = uiState.copy(currentEntry = entry)
                 },
+                onShowSnackbar = onShowSnackbar,
                 modifier = Modifier.padding(paddingValues)
             )
         }
@@ -283,7 +269,8 @@ fun SegmentEntryDetailsScreen(
                 onDeleteEntry(entry)
                 showDeleteDialog = null
             },
-            onDismiss = { showDeleteDialog = null }
+            onDismiss = { showDeleteDialog = null },
+            onShowSnackbar = onShowSnackbar
         )
     }
 }
@@ -296,10 +283,12 @@ fun SegmentEntryDetailsContent(
     uiState: SegmentEntryDetailsUiState,
     showMountainPasses: Boolean,
     mountainPasses: List<SegmentEntry>,
+    selectedSortOption: SegmentSortOptions,
     onDeleteEntry: (SegmentEntry) -> Unit,
     onEditEntry: (SegmentEntry) -> Unit,  // Add this parameter
     onSortOptionSelected: (SegmentSortOptions) -> Unit,
     onEntrySelected: (SegmentEntry) -> Unit,
+    onShowSnackbar: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -329,17 +318,15 @@ fun SegmentEntryDetailsContent(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        Log.i(
-            "SegmentEntryDetailsScreen",
-            "summit: ${summit?.getDateAsString()}, trackPoints. ${trackPoints.size}"
-        )
+
         // Map section
         if (summit != null && entry != null) {
             SegmentMapSection(
                 summit = summit,
                 segmentEntry = entry,
                 trackPoints = trackPoints,
-                segmentDetailsId = uiState.segment?.segmentDetails?.segmentDetailsId ?: -1L
+                segmentDetailsId = uiState.segment?.segmentDetails?.segmentDetailsId ?: -1L,
+                onShowSnackbar = onShowSnackbar
             )
         } else {
             // Show placeholder or loading indicator
@@ -351,7 +338,7 @@ fun SegmentEntryDetailsContent(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (uiState.isLoading) "Loading map..." else "Map not available",
+                    text = if (uiState.isLoading) stringResource(R.string.loading_map) else stringResource(R.string.chart_not_available),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -376,7 +363,7 @@ fun SegmentEntryDetailsContent(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (uiState.isLoading) "Loading chart..." else "Chart not available",
+                    text = if (uiState.isLoading) stringResource(R.string.loading_map) else stringResource(R.string.chart_not_available),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -387,7 +374,7 @@ fun SegmentEntryDetailsContent(
         // Sorting controls
         SortingControls(
             sortOptions = SegmentSortOptions.entries.toList(),
-            selectedOption = uiState.selectedSortOption,
+            selectedOption = selectedSortOption,
             onSortOptionSelected = onSortOptionSelected
         )
 
@@ -395,8 +382,8 @@ fun SegmentEntryDetailsContent(
 
         // Segment entries list
         if (showMountainPasses) {
-            val sortedPasses = when (uiState.selectedSortOption) {
-                SegmentSortOptions.AverageVelocity -> mountainPasses.sortedBy { it.kilometers / it.duration }.reversed()
+            val sortedPasses = when (selectedSortOption) {
+                SegmentSortOptions.AverageVelocity -> mountainPasses.sortedBy { it.speedKmh() }.reversed()
                 SegmentSortOptions.Date -> mountainPasses.sortedBy { it.getDateAsString() }.reversed()
                 SegmentSortOptions.AverageHeartRate -> mountainPasses.sortedBy { it.averageHeartRate }.reversed()
                 SegmentSortOptions.Power -> mountainPasses.sortedBy { it.averagePower }.reversed()
@@ -410,8 +397,8 @@ fun SegmentEntryDetailsContent(
             )
         } else {
             uiState.segment?.let { segment ->
-                val sortedEntries = when (uiState.selectedSortOption) {
-                    SegmentSortOptions.AverageVelocity -> segment.segmentEntries.sortedBy { it.kilometers / it.duration }
+                val sortedEntries = when (selectedSortOption) {
+                    SegmentSortOptions.AverageVelocity -> segment.segmentEntries.sortedBy { it.speedKmh() }
                         .reversed()
 
                     SegmentSortOptions.Date -> segment.segmentEntries.sortedBy { it.getDateAsString() }
@@ -573,9 +560,17 @@ fun SegmentMapSection(
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
     segmentEntry: SegmentEntry,
     segmentDetailsId: Long,
+    onShowSnackbar: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var hasGpsTrack by remember(summit.activityId) { mutableStateOf(false) }
+    val zoomed = remember(segmentEntry.entryId) { mutableStateOf(false) }
+
+    LaunchedEffect(summit.activityId) {
+        hasGpsTrack = withContext(Dispatchers.IO) { summit.hasGpsTrack() }
+    }
 
     Column(
         modifier = modifier
@@ -591,13 +586,15 @@ fun SegmentMapSection(
             SummitBookMapView(
                 update = { view ->
                     // Update map with track and markers
-                    updateMapContent(view, summit, trackPoints, segmentEntry)
+                    updateMapContent(view, trackPoints, segmentEntry, hasGpsTrack, zoomed)
                 },
                 extraControls = { map ->
                     // Map controls
                     MapControls(
                         onUpdateSnapshot = {
-                            takeScreenshot(map, segmentDetailsId, context)
+                            scope.launch {
+                                takeScreenshot(map, segmentDetailsId, context, onShowSnackbar)
+                            }
                         },
                         modifier = Modifier.align(Alignment.TopEnd)
                     )
@@ -657,12 +654,12 @@ fun SegmentChartSection(
         val lines = mutableListOf<Pair<Float, ComposeColor>>()
         if (segmentEntry.startPositionInTrack < trackPoints.size) {
             trackPoints[segmentEntry.startPositionInTrack].second.distance?.toFloat()?.let { distance ->
-                lines.add(distance to ComposeColor(0xFF00FF00.toInt())) // Green for start
+                lines.add(distance to SegmentStartGreen) // Green for start
             }
         }
         if (segmentEntry.endPositionInTrack < trackPoints.size) {
             trackPoints[segmentEntry.endPositionInTrack].second.distance?.toFloat()?.let { distance ->
-                lines.add(distance to ComposeColor(0xFFFF0000.toInt())) // Red for end
+                lines.add(distance to SegmentEndRed) // Red for end
             }
         }
         lines
@@ -816,7 +813,7 @@ fun SegmentEntryCard(
                             value = String.format(
                                 LocalConfiguration.current.locales[0],
                                 "%.1f",
-                                entry.kilometers / entry.duration * 60
+                                entry.speedKmh()
                             ),
                             label = stringResource(R.string.kmh)
                         )
@@ -845,7 +842,7 @@ fun SegmentEntryCard(
                             value = String.format(
                                 LocalConfiguration.current.locales[0],
                                 "%.1f",
-                                entry.kilometers / entry.duration * 60
+                                entry.speedKmh()
                             ),
                             label = stringResource(R.string.kmh)
                         )
@@ -918,20 +915,20 @@ fun SegmentEntryDeleteDialog(
     entry: SegmentEntry,
     segmentName: String,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onShowSnackbar: (String) -> Unit
 ) {
-    val context = LocalContext.current
     val deleteEntry = stringResource(R.string.delete_entry)
-    val deleteCancel = stringResource(R.string.delete_cancel)
+    val dateText = entry.getDateAsString() ?: ""
+    val title = if (segmentName.isNotBlank()) {
+        stringResource(R.string.segment_details_title, segmentName, dateText)
+    } else {
+        dateText
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                text = stringResource(
-                    R.string.delete_entry,
-                    "$segmentName on ${entry.getDateAsString()}"
-                )
-            )
+            Text(text = title)
         },
         text = {
             Text(text = stringResource(R.string.delete_entry_text))
@@ -939,24 +936,13 @@ fun SegmentEntryDeleteDialog(
         confirmButton = {
             TextButton(onClick = {
                 onConfirm()
-                Toast.makeText(
-                    context,
-                    String.format(deleteEntry, "$segmentName on ${entry.getDateAsString()}"),
-                    Toast.LENGTH_SHORT
-                ).show()
+                onShowSnackbar(String.format(deleteEntry, title))
             }) {
                 Text(text = stringResource(android.R.string.ok))
             }
         },
         dismissButton = {
-            TextButton(onClick = {
-                onDismiss()
-                Toast.makeText(
-                    context,
-                    deleteCancel,
-                    Toast.LENGTH_SHORT
-                ).show()
-            }) {
+            TextButton(onClick = onDismiss) {
                 Text(text = stringResource(android.R.string.cancel))
             }
         }
@@ -973,7 +959,6 @@ data class SegmentEntryDetailsUiState(
     val currentSummit: Summit? = null,
     val trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>> = emptyList(),
     val isLoading: Boolean = true,
-    val selectedSortOption: SegmentSortOptions = SegmentSortOptions.AverageVelocity,
     val selectedTrackColor: TrackColor = TrackColor.Elevation
 )
 
@@ -989,18 +974,24 @@ enum class SegmentSortOptions(val stringId: Int) {
 
 // Helper functions (these would need to be implemented based on the original Fragment logic)
 
+private fun SegmentEntry.speedKmh(): Double =
+    if (duration > 0) kilometers / duration * 60.0 else 0.0
+
 /**
  * Update map content with track and markers
  */
 private fun updateMapContent(
     mapView: MapView,
-    summit: Summit,
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
-    segmentEntry: SegmentEntry
+    segmentEntry: SegmentEntry,
+    hasGpsTrack: Boolean,
+    zoomed: MutableState<Boolean>
 ) {
-    // Clear existing overlays
-    mapView.overlays?.clear()
-    mapView.overlayManager?.clear()
+    // Clear only the overlays this screen owns (track polylines, markers) and
+    // keep the default overlays (scale bar, rotation gesture, copyright)
+    mapView.overlays.removeAll {
+        it is Polyline || it is org.osmdroid.views.overlay.Marker
+    }
 
     // Add start and end markers
     addMarker(
@@ -1024,8 +1015,8 @@ private fun updateMapContent(
     )
 
     // Draw GPX track if available
-    if (summit.hasGpsTrack()) {
-        drawGpxTrack(mapView, trackPoints, segmentEntry)
+    if (hasGpsTrack) {
+        drawGpxTrack(mapView, trackPoints, segmentEntry, zoomed)
     }
 
     mapView.invalidate()
@@ -1037,7 +1028,8 @@ private fun updateMapContent(
 private fun drawGpxTrack(
     mapView: MapView,
     trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
-    segmentEntry: SegmentEntry
+    segmentEntry: SegmentEntry,
+    zoomed: MutableState<Boolean>
 ) {
     try {
         // Add the full GPX track to the map
@@ -1056,10 +1048,13 @@ private fun drawGpxTrack(
             osMapRoute.setPoints(geoPoints)
             mapView.overlays.add(osMapRoute)
 
-            // Zoom to the bounding box of the track segment
-            val boundingBox = BoundingBox.fromGeoPoints(geoPoints)
-            mapView.post {
-                mapView.zoomToBoundingBox(boundingBox, false, 50)
+            // Zoom to the bounding box of the track segment, but only once per entry
+            if (!zoomed.value) {
+                val boundingBox = BoundingBox.fromGeoPoints(geoPoints)
+                mapView.post {
+                    mapView.zoomToBoundingBox(boundingBox, false, 50)
+                }
+                zoomed.value = true
             }
         }
     } catch (e: Exception) {
@@ -1125,24 +1120,25 @@ private fun addMarker(
 /**
  * Take a screenshot of the map view
  */
-private fun takeScreenshot(
+private suspend fun takeScreenshot(
     view: MapView,
     segmentDetailsId: Long,
-    context: Context
+    context: Context,
+    onShowSnackbar: (String) -> Unit
 ) {
     try {
         val bitmap = createBitmap(view.width, view.height)
         val canvas = Canvas(bitmap)
         view.draw(canvas)
 
-        val outputStream = FileOutputStream(Segment.getMapScreenshotFile(segmentDetailsId))
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
-        outputStream.flush()
-        outputStream.close()
+        withContext(Dispatchers.IO) {
+            val outputStream = FileOutputStream(Segment.getMapScreenshotFile(segmentDetailsId))
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
+            outputStream.flush()
+            outputStream.close()
+        }
 
-        Toast.makeText(
-            context, context.getString(R.string.screenshot_taken), Toast.LENGTH_SHORT
-        ).show()
+        onShowSnackbar(context.getString(R.string.screenshot_taken))
     } catch (io: FileNotFoundException) {
         io.printStackTrace()
     } catch (e: IOException) {

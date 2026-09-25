@@ -147,6 +147,9 @@ fun SettingsScreen(
     var onDeviceMapsFolderName by remember { mutableStateOf("") }
 
     // Dialog states
+    var fileCounts by remember { mutableStateOf<Map<FileRowType, Int>>(emptyMap()) }
+    var missingSimplifiedCount by remember { mutableIntStateOf(0) }
+
     var showProgressDialog by remember { mutableStateOf(false) }
     var progressDialogMessage by remember { mutableStateOf("") }
     var progressDialogCurrent by remember { mutableStateOf<Int?>(null) }
@@ -192,9 +195,18 @@ fun SettingsScreen(
         disableStartUpTasks = prefs.getBoolean(Keys.PREF_DEBUG, false)
 
         // Update on-device maps state
-        onDeviceMapFiles = FileHelper.getOnDeviceMapFiles(context)
-        onDeviceMbTilesFiles = FileHelper.getOnDeviceMbtilesFiles(context)
-        onDeviceMapsFolderName = FileHelper.getOnDeviceMapsFolderName(context)
+        withContext(Dispatchers.IO) {
+            onDeviceMapFiles = FileHelper.getOnDeviceMapFiles(context)
+            onDeviceMbTilesFiles = FileHelper.getOnDeviceMbtilesFiles(context)
+            onDeviceMapsFolderName = FileHelper.getOnDeviceMapsFolderName(context)
+        }
+    }
+
+    LaunchedEffect(summits) {
+        withContext(Dispatchers.IO) {
+            fileCounts = FileRowType.entries.associateWith { countFilesToUpdate(summits, it) }
+            missingSimplifiedCount = summits.count { isSimplifiedTrackMissing(it) }
+        }
     }
 
     // Launcher for selecting on-device maps folder
@@ -207,11 +219,17 @@ fun SettingsScreen(
             if (uri != null) {
                 FileHelper.makeUriPersistent(context, uri)
                 PreferencesHelper.saveOnDeviceMapsFolder(uri.toString())
-                onDeviceMapFiles = FileHelper.getOnDeviceMapFiles(context)
-                onDeviceMbTilesFiles = FileHelper.getOnDeviceMbtilesFiles(context)
-                onDeviceMapsFolderName = FileHelper.getOnDeviceMapsFolderName(context)
-                if (onDeviceMapFiles.isEmpty()) {
-                    showEmptyFolderError = true
+                coroutineScope.launch {
+                    val mapFiles = withContext(Dispatchers.IO) {
+                        val files = FileHelper.getOnDeviceMapFiles(context)
+                        onDeviceMapFiles = files
+                        onDeviceMbTilesFiles = FileHelper.getOnDeviceMbtilesFiles(context)
+                        onDeviceMapsFolderName = FileHelper.getOnDeviceMapsFolderName(context)
+                        files
+                    }
+                    if (mapFiles.isEmpty()) {
+                        showEmptyFolderError = true
+                    }
                 }
             }
         }
@@ -289,7 +307,11 @@ fun SettingsScreen(
 
         val garminMFA = File(AppState.storage?.absolutePath, ".garminconnect")
         if (!checked && garminMFA.exists()) {
-            garminMFA.deleteRecursively()
+            coroutineScope.launch {
+                withContext(Dispatchers.IO) {
+                    garminMFA.deleteRecursively()
+                }
+            }
         }
     }
 
@@ -550,8 +572,6 @@ fun SettingsScreen(
         SettingsCategory(title = stringResource(R.string.pref_bulk_file_management_title)) {
             val bulkUpdateComplete = stringResource(R.string.bulk_update_complete)
             val loadingCanceled = stringResource(R.string.loading_canceled)
-            val fileCounts = FileRowType.entries.associateWith { countFilesToUpdate(summits, it) }
-            val missingSimplifiedCount = summits.count { isSimplifiedTrackMissing(it) }
             val lastVisibleFileRowType =
                 fileCounts.filterValues { it > 0 }.keys.lastOrNull()
 
@@ -1033,9 +1053,12 @@ private fun generateHeatmapForSportGroup(
 
                 withContext(Dispatchers.Main) {
                     if (outputFile.exists()) {
-                        onComplete(true, "Heatmap saved to: ${outputFile.absolutePath}")
+                        onComplete(
+                            true,
+                            context.getString(R.string.heatmap_saved_to, outputFile.absolutePath)
+                        )
                     } else {
-                        onComplete(false, "Failed to generate heatmap")
+                        onComplete(false, context.getString(R.string.heatmap_generation_failed))
                     }
                 }
             }
@@ -1045,7 +1068,7 @@ private fun generateHeatmapForSportGroup(
         } catch (e: Exception) {
             Log.e("SettingsScreen", "Failed to generate heatmap", e)
             withContext(Dispatchers.Main) {
-                onComplete(false, "Error: ${e.message}")
+                onComplete(false, context.getString(R.string.error_message, e.message ?: ""))
             }
         }
     }
@@ -1155,7 +1178,13 @@ fun EditTextSetting(
 
     fun commit() {
         if (text != value) {
-            onValueChange(text)
+            // Numeric settings are consumed with toInt() downstream; never
+            // persist a blank value — fall back to the current value instead.
+            if (numeric && text.isBlank()) {
+                text = value
+            } else {
+                onValueChange(text)
+            }
         }
     }
 
@@ -1463,7 +1492,8 @@ fun DateSetting(
                     context,
                     { _, selectedYear, selectedMonth, selectedDay ->
                         val newDate = Calendar.getInstance()
-                        newDate.set(selectedYear, selectedMonth, selectedDay)
+                        newDate.set(selectedYear, selectedMonth, selectedDay, 0, 0, 0)
+                        newDate.set(Calendar.MILLISECOND, 0)
                         onDateChange(newDate.time)
                     },
                     year, month, day

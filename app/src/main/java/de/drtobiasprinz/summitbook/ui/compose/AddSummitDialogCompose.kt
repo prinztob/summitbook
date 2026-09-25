@@ -36,7 +36,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -74,6 +74,7 @@ import de.drtobiasprinz.summitbook.data.maps.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.sync.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
 import de.drtobiasprinz.summitbook.ui.theme.RecordGreen
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -169,8 +170,14 @@ fun AddSummitDialogCompose(
         }
     }
 
-    // Load existing summit data if editing
-    LaunchedEffect(summitId, summitsFromDatabase) {
+    // Load existing summit data if editing. Keyed on summitId only and guarded
+    // by a loaded-flag so background DB emissions (Garmin sync, pull-to-refresh)
+    // never re-initialize the fields while the user is typing. The flag resets
+    // automatically when summitId changes (dialog reuse).
+    var summitLoadedFromDb by rememberSaveable(summitId) { mutableStateOf(false) }
+    LaunchedEffect(summitId) {
+        if (summitLoadedFromDb) return@LaunchedEffect
+        summitLoadedFromDb = true
         summitsFromDatabase.firstOrNull { it.id == summitId }?.let { summit ->
             entity = summit
             summitName = entity.name
@@ -212,24 +219,26 @@ fun AddSummitDialogCompose(
         }
     }
 
-    LaunchedEffect(temporaryGpxFile) {
-        if (uri != null) {
-            scope.launch {
-                handleGpxTrackUpload(
-                    context, uri, entity, isLoading = { isLoading = it },
-                    onUpdate = { name, km, hm, elev, dur ->
-                        summitName = name
-                        kilometers = km
-                        heightMeter = hm
-                        topElevation = elev
-                        duration = dur
-                    },
-                    onFileUpdate = { temporaryGpxFile = it },
-                    onPointUpdate = { latLngHighestPoint = it }
-                )
-            }
-        }
-
+    // Process a shared/opened GPX uri exactly once. Keyed on uri (not on
+    // temporaryGpxFile, which the pipeline itself writes) so the upload never
+    // runs twice on open nor re-processes the old uri after a picker upload.
+    // The flag survives recomposition and resets automatically when uri changes.
+    var sharedUriProcessed by rememberSaveable(uri) { mutableStateOf(false) }
+    LaunchedEffect(uri) {
+        if (uri == null || sharedUriProcessed) return@LaunchedEffect
+        sharedUriProcessed = true
+        handleGpxTrackUpload(
+            context, uri, entity, isLoading = { isLoading = it },
+            onUpdate = { name, km, hm, elev, dur ->
+                summitName = name
+                kilometers = km
+                heightMeter = hm
+                topElevation = elev
+                duration = dur
+            },
+            onFileUpdate = { temporaryGpxFile = it },
+            onPointUpdate = { latLngHighestPoint = it }
+        )
     }
 
     // Checking for on-device map files queries storage via SAF; keep that off
@@ -241,10 +250,10 @@ fun AddSummitDialogCompose(
         }
     }
 
-    // Validation
+    // Validation ("." or "0" in kilometers must not pass as a silent 0.0)
     val isSaveEnabled = summitName.isNotBlank() &&
             heightMeter.isNotBlank() &&
-            kilometers.isNotBlank() &&
+            kilometers.toDoubleOrNull()?.let { it > 0.0 } == true &&
             (isBookmark || tourDate.isNotBlank())
 
     Dialog(
@@ -297,7 +306,9 @@ fun AddSummitDialogCompose(
                         onItemSelected = { summitName = it },
                         label = stringResource(if (isBookmark) R.string.add_new_bookmark else R.string.summit_name_hint),
                         icon = R.drawable.baseline_landscape_black_24dp,
-                        options = summitsFromDatabase.flatMap { it.places + it.name }.distinct(),
+                        options = remember(summitsFromDatabase) {
+                            summitsFromDatabase.flatMap { it.places + it.name }.distinct()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         onValueChange = { summitName = it }
                     )
@@ -349,7 +360,7 @@ fun AddSummitDialogCompose(
                                     }
                                 }
                             ) {
-                                Icon(painterResource(R.drawable.baseline_refresh_24), "Update name")
+                                Icon(painterResource(R.drawable.baseline_refresh_24), stringResource(R.string.update_name))
                             }
                         }
                     }
@@ -405,11 +416,13 @@ fun AddSummitDialogCompose(
                     if (!isBookmark) {
                         // Build places suggestions (real places only; connected
                         // activities are managed in their own section below)
-                        val placesSuggestions = summitsFromDatabase.flatMap {
-                            it.places + it.name
-                        }.filter {
-                            it.isNotEmpty() && !it.startsWith(CONNECTED_ACTIVITY_PREFIX)
-                        }.distinct()
+                        val placesSuggestions = remember(summitsFromDatabase) {
+                            summitsFromDatabase.flatMap {
+                                it.places + it.name
+                            }.filter {
+                                it.isNotEmpty() && !it.startsWith(CONNECTED_ACTIVITY_PREFIX)
+                            }.distinct()
+                        }
 
                         AdditionalDataFields(
                             topElevation, { topElevation = it },
@@ -475,17 +488,17 @@ fun AddSummitDialogCompose(
                                         garminDataFromGarminConnect, connectedActivityIds
                                     )
 
-                                    onSaveSummit(isEdit, entity).invokeOnCompletion {
-                                        temporaryGpxFile?.let { tempFile ->
-                                            if (tempFile.exists() && entity.sportType != SportType.IndoorTrainer) {
-                                                tempFile.copyTo(
-                                                    entity.getGpsTrackPath().toFile(),
-                                                    overwrite = true
-                                                )
+                                    try {
+                                        onSaveSummit(isEdit, entity).invokeOnCompletion { cause ->
+                                            if (cause is CancellationException) {
+                                                return@invokeOnCompletion
                                             }
+                                            isLoading = false
+                                            onDismiss()
                                         }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
                                         isLoading = false
-                                        onDismiss()
                                     }
                                 }
                             },
@@ -539,7 +552,12 @@ fun DatePickerField(
         ).show()
     }
 
-    Box(modifier = modifier.clickable { showDatePicker() }) {
+    Box(
+        modifier = modifier.clickable(
+            role = Role.Button,
+            onClickLabel = stringResource(R.string.tour_date)
+        ) { showDatePicker() }
+    ) {
         OutlinedTextField(
             value = value,
             onValueChange = { },
@@ -548,13 +566,6 @@ fun DatePickerField(
                 Icon(painterResource(R.drawable.baseline_today_black_24dp), null)
             },
             readOnly = true,
-            enabled = false,
-            colors = TextFieldDefaults.colors(
-                disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                disabledContainerColor = MaterialTheme.colorScheme.surface
-            ),
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -659,6 +670,22 @@ fun AdditionalDataFields(
     onCommentsExpandedChange: (Boolean) -> Unit,
     placesSuggestions: List<String> = emptyList()
 ) {
+    // Suggestion sources: computed once per summits-list/locale instead of on
+    // every recomposition.
+    val participantSuggestions = remember(summitsFromDatabase) {
+        summitsFromDatabase.flatMap { it.participants }.distinct()
+    }
+    val placeSuggestionsFallback = remember(summitsFromDatabase) {
+        summitsFromDatabase.flatMap { it.places + it.name }.distinct()
+    }
+    val countrySuggestions = remember {
+        Locale.getAvailableLocales().map { it.displayCountry }.distinct()
+            .filter { it.isNotEmpty() }
+    }
+    val equipmentSuggestions = remember(summitsFromDatabase) {
+        summitsFromDatabase.flatMap { it.equipments }.distinct()
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // Elevation & Speed Section
         ExpandableSection(
@@ -742,14 +769,14 @@ fun AdditionalDataFields(
                         R.drawable.ic_baseline_people_24,
                         participants,
                         onParticipantsChange,
-                        summitsFromDatabase.flatMap { it.participants }.distinct()
+                        participantSuggestions
                     )
                     AutoCompleteComposeChipField(
                         stringResource(R.string.place_hint),
                         R.drawable.outline_distance_24,
                         places,
                         onPlacesChange,
-                        placesSuggestions.ifEmpty { summitsFromDatabase.flatMap { it.places + it.name }.distinct() },
+                        placesSuggestions.ifEmpty { placeSuggestionsFallback },
                         peakIcon = R.drawable.outline_landscape_2_24,
                         nonPeakIcon = R.drawable.outline_landscape_2_off_24,
                         peaksList = peaks.map { it.name },
@@ -760,14 +787,14 @@ fun AdditionalDataFields(
                         R.drawable.ic_baseline_flag_24,
                         countries,
                         onCountriesChange,
-                        Locale.getAvailableLocales().map { it.displayCountry }.distinct()
-                            .filter { it.isNotEmpty() })
+                        countrySuggestions
+                    )
                     AutoCompleteComposeChipField(
                         stringResource(R.string.equipments),
                         R.drawable.ic_baseline_handyman_24,
                         equipments,
                         onEquipmentsChange,
-                        summitsFromDatabase.flatMap { it.equipments }.distinct()
+                        equipmentSuggestions
                     )
                 }
             }

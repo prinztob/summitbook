@@ -43,8 +43,11 @@ import de.drtobiasprinz.summitbook.data.analytics.TimeIntervalPower
 import kotlin.math.log10
 import kotlin.math.pow
 import androidx.compose.ui.graphics.Color as ComposeColor
+import de.drtobiasprinz.summitbook.ui.theme.ChartBlue
 import de.drtobiasprinz.summitbook.ui.theme.ChartGold
+import de.drtobiasprinz.summitbook.ui.theme.ChartRed
 import de.drtobiasprinz.summitbook.ui.theme.ChartTextDarkGray
+import de.drtobiasprinz.summitbook.ui.theme.ChartTextLightGray
 import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
 import de.drtobiasprinz.summitbook.ui.theme.DarkGrid
 import de.drtobiasprinz.summitbook.ui.theme.RecordGreen
@@ -98,6 +101,18 @@ fun PowerLineChart(
         getExtremaChartDataPointsMin(extremaValuesAllSummits)
     }
 
+    // Key the series by the interval's seconds value so lookups stay aligned
+    // even when the main/compare series skip intervals the extrema series include
+    val maxPowerBySeconds = remember(maxPowerData) {
+        maxPowerData.associateBy { it.originalSeconds }
+    }
+    val minPowerBySeconds = remember(minPowerData) {
+        minPowerData.associateBy { it.originalSeconds }
+    }
+    val comparePowerBySeconds = remember(comparePowerData) {
+        comparePowerData.associateBy { it.originalSeconds }
+    }
+
     // Calculate chart bounds
     val allDataPoints = mainPowerData + comparePowerData + maxPowerData + minPowerData
     val minX = scaleLog(1.0)
@@ -119,28 +134,28 @@ fun PowerLineChart(
 
     // Calculate colors for each point based on performance
     val pointColors = remember(mainPowerData, maxPowerData, minPowerData) {
-        mainPowerData.mapIndexed { index, chartEntry ->
-            val maxEntry = maxPowerData.getOrNull(index)
-            val minEntry = minPowerData.getOrNull(index)
+        mainPowerData.map { chartEntry ->
+            val maxEntry = maxPowerBySeconds[chartEntry.originalSeconds]
+            val minEntry = minPowerBySeconds[chartEntry.originalSeconds]
             if (maxEntry != null && minEntry != null) {
                 when {
                     chartEntry.y >= maxEntry.y -> ChartGold // Gold
-                    chartEntry.y < minEntry.y -> ComposeColor.Red
+                    chartEntry.y < minEntry.y -> ChartRed
                     else -> {
                         val fraction =
                             1f - ((chartEntry.y - minEntry.y) / (maxEntry.y - minEntry.y))
-                        lerp(ComposeColor.Green, ComposeColor.Red, fraction)
+                        lerp(RecordGreen, ChartRed, fraction)
                     }
                 }
             } else {
-                ComposeColor.Blue
+                ChartBlue
             }
         }
     }
 
-    val textColor = if (isDark) ComposeColor.White else ComposeColor.Black
-    val gridColor = if (isDark) ChartTextDarkGray else ComposeColor.LightGray
-    val chartBackgroundColor = if (isDark) DarkCanvas else ComposeColor.White
+    val textColor = if (isDark) ChartTextLightGray else ChartTextDarkGray
+    val gridColor = if (isDark) ChartTextDarkGray else ChartTextLightGray
+    val chartBackgroundColor = if (isDark) DarkCanvas else SurfaceLightGray
 
     // State for selected data point - reset when chart data or bounds change
     var selectedPointIndex by remember(mainPowerData, extremaValuesAllSummits) { mutableStateOf<Int?>(null) }
@@ -164,7 +179,7 @@ fun PowerLineChart(
                             // Find the closest data point to the tap
                             val chartWidth = size.width
                             val chartHeight = size.height
-                            val bottomPadding = 40f
+                            val bottomPadding = 40f * density
                             val effectiveChartHeight = chartHeight - bottomPadding
                             val tapTolerancePx = 50.dp.toPx()
 
@@ -190,7 +205,7 @@ fun PowerLineChart(
                 val chartWidth = size.width
                 val chartHeight = size.height
                 // Reserve space for x-axis labels at the bottom
-                val bottomPadding = 40f
+                val bottomPadding = 40f * density
                 val effectiveChartHeight = chartHeight - bottomPadding
 
                 // Draw grid lines and labels
@@ -217,7 +232,7 @@ fun PowerLineChart(
                         maxY = maxY,
                         chartWidth = chartWidth,
                         chartHeight = effectiveChartHeight,
-                        fillColor = ComposeColor.Blue.copy(alpha = 0.2f)
+                        fillColor = ChartBlue.copy(alpha = 0.2f)
                     )
                 }
 
@@ -231,10 +246,10 @@ fun PowerLineChart(
                         maxY = maxY,
                         chartWidth = chartWidth,
                         chartHeight = effectiveChartHeight,
-                        color = ComposeColor.Gray,
+                        color = ChartTextDarkGray,
                         lineWidth = 2.5f,
                         filled = true,
-                        fillColor = ComposeColor.Gray.copy(alpha = 0.2f)
+                        fillColor = ChartTextDarkGray.copy(alpha = 0.2f)
                     )
                 }
 
@@ -260,9 +275,9 @@ fun PowerLineChart(
             selectedPointIndex?.let { index ->
                 if (index < mainPowerData.size) {
                     val point = mainPowerData[index]
-                    val maxPoint = maxPowerData.getOrNull(index)
-                    val minPoint = minPowerData.getOrNull(index)
-                    val comparePoint = comparePowerData.getOrNull(index)
+                    val maxPoint = maxPowerBySeconds[point.originalSeconds]
+                    val minPoint = minPowerBySeconds[point.originalSeconds]
+                    val comparePoint = comparePowerBySeconds[point.originalSeconds]
 
                     PowerChartTooltip(
                         point = point,
@@ -284,10 +299,10 @@ fun PowerLineChart(
                 LegendItemData(powerProfileLabel, textColor),
                 if (comparePowerData.isNotEmpty()) LegendItemData(
                     powerProfileCompareLabel,
-                    ComposeColor.Gray
+                    ChartTextDarkGray
                 ) else null,
-                LegendItemData(powerProfileMaxLabel, ComposeColor.Blue),
-                LegendItemData(powerProfileMinLabel, ComposeColor.Blue)
+                LegendItemData(powerProfileMaxLabel, RecordGreen),
+                LegendItemData(powerProfileMinLabel, ChartRed)
             ),
             textColor = textColor,
             modifier = Modifier.fillMaxWidth()
@@ -377,7 +392,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPowerSeries(
             // Draw selection ring
             if (isSelected) {
                 drawCircle(
-                    color = ComposeColor.White,
+                    color = ChartTextLightGray,
                     radius = radius + 2.dp.toPx(),
                     center = point,
                     style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
@@ -470,12 +485,12 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPowerGridAndLab
 
     val xLabelPaint = Paint().apply {
         color = textColor.toArgb()
-        textSize = 24f
+        textSize = 24f * density
         textAlign = Paint.Align.CENTER
     }
     val yLabelPaint = Paint().apply {
         color = textColor.toArgb()
-        textSize = 24f
+        textSize = 24f * density
         textAlign = Paint.Align.LEFT
     }
 
@@ -595,7 +610,7 @@ fun PowerChartTooltip(
             minPoint?.let {
                 Text(
                     text = "$minLabel: ${it.y.toInt()} $wattLabel",
-                    color = ComposeColor.Red,
+                    color = ChartRed,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -604,7 +619,7 @@ fun PowerChartTooltip(
             comparePoint?.let {
                 Text(
                     text = "$compareLabel: ${it.y.toInt()} $wattLabel",
-                    color = ComposeColor.Gray,
+                    color = ChartTextDarkGray,
                     style = MaterialTheme.typography.bodySmall
                 )
             }

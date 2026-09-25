@@ -38,6 +38,7 @@ import de.drtobiasprinz.summitbook.data.model.TrackColor
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.osmdroid.config.Configuration
@@ -60,11 +61,32 @@ class CustomMapViewToAllowScrolling : MapView {
 
     var updateBoundingBox = false
 
+    /**
+     * Optional host callback for transient user messages (e.g. track taps or
+     * road-info status). When set, messages are routed there instead of Toasts.
+     */
+    var onShowMessage: ((String) -> Unit)? = null
+
+    private var fallbackRoadInfoScope: CoroutineScope? = null
+
+    private val mainScope = CoroutineScope(Dispatchers.Main.immediate)
+
+    private var onDeviceMapFilesCache: Pair<String, List<DocumentFile>>? = null
+
     var osMapRoute: Polyline? = null
 
     private var summitMarker: Marker? = null
 
     private var boundingBoxPolyline: Polyline? = null
+
+    private fun showMessage(context: Context, message: String, duration: Int = Toast.LENGTH_SHORT) {
+        val callback = onShowMessage
+        if (callback != null) {
+            callback(message)
+        } else {
+            Toast.makeText(context, message, duration).show()
+        }
+    }
 
     /**
      * Adds a marker and optional GPS track to the map for a summit entry.
@@ -183,11 +205,11 @@ class CustomMapViewToAllowScrolling : MapView {
             osMapRoute?.setOnClickListener { _, _, eventPos ->
                 if (mMapView != null) {
                     if (summit != null) {
-                        Toast.makeText(
+                        showMessage(
                             mMapView.context,
                             "${summit.getDateAsString()} ${summit.name}",
                             Toast.LENGTH_LONG
-                        ).show()
+                        )
                     }
 
                     val closestPoint = trackPoints.withIndex().minByOrNull { (_, trackPoint) ->
@@ -244,7 +266,7 @@ class CustomMapViewToAllowScrolling : MapView {
             mMapView?.overlayManager?.add(osMapRoute)
 
         } catch (e: NullPointerException) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to add GPS track", e)
         }
     }
 
@@ -270,7 +292,7 @@ class CustomMapViewToAllowScrolling : MapView {
             overlayManager?.add(additionalRoute)
             additionalRoute
         } catch (e: NullPointerException) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to add additional GPS track", e)
             null
         }
     }
@@ -325,7 +347,7 @@ class CustomMapViewToAllowScrolling : MapView {
             }
             return marker
         } catch (e: NullPointerException) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to add marker", e)
             return null
         }
     }
@@ -378,7 +400,12 @@ class CustomMapViewToAllowScrolling : MapView {
             return // Already exists, don't add another one
         }
         
-        val coroutineScope = scope ?: CoroutineScope(Dispatchers.Main)
+        val coroutineScope = if (scope != null) {
+            scope
+        } else {
+            fallbackRoadInfoScope?.cancel()
+            CoroutineScope(Dispatchers.Main).also { fallbackRoadInfoScope = it }
+        }
         val mapEventsReceiver = object : org.osmdroid.events.MapEventsReceiver {
             override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
                 Log.i(
@@ -386,7 +413,7 @@ class CustomMapViewToAllowScrolling : MapView {
                     "singleTapConfirmedHelper: position: $p, ${this@CustomMapViewToAllowScrolling.zoomLevelDouble}"
                 )
                 if (p != null) {
-                    showRoadInfoAtPosition(context, p, coroutineScope)
+                    showRoadInfoAtPosition(context, p, coroutineScope, onShowMessage)
                 }
                 return false // Don't consume the event, allow it to pass through to other overlays
             }
@@ -405,33 +432,46 @@ class CustomMapViewToAllowScrolling : MapView {
         val fDialogTitle = context.getString(R.string.select_map_type)
         // getMapProviders() queries the maps folder via DocumentFile; keep that
         // storage access off the main thread (StrictMode DiskReadViolation)
-        Thread {
-            val mapProviders = getMapProviders(context)
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                if (!isAttachedToWindow) return@post
-                val builder = AlertDialog.Builder(context)
-                builder.setTitle(fDialogTitle)
-                builder.setSingleChoiceItems(
-                    mapProviders.map { context.getString(it.textId) }.toTypedArray(),
-                    mapProviders.indexOf(selectedItem)
-                ) { dialog: DialogInterface, item: Int ->
-                    selectedItem = mapProviders[item]
-                    setTileProvider()
-                    onSelected()
-                    dialog.dismiss()
-                }
-
-                val fMapTypeDialog = builder.create()
-                fMapTypeDialog.setCanceledOnTouchOutside(true)
-                fMapTypeDialog.show()
+        mainScope.launch {
+            val mapProviders = withContext(Dispatchers.IO) { getMapProviders(context) }
+            if (!isAttachedToWindow) return@launch
+            val builder = AlertDialog.Builder(context)
+            builder.setTitle(fDialogTitle)
+            builder.setSingleChoiceItems(
+                mapProviders.map { context.getString(it.textId) }.toTypedArray(),
+                mapProviders.indexOf(selectedItem)
+            ) { dialog: DialogInterface, item: Int ->
+                selectedItem = mapProviders[item]
+                persistSelectedMapProvider()
+                setTileProvider()
+                onSelected()
+                dialog.dismiss()
             }
-        }.start()
+
+            val fMapTypeDialog = builder.create()
+            fMapTypeDialog.setCanceledOnTouchOutside(true)
+            fMapTypeDialog.show()
+        }
+    }
+
+    /**
+     * Memoized [FileHelper.getOnDeviceMapFiles]: repeated calls (e.g. from
+     * Compose update lambdas) must not re-query storage. Cached per maps
+     * folder URI so a newly selected folder invalidates the cache.
+     */
+    private fun getOnDeviceMapFilesCached(): List<DocumentFile> {
+        val folderUri = PreferencesHelper.loadOnDeviceMapsFolder()
+        val cache = onDeviceMapFilesCache
+        if (cache != null && cache.first == folderUri) {
+            return cache.second
+        }
+        val mapFiles = FileHelper.getOnDeviceMapFiles(context)
+        onDeviceMapFilesCache = folderUri to mapFiles
+        return mapFiles
     }
 
     fun setTileProviderDependingOnSummitSportType(sportType: SportType) {
-        if (PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
-                .isNotEmpty()
-        ) {
+        if (PreferencesHelper.loadOnDeviceMaps() && getOnDeviceMapFilesCached().isNotEmpty()) {
             selectedItem = getSportTypeForMapProviders(sportType, context)
         } else if (FileHelper.getOnDeviceMbtilesFiles(context).isNotEmpty()) {
             selectedItem = MapProvider.MBTILES
@@ -441,7 +481,7 @@ class CustomMapViewToAllowScrolling : MapView {
 
     fun setTileProvider() {
         enableRoadInfoOnMapClick()
-        val mapFiles: List<DocumentFile> = FileHelper.getOnDeviceMapFiles(context)
+        val mapFiles: List<DocumentFile> = getOnDeviceMapFilesCached()
         if (selectedItem.isOffline) {
             if (selectedItem == MapProvider.MBTILES) {
                 Log.i(TAG, "Use MBTILES map")
@@ -476,16 +516,26 @@ class CustomMapViewToAllowScrolling : MapView {
         }
     }
 
+    override fun onDetach() {
+        fallbackRoadInfoScope?.cancel()
+        fallbackRoadInfoScope = null
+        mainScope.cancel()
+        super.onDetach()
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(ev: MotionEvent): Boolean {
         when (ev.action) {
             MotionEvent.ACTION_DOWN ->                 // Disallow ScrollView to intercept touch events.
                 this.parent.requestDisallowInterceptTouchEvent(true)
 
-            MotionEvent.ACTION_UP ->                 // Allow ScrollView to intercept touch events.
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->                 // Allow ScrollView to intercept touch events again.
                 this.parent.requestDisallowInterceptTouchEvent(false)
         }
-        if (updateBoundingBox) {
+        if (updateBoundingBox &&
+            (ev.action == MotionEvent.ACTION_UP || ev.action == MotionEvent.ACTION_CANCEL)
+        ) {
+            // Persist the bounding box once, when the gesture ends
             cleanupAndSaveCurrentStatus()
         }
         return super.onTouchEvent(ev)
@@ -511,7 +561,26 @@ class CustomMapViewToAllowScrolling : MapView {
         const val TAG = "CustomMap"
         const val LINE_WIDTH_BIG = 16f
         const val COLOR_POLYLINE_STATIC = Color.BLUE
-        var selectedItem = MapProvider.OPENTOPO
+        // Restored from preferences so an explicitly selected map type survives
+        // process death. Programmatic (auto-detected) writes must not call
+        // [persistSelectedMapProvider].
+        var selectedItem: MapProvider = loadPersistedMapProvider()
+
+        /**
+         * Persists the explicitly user-selected map type. Only call this for
+         * explicit user choices (map type dialog), never for programmatic
+         * auto-detection by sport type or offline-map availability.
+         */
+        fun persistSelectedMapProvider() {
+            sharedPreferences.edit { putString(Keys.PREF_MAP_PROVIDER, selectedItem.name) }
+        }
+
+        private fun loadPersistedMapProvider(): MapProvider {
+            return runCatching {
+                val stored = sharedPreferences.getString(Keys.PREF_MAP_PROVIDER, null)
+                MapProvider.entries.firstOrNull { it.name == stored } ?: MapProvider.OPENTOPO
+            }.getOrDefault(MapProvider.OPENTOPO)
+        }
 
         /**
          * When true, offline MapsForge maps are rendered with the plain built-in
@@ -539,28 +608,37 @@ class CustomMapViewToAllowScrolling : MapView {
         }
 
         fun showRoadInfoAtPosition(
-            context: Context, geoPoint: GeoPoint, scope: CoroutineScope
+            context: Context, geoPoint: GeoPoint, scope: CoroutineScope,
+            onShowMessage: ((String) -> Unit)? = null
         ) {
-            Toast.makeText(context, context.getString(R.string.querying_road_info), Toast.LENGTH_SHORT).show()
+            val queryingMessage = context.getString(R.string.querying_road_info)
+            if (onShowMessage != null) {
+                onShowMessage(queryingMessage)
+            } else {
+                Toast.makeText(context, queryingMessage, Toast.LENGTH_SHORT).show()
+            }
             scope.launch {
                 try {
-                    var info: Pair<RoadInfo?, LocationInfo?>? = null
-                    withContext(Dispatchers.IO) {
+                    val info = withContext(Dispatchers.IO) {
                         OfflineMapAnalyzer.from(context).use { analyzer ->
-                            info = analyzer.getInfosForLocation(geoPoint)
+                            analyzer.getInfosForLocation(geoPoint)
                         }
                     }
 
                     // Show result on main thread
-                    if (info != null) {
-                        withContext(Dispatchers.Main) {
-                            showMapPointInfo(context, geoPoint, info)
-                        }
+                    withContext(Dispatchers.Main) {
+                        showMapPointInfo(context, geoPoint, info)
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error querying road info", e)
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, context.getString(R.string.road_info_error, e.message ?: ""), Toast.LENGTH_SHORT).show()
+                        val errorMessage =
+                            context.getString(R.string.road_info_error, e.message ?: "")
+                        if (onShowMessage != null) {
+                            onShowMessage(errorMessage)
+                        } else {
+                            Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
@@ -570,26 +648,33 @@ class CustomMapViewToAllowScrolling : MapView {
             context: Context, geoPoint: GeoPoint, info: Pair<RoadInfo?, LocationInfo?>
         ) {
             val message = buildString {
-                append("lat: ${geoPoint.latitude}, long: ${geoPoint.longitude}\n\n")
+                append(context.getString(R.string.road_info_lat, geoPoint.latitude.toString()))
+                append(", ")
+                append(context.getString(R.string.road_info_long, geoPoint.longitude.toString()))
+                append("\n\n")
 
                 info.first?.let { roadInfo ->
-                    append("Road Info:\n")
+                    append(context.getString(R.string.road_info_heading))
+                    append("\n")
                     append(roadInfo.toString())
                     append("\n\n")
-                    append("Mapped Surface: ${Surface.mapFromRoadInfo(roadInfo)}\n")
-                    append("Mapped RoadType: ${RoadType.mapFromRoadInfo(roadInfo)}\n\n")
+                    append(context.getString(R.string.road_info_surface, Surface.mapFromRoadInfo(roadInfo)))
+                    append("\n")
+                    append(context.getString(R.string.road_info_road_type, RoadType.mapFromRoadInfo(roadInfo)))
+                    append("\n\n")
                 }
 
                 info.second?.let { locationInfo ->
-                    append("Location Info:\n")
+                    append(context.getString(R.string.road_info_location_heading))
+                    append("\n")
                     append(locationInfo.toString())
                 }
             }
 
             AlertDialog.Builder(context)
-                .setTitle("Road and location Information")
+                .setTitle(R.string.road_info_title)
                 .setMessage(message)
-                .setPositiveButton("OK", null)
+                .setPositiveButton(android.R.string.ok, null)
                 .show()
         }
 

@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.graphics.toColorInt
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.LegendEntry
@@ -46,7 +45,14 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import androidx.compose.ui.graphics.Color as ComposeColor
+import de.drtobiasprinz.summitbook.ui.theme.ChartBlue
+import de.drtobiasprinz.summitbook.ui.theme.ChartGold
+import de.drtobiasprinz.summitbook.ui.theme.ChartRed
+import de.drtobiasprinz.summitbook.ui.theme.ChartTextDarkGray
+import de.drtobiasprinz.summitbook.ui.theme.ChartTextLightGray
 import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
+import de.drtobiasprinz.summitbook.ui.theme.HighlightRedSoft
+import de.drtobiasprinz.summitbook.ui.theme.RecordGreen
 
 /**
  * Data class representing a data series in the chart
@@ -90,9 +96,9 @@ fun PerformanceLineChart(
 
     var lineChart by remember { mutableStateOf<LineChart?>(null) }
 
-    val textColor = if (isDark) Color.WHITE else Color.BLACK
-    val gridColor = if (isDark) "#444444".toColorInt() else Color.LTGRAY
-    val chartBackgroundColor = if (isDark) "#1E1E1E".toColorInt() else Color.WHITE
+    val textColor = (if (isDark) ChartTextLightGray else ChartTextDarkGray).toArgb()
+    val gridColor = if (isDark) ChartTextDarkGray.toArgb() else Color.LTGRAY
+    val chartBackgroundColor = if (isDark) DarkCanvas.toArgb() else Color.WHITE
 
     Column(
         modifier = modifier
@@ -114,7 +120,7 @@ fun PerformanceLineChart(
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_refresh_24),
                     contentDescription = stringResource(R.string.cd_reset_zoom),
-                    tint = if (isDark) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color.Black,
+                    tint = if (isDark) ChartTextLightGray else ChartTextDarkGray,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -220,10 +226,11 @@ private fun updateLineChart(
     lineChart.axisRight.axisMaximum = maxY + 1
 
     // Set Y-axis formatter
+    val axisNumberFormat = numberFormat.clone() as NumberFormat
     lineChart.axisLeft.valueFormatter = object : ValueFormatter() {
         override fun getFormattedValue(value: Float): String {
-            numberFormat.maximumFractionDigits = if (value > 99) 0 else 1
-            return "${numberFormat.format(value.toDouble())} ${graphType.unit}"
+            axisNumberFormat.maximumFractionDigits = if (value > 99) 0 else 1
+            return "${axisNumberFormat.format(value.toDouble())} ${graphType.unit}"
         }
     }
 
@@ -243,6 +250,7 @@ private fun updateLineChart(
     }
 
     // Process each series
+    var needsLegendRenderer = false
     series.forEach { chartSeries ->
         if (chartSeries.data.isNotEmpty()) {
             val entries = chartSeries.data.map { point ->
@@ -262,7 +270,7 @@ private fun updateLineChart(
                 }
 
                 if (chartSeries.filled && chartSeries.fillColor != null) {
-                    highLightColor = Color.rgb(244, 117, 117)
+                    highLightColor = HighlightRedSoft.toArgb()
                     setDrawFilled(true)
                     fillColor = chartSeries.fillColor.toArgb()
                     fillAlpha = (chartSeries.fillAlpha * 255).toInt()
@@ -274,11 +282,7 @@ private fun updateLineChart(
                         }
                         val boundaryDataSet = LineDataSet(boundaryEntries, "")
                         fillFormatter = MyFillFormatter(boundaryDataSet)
-                        lineChart.renderer = MyLineLegendRenderer(
-                            lineChart,
-                            lineChart.animator,
-                            lineChart.viewPortHandler
-                        )
+                        needsLegendRenderer = true
                     }
                 } else {
                     setDrawFilled(false)
@@ -289,6 +293,15 @@ private fun updateLineChart(
 
             dataSets.add(dataSet)
         }
+    }
+
+    // The legend renderer args are loop-invariant, so assign it only once
+    if (needsLegendRenderer) {
+        lineChart.renderer = MyLineLegendRenderer(
+            lineChart,
+            lineChart.animator,
+            lineChart.viewPortHandler
+        )
     }
 
     lineChart.data = LineData(dataSets)
@@ -311,7 +324,7 @@ private fun updateLineChart(
             9f,
             5f,
             null,
-            Color.rgb(255, 215, 0) // Gold
+            ChartGold.toArgb()
         ),
         LegendEntry(
             context.getString(R.string.better_then),
@@ -319,7 +332,7 @@ private fun updateLineChart(
             9f,
             5f,
             null,
-            Color.GREEN
+            RecordGreen.toArgb()
         ),
         LegendEntry(
             context.getString(R.string.forecast),
@@ -327,7 +340,7 @@ private fun updateLineChart(
             9f,
             5f,
             null,
-            Color.RED
+            ChartRed.toArgb()
         ),
         LegendEntry(
             context.getString(R.string.min_max_5_yrs),
@@ -335,7 +348,7 @@ private fun updateLineChart(
             9f,
             5f,
             null,
-            Color.BLUE
+            ChartBlue.toArgb()
         )
     )
     legend.setCustom(legendEntries)

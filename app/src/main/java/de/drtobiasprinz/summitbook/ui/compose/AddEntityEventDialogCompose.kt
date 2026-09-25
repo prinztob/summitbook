@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,7 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -46,13 +45,14 @@ fun AddEntityEventDialogCompose(
     entity: SummitEntitySummary,
     onDismiss: () -> Unit,
     onSaveEntityEvent: (Boolean, EntityEvent) -> Unit,
+    onShowSnackbar: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val isUpdate = entityEvent != null
 
     // State management
-    var eventDate by remember { mutableStateOf(entityEvent?.getDateAsString() ?: "") }
-    var description by remember { mutableStateOf(entityEvent?.description ?: "") }
+    var eventDate by rememberSaveable { mutableStateOf(entityEvent?.getDateAsString() ?: "") }
+    var description by rememberSaveable { mutableStateOf(entityEvent?.description ?: "") }
 
     // Validation
     val isSaveEnabled = eventDate.isNotBlank() && description.isNotBlank()
@@ -122,7 +122,7 @@ fun AddEntityEventDialogCompose(
                     Button(
                         onClick = {
                             onDismiss()
-                            Toast.makeText(context, cancelMessage, Toast.LENGTH_SHORT).show()
+                            onShowSnackbar(cancelMessage)
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
@@ -143,11 +143,7 @@ fun AddEntityEventDialogCompose(
                                 onDismiss()
                             } catch (e: ParseException) {
                                 e.printStackTrace()
-                                Toast.makeText(
-                                    context,
-                                    invalidDate,
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                onShowSnackbar(invalidDate)
                             }
                         },
                         enabled = isSaveEnabled,

@@ -30,6 +30,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -111,6 +112,7 @@ fun SummitEntryTrackScreen(
     }
     var usedItemsForColorCode by remember { mutableStateOf<List<TrackColor>>(emptyList()) }
     var alreadyZoomedOnTrack by rememberSaveable { mutableStateOf(false) }
+    var userPickedColor by rememberSaveable { mutableStateOf(false) }
     var showColorDialog by rememberSaveable { mutableStateOf(false) }
     var mapViewRef by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
     var locationOverlayRef by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
@@ -186,19 +188,23 @@ fun SummitEntryTrackScreen(
 
     // Update used items for color code
     LaunchedEffect(trackPoints) {
-        usedItemsForColorCode = TrackColor.entries.filter { trackColorEntry ->
-            trackPoints.any {
-                val value = trackColorEntry.f(it)
-                value != null && value != 0.0
+        usedItemsForColorCode = withContext(Dispatchers.Default) {
+            TrackColor.entries.filter { trackColorEntry ->
+                trackPoints.any {
+                    val value = trackColorEntry.f(it)
+                    value != null && value != 0.0
+                }
             }
         }
 
-        selectedCustomizeTrackItem =
-            if (TrackColor.Elevation in usedItemsForColorCode) {
-                TrackColor.Elevation
-            } else {
-                TrackColor.None
-            }
+        if (!userPickedColor) {
+            selectedCustomizeTrackItem =
+                if (TrackColor.Elevation in usedItemsForColorCode) {
+                    TrackColor.Elevation
+                } else {
+                    TrackColor.None
+                }
+        }
     }
 
     // Track point bookkeeping: O(n) scan, so compute it once per track
@@ -313,6 +319,15 @@ fun SummitEntryTrackScreen(
                         modifier = Modifier.align(Alignment.TopEnd)
                     )
                 }
+            } else if (!isAnalyzingTrack) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height((Resources.getSystem().displayMetrics.heightPixels * 0.6 / Resources.getSystem().displayMetrics.density).dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = stringResource(R.string.no_gps_data))
+                }
             }
 
             // Chart view
@@ -343,6 +358,7 @@ fun SummitEntryTrackScreen(
     // Color customization dialog
     if (showColorDialog) {
         TrackColorDialog(usedItems = usedItemsForColorCode, onItemSelected = { item ->
+            userPickedColor = true
             selectedCustomizeTrackItem = item
             showColorDialog = false
         }, onDismiss = { showColorDialog = false })
@@ -371,11 +387,18 @@ fun SummitEntryTrackMapView(
 ) {
     var mLocationOverlay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
     var mapCreatedView by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
+    var lastOverlayKey by remember { mutableStateOf<Any?>(null) }
+    var selectedPointMarker by remember { mutableStateOf<Marker?>(null) }
+    var lastMarkerIndex by remember { mutableStateOf<Int?>(null) }
 
     DisposableEffect(Unit) {
         onDispose {
             mLocationOverlay?.disableMyLocation()
         }
+    }
+
+    if (calculateBoundingBox && trackPoints.isNotEmpty()) {
+        SideEffect { onMapReady() }
     }
 
     // Discovering on-device maps reads preferences and SAF folder listings
@@ -442,63 +465,81 @@ fun SummitEntryTrackMapView(
             )
             view.layout(0, 0, view.measuredWidth, view.measuredHeight)
 
-            // Update map with track
-            view.overlays.clear()
-            mLocationOverlay?.let { view.overlays.add(it) }
-            view.addDefaultSettings()
+            // Rebuild the heavy track overlays only when the track data
+            // actually changed; a mere track point selection only refreshes
+            // the marker below.
+            val overlayKey = listOf(
+                trackPoints,
+                selectedTrackColor,
+                compareTrackPoints,
+                connectedTrackPoints,
+                summitToCompare != null
+            )
+            var rebuiltOverlays = false
+            if (lastOverlayKey != overlayKey) {
+                lastOverlayKey = overlayKey
+                rebuiltOverlays = true
 
-            if (summitToCompare != null) {
-                view.addAdditionalGpsTrack(
-                    trackPoints = compareTrackPoints,
-                    color = CompareTrackColor.toArgb()
-                )
-            } else {
-                connectedTrackPoints.forEach {
+                // Update map with track
+                view.overlays.clear()
+                mLocationOverlay?.let { view.overlays.add(it) }
+                view.addDefaultSettings()
+
+                if (summitToCompare != null) {
                     view.addAdditionalGpsTrack(
-                        trackPoints = it,
+                        trackPoints = compareTrackPoints,
                         color = CompareTrackColor.toArgb()
                     )
+                } else {
+                    connectedTrackPoints.forEach {
+                        view.addAdditionalGpsTrack(
+                            trackPoints = it,
+                            color = CompareTrackColor.toArgb()
+                        )
+                    }
                 }
-            }
 
-            view.addTrackAndMarker(
-                summit,
-                trackPoints,
-                true,
-                selectedTrackColor,
-                true,
-                addInfoWindow = false,
-                calculateBondingBox = calculateBoundingBox,
-                onTrackPointSelected = onTrackPointSelected
-            )
+                view.addTrackAndMarker(
+                    summit,
+                    trackPoints,
+                    true,
+                    selectedTrackColor,
+                    true,
+                    addInfoWindow = false,
+                    calculateBondingBox = calculateBoundingBox,
+                    onTrackPointSelected = onTrackPointSelected
+                )
+            }
 
             // Handle selected track point marker
-            selectedTrackPointIndex?.let { index ->
-                if (index in trackPoints.indices) {
-                    val trackPoint = trackPoints[index].first
-                    val geoPoint = GeoPoint(
-                        trackPoint.latitude,
-                        trackPoint.longitude,
-                        trackPoint.elevation
-                    )
-                    val markerSizePx =
-                        (20 * view.resources.displayMetrics.density).toInt()
-                    val marker = Marker(view).apply {
-                        position = geoPoint
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                        icon = createBitmap(markerSizePx, markerSizePx).apply {
-                            eraseColor(HighlightYellow.toArgb())
-                        }.toDrawable(view.resources)
-                        setOnMarkerClickListener { _, _ ->
-                            true // Consume the click so the map doesn't treat it as a track-point tap
+            if (rebuiltOverlays || selectedTrackPointIndex != lastMarkerIndex) {
+                lastMarkerIndex = selectedTrackPointIndex
+                selectedPointMarker?.let { view.overlays.remove(it) }
+                selectedPointMarker = null
+                selectedTrackPointIndex?.let { index ->
+                    if (index in trackPoints.indices) {
+                        val trackPoint = trackPoints[index].first
+                        val geoPoint = GeoPoint(
+                            trackPoint.latitude,
+                            trackPoint.longitude,
+                            trackPoint.elevation
+                        )
+                        val markerSizePx =
+                            (20 * view.resources.displayMetrics.density).toInt()
+                        val marker = Marker(view).apply {
+                            position = geoPoint
+                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                            icon = createBitmap(markerSizePx, markerSizePx).apply {
+                                eraseColor(HighlightYellow.toArgb())
+                            }.toDrawable(view.resources)
+                            setOnMarkerClickListener { _, _ ->
+                                true // Consume the click so the map doesn't treat it as a track-point tap
+                            }
                         }
+                        view.overlays.add(marker)
+                        selectedPointMarker = marker
                     }
-                    view.overlays.add(marker)
                 }
-            }
-
-            if (calculateBoundingBox && trackPoints.isNotEmpty()) {
-                onMapReady()
             }
 
             view.enableRoadInfoOnMapClick()

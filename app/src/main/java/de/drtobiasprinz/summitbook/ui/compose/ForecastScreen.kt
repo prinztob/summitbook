@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,11 +30,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +44,7 @@ import de.drtobiasprinz.summitbook.data.db.entities.Forecast
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
 import de.drtobiasprinz.summitbook.core.ForecastConstants
+import de.drtobiasprinz.summitbook.core.Keys
 import kotlinx.coroutines.Job
 import java.util.Calendar
 import kotlin.math.ceil
@@ -56,21 +56,20 @@ fun ForecastScreen(
     summits: List<Summit>,
     forecasts: MutableList<Forecast>,
     onNavigateBack: () -> Unit = {},
-    onSaveForecasts: (Boolean, List<Forecast>) -> Job
+    onSaveForecasts: (Boolean, List<Forecast>) -> Job,
+    onShowSnackbar: (String) -> Unit = {}
 ) {
-    val context = LocalContext.current
-
     val indoorHeightMeterPercent = remember {
-        sharedPreferences.getInt("pref_indoor_height_meter", 0)
+        sharedPreferences.getInt(Keys.PREF_INDOOR_HEIGHT_METER, 0)
     }
     val annualTargetActivity = remember {
-        sharedPreferences.getString("pref_annual_target_activities", "52") ?: "52"
+        sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_ACTIVITIES, "52") ?: "52"
     }
     val annualTargetKm = remember {
-        sharedPreferences.getString("pref_annual_target_km", "1200") ?: "1200"
+        sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET_KM, "1200") ?: "1200"
     }
     val annualTargetHm = remember {
-        sharedPreferences.getString("pref_annual_target", "50000") ?: "50000"
+        sharedPreferences.getString(Keys.PREF_ANNUAL_TARGET, "50000") ?: "50000"
     }
 
     val currentYear = Calendar.getInstance().get(Calendar.YEAR)
@@ -88,7 +87,10 @@ fun ForecastScreen(
         if (!forecastsUpdated) {
             forecastsUpdated = true
             val yearsWithForecasts = listOf(currentYear, currentYear + 1)
-            updateMissingForecasts(yearsWithForecasts, forecasts, summits, onSaveForecasts)
+            updateMissingForecasts(
+                yearsWithForecasts, forecasts, summits, onSaveForecasts,
+                annualTargetActivity, annualTargetKm, annualTargetHm
+            )
         }
         forecasts.forEach { forecast ->
             if (forecast.year == currentYear && forecast.month <= currentMonth) {
@@ -122,7 +124,7 @@ fun ForecastScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Error loading data",
+                    text = stringResource(R.string.error_loading_data),
                     color = MaterialTheme.colorScheme.error
                 )
             }
@@ -136,9 +138,12 @@ fun ForecastScreen(
             ) {
 
 
-                val hmTargetReached = hmSum > annualTargetHm.toInt()
-                val kmTargetReached = kmSum > annualTargetKm.toInt()
-                val activityTargetReached = activitySum > annualTargetActivity.toInt()
+                val hmTarget = annualTargetHm.toIntOrNull() ?: 50000
+                val kmTarget = annualTargetKm.toIntOrNull() ?: 1200
+                val activityTarget = annualTargetActivity.toIntOrNull() ?: 52
+                val hmTargetReached = hmSum > hmTarget
+                val kmTargetReached = kmSum > kmTarget
+                val activityTargetReached = activitySum > activityTarget
 
 
                 // Table approach for forecast info
@@ -245,7 +250,10 @@ fun ForecastScreen(
                                 forecasts,
                                 currentYear + 1,
                                 summits,
-                                onSaveForecasts
+                                onSaveForecasts,
+                                annualTargetActivity,
+                                annualTargetKm,
+                                annualTargetHm
                             )
                             forecastsUpdated = !forecastsUpdated
                         },
@@ -260,17 +268,18 @@ fun ForecastScreen(
                     }
 
                     val successfullySaved = stringResource(R.string.forecast_successfully_saved)
+                    val saveFailed = stringResource(R.string.forecast_save_failed)
                     Button(
                         onClick = {
                             // Save all forecasts for both years
                             val job = onSaveForecasts(true, forecasts)
-                            job.invokeOnCompletion {
-                                Toast.makeText(
-                                    context,
-                                    successfullySaved,
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                onNavigateBack()
+                            job.invokeOnCompletion { cause ->
+                                if (cause == null) {
+                                    onShowSnackbar(successfullySaved)
+                                    onNavigateBack()
+                                } else if (cause !is kotlinx.coroutines.CancellationException) {
+                                    onShowSnackbar(saveFailed)
+                                }
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = RecordGreen),
@@ -320,7 +329,10 @@ fun ForecastScreen(
                                     currentYear,
                                     summits,
                                     forecasts,
-                                    onSaveForecasts = onSaveForecasts
+                                    onSaveForecasts = onSaveForecasts,
+                                    annualTargetActivity = annualTargetActivity,
+                                    annualTargetKm = annualTargetKm,
+                                    annualTargetHm = annualTargetHm
                                 )
                                 forecastsUpdated = !forecastsUpdated
                             }
@@ -354,7 +366,10 @@ fun ForecastScreen(
                                     currentYear + 1,
                                     summits,
                                     forecasts,
-                                    onSaveForecasts = onSaveForecasts
+                                    onSaveForecasts = onSaveForecasts,
+                                    annualTargetActivity = annualTargetActivity,
+                                    annualTargetKm = annualTargetKm,
+                                    annualTargetHm = annualTargetHm
                                 )
                                 forecastsUpdated = !forecastsUpdated
                             }
@@ -390,11 +405,11 @@ fun ForecastMonthRow(
 
     val actualDistance = forecast.actualDistance
 
-    var heightMeterValue by remember { mutableIntStateOf(forecast.forecastHeightMeter) }
-    var distanceValue by remember { mutableIntStateOf(forecast.forecastDistance) }
-    var activitiesValue by remember { mutableIntStateOf(forecast.forecastNumberActivities) }
+    var heightMeterValue by rememberSaveable { mutableIntStateOf(forecast.forecastHeightMeter) }
+    var distanceValue by rememberSaveable { mutableIntStateOf(forecast.forecastDistance) }
+    var activitiesValue by rememberSaveable { mutableIntStateOf(forecast.forecastNumberActivities) }
 
-    var isSliderEnabled by remember { mutableStateOf(!isPastMonth) }
+    var isSliderEnabled by rememberSaveable { mutableStateOf(!isPastMonth) }
 
     // Update slider values when forecast values change (e.g., after recalculation)
     LaunchedEffect(
@@ -637,7 +652,10 @@ private fun updateMissingForecasts(
     years: List<Int>,
     forecasts: MutableList<Forecast>,
     summits: List<Summit>,
-    onSaveForecasts: (Boolean, List<Forecast>) -> Job
+    onSaveForecasts: (Boolean, List<Forecast>) -> Job,
+    annualTargetActivity: String,
+    annualTargetKm: String,
+    annualTargetHm: String
 ) {
     for (year in years) {
         for (month in 1..12) {
@@ -646,9 +664,9 @@ private fun updateMissingForecasts(
                 year,
                 summits,
                 3,
-                "52",
-                "1200",
-                "50000"
+                annualTargetActivity,
+                annualTargetKm,
+                annualTargetHm
             )
             val existingForecast = forecasts.firstOrNull { it.month == month && it.year == year }
             if (existingForecast == null) {
@@ -662,7 +680,10 @@ private fun updateForecastsForYear(
     forecasts: MutableList<Forecast>,
     year: Int,
     summits: List<Summit>?,
-    onSaveForecasts: (Boolean, List<Forecast>) -> Job
+    onSaveForecasts: (Boolean, List<Forecast>) -> Job,
+    annualTargetActivity: String,
+    annualTargetKm: String,
+    annualTargetHm: String
 ) {
     for (month in 1..12) {
         updateForecastForMonthAndYear(
@@ -670,7 +691,10 @@ private fun updateForecastsForYear(
             year,
             summits,
             forecasts,
-            onSaveForecasts = onSaveForecasts
+            onSaveForecasts = onSaveForecasts,
+            annualTargetActivity = annualTargetActivity,
+            annualTargetKm = annualTargetKm,
+            annualTargetHm = annualTargetHm
         )
     }
 }
@@ -680,16 +704,19 @@ private fun updateForecastForMonthAndYear(
     year: Int,
     summits: List<Summit>?,
     forecasts: MutableList<Forecast>,
-    onSaveForecasts: (Boolean, List<Forecast>) -> Job
+    onSaveForecasts: (Boolean, List<Forecast>) -> Job,
+    annualTargetActivity: String,
+    annualTargetKm: String,
+    annualTargetHm: String
 ) {
     val updatedForecast = Forecast.getNewForecastFrom(
         month,
         year,
         summits,
         3,
-        "52",
-        "1200",
-        "50000"
+        annualTargetActivity,
+        annualTargetKm,
+        annualTargetHm
     )
     val existingForecastIndex = forecasts.indexOfFirst { it.month == month && it.year == year }
     if (existingForecastIndex == -1) {

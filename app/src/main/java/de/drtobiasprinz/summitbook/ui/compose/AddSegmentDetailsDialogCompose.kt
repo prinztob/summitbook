@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,10 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -41,13 +39,13 @@ fun AddSegmentDetailsDialogCompose(
     segmentDetails: SegmentDetails? = null,
     onDismiss: () -> Unit,
     onSaveSegmentDetails: (Boolean, SegmentDetails) -> Unit,
+    onShowSnackbar: (String) -> Unit = {},
 ) {
-    val context = LocalContext.current
     val isUpdate = segmentDetails != null
 
     // State management
-    var startPointName by remember { mutableStateOf(segmentDetails?.startPointName ?: "") }
-    var endPointName by remember { mutableStateOf(segmentDetails?.endPointName ?: "") }
+    var startPointName by rememberSaveable { mutableStateOf(segmentDetails?.startPointName ?: "") }
+    var endPointName by rememberSaveable { mutableStateOf(segmentDetails?.endPointName ?: "") }
 
     // Validation - save button is enabled only when both fields are filled
     val isSaveEnabled = startPointName.isNotBlank() && endPointName.isNotBlank()
@@ -123,7 +121,7 @@ fun AddSegmentDetailsDialogCompose(
                     Button(
                         onClick = {
                             onDismiss()
-                            Toast.makeText(context, cancelMessage, Toast.LENGTH_SHORT).show()
+                            onShowSnackbar(cancelMessage)
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error

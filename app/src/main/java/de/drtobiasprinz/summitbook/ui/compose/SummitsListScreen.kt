@@ -3,7 +3,6 @@ package de.drtobiasprinz.summitbook.ui.compose
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,6 +87,7 @@ fun SummitsListScreen(
     onOpenSettings: (() -> Unit)? = null,
     onRefresh: (() -> Unit)? = null,
     isRefreshing: Boolean = false,
+    onShowSnackbar: (String) -> Unit = {},
 ) {
     if (onRefresh != null) {
         PullToRefreshBox(
@@ -104,7 +105,8 @@ fun SummitsListScreen(
                 onPeakToggle = onPeakToggle,
                 onAddSegmentEntry = onAddSegmentEntry,
                 onAddEntry = onAddEntry,
-                onOpenSettings = onOpenSettings
+                onOpenSettings = onOpenSettings,
+                onShowSnackbar = onShowSnackbar
             )
         }
     } else {
@@ -118,7 +120,8 @@ fun SummitsListScreen(
             onPeakToggle = onPeakToggle,
             onAddSegmentEntry = onAddSegmentEntry,
             onAddEntry = onAddEntry,
-            onOpenSettings = onOpenSettings
+            onOpenSettings = onOpenSettings,
+            onShowSnackbar = onShowSnackbar
         )
     }
 }
@@ -136,6 +139,7 @@ private fun SummitsListContent(
     onAddSegmentEntry: ((Summit) -> Unit)?,
     onAddEntry: (() -> Unit)?,
     onOpenSettings: (() -> Unit)?,
+    onShowSnackbar: (String) -> Unit,
 ) {
     if (filteredSummits.isEmpty()) {
         // Show app icon and "no summit" message when list is empty
@@ -199,6 +203,7 @@ private fun SummitsListContent(
                     onSaveSummit = onSaveSummit,
                     onPeakToggle = onPeakToggle,
                     onAddSegmentEntry = onAddSegmentEntry,
+                    onShowSnackbar = onShowSnackbar,
                     connectedFrame = connectedFrames[summit.id]
                 )
             }
@@ -219,15 +224,16 @@ fun SummitCard(
     onSaveSummit: (Boolean, Summit) -> Job,
     onPeakToggle: ((String, Boolean) -> Unit)? = null,
     onAddSegmentEntry: ((Summit) -> Unit)? = null,
+    onShowSnackbar: (String) -> Unit = {},
     connectedFrame: ConnectedSummitFrame? = null,
 ) {
     val context = LocalContext.current
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf(false) }
-    var showAddImagesDialog by remember { mutableStateOf(false) }
-    var showSelectOnMapDialog by remember { mutableStateOf(false) }
-    var showAddAdditionalDataDialog by remember { mutableStateOf(false) }
-    var refreshTrigger by remember { mutableIntStateOf(0) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var showEditDialog by rememberSaveable { mutableStateOf(false) }
+    var showAddImagesDialog by rememberSaveable { mutableStateOf(false) }
+    var showSelectOnMapDialog by rememberSaveable { mutableStateOf(false) }
+    var showAddAdditionalDataDialog by rememberSaveable { mutableStateOf(false) }
+    var refreshTrigger by rememberSaveable { mutableIntStateOf(0) }
     val isDarkTheme = isSystemInDarkTheme()
     val deleteCancelMessage = stringResource(R.string.delete_cancel)
 
@@ -461,7 +467,7 @@ fun SummitCard(
                                     R.drawable.baseline_more_time_black_24dp
                                 }
                             ),
-                            contentDescription = stringResource(R.string.add_image),
+                            contentDescription = stringResource(R.string.additional_summit_data),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
@@ -552,7 +558,9 @@ fun SummitCard(
                                     R.drawable.outline_landscape_2_off_24
                                 }
                             ),
-                            contentDescription = stringResource(R.string.is_favorite),
+                            contentDescription = stringResource(
+                                if (currentSummit.isPeak) R.string.unmark_peak else R.string.mark_peak
+                            ),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
@@ -571,11 +579,7 @@ fun SummitCard(
             },
             onDismiss = {
                 showDeleteDialog = false
-                Toast.makeText(
-                    context,
-                    deleteCancelMessage,
-                    Toast.LENGTH_SHORT
-                ).show()
+                onShowSnackbar(deleteCancelMessage)
             }
         )
     }
@@ -610,7 +614,8 @@ fun SummitCard(
                     refreshTrigger++
                 }
                 job
-            }
+            },
+            onShowSnackbar = onShowSnackbar
         )
     }
 

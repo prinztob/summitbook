@@ -34,9 +34,10 @@ enum class BarChartYAxisSelector(
         Keys.PREF_ANNUAL_TARGET_SUMMITS,
         10,
         { stream, _ ->
+            val peakNames = AppState.peaks.map { peak -> peak.name }.toHashSet()
             val peaks = mutableListOf<String>()
             stream?.forEach {
-                peaks.addAll(it?.places?.filter { place -> place in AppState.peaks.map { peak -> peak.name } }
+                peaks.addAll(it?.places?.filter { place -> place in peakNames }
                     ?: emptyList())
                 if (it?.isPeak == true) {
                     peaks.add(it.name)

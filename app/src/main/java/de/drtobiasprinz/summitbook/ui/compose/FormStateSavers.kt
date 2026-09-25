@@ -22,18 +22,22 @@ internal val formStateGson = Gson()
 
 /**
  * Gson-based saver for non-null domain objects. Restore failures (e.g. a
- * class layout change between save and restore) throw, so the caller notices
- * instead of silently operating on nulls.
+ * class layout change between save and restore) log and yield null so the
+ * caller falls back to its initial value instead of crashing on restore.
  */
 inline fun <reified T : Any> jsonSaver(): Saver<T, String> = Saver(
     save = { value -> formStateGson.toJson(value) },
     restore = { stored ->
         try {
             formStateGson.fromJson(stored, object : TypeToken<T>() {}.type) as T?
-                ?: error("Could not restore $stored to ${T::class.java.name}")
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.util.Log.w(
+                "FormStateSavers",
+                "Could not restore ${T::class.java.name} from saved state",
+                e
+            )
             null
-        } ?: error("Could not restore $stored to ${T::class.java.name}")
+        }
     }
 )
 
@@ -53,10 +57,18 @@ inline fun <reified T : Any> nullableJsonSaver(): Saver<T?, String> = Saver(
     }
 )
 
-/** Saver for enum constants, stored by name. */
+/** Saver for enum constants, stored by name. Unknown names (e.g. after a
+ *  rename or removal of a constant) restore to null so the caller falls back
+ *  to its initial value instead of crashing. */
 inline fun <reified T : Enum<T>> enumSaver(): Saver<T, String> = Saver(
     save = { it.name },
-    restore = { stored -> enumValueOf<T>(stored) }
+    restore = { stored ->
+        try {
+            enumValueOf<T>(stored)
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+    }
 )
 
 /** Saver for nullable enum constants. */
@@ -69,6 +81,12 @@ inline fun <reified T : Enum<T>> nullableEnumSaver(): Saver<T?, String> = Saver(
 val dateSaver: Saver<Date?, Long> = Saver(
     save = { it?.time ?: -1L },
     restore = { stored -> if (stored == -1L) null else Date(stored) }
+)
+
+/** Saver for a non-null java.util.Date stored as epoch millis. */
+val nonNullDateSaver: Saver<Date, Long> = Saver(
+    save = { it.time },
+    restore = { stored -> Date(stored) }
 )
 
 /** Saver for List<String>. */

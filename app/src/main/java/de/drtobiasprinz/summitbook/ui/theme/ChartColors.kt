@@ -17,6 +17,18 @@ val ChartBlue = Color(0xFF0000FF)
 val ChartGold = Color(0xFFFFD700)
 val ChartLime = Color(0xFF00FF00)
 
+// Medal badges for record rankings (gold/silver/bronze)
+val RecordGold = Color(0xFFFFD700)
+val RecordSilver = Color(0xFFC0C0C0)
+val RecordBronze = Color(0xFFA87000)
+
+// Segment track start/end marker lines
+val SegmentStartGreen = Color(0xFF00FF00)
+val SegmentEndRed = Color(0xFFFF0000)
+
+// Soft red used to highlight values on light chart canvases
+val HighlightRedSoft = Color(0xFFF47575)
+
 // Dark canvases the charts draw on
 val DarkCanvas = Color(0xFF1E1E1E)
 val DarkCanvasDeep = Color(0xFF121212)

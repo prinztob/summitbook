@@ -1,8 +1,6 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import android.content.Context
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,11 +33,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -71,8 +69,9 @@ fun SummitEntitiesScreen(
     onSaveEntityEvent: (Boolean, EntityEvent) -> Unit,
     onUpdatePeakName: (String, String) -> Unit,
     modifier: Modifier = Modifier,
+    onShowSnackbar: (String) -> Unit = {},
 ) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val tabTitles = listOf(
         R.string.participants,
         R.string.place_hint,
@@ -123,7 +122,8 @@ fun SummitEntitiesScreen(
             onSaveSummit = onSaveSummit,
             onDeleteEntityEvent = onDeleteEntityEvent,
             onSaveEntityEvent = onSaveEntityEvent,
-            onUpdatePeakName = onUpdatePeakName
+            onUpdatePeakName = onUpdatePeakName,
+            onShowSnackbar = onShowSnackbar
         )
     }
 }
@@ -141,14 +141,16 @@ fun SummitEntitiesList(
     onSaveSummit: (Boolean, Summit) -> Unit,
     onDeleteEntityEvent: (EntityEvent) -> Unit,
     onSaveEntityEvent: (Boolean, EntityEvent) -> Unit,
-    onUpdatePeakName: (String, String) -> Unit
+    onUpdatePeakName: (String, String) -> Unit,
+    onShowSnackbar: (String) -> Unit = {}
 ) {
-    val context = LocalContext.current
-
     // State for entity event dialog
-    var showEntityEventDialog by remember { mutableStateOf(false) }
+    var showEntityEventDialog by rememberSaveable { mutableStateOf(false) }
     var currentEntityEvent by remember { mutableStateOf<EntityEvent?>(null) }
     var currentEntity by remember { mutableStateOf<SummitEntitySummary?>(null) }
+
+    val peakNames = remember(AppState.peaks) { AppState.peaks.map { it.name }.toHashSet() }
+    val updateDoneMessage = stringResource(R.string.update_done)
 
     // Create a key that changes when any summit is updated
     // Use id and hashCode of mutable properties to detect changes
@@ -176,7 +178,7 @@ fun SummitEntitiesList(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "No data available")
+                    Text(text = stringResource(R.string.no_data_available))
                 }
             }
         } else {
@@ -186,9 +188,9 @@ fun SummitEntitiesList(
                     entityType = entityType,
                     entityEvents = entityEvents,
                     filteredSummits = filteredSummits,
+                    peakNames = peakNames,
                     onUpdateEntity = { oldName, newName ->
                         updateEntityName(
-                            context,
                             oldName,
                             newName,
                             entityType,
@@ -196,6 +198,7 @@ fun SummitEntitiesList(
                             onSaveSummit = onSaveSummit,
                             onUpdatePeakName = onUpdatePeakName
                         )
+                        onShowSnackbar(updateDoneMessage)
                     },
                     onDeleteEntityEvent = onDeleteEntityEvent,
                     onAddEntityEvent = {
@@ -219,7 +222,8 @@ fun SummitEntitiesList(
             entityEvent = currentEntityEvent,
             entity = currentEntity!!,
             onDismiss = { showEntityEventDialog = false },
-            onSaveEntityEvent = onSaveEntityEvent
+            onSaveEntityEvent = onSaveEntityEvent,
+            onShowSnackbar = onShowSnackbar
         )
     }
 }
@@ -259,7 +263,6 @@ private fun calculateEntitySummaries(
  * Update entity name across all relevant summits
  */
 private fun updateEntityName(
-    context: Context,
     oldName: String,
     newName: String,
     entityType: SummitEntityType,
@@ -282,8 +285,6 @@ private fun updateEntityName(
         Log.d("SummitEntitiesScreen", "Updating peak name: $oldName -> $newName")
         onUpdatePeakName(oldName, newName)
     }
-    
-    Toast.makeText(context, R.string.update_done, Toast.LENGTH_SHORT).show()
 }
 
 /**
@@ -296,20 +297,20 @@ fun SummitEntityCard(
     entityType: SummitEntityType,
     entityEvents: List<EntityEvent>,
     filteredSummits: List<Summit>,
+    peakNames: Set<String>,
     onUpdateEntity: (String, String) -> Unit,
     onDeleteEntityEvent: (EntityEvent) -> Unit,
     onAddEntityEvent: () -> Unit,
     onEditEntityEvent: (EntityEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Log.d("SummitEntitiesScreen", "SummitEntityCard recomposed: ${entity.name}")
-    var isEditing by remember { mutableStateOf(false) }
-    var editedName by remember(entity.name) { mutableStateOf(entity.name) }
-    var expanded by remember { mutableStateOf(false) }
+    var isEditing by rememberSaveable { mutableStateOf(false) }
+    var editedName by rememberSaveable(entity.name) { mutableStateOf(entity.name) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
     val relevantEvents = entityEvents.filter { it.equipmentName == entity.name }
         .sortedByDescending { it.date }
 
-    val isActive = entity.name in AppState.peaks.map { it.name }
+    val isActive = entity.name in peakNames
     val imageResourceId = if (isActive && entityType.drawableIdActive != null) {
         entityType.drawableIdActive!!
     } else {
@@ -356,10 +357,13 @@ fun SummitEntityCard(
                             unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
-                    IconButton(onClick = {
-                        onUpdateEntity(entity.name, editedName)
-                        isEditing = false
-                    }) {
+                    IconButton(
+                        onClick = {
+                            onUpdateEntity(entity.name, editedName)
+                            isEditing = false
+                        },
+                        enabled = editedName.isNotBlank()
+                    ) {
                         Icon(
                             painter = painterResource(R.drawable.baseline_done_24),
                             contentDescription = stringResource(R.string.saveButtonText),

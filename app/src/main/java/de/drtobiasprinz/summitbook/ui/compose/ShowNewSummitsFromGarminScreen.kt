@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,15 +43,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.asFlow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.core.DataStatus
 import de.drtobiasprinz.summitbook.data.db.entities.IgnoredActivity
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.sync.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.ui.activities.MainActivityCompose
 import de.drtobiasprinz.summitbook.ui.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -71,57 +73,42 @@ fun ShowNewSummitsFromGarminScreen(
     val context = LocalContext.current
 
     // State variables
-    var startDate by remember {
+    var startDate by rememberSaveable(stateSaver = nonNullDateSaver) {
         mutableStateOf(getDefaultStartDate(selectedDate))
     }
-    var endDate by remember {
+    var endDate by rememberSaveable(stateSaver = nonNullDateSaver) {
         mutableStateOf(getDefaultEndDate(selectedDate))
     }
-    var showAllButtonEnabled by remember { mutableStateOf(false) }
+    var showAllButtonEnabled by rememberSaveable { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var entriesWithoutIgnored by remember { mutableStateOf<MutableList<Summit>>(mutableListOf()) }
-    var ignoredActivities by remember { mutableStateOf<List<IgnoredActivity>>(emptyList()) }
-    var selectedSummits by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    val ignoredActivityStatus by viewModel.ignoredActivityList.asFlow()
+        .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
+    val ignoredActivities = ignoredActivityStatus.data ?: emptyList<IgnoredActivity>()
+    var selectedSummits by rememberSaveable(stateSaver = longListSaver) {
+        mutableStateOf<List<Long>>(emptyList())
+    }
     var canMerge by remember { mutableStateOf(false) }
 
     // Date format
     val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
 
-    // Update entries when ignored activities change
+    // Update entries when ignored activities, date range or filters change
     LaunchedEffect(ignoredActivities, startDate, endDate, showAllButtonEnabled) {
-        // Update entries in background
         isLoading = true
-        viewModel.viewModelScope.launch(Dispatchers.IO) {
-            val updatedEntries = updateEntriesWithoutIgnored(
-                summits,
-                ignoredActivities.map { it.activityId },
-                startDate,
-                endDate,
-                showAllButtonEnabled
-            )
+        val updatedEntries = reloadEntriesWithoutIgnored(
+            summits,
+            ignoredActivities.map { it.activityId },
+            startDate,
+            endDate,
+            showAllButtonEnabled,
+            selectedSummits
+        )
 
-            // Restore selection state
-            updatedEntries.forEach { summit ->
-                summit.isSelected =
-                    summit.id in selectedSummits || summit.activityId in selectedSummits
-            }
-
-            // Update UI on main thread
-            withContext(Dispatchers.Main) {
-                entriesWithoutIgnored = updatedEntries
-                isLoading = false
-                canMerge = canSelectedSummitsBeMerged(updatedEntries.filter { it.isSelected })
-            }
-        }
-    }
-
-    // Observe ignored activities
-    LaunchedEffect(Unit) {
-        viewModel.ignoredActivityList.observeForever { dataStatus ->
-            dataStatus.data?.let { ignoredList ->
-                ignoredActivities = ignoredList
-            }
-        }
+        // Update UI on main thread
+        entriesWithoutIgnored = updatedEntries
+        isLoading = false
+        canMerge = canSelectedSummitsBeMerged(updatedEntries.filter { it.isSelected })
     }
 
     // Main UI
@@ -165,31 +152,6 @@ fun ShowNewSummitsFromGarminScreen(
                                 val newDate = Calendar.getInstance()
                                 newDate.set(selectedYear, selectedMonth, selectedDay)
                                 startDate = newDate.time
-
-                                // Update entries in background
-                                isLoading = true
-                                viewModel.viewModelScope.launch(Dispatchers.IO) {
-                                    val updatedEntries = updateEntriesWithoutIgnored(
-                                        summits,
-                                        ignoredActivities.map { it.activityId },
-                                        startDate,
-                                        endDate,
-                                        showAllButtonEnabled
-                                    )
-
-                                    // Restore selection state
-                                    updatedEntries.forEach { summit ->
-                                        summit.isSelected =
-                                            summit.id in selectedSummits || summit.activityId in selectedSummits
-                                    }
-
-                                    // Update UI on main thread
-                                    withContext(Dispatchers.Main) {
-                                        entriesWithoutIgnored = updatedEntries
-                                        isLoading = false
-                                        canMerge = canSelectedSummitsBeMerged(updatedEntries.filter { it.isSelected })
-                                    }
-                                }
                             },
                             year, month, day
                         )
@@ -234,31 +196,6 @@ fun ShowNewSummitsFromGarminScreen(
                                 val newDate = Calendar.getInstance()
                                 newDate.set(selectedYear, selectedMonth, selectedDay)
                                 endDate = newDate.time
-
-                                // Update entries in background
-                                isLoading = true
-                                viewModel.viewModelScope.launch(Dispatchers.IO) {
-                                    val updatedEntries = updateEntriesWithoutIgnored(
-                                        summits,
-                                        ignoredActivities.map { it.activityId },
-                                        startDate,
-                                        endDate,
-                                        showAllButtonEnabled
-                                    )
-
-                                    // Restore selection state
-                                    updatedEntries.forEach { summit ->
-                                        summit.isSelected =
-                                            summit.id in selectedSummits || summit.activityId in selectedSummits
-                                    }
-
-                                    // Update UI on main thread
-                                    withContext(Dispatchers.Main) {
-                                        entriesWithoutIgnored = updatedEntries
-                                        isLoading = false
-                                        canMerge = canSelectedSummitsBeMerged(updatedEntries.filter { it.isSelected })
-                                    }
-                                }
                             },
                             year, month, day
                         )
@@ -292,7 +229,11 @@ fun ShowNewSummitsFromGarminScreen(
                     }
                 },
                 modifier = Modifier.padding(end = 8.dp),
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = if (entriesWithoutIgnored.any { it.isSelected }) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                }
             ) {
                 Icon(
                     painter = painterResource(R.drawable.baseline_save_black_24dp),
@@ -306,13 +247,15 @@ fun ShowNewSummitsFromGarminScreen(
                     val selectedEntries = entriesWithoutIgnored.filter { it.isSelected }
                     if (selectedEntries.isNotEmpty()) {
                         // Update selectedSummits state
-                        selectedSummits = selectedSummits.toMutableSet().apply {
+                        selectedSummits = selectedSummits.toMutableList().apply {
                             removeAll(selectedEntries.map { it.id })
                             removeAll(selectedEntries.map { it.activityId })
                         }
 
                         // Remove selected entries from the list
-                        entriesWithoutIgnored.removeAll(selectedEntries)
+                        entriesWithoutIgnored = entriesWithoutIgnored
+                            .minus(selectedEntries)
+                            .toMutableList()
 
                         // Save ignored activities
                         selectedEntries.forEach { summit ->
@@ -325,7 +268,11 @@ fun ShowNewSummitsFromGarminScreen(
                     }
                 },
                 modifier = Modifier.padding(end = 8.dp),
-                containerColor = MaterialTheme.colorScheme.error,
+                containerColor = if (entriesWithoutIgnored.any { it.isSelected }) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                }
             ) {
                 Icon(
                     painter = painterResource(R.drawable.baseline_do_not_disturb_on_total_silence_24),
@@ -375,31 +322,6 @@ fun ShowNewSummitsFromGarminScreen(
             OutlinedButton(
                 onClick = {
                     showAllButtonEnabled = !showAllButtonEnabled
-
-                    // Update entries in background
-                    isLoading = true
-                    viewModel.viewModelScope.launch(Dispatchers.IO) {
-                        val updatedEntries = updateEntriesWithoutIgnored(
-                            summits,
-                            ignoredActivities.map { it.activityId },
-                            startDate,
-                            endDate,
-                            showAllButtonEnabled
-                        )
-
-                        // Restore selection state
-                        updatedEntries.forEach { summit ->
-                            summit.isSelected =
-                                summit.id in selectedSummits || summit.activityId in selectedSummits
-                        }
-
-                        // Update UI on main thread
-                        withContext(Dispatchers.Main) {
-                            entriesWithoutIgnored = updatedEntries
-                            isLoading = false
-                            canMerge = canSelectedSummitsBeMerged(updatedEntries.filter { it.isSelected })
-                        }
-                    }
                 },
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = if (showAllButtonEnabled) {
@@ -439,13 +361,16 @@ fun ShowNewSummitsFromGarminScreen(
                     )
                 }
             } else {
+                val sortedEntries = remember(entriesWithoutIgnored) {
+                    entriesWithoutIgnored.sortedByDescending { it.date }
+                }
                 // Summit list
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(
-                        items = entriesWithoutIgnored.sortedBy { it.getDateAsString() }.reversed(),
+                        items = sortedEntries,
                         key = { "${it.activityId}-${it.name}-${it.date.time}" }
                     ) { summit ->
                         SummitCardItem(
@@ -454,7 +379,7 @@ fun ShowNewSummitsFromGarminScreen(
                             onSelectionChanged = { isSelected ->
                                 summit.isSelected = isSelected
                                 // Update selectedSummits state
-                                selectedSummits = selectedSummits.toMutableSet().apply {
+                                selectedSummits = selectedSummits.toMutableList().apply {
                                     if (isSelected) {
                                         add(summit.id)
                                         add(summit.activityId)
@@ -482,7 +407,7 @@ fun SummitCardItem(
 ) {
     val context = LocalContext.current
     val isIgnored = summit.garminData?.activityId in ignoredActivities.map { it.activityId }
-    var checked by remember { mutableStateOf(false) }
+    var checked by remember(summit) { mutableStateOf(summit.isSelected) }
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -666,6 +591,33 @@ private fun updateEntriesWithoutIgnored(
     return allEntries.filter { summit ->
         summit.date.time >= startDate.time && summit.date.time <= endDate.time
     }.toMutableList()
+}
+
+private suspend fun reloadEntriesWithoutIgnored(
+    summits: List<Summit>,
+    activitiesIdIgnored: List<String>,
+    startDate: Date,
+    endDate: Date,
+    showAll: Boolean,
+    selectedSummits: List<Long>
+): MutableList<Summit> {
+    val updatedEntries = withContext(Dispatchers.IO) {
+        updateEntriesWithoutIgnored(
+            summits,
+            activitiesIdIgnored,
+            startDate,
+            endDate,
+            showAll
+        )
+    }
+
+    // Restore selection state
+    updatedEntries.forEach { summit ->
+        summit.isSelected =
+            summit.id in selectedSummits || summit.activityId in selectedSummits
+    }
+
+    return updatedEntries
 }
 
 private fun canSelectedSummitsBeMerged(summits: List<Summit>): Boolean {

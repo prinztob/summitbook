@@ -10,7 +10,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -71,7 +70,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -237,9 +235,6 @@ class MainActivityCompose : ComponentActivity(),
         super.onCreate(savedInstanceState)
 
         restoreUiState(savedInstanceState)
-
-        // Enable edge-to-edge
-        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         // Initialize disk I/O operations off main thread to avoid StrictMode violations
         lifecycleScope.launch(Dispatchers.IO) {
@@ -472,9 +467,14 @@ class MainActivityCompose : ComponentActivity(),
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
                     if (!isMapFullscreen) {
-                        var searchText by remember { mutableStateOf("") }
-                        var isSearching by remember { mutableStateOf(false) }
+                        var searchText by rememberSaveable { mutableStateOf("") }
+                        var isSearching by rememberSaveable { mutableStateOf(false) }
                         val focusRequester = remember { FocusRequester() }
+                        LaunchedEffect(isSearching) {
+                            if (isSearching) {
+                                focusRequester.requestFocus()
+                            }
+                        }
 
                         // Debounced search job to prevent excessive filtering on main thread
                         var searchJob by remember { mutableStateOf<Job?>(null) }
@@ -556,14 +556,7 @@ class MainActivityCompose : ComponentActivity(),
                                 actions = {
                                     // Search action
                                     if (!isSearching) {
-                                        IconButton(onClick = {
-                                            isSearching = true
-                                            // Request focus after a short delay to ensure the text field is rendered
-                                            coroutineScope.launch {
-                                                delay(100.milliseconds)
-                                                focusRequester.requestFocus()
-                                            }
-                                        }) {
+                                        IconButton(onClick = { isSearching = true }) {
                                             Icon(
                                                 painter = painterResource(R.drawable.ic_baseline_search_24),
                                                 contentDescription = stringResource(R.string.action_search)
@@ -623,6 +616,7 @@ class MainActivityCompose : ComponentActivity(),
                                     }
                                 ),
                             detail = databaseError,
+                            onRetry = { errorBannerDismissed = false },
                             onDismiss = { errorBannerDismissed = true }
                         )
                     }
@@ -985,6 +979,10 @@ class MainActivityCompose : ComponentActivity(),
         coroutineScope: CoroutineScope,
         navController: NavHostController
     ) {
+        fun showSnackbar(message: String) {
+            coroutineScope.launch { snackbarHostState?.showSnackbar(message) }
+        }
+
         NavHost(
             navController = navController,
             startDestination = Destination.Summits.name
@@ -1033,7 +1031,8 @@ class MainActivityCompose : ComponentActivity(),
                         onAddEntry = { showAddSummitDialog() },
                         onOpenSettings = { navigateTo(Destination.Settings) },
                         onRefresh = { updateThirdPartyData(coroutineScope) },
-                        isRefreshing = loadingState.value
+                        isRefreshing = loadingState.value,
+                        onShowSnackbar = ::showSnackbar
                     )
                 }
             }
@@ -1056,7 +1055,8 @@ class MainActivityCompose : ComponentActivity(),
                     summits = summitsFromDatabase,
                     onDeleteSegment = { segment ->
                         viewModel.deleteSegment(segment)
-                    }
+                    },
+                    onShowSnackbar = ::showSnackbar
                 )
             }
 
@@ -1102,7 +1102,12 @@ class MainActivityCompose : ComponentActivity(),
                     summitsFromDatabase,
                     forecasts.toMutableList(),
                     { navigateTo(Destination.Summits) },
-                    { isEdit, forecasts -> viewModel.saveForecasts(isEdit, forecasts) })
+                    { isEdit, forecasts -> viewModel.saveForecasts(isEdit, forecasts) },
+                    onShowSnackbar = { message ->
+                        coroutineScope.launch {
+                            snackbarHostState?.showSnackbar(message)
+                        }
+                    })
             }
 
             composable(Destination.NewSummits.name) {
@@ -1130,7 +1135,8 @@ class MainActivityCompose : ComponentActivity(),
                     { isEdit, summit -> viewModel.saveSummit(isEdit, summit) },
                     { viewModel.deleteEntityEvent(it) },
                     { isEdit, event -> viewModel.saveEntityEvent(isEdit, event) },
-                    { oldName, newName -> viewModel.updatePeakName(oldName, newName) }
+                    { oldName, newName -> viewModel.updatePeakName(oldName, newName) },
+                    onShowSnackbar = ::showSnackbar
                 )
             }
 
@@ -1280,11 +1286,10 @@ class MainActivityCompose : ComponentActivity(),
                     }
                 }
             } else {
-                Toast.makeText(
-                    this@MainActivityCompose,
+                snackbarHostState?.showSnackbar(
                     getString(R.string.set_user_pwd),
-                    Toast.LENGTH_LONG
-                ).show()
+                    duration = SnackbarDuration.Long
+                )
             }
         }
     }
@@ -1318,11 +1323,10 @@ class MainActivityCompose : ComponentActivity(),
                 if (finalSummits.isNotEmpty()) {
                     viewModel.saveSummits(finalSummits).join()
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            this@MainActivityCompose,
+                        snackbarHostState?.showSnackbar(
                             getString(R.string.add_new_summit_successful),
-                            Toast.LENGTH_LONG
-                        ).show()
+                            duration = SnackbarDuration.Long
+                        )
                     }
                 }
             } catch (e: CancellationException) {
@@ -1626,11 +1630,7 @@ class MainActivityCompose : ComponentActivity(),
                 Log.i("MainActivity", "showFullscreenImageViewer")
                 fullscreenImageViewer?.show(allImages, adjustedPosition, filteredSummits)
             } else {
-                Toast.makeText(
-                    this@MainActivityCompose,
-                    getString(R.string.no_image_selected),
-                    Toast.LENGTH_SHORT
-                ).show()
+                snackbarHostState?.showSnackbar(getString(R.string.no_image_selected))
             }
         }
     }
@@ -1734,6 +1734,7 @@ class MainActivityCompose : ComponentActivity(),
         AppState.activitiesWithAverageVelocityRecordsAll = getSummitIdsWithAverageVelocityRecord(allSummits)
 
         if (!segments.isEmpty()) {
+            AppState.activitiesWithSegmentsRecord.clear()
             allSummits.forEach { summit ->
                 summit.updateSegmentInfo(segments)
             }

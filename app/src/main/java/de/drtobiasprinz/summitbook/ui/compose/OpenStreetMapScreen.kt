@@ -6,10 +6,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.os.Build
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
-import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -64,6 +62,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import de.drtobiasprinz.summitbook.core.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.data.db.entities.SportType
@@ -101,7 +101,10 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import de.drtobiasprinz.summitbook.data.maps.FileHelper
 import java.io.File
 
-@RequiresApi(Build.VERSION_CODES.S)
+/** Default alpha for freshly added mbtiles overlay layers so they are visible
+ *  immediately (the slider range tops out at 0.4). */
+private const val DEFAULT_OVERLAY_ALPHA = 0.2f
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OpenStreetMapScreen(
@@ -141,6 +144,8 @@ fun OpenStreetMapScreen(
     val mMarkers = remember { mutableStateListOf<Marker?>() }
     val mMarkersShown = remember { mutableStateListOf<Marker?>() }
     val layers = remember { mutableStateListOf<Pair<String, TilesOverlay>>() }
+    val mClusterer = remember { mutableStateListOf<RadiusMarkerClusterer>() }
+    var boundingBoxRestored by remember { mutableStateOf(false) }
 
     // Overlays
     var mLocationOverlay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
@@ -275,30 +280,43 @@ fun OpenStreetMapScreen(
     }
 
     // Handle system bar visibility when fullscreen state changes
-    LaunchedEffect(fullscreenEnabled) {
+    DisposableEffect(fullscreenEnabled) {
         val activity = context as? Activity
-        activity?.window?.let { window ->
-            if (fullscreenEnabled) {
-                window.insetsController?.hide(android.view.WindowInsets.Type.systemBars())
+        val window = activity?.window
+        if (fullscreenEnabled) {
+            window?.let {
+                WindowCompat.getInsetsController(it, it.decorView)
+                    .hide(WindowInsetsCompat.Type.systemBars())
                 // Re-hide system bars immediately when they become visible (e.g., from edge swipe)
                 @Suppress("DEPRECATION")
-                window.decorView.setOnSystemUiVisibilityChangeListener { _ ->
+                it.decorView.setOnSystemUiVisibilityChangeListener { _ ->
                     if (fullscreenEnabled) {
-                        window.insetsController?.hide(android.view.WindowInsets.Type.systemBars())
+                        WindowCompat.getInsetsController(it, it.decorView)
+                            .hide(WindowInsetsCompat.Type.systemBars())
                     }
                 }
-            } else {
-                window.insetsController?.show(android.view.WindowInsets.Type.systemBars())
+            }
+        } else {
+            window?.let {
+                WindowCompat.getInsetsController(it, it.decorView)
+                    .show(WindowInsetsCompat.Type.systemBars())
                 @Suppress("DEPRECATION")
-                window.decorView.setOnSystemUiVisibilityChangeListener(null)
+                it.decorView.setOnSystemUiVisibilityChangeListener(null)
             }
         }
         onFullscreenChanged(fullscreenEnabled)
+        onDispose {
+            window?.let {
+                WindowCompat.getInsetsController(it, it.decorView)
+                    .show(WindowInsetsCompat.Type.systemBars())
+                it.decorView.setOnSystemUiVisibilityChangeListener(null)
+            }
+        }
     }
 
     // Show summits and bookmarks when they are enabled and map is ready
     LaunchedEffect(showSummits, showBookmarks, mapView, filteredSummits, bookmarks) {
-        if (mapView != null && (showSummits || showBookmarks)) {
+        if (mapView != null) {
             showSummitsAndBookmarksIfEnabled(
                 mapView,
                 showSummits,
@@ -307,6 +325,8 @@ fun OpenStreetMapScreen(
                 bookmarks,
                 mGeoPoints,
                 mMarkers,
+                mClusterer,
+                mMarkersShown,
                 context,
                 coroutineScope,
                 hasLocationPermission = hasLocationPermission,
@@ -314,6 +334,36 @@ fun OpenStreetMapScreen(
                 onShowSnackbar = { showSnackbar(it) },
                 onLoadingChange = { isLoading = it }
             )
+        }
+    }
+
+    // Restore the persisted bounding box exactly once per map instance
+    LaunchedEffect(mapView, osMapBoundingBox) {
+        val map = mapView ?: return@LaunchedEffect
+        if (!boundingBoxRestored && osMapBoundingBox.size == 6) {
+            boundingBoxRestored = true
+            try {
+                val boundingBox = BoundingBox()
+                boundingBox.set(
+                    osMapBoundingBox[0].toDouble(),
+                    osMapBoundingBox[1].toDouble(),
+                    osMapBoundingBox[2].toDouble(),
+                    osMapBoundingBox[3].toDouble()
+                )
+                map.post {
+                    Log.d(
+                        "OpenStreetMapScreen", "Attempting to zoom to bounding box: " +
+                                "north=${boundingBox.latNorth}, east=${boundingBox.lonEast}, " +
+                                "south=${boundingBox.latSouth}, west=${boundingBox.lonWest}"
+                    )
+                    map.zoomToBoundingBox(boundingBox, false, 30)
+                }
+            } catch (e: Exception) {
+                Log.e(
+                    "OpenStreetMapScreen",
+                    "Getting bounding box from shared preference failed. ${e.message}"
+                )
+            }
         }
     }
 
@@ -399,41 +449,17 @@ fun OpenStreetMapScreen(
                                 }
                             mLocationOverlay = locationOverlay
                             map.overlays.add(locationOverlay)
-                            locationOverlay.enableMyLocation()
+                            if (hasLocationPermission) {
+                                locationOverlay.enableMyLocation()
+                            }
 
                             // Enable road info on map click
                             map.enableRoadInfoOnMapClick()
                         },
+                        onShowMessage = { showSnackbar(it) },
                         update = { map ->
                             // Update map when state changes
                             map.updateBoundingBox = true
-
-                            Log.d(TAG, "Updated $osMapBoundingBox")
-                            if (osMapBoundingBox.size == 6) {
-                                try {
-                                    val boundingBox = BoundingBox()
-                                    boundingBox.set(
-                                        osMapBoundingBox[0].toDouble(),
-                                        osMapBoundingBox[1].toDouble(),
-                                        osMapBoundingBox[2].toDouble(),
-                                        osMapBoundingBox[3].toDouble()
-                                    )
-                                    map.post {
-                                        Log.d(
-                                            "OpenStreetMapScreen", "Attempting to zoom to bounding box: " +
-                                                    "north=${boundingBox.latNorth}, east=${boundingBox.lonEast}, " +
-                                                    "south=${boundingBox.latSouth}, west=${boundingBox.lonWest}"
-                                        )
-                                        map.zoomToBoundingBox(boundingBox, false, 30)
-                                        Log.d("OpenStreetMapScreen", "Zoom operation completed")
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e(
-                                        "MapViewComposable",
-                                        "Getting bounding box from shared preference failed. ${e.message}"
-                                    )
-                                }
-                            }
 
                             // Show my location
                             showMyLocation(
@@ -443,8 +469,6 @@ fun OpenStreetMapScreen(
                                 onRequestPermission = { requestLocationPermission() },
                                 onShowSnackbar = { showSnackbar(it) }
                             )
-
-                            map.onResume()
                         }
                     )
                 }
@@ -465,6 +489,7 @@ fun OpenStreetMapScreen(
                         maxPointsToShow,
                         context,
                         coroutineScope,
+                        (filteredSummits + bookmarks).associateBy { it.id.toString() },
                         onShowSnackbar = { showSnackbar(it) },
                         onLoadingChange = { isLoading = it }
                     )
@@ -494,21 +519,6 @@ fun OpenStreetMapScreen(
                             showSummits,
                             showBookmarks
                         )
-                        showSummitsAndBookmarksIfEnabled(
-                            mapView,
-                            showSummits,
-                            showBookmarks,
-                            filteredSummits,
-                            bookmarks,
-                            mGeoPoints,
-                            mMarkers,
-                            context,
-                            coroutineScope,
-                            hasLocationPermission = hasLocationPermission,
-                            onRequestLocationPermission = { requestLocationPermission() },
-                            onShowSnackbar = { showSnackbar(it) },
-                            onLoadingChange = { isLoading = it }
-                        )
                     }
                 },
                 showSummits = showSummits,
@@ -518,21 +528,6 @@ fun OpenStreetMapScreen(
                         updateSelectedParameters(
                             showSummits,
                             showBookmarks
-                        )
-                        showSummitsAndBookmarksIfEnabled(
-                            mapView,
-                            showSummits,
-                            showBookmarks,
-                            filteredSummits,
-                            bookmarks,
-                            mGeoPoints,
-                            mMarkers,
-                            context,
-                            coroutineScope,
-                            hasLocationPermission = hasLocationPermission,
-                            onRequestLocationPermission = { requestLocationPermission() },
-                            onShowSnackbar = { showSnackbar(it) },
-                            onLoadingChange = { isLoading = it }
                         )
                     } else {
                         coroutineScope.launch {
@@ -612,7 +607,7 @@ fun OverlaySliders(
             modifier = Modifier.padding(2.dp)
         ) {
             items(layers) { layer ->
-                val alpha = overlayAlphas[layer.first] ?: 0f
+                val alpha = overlayAlphas[layer.first] ?: DEFAULT_OVERLAY_ALPHA
 
                 Column(
                     modifier = Modifier
@@ -716,7 +711,7 @@ private fun showOverlayIfExist(
                     layer.loadingLineColor = Color.TRANSPARENT
                     mapView.overlays.add(layer)
                     layers.add(Pair(name, layer))
-                    setAlphaForLayer(layer)
+                    setAlphaForLayer(layer, DEFAULT_OVERLAY_ALPHA)
                     mapView.invalidate()
                 }
             }
@@ -830,6 +825,36 @@ private fun updateSelectedParameters(
     Log.d(TAG, "Content: ${sharedPreferences.getString(Keys.PREF_OS_MAP_BOUNDING_BOX, "")}")
 }
 
+private fun removeSummitOverlays(
+    map: CustomMapViewToAllowScrolling,
+    mClusterer: SnapshotStateList<RadiusMarkerClusterer>,
+    mMarkers: SnapshotStateList<Marker?>,
+    mMarkersShown: SnapshotStateList<Marker?>,
+    mGeoPoints: SnapshotStateList<GeoPoint?>,
+    summitsById: Map<String, Summit>
+) {
+    // Remove only the overlays this screen owns (clusterer, events overlay,
+    // info windows, tracks); base overlays added by addDefaultSettings(),
+    // the heatmap and the mbtiles overlay layers must survive so their
+    // tracked references stay valid.
+    mClusterer.forEach { map.overlays.remove(it) }
+    mClusterer.clear()
+    map.overlays.removeAll { it is MapEventsOverlay }
+    mMarkers.forEach { marker ->
+        if (marker?.isInfoWindowShown == true) {
+            marker.closeInfoWindow()
+        }
+        val gpsTrack = marker?.title?.let { summitsById[it] }?.gpsTrack
+        if (gpsTrack?.isShownOnMap == true) {
+            gpsTrack.osMapRoute?.let { map.overlayManager?.remove(it) }
+            gpsTrack.isShownOnMap = false
+        }
+    }
+    mMarkers.clear()
+    mMarkersShown.clear()
+    mGeoPoints.clear()
+}
+
 private fun showSummitsAndBookmarksIfEnabled(
     mapView: CustomMapViewToAllowScrolling?,
     showSummits: Boolean,
@@ -838,6 +863,8 @@ private fun showSummitsAndBookmarksIfEnabled(
     bookmarks: List<Summit>,
     mGeoPoints: SnapshotStateList<GeoPoint?>,
     mMarkers: SnapshotStateList<Marker?>,
+    mClusterer: SnapshotStateList<RadiusMarkerClusterer>,
+    mMarkersShown: SnapshotStateList<Marker?>,
     context: Context,
     coroutineScope: CoroutineScope,
     hasLocationPermission: Boolean = false,
@@ -845,6 +872,10 @@ private fun showSummitsAndBookmarksIfEnabled(
     onShowSnackbar: ((String) -> Unit)? = null,
     onLoadingChange: ((Boolean) -> Unit)? = null
 ) {
+    val summitsById = (summits + bookmarks).associateBy { it.id.toString() }
+    mapView?.let { map ->
+        removeSummitOverlays(map, mClusterer, mMarkers, mMarkersShown, mGeoPoints, summitsById)
+    }
     if (showSummits || showBookmarks) {
         mapView?.enableRoadInfoOnMapClick(coroutineScope)
         onLoadingChange?.invoke(true)
@@ -869,6 +900,7 @@ private fun showSummitsAndBookmarksIfEnabled(
                 context,
                 mGeoPoints,
                 mMarkers,
+                mClusterer,
                 coroutineScope,
                 hasLocationPermission,
                 onRequestLocationPermission,
@@ -877,7 +909,7 @@ private fun showSummitsAndBookmarksIfEnabled(
             )
         }
     } else {
-        mapView?.overlays?.clear()
+        mapView?.enableRoadInfoOnMapClick(coroutineScope)
         showMyLocation(
             mapView,
             mapView?.overlays?.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay,
@@ -958,6 +990,7 @@ private fun addAllMarkers(
     context: Context,
     mGeoPoints: SnapshotStateList<GeoPoint?>,
     mMarkers: SnapshotStateList<Marker?>,
+    mClusterer: SnapshotStateList<RadiusMarkerClusterer>,
     coroutineScope: CoroutineScope,
     hasLocationPermission: Boolean = false,
     onRequestLocationPermission: (() -> Unit)? = null,
@@ -967,6 +1000,17 @@ private fun addAllMarkers(
     mapView?.let { map ->
         val mReceive = object : MapEventsReceiver {
             override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+                // Delegate to the same road-info behavior that
+                // enableRoadInfoOnMapClick installs, so replacing its overlay
+                // with this one (which satisfies that guard's type check)
+                // keeps road-info-on-tap working.
+                if (p != null) {
+                    CustomMapViewToAllowScrolling.showRoadInfoAtPosition(
+                        map.context,
+                        p,
+                        coroutineScope
+                    )
+                }
                 return false
             }
 
@@ -980,37 +1024,50 @@ private fun addAllMarkers(
             }
         }
         val markers = RadiusMarkerClusterer(context)
-        map.overlays?.clear()
+        // Remove only the overlays this screen owns; base overlays (scale bar,
+        // rotation gesture, copyright, heatmap, mbtiles layers, location) and
+        // the tracked heatmap/layers references must stay valid.
+        mClusterer.forEach { map.overlays.remove(it) }
+        mClusterer.clear()
+        map.overlays.removeAll { it is MapEventsOverlay }
         showMyLocation(
             map,
-            map.overlays?.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay,
+            map.overlays.find { it is MyLocationNewOverlay } as? MyLocationNewOverlay,
             hasPermission = hasLocationPermission,
             onRequestPermission = onRequestLocationPermission,
             onShowSnackbar = onShowSnackbar)
         coroutineScope.launch {
-            withContext(Dispatchers.IO) {
-                val clusterIcon = BonusPackHelper.getBitmapFromVectorDrawable(
+            val clusterIcon = withContext(Dispatchers.IO) {
+                BonusPackHelper.getBitmapFromVectorDrawable(
                     context,
                     org.osmdroid.bonuspack.R.drawable.marker_cluster
                 )
-                markers.setIcon(clusterIcon)
-                markers.setMaxClusteringZoomLevel(10)
-                mGeoPoints.clear()
-                mMarkers.clear()
+            }
+            // Mutate the clusterer and the marker state lists on the main
+            // thread only; onDraw may iterate them concurrently.
+            markers.setIcon(clusterIcon)
+            markers.setMaxClusteringZoomLevel(10)
+            mGeoPoints.clear()
+            mMarkers.clear()
+            val newMarkers = mutableListOf<Marker>()
+            withContext(Dispatchers.IO) {
                 summits.forEach { pair ->
                     if (!currentCoroutineContext().isActive || !map.isAttachedToWindow) {
                         onLoadingChange?.invoke(false)
                         return@withContext
                     }
-                    mGeoPoints.add(pair.second)
-                    val marker = getMarker(map, pair.first, pair.second, context)
-                    markers.add(marker)
-                    mMarkers.add(marker)
+                    newMarkers.add(getMarker(map, pair.first, pair.second, context))
                 }
             }
+            newMarkers.forEach { marker ->
+                mGeoPoints.add(marker.position)
+                markers.add(marker)
+                mMarkers.add(marker)
+            }
             val eventsOverlay = MapEventsOverlay(mReceive)
-            map.overlays?.add(markers)
-            map.overlays?.add(eventsOverlay)
+            map.overlays.add(markers)
+            map.overlays.add(eventsOverlay)
+            mClusterer.add(markers)
             map.invalidate()
             onLoadingChange?.invoke(false)
         }
@@ -1039,9 +1096,17 @@ private fun getMarker(
             null
         )
     }
-    marker.infoWindow =
-        MapCustomInfoBubble(localMapView as? CustomMapViewToAllowScrolling, entry, context, false)
+    // Inflate the InfoWindow lazily on first tap: one inflated bubble layout
+    // per marker would be far too heavy for large summit collections.
     marker.setOnMarkerClickListener { marker1, _ ->
+        if (marker1.infoWindow == null) {
+            marker1.infoWindow = MapCustomInfoBubble(
+                localMapView as? CustomMapViewToAllowScrolling,
+                entry,
+                context,
+                false
+            )
+        }
         if (!marker1.isInfoWindowShown) {
             marker1.showInfoWindow()
         } else {
@@ -1059,6 +1124,7 @@ private fun showAllTracksOfSummitInBoundingBox(
     maxPointsToShow: Int,
     context: Context,
     coroutineScope: CoroutineScope,
+    summitsById: Map<String, Summit>,
     onShowSnackbar: ((String) -> Unit)? = null,
     onLoadingChange: ((Boolean) -> Unit)? = null
 ) {
@@ -1070,23 +1136,29 @@ private fun showAllTracksOfSummitInBoundingBox(
             // file system access off the main thread (StrictMode DiskReadViolation)
             val markersInBoundingBox: Set<Marker?> = withContext(Dispatchers.IO) {
                 mMarkers.filterTo(HashSet()) { marker ->
-                    (marker?.infoWindow as? MapCustomInfoBubble)?.entry
-                        ?.isInBoundingBox(boundingBox) == true
+                    marker?.title?.let { summitsById[it] }?.isInBoundingBox(boundingBox) == true
                 }
             }
             var pointsShown = mMarkersShown.sumOf {
-                (it?.infoWindow as MapCustomInfoBubble).entry.gpsTrack?.trackPoints?.size ?: 0
+                (it?.title?.let { t -> summitsById[t] })?.gpsTrack?.trackPoints?.size ?: 0
             }
+            val anyEntry = mMarkers.firstNotNullOfOrNull { marker ->
+                marker?.title?.let { summitsById[it] }
+            }
+            if (anyEntry == null) {
+                onLoadingChange?.invoke(false)
+                return@launch
+            }
+            // Markers no longer carry an eagerly created InfoWindow; reuse a
+            // single bubble as a handle for updateGpxTrack and swap its entry.
+            val sharedBubble = MapCustomInfoBubble(mapView, anyEntry, context, false)
             val summitsInBoundingBox = mMarkers.filter {
-                val mapCustomInfoBubble: MapCustomInfoBubble = it?.infoWindow as MapCustomInfoBubble
+                val entry = it?.title?.let { t -> summitsById[t] }
                 val shouldBeShown = it in markersInBoundingBox
-                if (!shouldBeShown && it in mMarkersShown) {
-                    Log.i(
-                        "trackPoints",
-                        "trackPoints --: ${mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0}"
-                    )
-                    pointsShown -= mapCustomInfoBubble.entry.gpsTrack?.trackPoints?.size ?: 0
-                    mapCustomInfoBubble.updateGpxTrack(forceRemove = true)
+                if (!shouldBeShown && it in mMarkersShown && entry != null) {
+                    sharedBubble.entry = entry
+                    pointsShown -= entry.gpsTrack?.trackPoints?.size ?: 0
+                    sharedBubble.updateGpxTrack(forceRemove = true)
                     mMarkersShown.remove(it)
                 }
                 shouldBeShown
@@ -1094,23 +1166,24 @@ private fun showAllTracksOfSummitInBoundingBox(
             var boxAlreadyShown = false
             summitsInBoundingBox.forEach {
                 if (it != null) {
-                    val infoWindow: MapCustomInfoBubble = it.infoWindow as MapCustomInfoBubble
-                    if (it !in mMarkersShown || infoWindow.entry.gpsTrack?.isShownOnMap == false) {
-                        if (infoWindow.entry.hasGpsTrack()) {
+                    val entry = it.title?.let { t -> summitsById[t] }
+                    if (entry != null && (it !in mMarkersShown || entry.gpsTrack?.isShownOnMap == false)) {
+                        if (entry.hasGpsTrack()) {
                             launch {
                                 var show = false
                                 withContext(Dispatchers.Default) {
                                     if (pointsShown < maxPointsToShow) {
                                         show = true
-                                        infoWindow.entry.setGpsTrack()
-                                        pointsShown += infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0
+                                        entry.setGpsTrack()
+                                        pointsShown += entry.gpsTrack?.trackPoints?.size ?: 0
                                     }
                                 }
                                 if (show) {
-                                    infoWindow.updateGpxTrack(forceShow = true)
+                                    sharedBubble.entry = entry
+                                    sharedBubble.updateGpxTrack(forceShow = true)
                                     Log.i(
                                         "trackPoints",
-                                        "trackPoints ${pointsShown}++: ${infoWindow.entry.gpsTrack?.trackPoints?.size ?: 0}"
+                                        "trackPoints ${pointsShown}++: ${entry.gpsTrack?.trackPoints?.size ?: 0}"
                                     )
                                     mMarkersShown.add(it)
                                 } else if (!boxAlreadyShown) {
@@ -1170,7 +1243,7 @@ fun MapControlButtons(
             FloatingActionButton(
                 onClick = it,
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .padding(bottom = 8.dp)
             ) {
                 Icon(
@@ -1184,7 +1257,7 @@ fun MapControlButtons(
         FloatingActionButton(
             onClick = onFullscreenToggle,
             modifier = Modifier
-                .size(40.dp)
+                .size(48.dp)
                 .padding(bottom = 8.dp)
         ) {
             Icon(
@@ -1202,7 +1275,7 @@ fun MapControlButtons(
                 FloatingActionButton(
                     onClick = onShowAllTracks,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .padding(bottom = 8.dp)
                 ) {
                     Icon(
@@ -1214,7 +1287,7 @@ fun MapControlButtons(
                 FloatingActionButton(
                     onClick = onChangeMapType,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .padding(bottom = 8.dp)
                 ) {
                     Icon(
@@ -1226,7 +1299,7 @@ fun MapControlButtons(
                 FloatingActionButton(
                     onClick = onCenterOnLocation,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .padding(bottom = 8.dp)
                 ) {
                     Icon(
@@ -1238,7 +1311,7 @@ fun MapControlButtons(
                 FloatingActionButton(
                     onClick = onCenterOnSummits,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .padding(bottom = 8.dp)
                 ) {
                     Icon(
@@ -1250,7 +1323,7 @@ fun MapControlButtons(
                 FloatingActionButton(
                     onClick = onShowBookmarksToggle,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .padding(bottom = 8.dp),
                     containerColor = if (showBookmarks) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
                 ) {
@@ -1263,7 +1336,7 @@ fun MapControlButtons(
                 FloatingActionButton(
                     onClick = onShowSummitsToggle,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .padding(bottom = 8.dp),
                     containerColor = if (showSummits) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
                 ) {
@@ -1276,7 +1349,7 @@ fun MapControlButtons(
                 FloatingActionButton(
                     onClick = onFollowLocationToggle,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .padding(bottom = 8.dp),
                     containerColor = if (followLocationEnabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondaryContainer
                 ) {
@@ -1293,7 +1366,7 @@ fun MapControlButtons(
                     FloatingActionButton(
                         onClick = onToggleOverlaySliders,
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(48.dp)
                             .padding(bottom = 8.dp),
                         containerColor = if (showOverlaySliders) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
                     ) {
@@ -1309,7 +1382,7 @@ fun MapControlButtons(
                     FloatingActionButton(
                         onClick = onToggleHeatmap,
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(48.dp)
                             .padding(bottom = 8.dp),
                         containerColor = if (heatmapEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
                     ) {
@@ -1325,7 +1398,7 @@ fun MapControlButtons(
         // Expand/collapse the map controls
         FloatingActionButton(
             onClick = { controlsExpanded = !controlsExpanded },
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(48.dp)
         ) {
             Icon(
                 painter = painterResource(

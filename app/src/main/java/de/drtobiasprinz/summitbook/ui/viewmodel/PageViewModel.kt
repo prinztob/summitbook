@@ -13,6 +13,7 @@ import de.drtobiasprinz.summitbook.data.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.data.analytics.ExtremaValuesSummits
 import de.drtobiasprinz.summitbook.core.DataStatus
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -78,15 +79,24 @@ class PageViewModel @Inject constructor(private val repository: DatabaseReposito
         }
     }
 
-    fun getSummitToView(id: Long) = viewModelScope.launch {
-        repository.getDetailsSummit(id).collect {
-            _summitToView.postValue(DataStatus.success(it, false))
+    private var summitToViewJob: Job? = null
+    private var summitToCompareJob: Job? = null
+
+    fun getSummitToView(id: Long) {
+        summitToViewJob?.cancel()
+        summitToViewJob = viewModelScope.launch {
+            repository.getDetailsSummit(id).collect {
+                _summitToView.postValue(DataStatus.success(it, false))
+            }
         }
     }
 
-    fun getSummitToCompare(id: Long) = viewModelScope.launch {
-        repository.getDetailsSummit(id).collect {
-            _summitToCompare.postValue(DataStatus.success(it, false))
+    fun getSummitToCompare(id: Long) {
+        summitToCompareJob?.cancel()
+        summitToCompareJob = viewModelScope.launch {
+            repository.getDetailsSummit(id).collect {
+                _summitToCompare.postValue(DataStatus.success(it, false))
+            }
         }
     }
 

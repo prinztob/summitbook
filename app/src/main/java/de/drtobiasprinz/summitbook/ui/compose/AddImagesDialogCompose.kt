@@ -2,7 +2,6 @@ package de.drtobiasprinz.summitbook.ui.compose
 
 import android.content.Intent
 import android.graphics.BitmapFactory
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -37,6 +36,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,6 +71,7 @@ fun AddImagesDialogCompose(
     summit: Summit?,
     onDismiss: () -> Unit,
     onSaveSummit: (Boolean, Summit) -> Job,
+    onShowSnackbar: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -77,7 +79,7 @@ fun AddImagesDialogCompose(
     var localSummit by remember { mutableStateOf<Summit?>(null) }
     var imageFiles by remember { mutableStateOf<List<Pair<Int, File>>>(emptyList()) }
     var canImageBeOnFirstPosition by remember { mutableStateOf<Map<Int, Boolean>>(emptyMap()) }
-    var isLoading by remember { mutableStateOf(false) }
+    var isLoading by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var imageToDelete by remember { mutableStateOf<Int?>(null) }
 
@@ -86,15 +88,22 @@ fun AddImagesDialogCompose(
     val deleteCancel = stringResource(R.string.delete_cancel)
 
     // Crop selection state
-    var selectedCropValues by remember { mutableStateOf(CropValues.HORIZONTAL) }
+    var selectedCropValues by rememberSaveable(
+        stateSaver = listSaver<CropValues, Float>(
+            save = { listOf(it.width, it.height) },
+            restore = { CropValues(it[0], it[1]) }
+        )
+    ) { mutableStateOf(CropValues.HORIZONTAL) }
 
     // Load summit data
     LaunchedEffect(summit) {
         summit?.let { s ->
             localSummit = s.clone()
+            isLoading = true
             loadImageFiles(s) { files, canBeFirst ->
                 imageFiles = files
                 canImageBeOnFirstPosition = canBeFirst
+                isLoading = false
             }
         }
     }
@@ -108,10 +117,12 @@ fun AddImagesDialogCompose(
             currentSummit.getNextImagePath(true)
             onSaveSummit(true, currentSummit)
             // Reload images
+            isLoading = true
             scope.launch {
                 loadImageFiles(currentSummit) { files, canBeFirst ->
                     imageFiles = files
                     canImageBeOnFirstPosition = canBeFirst
+                    isLoading = false
                 }
             }
         }
@@ -126,10 +137,12 @@ fun AddImagesDialogCompose(
                 val currentSummit = localSummit ?: return@let
                 val destinationUri = currentSummit.getNextImagePath().toFile().toUri()
 
-                UCrop.of(sourceUri, destinationUri)
-                    .withAspectRatio(selectedCropValues.width, selectedCropValues.height)
-                    .withMaxResultSize(2048, 2048)
-                    .start(context as android.app.Activity, uCropLauncher)
+                (context as? android.app.Activity)?.let { activity ->
+                    UCrop.of(sourceUri, destinationUri)
+                        .withAspectRatio(selectedCropValues.width, selectedCropValues.height)
+                        .withMaxResultSize(2048, 2048)
+                        .start(activity, uCropLauncher)
+                }
             }
         }
     }
@@ -139,21 +152,22 @@ fun AddImagesDialogCompose(
         val currentSummit = localSummit ?: return
         val imagePath = currentSummit.getImagePath(imageId).toFile()
 
-        if (imagePath.delete()) {
-            currentSummit.imageIds.remove(imageId)
-            onSaveSummit(true, currentSummit)
-            // Reload images
-            scope.launch {
+        isLoading = true
+        scope.launch {
+            val deleted = withContext(Dispatchers.IO) { imagePath.delete() }
+            if (deleted) {
+                currentSummit.imageIds.remove(imageId)
+                onSaveSummit(true, currentSummit)
+                // Reload images
                 loadImageFiles(currentSummit) { files, canBeFirst ->
                     imageFiles = files
                     canImageBeOnFirstPosition = canBeFirst
+                    isLoading = false
                 }
+                onShowSnackbar(deleteImageDone)
+            } else {
+                isLoading = false
             }
-            Toast.makeText(
-                context,
-                deleteImageDone,
-                Toast.LENGTH_SHORT
-            ).show()
         }
     }
 
@@ -198,7 +212,7 @@ fun AddImagesDialogCompose(
         properties = DialogProperties(
             usePlatformDefaultWidth = false,
             dismissOnBackPress = true,
-            dismissOnClickOutside = true
+            dismissOnClickOutside = false
         )
     ) {
         Surface(
@@ -342,11 +356,7 @@ fun AddImagesDialogCompose(
                     onClick = {
                         showDeleteDialog = false
                         imageToDelete = null
-                        Toast.makeText(
-                            context,
-                            deleteCancel,
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        onShowSnackbar(deleteCancel)
                     }
                 ) {
                     Text(stringResource(android.R.string.cancel))

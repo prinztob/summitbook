@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import android.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -74,10 +73,15 @@ import java.util.Date
 import java.util.GregorianCalendar
 import java.util.TimeZone
 import kotlin.math.floor
+import androidx.compose.runtime.saveable.rememberSaveable
+import de.drtobiasprinz.summitbook.ui.theme.ChartRed
 import de.drtobiasprinz.summitbook.ui.theme.ChartTextDarkGray
 import de.drtobiasprinz.summitbook.ui.theme.ChartTextLightGray
 import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
 import de.drtobiasprinz.summitbook.ui.theme.DarkCanvasDeep
+import de.drtobiasprinz.summitbook.ui.theme.DarkGrid
+import de.drtobiasprinz.summitbook.ui.theme.SurfaceLightGray
+import de.drtobiasprinz.summitbook.ui.theme.SurfaceMidGray
 
 @Composable
 fun BarChartScreen(
@@ -93,22 +97,26 @@ fun BarChartScreen(
         PreferenceManager.getDefaultSharedPreferences(context)
     }
 
-    var selectedXAxisSpinnerEntry by remember {
+    var selectedXAxisSpinnerEntry by rememberSaveable(
+        stateSaver = enumSaver<BarChartXAxisSelector>()
+    ) {
         mutableStateOf(
             if (areMoreThanOneYearSelected) BarChartXAxisSelector.DateByYear else BarChartXAxisSelector.DateByMonth
         )
     }
-    var selectedYAxisSpinnerEntry by remember { mutableStateOf(BarChartYAxisSelector.TotalActivities) }
-    var selectedZAxisSpinnerEntry by remember { mutableStateOf(BarChartZAxisSelector.PerSportGroup) }
-    var selectedXAxisSpinnerMonth by remember { mutableIntStateOf(0) }
-    var includeFilteredDailyActivitySummaries by remember { mutableStateOf(false) }
+    var selectedYAxisSpinnerEntry by rememberSaveable(stateSaver = enumSaver<BarChartYAxisSelector>()) {
+        mutableStateOf(BarChartYAxisSelector.TotalActivities)
+    }
+    var selectedZAxisSpinnerEntry by rememberSaveable(stateSaver = enumSaver<BarChartZAxisSelector>()) {
+        mutableStateOf(BarChartZAxisSelector.PerSportGroup)
+    }
+    var selectedXAxisSpinnerMonth by rememberSaveable { mutableIntStateOf(0) }
+    var includeFilteredDailyActivitySummaries by rememberSaveable { mutableStateOf(false) }
 
     var barChartEntries by remember { mutableStateOf<List<BarEntry>>(emptyList()) }
     var lineChartEntriesForecast by remember { mutableStateOf<List<Entry>>(emptyList()) }
     var minDate by remember { mutableStateOf(Date()) }
     var intervalHelper by remember { mutableStateOf<IntervalHelper?>(null) }
-    var unit by remember { mutableStateOf("hm") }
-    var label by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
 
     val indoorHeightMeterPercent = remember {
@@ -122,17 +130,20 @@ fun BarChartScreen(
     val labelLabel = stringResource(selectedYAxisSpinnerEntry.nameId)
     val forecastLabel = stringResource(R.string.forecast)
     val allLabel = stringResource(R.string.all)
-    val symbols = DateFormatSymbols()
-    val monthNames = remember {
+    var unit by remember { mutableStateOf(unitLabel) }
+    var label by remember { mutableStateOf(labelLabel) }
+    val locale = LocalConfiguration.current.locales[0]
+    val fullMonthNames = remember(locale) { DateFormatSymbols(locale).months }
+    val monthNames = remember(allLabel, locale) {
         mutableListOf(allLabel).apply {
-            addAll(symbols.shortMonths.toList())
+            addAll(DateFormatSymbols(locale).shortMonths.toList())
         }
     }
 
-    val textColor = if (isDark) Color.WHITE else Color.BLACK
-    val gridColor = if (isDark) ChartTextDarkGray.toArgb() else Color.LTGRAY
-    val chartBackgroundColor = if (isDark) DarkCanvas.toArgb() else Color.WHITE
-    val forecastLineColor = if (isDark) Color.LTGRAY else Color.DKGRAY
+    val textColor = if (isDark) ChartTextLightGray.toArgb() else ChartTextDarkGray.toArgb()
+    val gridColor = if (isDark) DarkGrid.toArgb() else SurfaceMidGray.toArgb()
+    val chartBackgroundColor = if (isDark) DarkCanvas.toArgb() else SurfaceLightGray.toArgb()
+    val forecastLineColor = if (isDark) ChartTextLightGray.toArgb() else ChartTextDarkGray.toArgb()
 
     // Process data when summits or filters change
     LaunchedEffect(
@@ -192,6 +203,8 @@ fun BarChartScreen(
             label = labelLabel
             isLoading = false
         } else {
+            barChartEntries = emptyList()
+            lineChartEntriesForecast = emptyList()
             isLoading = false
         }
     }
@@ -232,6 +245,8 @@ fun BarChartScreen(
         // Chart section
         var selectedEntry by remember { mutableStateOf<BarEntry?>(null) }
         var selectedHighlight by remember { mutableStateOf<Highlight?>(null) }
+        var lastAppliedInputs by remember { mutableStateOf<CombinedChartInputs?>(null) }
+        var lastAppliedXAxis by remember { mutableStateOf<BarChartXAxisSelector?>(null) }
 
         Box(
             modifier = Modifier
@@ -241,6 +256,111 @@ fun BarChartScreen(
                 .background(androidx.compose.ui.graphics.Color(chartBackgroundColor))
                 .padding(8.dp, top = 0.dp)
         ) {
+            AndroidView(
+                factory = { ctx ->
+                    CombinedChart(ctx).apply {
+                        setDrawOrder(
+                            arrayOf(
+                                DrawOrder.BUBBLE,
+                                DrawOrder.CANDLE,
+                                DrawOrder.BAR,
+                                DrawOrder.SCATTER,
+                                DrawOrder.LINE
+                            )
+                        )
+                        legend.isWordWrapEnabled = true
+                        xAxis.textColor = textColor
+                        xAxis.position = XAxis.XAxisPosition.BOTTOM
+                        axisLeft.textColor = textColor
+                        axisRight.isEnabled = false
+                        legend.textColor = textColor
+                        setBackgroundColor(chartBackgroundColor)
+                        description.isEnabled = false
+                        setTouchEnabled(true)
+                        setDrawValueAboveBar(false)
+                        renderer = BarChartCustomRenderer(this, animator, viewPortHandler)
+                        setOnChartValueSelectedListener(object : com.github.mikephil.charting.listener.OnChartValueSelectedListener {
+                            override fun onValueSelected(e: Entry?, h: Highlight?) {
+                                if (e != null && h != null && e is BarEntry) {
+                                    selectedEntry = e
+                                    selectedHighlight = h
+                                } else {
+                                    selectedEntry = null
+                                    selectedHighlight = null
+                                }
+                            }
+
+                            override fun onNothingSelected() {
+                                selectedEntry = null
+                                selectedHighlight = null
+                            }
+                        })
+                    }
+                },
+                modifier = Modifier.fillMaxSize(),
+                update = { chart ->
+                    val inputs = CombinedChartInputs(
+                        barChartEntries = barChartEntries,
+                        lineChartEntriesForecast = lineChartEntriesForecast,
+                        selectedXAxisSpinnerEntry = selectedXAxisSpinnerEntry,
+                        selectedYAxisSpinnerEntry = selectedYAxisSpinnerEntry,
+                        selectedZAxisSpinnerEntry = selectedZAxisSpinnerEntry,
+                        unit = unit,
+                        label = label,
+                        intervalHelper = intervalHelper
+                    )
+                    val inputsChanged = lastAppliedInputs != inputs
+                    val xAxisChanged = lastAppliedXAxis != selectedXAxisSpinnerEntry
+                    updateCombinedChart(
+                        combinedChart = chart,
+                        barChartEntries = barChartEntries,
+                        lineChartEntriesForecast = lineChartEntriesForecast,
+                        selectedXAxisSpinnerEntry = selectedXAxisSpinnerEntry,
+                        selectedYAxisSpinnerEntry = selectedYAxisSpinnerEntry,
+                        selectedZAxisSpinnerEntry = selectedZAxisSpinnerEntry,
+                        sharedPreferences = sharedPreferences,
+                        intervalHelper = intervalHelper,
+                        unit = unit,
+                        label = label,
+                        textColor = textColor,
+                        gridColor = gridColor,
+                        chartBackgroundColor = chartBackgroundColor,
+                        forecastLineColor = forecastLineColor,
+                        forecastLabel = forecastLabel,
+                        fullMonthNames = fullMonthNames,
+                        rebuildData = inputsChanged,
+                        scrollToLatest = xAxisChanged,
+                        context = context
+                    )
+                    if (inputsChanged) {
+                        lastAppliedInputs = inputs
+                    }
+                    if (xAxisChanged) {
+                        lastAppliedXAxis = selectedXAxisSpinnerEntry
+                    }
+                }
+            )
+
+            // Compose-based marker overlay
+            intervalHelper?.let { helper ->
+                selectedEntry?.let { entry ->
+                    selectedHighlight?.let { highlight ->
+                        ChartMarkerCompose(
+                            entry = entry,
+                            highlight = highlight,
+                            selectedXAxisSpinnerEntry = selectedXAxisSpinnerEntry,
+                            selectedZAxisSpinnerEntry = selectedZAxisSpinnerEntry,
+                            minDate = minDate,
+                            unit = unit,
+                            intervalHelper = helper,
+                            lineChartEntriesForecast = lineChartEntriesForecast,
+                            isDark = isDark,
+                            modifier = Modifier.align(Alignment.TopStart)
+                        )
+                    }
+                }
+            }
+
             if (isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -248,82 +368,7 @@ fun BarChartScreen(
                 ) {
                     CircularProgressIndicator()
                 }
-            } else if (barChartEntries.isNotEmpty()) {
-                AndroidView(
-                    factory = { ctx ->
-                        CombinedChart(ctx).apply {
-                            setDrawOrder(
-                                arrayOf(
-                                    DrawOrder.BUBBLE,
-                                    DrawOrder.CANDLE,
-                                    DrawOrder.BAR,
-                                    DrawOrder.SCATTER,
-                                    DrawOrder.LINE
-                                )
-                            )
-                            legend.isWordWrapEnabled = true
-                            xAxis.textColor = textColor
-                            xAxis.position = XAxis.XAxisPosition.BOTTOM
-                            axisLeft.textColor = textColor
-                            axisRight.isEnabled = false
-                            legend.textColor = textColor
-                            setBackgroundColor(chartBackgroundColor)
-                            description.isEnabled = false
-                            setTouchEnabled(true)
-                            setDrawValueAboveBar(false)
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                    update = { chart ->
-                        updateCombinedChart(
-                            combinedChart = chart,
-                            barChartEntries = barChartEntries,
-                            lineChartEntriesForecast = lineChartEntriesForecast,
-                            selectedXAxisSpinnerEntry = selectedXAxisSpinnerEntry,
-                            selectedYAxisSpinnerEntry = selectedYAxisSpinnerEntry,
-                            selectedZAxisSpinnerEntry = selectedZAxisSpinnerEntry,
-                            sharedPreferences = sharedPreferences,
-                            intervalHelper = intervalHelper,
-                            unit = unit,
-                            label = label,
-                            textColor = textColor,
-                            gridColor = gridColor,
-                            chartBackgroundColor = chartBackgroundColor,
-                            forecastLineColor = forecastLineColor,
-                            forecastLabel = forecastLabel,
-                            context = context,
-                            onEntrySelected = { entry, highlight ->
-                                selectedEntry = entry
-                                selectedHighlight = highlight
-                            },
-                            onNothingSelected = {
-                                selectedEntry = null
-                                selectedHighlight = null
-                            }
-                        )
-                    }
-                )
-
-                // Compose-based marker overlay
-                intervalHelper?.let { helper ->
-                    selectedEntry?.let { entry ->
-                        selectedHighlight?.let { highlight ->
-                            ChartMarkerCompose(
-                                entry = entry,
-                                highlight = highlight,
-                                selectedXAxisSpinnerEntry = selectedXAxisSpinnerEntry,
-                                selectedZAxisSpinnerEntry = selectedZAxisSpinnerEntry,
-                                minDate = minDate,
-                                unit = unit,
-                                intervalHelper = helper,
-                                lineChartEntriesForecast = lineChartEntriesForecast,
-                                isDark = isDark,
-                                modifier = Modifier.align(Alignment.TopStart)
-                            )
-                        }
-                    }
-                }
-                } else {
+            } else if (barChartEntries.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -331,7 +376,7 @@ fun BarChartScreen(
                     Text(
                         text = stringResource(R.string.no_data_available),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (isDark) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color.Black
+                        color = if (isDark) ChartTextLightGray else ChartTextDarkGray
                     )
                 }
             }
@@ -363,9 +408,9 @@ fun SpinnerSection(
     var showMonthDropdown by remember { mutableStateOf(false) }
 
     val textColor =
-        if (isDarkTheme) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color.Black
+        if (isDarkTheme) ChartTextLightGray else ChartTextDarkGray
     val backgroundColor =
-        if (isDarkTheme) DarkCanvas else androidx.compose.ui.graphics.Color.White
+        if (isDarkTheme) DarkCanvas else SurfaceLightGray
 
     Column(
         modifier = Modifier
@@ -626,9 +671,10 @@ private fun updateCombinedChart(
     chartBackgroundColor: Int,
     forecastLineColor: Int,
     forecastLabel: String,
-    context: android.content.Context,
-    onEntrySelected: (BarEntry, Highlight) -> Unit,
-    onNothingSelected: () -> Unit
+    fullMonthNames: Array<String>,
+    rebuildData: Boolean,
+    scrollToLatest: Boolean,
+    context: android.content.Context
 ) {
     if (intervalHelper == null) return
 
@@ -639,150 +685,151 @@ private fun updateCombinedChart(
     combinedChart.axisLeft.gridColor = gridColor
     combinedChart.legend.textColor = textColor
 
-    val combinedData = CombinedData()
+    if (rebuildData) {
+        val combinedData = CombinedData()
 
-    // Set bar data
-    val barDataSet = BarDataSet(barChartEntries, label).apply {
-        setDrawValues(false)
-        highLightColor = Color.RED
-        colors = selectedZAxisSpinnerEntry.getColors(context)
-        stackLabels = selectedZAxisSpinnerEntry.getStackLabels(context)
-    }
-    combinedData.setData(BarData(barDataSet))
-
-    // Set line data for forecast
-    if (lineChartEntriesForecast.isNotEmpty()) {
-        val lineDataSet = LineDataSet(lineChartEntriesForecast, forecastLabel).apply {
+        // Set bar data
+        val barDataSet = BarDataSet(barChartEntries, label).apply {
             setDrawValues(false)
-            setDrawCircles(false)
-            isHighlightEnabled = false
-            color = forecastLineColor
-            circleHoleColor = Color.RED
-            highLightColor = Color.RED
-            lineWidth = 2f
-            mode = LineDataSet.Mode.STEPPED
+            highLightColor = ChartRed.toArgb()
+            colors = selectedZAxisSpinnerEntry.getColors(context)
+            stackLabels = selectedZAxisSpinnerEntry.getStackLabels(context)
         }
-        combinedData.setData(LineData(lineDataSet))
-    }
+        combinedData.setData(BarData(barDataSet))
 
-    // Configure X axis
-    val max = barChartEntries.maxByOrNull { it.x }?.x ?: 0f
-    val min = barChartEntries.minByOrNull { it.x }?.x ?: 0f
-    combinedChart.xAxis.axisMaximum =
-        if (selectedXAxisSpinnerEntry.isAQuality && max < 10) 10.5f else max + 0.5f
-    combinedChart.xAxis.axisMinimum = min - 0.5f
-    combinedChart.xAxis.valueFormatter = object : ValueFormatter() {
-        override fun getFormattedValue(value: Float): String {
-            return when (selectedXAxisSpinnerEntry) {
-                BarChartXAxisSelector.DateByYear,
-                BarChartXAxisSelector.DateByYearUntilToday -> {
-                    String.format("%s", value.toInt())
-                }
+        // Set line data for forecast
+        if (lineChartEntriesForecast.isNotEmpty()) {
+            val lineDataSet = LineDataSet(lineChartEntriesForecast, forecastLabel).apply {
+                setDrawValues(false)
+                setDrawCircles(false)
+                isHighlightEnabled = false
+                color = forecastLineColor
+                circleHoleColor = ChartRed.toArgb()
+                highLightColor = ChartRed.toArgb()
+                lineWidth = 2f
+                mode = LineDataSet.Mode.STEPPED
+            }
+            combinedData.setData(LineData(lineDataSet))
+        }
 
-                BarChartXAxisSelector.DateByWeek -> {
-                    String.format("%s", value.toInt() % 52)
-                }
+        // Configure X axis
+        val max = barChartEntries.maxOfOrNull { it.x } ?: 0f
+        val min = barChartEntries.minByOrNull { it.x }?.x ?: 0f
+        combinedChart.xAxis.axisMaximum =
+            if (selectedXAxisSpinnerEntry.isAQuality && max < 10) 10.5f else max + 0.5f
+        combinedChart.xAxis.axisMinimum = min - 0.5f
+        combinedChart.xAxis.valueFormatter = object : ValueFormatter() {
+            override fun getFormattedValue(value: Float): String {
+                return when (selectedXAxisSpinnerEntry) {
+                    BarChartXAxisSelector.DateByYear,
+                    BarChartXAxisSelector.DateByYearUntilToday -> {
+                        String.format("%s", value.toInt())
+                    }
 
-                BarChartXAxisSelector.DateByMonth -> {
-                    String.format(
-                        "%s",
-                        DateFormatSymbols(context.resources.configuration.locales[0]).months[(value % 12f).toInt()]
-                    )
-                }
+                    BarChartXAxisSelector.DateByWeek -> {
+                        String.format("%s", value.toInt() % 52)
+                    }
 
-                BarChartXAxisSelector.DateByQuarter -> {
-                    String.format("%s", toRomanNumerics((value.toInt() + 1) % 4))
-                }
-
-                else -> {
-                    if (selectedXAxisSpinnerEntry.isAQuality) {
-                        getFormattedValueForQuantity(
-                            value,
-                            selectedXAxisSpinnerEntry,
-                            intervalHelper
-                        )
-                    } else {
+                    BarChartXAxisSelector.DateByMonth -> {
                         String.format(
                             "%s",
-                            ((value + 0.5) * selectedXAxisSpinnerEntry.stepsSize).toInt()
+                            fullMonthNames[(value % 12f).toInt()]
                         )
+                    }
+
+                    BarChartXAxisSelector.DateByQuarter -> {
+                        String.format("%s", toRomanNumerics((value.toInt() + 1) % 4))
+                    }
+
+                    else -> {
+                        if (selectedXAxisSpinnerEntry.isAQuality) {
+                            getFormattedValueForQuantity(
+                                value,
+                                selectedXAxisSpinnerEntry,
+                                intervalHelper
+                            )
+                        } else {
+                            String.format(
+                                "%s",
+                                ((value + 0.5) * selectedXAxisSpinnerEntry.stepsSize).toInt()
+                            )
+                        }
                     }
                 }
             }
         }
-    }
 
-    // Configure Y axis
-    combinedChart.axisLeft.valueFormatter = object : ValueFormatter() {
-        override fun getFormattedValue(value: Float): String {
-            return String.format(
-                context.resources.configuration.locales[0],
-                "%.0f %s",
-                value,
-                unit
-            )
-        }
-    }
-
-    // Add limit line for annual target
-    combinedChart.axisLeft.removeAllLimitLines()
-    var annualTarget: Float = sharedPreferences.getString(
-        selectedYAxisSpinnerEntry.sharedPreferenceKey,
-        selectedYAxisSpinnerEntry.defaultAnnualTarget.toString()
-    )?.toFloat() ?: selectedYAxisSpinnerEntry.defaultAnnualTarget.toFloat()
-
-    when (selectedXAxisSpinnerEntry) {
-        BarChartXAxisSelector.DateByWeek -> annualTarget /= 52f
-        BarChartXAxisSelector.DateByYear -> {
-            // annual target stays the same for full year view
-        }
-
-        BarChartXAxisSelector.DateByMonth -> annualTarget /= 12f
-        BarChartXAxisSelector.DateByQuarter -> annualTarget /= 4f
-        else -> { /* Do nothing */
-        }
-    }
-
-    val limitLine = LimitLine(annualTarget)
-    combinedChart.axisLeft.addLimitLine(limitLine)
-
-    // Set custom renderer
-    val barChartCustomRenderer = BarChartCustomRenderer(
-        combinedChart,
-        combinedChart.animator,
-        combinedChart.viewPortHandler
-    )
-    combinedChart.renderer = barChartCustomRenderer
-
-    // Set up selection listener to trigger Compose marker
-    combinedChart.setOnChartValueSelectedListener(object : com.github.mikephil.charting.listener.OnChartValueSelectedListener {
-        override fun onValueSelected(e: Entry?, h: Highlight?) {
-            if (e != null && h != null && e is BarEntry) {
-                onEntrySelected(e, h)
-            } else {
-                onNothingSelected()
+        // Configure Y axis
+        combinedChart.axisLeft.valueFormatter = object : ValueFormatter() {
+            override fun getFormattedValue(value: Float): String {
+                return String.format(
+                    context.resources.configuration.locales[0],
+                    "%.0f %s",
+                    value,
+                    unit
+                )
             }
         }
 
-        override fun onNothingSelected() {
-            onNothingSelected()
+        // Add limit line for annual target
+        combinedChart.axisLeft.removeAllLimitLines()
+        var annualTarget: Float = sharedPreferences.getString(
+            selectedYAxisSpinnerEntry.sharedPreferenceKey,
+            selectedYAxisSpinnerEntry.defaultAnnualTarget.toString()
+        )?.toFloat() ?: selectedYAxisSpinnerEntry.defaultAnnualTarget.toFloat()
+
+        when (selectedXAxisSpinnerEntry) {
+            BarChartXAxisSelector.DateByWeek -> annualTarget /= 52f
+            BarChartXAxisSelector.DateByYear -> {
+                // annual target stays the same for full year view
+            }
+
+            BarChartXAxisSelector.DateByMonth -> annualTarget /= 12f
+            BarChartXAxisSelector.DateByQuarter -> annualTarget /= 4f
+            else -> { /* Do nothing */
+            }
         }
-    })
 
-    combinedChart.data = combinedData
-    combinedChart.setVisibleXRangeMinimum(if (barChartEntries.size < 12) (barChartEntries.size + 1).toFloat() else 12f)
+        val limitLine = LimitLine(annualTarget)
+        combinedChart.axisLeft.addLimitLine(limitLine)
 
-    if (selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart != -1f) {
-        combinedChart.setVisibleXRangeMaximum(selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart)
-        if (!selectedXAxisSpinnerEntry.isAQuality) {
-            combinedChart.moveViewToX(
-                barChartEntries.maxOf { it.x } - selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart + 1
-            )
+        combinedChart.data = combinedData
+        combinedChart.setVisibleXRangeMinimum(if (barChartEntries.size < 12) (barChartEntries.size + 1).toFloat() else 12f)
+
+        if (selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart != -1f) {
+            combinedChart.setVisibleXRangeMaximum(selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart)
         }
     }
 
-    combinedChart.invalidate()
+    if (scrollToLatest &&
+        selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart != -1f &&
+        !selectedXAxisSpinnerEntry.isAQuality &&
+        barChartEntries.isNotEmpty()
+    ) {
+        combinedChart.moveViewToX(
+            barChartEntries.maxOf { it.x } - selectedXAxisSpinnerEntry.maxVisibilityRangeForBarChart + 1
+        )
+    }
+
+    if (rebuildData || scrollToLatest) {
+        combinedChart.invalidate()
+    }
 }
+
+/**
+ * Inputs that fully describe the chart's rendered content; compared between
+ * recompositions so [updateCombinedChart] only rebuilds data when they change.
+ */
+private data class CombinedChartInputs(
+    val barChartEntries: List<BarEntry>,
+    val lineChartEntriesForecast: List<Entry>,
+    val selectedXAxisSpinnerEntry: BarChartXAxisSelector,
+    val selectedYAxisSpinnerEntry: BarChartYAxisSelector,
+    val selectedZAxisSpinnerEntry: BarChartZAxisSelector,
+    val unit: String,
+    val label: String,
+    val intervalHelper: IntervalHelper?
+)
 
 // Compose-based Chart Marker
 @Composable
@@ -893,7 +940,7 @@ fun ChartMarkerCompose(
     }
 
     val backgroundColor = if (isDark) DarkCanvas else androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.8f)
-    val textColor = androidx.compose.ui.graphics.Color.White
+    val textColor = ChartTextLightGray
 
     Surface(
         modifier = modifier.padding(8.dp),

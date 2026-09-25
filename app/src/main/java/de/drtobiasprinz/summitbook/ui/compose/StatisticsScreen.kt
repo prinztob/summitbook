@@ -50,7 +50,10 @@ import de.drtobiasprinz.summitbook.data.model.StatisticGroup
 import de.drtobiasprinz.summitbook.data.model.StatisticsData
 import de.drtobiasprinz.summitbook.ui.theme.ChartTextLightGray
 import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
+import de.drtobiasprinz.summitbook.ui.theme.DarkCanvasDeep
 import de.drtobiasprinz.summitbook.ui.theme.SurfaceMidGray
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.concurrent.TimeUnit
 
@@ -83,48 +86,53 @@ fun StatisticsScreen(
         dailyActivitySummaryList,
         includeNotPersistedActivities
     ) {
-        val summitsToUse = if (includeNotPersistedActivities) {
-            val notPersistedSummits = findDailyActivitySummariesWhichWasNotAddedToSummits(
-                dailyActivitySummaryList,
+        val statistics = withContext(Dispatchers.IO) {
+            val summitsToUse = if (includeNotPersistedActivities) {
+                val notPersistedSummits = findDailyActivitySummariesWhichWasNotAddedToSummits(
+                    dailyActivitySummaryList,
+                    filteredSummits
+                )
+                filteredSummits + parseAsSummit(notPersistedSummits)
+            } else {
                 filteredSummits
+            }
+
+            val statisticEntry = StatisticEntry(
+                summitsToUse,
+                annualTargetActivity.toIntOrNull() ?: 52,
+                annualTargetKm.toIntOrNull() ?: 1200,
+                annualTargetHm.toIntOrNull() ?: 50000,
+                indoorHeightMeterPercent
             )
-            filteredSummits + parseAsSummit(notPersistedSummits)
-        } else {
-            filteredSummits
+            statisticEntry.calculate()
+
+            val extremaValuesSummits = ExtremaValuesSummits(
+                summitsToUse, shouldIndoorActivityBeExcluded = true
+            )
+
+            StatisticsData(
+                totalActivities = statisticEntry.getTotalActivities(),
+                totalSummits = statisticEntry.getTotalSummits(),
+                totalKm = statisticEntry.totalKm,
+                totalHm = statisticEntry.totalHm,
+                achievement = statisticEntry.getAchievement(),
+                visitedCountries = statisticEntry.getVisitedCountries(),
+                totalRoadSurfaceMeter = statisticEntry.totalRoadSurfaceMeter,
+                totalRoadTypeMeter = statisticEntry.totalRoadTypeMeter,
+                extremaValuesSummits = extremaValuesSummits,
+                forecasts = forecasts,
+                summits = summitsToUse
+            )
         }
-
-        val statisticEntry = StatisticEntry(
-            summitsToUse,
-            annualTargetActivity.toIntOrNull() ?: 52,
-            annualTargetKm.toIntOrNull() ?: 1200,
-            annualTargetHm.toIntOrNull() ?: 50000,
-            indoorHeightMeterPercent
-        )
-        statisticEntry.calculate()
-
-        val extremaValuesSummits = ExtremaValuesSummits(
-            summitsToUse, shouldIndoorActivityBeExcluded = true
-        )
-
-        statisticsData = StatisticsData(
-            totalActivities = statisticEntry.getTotalActivities(),
-            totalSummits = statisticEntry.getTotalSummits(),
-            totalKm = statisticEntry.totalKm,
-            totalHm = statisticEntry.totalHm,
-            achievement = statisticEntry.getAchievement(),
-            visitedCountries = statisticEntry.getVisitedCountries(),
-            totalRoadSurfaceMeter = statisticEntry.totalRoadSurfaceMeter,
-            totalRoadTypeMeter = statisticEntry.totalRoadTypeMeter,
-            extremaValuesSummits = extremaValuesSummits,
-            forecasts = forecasts,
-            summits = summitsToUse
-        )
+        statisticsData = statistics
     }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(ChartTextLightGray)
+            .background(
+                if (isSystemInDarkTheme()) DarkCanvasDeep else ChartTextLightGray
+            )
             .padding(8.dp)
     ) {
 
@@ -282,7 +290,7 @@ fun RoadDataSection(statisticsData: StatisticsData, distanceFormat: NumberFormat
             HorizontalScrollbarContainer {
                 statisticsData.totalRoadSurfaceMeter.forEach { (surface, meters) ->
                     SurfaceCard(
-                        surface.name.replace("_", " "),
+                        stringResource(surface.nameId),
                         meters / 1000.0,
                         distanceFormat
                     )
@@ -298,7 +306,7 @@ fun RoadDataSection(statisticsData: StatisticsData, distanceFormat: NumberFormat
             HorizontalScrollbarContainer {
                 statisticsData.totalRoadTypeMeter.forEach { (roadType, meters) ->
                     SurfaceCard(
-                        roadType.name.replace("_", " "),
+                        stringResource(roadType.nameId),
                         meters / 1000.0,
                         distanceFormat
                     )

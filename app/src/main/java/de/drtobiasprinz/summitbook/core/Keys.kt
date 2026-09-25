@@ -23,4 +23,5 @@ object Keys {
     const val PREF_EXPORT_THIRD_PARTY_DATA: String = "export_third_party_data"
     const val PREF_EXPORT_CALCULATED_DATA: String = "export_calculated_data"
     const val PREF_OS_MAP_BOUNDING_BOX: String = "os_map_bounding_box"
+    const val PREF_MAP_PROVIDER: String = "map_provider"
 }

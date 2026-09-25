@@ -490,6 +490,15 @@ fun CompareDropdown(
                 onPageChanged = { currentPage = it }
             )
 
+            // "None" entry to clear the comparison, visible on every page
+            DropdownMenuItem(
+                text = { Text(text = stringResource(R.string.none)) },
+                onClick = {
+                    onSummitSelected(null)
+                    expanded = false
+                }
+            )
+
             // Paginated items
             paginatedItems.forEach { summit ->
                 DropdownMenuItem(
@@ -808,7 +817,7 @@ fun SegmentsSection(
 ) {
     // updateSegmentInfo() sorts segment entry lists and writes back into the
     // entity; keep that side effect out of composition and off the main thread
-    var segmentInfo by remember { mutableStateOf(summit.segmentInfo) }
+    var segmentInfo by remember(summit.id) { mutableStateOf(summit.segmentInfo) }
     LaunchedEffect(summit.id, segments) {
         withContext(Dispatchers.IO) {
             @Suppress("UNCHECKED_CAST")
@@ -820,6 +829,9 @@ fun SegmentsSection(
     if (segmentInfo.isEmpty()) return
 
     var selectedSegment by remember { mutableStateOf<Triple<*, *, *>?>(null) }
+    LaunchedEffect(summit.id) {
+        selectedSegment = null
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -899,6 +911,9 @@ fun MountainPassesSection(
     val locale = LocalConfiguration.current.locales[0]
 
     var selectedPass by remember { mutableStateOf<SegmentEntry?>(null) }
+    LaunchedEffect(summit.id) {
+        selectedPass = null
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),

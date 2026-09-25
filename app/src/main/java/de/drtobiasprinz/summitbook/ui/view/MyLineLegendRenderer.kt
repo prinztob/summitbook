@@ -41,15 +41,20 @@ class MyLineLegendRenderer internal constructor(chart: LineDataProvider?, animat
 
     override fun drawCubicFill(c: Canvas, dataSet: ILineDataSet, spline: Path, trans: Transformer, bounds: XBounds) {
         val phaseY = mAnimator.phaseY
-        val boundaryEntries = (dataSet.fillFormatter as MyFillFormatter).fillLineBoundary
-        val boundaryEntry = boundaryEntries[bounds.min + bounds.range]
+        val formatter = dataSet.fillFormatter
+        if (formatter !is MyFillFormatter) {
+            super.drawCubicFill(c, dataSet, spline, trans, bounds)
+            return
+        }
+        val boundaryEntries = formatter.fillLineBoundary
+        val boundaryEntry = boundaryEntries.getOrNull(bounds.min + bounds.range) ?: return
         spline.lineTo(boundaryEntry.x, boundaryEntry.y * phaseY)
 
         var prev = dataSet.getEntryForIndex(bounds.min + bounds.range)
         var cur = prev
         for (x in bounds.min + bounds.range downTo bounds.min) {
             prev = cur
-            cur = boundaryEntries[x]
+            cur = boundaryEntries.getOrNull(x) ?: return
             val cpx = prev.x + (cur.x - prev.x) / 2.0f
             spline.cubicTo(
                     cpx, prev.y * phaseY,
@@ -74,8 +79,13 @@ class MyLineLegendRenderer internal constructor(chart: LineDataProvider?, animat
         if (dataSet.fillFormatter is MyFillFormatter) {
 
             val boundaryEntries = (dataSet.fillFormatter as MyFillFormatter).fillLineBoundary
+            if (boundaryEntries.size < dataSet.entryCount) {
+                // Boundary series shorter than the main series: indices would
+                // not line up, so skip the fill instead of crashing.
+                return
+            }
             val entry = dataSet.getEntryForIndex(startIndex)
-            val boundaryEntry = boundaryEntries[startIndex]
+            val boundaryEntry = boundaryEntries.getOrNull(startIndex) ?: return
 
             outputPath.moveTo(entry.x, boundaryEntry.y * phaseY)
             outputPath.lineTo(entry.x, entry.y * phaseY)
@@ -88,7 +98,7 @@ class MyLineLegendRenderer internal constructor(chart: LineDataProvider?, animat
 
             var boundaryEntry1: Entry
             for (x in endIndex downTo startIndex + 1) {
-                boundaryEntry1 = boundaryEntries[x]
+                boundaryEntry1 = boundaryEntries.getOrNull(x) ?: return
                 outputPath.lineTo(boundaryEntry1.x, boundaryEntry1.y * phaseY)
             }
             outputPath.close()

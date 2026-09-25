@@ -2,7 +2,6 @@ package de.drtobiasprinz.summitbook.ui.compose
 
 import android.content.Context
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -62,9 +62,11 @@ fun FileInfoDialogCompose(
     entry: Summit,
     onUpdateSummit: (Boolean, Summit) -> Job,
     onDismiss: () -> Unit,
-    onLoadingStateChanged: (Boolean) -> Unit = {}
+    onLoadingStateChanged: (Boolean) -> Unit,
+    onShowSnackbar: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val coroutineScope = rememberCoroutineScope()
     val cacheDir = remember {
         File(
@@ -76,15 +78,25 @@ fun FileInfoDialogCompose(
     // Track file states
     val fileStates = remember { mutableStateMapOf<FileRowType, FileState>() }
 
+    // Track in-flight operations so double taps can't race the same file
+    val rowsInFlight = remember { mutableStateMapOf<FileRowType, Boolean>() }
+
+    suspend fun refreshFileState(fileRowType: FileRowType) {
+        withContext(Dispatchers.IO) {
+            val updatedFile = fileRowType.getFile(entry)
+            val exists = updatedFile.exists()
+            fileStates[fileRowType] = FileState(
+                exists = exists,
+                size = if (exists) formatFileSize(updatedFile.length()) else "-",
+                lastModified = if (exists) formatLastModified(updatedFile.lastModified()) else "-"
+            )
+        }
+    }
+
     // Initialize file states
     LaunchedEffect(entry) {
         FileRowType.entries.forEach { fileRowType ->
-            val file = fileRowType.getFile(entry)
-            fileStates[fileRowType] = FileState(
-                exists = file.exists(),
-                size = if (file.exists()) formatFileSize(file.length()) else "-",
-                lastModified = if (file.exists()) formatLastModified(file.lastModified()) else "-"
-            )
+            refreshFileState(fileRowType)
         }
     }
 
@@ -125,47 +137,102 @@ fun FileInfoDialogCompose(
                     val fileState = fileStates[fileRowType] ?: FileState(false, "-", "-")
                     val file = fileRowType.getFile(entry)
                     val isAlternate = index % 2 == 1
+                    val isInFlight = rowsInFlight[fileRowType] == true
 
                     FileRow(
                         fileName = file.name,
                         fileState = fileState,
                         isAlternate = isAlternate,
-                        onUpdate = {
+                        onUpdate = onUpdate@{
+                            if (isInFlight) return@onUpdate
+                            rowsInFlight[fileRowType] = true
                             onLoadingStateChanged(true)
                             val backupFile = File(cacheDir, file.name)
-                            updateFileData(file, backupFile, context)
                             coroutineScope.launch {
-                                withContext(Dispatchers.Default) {
-                                    fileRowType.updateAction.invoke(entry, backupFile)
-                                    if (fileRowType.shouldUpdateRoadInfos) {
-                                        updateRoadInfos(
-                                            context,
-                                            entry,
-                                            onUpdateSummit
-                                        )
+                                try {
+                                    withContext(Dispatchers.IO) {
+                                        backupFileData(file, backupFile) { message ->
+                                            onShowSnackbar(
+                                                resources.getString(
+                                                    R.string.failed_to_backup_file,
+                                                    message
+                                                )
+                                            )
+                                        }
+                                        fileRowType.updateAction.invoke(entry, backupFile)
+                                        if (fileRowType.shouldUpdateRoadInfos) {
+                                            updateRoadInfos(
+                                                context,
+                                                entry,
+                                                onUpdateSummit,
+                                                onShowSnackbar
+                                            )
+                                        }
                                     }
+                                } catch (e: kotlinx.coroutines.CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    Log.e("FileInfoDialog", "Update of ${file.name} failed", e)
+                                    onShowSnackbar(
+                                        resources.getString(
+                                            R.string.update_failed_file,
+                                            file.name,
+                                            e.message ?: ""
+                                        )
+                                    )
+                                } finally {
+                                    rowsInFlight[fileRowType] = false
+                                    onLoadingStateChanged(false)
+                                    refreshFileState(fileRowType)
                                 }
-                                onLoadingStateChanged(false)
-                                // Update file state
-                                val updatedFile = fileRowType.getFile(entry)
-                                fileStates[fileRowType] = FileState(
-                                    exists = updatedFile.exists(),
-                                    size = if (updatedFile.exists()) formatFileSize(updatedFile.length()) else "-",
-                                    lastModified = if (updatedFile.exists()) formatLastModified(updatedFile.lastModified()) else "-"
-                                )
                             }
                         },
-                        onRevert = {
-                            revertFileData(file, cacheDir, context) {
-                                // Update file state after revert
-                                val updatedFile = fileRowType.getFile(entry)
-                                fileStates[fileRowType] = FileState(
-                                    exists = updatedFile.exists(),
-                                    size = if (updatedFile.exists()) formatFileSize(updatedFile.length()) else "-",
-                                    lastModified = if (updatedFile.exists()) formatLastModified(updatedFile.lastModified()) else "-"
-                                )
+                        onRevert = onRevert@{
+                            if (isInFlight) return@onRevert
+                            rowsInFlight[fileRowType] = true
+                            val backupFile = File(cacheDir, file.name)
+                            coroutineScope.launch {
+                                try {
+                                    val restored = withContext(Dispatchers.IO) {
+                                        if (!backupFile.exists()) {
+                                            false
+                                        } else {
+                                            Files.move(
+                                                backupFile.toPath(),
+                                                file.toPath(),
+                                                StandardCopyOption.REPLACE_EXISTING
+                                            )
+                                            Log.i("FileInfoDialog", "Restored ${file.name} from cache")
+                                            true
+                                        }
+                                    }
+                                    if (restored) {
+                                        onShowSnackbar(
+                                            resources.getString(R.string.reverted_file, file.name)
+                                        )
+                                    } else {
+                                        onShowSnackbar(
+                                            resources.getString(R.string.no_backup_found, file.name)
+                                        )
+                                    }
+                                } catch (e: kotlinx.coroutines.CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    Log.e("FileInfoDialog", "Failed to restore file: ${e.message}")
+                                    onShowSnackbar(
+                                        resources.getString(
+                                            R.string.failed_to_restore_file,
+                                            e.message ?: ""
+                                        )
+                                    )
+                                } finally {
+                                    rowsInFlight[fileRowType] = false
+                                    refreshFileState(fileRowType)
+                                }
                             }
-                        }
+                        },
+                        isUpdateEnabled = !isInFlight,
+                        isRevertEnabled = !isInFlight
                     )
                 }
 
@@ -257,6 +324,8 @@ private fun FileRow(
     fileName: String,
     fileState: FileState,
     isAlternate: Boolean,
+    isUpdateEnabled: Boolean,
+    isRevertEnabled: Boolean,
     onUpdate: () -> Unit,
     onRevert: () -> Unit
 ) {
@@ -329,6 +398,7 @@ private fun FileRow(
         ) {
             IconButton(
                 onClick = onUpdate,
+                enabled = isUpdateEnabled,
                 modifier = Modifier.size(32.dp)
             ) {
                 Icon(
@@ -348,6 +418,7 @@ private fun FileRow(
         ) {
             IconButton(
                 onClick = onRevert,
+                enabled = isRevertEnabled,
                 modifier = Modifier.size(32.dp)
             ) {
                 Icon(
@@ -383,10 +454,10 @@ private fun formatLastModified(lastModified: Long): String {
     return dateFormat.format(Date(lastModified))
 }
 
-private fun updateFileData(
+private fun backupFileData(
     file: File,
     backupFile: File,
-    context: Context
+    onBackupFailed: (String) -> Unit
 ) {
     if (file.exists()) {
         try {
@@ -394,11 +465,7 @@ private fun updateFileData(
             Log.i("FileInfoDialog", "Backed up ${file.name} to cache")
         } catch (e: Exception) {
             Log.e("FileInfoDialog", "Failed to backup file: ${e.message}")
-            Toast.makeText(
-                context,
-                context.getString(R.string.failed_to_backup_file, e.message),
-                Toast.LENGTH_SHORT
-            ).show()
+            onBackupFailed(e.message ?: "")
         }
     }
 }
@@ -406,7 +473,8 @@ private fun updateFileData(
 private suspend fun updateRoadInfos(
     context: Context,
     entry: Summit,
-    onUpdateSummit: (Boolean, Summit) -> Job
+    onUpdateSummit: (Boolean, Summit) -> Job,
+    onShowSnackbar: (String) -> Unit
 ) {
     OfflineMapAnalyzer.from(context).use { analyzer ->
         if (OfflineMapAnalyzer.isDistancePerSurfacesAndRoadTypePossible(analyzer, entry)) {
@@ -415,52 +483,8 @@ private suspend fun updateRoadInfos(
             }
             if (updated) {
                 onUpdateSummit(true, entry)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.update_done_roadinfo),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+                onShowSnackbar(context.getString(R.string.update_done_roadinfo))
             }
         }
-    }
-}
-
-private fun revertFileData(
-    file: File,
-    cacheDir: File,
-    context: Context,
-    onRevertComplete: () -> Unit
-) {
-    val backupFile = File(cacheDir, file.name)
-
-    if (!backupFile.exists()) {
-        Toast.makeText(
-            context,
-            context.getString(R.string.no_backup_found, file.name),
-            Toast.LENGTH_SHORT
-        ).show()
-        return
-    }
-
-    try {
-        Files.move(backupFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING)
-        Log.i("FileInfoDialog", "Restored ${file.name} from cache")
-
-        Toast.makeText(
-            context,
-            context.getString(R.string.reverted_file, file.name),
-            Toast.LENGTH_SHORT
-        ).show()
-
-        onRevertComplete()
-    } catch (e: Exception) {
-        Log.e("FileInfoDialog", "Failed to restore file: ${e.message}")
-        Toast.makeText(
-            context,
-            context.getString(R.string.failed_to_restore_file, e.message),
-            Toast.LENGTH_SHORT
-        ).show()
     }
 }

@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import android.graphics.Color
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -29,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +58,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import androidx.compose.ui.graphics.Color as ComposeColor
+import androidx.compose.ui.graphics.toArgb
+import de.drtobiasprinz.summitbook.ui.theme.ChartRed
+import de.drtobiasprinz.summitbook.ui.theme.ChartTextDarkGray
 import de.drtobiasprinz.summitbook.ui.theme.ChartTextLightGray
 import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
 import de.drtobiasprinz.summitbook.ui.theme.DarkCanvasDeep
@@ -80,7 +83,9 @@ fun LineChartScreen(
 ) {
     val context = LocalContext.current
 
-    var lineChartSpinnerEntry by remember { mutableStateOf(OrderBySpinnerEntry.HeightMeter) }
+    var lineChartSpinnerEntry by rememberSaveable(stateSaver = enumSaver<OrderBySpinnerEntry>()) {
+        mutableStateOf(OrderBySpinnerEntry.HeightMeter)
+    }
     var lineChartEntries by remember { mutableStateOf<List<Entry>>(emptyList()) }
     var lineChartColors by remember { mutableStateOf<List<Int>>(emptyList()) }
     var showDropdown by remember { mutableStateOf(false) }
@@ -126,7 +131,7 @@ fun LineChartScreen(
 
     val backgroundColor =
         if (isDarkTheme) DarkCanvasDeep else ChartTextLightGray
-    val textColor = if (isDarkTheme) ComposeColor.White else ComposeColor.Black
+    val textColor = if (isDarkTheme) ChartTextLightGray else ChartTextDarkGray
 
     Column(
         modifier = Modifier
@@ -143,7 +148,7 @@ fun LineChartScreen(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.baseline_trending_up_black_24dp),
-                contentDescription = stringResource(id = R.string.choose_data_source),
+                contentDescription = null,
                 modifier = Modifier.padding(end = 8.dp),
                 tint = textColor
             )
@@ -166,14 +171,14 @@ fun LineChartScreen(
                     expanded = showDropdown,
                     onDismissRequest = { showDropdown = false },
                     properties = PopupProperties(focusable = true),
-                    containerColor = if (isDarkTheme) DarkCanvas else ComposeColor.White
+                    containerColor = if (isDarkTheme) DarkCanvas else MaterialTheme.colorScheme.surface
                 ) {
                     spinnerEntries.forEach { entry ->
                         DropdownMenuItem(
                             text = {
                                 Text(
                                     stringResource(id = entry.nameId),
-                                    color = if (isDarkTheme) ComposeColor.White else ComposeColor.Black
+                                    color = if (isDarkTheme) ChartTextLightGray else ChartTextDarkGray
                                 )
                             },
                             onClick = {
@@ -192,7 +197,7 @@ fun LineChartScreen(
                 .fillMaxWidth()
                 .weight(1f)
                 .clip(RoundedCornerShape(8.dp))
-                .background(if (isDarkTheme) DarkCanvas else ComposeColor.White)
+                .background(if (isDarkTheme) DarkCanvas else MaterialTheme.colorScheme.surface)
                 .padding(8.dp, top = 0.dp)
         ) {
             MPLineChart(
@@ -207,7 +212,9 @@ fun LineChartScreen(
         // Legend section
         LineChartLegendSection(
             lineChartSpinnerEntry = lineChartSpinnerEntry,
-            sportTypes = filteredSummits.map { it.sportType }.distinct(),
+            sportTypes = remember(filteredSummits) {
+                filteredSummits.map { it.sportType }.distinct()
+            },
             isDarkTheme = isDarkTheme
         )
     }
@@ -230,9 +237,18 @@ fun MPLineChart(
     val labelString = stringResource(spinnerEntry.nameId)
 
     // Resolve theme-dependent colors once
-    val axisTextColor = if (isDarkTheme) Color.WHITE else Color.BLACK
+    val axisTextColor =
+        if (isDarkTheme) ChartTextLightGray.toArgb() else ChartTextDarkGray.toArgb()
     val lineColor =
-        if (isDarkTheme) Color.WHITE else ContextCompat.getColor(context, R.color.colorPrimaryDark)
+        if (isDarkTheme) ChartTextLightGray.toArgb() else MaterialTheme.colorScheme.primary.toArgb()
+
+    // Reuse the marker across recompositions; recreate only when the metric changes
+    val markerView = remember(spinnerEntry) {
+        CustomMarkerView(context, R.layout.marker_graph, spinnerEntry)
+    }
+    var lastDataInputs by remember {
+        mutableStateOf<Triple<List<Entry>, List<Int>, OrderBySpinnerEntry>?>(null)
+    }
 
     AndroidView(
         modifier = modifier,
@@ -245,6 +261,22 @@ fun MPLineChart(
                 isScaleXEnabled = true
                 isScaleYEnabled = true
                 setPinchZoom(false)
+                legend.isEnabled = false
+                axisRight.isEnabled = false
+
+                // ── Axis text colours (mirrors resizeChart()) ──────────────────────
+                xAxis.textColor = axisTextColor
+                axisLeft.textColor = axisTextColor
+                axisRight.textColor = axisTextColor
+                legend.textColor = axisTextColor
+
+                // ── X-Axis (mirrors setXAxis()) ────────────────────────────────────
+                xAxis.position = XAxis.XAxisPosition.BOTTOM
+                xAxis.valueFormatter = object : ValueFormatter() {
+                    private val sdf = SimpleDateFormat(DATE_FORMAT, configuration.locales[0])
+                    override fun getFormattedValue(value: Float): String =
+                        sdf.format(Summit.getDateFromFloat(value))
+                }
             }
         },
         update = { chart ->
@@ -254,52 +286,46 @@ fun MPLineChart(
             chart.axisRight.textColor = axisTextColor
             chart.legend?.textColor = axisTextColor
 
-            // ── X-Axis (mirrors setXAxis()) ────────────────────────────────────
-            chart.xAxis.position = XAxis.XAxisPosition.BOTTOM
-            chart.xAxis.valueFormatter = object : ValueFormatter() {
-                private val sdf = SimpleDateFormat(DATE_FORMAT, configuration.locales[0])
-                override fun getFormattedValue(value: Float): String =
-                    sdf.format(Summit.getDateFromFloat(value))
-            }
+            val dataInputs = Triple(entries, colors, spinnerEntry)
+            if (lastDataInputs != dataInputs) {
+                lastDataInputs = dataInputs
 
-            // ── Y-Axes (mirrors setYAxis()) ────────────────────────────────────
-            val yFormatter = object : ValueFormatter() {
-                override fun getFormattedValue(value: Float): String {
-                    val fmt =
-                        if (spinnerEntry == OrderBySpinnerEntry.Vo2Max) "%.1f %s" else "%.0f %s"
-                    return String.format(
-                        configuration.locales[0], fmt, value, unitString
-                    )
+                // ── Y-Axis (mirrors setYAxis()) ────────────────────────────────────
+                val yFormatter = object : ValueFormatter() {
+                    override fun getFormattedValue(value: Float): String {
+                        val fmt =
+                            if (spinnerEntry == OrderBySpinnerEntry.Vo2Max) "%.1f %s" else "%.0f %s"
+                        return String.format(
+                            configuration.locales[0], fmt, value, unitString
+                        )
+                    }
                 }
+                chart.axisLeft.valueFormatter = yFormatter
+
+                // ── Dataset (mirrors setGraphView() + drawLineChart()) ─────────────
+                val dataSet = LineDataSet(entries, labelString).apply {
+                    setDrawValues(false)
+                    circleColors = colors
+                    highLightColor = ChartRed.toArgb()
+                    lineWidth = 5f
+                    circleRadius = 10f
+                    valueTextSize = 15f
+                    mode = LineDataSet.Mode.HORIZONTAL_BEZIER
+                    cubicIntensity = 0.2f
+                    setDrawFilled(true)
+                    fillAlpha = 60
+                    color = lineColor
+                    fillColor = lineColor
+                }
+
+                val dataSets: MutableList<ILineDataSet> = mutableListOf(dataSet)
+                chart.data = LineData(dataSets)
+
+                // ── Marker ─────────────────────────────────────────────────────────
+                chart.marker = markerView
+
+                chart.invalidate()
             }
-            chart.axisLeft.valueFormatter = yFormatter
-            chart.axisRight.isEnabled = false
-
-            // ── Dataset (mirrors setGraphView() + drawLineChart()) ─────────────
-            val dataSet = LineDataSet(entries, labelString).apply {
-                setDrawValues(false)
-                circleColors = colors
-                highLightColor = Color.RED
-                lineWidth = 5f
-                circleRadius = 10f
-                valueTextSize = 15f
-                mode = LineDataSet.Mode.HORIZONTAL_BEZIER
-                cubicIntensity = 0.2f
-                setDrawFilled(true)
-                fillAlpha = 60
-                color = lineColor
-                fillColor = lineColor
-            }
-
-            val dataSets: MutableList<ILineDataSet> = mutableListOf(dataSet)
-            chart.data = LineData(dataSets)
-
-            chart.legend.isEnabled = false
-
-            // ── Marker ─────────────────────────────────────────────────────────
-            chart.marker = CustomMarkerView(context, R.layout.marker_graph, spinnerEntry)
-
-            chart.invalidate()
         }
     )
 }
@@ -314,8 +340,8 @@ fun LineChartLegendSection(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val backgroundColor = if (isDarkTheme) DarkCanvas else ComposeColor.White
-    val textColor = if (isDarkTheme) ComposeColor.White else ComposeColor.Black
+    val backgroundColor = if (isDarkTheme) DarkCanvas else MaterialTheme.colorScheme.surface
+    val textColor = if (isDarkTheme) ChartTextLightGray else MaterialTheme.colorScheme.onSurface
     val primaryColor = MaterialTheme.colorScheme.primary
 
     Surface(

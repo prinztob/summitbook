@@ -10,9 +10,11 @@ import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -36,9 +38,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -241,6 +245,8 @@ fun FullscreenImageViewer(
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
                         .background(Scrim)
+                        .navigationBarsPadding()
+                        .displayCutoutPadding()
                         .padding(16.dp)
                 ) {
                     Text(
@@ -261,13 +267,28 @@ fun ZoomableImage(
 ) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
+    var viewSize by remember { mutableStateOf(IntSize.Zero) }
+
+    fun clampOffset() {
+        if (scale <= 1f) {
+            offset = Offset.Zero
+            return
+        }
+        val maxX = viewSize.width * (scale - 1f) / 2f
+        val maxY = viewSize.height * (scale - 1f) / 2f
+        offset = Offset(
+            offset.x.coerceIn(-maxX, maxX),
+            offset.y.coerceIn(-maxY, maxY)
+        )
+    }
 
     val state = rememberTransformableState { panChange: Offset, zoomChange: Float, _, _ ->
         scale = (scale * zoomChange).coerceIn(1f, 4f)
 
-        // Only allow panning when zoomed in
+        // Only allow panning when zoomed in, clamped so the image stays in view
         if (scale > 1f) {
             offset += panChange
+            clampOffset()
         } else {
             offset = Offset.Zero
         }
@@ -276,15 +297,26 @@ fun ZoomableImage(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .onSizeChanged { viewSize = it }
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onDoubleTap = {
+                    onDoubleTap = { tapPosition ->
                         // Toggle between zoomed and normal
                         if (scale > 1f) {
                             scale = 1f
                             offset = Offset.Zero
                         } else {
-                            scale = 2f
+                            val newScale = 2f
+                            // graphicsLayer scales around the center; keep the
+                            // content coordinate under the finger fixed
+                            val centerX = viewSize.width / 2f
+                            val centerY = viewSize.height / 2f
+                            offset = Offset(
+                                (tapPosition.x - centerX) * (1f - newScale) + offset.x * newScale,
+                                (tapPosition.y - centerY) * (1f - newScale) + offset.y * newScale
+                            )
+                            scale = newScale
+                            clampOffset()
                         }
                     },
                     onTap = {

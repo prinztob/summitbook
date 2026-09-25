@@ -16,24 +16,26 @@ class ZoomableImageView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : AppCompatImageView(context, attrs, defStyleAttr) {
 
+    var onSingleTap: (() -> Unit)? = null
+
     private val matrix = Matrix()
     private val savedMatrix = Matrix()
-    
+
     private var mode = NONE
     private val start = PointF()
     private val mid = PointF()
-    private var oldDist = 1f
     private var minScale = 1f
     private var maxScale = 4f
     private var currentScale = 1f
-    
+    private var interactionOccurred = false
+
     private val scaleGestureDetector: ScaleGestureDetector
     private val gestureDetector: GestureDetector
 
     init {
         scaleType = ScaleType.MATRIX
         imageMatrix = matrix
-        
+
         scaleGestureDetector = ScaleGestureDetector(context, ScaleListener())
         gestureDetector = GestureDetector(context, GestureListener())
     }
@@ -47,33 +49,29 @@ class ZoomableImageView @JvmOverloads constructor(
                 savedMatrix.set(matrix)
                 start.set(event.x, event.y)
                 mode = DRAG
+                interactionOccurred = false
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
-                oldDist = spacing(event)
-                if (oldDist > 10f) {
-                    savedMatrix.set(matrix)
-                    midPoint(mid, event)
-                    mode = ZOOM
-                }
+                // Pinch zooming is handled by the ScaleGestureDetector; block dragging
+                mode = ZOOM
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+            MotionEvent.ACTION_UP -> {
+                if (!interactionOccurred) {
+                    performClick()
+                }
+                mode = NONE
+            }
+            MotionEvent.ACTION_POINTER_UP -> {
                 mode = NONE
             }
             MotionEvent.ACTION_MOVE -> {
                 if (mode == DRAG) {
+                    interactionOccurred = true
                     matrix.set(savedMatrix)
                     val dx = event.x - start.x
                     val dy = event.y - start.y
                     matrix.postTranslate(dx, dy)
                     checkAndSetTranslate()
-                } else if (mode == ZOOM) {
-                    val newDist = spacing(event)
-                    if (newDist > 10f) {
-                        matrix.set(savedMatrix)
-                        val scale = newDist / oldDist
-                        matrix.postScale(scale, scale, mid.x, mid.y)
-                        checkAndSetScale()
-                    }
                 }
             }
         }
@@ -82,22 +80,27 @@ class ZoomableImageView @JvmOverloads constructor(
         return true
     }
 
+    override fun performClick(): Boolean {
+        super.performClick()
+        return true
+    }
+
     private fun checkAndSetTranslate() {
         val values = FloatArray(9)
         matrix.getValues(values)
-        
+
         val transX = values[Matrix.MTRANS_X]
         val transY = values[Matrix.MTRANS_Y]
-        
+
         val imageWidth = drawable?.intrinsicWidth?.toFloat() ?: 0f
         val imageHeight = drawable?.intrinsicHeight?.toFloat() ?: 0f
-        
+
         val scaledWidth = imageWidth * currentScale
         val scaledHeight = imageHeight * currentScale
-        
+
         var deltaX = 0f
         var deltaY = 0f
-        
+
         if (scaledWidth <= width) {
             deltaX = (width - scaledWidth) / 2 - transX
         } else {
@@ -107,7 +110,7 @@ class ZoomableImageView @JvmOverloads constructor(
                 deltaX = width - (transX + scaledWidth)
             }
         }
-        
+
         if (scaledHeight <= height) {
             deltaY = (height - scaledHeight) / 2 - transY
         } else {
@@ -117,17 +120,17 @@ class ZoomableImageView @JvmOverloads constructor(
                 deltaY = height - (transY + scaledHeight)
             }
         }
-        
+
         matrix.postTranslate(deltaX, deltaY)
     }
 
     private fun checkAndSetScale() {
         val values = FloatArray(9)
         matrix.getValues(values)
-        
+
         val scaleX = values[Matrix.MSCALE_X]
         currentScale = scaleX
-        
+
         if (currentScale < minScale) {
             val scale = minScale / currentScale
             matrix.postScale(scale, scale, mid.x, mid.y)
@@ -137,51 +140,45 @@ class ZoomableImageView @JvmOverloads constructor(
             matrix.postScale(scale, scale, mid.x, mid.y)
             currentScale = maxScale
         }
-        
+
         checkAndSetTranslate()
-    }
-
-    private fun spacing(event: MotionEvent): Float {
-        val x = event.getX(0) - event.getX(1)
-        val y = event.getY(0) - event.getY(1)
-        return kotlin.math.sqrt((x * x + y * y).toDouble()).toFloat()
-    }
-
-    private fun midPoint(point: PointF, event: MotionEvent) {
-        val x = event.getX(0) + event.getX(1)
-        val y = event.getY(0) + event.getY(1)
-        point.set(x / 2, y / 2)
     }
 
     private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScale(detector: ScaleGestureDetector): Boolean {
-            val scaleFactor = detector.scaleFactor
-            val newScale = currentScale * scaleFactor
-            
-            if (newScale in minScale..maxScale) {
-                matrix.postScale(scaleFactor, scaleFactor, detector.focusX, detector.focusY)
-                currentScale = newScale
-                checkAndSetTranslate()
-                imageMatrix = matrix
-            }
+            interactionOccurred = true
+            mid.set(detector.focusX, detector.focusY)
+            matrix.postScale(
+                detector.scaleFactor,
+                detector.scaleFactor,
+                detector.focusX,
+                detector.focusY
+            )
+            checkAndSetScale()
+            imageMatrix = matrix
             return true
         }
     }
 
     private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
+        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+            onSingleTap?.invoke()
+            return onSingleTap != null
+        }
+
         override fun onDoubleTap(e: MotionEvent): Boolean {
+            interactionOccurred = true
             if (currentScale > minScale) {
-                // Reset to min scale
-                matrix.reset()
-                currentScale = minScale
+                // Reset to the fitted min scale
+                applyFitMatrix()
             } else {
-                // Zoom to 2x
+                // Zoom to 2x around the tapped point
                 val scale = min(2f, maxScale) / currentScale
                 matrix.postScale(scale, scale, e.x, e.y)
                 currentScale = min(2f, maxScale)
                 checkAndSetTranslate()
+                imageMatrix = matrix
             }
-            imageMatrix = matrix
             return true
         }
     }
@@ -193,36 +190,45 @@ class ZoomableImageView @JvmOverloads constructor(
         }
     }
 
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        applyFitMatrix()
+    }
+
     private fun resetZoom() {
+        applyFitMatrix()
+    }
+
+    private fun applyFitMatrix() {
         matrix.reset()
         currentScale = 1f
-        
+
         drawable?.let { d ->
             val imageWidth = d.intrinsicWidth.toFloat()
             val imageHeight = d.intrinsicHeight.toFloat()
             val viewWidth = width.toFloat()
             val viewHeight = height.toFloat()
-            
+
             if (imageWidth > 0 && imageHeight > 0 && viewWidth > 0 && viewHeight > 0) {
                 // Calculate scale to fit image in view
                 val scaleX = viewWidth / imageWidth
                 val scaleY = viewHeight / imageHeight
                 val scale = minOf(scaleX, scaleY)
-                
+
                 // Calculate translation to center the image
                 val scaledWidth = imageWidth * scale
                 val scaledHeight = imageHeight * scale
                 val dx = (viewWidth - scaledWidth) / 2f
                 val dy = (viewHeight - scaledHeight) / 2f
-                
+
                 matrix.setScale(scale, scale)
                 matrix.postTranslate(dx, dy)
-                
+
                 currentScale = scale
                 minScale = scale
             }
         }
-        
+
         imageMatrix = matrix
     }
 

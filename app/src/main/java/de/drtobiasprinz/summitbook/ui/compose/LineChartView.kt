@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -48,8 +49,11 @@ import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlin.math.abs
 import kotlin.math.roundToLong
 import androidx.compose.ui.graphics.Color as ComposeColor
+import de.drtobiasprinz.summitbook.ui.theme.ChartRed
 import de.drtobiasprinz.summitbook.ui.theme.ChartTextDarkGray
 import de.drtobiasprinz.summitbook.ui.theme.DarkCanvas
+import de.drtobiasprinz.summitbook.ui.theme.HighlightYellow
+import de.drtobiasprinz.summitbook.ui.theme.RecordGreen
 
 /**
  * A Compose-based line chart view for displaying track data
@@ -139,7 +143,8 @@ fun LineChartView(
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
-                    .pointerInput(Unit) {
+                    .onSizeChanged { canvasSize = Size(it.width.toFloat(), it.height.toFloat()) }
+                    .pointerInput(lineChartEntries) {
                         detectTapGestures { offset ->
                             // Find the closest point to the tap
                             val chartWidth = canvasSize.width
@@ -168,8 +173,6 @@ fun LineChartView(
                         }
                     }
             ) {
-                // Update canvas size for tap detection
-                canvasSize = size
                 val chartWidth = size.width
                 val chartHeight = size.height
 
@@ -244,15 +247,15 @@ fun LineChartView(
                         
                         // Draw vertical line
                         drawLine(
-                            color = ComposeColor(android.graphics.Color.YELLOW),
+                            color = HighlightYellow,
                             start = Offset(selectedPoint.x, 0f),
                             end = Offset(selectedPoint.x, chartHeight),
                             strokeWidth = 2f
                         )
-                        
+
                         // Draw highlight circle
                         drawCircle(
-                            color = ComposeColor(android.graphics.Color.YELLOW),
+                            color = HighlightYellow,
                             radius = 10.dp.toPx(),
                             center = selectedPoint
                         )
@@ -352,6 +355,18 @@ fun DrawScope.drawGridAndLabels(
     gridColor: ComposeColor,
     textColor: ComposeColor
 ) {
+    val labelTextSize = 12.dp.toPx()
+    val xLabelPaint = Paint().apply {
+        color = textColor.toArgb()
+        textSize = labelTextSize
+        textAlign = Paint.Align.CENTER
+    }
+    val yLabelPaint = Paint().apply {
+        color = textColor.toArgb()
+        textSize = labelTextSize
+        textAlign = Paint.Align.LEFT
+    }
+
     // Draw X axis labels (distance in km) - skip first and last
     for (i in 0..4) {
         val xValue = minX + (maxX - minX) * i / 4f
@@ -373,11 +388,7 @@ fun DrawScope.drawGridAndLabels(
                 label,
                 xPos,
                 this.size.height - 10,
-                Paint().apply {
-                    color = textColor.toArgb()
-                    textSize = 30f
-                    textAlign = Paint.Align.CENTER
-                }
+                xLabelPaint
             )
         }
     }
@@ -400,11 +411,7 @@ fun DrawScope.drawGridAndLabels(
             label,
             10f,
             this.size.height - i * this.size.height / 4f,
-            Paint().apply {
-                color = textColor.toArgb()
-                textSize = 30f
-                textAlign = Paint.Align.LEFT
-            }
+            yLabelPaint
         )
     }
 }
@@ -505,8 +512,8 @@ fun InteractiveLineChartView(
     val chartBackgroundColor = if (isDark) DarkCanvas else ComposeColor.White
 
     // Colors for start/end markers
-    val startMarkerColor = ComposeColor(android.graphics.Color.GREEN)
-    val endMarkerColor = ComposeColor(android.graphics.Color.RED)
+    val startMarkerColor = RecordGreen
+    val endMarkerColor = ChartRed
 
     // Track canvas size for tap detection
     var canvasSize by remember { mutableStateOf(Size.Zero) }
@@ -518,7 +525,8 @@ fun InteractiveLineChartView(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(startSelected) {
+                .onSizeChanged { canvasSize = Size(it.width.toFloat(), it.height.toFloat()) }
+                .pointerInput(lineChartEntries, startSelected) {
                     detectTapGestures { offset ->
                         // Find the closest point to the tap
                         val chartWidth = canvasSize.width
@@ -552,9 +560,6 @@ fun InteractiveLineChartView(
                     }
                 }
         ) {
-            // Update canvas size for tap detection
-            canvasSize = size
-
             val chartWidth = size.width
             val chartHeight = size.height
 
@@ -777,6 +782,12 @@ fun HorizontalBarChartView(
             val valueWidth = 60.dp.toPx()
             val chartAreaWidth = canvasWidth - labelWidth - valueWidth - 20.dp.toPx()
 
+            val labelPaint = Paint().apply {
+                color = textColor.toArgb()
+                textSize = 12.dp.toPx()
+                textAlign = Paint.Align.LEFT
+            }
+
             chartData.forEachIndexed { index, bar ->
                 val y = index * (barHeight + barSpacing) + barSpacing / 2
                 val barWidth = (bar.value / maxValue) * chartAreaWidth
@@ -786,11 +797,7 @@ fun HorizontalBarChartView(
                     bar.label,
                     10f,
                     y + barHeight / 2 + 10f,
-                    Paint().apply {
-                        color = textColor.toArgb()
-                        textSize = 30f
-                        textAlign = Paint.Align.LEFT
-                    }
+                    labelPaint
                 )
 
                 // Draw bar
@@ -811,11 +818,7 @@ fun HorizontalBarChartView(
                     valueText,
                     labelWidth + 10.dp.toPx() + barWidth + 10.dp.toPx(),
                     y + barHeight / 2 + 10f,
-                    Paint().apply {
-                        color = textColor.toArgb()
-                        textSize = 30f
-                        textAlign = Paint.Align.LEFT
-                    }
+                    labelPaint
                 )
             }
         }

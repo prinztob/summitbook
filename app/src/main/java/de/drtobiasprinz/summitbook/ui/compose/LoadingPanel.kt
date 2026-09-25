@@ -1,6 +1,7 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,12 +18,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.ui.theme.Scrim
 
 /**
  * Full-screen blocking loading panel with a status text, optional determinate
@@ -42,7 +44,8 @@ fun LoadingPanel(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f))
+            .background(Scrim)
+            .pointerInput(Unit) { detectTapGestures { } }
             .zIndex(1f),
         contentAlignment = Alignment.Center
     ) {

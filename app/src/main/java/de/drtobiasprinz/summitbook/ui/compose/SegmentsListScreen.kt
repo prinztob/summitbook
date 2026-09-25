@@ -2,7 +2,6 @@ package de.drtobiasprinz.summitbook.ui.compose
 
 import android.content.Context
 import android.content.Intent
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,10 +30,12 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,6 +62,8 @@ import de.drtobiasprinz.summitbook.core.DataStatus
 import de.drtobiasprinz.summitbook.ui.viewmodel.DatabaseViewModel
 import kotlin.math.roundToInt
 import de.drtobiasprinz.summitbook.ui.theme.Scrim
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Composable function that displays a list of segments
@@ -77,18 +80,32 @@ fun SegmentsListScreen(
     segments: List<Segment>,
     summits: List<Summit>,
     modifier: Modifier = Modifier,
-    onDeleteSegment: (Segment) -> Unit = {}
+    onDeleteSegment: (Segment) -> Unit = {},
+    onShowSnackbar: (String) -> Unit = {}
 ) {
     val mountainPassesState by viewModel.mountainPasses.asFlow()
         .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
     val mountainPasses = mountainPassesState.data ?: emptyList()
 
-    var showMountainPasses by remember { mutableStateOf(false) }
-    var showAddSegmentEntryDialog by remember { mutableStateOf(false) }
-    var selectedSegmentId by remember { mutableLongStateOf(0L) }
-    var showAddSegmentDetailsDialog by remember { mutableStateOf(false) }
-    var showEditSegmentDetailsDialog by remember { mutableStateOf(false) }
+    var showMountainPasses by rememberSaveable { mutableStateOf(false) }
+    var showAddSegmentEntryDialog by rememberSaveable { mutableStateOf(false) }
+    var selectedSegmentId by rememberSaveable { mutableLongStateOf(0L) }
+    var showAddSegmentDetailsDialog by rememberSaveable { mutableStateOf(false) }
+    var showEditSegmentDetailsDialog by rememberSaveable { mutableStateOf(false) }
     var selectedSegmentDetails by remember { mutableStateOf<SegmentDetails?>(null) }
+
+    var segmentsWithScreenshots by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    LaunchedEffect(segments) {
+        withContext(Dispatchers.IO) {
+            segmentsWithScreenshots = segments.mapNotNull { segment ->
+                if (Segment.getMapScreenshotFile(segment.segmentDetails.segmentDetailsId).exists()) {
+                    segment.segmentDetails.segmentDetailsId
+                } else {
+                    null
+                }
+            }.toSet()
+        }
+    }
 
     LazyColumn(
         modifier = modifier
@@ -138,7 +155,8 @@ fun SegmentsListScreen(
             ) { pass ->
                 MountainPassCard(
                     pass = pass,
-                    onDelete = { viewModel.deleteMountainPass(it) }
+                    onDelete = { viewModel.deleteMountainPass(it) },
+                    onShowSnackbar = onShowSnackbar
                 )
             }
         } else {
@@ -153,6 +171,7 @@ fun SegmentsListScreen(
             ) { segment ->
                 SegmentCard(
                     segment = segment,
+                    hasScreenshot = segment.segmentDetails.segmentDetailsId in segmentsWithScreenshots,
                     onDelete = onDeleteSegment,
                     onAddSegmentEntry = { segmentId ->
                         selectedSegmentId = segmentId
@@ -161,7 +180,8 @@ fun SegmentsListScreen(
                     onEditSegmentDetails = { segmentDetails ->
                         selectedSegmentDetails = segmentDetails
                         showEditSegmentDetailsDialog = true
-                    }
+                    },
+                    onShowSnackbar = onShowSnackbar
                 )
             }
 
@@ -195,7 +215,8 @@ fun SegmentsListScreen(
             onDismiss = { showAddSegmentDetailsDialog = false },
             onSaveSegmentDetails = { isUpdate, segmentDetails ->
                 viewModel.saveSegmentDetails(isUpdate, segmentDetails)
-            }
+            },
+            onShowSnackbar = onShowSnackbar
         )
     }
 
@@ -206,7 +227,8 @@ fun SegmentsListScreen(
             onDismiss = { showEditSegmentDetailsDialog = false },
             onSaveSegmentDetails = { isUpdate, segmentDetails ->
                 viewModel.saveSegmentDetails(isUpdate, segmentDetails)
-            }
+            },
+            onShowSnackbar = onShowSnackbar
         )
     }
 }
@@ -217,12 +239,14 @@ fun SegmentsListScreen(
 @Composable
 fun SegmentCard(
     segment: Segment,
+    hasScreenshot: Boolean,
     onDelete: (Segment) -> Unit,
     onAddSegmentEntry: (Long) -> Unit = {},
-    onEditSegmentDetails: (SegmentDetails) -> Unit = {}
+    onEditSegmentDetails: (SegmentDetails) -> Unit = {},
+    onShowSnackbar: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     val deleteCancelMessage = stringResource(R.string.delete_cancel)
     
     // Calculate average values
@@ -239,7 +263,7 @@ fun SegmentCard(
     } else 0.0
     
     val mapScreenshotFile = Segment.getMapScreenshotFile(segment.segmentDetails.segmentDetailsId)
-    val hasMapScreenshot = mapScreenshotFile.exists()
+    val hasMapScreenshot = hasScreenshot
     
     Card(
         modifier = Modifier
@@ -297,7 +321,13 @@ fun SegmentCard(
                             painter = painterResource(id = R.drawable.ic_baseline_route_24),
                             contentDescription = stringResource(R.string.segments),
                             modifier = Modifier.size(40.dp),
-                            colorFilter = ColorFilter.tint(androidx.compose.ui.graphics.Color.White)
+                            colorFilter = ColorFilter.tint(
+                                if (hasMapScreenshot) {
+                                    androidx.compose.ui.graphics.Color.White
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                }
+                            )
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         
@@ -430,11 +460,7 @@ fun SegmentCard(
             },
             onDismiss = {
                 showDeleteDialog = false
-                Toast.makeText(
-                    context,
-                    deleteCancelMessage,
-                    Toast.LENGTH_SHORT
-                ).show()
+                onShowSnackbar(deleteCancelMessage)
             }
         )
     }
@@ -446,10 +472,11 @@ fun SegmentCard(
 @Composable
 fun MountainPassCard(
     pass: SegmentEntry,
-    onDelete: (SegmentEntry) -> Unit
+    onDelete: (SegmentEntry) -> Unit,
+    onShowSnackbar: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     val deleteCancelMessage = stringResource(R.string.delete_cancel)
 
     Card(
@@ -561,11 +588,7 @@ fun MountainPassCard(
             },
             onDismiss = {
                 showDeleteDialog = false
-                Toast.makeText(
-                    context,
-                    deleteCancelMessage,
-                    Toast.LENGTH_SHORT
-                ).show()
+                onShowSnackbar(deleteCancelMessage)
             }
         )
     }

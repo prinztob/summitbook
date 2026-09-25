@@ -42,15 +42,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.asFlow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.data.model.GpsTrack
 import de.drtobiasprinz.summitbook.data.model.TrackColor
+import de.drtobiasprinz.summitbook.data.db.entities.Peak
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.compose.AddSummitDialogCompose
 import de.drtobiasprinz.summitbook.ui.compose.SummitBookMapView
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
 import de.drtobiasprinz.summitbook.data.analytics.GpsUtils.Companion.copyGpxFileToCache
 import de.drtobiasprinz.summitbook.data.analytics.GpsUtils.Companion.prepareGpxTrack
+import de.drtobiasprinz.summitbook.core.DataStatus
 import de.drtobiasprinz.summitbook.core.utils.Utils
 import de.drtobiasprinz.summitbook.ui.viewmodel.DatabaseViewModel
 import kotlinx.coroutines.Dispatchers
@@ -99,6 +103,10 @@ class ReceiverActivityCompose : ComponentActivity() {
         var mapViewReference by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
         var gpxTrackUriState by remember { mutableStateOf<Uri?>(null) }
         var importState by remember { mutableStateOf(ImportState.Loading) }
+        val summitsList by viewModel.summitsList.asFlow()
+            .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
+        val peakList by viewModel.peaks.asFlow()
+            .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
 
         LaunchedEffect(Unit) {
             // Initialize cache and storage directories off the main thread
@@ -249,8 +257,8 @@ class ReceiverActivityCompose : ComponentActivity() {
         // Show add summit dialog when requested
         if (showDialog && importState == ImportState.Ready && gpxTrackUriState != null) {
             AddSummitDialogCompose(
-                summitsFromDatabase = emptyList(),
-                peaks = emptyList(),
+                summitsFromDatabase = summitsList.data ?: emptyList(),
+                peaks = peakList.data ?: emptyList(),
                 uri = gpxTrackUri,
                 isBookmark = isBookmark,
                 onDismiss = {
@@ -264,6 +272,18 @@ class ReceiverActivityCompose : ComponentActivity() {
                         invokeOnCompletion {
                             showDialog = false
                             isBookmark = false
+                        }
+                    }
+                },
+                onPeakToggle = { placeName, isPeak ->
+                    if (isPeak) {
+                        val elevation = summitsList.data.orEmpty().firstOrNull {
+                            it.name == placeName || it.places.contains(placeName)
+                        }?.elevationData?.maxElevation ?: 0
+                        viewModel.savePeak(Peak(placeName, elevation))
+                    } else {
+                        AppState.peaks.find { it.name == placeName }?.let {
+                            viewModel.deletePeak(it)
                         }
                     }
                 }

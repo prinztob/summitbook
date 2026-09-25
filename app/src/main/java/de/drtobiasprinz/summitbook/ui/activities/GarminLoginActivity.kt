@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -35,11 +36,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
 import kotlinx.coroutines.flow.MutableStateFlow
+
+/**
+ * Holds the login output state so it survives configuration changes while
+ * the login [PythonActivity.Task] (also a ViewModel) keeps running.
+ */
+class GarminLoginViewModel : ViewModel() {
+    val loginOutput = MutableStateFlow("")
+    val loginInputNeeded = MutableStateFlow(false)
+    val loginFinished = MutableStateFlow(false)
+}
 
 /**
  * Compose replacement for the raw Python console previously shown for the
@@ -51,26 +63,24 @@ import kotlinx.coroutines.flow.MutableStateFlow
 class GarminLoginActivity : ComponentActivity() {
 
     private lateinit var task: PythonActivity.Task
-
-    private val loginOutput = MutableStateFlow("")
-    private val loginInputNeeded = MutableStateFlow(false)
-    private val loginFinished = MutableStateFlow(false)
+    private lateinit var loginViewModel: GarminLoginViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         task = ViewModelProvider(this)[PythonActivity.Task::class.java]
+        loginViewModel = ViewModelProvider(this)[GarminLoginViewModel::class.java]
 
         task.output.observe(this) { text ->
             if (text.contains("[Finished]")) {
-                loginFinished.value = true
+                loginViewModel.loginFinished.value = true
             } else {
-                loginOutput.value += text
+                loginViewModel.loginOutput.value += text
             }
         }
         task.inputEnabled.observe(this) { enabled ->
-            loginInputNeeded.value = java.lang.Boolean.TRUE == enabled
+            loginViewModel.loginInputNeeded.value = java.lang.Boolean.TRUE == enabled
         }
 
         setContent {
@@ -98,10 +108,15 @@ class GarminLoginActivity : ComponentActivity() {
     @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
     @Composable
     private fun GarminLoginScreen() {
-        val output by loginOutput.collectAsStateWithLifecycle()
-        val inputNeeded by loginInputNeeded.collectAsStateWithLifecycle()
-        val finished by loginFinished.collectAsStateWithLifecycle()
+        val output by loginViewModel.loginOutput.collectAsStateWithLifecycle()
+        val inputNeeded by loginViewModel.loginInputNeeded.collectAsStateWithLifecycle()
+        val finished by loginViewModel.loginFinished.collectAsStateWithLifecycle()
         var mfaCode by rememberSaveable { mutableStateOf("") }
+        val scrollState = rememberScrollState()
+
+        LaunchedEffect(output) {
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
 
         Scaffold(
             topBar = {
@@ -115,7 +130,7 @@ class GarminLoginActivity : ComponentActivity() {
                     .fillMaxSize()
                     .padding(padding)
                     .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {

@@ -26,6 +26,7 @@ import de.drtobiasprinz.summitbook.R
 fun DatabaseErrorBanner(
     modifier: Modifier = Modifier,
     detail: String? = null,
+    onRetry: () -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     Surface(
@@ -50,6 +51,13 @@ fun DatabaseErrorBanner(
                     .weight(1f)
                     .padding(horizontal = 12.dp)
             )
+            IconButton(onClick = onRetry) {
+                Icon(
+                    painter = painterResource(R.drawable.baseline_refresh_24),
+                    contentDescription = stringResource(R.string.retry),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
             IconButton(onClick = onDismiss) {
                 Icon(
                     painter = painterResource(R.drawable.baseline_cancel_24),

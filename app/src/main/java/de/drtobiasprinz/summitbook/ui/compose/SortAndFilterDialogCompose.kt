@@ -43,7 +43,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -137,7 +136,8 @@ fun SortAndFilterDialogCompose(
     val years = sortFilterValues.years
 
     // Date format
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd", LocalConfiguration.current.locales[0])
+    val locale = LocalConfiguration.current.locales[0]
+    val dateFormat = remember(locale) { SimpleDateFormat("yyyy-MM-dd", locale) }
 
     // Get suggestions for participants
     val participantSuggestions = remember(summits) {
@@ -462,6 +462,10 @@ fun DateSpinner(
                             { _, selectedYear, selectedMonth, selectedDay ->
                                 val newDate = Calendar.getInstance()
                                 newDate.set(selectedYear, selectedMonth, selectedDay)
+                                newDate[Calendar.HOUR_OF_DAY] = 0
+                                newDate[Calendar.MINUTE] = 0
+                                newDate[Calendar.SECOND] = 0
+                                newDate[Calendar.MILLISECOND] = 0
                                 onStartDateChange(newDate.time)
                             },
                             year, month, day
@@ -497,7 +501,8 @@ fun DateSpinner(
                             context,
                             { _, selectedYear, selectedMonth, selectedDay ->
                                 val newDate = Calendar.getInstance()
-                                newDate.set(selectedYear, selectedMonth, selectedDay)
+                                newDate.set(selectedYear, selectedMonth, selectedDay, 23, 59, 59)
+                                newDate[Calendar.MILLISECOND] = 999
                                 onEndDateChange(newDate.time)
                             },
                             year, month, day
@@ -905,12 +910,15 @@ fun RangeSliders(
 ) {
     if (summits.isNotEmpty()) {
         // Update slider ranges based on summits data
-        val updatedKilometersSlider =
+        val updatedKilometersSlider = remember(summits, kilometersSlider) {
             updateRangeSliderValues(summits, kilometersSlider, kilometersSlider.stepSize)
-        val updatedElevationGainSlider =
+        }
+        val updatedElevationGainSlider = remember(summits, elevationGainSlider) {
             updateRangeSliderValues(summits, elevationGainSlider, elevationGainSlider.stepSize)
-        val updatedTopElevationSlider =
+        }
+        val updatedTopElevationSlider = remember(summits, topElevationSlider) {
             updateRangeSliderValues(summits, topElevationSlider, topElevationSlider.stepSize)
+        }
 
         // Kilometers Range Slider
         RangeSliderComponent(
@@ -1003,11 +1011,18 @@ fun RangeSliderComponent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        val coercedFrom = minOf(valueFrom, valueTo)
+        val coercedTo = maxOf(valueFrom, valueTo)
+        val coercedStart = values[0].coerceIn(coercedFrom, coercedTo)
+        val coercedEnd = values[1].coerceIn(coercedFrom, coercedTo).coerceAtLeast(coercedStart)
+
         RangeSlider(
-            value = values[0]..values[1],
+            value = coercedStart..coercedEnd,
             onValueChange = { range -> onValueChange(listOf(range.start, range.endInclusive)) },
-            valueRange = valueFrom..valueTo,
-            steps = if (step > 0f) ((valueTo - valueFrom) / step).toInt() - 1 else 0,
+            valueRange = coercedFrom..coercedTo,
+            steps = if (step > 0f && coercedTo > coercedFrom)
+                (((coercedTo - coercedFrom) / step).toInt() - 1).coerceAtLeast(0)
+            else 0,
             onValueChangeFinished = { /* Handle value change finished if needed */ }
         )
     }
@@ -1055,12 +1070,12 @@ fun ActionButtons(
             onClick = onApply,
             modifier = Modifier
                 .size(48.dp)
-                .background(Color.Green, shape = RoundedCornerShape(24.dp))
+                .background(MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(24.dp))
         ) {
             Icon(
                 painter = painterResource(R.drawable.baseline_done_24),
                 contentDescription = stringResource(R.string.apply),
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onPrimary
             )
         }
 
@@ -1068,12 +1083,12 @@ fun ActionButtons(
             onClick = onApplyAll,
             modifier = Modifier
                 .size(48.dp)
-                .background(Color.Green, shape = RoundedCornerShape(24.dp))
+                .background(MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(24.dp))
         ) {
             Icon(
                 painter = painterResource(R.drawable.outline_filter_list_off_24),
-                contentDescription = stringResource(R.string.apply),
-                tint = Color.White
+                contentDescription = stringResource(R.string.apply_defaults),
+                tint = MaterialTheme.colorScheme.onPrimary
             )
         }
 
@@ -1081,12 +1096,12 @@ fun ActionButtons(
             onClick = onReset,
             modifier = Modifier
                 .size(48.dp)
-                .background(Color.Red, shape = RoundedCornerShape(24.dp))
+                .background(MaterialTheme.colorScheme.error, shape = RoundedCornerShape(24.dp))
         ) {
             Icon(
                 painter = painterResource(R.drawable.baseline_cancel_24),
                 contentDescription = stringResource(R.string.set_to_default),
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onError
             )
         }
     }
@@ -1124,7 +1139,7 @@ fun CollapsibleSection(
                 IconButton(onClick = { onExpandChange(!expanded) }) {
                     Icon(
                         painter = painterResource( if (expanded) R.drawable.baseline_arrow_drop_up_black_24dp else  R.drawable.baseline_arrow_drop_down_24),
-                        contentDescription = if (expanded) "Collapse" else "Expand"
+                        contentDescription = if (expanded) stringResource(R.string.collapse) else stringResource(R.string.expand)
                     )
                 }
             }

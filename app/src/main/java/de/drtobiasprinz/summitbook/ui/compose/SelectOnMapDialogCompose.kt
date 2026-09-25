@@ -1,8 +1,8 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
+import android.content.Intent
 import android.location.Address
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -55,18 +55,22 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.res.ResourcesCompat
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.core.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.core.Keys
 import de.drtobiasprinz.summitbook.data.analytics.GpsUtils.Companion.copyGpxFileToCache
 import de.drtobiasprinz.summitbook.data.analytics.GpsUtils.Companion.prepareGpxTrack
 import de.drtobiasprinz.summitbook.data.appstate.AppState
 import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.model.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.data.model.GpsTrack
 import de.drtobiasprinz.summitbook.data.model.TrackColor
 import de.drtobiasprinz.summitbook.sync.GarminPythonExecutor
 import de.drtobiasprinz.summitbook.sync.GarminTrackAndDataDownloader
+import de.drtobiasprinz.summitbook.ui.activities.SummitEntryDetailsComposeActivity
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling
 import io.ticofab.androidgpxparser.parser.GPXParser
+import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -114,6 +118,9 @@ fun SelectOnMapDialogCompose(
     var mapView by remember { mutableStateOf<CustomMapViewToAllowScrolling?>(null) }
     var searchMarkers by remember { mutableStateOf<List<Marker>>(emptyList()) }
     var importedMarker by remember { mutableStateOf<Marker?>(null) }
+    var lastDrawnTrackPoints by remember {
+        mutableStateOf<List<Pair<TrackPoint, ExtensionFromYaml>>?>(null)
+    }
 
     val deleteCoordinatesText = stringResource(R.string.delete_coordinates)
     val deleteCoordinatesMessage = stringResource(R.string.delete_coordinates_message)
@@ -177,7 +184,7 @@ fun SelectOnMapDialogCompose(
                         null
                     )
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                    setInfoWindow(CustomInfoWindow(map))
+                    setInfoWindow(CustomInfoWindow(map, summitEntry))
                 }
                 map.overlays.add(poiMarker)
                 searchMarkers = listOf(poiMarker)
@@ -260,46 +267,46 @@ fun SelectOnMapDialogCompose(
         summitEntry.lat = position.latitude
         summitEntry.lng = position.longitude
         summitEntry.latLng = position
-        selectedGpsFile?.let { file ->
-            try {
-                Files.copy(
-                    file.toPath(),
-                    summitEntry.getGpsTrackPath(),
-                    StandardCopyOption.REPLACE_EXISTING
-                )
-                summitEntry.hasTrack = true
-            } catch (ex: IOException) {
-                Log.e(TAG, "Could not copy selected GPX track: ${ex.message}")
+        scope.launch {
+            selectedGpsFile?.let { file ->
+                try {
+                    withContext(Dispatchers.IO) {
+                        Files.copy(
+                            file.toPath(),
+                            summitEntry.getGpsTrackPath(),
+                            StandardCopyOption.REPLACE_EXISTING
+                        )
+                    }
+                    summitEntry.hasTrack = true
+                } catch (ex: IOException) {
+                    Log.e(TAG, "Could not copy selected GPX track: ${ex.message}")
+                }
             }
+            summitEntry.setBoundingBoxFromTrack()
+            onSaveSummit(true, summitEntry)
+            showSnackbar(addPositionToSummitSuccessful.format(summitEntry.name))
+            onDismiss()
         }
-        summitEntry.setBoundingBoxFromTrack()
-        onSaveSummit(true, summitEntry)
-        onDismiss()
-        Toast.makeText(
-            context,
-            addPositionToSummitSuccessful.format(summitEntry.name),
-            Toast.LENGTH_SHORT
-        ).show()
     }
 
     fun deleteCoordinates() {
         selectedLat = Double.NaN
         selectedLng = Double.NaN
         selectedGpsFile = null
-        if (summitEntry.hasGpsTrack()) {
-            summitEntry.getGpsTrackPath().toFile().delete()
-            summitEntry.getGpsTrackPath(simplified = true).toFile().delete()
-            summitEntry.hasTrack = false
+        scope.launch {
+            if (summitEntry.hasGpsTrack()) {
+                withContext(Dispatchers.IO) {
+                    summitEntry.getGpsTrackPath().toFile().delete()
+                    summitEntry.getGpsTrackPath(simplified = true).toFile().delete()
+                }
+                summitEntry.hasTrack = false
+            }
+            summitEntry.latLng = GeoPoint(0.0, 0.0)
+            onSaveSummit(true, summitEntry)
+            showSnackbar(deleteGps.format(summitEntry.name))
+            onDismiss()
+            showDeleteDialog = false
         }
-        summitEntry.latLng = GeoPoint(0.0, 0.0)
-        onSaveSummit(true, summitEntry)
-        onDismiss()
-        showDeleteDialog = false
-        Toast.makeText(
-            context,
-            deleteGps.format(summitEntry.name),
-            Toast.LENGTH_SHORT
-        ).show()
     }
 
     // Delete confirmation dialog
@@ -354,12 +361,9 @@ fun SelectOnMapDialogCompose(
                     onMapCreated = { map ->
                         mapView = map
                         map.setTileSource(TileSourceFactory.MAPNIK)
-                    },
-                    update = { map ->
                         map.setTileProviderDependingOnSummitSportType(
                             summitEntry.sportType
                         )
-
                         if (summitEntry.hasGpsTrack() && summitEntry.gpsTrack == null) {
                             summitEntry.setGpsTrack()
                         }
@@ -367,10 +371,11 @@ fun SelectOnMapDialogCompose(
                         if (gpsTrack?.hasNoTrackPoints() == true) {
                             gpsTrack.parseTrack()
                         }
-
+                        val trackPoints = gpsTrack?.trackPoints ?: emptyList()
+                        lastDrawnTrackPoints = trackPoints
                         map.addTrackAndMarker(
                             summitEntry,
-                            gpsTrack?.trackPoints ?: emptyList(),
+                            trackPoints,
                             false,
                             TrackColor.None,
                             alwaysShowTrackOnMap = false,
@@ -378,6 +383,30 @@ fun SelectOnMapDialogCompose(
                         )
                         summitEntry.trackBoundingBox?.let { boundingBox ->
                             map.drawBoundingBox(boundingBox)
+                        }
+                    },
+                    update = { map ->
+                        if (summitEntry.hasTrack && summitEntry.gpsTrack == null) {
+                            summitEntry.setGpsTrack()
+                        }
+                        val gpsTrack = summitEntry.gpsTrack
+                        if (gpsTrack?.hasNoTrackPoints() == true) {
+                            gpsTrack.parseTrack()
+                        }
+                        val trackPoints = gpsTrack?.trackPoints ?: emptyList()
+                        if (trackPoints !== lastDrawnTrackPoints) {
+                            lastDrawnTrackPoints = trackPoints
+                            map.addTrackAndMarker(
+                                summitEntry,
+                                trackPoints,
+                                false,
+                                TrackColor.None,
+                                alwaysShowTrackOnMap = false,
+                                calculateBondingBox = false
+                            )
+                            summitEntry.trackBoundingBox?.let { boundingBox ->
+                                map.drawBoundingBox(boundingBox)
+                            }
                         }
                     }
                 )
@@ -430,12 +459,8 @@ fun SelectOnMapDialogCompose(
                                 iconRes = R.drawable.ic_baseline_clear_24,
                                 contentDescription = closeText,
                                 onClick = {
+                                    showSnackbar(addPositionToSummitCancel.format(summitEntry.name))
                                     onDismiss()
-                                    Toast.makeText(
-                                        context,
-                                        addPositionToSummitCancel.format(summitEntry.name),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
                                 }
                             )
                             MapFab(
@@ -513,7 +538,8 @@ fun SelectOnMapDialogCompose(
             entry = summitEntry,
             onUpdateSummit = onSaveSummit,
             onDismiss = { showFileInfoDialog = false },
-            onLoadingStateChanged = { loading -> isLoading = loading }
+            onLoadingStateChanged = { loading -> isLoading = loading },
+            onShowSnackbar = { message -> showSnackbar(message) }
         )
     }
 }
@@ -561,9 +587,9 @@ private suspend fun searchForAddress(
                 searchQuery,
                 1,
                 viewBox.latSouth,
-                viewBox.lonEast,
-                viewBox.latNorth,
                 viewBox.lonWest,
+                viewBox.latNorth,
+                viewBox.lonEast,
                 false
             ).firstOrNull()
         } catch (ex: Exception) {
@@ -608,13 +634,27 @@ private fun addSelectedPositionAndTrack(
 /**
  * Custom info window for map markers
  */
-private class CustomInfoWindow(mapView: CustomMapViewToAllowScrolling?) :
-    MarkerInfoWindow(R.layout.bonuspack_bubble, mapView) {
+private class CustomInfoWindow(
+    private val mapView: CustomMapViewToAllowScrolling?,
+    private val summitEntry: Summit
+) : MarkerInfoWindow(R.layout.bonuspack_bubble, mapView) {
     private var mSelectedPoi: Address? = null
     override fun onOpen(item: Any) {
         super.onOpen(item)
-        val button = mView.findViewById<android.widget.Button>(R.id.bubble_moreinfo)
+        val button = mView?.findViewById<android.widget.Button>(R.id.bubble_moreinfo)
         button?.visibility = android.view.View.VISIBLE
+        button?.setOnClickListener {
+            val context = mapView?.context
+            if (context != null) {
+                try {
+                    val intent = Intent(context, SummitEntryDetailsComposeActivity::class.java)
+                    intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, summitEntry.id)
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                    // DO NOTHING
+                }
+            }
+        }
         val marker: Marker = item as Marker
         mSelectedPoi = marker.relatedObject as Address
     }

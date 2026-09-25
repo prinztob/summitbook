@@ -1,5 +1,6 @@
 package de.drtobiasprinz.summitbook.ui.view
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.widget.TextView
@@ -12,7 +13,7 @@ import de.drtobiasprinz.summitbook.core.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.infowindow.InfoWindow
 
-class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Context,
+class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, private val context: Context,
                           private var alwaysShowTrack: Boolean) :
         InfoWindow(R.layout.bonuspack_bubble, mapView) {
 
@@ -72,7 +73,7 @@ class MapCustomInfoBubble(mapView: MapView?, var entry: Summit, var context: Con
             val intent = Intent(context, SummitEntryDetailsComposeActivity::class.java)
             intent.putExtra(SUMMIT_ID_EXTRA_IDENTIFIER, entry.id)
             context.startActivity(intent)
-        } catch (_: NullPointerException) {
+        } catch (_: ActivityNotFoundException) {
             // DO NOTHING
         }
     }

@@ -538,7 +538,7 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
 
         val indoorHeightMeterPercent =
             androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
-                .getInt("pref_indoor_height_meter", 0)
+                .getInt(de.drtobiasprinz.summitbook.core.Keys.PREF_INDOOR_HEIGHT_METER, 0)
 
         val summitsForCurrentMonth = summits.filter {
             val calForSummit = Calendar.getInstance()
@@ -650,13 +650,24 @@ class SummitBookGlanceWidget : GlanceAppWidget() {
         val sharedPreferences =
             androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
         val annualTargetActivity =
-            sharedPreferences.getString("pref_annual_target_activities", "52")?.toInt() ?: 52
+            sharedPreferences.getString(
+                de.drtobiasprinz.summitbook.core.Keys.PREF_ANNUAL_TARGET_ACTIVITIES,
+                "52"
+            )?.toIntOrNull() ?: 52
         val annualTargetKm =
-            sharedPreferences.getString("pref_annual_target_km", "1200")?.toInt() ?: 1200
+            sharedPreferences.getString(
+                de.drtobiasprinz.summitbook.core.Keys.PREF_ANNUAL_TARGET_KM,
+                "1200"
+            )?.toIntOrNull() ?: 1200
         val annualTargetHm =
-            sharedPreferences.getString("pref_annual_target", "50000")?.toInt() ?: 50000
+            sharedPreferences.getString(
+                de.drtobiasprinz.summitbook.core.Keys.PREF_ANNUAL_TARGET,
+                "50000"
+            )?.toIntOrNull() ?: 50000
         val indoorHeightMeterPercent =
-            sharedPreferences.getInt("pref_indoor_height_meter", 0)
+            sharedPreferences.getInt(
+                de.drtobiasprinz.summitbook.core.Keys.PREF_INDOOR_HEIGHT_METER, 0
+            )
 
         val statisticEntry = de.drtobiasprinz.summitbook.data.model.StatisticEntry(
             filterByDate(entries),

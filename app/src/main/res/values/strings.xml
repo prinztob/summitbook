@@ -184,6 +184,8 @@
     <string name="forecast_info_combined">"%1$s: Estimated elevation gain: %2$s m (Goal: %3$s m), distance: %4$s km (Goal: %5$s km), activities: %6$s (Goal: %7$s)."</string>
     <string name="import_string_title">"Import successful"</string>
     <string name="forecast_successfully_saved">"Forecasts successfully saved"</string>
+    <string name="forecast_save_failed">"Saving forecasts failed"</string>
+    <string name="error_loading_data">"Error loading data"</string>
     <string name="forecast_canceled">"Update forcast canceled"</string>
     <string name="import_string">"Finished import of Zip File with in total %1$s entries in CSV file\nImported entries: %2$s\nInvalid entries: %3$s\nDuplicate entries: %4$s"</string>
     <string name="current_estimate">"Current estimate from annual target: %1$s hm."</string>
@@ -612,6 +614,30 @@
     <string name="no_backup_found">No backup found for %1$s</string>
     <string name="reverted_file">Reverted %1$s</string>
     <string name="failed_to_restore_file">Failed to restore file: %1$s</string>
+    <string name="update_failed_file">Update of %1$s failed: %2$s</string>
+    <string name="no_gps_data">"No GPS data for this activity"</string>
+    <string name="loading_map">"Loading map…"</string>
+    <string name="chart_not_available">"Chart not available"</string>
+    <string name="segment_details_title">"%1$s on %2$s"</string>
+    <string name="road_info_title">"Road and location information"</string>
+    <string name="road_info_lat">"lat: %1$s"</string>
+    <string name="road_info_long">"long: %1$s"</string>
+    <string name="road_info_heading">"Road Info:"</string>
+    <string name="road_info_surface">"Mapped Surface: %1$s"</string>
+    <string name="road_info_road_type">"Mapped RoadType: %1$s"</string>
+    <string name="road_info_location_heading">"Location Info:"</string>
+    <string name="collapse">"Collapse"</string>
+    <string name="expand">"Expand"</string>
+    <string name="chip_peak">"Peak"</string>
+    <string name="chip_non_peak">"Non-peak"</string>
+    <string name="add_participant">"Add participant"</string>
+    <string name="update_name">"Update name"</string>
+    <string name="heatmap_saved_to">"Heatmap saved to: %1$s"</string>
+    <string name="heatmap_generation_failed">"Failed to generate heatmap"</string>
+    <string name="error_message">"Error: %1$s"</string>
+    <string name="apply_defaults">"Apply default filter values"</string>
+    <string name="mark_peak">"Mark this place as peak"</string>
+    <string name="unmark_peak">"Remove peak mark"</string>
 
     <!-- Bulk File Management -->
     <string name="pref_bulk_file_management_title">Bulk File Management</string>
@@ -639,8 +665,6 @@
     <string name="segment_entries">Segment entries</string>
     <string name="total">Total</string>
     <string name="number_activities"># %1$d</string>
-    <string name="collapse">Collapse</string>
-    <string name="expand">Expand</string>
     <string name="error">Error</string>
     <string name="add_additional_data">Add Additional Data</string>
     <string name="no_additional_data_available">No additional data available</string>

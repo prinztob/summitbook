@@ -1,6 +1,5 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +16,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -71,9 +71,7 @@ fun AutoCompleteCompose(
     ExposedDropdownMenuBox(
         modifier = modifier,
         expanded = expanded,
-        onExpandedChange = {
-            if (!it) expanded = false
-        }
+        onExpandedChange = { expanded = it }
     ) {
         OutlinedTextField(
             leadingIcon = {
@@ -159,8 +157,6 @@ fun AutoCompleteComposeChipField(
         }
     }
 
-    val isDarkTheme = isSystemInDarkTheme()
-
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             val keyboardController = LocalSoftwareKeyboardController.current
@@ -187,7 +183,7 @@ fun AutoCompleteComposeChipField(
                     value = inputText,
                     onValueChange = {
                         inputText = it
-                        expanded = it.isNotEmpty() && filteredOptions.isNotEmpty()
+                        expanded = it.isNotEmpty()
                     },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(
@@ -279,12 +275,10 @@ fun AutoCompleteComposeChipField(
                             {
                                 Icon(
                                     painterResource(chipIcon),
-                                    contentDescription = if (hasPeakIcon) "Peak" else "Non-peak",
+                                    contentDescription = if (hasPeakIcon) stringResource(R.string.chip_peak)
+                                    else stringResource(R.string.chip_non_peak),
                                     modifier = Modifier.size(18.dp),
-                                    tint = if (isDarkTheme)
-                                        androidx.compose.ui.graphics.Color.White
-                                    else
-                                        androidx.compose.ui.graphics.Color.Black
+                                    tint = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         } else null,
