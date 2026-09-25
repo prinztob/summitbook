@@ -1,10 +1,14 @@
 package de.drtobiasprinz.summitbook.ui.compose
 
+import android.app.Activity
+import android.content.ContentResolver
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,9 +25,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -41,10 +44,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -57,15 +63,27 @@ import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+
+private const val MAX_PICKED_IMAGES = 10
+
+/**
+ * A single entry of the sequential crop queue.
+ */
+data class PendingCrop(val uri: String, val landscape: Boolean)
+
+private val PendingCropsSaver = listSaver<List<PendingCrop>, Any>(
+    save = { list -> list.flatMap { listOf(it.uri, it.landscape) } },
+    restore = { flat -> flat.chunked(2).map { PendingCrop(it[0] as String, it[1] as Boolean) } }
+)
 
 /**
  * Jetpack Compose version of AddImagesActivity
  * Replaces the Activity-based implementation with a modern Compose Dialog
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddImagesDialogCompose(
     summit: Summit?,
@@ -76,132 +94,225 @@ fun AddImagesDialogCompose(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var localSummit by remember { mutableStateOf<Summit?>(null) }
+    // Eager, isolated clone: mutations of imageIds must not leak into the caller's Summit
+    var localSummit by remember(summit) {
+        mutableStateOf(
+            summit?.let { s -> s.clone().also { cloned -> cloned.imageIds = s.imageIds.toMutableList() } }
+        )
+    }
     var imageFiles by remember { mutableStateOf<List<Pair<Int, File>>>(emptyList()) }
     var canImageBeOnFirstPosition by remember { mutableStateOf<Map<Int, Boolean>>(emptyMap()) }
     var isLoading by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var imageToDelete by remember { mutableStateOf<Int?>(null) }
 
+    // Sequential crop queue state
+    var pendingCrops by rememberSaveable(stateSaver = PendingCropsSaver) {
+        mutableStateOf(emptyList<PendingCrop>())
+    }
+    var cropInFlight by rememberSaveable { mutableStateOf(false) }
+    var batchTotal by rememberSaveable { mutableIntStateOf(0) }
+    var batchAddedCount by rememberSaveable { mutableIntStateOf(0) }
+
+    // In-dialog feedback (activity snackbars are invisible behind the dialog window)
+    var feedbackMessage by remember { mutableStateOf<String?>(null) }
+    var feedbackAddedImages by remember { mutableStateOf<Int?>(null) }
+
     // String resources for use in callbacks
     val deleteImageDone = stringResource(R.string.delete_image_done)
-    val deleteCancel = stringResource(R.string.delete_cancel)
+    val addImageCanceled = stringResource(R.string.add_image_canceled)
+    val firstImageMustBeLandscape = stringResource(R.string.error_first_image_must_be_landscape)
+    val errorCroppingImage = stringResource(R.string.error_cropping_image)
+    val errorDeleteImage = stringResource(R.string.error_delete_image)
+    val maxImagesNotice = stringResource(R.string.max_images_notice, MAX_PICKED_IMAGES)
 
-    // Crop selection state
-    var selectedCropValues by rememberSaveable(
-        stateSaver = listSaver<CropValues, Float>(
-            save = { listOf(it.width, it.height) },
-            restore = { CropValues(it[0], it[1]) }
-        )
-    ) { mutableStateOf(CropValues.HORIZONTAL) }
+    // Auto-clear feedback
+    LaunchedEffect(feedbackMessage, feedbackAddedImages) {
+        if (feedbackMessage != null || feedbackAddedImages != null) {
+            delay(4000)
+            feedbackMessage = null
+            feedbackAddedImages = null
+        }
+    }
 
-    // Load summit data
+    // Load image files whenever the underlying summit instance changes
     LaunchedEffect(summit) {
-        summit?.let { s ->
-            localSummit = s.clone()
-            isLoading = true
-            loadImageFiles(s) { files, canBeFirst ->
-                imageFiles = files
-                canImageBeOnFirstPosition = canBeFirst
-                isLoading = false
-            }
+        val s = localSummit ?: return@LaunchedEffect
+        isLoading = true
+        val (files, canBeFirst) = loadImageFiles(s)
+        imageFiles = files
+        canImageBeOnFirstPosition = canBeFirst
+        isLoading = false
+    }
+
+    fun reloadImages() {
+        val currentSummit = localSummit ?: return
+        scope.launch {
+            val (files, canBeFirst) = loadImageFiles(currentSummit)
+            imageFiles = files
+            canImageBeOnFirstPosition = canBeFirst
+            isLoading = false
         }
     }
 
-    // UCrop result launcher (must be defined before filePickerLauncher)
-    val uCropLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            val currentSummit = localSummit ?: return@rememberLauncherForActivityResult
-            currentSummit.getNextImagePath(true)
-            onSaveSummit(true, currentSummit)
-            // Reload images
-            isLoading = true
-            scope.launch {
-                loadImageFiles(currentSummit) { files, canBeFirst ->
-                    imageFiles = files
-                    canImageBeOnFirstPosition = canBeFirst
-                    isLoading = false
-                }
-            }
+    fun canBeFirst(imageId: Int): Boolean = canImageBeOnFirstPosition[imageId] ?: true
+
+    // A swap is only allowed if the image landing on position 0 is landscape
+    fun swapAllowed(position: Int, target: Int): Boolean {
+        val ids = localSummit?.imageIds ?: return false
+        if (position !in ids.indices || target !in ids.indices) return false
+        val landingOnFirstPosition = when {
+            target == 0 -> ids[position]
+            position == 0 -> ids[target]
+            else -> null
         }
+        return landingOnFirstPosition == null || canBeFirst(landingOnFirstPosition)
     }
 
-    // File picker launcher for adding images
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            result.data?.data?.let { sourceUri ->
-                val currentSummit = localSummit ?: return@let
-                val destinationUri = currentSummit.getNextImagePath().toFile().toUri()
-
-                (context as? android.app.Activity)?.let { activity ->
-                    UCrop.of(sourceUri, destinationUri)
-                        .withAspectRatio(selectedCropValues.width, selectedCropValues.height)
-                        .withMaxResultSize(2048, 2048)
-                        .start(activity, uCropLauncher)
-                }
-            }
-        }
+    fun moveImage(position: Int, delta: Int) {
+        val currentSummit = localSummit ?: return
+        val target = position + delta
+        if (!swapAllowed(position, target)) return
+        val ids = currentSummit.imageIds
+        val temp = ids[position]
+        ids[position] = ids[target]
+        ids[target] = temp
+        isLoading = true
+        onSaveSummit(true, currentSummit)
+        reloadImages()
     }
 
-    // Handle image deletion
     fun handleDeleteImage(imageId: Int) {
         val currentSummit = localSummit ?: return
         val imagePath = currentSummit.getImagePath(imageId).toFile()
 
         isLoading = true
         scope.launch {
-            val deleted = withContext(Dispatchers.IO) { imagePath.delete() }
+            val deleted = withContext(Dispatchers.IO) { !imagePath.exists() || imagePath.delete() }
             if (deleted) {
                 currentSummit.imageIds.remove(imageId)
-                onSaveSummit(true, currentSummit)
-                // Reload images
-                loadImageFiles(currentSummit) { files, canBeFirst ->
-                    imageFiles = files
-                    canImageBeOnFirstPosition = canBeFirst
-                    isLoading = false
+                // Keep a landscape image on the first position if possible
+                val ids = currentSummit.imageIds
+                if (ids.isNotEmpty() && !canBeFirst(ids.first())) {
+                    val firstLandscape = ids.firstOrNull { canBeFirst(it) }
+                    if (firstLandscape != null) {
+                        ids.remove(firstLandscape)
+                        ids.add(0, firstLandscape)
+                    }
                 }
-                onShowSnackbar(deleteImageDone)
+                onSaveSummit(true, currentSummit)
+                reloadImages()
+                feedbackMessage = deleteImageDone
             } else {
                 isLoading = false
+                feedbackMessage = errorDeleteImage
             }
         }
     }
 
-    // Handle moving image up
-    fun handleMoveImageUp(position: Int) {
-        val currentSummit = localSummit ?: return
-        if (position > 0) {
-            val temp = currentSummit.imageIds[position]
-            currentSummit.imageIds[position] = currentSummit.imageIds[position - 1]
-            currentSummit.imageIds[position - 1] = temp
-            onSaveSummit(true, currentSummit)
-            // Reload images
-            scope.launch {
-                loadImageFiles(currentSummit) { files, canBeFirst ->
-                    imageFiles = files
-                    canImageBeOnFirstPosition = canBeFirst
+    // UCrop result launcher
+    val uCropLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        cropInFlight = false
+        val currentSummit = localSummit ?: return@rememberLauncherForActivityResult
+        when (result.resultCode) {
+            Activity.RESULT_OK -> {
+                currentSummit.getNextImagePath(true)
+                onSaveSummit(true, currentSummit)
+                batchAddedCount++
+                if (pendingCrops.isEmpty()) {
+                    feedbackMessage = null
+                    feedbackAddedImages = batchAddedCount
+                    batchTotal = 0
+                    reloadImages()
                 }
             }
+            UCrop.RESULT_ERROR -> {
+                pendingCrops = emptyList()
+                batchTotal = 0
+                feedbackMessage = errorCroppingImage
+                feedbackAddedImages = null
+                reloadImages()
+            }
+            else -> {
+                val added = batchAddedCount
+                pendingCrops = emptyList()
+                batchTotal = 0
+                if (added > 0) {
+                    feedbackMessage = null
+                    feedbackAddedImages = added
+                } else {
+                    feedbackMessage = addImageCanceled
+                    feedbackAddedImages = null
+                }
+                reloadImages()
+            }
         }
     }
 
-    // Handle moving image down
-    fun handleMoveImageDown(position: Int) {
-        val currentSummit = localSummit ?: return
-        if (position < currentSummit.imageIds.size - 1) {
-            val temp = currentSummit.imageIds[position]
-            currentSummit.imageIds[position] = currentSummit.imageIds[position + 1]
-            currentSummit.imageIds[position + 1] = temp
-            onSaveSummit(true, currentSummit)
-            // Reload images
+    // Starts the next queued crop session whenever the queue is non-empty and no crop is running
+    LaunchedEffect(pendingCrops, cropInFlight) {
+        if (pendingCrops.isEmpty() || cropInFlight) return@LaunchedEffect
+        val currentSummit = localSummit
+        val activity = context as? Activity
+        if (currentSummit == null || activity == null) {
+            pendingCrops = emptyList()
+            return@LaunchedEffect
+        }
+        cropInFlight = true
+        val next = pendingCrops.first()
+        pendingCrops = pendingCrops.drop(1)
+        val cropValues = if (next.landscape) CropValues.HORIZONTAL else CropValues.VERTICAL
+        val destinationUri = currentSummit.getNextImagePath().toFile().toUri()
+        val options = UCrop.Options().apply {
+            setToolbarTitle("${batchTotal - pendingCrops.size}/$batchTotal")
+        }
+        UCrop.of(next.uri.toUri(), destinationUri)
+            .withAspectRatio(cropValues.width, cropValues.height)
+            .withMaxResultSize(2048, 2048)
+            .withOptions(options)
+            .start(activity, uCropLauncher)
+    }
+
+    // File picker launcher for adding images (multiple selection)
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val uris = mutableListOf<Uri>()
+            result.data?.clipData?.let { clipData ->
+                for (i in 0 until clipData.itemCount) {
+                    uris.add(clipData.getItemAt(i).uri)
+                }
+            }
+            if (uris.isEmpty()) {
+                result.data?.data?.let { uris.add(it) }
+            }
+            val currentSummit = localSummit
+            if (uris.isEmpty() || currentSummit == null) {
+                return@rememberLauncherForActivityResult
+            }
+            if (uris.size > MAX_PICKED_IMAGES) {
+                feedbackMessage = maxImagesNotice
+            }
+            val selectedUris = uris.take(MAX_PICKED_IMAGES)
+
+            isLoading = true
             scope.launch {
-                loadImageFiles(currentSummit) { files, canBeFirst ->
-                    imageFiles = files
-                    canImageBeOnFirstPosition = canBeFirst
+                val ordered = withContext(Dispatchers.IO) {
+                    selectedUris.map { uri -> uri to isLandscapeImage(context.contentResolver, uri) }
+                        .sortedBy { !it.second } // landscape images first, stable order
+                }
+                if (currentSummit.imageIds.isEmpty() && ordered.none { it.second }) {
+                    isLoading = false
+                    feedbackMessage = firstImageMustBeLandscape
+                } else {
+                    batchTotal = ordered.size
+                    batchAddedCount = 0
+                    pendingCrops = ordered.map { (uri, landscape) ->
+                        PendingCrop(uri.toString(), landscape)
+                    }
                 }
             }
         }
@@ -267,65 +378,84 @@ fun AddImagesDialogCompose(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Images list
-                if (isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        itemsIndexed(
-                            imageFiles,
-                            key = { _, (imageId, _) -> imageId }
-                        ) { index, (imageId, file) ->
-                            ImageItem(
-                                file = file,
-                                index = index,
-                                totalImages = imageFiles.size,
-                                isVerticalImageOnNextPosition = index == 0 &&
-                                        imageFiles.size > 1 &&
-                                        (canImageBeOnFirstPosition[imageFiles.getOrNull(1)?.first] == false),
-                                isVerticalImageOnSecondPosition = index == 1 &&
-                                        (canImageBeOnFirstPosition[imageId] == false),
-                                onDelete = {
-                                    imageToDelete = imageId
-                                    showDeleteDialog = true
-                                },
-                                onMoveUp = { handleMoveImageUp(index) },
-                                onMoveDown = { handleMoveImageDown(index) }
+                // Image list with empty state and loading overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    if (imageFiles.isEmpty() && !isLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.no_images_yet),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            itemsIndexed(
+                                imageFiles,
+                                key = { _, (imageId, _) -> imageId }
+                            ) { index, (imageId, file) ->
+                                ImageItem(
+                                    file = file,
+                                    canMoveUp = index > 0 && swapAllowed(index, index - 1),
+                                    canMoveDown = index < imageFiles.size - 1 && swapAllowed(index, index + 1),
+                                    onDelete = {
+                                        imageToDelete = imageId
+                                        showDeleteDialog = true
+                                    },
+                                    onMoveUp = { moveImage(index, -1) },
+                                    onMoveDown = { moveImage(index, 1) }
+                                )
+                            }
+                        }
+                    }
 
-                        // Add new image buttons
-                        item {
-                            AddImageButtons(
-                                onAddHorizontal = {
-                                    selectedCropValues = CropValues.HORIZONTAL
-                                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                                        addCategory(Intent.CATEGORY_OPENABLE)
-                                        type = "*/*"
-                                    }
-                                    filePickerLauncher.launch(intent)
-                                },
-                                onAddVertical = {
-                                    selectedCropValues = CropValues.VERTICAL
-                                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                                        addCategory(Intent.CATEGORY_OPENABLE)
-                                        type = "*/*"
-                                    }
-                                    filePickerLauncher.launch(intent)
-                                },
-                                hasImages = imageFiles.isNotEmpty()
-                            )
+                    // Loading overlay: keeps the list visible but blocks interaction
+                    if (isLoading) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f))
+                                .pointerInput(Unit) { detectTapGestures { } },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
                         }
                     }
                 }
+
+                // In-dialog feedback banner
+                val feedbackText = feedbackMessage
+                    ?: feedbackAddedImages?.let { pluralStringResource(R.plurals.images_added, it, it) }
+                feedbackText?.let { message ->
+                    FeedbackBanner(message = message, onDismiss = {
+                        feedbackMessage = null
+                        feedbackAddedImages = null
+                    })
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Add images button
+                AddImageButton(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "*/*"
+                            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                        }
+                        filePickerLauncher.launch(intent)
+                    }
+                )
             }
         }
     }
@@ -335,7 +465,7 @@ fun AddImagesDialogCompose(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = {
-                Text(text = stringResource(R.string.delete_image, localSummit?.name ?: ""))
+                Text(text = stringResource(R.string.delete_image_title, localSummit?.name ?: ""))
             },
             text = {
                 Text(text = stringResource(R.string.delete_image_text))
@@ -356,7 +486,6 @@ fun AddImagesDialogCompose(
                     onClick = {
                         showDeleteDialog = false
                         imageToDelete = null
-                        onShowSnackbar(deleteCancel)
                     }
                 ) {
                     Text(stringResource(android.R.string.cancel))
@@ -375,10 +504,8 @@ fun AddImagesDialogCompose(
 @Composable
 private fun ImageItem(
     file: File,
-    index: Int,
-    totalImages: Int,
-    isVerticalImageOnNextPosition: Boolean,
-    isVerticalImageOnSecondPosition: Boolean,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
     onDelete: () -> Unit,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit
@@ -407,46 +534,43 @@ private fun ImageItem(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Action buttons overlay
+        // Delete button overlay
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(8.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // Delete button
             IconButton(
                 onClick = onDelete,
                 modifier = Modifier
                     .background(
-                        color = Color.Black.copy(alpha = 0.5f),
+                        color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(50)
                     )
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_delete_black_24dp),
-                    contentDescription = stringResource(R.string.delete),
+                    contentDescription = stringResource(R.string.delete_image_action),
                     tint = Color.White
                 )
             }
         }
 
         // Move buttons (vertical stack on the right)
-        if (!isVerticalImageOnNextPosition) {
+        if (canMoveUp || canMoveDown) {
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // Up button
-                val canMoveUp = index > 0 && !isVerticalImageOnSecondPosition
                 if (canMoveUp) {
                     IconButton(
                         onClick = onMoveUp,
                         modifier = Modifier
                             .background(
-                                color = Color.Black.copy(alpha = 0.5f),
+                                color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
                                 shape = RoundedCornerShape(50)
                             )
                     ) {
@@ -458,14 +582,12 @@ private fun ImageItem(
                     }
                 }
 
-                // Down button
-                val canMoveDown = index < totalImages - 1
                 if (canMoveDown) {
                     IconButton(
                         onClick = onMoveDown,
                         modifier = Modifier
                             .background(
-                                color = Color.Black.copy(alpha = 0.5f),
+                                color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
                                 shape = RoundedCornerShape(50)
                             )
                     ) {
@@ -482,94 +604,101 @@ private fun ImageItem(
 }
 
 @Composable
-private fun AddImageButtons(
-    onAddHorizontal: () -> Unit,
-    onAddVertical: () -> Unit,
-    hasImages: Boolean
+private fun AddImageButton(
+    onClick: () -> Unit
 ) {
-    Column(
+    Button(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.baseline_add_photo_alternate_black_24dp),
+            contentDescription = null
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(stringResource(R.string.add_images))
+    }
+}
+
+@Composable
+private fun FeedbackBanner(
+    message: String,
+    onDismiss: () -> Unit
+) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.inverseSurface)
+            .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = stringResource(R.string.add_image),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            text = message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.inverseOnSurface,
+            modifier = Modifier.weight(1f)
         )
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Horizontal image button
-            Button(
-                onClick = onAddHorizontal,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_baseline_panorama_horizontal_24),
-                    contentDescription = null
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.horizontal))
-            }
-
-            // Vertical image button (only show if there are already images)
-            if (hasImages) {
-                Button(
-                    onClick = onAddVertical,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_baseline_panorama_vertical_24),
-                        contentDescription = null
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.vertical))
-                }
-            }
+        IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_cancel_24),
+                contentDescription = stringResource(R.string.close),
+                tint = MaterialTheme.colorScheme.inverseOnSurface,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }
 
 /**
- * Asynchronously load image files and determine which images can be on first position
+ * Loads the image files for a summit and determines which images can be on first position
  */
 private suspend fun loadImageFiles(
-    summit: Summit,
-    onResult: (List<Pair<Int, File>>, Map<Int, Boolean>) -> Unit
-) {
-    withContext(Dispatchers.IO) {
-        val files = mutableListOf<Pair<Int, File>>()
-        val canBeFirst = mutableMapOf<Int, Boolean>()
+    summit: Summit
+): Pair<List<Pair<Int, File>>, Map<Int, Boolean>> = withContext(Dispatchers.IO) {
+    val files = mutableListOf<Pair<Int, File>>()
+    val canBeFirst = mutableMapOf<Int, Boolean>()
 
-        if (summit.hasImagePath()) {
-            for (imageId in summit.imageIds) {
-                val file = summit.getImagePath(imageId).toFile()
-                files.add(imageId to file)
+    if (summit.hasImagePath()) {
+        for (imageId in summit.imageIds) {
+            val file = summit.getImagePath(imageId).toFile()
+            files.add(imageId to file)
 
-                // Determine if image can be on first position (width > height)
-                try {
-                    val options = BitmapFactory.Options().apply {
-                        inJustDecodeBounds = true
-                    }
-                    BitmapFactory.decodeFile(file.absolutePath, options)
-                    canBeFirst[imageId] = options.outWidth > options.outHeight
-                } catch (_: Exception) {
-                    canBeFirst[imageId] = true // Default to true if we can't determine
+            // Determine if image can be on first position (width > height)
+            try {
+                val options = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
                 }
+                BitmapFactory.decodeFile(file.absolutePath, options)
+                canBeFirst[imageId] = options.outWidth > options.outHeight
+            } catch (_: Exception) {
+                canBeFirst[imageId] = true // Default to true if we can't determine
             }
         }
+    }
 
-        withContext(Dispatchers.Main) {
-            onResult(files, canBeFirst)
+    files to canBeFirst
+}
+
+/**
+ * Determines whether the image behind the given Uri is in landscape orientation
+ * (width > height). Defaults to true if the bounds cannot be read.
+ */
+private fun isLandscapeImage(resolver: ContentResolver, uri: Uri): Boolean {
+    return try {
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
         }
+        resolver.openInputStream(uri)?.use { input ->
+            BitmapFactory.decodeStream(input, null, options)
+        }
+        if (options.outWidth > 0 && options.outHeight > 0) {
+            options.outWidth > options.outHeight
+        } else {
+            true
+        }
+    } catch (_: Exception) {
+        true
     }
 }
 

@@ -144,6 +144,8 @@
     <string name="grit">Grit (difficulty)</string>
     <string name="trainingLoad">Training load</string>
     <string name="add_image">Add image</string>
+    <string name="add_images">Add images</string>
+    <string name="error_first_image_must_be_landscape">The first image must be in landscape format</string>
     <string name="with_image">With image</string>
     <string name="set_date">Set date</string>
     <string name="set_activity">Set activity</string>
@@ -213,7 +215,6 @@
     <string name="power_profile_compare_label">"Summit to compare"</string>
     <string name="power_profile_max_label">"Record"</string>
     <string name="power_profile_min_label">"Negative Record"</string>
-    <string name="delete_image">"Deleted image for entry %1$s."</string>
     <string name="delete_image_text">"Are you sure you want to delete this image?"</string>
     <string name="delete_image_done">"Image was deleted."</string>
     <string name="garmin_pwd_summary">Enter Garmin password to retrieve gpx from Garmin connect</string>
@@ -444,10 +445,14 @@
     <string name="add_image_canceled">Image picking canceled</string>
     <string name="summits_shown">Only %1$s of %2$s summits are shown, because track points exceeds limit.</string>
     <string name="close">Close</string>
-    <string name="horizontal">Horizontal</string>
-    <string name="vertical">Vertical</string>
     <string name="move_up">Move up</string>
     <string name="move_down">Move down</string>
+    <string name="delete_image_action">Delete image</string>
+    <string name="delete_image_title">Delete image of %1$s?</string>
+    <string name="error_cropping_image">Could not crop image</string>
+    <string name="error_delete_image">Could not delete image</string>
+    <string name="no_images_yet">This summit has no images yet</string>
+    <string name="max_images_notice">Only the first %1$d images can be selected</string>
     <string name="no_image_selected">No images selected</string>
     <string name="gpx_viewer_not_installed">GPX viewer not installed</string>
     <string name="gpx_file_not_copied">GPX file could not be copied</string>
@@ -791,5 +796,9 @@
     <plurals name="overview_summits">
         <item quantity="one">%1$d summit, %2$s km, %3$s hm</item>
         <item quantity="other">%1$d summits, %2$s km, %3$s hm</item>
+    </plurals>
+    <plurals name="images_added">
+        <item quantity="one">Image added</item>
+        <item quantity="other">%1$d images added</item>
     </plurals>
 </resources>

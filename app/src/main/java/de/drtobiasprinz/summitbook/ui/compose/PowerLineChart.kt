@@ -179,7 +179,7 @@ fun PowerLineChart(
                             // Find the closest data point to the tap
                             val chartWidth = size.width
                             val chartHeight = size.height
-                            val bottomPadding = 40f * density
+                            val bottomPadding = 24f * density
                             val effectiveChartHeight = chartHeight - bottomPadding
                             val tapTolerancePx = 50.dp.toPx()
 
@@ -205,7 +205,7 @@ fun PowerLineChart(
                 val chartWidth = size.width
                 val chartHeight = size.height
                 // Reserve space for x-axis labels at the bottom
-                val bottomPadding = 40f * density
+                val bottomPadding = 24f * density
                 val effectiveChartHeight = chartHeight - bottomPadding
 
                 // Draw grid lines and labels
@@ -485,12 +485,12 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPowerGridAndLab
 
     val xLabelPaint = Paint().apply {
         color = textColor.toArgb()
-        textSize = 24f * density
+        textSize = 12f * density
         textAlign = Paint.Align.CENTER
     }
     val yLabelPaint = Paint().apply {
         color = textColor.toArgb()
-        textSize = 24f * density
+        textSize = 12f * density
         textAlign = Paint.Align.LEFT
     }
 
