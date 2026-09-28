@@ -2,10 +2,12 @@
 
 package de.drtobiasprinz.summitbook.ui.compose
 
+import android.Manifest
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -67,22 +69,25 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.preference.PreferenceManager
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import de.drtobiasprinz.summitbook.BuildConfig
 import de.drtobiasprinz.summitbook.core.Keys
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.data.db.entities.GroupForHeatmap
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling.Companion.selectedItem
-import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
-import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
 import de.drtobiasprinz.summitbook.data.maps.MapProvider
 import de.drtobiasprinz.summitbook.sync.FileRowType
 import de.drtobiasprinz.summitbook.data.maps.FileHelper
 import de.drtobiasprinz.summitbook.data.maps.OfflineMapAnalyzer
 import de.drtobiasprinz.summitbook.core.preferences.PreferencesHelper
+import de.drtobiasprinz.summitbook.work.HeatmapGenerationWorker
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -96,6 +101,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import de.drtobiasprinz.summitbook.data.appstate.AppState
 
 /**
@@ -709,31 +715,10 @@ fun SettingsScreen(
 
     // Heatmap management dialog
     if (showHeatmapDialog) {
-        val loadingCanceled = stringResource(R.string.loading_canceled)
         HeatmapManagementDialog(
             summits = summits,
             onDismiss = { showHeatmapDialog = false },
-            onProgressUpdate = { message, current, total ->
-                progressDialogMessage = message
-                progressDialogCurrent = current
-                progressDialogTotal = total
-                showProgressDialog = true
-            },
-            onJobStarted = { job ->
-                progressDialogJob = job
-            },
-            onComplete = { message ->
-                showProgressDialog = false
-                progressDialogJob = null
-                onShowSnackbar(message)
-                Log.i("Settings", message)
-            },
-            onCanceled = {
-                showProgressDialog = false
-                progressDialogJob = null
-                onShowSnackbar(loadingCanceled)
-            },
-            coroutineScope = coroutineScope
+            onShowSnackbar = onShowSnackbar
         )
     }
 }
@@ -743,6 +728,7 @@ fun SettingsScreen(
  */
 data class HeatmapStatus(
     val name: String,
+    val fileName: String,
     val sportGroup: GroupForHeatmap?,
     val isAllActivities: Boolean = false,
     val exists: Boolean,
@@ -755,34 +741,105 @@ data class HeatmapStatus(
 fun HeatmapManagementDialog(
     summits: List<Summit>,
     onDismiss: () -> Unit,
-    onProgressUpdate: (String, Int?, Int?) -> Unit,
-    onJobStarted: (Job) -> Unit,
-    onComplete: (String) -> Unit,
-    onCanceled: () -> Unit,
-    coroutineScope: CoroutineScope
+    onShowSnackbar: (String) -> Unit
 ) {
     val context = LocalContext.current
     val view = LocalView.current
     var heatmapStatuses by remember { mutableStateOf<List<HeatmapStatus>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
-    var generatingForItem by remember { mutableStateOf<String?>(null) }
     var refreshTrigger by remember { mutableIntStateOf(0) }
     val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
 
-    // Pre-fetch sport group names to avoid using context in IO dispatcher
-    val sportGroupNames = GroupForHeatmap.entries.associateWith { sportGroup ->
-        stringResource(sportGroup.sportNameStringId)
-    }
+    // Heatmap generation runs in a WorkManager worker; observe its state here
+    val workManager = remember { WorkManager.getInstance(context) }
+    val workInfos by workManager
+        .getWorkInfosByTagFlow(HeatmapGenerationWorker.TAG)
+        .collectAsStateWithLifecycle(initialValue = emptyList())
 
-    // Keep screen on while generating heatmap
-    DisposableEffect(generatingForItem) {
+    // Output file names of the heatmaps currently being generated
+    val runningFileNames = workInfos
+        .filter { !it.state.isFinished }
+        .mapNotNull { info ->
+            info.tags
+                .firstOrNull { it.startsWith(HeatmapGenerationWorker.TAG_ITEM_PREFIX) }
+                ?.removePrefix(HeatmapGenerationWorker.TAG_ITEM_PREFIX)
+        }
+        .toSet()
+    val anyRunning = runningFileNames.isNotEmpty()
+
+    // Keep screen on while a heatmap is generating and the dialog is open
+    DisposableEffect(anyRunning) {
         val activity = view.context as? Activity
-        if (generatingForItem != null) {
+        if (anyRunning) {
             activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
         onDispose {
             activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
+    }
+
+    // Hoisted string resources (configuration-aware); the saved-to template is
+    // formatted in the effect below because the path is only known then
+    val heatmapSavedToTemplate = stringResource(R.string.heatmap_saved_to)
+    val loadingCanceled = stringResource(R.string.loading_canceled)
+    val heatmapGenerationFailed = stringResource(R.string.heatmap_generation_failed)
+
+    // Report finished generations once (works that were already finished when
+    // the dialog opened are not reported again) and refresh the statuses
+    val reportedFinishedIds = remember { mutableSetOf<UUID>() }
+    var sawFirstWorkInfos by remember { mutableStateOf(false) }
+    LaunchedEffect(workInfos) {
+        workInfos.forEach { info ->
+            if (info.state.isFinished && info.id !in reportedFinishedIds) {
+                reportedFinishedIds.add(info.id)
+                if (sawFirstWorkInfos) {
+                    val message = when (info.state) {
+                        WorkInfo.State.SUCCEEDED -> String.format(
+                            heatmapSavedToTemplate,
+                            info.outputData.getString(HeatmapGenerationWorker.KEY_OUTPUT_PATH)
+                                ?: ""
+                        )
+                        WorkInfo.State.CANCELLED -> loadingCanceled
+                        else -> heatmapGenerationFailed
+                    }
+                    onShowSnackbar(message)
+                    refreshTrigger++
+                }
+            }
+        }
+        if (workInfos.isNotEmpty()) {
+            sawFirstWorkInfos = true
+        }
+    }
+
+    // Request notification permission (API 33+) so the progress notification
+    // is visible; generation is started regardless of the grant result.
+    var pendingGeneration by remember { mutableStateOf<HeatmapStatus?>(null) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        pendingGeneration?.let { status ->
+            enqueueHeatmapGeneration(status, summits, onShowSnackbar, context)
+        }
+        pendingGeneration = null
+    }
+
+    fun startGeneration(status: HeatmapStatus) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context, Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingGeneration = status
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            enqueueHeatmapGeneration(status, summits, onShowSnackbar, context)
+        }
+    }
+
+    // Pre-fetch sport group names to avoid using context in IO dispatcher
+    val sportGroupNames = GroupForHeatmap.entries.associateWith { sportGroup ->
+        stringResource(sportGroup.sportNameStringId)
     }
 
     // Load heatmap statuses
@@ -800,6 +857,7 @@ fun HeatmapManagementDialog(
                 statuses.add(
                     HeatmapStatus(
                         name = sportGroupNames[sportGroup] ?: sportGroup.name,
+                        fileName = fileName,
                         sportGroup = sportGroup,
                         exists = heatmapFile.exists(),
                         fileSize = if (heatmapFile.exists()) formatFileSize(heatmapFile.length()) else "-",
@@ -835,27 +893,12 @@ fun HeatmapManagementDialog(
                         HeatmapStatusRow(
                             status = status,
                             dateFormat = dateFormat,
-                            isGenerating = generatingForItem == status.name,
-                            onGenerate = {
-                                generatingForItem = status.name
-                                onJobStarted(
-                                    generateHeatmapForSportGroup(
-                                        summits = summits,
-                                        sportGroup = status.sportGroup,
-                                        isAllActivities = status.isAllActivities,
-                                        coroutineScope = coroutineScope,
-                                        context = context,
-                                        onProgressUpdate = onProgressUpdate,
-                                        onComplete = { _, message ->
-                                            generatingForItem = null
-                                            onComplete(message)
-                                            // Refresh the dialog by reloading
-                                            refreshTrigger++
-                                        },
-                                        onCanceled = {
-                                            generatingForItem = null
-                                            onCanceled()
-                                        }
+                            isGenerating = status.fileName in runningFileNames,
+                            onGenerate = { startGeneration(status) },
+                            onCancel = {
+                                workManager.cancelUniqueWork(
+                                    HeatmapGenerationWorker.uniqueWorkName(
+                                        File(AppState.heatmapDir, status.fileName)
                                     )
                                 )
                             }
@@ -877,7 +920,8 @@ fun HeatmapStatusRow(
     status: HeatmapStatus,
     dateFormat: SimpleDateFormat,
     isGenerating: Boolean,
-    onGenerate: () -> Unit
+    onGenerate: () -> Unit,
+    onCancel: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -912,10 +956,25 @@ fun HeatmapStatusRow(
                 }
 
                 if (isGenerating) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconButton(
+                            onClick = onCancel,
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_cancel_24),
+                                contentDescription = stringResource(android.R.string.cancel),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                 } else {
                     TextButton(
                         onClick = onGenerate,
@@ -972,107 +1031,39 @@ private fun formatFileSize(bytes: Long): String {
     }
 }
 
-private fun generateHeatmapForSportGroup(
+private fun enqueueHeatmapGeneration(
+    status: HeatmapStatus,
     summits: List<Summit>,
-    sportGroup: GroupForHeatmap?,
-    isAllActivities: Boolean,
-    coroutineScope: CoroutineScope,
-    context: Context,
-    onProgressUpdate: (String, Int?, Int?) -> Unit,
-    onComplete: (Boolean, String) -> Unit,
-    onCanceled: () -> Unit
-): Job {
+    onShowSnackbar: (String) -> Unit,
+    context: Context
+) {
     val filteredSummits = when {
-        isAllActivities -> summits.filter { it.hasGpsTrack() }
-        sportGroup != null -> summits.filter { summit ->
-            summit.sportType in sportGroup.sportTypes && summit.hasGpsTrack()
+        status.isAllActivities -> summits.filter { it.hasGpsTrack() }
+        status.sportGroup != null -> summits.filter { summit ->
+            summit.sportType in status.sportGroup.sportTypes && summit.hasGpsTrack()
         }
         else -> emptyList()
     }
 
     if (filteredSummits.isEmpty()) {
-        onComplete(false, context.getString(R.string.no_activities_with_tracks))
-        return Job().apply { cancel() }
+        onShowSnackbar(context.getString(R.string.no_activities_with_tracks))
+        return
     }
 
-    return coroutineScope.launch(Dispatchers.Main) {
-        try {
-            withContext(Dispatchers.IO) {
-                val trackFiles = filteredSummits.mapNotNull { summit ->
-                    val trackFile = summit.getGpsTrackPath().toFile()
-                    if (trackFile.exists()) trackFile else null
-                }
-
-                if (trackFiles.isEmpty()) {
-                    withContext(Dispatchers.Main) {
-                        onComplete(false, context.getString(R.string.no_valid_track_files))
-                    }
-                    return@withContext
-                }
-
-                withContext(Dispatchers.Main) {
-                    onProgressUpdate(
-                        context.getString(R.string.found_tracks_generating, trackFiles.size),
-                        null,
-                        null
-                    )
-                }
-
-                val fileName = when {
-                    isAllActivities -> "all_activities.mbtiles"
-                    sportGroup != null -> "${sportGroup.name.lowercase()}.mbtiles"
-                    else -> "unknown.mbtiles"
-                }
-                val outputFile = File(AppState.heatmapDir, fileName)
-
-                pythonInstance?.let { python ->
-                    try {
-                        Log.i(
-                            "Settings",
-                            "generateHeatmap for ${trackFiles.size} tracks, saving to $outputFile"
-                        )
-                        GpxPyExecutor(python).generateHeatmap(
-                            trackFiles,
-                            outputFile
-                        ) { currentZoom, totalZoomLevels ->
-                            onProgressUpdate(
-                                context.getString(
-                                    R.string.loading_generating_heatmap_zoom,
-                                    currentZoom,
-                                    totalZoomLevels
-                                ),
-                                currentZoom,
-                                totalZoomLevels
-                            )
-                        }
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: RuntimeException) {
-                        Log.e("Settings", "Generate Heatmap failed.", e)
-                    }
-                }
-
-                withContext(Dispatchers.Main) {
-                    if (outputFile.exists()) {
-                        onComplete(
-                            true,
-                            context.getString(R.string.heatmap_saved_to, outputFile.absolutePath)
-                        )
-                    } else {
-                        onComplete(false, context.getString(R.string.heatmap_generation_failed))
-                    }
-                }
-            }
-        } catch (e: CancellationException) {
-            onCanceled()
-            throw e
-        } catch (e: Exception) {
-            Log.e("SettingsScreen", "Failed to generate heatmap", e)
-            withContext(Dispatchers.Main) {
-                onComplete(false, context.getString(R.string.error_message, e.message ?: ""))
-            }
-        }
+    val trackFiles = filteredSummits.mapNotNull { summit ->
+        val trackFile = summit.getGpsTrackPath().toFile()
+        if (trackFile.exists()) trackFile else null
     }
+
+    if (trackFiles.isEmpty()) {
+        onShowSnackbar(context.getString(R.string.no_valid_track_files))
+        return
+    }
+
+    val outputFile = File(AppState.heatmapDir, status.fileName)
+    Log.i("Settings", "Enqueue heatmap generation for ${trackFiles.size} tracks, saving to $outputFile")
+    HeatmapGenerationWorker.enqueue(context, trackFiles, outputFile, status.name)
+    onShowSnackbar(context.getString(R.string.heatmap_generation_started))
 }
 
 @Composable

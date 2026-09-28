@@ -632,6 +632,10 @@
     <string name="update_name">"Namen aktualisieren"</string>
     <string name="heatmap_saved_to">"Heatmap gespeichert unter: %1$s"</string>
     <string name="heatmap_generation_failed">"Heatmap konnte nicht erstellt werden"</string>
+    <string name="heatmap_notification_channel">Heatmap-Erstellung</string>
+    <string name="heatmap_notification_title">Heatmap wird erstellt für %1$s</string>
+    <string name="heatmap_notification_text">Zoomstufe %1$d von %2$d</string>
+    <string name="heatmap_generation_started">Heatmap-Erstellung im Hintergrund gestartet</string>
     <string name="error_message">"Fehler: %1$s"</string>
     <string name="apply_defaults">"Standard-Filterwerte anwenden"</string>
     <string name="mark_peak">"Diesen Ort als Gipfel markieren"</string>

@@ -573,7 +573,7 @@ def _build_tile_grid(
         draw_line_on_grid(grid, (clipped[0], clipped[1]), (clipped[2], clipped[3]))
 
     if gaussian_sigma > 0:
-        grid = gaussian_filter(grid, sigma=gaussian_sigma)
+        grid = gaussian_filter(grid, sigma=gaussian_sigma, truncate=3.0)
 
     return grid
 

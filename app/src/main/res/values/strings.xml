@@ -639,6 +639,10 @@
     <string name="update_name">"Update name"</string>
     <string name="heatmap_saved_to">"Heatmap saved to: %1$s"</string>
     <string name="heatmap_generation_failed">"Failed to generate heatmap"</string>
+    <string name="heatmap_notification_channel">Heatmap generation</string>
+    <string name="heatmap_notification_title">Generating heatmap for %1$s</string>
+    <string name="heatmap_notification_text">Zoom level %1$d of %2$d</string>
+    <string name="heatmap_generation_started">Heatmap generation started in the background</string>
     <string name="error_message">"Error: %1$s"</string>
     <string name="apply_defaults">"Apply default filter values"</string>
     <string name="mark_peak">"Mark this place as peak"</string>
