@@ -654,6 +654,7 @@ def generate_heatmap_from_tracks(
         generate_heatmap(
             [Path(track) for track in input_gpx_track_files],
             Path(output_mbtiles_file),
+            gaussian_sigma = 0.5,
             progress_callback=progress_callback,
         )
         return "return code: 0Generate heatmap was successful"

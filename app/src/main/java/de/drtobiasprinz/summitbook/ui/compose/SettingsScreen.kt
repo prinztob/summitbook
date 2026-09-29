@@ -819,7 +819,7 @@ fun HeatmapManagementDialog(
         contract = ActivityResultContracts.RequestPermission()
     ) { _ ->
         pendingGeneration?.let { status ->
-            enqueueHeatmapGeneration(status, summits, onShowSnackbar, context)
+            enqueueHeatmapGeneration(status, onShowSnackbar, context)
         }
         pendingGeneration = null
     }
@@ -833,7 +833,7 @@ fun HeatmapManagementDialog(
             pendingGeneration = status
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
-            enqueueHeatmapGeneration(status, summits, onShowSnackbar, context)
+            enqueueHeatmapGeneration(status, onShowSnackbar, context)
         }
     }
 
@@ -897,9 +897,7 @@ fun HeatmapManagementDialog(
                             onGenerate = { startGeneration(status) },
                             onCancel = {
                                 workManager.cancelUniqueWork(
-                                    HeatmapGenerationWorker.uniqueWorkName(
-                                        File(AppState.heatmapDir, status.fileName)
-                                    )
+                                    HeatmapGenerationWorker.uniqueWorkName(status.fileName)
                                 )
                             }
                         )
@@ -1033,36 +1031,16 @@ private fun formatFileSize(bytes: Long): String {
 
 private fun enqueueHeatmapGeneration(
     status: HeatmapStatus,
-    summits: List<Summit>,
     onShowSnackbar: (String) -> Unit,
     context: Context
 ) {
-    val filteredSummits = when {
-        status.isAllActivities -> summits.filter { it.hasGpsTrack() }
-        status.sportGroup != null -> summits.filter { summit ->
-            summit.sportType in status.sportGroup.sportTypes && summit.hasGpsTrack()
-        }
-        else -> emptyList()
-    }
-
-    if (filteredSummits.isEmpty()) {
-        onShowSnackbar(context.getString(R.string.no_activities_with_tracks))
-        return
-    }
-
-    val trackFiles = filteredSummits.mapNotNull { summit ->
-        val trackFile = summit.getGpsTrackPath().toFile()
-        if (trackFile.exists()) trackFile else null
-    }
-
-    if (trackFiles.isEmpty()) {
-        onShowSnackbar(context.getString(R.string.no_valid_track_files))
-        return
-    }
-
-    val outputFile = File(AppState.heatmapDir, status.fileName)
-    Log.i("Settings", "Enqueue heatmap generation for ${trackFiles.size} tracks, saving to $outputFile")
-    HeatmapGenerationWorker.enqueue(context, trackFiles, outputFile, status.name)
+    Log.i(
+        "Settings",
+        "Enqueue heatmap generation for sport group ${status.sportGroup}, saving to ${status.fileName}"
+    )
+    // Only small strings go into the worker input (WorkManager Data limit:
+    // 10 KB); the worker loads the track files from the database itself.
+    HeatmapGenerationWorker.enqueue(context, status.sportGroup, status.fileName, status.name)
     onShowSnackbar(context.getString(R.string.heatmap_generation_started))
 }
 

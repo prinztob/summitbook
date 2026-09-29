@@ -16,14 +16,17 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.chaquo.python.android.AndroidPlatform
 import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.data.db.entities.GroupForHeatmap
+import de.drtobiasprinz.summitbook.data.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -33,19 +36,26 @@ import java.io.File
  * the generation alive even when the app is backgrounded or the screen is
  * off; progress is shown as a notification with a per-zoom-level progress
  * bar.
+ *
+ * The track files are loaded from the database inside the worker because
+ * WorkManager's input Data is limited to 10 KB - passing ~1000 absolute track
+ * paths would exceed that limit.
  */
 @HiltWorker
 class HeatmapGenerationWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
+    private val repository: DatabaseRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     private var foregroundActive = false
 
     override suspend fun doWork(): Result {
-        val trackPaths = inputData.getStringArray(KEY_TRACK_PATHS) ?: return Result.failure()
-        val outputPath = inputData.getString(KEY_OUTPUT_PATH) ?: return Result.failure()
-        val displayName = inputData.getString(KEY_DISPLAY_NAME) ?: File(outputPath).name
+        val sportGroupName = inputData.getString(KEY_SPORT_GROUP) ?: ""
+        val outputFileName = inputData.getString(KEY_OUTPUT_FILE_NAME)
+            ?: return Result.failure()
+        val displayName = inputData.getString(KEY_DISPLAY_NAME) ?: outputFileName
+        val outputFile = File(getHeatmapDir(applicationContext), outputFileName)
 
         createNotificationChannel()
         try {
@@ -59,13 +69,27 @@ class HeatmapGenerationWorker @AssistedInject constructor(
         }
 
         return try {
+            val trackFiles = withContext(Dispatchers.IO) {
+                loadTrackFiles(sportGroupName)
+            }
+            if (trackFiles.isEmpty()) {
+                Log.w(TAG, "No GPX track files found for sport group '$sportGroupName'")
+                return Result.failure(
+                    workDataOf(
+                        KEY_SUCCESS to false,
+                        KEY_OUTPUT_PATH to outputFile.absolutePath,
+                        KEY_ERROR to "no_tracks"
+                    )
+                )
+            }
+
             withContext(Dispatchers.IO) {
                 if (!Python.isStarted()) {
                     Python.start(AndroidPlatform(applicationContext))
                 }
                 GpxPyExecutor(Python.getInstance()).generateHeatmap(
-                    trackPaths.map { File(it) },
-                    File(outputPath)
+                    trackFiles,
+                    outputFile
                 ) { currentZoom, totalZoomLevels ->
                     setProgressAsync(
                         workDataOf(
@@ -76,14 +100,14 @@ class HeatmapGenerationWorker @AssistedInject constructor(
                     updateNotification(displayName, currentZoom, totalZoomLevels)
                 }
             }
-            if (File(outputPath).exists()) {
+            if (outputFile.exists()) {
                 Result.success(
-                    workDataOf(KEY_SUCCESS to true, KEY_OUTPUT_PATH to outputPath)
+                    workDataOf(KEY_SUCCESS to true, KEY_OUTPUT_PATH to outputFile.absolutePath)
                 )
             } else {
-                Log.e(TAG, "Heatmap generation finished without output file $outputPath")
+                Log.e(TAG, "Heatmap generation finished without output file $outputFile")
                 Result.failure(
-                    workDataOf(KEY_SUCCESS to false, KEY_OUTPUT_PATH to outputPath)
+                    workDataOf(KEY_SUCCESS to false, KEY_OUTPUT_PATH to outputFile.absolutePath)
                 )
             }
         } catch (e: CancellationException) {
@@ -93,11 +117,29 @@ class HeatmapGenerationWorker @AssistedInject constructor(
             Result.failure(
                 workDataOf(
                     KEY_SUCCESS to false,
-                    KEY_OUTPUT_PATH to outputPath,
+                    KEY_OUTPUT_PATH to outputFile.absolutePath,
                     KEY_ERROR to e.message
                 )
             )
         }
+    }
+
+    /**
+     * Loads the summits from the database and returns the existing GPX track
+     * files for the given sport group. An empty [sportGroupName] selects all
+     * activities with tracks.
+     */
+    private suspend fun loadTrackFiles(sportGroupName: String): List<File> {
+        val sportGroup = runCatching { GroupForHeatmap.valueOf(sportGroupName) }.getOrNull()
+        return repository.getAllSummits().first()
+            .filter { summit ->
+                (sportGroup == null || summit.sportType in sportGroup.sportTypes) &&
+                    summit.hasGpsTrack()
+            }
+            .mapNotNull { summit ->
+                val trackFile = summit.getGpsTrackPath().toFile()
+                if (trackFile.exists()) trackFile else null
+            }
     }
 
     private fun createNotificationChannel() {
@@ -154,44 +196,53 @@ class HeatmapGenerationWorker @AssistedInject constructor(
     companion object {
         const val TAG = "HeatmapGenerationWorker"
         const val TAG_ITEM_PREFIX = "heatmap_item_"
-        const val KEY_TRACK_PATHS = "track_paths"
-        const val KEY_OUTPUT_PATH = "output_path"
+        const val KEY_SPORT_GROUP = "sport_group"
+        const val KEY_OUTPUT_FILE_NAME = "output_file_name"
         const val KEY_DISPLAY_NAME = "display_name"
         const val KEY_SUCCESS = "success"
         const val KEY_ERROR = "error"
+        const val KEY_OUTPUT_PATH = "output_path"
         const val KEY_PROGRESS_CURRENT = "progress_current"
         const val KEY_PROGRESS_TOTAL = "progress_total"
         private const val CHANNEL_ID = "heatmap_generation"
         private const val NOTIFICATION_ID = 4242
 
-        fun uniqueWorkName(outputFile: File) = "heatmap_generation_${outputFile.name}"
+        /** Must match the directory set up in MainActivityCompose. */
+        private const val HEATMAP_DIR_NAME = "heatmaps"
 
-        fun itemTag(outputFile: File) = TAG_ITEM_PREFIX + outputFile.name
+        private fun getHeatmapDir(context: Context) = File(context.filesDir, HEATMAP_DIR_NAME)
+
+        fun uniqueWorkName(outputFileName: String) = "heatmap_generation_$outputFileName"
+
+        fun itemTag(outputFileName: String) = TAG_ITEM_PREFIX + outputFileName
 
         /**
          * Enqueues the generation for the given output file. ExistingWorkPolicy.KEEP
          * prevents enqueuing a duplicate while a generation for the same file is
          * already running or pending.
+         *
+         * Only small strings are passed as input data (see class doc); the worker
+         * loads the tracks from the database itself.
          */
         fun enqueue(
             context: Context,
-            trackFiles: List<File>,
-            outputFile: File,
+            sportGroup: GroupForHeatmap?,
+            outputFileName: String,
             displayName: String
         ) {
             val request = OneTimeWorkRequestBuilder<HeatmapGenerationWorker>()
                 .setInputData(
                     workDataOf(
-                        KEY_TRACK_PATHS to trackFiles.map { it.absolutePath }.toTypedArray(),
-                        KEY_OUTPUT_PATH to outputFile.absolutePath,
+                        KEY_SPORT_GROUP to (sportGroup?.name ?: ""),
+                        KEY_OUTPUT_FILE_NAME to outputFileName,
                         KEY_DISPLAY_NAME to displayName
                     )
                 )
                 .addTag(TAG)
-                .addTag(itemTag(outputFile))
+                .addTag(itemTag(outputFileName))
                 .build()
             WorkManager.getInstance(context).enqueueUniqueWork(
-                uniqueWorkName(outputFile),
+                uniqueWorkName(outputFileName),
                 ExistingWorkPolicy.KEEP,
                 request
             )
