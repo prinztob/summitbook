@@ -1088,9 +1088,24 @@ class MainActivityCompose : ComponentActivity(),
             }
 
             composable(Destination.Map.name) {
+                val savedLocations by viewModel.savedLocations.asFlow()
+                    .collectAsStateWithLifecycle(initialValue = DataStatus.loading())
                 OpenStreetMapScreen(
                     filteredSummits,
                     summitsFromDatabase.filter { it.isBookmark },
+                    savedLocations.data ?: emptyList(),
+                    onSaveLocation = { name, lat, lng, color ->
+                        viewModel.saveSavedLocation(name, lat, lng, color)
+                    },
+                    onRenameLocation = { location, newName ->
+                        viewModel.renameSavedLocation(location, newName)
+                    },
+                    onUpdateLocationColor = { location, color ->
+                        viewModel.changeSavedLocationColor(location, color)
+                    },
+                    onDeleteLocation = { location ->
+                        viewModel.deleteSavedLocation(location)
+                    },
                     onFullscreenChanged = { isFullscreen ->
                         isMapFullscreen = isFullscreen
                     }
@@ -1214,7 +1229,7 @@ class MainActivityCompose : ComponentActivity(),
                         contentDescription = null
                     )
                 },
-                label = { Text(stringResource(R.string.action_settings)) },
+                label = { Text(stringResource(R.string.nav_settings)) },
                 selected = currentDestination == Destination.Settings,
                 onClick = { onDestinationSelected(Destination.Settings) }
             )

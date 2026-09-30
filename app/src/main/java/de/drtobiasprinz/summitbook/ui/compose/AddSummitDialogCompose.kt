@@ -114,9 +114,9 @@ fun AddSummitDialogCompose(
     // State management
     var entity by rememberSaveable(stateSaver = jsonSaver<Summit>()) { mutableStateOf(createEmptySummit(isBookmark, context)) }
     var isLoading by rememberSaveable { mutableStateOf(false) }
-    var temporaryGpxFile by rememberSaveable(stateSaver = fileSaver) { mutableStateOf<File?>(null) }
-    var latLngHighestPoint by rememberSaveable(stateSaver = nullableJsonSaver<GeoPoint>()) { mutableStateOf<GeoPoint?>(null) }
-    var garminDataFromGarminConnect by rememberSaveable(stateSaver = nullableJsonSaver<GarminData>()) { mutableStateOf<GarminData?>(null) }
+    var temporaryGpxFile by rememberSaveable(stateSaver = fileSaver) { mutableStateOf(null) }
+    var latLngHighestPoint by rememberSaveable(stateSaver = nullableJsonSaver<GeoPoint>()) { mutableStateOf(null) }
+    var garminDataFromGarminConnect by rememberSaveable(stateSaver = nullableJsonSaver<GarminData>()) { mutableStateOf(null) }
 
     // UI State - Basic fields
     var summitName by rememberSaveable { mutableStateOf("") }
@@ -130,13 +130,13 @@ fun AddSummitDialogCompose(
     var comments by rememberSaveable { mutableStateOf("") }
 
     // Chip groups
-    var participants by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf<List<String>>(emptyList()) }
-    var places by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf<List<String>>(emptyList()) }
-    var countries by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf<List<String>>(emptyList()) }
-    var equipments by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf<List<String>>(emptyList()) }
+    var participants by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf(emptyList()) }
+    var places by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf(emptyList()) }
+    var countries by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf(emptyList()) }
+    var equipments by rememberSaveable(stateSaver = stringListSaver) { mutableStateOf(emptyList()) }
 
     // Connected activities: persisted in the DB column, canonical ids in dialog state
-    var connectedActivityIds by rememberSaveable(stateSaver = longListSaver) { mutableStateOf<List<Long>>(emptyList()) }
+    var connectedActivityIds by rememberSaveable(stateSaver = longListSaver) { mutableStateOf(emptyList()) }
 
     // Performance data state
     val performanceState = rememberSaveable(saver = PerformanceDataStateSaver) { PerformanceDataState() }
@@ -1446,7 +1446,7 @@ private fun computeConnectedSummits(
                 .toDays(entityDay.timeInMillis - startOfDay(entry.date).timeInMillis)
                 .toDouble()
             // Same calendar day or the day before
-            0.0 <= differenceInDays && differenceInDays <= 1.0
+            differenceInDays in 0.0..1.0
         }
     }
 }
@@ -1456,7 +1456,7 @@ private fun computeConnectedSummits(
  * The fields are Compose state, so they cannot be serialized via reflection;
  * they are saved as a flat string list instead.
  */
-val PerformanceDataStateSaver = listSaver<PerformanceDataState, String>(
+val PerformanceDataStateSaver = listSaver(
     save = { state -> listOf(state.calories, state.averageHr, state.maxHr, state.ftp, state.vo2Max, state.normPower, state.avgPower, state.power1s, state.power2s, state.power5s, state.power10s, state.power20s, state.power30s, state.power1min, state.power2min, state.power5min, state.power10min, state.power20min, state.power30min, state.power1h, state.power2h, state.power5h) },
     restore = { values ->
         PerformanceDataState().apply {

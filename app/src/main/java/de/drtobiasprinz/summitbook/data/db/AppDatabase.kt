@@ -13,6 +13,7 @@ import de.drtobiasprinz.summitbook.data.db.dao.EntityEventDao
 import de.drtobiasprinz.summitbook.data.db.dao.ForecastDao
 import de.drtobiasprinz.summitbook.data.db.dao.IgnoredActivityDao
 import de.drtobiasprinz.summitbook.data.db.dao.PeakDao
+import de.drtobiasprinz.summitbook.data.db.dao.SavedLocationDao
 import de.drtobiasprinz.summitbook.data.db.dao.SegmentDao
 import de.drtobiasprinz.summitbook.data.db.dao.SummitsDao
 import de.drtobiasprinz.summitbook.data.db.entities.DailyActivitySummary
@@ -20,6 +21,7 @@ import de.drtobiasprinz.summitbook.data.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.data.db.entities.Forecast
 import de.drtobiasprinz.summitbook.data.db.entities.IgnoredActivity
 import de.drtobiasprinz.summitbook.data.db.entities.Peak
+import de.drtobiasprinz.summitbook.data.db.entities.SavedLocation
 import de.drtobiasprinz.summitbook.data.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.data.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
@@ -27,8 +29,9 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
 
 @Database(
     entities = [Summit::class, Forecast::class, IgnoredActivity::class,
-        SegmentDetails::class, SegmentEntry::class, EntityEvent::class, Peak::class, DailyActivitySummary::class],
-    version = 14,
+        SegmentDetails::class, SegmentEntry::class, EntityEvent::class, Peak::class, DailyActivitySummary::class,
+        SavedLocation::class],
+    version = 16,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -44,6 +47,8 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
         AutoMigration(from = 11, to = 12, spec = AppDatabase.AutoMigration11to12::class),
         AutoMigration(from = 12, to = 13),
         AutoMigration(from = 13, to = 14),
+        AutoMigration(from = 14, to = 15),
+        AutoMigration(from = 15, to = 16),
     ]
 )
 
@@ -54,6 +59,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun segmentDao(): SegmentDao
     abstract fun ignoredActivityDao(): IgnoredActivityDao
     abstract fun peakDao(): PeakDao
+    abstract fun savedLocationDao(): SavedLocationDao
     abstract fun entityEventDao(): EntityEventDao
     abstract fun dailyActivitySummaryDao(): DailyActivitySummaryDao
 

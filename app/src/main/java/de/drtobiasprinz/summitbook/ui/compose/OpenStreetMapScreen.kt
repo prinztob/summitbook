@@ -11,6 +11,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,8 +35,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -64,17 +68,24 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import de.drtobiasprinz.summitbook.core.Keys
 import de.drtobiasprinz.summitbook.R
+import de.drtobiasprinz.summitbook.data.db.entities.RoadType
 import de.drtobiasprinz.summitbook.data.db.entities.SportType
+import de.drtobiasprinz.summitbook.data.db.entities.SavedLocation
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
+import de.drtobiasprinz.summitbook.data.db.entities.Surface
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling.Companion.TAG
 import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
 import de.drtobiasprinz.summitbook.ui.theme.MapVoidBackground
+import de.drtobiasprinz.summitbook.ui.theme.SavedLocationPinColorPicker
 import de.drtobiasprinz.summitbook.ui.view.MapCustomInfoBubble
 import de.drtobiasprinz.summitbook.data.maps.MapProvider
 import de.drtobiasprinz.summitbook.data.maps.MapTilesHelper
+import de.drtobiasprinz.summitbook.data.maps.OfflineMapAnalyzer
+import de.drtobiasprinz.summitbook.data.model.PositionInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -100,6 +111,7 @@ import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import de.drtobiasprinz.summitbook.data.maps.FileHelper
 import java.io.File
+import java.util.Locale
 
 /** Default alpha for freshly added mbtiles overlay layers so they are visible
  *  immediately (the slider range tops out at 0.4). */
@@ -110,12 +122,20 @@ private const val DEFAULT_OVERLAY_ALPHA = 0.2f
 fun OpenStreetMapScreen(
     filteredSummits: List<Summit>,
     bookmarks: List<Summit>,
+    savedLocations: List<SavedLocation>,
+    onSaveLocation: (name: String, lat: Double, lng: Double, color: Int) -> Unit,
+    onRenameLocation: (location: SavedLocation, newName: String) -> Unit,
+    onUpdateLocationColor: (location: SavedLocation, color: Int) -> Unit = { _, _ -> },
+    onDeleteLocation: (location: SavedLocation) -> Unit,
     onFullscreenChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     val snackBarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val showSummitDisabledMessage = stringResource(R.string.show_summit_disabled)
+    val locationSavedMessage = stringResource(R.string.location_saved)
+    val locationDeletedMessage = stringResource(R.string.location_deleted)
+    val locationRenamedMessage = stringResource(R.string.location_renamed)
 
     fun showSnackbar(message: String) {
         coroutineScope.launch {
@@ -139,6 +159,18 @@ fun OpenStreetMapScreen(
     var heatmapOverlay by remember { mutableStateOf<TilesOverlay?>(null) }
     var hasHeatmap by remember { mutableStateOf(false) }
 
+    // Saved locations (long-press to add, details on marker tap)
+    var showSavedLocations by rememberSaveable { mutableStateOf(false) }
+    var pendingLocation by rememberSaveable { mutableStateOf<Pair<Double, Double>?>(null) }
+    var newLocationName by rememberSaveable { mutableStateOf("") }
+    var pendingLocationColor by rememberSaveable { mutableIntStateOf(Color.BLACK) }
+    var pendingMarker by remember { mutableStateOf<Marker?>(null) }
+    var detailsLocation by remember { mutableStateOf<SavedLocation?>(null) }
+    var locationDetails by remember { mutableStateOf<PositionInfo?>(null) }
+    var renameMode by rememberSaveable { mutableStateOf(false) }
+    var renameText by rememberSaveable { mutableStateOf("") }
+    val savedLocationMarkers = remember { mutableStateListOf<Marker>() }
+
     // Lists
     val mGeoPoints = remember { mutableStateListOf<GeoPoint?>() }
     val mMarkers = remember { mutableStateListOf<Marker?>() }
@@ -154,6 +186,12 @@ fun OpenStreetMapScreen(
     var osMapBoundingBox by remember { mutableStateOf<List<String>>(emptyList()) }
     var mapProviderInitialized by remember { mutableStateOf(false) }
     var hasLocationPermission by remember { mutableStateOf(false) }
+
+    fun removePendingLocationMarker() {
+        pendingMarker?.let { mapView?.overlays?.remove(it) }
+        pendingMarker = null
+        mapView?.invalidate()
+    }
     val locationPermissionDeniedMessage = stringResource(R.string.location_permission_denied)
 
     // Check and update location permission state
@@ -276,6 +314,7 @@ fun OpenStreetMapScreen(
     DisposableEffect(Unit) {
         onDispose {
             CustomMapViewToAllowScrolling.usePlainMapTheme = false
+            mapView?.onMapLongPress = null
         }
     }
 
@@ -285,23 +324,19 @@ fun OpenStreetMapScreen(
         val window = activity?.window
         if (fullscreenEnabled) {
             window?.let {
-                WindowCompat.getInsetsController(it, it.decorView)
-                    .hide(WindowInsetsCompat.Type.systemBars())
-                // Re-hide system bars immediately when they become visible (e.g., from edge swipe)
-                @Suppress("DEPRECATION")
-                it.decorView.setOnSystemUiVisibilityChangeListener { _ ->
-                    if (fullscreenEnabled) {
-                        WindowCompat.getInsetsController(it, it.decorView)
-                            .hide(WindowInsetsCompat.Type.systemBars())
-                    }
+                WindowCompat.getInsetsController(it, it.decorView).apply {
+                    // Transient bars revealed by an edge swipe overlay the
+                    // content and auto-hide again; no legacy
+                    // OnSystemUiVisibilityChangeListener needed.
+                    systemBarsBehavior =
+                        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    hide(WindowInsetsCompat.Type.systemBars())
                 }
             }
         } else {
             window?.let {
                 WindowCompat.getInsetsController(it, it.decorView)
                     .show(WindowInsetsCompat.Type.systemBars())
-                @Suppress("DEPRECATION")
-                it.decorView.setOnSystemUiVisibilityChangeListener(null)
             }
         }
         onFullscreenChanged(fullscreenEnabled)
@@ -309,7 +344,6 @@ fun OpenStreetMapScreen(
             window?.let {
                 WindowCompat.getInsetsController(it, it.decorView)
                     .show(WindowInsetsCompat.Type.systemBars())
-                it.decorView.setOnSystemUiVisibilityChangeListener(null)
             }
         }
     }
@@ -334,6 +368,60 @@ fun OpenStreetMapScreen(
                 onShowSnackbar = { showSnackbar(it) },
                 onLoadingChange = { isLoading = it }
             )
+        }
+    }
+
+    // Show saved locations as plain (non-clustered) markers when enabled
+    LaunchedEffect(savedLocations, showSavedLocations, mapView) {
+        val map = mapView ?: return@LaunchedEffect
+        savedLocationMarkers.forEach { map.overlays.remove(it) }
+        savedLocationMarkers.clear()
+        if (showSavedLocations) {
+            savedLocations.forEach { location ->
+                val marker = Marker(map).apply {
+                    position = GeoPoint(location.lat, location.lng)
+                    icon = getSavedLocationPinDrawable(map.context, location.color)
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    setOnMarkerClickListener { _, _ ->
+                        detailsLocation = location
+                        renameMode = false
+                        true
+                    }
+                }
+                map.overlays.add(marker)
+                savedLocationMarkers.add(marker)
+            }
+            map.invalidate()
+        }
+    }
+
+    // Live-preview the picked pin color on the pending long-press marker
+    LaunchedEffect(pendingLocationColor) {
+        pendingMarker?.let { marker ->
+            marker.icon = getSavedLocationPinDrawable(context, pendingLocationColor)
+            mapView?.invalidate()
+        }
+    }
+
+    // Deduce all available infos for the selected or pending location from
+    // the offline map (display only, not persisted)
+    LaunchedEffect(detailsLocation, pendingLocation) {
+        val target = detailsLocation?.let { GeoPoint(it.lat, it.lng) }
+            ?: pendingLocation?.let { GeoPoint(it.first, it.second) }
+        if (target == null) {
+            locationDetails = null
+            return@LaunchedEffect
+        }
+        locationDetails = null
+        try {
+            locationDetails = withContext(Dispatchers.IO) {
+                OfflineMapAnalyzer.from(context).use { analyzer ->
+                    analyzer.getPositionInfos(target)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get infos for location", e)
+            locationDetails = PositionInfo()
         }
     }
 
@@ -377,6 +465,198 @@ fun OpenStreetMapScreen(
                 // Update heatmap overlay if enabled
                 if (heatmapEnabled) {
                     heatmapOverlay = showHeatmapOverlay(mapView, context, heatmapOverlay)
+                }
+            }
+        )
+    }
+
+    fun closeSaveLocationDialog() {
+        pendingLocation = null
+        newLocationName = ""
+        pendingLocationColor = Color.BLACK
+        removePendingLocationMarker()
+    }
+
+    fun closeDetailsDialog() {
+        detailsLocation = null
+        renameMode = false
+    }
+
+    // Dialog for naming and saving the location of the last long press
+    if (pendingLocation != null) {
+        AlertDialog(
+            onDismissRequest = { closeSaveLocationDialog() },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.name_location),
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = { closeSaveLocationDialog() }) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_close_24),
+                            contentDescription = stringResource(R.string.close)
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    OutlinedTextField(
+                        value = newLocationName,
+                        onValueChange = { newLocationName = it },
+                        label = { Text(stringResource(R.string.location_name_hint)) },
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.saved_location_pin_color),
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    SavedLocationPinColorPicker(
+                        selectedColor = pendingLocationColor,
+                        onColorSelected = { pendingLocationColor = it }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    pendingLocation?.let { (lat, lng) ->
+                        PositionInfoSection(
+                            positionInfo = locationDetails,
+                            lat = lat,
+                            lng = lng
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        pendingLocation?.let { (lat, lng) ->
+                            if (newLocationName.isNotBlank()) {
+                                onSaveLocation(newLocationName, lat, lng, pendingLocationColor)
+                                showSavedLocations = true
+                                showSnackbar(locationSavedMessage)
+                            }
+                        }
+                        pendingLocation = null
+                        newLocationName = ""
+                        pendingLocationColor = Color.BLACK
+                        removePendingLocationMarker()
+                    },
+                    enabled = newLocationName.isNotBlank()
+                ) {
+                    Text(stringResource(R.string.saveButtonText))
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        pendingLocation = null
+                        newLocationName = ""
+                        pendingLocationColor = Color.BLACK
+                        removePendingLocationMarker()
+                    }
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Details dialog for a tapped saved location (rename/delete)
+    detailsLocation?.let { location ->
+        AlertDialog(
+            onDismissRequest = { closeDetailsDialog() },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.saved_location_details),
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = { closeDetailsDialog() }) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_close_24),
+                            contentDescription = stringResource(R.string.close)
+                        )
+                    }
+                }
+            },
+            text = {
+                if (renameMode) {
+                    OutlinedTextField(
+                        value = renameText,
+                        onValueChange = { renameText = it },
+                        label = { Text(stringResource(R.string.location_name_hint)) },
+                        singleLine = true
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState())
+                    ) {
+                        Text(
+                            text = location.name,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.saved_location_pin_color),
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        SavedLocationPinColorPicker(
+                            selectedColor = location.color,
+                            onColorSelected = { onUpdateLocationColor(location, it) }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        PositionInfoSection(
+                            positionInfo = locationDetails,
+                            lat = location.lat,
+                            lng = location.lng
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                if (renameMode) {
+                    Button(
+                        onClick = {
+                            if (renameText.isNotBlank()) {
+                                onRenameLocation(location, renameText)
+                                showSnackbar(locationRenamedMessage)
+                            }
+                            detailsLocation = null
+                            renameMode = false
+                        },
+                        enabled = renameText.isNotBlank()
+                    ) {
+                        Text(stringResource(R.string.saveButtonText))
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            renameMode = true
+                            renameText = location.name
+                        }
+                    ) {
+                        Text(stringResource(R.string.rename_location))
+                    }
+                }
+            },
+            dismissButton = {
+                if (renameMode) {
+                    Button(
+                        onClick = { renameMode = false }
+                    ) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            onDeleteLocation(location)
+                            showSnackbar(locationDeletedMessage)
+                            detailsLocation = null
+                        }
+                    ) {
+                        Text(stringResource(R.string.delete_location))
+                    }
                 }
             }
         )
@@ -455,6 +735,27 @@ fun OpenStreetMapScreen(
 
                             // Enable road info on map click
                             map.enableRoadInfoOnMapClick()
+                            // The road-and-surface info dialog on tap is disabled
+                            // on this screen; deduced infos for a position are
+                            // shown in the saved-location details instead.
+                            map.roadInfoOnTapEnabled = false
+
+                            // Long press on the map drops a pin and opens the
+                            // save-location dialog for that position
+                            map.onMapLongPress = { p ->
+                                newLocationName = ""
+                                pendingLocationColor = Color.BLACK
+                                pendingLocation = p.latitude to p.longitude
+                                removePendingLocationMarker()
+                                val marker = Marker(map).apply {
+                                    position = p
+                                    icon = getSavedLocationPinDrawable(map.context, Color.BLACK)
+                                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                                }
+                                pendingMarker = marker
+                                map.overlays.add(marker)
+                                map.invalidate()
+                            }
                         },
                         onShowMessage = { showSnackbar(it) },
                         update = { map ->
@@ -561,6 +862,10 @@ fun OpenStreetMapScreen(
                         removeHeatmapOverlay(mapView, heatmapOverlay)
                     }
                     mapView?.setTileProvider()
+                },
+                showSavedLocations = showSavedLocations,
+                onShowSavedLocationsToggle = {
+                    showSavedLocations = !showSavedLocations
                 },
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
@@ -693,7 +998,144 @@ fun MapTypeSelectionDialog(
     )
 }
 
+/**
+ * Renders the coordinates and all infos deduced from the offline map for a
+ * position. Shown in the save-location dialog and the saved-location
+ * details dialog.
+ */
+@Composable
+private fun PositionInfoSection(
+    positionInfo: PositionInfo?,
+    lat: Double,
+    lng: Double
+) {
+    Text(
+        text = stringResource(R.string.location_coordinates) + ": " +
+                String.format(Locale.US, "%.5f, %.5f", lat, lng),
+        style = MaterialTheme.typography.bodyMedium
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    when (positionInfo) {
+        null -> {
+            Text(
+                text = stringResource(R.string.querying_road_info),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+
+        else -> {
+            positionInfo.elevation?.let { elevation ->
+                Text(
+                    text = stringResource(
+                        R.string.position_info_elevation,
+                        elevation,
+                        positionInfo.elevationDistance ?: 0
+                    ),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            positionInfo.locationInfo?.let { locationInfo ->
+                Text(
+                    text = stringResource(R.string.road_info_location_heading),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Text(
+                    text = "${locationInfo.name} (${locationInfo.placeType}), " +
+                            stringResource(
+                                R.string.location_info_distance,
+                                locationInfo.minDistance
+                            ),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            if (positionInfo.nearbyPois.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.position_info_nearby_pois),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                positionInfo.nearbyPois.forEach { poi ->
+                    val poiDescription = buildString {
+                        append(poi.name)
+                        if (poi.type.isNotEmpty()) {
+                            append(" (")
+                            append(poi.type)
+                            append(")")
+                        }
+                        poi.elevation?.let {
+                            append(", ")
+                            append(it)
+                            append(" m")
+                        }
+                        append(", ")
+                        append(
+                            stringResource(
+                                R.string.location_info_distance,
+                                poi.minDistance
+                            )
+                        )
+                    }
+                    Text(
+                        text = poiDescription,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+            positionInfo.roadInfo?.let { roadInfo ->
+                Text(
+                    text = stringResource(R.string.road_info_heading),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                roadInfo.name?.let { name ->
+                    Text(
+                        text = stringResource(R.string.road_info_name, name),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                Text(
+                    text = stringResource(
+                        R.string.road_info_surface,
+                        Surface.mapFromRoadInfo(roadInfo)
+                    ),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = stringResource(
+                        R.string.road_info_road_type,
+                        RoadType.mapFromRoadInfo(roadInfo)
+                    ),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                roadInfo.trackType?.takeIf { it.isNotEmpty() }?.let { trackType ->
+                    Text(
+                        text = stringResource(R.string.road_info_track_type, trackType),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+            if (positionInfo.areas.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.position_info_areas),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Text(
+                    text = positionInfo.areas.joinToString(", "),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
 // Helper functions
+
+/**
+ * Creates the push-pin marker icon tinted with the pin color of a saved
+ * location (or the color picked for a pending one).
+ */
+private fun getSavedLocationPinDrawable(context: Context, color: Int) =
+    ResourcesCompat.getDrawable(context.resources, R.drawable.baseline_push_pin_48, null)
+        ?.mutate()?.apply { setTint(color) }
+
 private fun showOverlayIfExist(
     mapView: CustomMapViewToAllowScrolling,
     context: Context,
@@ -1000,17 +1442,8 @@ private fun addAllMarkers(
     mapView?.let { map ->
         val mReceive = object : MapEventsReceiver {
             override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
-                // Delegate to the same road-info behavior that
-                // enableRoadInfoOnMapClick installs, so replacing its overlay
-                // with this one (which satisfies that guard's type check)
-                // keeps road-info-on-tap working.
-                if (p != null) {
-                    CustomMapViewToAllowScrolling.showRoadInfoAtPosition(
-                        map.context,
-                        p,
-                        coroutineScope
-                    )
-                }
+                // Road info on tap is disabled on this screen; this overlay
+                // exists for the long-press handling only.
                 return false
             }
 
@@ -1020,6 +1453,7 @@ private fun addAllMarkers(
                         it.infoWindow.close()
                     }
                 }
+                map.onMapLongPress?.invoke(arg0)
                 return false
             }
         }
@@ -1231,7 +1665,9 @@ fun MapControlButtons(
     modifier: Modifier = Modifier,
     heatmapEnabled: Boolean = false,
     hasHeatmap: Boolean = false,
-    onToggleHeatmap: () -> Unit = {}
+    onToggleHeatmap: () -> Unit = {},
+    showSavedLocations: Boolean = false,
+    onShowSavedLocationsToggle: () -> Unit = {}
 ) {
     var controlsExpanded by rememberSaveable { mutableStateOf(false) }
     Column(
@@ -1330,6 +1766,19 @@ fun MapControlButtons(
                     Icon(
                         painter = painterResource(id = R.drawable.ic_baseline_bookmarks_24),
                         contentDescription = stringResource(R.string.cd_show_bookmarks)
+                    )
+                }
+
+                FloatingActionButton(
+                    onClick = onShowSavedLocationsToggle,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .padding(bottom = 8.dp),
+                    containerColor = if (showSavedLocations) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_push_pin_24),
+                        contentDescription = stringResource(R.string.cd_show_saved_locations)
                     )
                 }
 

@@ -59,6 +59,10 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideSavedLocationDao(db: AppDatabase) = db.savedLocationDao()
+
+    @Provides
+    @Singleton
     fun provideSortFilterValues() = SortFilterValues()
 
     @Provides

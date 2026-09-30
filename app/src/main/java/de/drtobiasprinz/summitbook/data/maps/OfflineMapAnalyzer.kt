@@ -9,6 +9,8 @@ import de.drtobiasprinz.summitbook.data.db.entities.TrackBoundingBox
 import de.drtobiasprinz.summitbook.data.model.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.data.model.ExtensionsFromYaml
 import de.drtobiasprinz.summitbook.data.model.LocationInfo
+import de.drtobiasprinz.summitbook.data.model.PoiInfo
+import de.drtobiasprinz.summitbook.data.model.PositionInfo
 import de.drtobiasprinz.summitbook.data.model.RoadInfo
 import de.drtobiasprinz.summitbook.data.db.entities.RoadType
 import de.drtobiasprinz.summitbook.data.db.entities.Surface
@@ -75,6 +77,129 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
             }
         }
         return Pair(null, null)
+    }
+
+    /**
+     * Collects all infos deducible for a position from the offline map files:
+     * elevation (from the nearest contour line), the closest place, nearby
+     * named POIs, the closest road and the area features containing the
+     * point (e.g. forest, farmland, nature reserve).
+     */
+    fun getPositionInfos(geoPoint: GeoPoint): PositionInfo {
+        val latLong = LatLong(geoPoint.latitude, geoPoint.longitude)
+        for (mapFile in mapFiles) {
+            try {
+                val tile = Tile(
+                    latLongToTileX(latLong.longitude),
+                    latLongToTileY(latLong.latitude),
+                    16.toByte(),
+                    256
+                )
+                val mapReadResult: MapReadResult = mapFile.readMapData(tile)
+                val roadInfo = processWays(mapReadResult.ways, latLong)
+                    ?.takeIf { it.minDistance < searchRadiusMeters }
+                var elevation: Int? = null
+                var elevationDistance: Int? = null
+                val areas = mutableListOf<String>()
+                for (way in mapReadResult.ways) {
+                    val contourTag = way.tags.firstOrNull { it.key == "contour_elevation" }
+                    if (contourTag != null) {
+                        val contourElevation = contourTag.value.toDoubleOrNull()?.toInt()
+                        if (contourElevation != null) {
+                            val distance = getMinimalDistance(way, latLong)
+                            if (elevationDistance == null || distance < elevationDistance) {
+                                elevation = contourElevation
+                                elevationDistance = distance
+                            }
+                        }
+                    }
+                    val areaTag = way.tags.firstOrNull { it.key in AREA_KEYS }
+                    if (areaTag != null && isPointInWayPolygons(latLong, way)) {
+                        areas.add(areaTag.value)
+                    }
+                }
+                val locationInfo = getClosestLocationInfo(latLong, mapFile)
+                val nearbyPois = getNearbyPois(latLong, mapFile)
+                if (roadInfo != null || locationInfo != null || elevation != null ||
+                    areas.isNotEmpty() || nearbyPois.isNotEmpty()
+                ) {
+                    return PositionInfo(
+                        elevation = elevation,
+                        elevationDistance = elevationDistance,
+                        locationInfo = locationInfo,
+                        roadInfo = roadInfo,
+                        nearbyPois = nearbyPois,
+                        areas = areas.distinct().take(MAX_AREA_INFOS)
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error reading position infos", e)
+            }
+        }
+        return PositionInfo()
+    }
+
+    private fun getNearbyPois(
+        latLong: LatLong, mapFile: MapFile, radiusMeters: Double = 1000.0, limit: Int = 8
+    ): List<PoiInfo> {
+        return try {
+            val zoomLevel: Byte = 16
+            val tile = Tile(
+                latLongToTileX(latLong.longitude, zoomLevel.toInt()),
+                latLongToTileY(latLong.latitude, zoomLevel.toInt()),
+                zoomLevel,
+                mapFile.mapFileInfo.tilePixelSize
+            )
+            val pois = mutableListOf<PoiInfo>()
+            for (poi in mapFile.readPoiData(tile).pois) {
+                val name = poi.tags.firstOrNull { it.key == "name" }?.value ?: continue
+                val distance = latLong.vincentyDistance(poi.position)
+                if (distance > radiusMeters) {
+                    continue
+                }
+                val typeTag = poi.tags.firstOrNull { it.key in POI_TYPE_KEYS }
+                    ?: poi.tags.firstOrNull { !it.key.startsWith("name") && it.key != "ele" }
+                pois.add(
+                    PoiInfo(
+                        name = name,
+                        type = typeTag?.value ?: "",
+                        elevation = poi.tags.firstOrNull { it.key == "ele" }?.value,
+                        minDistance = distance.roundToInt()
+                    )
+                )
+            }
+            pois.sortBy { it.minDistance }
+            pois.take(limit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading POIs at position", e)
+            emptyList()
+        }
+    }
+
+    private fun isPointInWayPolygons(point: LatLong, way: Way): Boolean {
+        for (block in way.latLongs) {
+            if (block.size >= 3 && isPointInPolygon(point, block)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun isPointInPolygon(point: LatLong, polygon: Array<LatLong>): Boolean {
+        var inside = false
+        var j = polygon.size - 1
+        for (i in polygon.indices) {
+            val pi = polygon[i]
+            val pj = polygon[j]
+            if ((pi.latitude > point.latitude) != (pj.latitude > point.latitude) &&
+                point.longitude < (pj.longitude - pi.longitude) *
+                (point.latitude - pi.latitude) / (pj.latitude - pi.latitude) + pi.longitude
+            ) {
+                inside = !inside
+            }
+            j = i
+        }
+        return inside
     }
 
     /**
@@ -501,6 +626,14 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
 
     companion object {
         const val TAG = "RoadSurfaceAnalyzer"
+
+        private val POI_TYPE_KEYS = listOf(
+            "place", "natural", "tourism", "amenity", "historic", "man_made",
+            "leisure", "shop", "craft", "railway", "aeroway", "waterway", "highway", "office", "sport"
+        )
+        private val AREA_KEYS = listOf("natural", "landuse", "leisure")
+        private const val MAX_AREA_INFOS = 5
+
         fun from(context: Context, searchRadiusMeters: Double = 15.0): OfflineMapAnalyzer {
             val mapFiles = FileHelper.getOnDeviceMapFiles(context)
             return OfflineMapAnalyzer(

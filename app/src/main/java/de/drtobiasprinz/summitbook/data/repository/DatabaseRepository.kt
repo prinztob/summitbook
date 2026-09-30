@@ -16,6 +16,7 @@ class DatabaseRepository @Inject constructor(
     private val entityEventDao: EntityEventDao,
     private val peakDao: PeakDao,
     private val dailyActivitySummaryDao: DailyActivitySummaryDao,
+    private val savedLocationDao: SavedLocationDao,
 ) {
 
     suspend fun saveSummit(entity: Summit) = summitsDao.saveSummit(entity)
@@ -90,6 +91,11 @@ class DatabaseRepository @Inject constructor(
     suspend fun updateEntityEvent(entity: EntityEvent) = entityEventDao.update(entity)
     suspend fun deleteEntityEvent(entity: EntityEvent) = entityEventDao.delete(entity)
     fun getEntityEvents() = entityEventDao.getAllEntityEvents()
+
+    fun getSavedLocations() = savedLocationDao.getAllSavedLocations()
+    suspend fun saveSavedLocation(entity: SavedLocation) = savedLocationDao.add(entity)
+    suspend fun updateSavedLocation(entity: SavedLocation) = savedLocationDao.update(entity)
+    suspend fun deleteSavedLocation(entity: SavedLocation) = savedLocationDao.delete(entity)
 
     fun getAllDailyActivitySummary() = dailyActivitySummaryDao.getAllDailyActivitySummary()
     suspend fun saveDailyActivitySummary(entity: DailyActivitySummary) = dailyActivitySummaryDao.add(entity)

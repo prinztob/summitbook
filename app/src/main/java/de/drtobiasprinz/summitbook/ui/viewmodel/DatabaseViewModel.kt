@@ -13,6 +13,7 @@ import de.drtobiasprinz.summitbook.data.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.data.db.entities.Forecast
 import de.drtobiasprinz.summitbook.data.db.entities.IgnoredActivity
 import de.drtobiasprinz.summitbook.data.db.entities.Peak
+import de.drtobiasprinz.summitbook.data.db.entities.SavedLocation
 import de.drtobiasprinz.summitbook.data.db.entities.Segment
 import de.drtobiasprinz.summitbook.data.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.data.db.entities.SegmentEntry
@@ -61,6 +62,10 @@ class DatabaseViewModel @Inject constructor(
     val mountainPasses: LiveData<DataStatus<List<SegmentEntry>>>
         get() = _mountainPasses
 
+    private val _savedLocations = MutableLiveData<DataStatus<List<SavedLocation>>>()
+    val savedLocations: LiveData<DataStatus<List<SavedLocation>>>
+        get() = _savedLocations
+
     init {
         getAllSummits()
         getAllSegments()
@@ -70,6 +75,7 @@ class DatabaseViewModel @Inject constructor(
         getAllEntityEvent()
         getAllDailyActivitySummaries()
         getAllMountainPasses()
+        getSavedLocations()
     }
 
     fun refresh() {
@@ -239,10 +245,6 @@ class DatabaseViewModel @Inject constructor(
             .collect { _dailyActivitySummaryList.postValue(DataStatus.success(it, it.isEmpty())) }
     }
 
-    fun saveActivitySummary(entity: DailyActivitySummary) = viewModelScope.launch {
-        repository.saveDailyActivitySummary(entity)
-    }
-
     private fun getAllMountainPasses() = viewModelScope.launch {
         repository.getAllMountainPasses()
             .catch { _mountainPasses.postValue(DataStatus.error(it.message.toString())) }
@@ -256,6 +258,30 @@ class DatabaseViewModel @Inject constructor(
 
     fun deleteMountainPass(mountainPass: SegmentEntry) = viewModelScope.launch {
         repository.deleteSegmentEntry(mountainPass)
+    }
+
+    private fun getSavedLocations() = viewModelScope.launch {
+        repository.getSavedLocations().collect {
+            _savedLocations.postValue(DataStatus.success(it, it.isEmpty()))
+        }
+    }
+
+    fun saveSavedLocation(name: String, lat: Double, lng: Double, color: Int) = viewModelScope.launch {
+        repository.saveSavedLocation(SavedLocation(name.trim(), lat, lng, color))
+    }
+
+    fun renameSavedLocation(location: SavedLocation, newName: String) = viewModelScope.launch {
+        location.name = newName.trim()
+        repository.updateSavedLocation(location)
+    }
+
+    fun changeSavedLocationColor(location: SavedLocation, newColor: Int) = viewModelScope.launch {
+        location.color = newColor
+        repository.updateSavedLocation(location)
+    }
+
+    fun deleteSavedLocation(location: SavedLocation) = viewModelScope.launch {
+        repository.deleteSavedLocation(location)
     }
 
 }

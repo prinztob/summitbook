@@ -67,6 +67,20 @@ class CustomMapViewToAllowScrolling : MapView {
      */
     var onShowMessage: ((String) -> Unit)? = null
 
+    /**
+     * Optional host callback for long presses on empty map areas. Invoked by
+     * every MapEventsOverlay this view installs (road-info overlay and the
+     * OpenStreetMapScreen marker-events overlay).
+     */
+    var onMapLongPress: ((GeoPoint) -> Unit)? = null
+
+    /**
+     * Whether single taps on empty map areas query the offline map and show
+     * the road-and-surface info dialog. Hosts that surface that information
+     * differently can set this to false.
+     */
+    var roadInfoOnTapEnabled = true
+
     private var fallbackRoadInfoScope: CoroutineScope? = null
 
     private val mainScope = CoroutineScope(Dispatchers.Main.immediate)
@@ -79,12 +93,12 @@ class CustomMapViewToAllowScrolling : MapView {
 
     private var boundingBoxPolyline: Polyline? = null
 
-    private fun showMessage(context: Context, message: String, duration: Int = Toast.LENGTH_SHORT) {
+    private fun showMessage(context: Context, message: String) {
         val callback = onShowMessage
         if (callback != null) {
             callback(message)
         } else {
-            Toast.makeText(context, message, duration).show()
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -207,8 +221,7 @@ class CustomMapViewToAllowScrolling : MapView {
                     if (summit != null) {
                         showMessage(
                             mMapView.context,
-                            "${summit.getDateAsString()} ${summit.name}",
-                            Toast.LENGTH_LONG
+                            "${summit.getDateAsString()} ${summit.name}"
                         )
                     }
 
@@ -412,7 +425,7 @@ class CustomMapViewToAllowScrolling : MapView {
                     "MAP",
                     "singleTapConfirmedHelper: position: $p, ${this@CustomMapViewToAllowScrolling.zoomLevelDouble}"
                 )
-                if (p != null) {
+                if (p != null && roadInfoOnTapEnabled) {
                     showRoadInfoAtPosition(context, p, coroutineScope, onShowMessage)
                 }
                 return false // Don't consume the event, allow it to pass through to other overlays
@@ -420,6 +433,9 @@ class CustomMapViewToAllowScrolling : MapView {
 
             override fun longPressHelper(p: GeoPoint?): Boolean {
                 Log.i("MAP", "longPressHelper")
+                if (p != null) {
+                    onMapLongPress?.invoke(p)
+                }
                 return false
             }
         }

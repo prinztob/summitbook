@@ -17,6 +17,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mapsforge.core.model.LatLong
 import org.mapsforge.map.reader.MapFile
+import org.osmdroid.util.GeoPoint
 import org.robolectric.RobolectricTestRunner
 import java.io.File
 import java.io.FileInputStream
@@ -123,6 +124,38 @@ class OfflineMapAnalyzerTest {
             analyzer.getClosestLocationInfo(LatLong(47.6722222,11.8863889))
         assert(locationInfoPass != null)
         assertEquals("Spitzingsattel", locationInfoPass?.name)
+    }
+
+    @Test
+    fun testGetPositionInfosNearWendelstein() {
+        val mapFile = assumeBayernMapPresent()
+        val analyzer = OfflineMapAnalyzer(listOf(MapFile(FileInputStream(mapFile))), 15.0)
+
+        val positionInfo = analyzer.getPositionInfos(GeoPoint(47.7036326, 12.0109743))
+
+        // The Wendelstein peak POI must be among the nearby POIs
+        assertTrue(
+            "Wendelstein peak should be a nearby POI",
+            positionInfo.nearbyPois.any { it.name == "Wendelstein" }
+        )
+        // If the map provides contour lines, the deduced elevation must be plausible
+        positionInfo.elevation?.let { elevation ->
+            assertTrue(
+                "Elevation near Wendelstein should be plausible but was $elevation",
+                elevation in 1500..2000
+            )
+        }
+    }
+
+    @Test
+    fun testGetPositionInfosNearVillage() {
+        val mapFile = assumeBayernMapPresent()
+        val analyzer = OfflineMapAnalyzer(listOf(MapFile(FileInputStream(mapFile))), 15.0)
+
+        val positionInfo = analyzer.getPositionInfos(GeoPoint(48.002878, 11.79445))
+
+        assertEquals("Egmating", positionInfo.locationInfo?.name)
+        assertTrue("Nearby POIs must not be empty", positionInfo.nearbyPois.isNotEmpty())
     }
 
     /**
