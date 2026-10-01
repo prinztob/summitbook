@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -62,6 +63,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.core.content.res.ResourcesCompat
@@ -96,9 +98,6 @@ import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.bonuspack.utils.BonusPackHelper
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
-import org.osmdroid.tileprovider.modules.ArchiveFileFactory
-import org.osmdroid.tileprovider.modules.OfflineTileProvider
-import org.osmdroid.tileprovider.util.SimpleRegisterReceiver
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -110,12 +109,29 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import de.drtobiasprinz.summitbook.data.maps.FileHelper
+import de.drtobiasprinz.summitbook.data.maps.OverlayTileProvider
+import kotlinx.coroutines.CancellationException
 import java.io.File
 import java.util.Locale
 
-/** Default alpha for freshly added mbtiles overlay layers so they are visible
- *  immediately (the slider range tops out at 0.4). */
-private const val DEFAULT_OVERLAY_ALPHA = 0.2f
+/** Alpha for freshly attached overlay layers; all of them are faded in by
+ *  the user via the sliders (the mbtiles slider range tops out at 0.4). */
+private const val DEFAULT_OVERLAY_ALPHA = 0f
+
+/** Number of layer rows the overlay panel keeps visible before it scrolls. */
+private const val VISIBLE_LAYER_ROWS = 4
+
+/** Height budget of one layer row in the overlay panel (label + slider). */
+private const val LAYER_ROW_HEIGHT_DP = 72
+
+/** A map overlay layer listed in the overlay panel, with its alpha slider
+ *  range (mbtiles overlays top out at 0.4, heatmaps go up to 1). */
+private data class MapLayer(
+    val name: String,
+    val overlay: TilesOverlay,
+    val maxAlpha: Float = 0.4f,
+    val isHeatmap: Boolean = false
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -155,9 +171,8 @@ fun OpenStreetMapScreen(
     var showOverlaySliders by remember { mutableStateOf(false) }
     var overlayAlphas by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
     var hasOverlayLayers by remember { mutableStateOf(false) }
-    var heatmapEnabled by rememberSaveable { mutableStateOf(false) }
-    var heatmapOverlay by remember { mutableStateOf<TilesOverlay?>(null) }
-    var hasHeatmap by remember { mutableStateOf(false) }
+    // Whether the mbtiles layers were already attached for this map instance
+    var baseLayersLoaded by remember { mutableStateOf(false) }
 
     // Saved locations (long-press to add, details on marker tap)
     var showSavedLocations by rememberSaveable { mutableStateOf(false) }
@@ -175,7 +190,7 @@ fun OpenStreetMapScreen(
     val mGeoPoints = remember { mutableStateListOf<GeoPoint?>() }
     val mMarkers = remember { mutableStateListOf<Marker?>() }
     val mMarkersShown = remember { mutableStateListOf<Marker?>() }
-    val layers = remember { mutableStateListOf<Pair<String, TilesOverlay>>() }
+    val layers = remember { mutableStateListOf<MapLayer>() }
     val mClusterer = remember { mutableStateListOf<RadiusMarkerClusterer>() }
     var boundingBoxRestored by remember { mutableStateOf(false) }
 
@@ -291,7 +306,6 @@ fun OpenStreetMapScreen(
 
             // Check for overlay layers
             hasOverlayLayers = hasOverlayLayers(context)
-            hasHeatmap = hasHeatmapForProvider(context)
         }
     }
 
@@ -299,13 +313,7 @@ fun OpenStreetMapScreen(
     LaunchedEffect(mapProviderInitialized, mapView) {
         if (mapProviderInitialized && mapView != null) {
             Log.i("OpenStreetMapScreen", "Updating tile provider after initialization")
-            CustomMapViewToAllowScrolling.usePlainMapTheme = heatmapEnabled
             mapView?.setTileProvider()
-            // The toggle state can be restored while the overlay is not yet
-            // attached (e.g. after process death or returning to this screen).
-            if (heatmapEnabled) {
-                heatmapOverlay = showHeatmapOverlay(mapView, context, heatmapOverlay)
-            }
         }
     }
 
@@ -455,6 +463,71 @@ fun OpenStreetMapScreen(
         }
     }
 
+    // Build the mbtiles overlay layers once per map instance, off the main
+    // thread: listing the folder and opening the SQLite archives would
+    // otherwise block composition (StrictMode DiskReadViolation) and stall
+    // the first frames after the panel is opened.
+    LaunchedEffect(showOverlaySliders, mapView) {
+        val map = mapView ?: return@LaunchedEffect
+        if (!showOverlaySliders || baseLayersLoaded) return@LaunchedEffect
+        baseLayersLoaded = true
+        isLoading = true
+        try {
+            // The overlays subfolder of the maps folder is reachable through
+            // the storage access framework; getOverlayMbtilesFiles resolves
+            // those to readable files, copying into the internal cache when
+            // the folder has no real filesystem path (e.g. on emulators).
+            // Merge with tiles-folder overlays and deduplicate by name -
+            // when both resolve to the same physical file, the layer must
+            // only be attached once.
+            val layerFiles = withContext(Dispatchers.IO) {
+                (FileHelper.getOverlayMbtilesFiles(context)
+                    .map { it to it.nameWithoutExtension } +
+                    getLayerFiles()).distinctBy { (_, name) -> name }
+            }
+            layerFiles.forEach { (file, name) ->
+                if (!currentCoroutineContext().isActive) return@forEach
+                val layer = try {
+                    withContext(Dispatchers.IO) {
+                        OverlayTileProvider.createTilesOverlay(context, file, map)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to add overlay layer $name", e)
+                    null
+                } ?: return@forEach
+                setAlphaForLayer(layer, DEFAULT_OVERLAY_ALPHA)
+                map.overlays.add(layer)
+                layers.add(MapLayer(name, layer))
+                map.invalidate()
+            }
+            // Attach every heatmap with the other layers; each one is faded
+            // in individually with its own alpha slider.
+            withContext(Dispatchers.IO) { FileHelper.getHeatmapMbtilesFiles(context) }
+                .forEach { heatmapFile ->
+                    if (!currentCoroutineContext().isActive) return@forEach
+                    val name = heatmapFile.nameWithoutExtension
+                    val layer = try {
+                        withContext(Dispatchers.IO) {
+                            OverlayTileProvider.createTilesOverlay(context, heatmapFile, map)
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to add heatmap layer $name", e)
+                        null
+                    } ?: return@forEach
+                    setAlphaForLayer(layer, DEFAULT_OVERLAY_ALPHA, isHeatmap = true)
+                    map.overlays.add(layer)
+                    layers.add(MapLayer(name, layer, maxAlpha = 1f, isHeatmap = true))
+                    map.invalidate()
+                }
+        } finally {
+            isLoading = false
+        }
+    }
+
     // Handle map type selection
     if (showMapTypeDialog) {
         MapTypeSelectionDialog(
@@ -462,10 +535,6 @@ fun OpenStreetMapScreen(
             onMapTypeSelected = { mapProvider ->
                 CustomMapViewToAllowScrolling.selectedItem = mapProvider
                 mapView?.setTileProvider()
-                // Update heatmap overlay if enabled
-                if (heatmapEnabled) {
-                    heatmapOverlay = showHeatmapOverlay(mapView, context, heatmapOverlay)
-                }
             }
         )
     }
@@ -698,9 +767,6 @@ fun OpenStreetMapScreen(
                         onMapCreated = { map ->
                             mapView = map
                             map.updateBoundingBox = true
-                            // Heatmap state may be restored (e.g. after process death);
-                            // apply the matching base map style before the first tiles load.
-                            CustomMapViewToAllowScrolling.usePlainMapTheme = heatmapEnabled
                             map.setTileProvider()
                             
                             // Setup polyline for follow location
@@ -849,20 +915,6 @@ fun OpenStreetMapScreen(
                 onToggleOverlaySliders = {
                     showOverlaySliders = !showOverlaySliders
                 },
-                heatmapEnabled = heatmapEnabled,
-                hasHeatmap = hasHeatmap,
-                onToggleHeatmap = {
-                    heatmapEnabled = !heatmapEnabled
-                    // Render the offline base map with the plain built-in theme
-                    // while the heatmap is shown so it is clearly visible.
-                    CustomMapViewToAllowScrolling.usePlainMapTheme = heatmapEnabled
-                    heatmapOverlay = if (heatmapEnabled) {
-                        showHeatmapOverlay(mapView, context, heatmapOverlay)
-                    } else {
-                        removeHeatmapOverlay(mapView, heatmapOverlay)
-                    }
-                    mapView?.setTileProvider()
-                },
                 showSavedLocations = showSavedLocations,
                 onShowSavedLocationsToggle = {
                     showSavedLocations = !showSavedLocations
@@ -873,18 +925,32 @@ fun OpenStreetMapScreen(
                     .padding(16.dp)
             )
 
-            // Overlay map sliders
+            // Overlay map sliders; shown whenever toggled so the button always
+            // has visible feedback, even while layers load or if none exist
             if (showOverlaySliders) {
-                val layerFiles = getLayerFiles()
-                if (layerFiles.isNotEmpty() && layers.isEmpty()) {
-                    mapView?.let { showOverlayIfExist(it, context, layers, layerFiles) }
-                }
                 OverlaySliders(
                     layers = layers,
                     mapView = mapView,
                     overlayAlphas = overlayAlphas,
                     onAlphaChanged = { name, alpha ->
                         overlayAlphas = overlayAlphas.toMutableMap().apply { put(name, alpha) }
+                    },
+                    onAlphaSettled = { layer, _ ->
+                        if (layer.isHeatmap) {
+                            // Follow the heatmap alpha with the base-map theme:
+                            // plain while any heatmap is visible, full render
+                            // theme once all of them are faded out. Rebuilding
+                            // the tile provider is expensive, so only do it
+                            // when the theme actually flips.
+                            val plain = layers.any {
+                                it.isHeatmap &&
+                                    (overlayAlphas[it.name] ?: DEFAULT_OVERLAY_ALPHA) > 0f
+                            }
+                            if (plain != CustomMapViewToAllowScrolling.usePlainMapTheme) {
+                                CustomMapViewToAllowScrolling.usePlainMapTheme = plain
+                                mapView?.setTileProvider()
+                            }
+                        }
                     },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -897,43 +963,62 @@ fun OpenStreetMapScreen(
 }
 
 @Composable
-fun OverlaySliders(
-    layers: List<Pair<String, TilesOverlay>>,
+private fun OverlaySliders(
+    layers: List<MapLayer>,
     mapView: CustomMapViewToAllowScrolling?,
     overlayAlphas: Map<String, Float>,
     onAlphaChanged: (String, Float) -> Unit,
+    onAlphaSettled: (MapLayer, Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.width(200.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        LazyColumn(
-            modifier = Modifier.padding(2.dp)
-        ) {
-            items(layers) { layer ->
-                val alpha = overlayAlphas[layer.first] ?: DEFAULT_OVERLAY_ALPHA
+        if (layers.isEmpty()) {
+            Text(
+                text = stringResource(R.string.no_map_overlay_layers),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(8.dp)
+            )
+        } else {
+            LazyColumn(
+                // Keep the panel at VISIBLE_LAYER_ROWS rows; longer lists scroll
+                // inside the card instead of growing over the whole map.
+                modifier = Modifier
+                    .padding(2.dp)
+                    .heightIn(max = (VISIBLE_LAYER_ROWS * LAYER_ROW_HEIGHT_DP).dp)
+            ) {
+                items(layers) { layer ->
+                    val alpha =
+                        (overlayAlphas[layer.name] ?: DEFAULT_OVERLAY_ALPHA).coerceAtMost(layer.maxAlpha)
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 2.dp)
-                ) {
-                    Text(
-                        text = layer.first,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = layer.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
 
-                    Slider(
-                        value = alpha,
-                        onValueChange = { newValue ->
-                            onAlphaChanged(layer.first, newValue)
-                            setAlphaForLayer(layer.second, newValue)
-                            mapView?.invalidate()
-                        },
-                        valueRange = 0f..0.4f,
-                        steps = 4
-                    )
+                        Slider(
+                            value = alpha,
+                            onValueChange = { newValue ->
+                                onAlphaChanged(layer.name, newValue)
+                                setAlphaForLayer(layer.overlay, newValue, layer.isHeatmap)
+                                mapView?.invalidate()
+                            },
+                            onValueChangeFinished = {
+                                onAlphaSettled(layer, alpha)
+                            },
+                            valueRange = 0f..layer.maxAlpha,
+                            steps = if (layer.maxAlpha > 0.4f) 9 else 4
+                        )
+                    }
                 }
             }
         }
@@ -1136,33 +1221,6 @@ private fun getSavedLocationPinDrawable(context: Context, color: Int) =
     ResourcesCompat.getDrawable(context.resources, R.drawable.baseline_push_pin_48, null)
         ?.mutate()?.apply { setTint(color) }
 
-private fun showOverlayIfExist(
-    mapView: CustomMapViewToAllowScrolling,
-    context: Context,
-    layers: SnapshotStateList<Pair<String, TilesOverlay>>,
-    layerFiles: List<Pair<File, String>>
-) {
-    if (ArchiveFileFactory.isFileExtensionRegistered("mbtiles") && layerFiles.isNotEmpty()) {
-        try {
-            layerFiles.forEach { (file, name) ->
-                if (!layers.map { layer -> layer.first }.contains(name)) {
-                    val tileProvider =
-                        OfflineTileProvider(SimpleRegisterReceiver(context), arrayOf(file))
-                    val layer = TilesOverlay(tileProvider, context)
-                    layer.loadingBackgroundColor = Color.TRANSPARENT
-                    layer.loadingLineColor = Color.TRANSPARENT
-                    mapView.overlays.add(layer)
-                    layers.add(Pair(name, layer))
-                    setAlphaForLayer(layer, DEFAULT_OVERLAY_ALPHA)
-                    mapView.invalidate()
-                }
-            }
-        } catch (ex: Exception) {
-            Log.e("OpenStreetMapScreen", Log.getStackTraceString(ex))
-        }
-    }
-}
-
 private fun getLayerFiles(): List<Pair<File, String>> {
     val fileEnding = "mbtiles"
     val overlayFolder = File(MapTilesHelper.getOsmdroidTilesFolder(), "overlays")
@@ -1171,82 +1229,38 @@ private fun getLayerFiles(): List<Pair<File, String>> {
 }
 
 private fun hasOverlayLayers(context: Context): Boolean {
-    return FileHelper.getOnDeviceOverlayMbtilesFiles(context).isNotEmpty() ||
-           FileHelper.getHeatmapMbtilesFiles(context).isNotEmpty()
+    return getLayerFiles().isNotEmpty() ||
+        FileHelper.getOnDeviceOverlayMbtilesFiles(context).isNotEmpty() ||
+        FileHelper.getHeatmapMbtilesFiles(context).isNotEmpty()
 }
 
-private fun setAlphaForLayer(layer: TilesOverlay, alpha: Float = 0f) {
+private fun setAlphaForLayer(layer: TilesOverlay, alpha: Float = 0f, isHeatmap: Boolean = false) {
     Log.i("OpenStreetMapScreen", "Set alpha $alpha")
+    // Heatmap tiles carry their own transparency; scaling only the source
+    // alpha preserves their soft gradient. mbtiles overlays are mostly
+    // opaque (hillshades, imagery) - with a plain alpha scale they would
+    // stay washed out at best 40% opacity, so the alpha channel is
+    // premultiplied with the RGB channels and a constant there, which
+    // renders them fully visible.
     layer.setColorFilter(
         android.graphics.ColorMatrixColorFilter(
-            floatArrayOf(
-                1f, 0f, 0f, 0f, 0f,  //red
-                0f, 1f, 0f, 0f, 0f,  //green
-                0f, 0f, 1f, 0f, 0f,  //blue
-                alpha, alpha, alpha, alpha, alpha
-            )
+            if (isHeatmap) {
+                floatArrayOf(
+                    1f, 0f, 0f, 0f, 0f,  //red
+                    0f, 1f, 0f, 0f, 0f,  //green
+                    0f, 0f, 1f, 0f, 0f,  //blue
+                    0f, 0f, 0f, alpha, 0f
+                )
+            } else {
+                floatArrayOf(
+                    1f, 0f, 0f, 0f, 0f,  //red
+                    0f, 1f, 0f, 0f, 0f,  //green
+                    0f, 0f, 1f, 0f, 0f,  //blue
+                    alpha, alpha, alpha, alpha, alpha
+                )
+            }
         )
     )
-}
-
-private fun hasHeatmapForProvider(context: Context): Boolean {
-    val heatmapFiles = FileHelper.getHeatmapMbtilesFiles(context)
-    return heatmapFiles.isNotEmpty()
-}
-
-private fun showHeatmapOverlay(
-    mapView: CustomMapViewToAllowScrolling?,
-    context: Context,
-    currentOverlay: TilesOverlay?
-): TilesOverlay? {
-    if (mapView == null) return null
-    
-    // Remove existing heatmap overlay if present
-    currentOverlay?.let { mapView.overlays.remove(it) }
-    
-    val heatmapFiles = FileHelper.getHeatmapMbtilesFiles(context)
-    if (heatmapFiles.isEmpty()) return null
-    
-    // Get the heatmap file based on the selected MapProvider's heatmap property
-    val selectedProvider = CustomMapViewToAllowScrolling.selectedItem
-    val targetHeatmapName = selectedProvider.heatmap.name
-    val heatmapFile = heatmapFiles.find {
-        it.nameWithoutExtension.equals(targetHeatmapName, ignoreCase = true)
-    } ?: heatmapFiles.firstOrNull() // Fallback to first available
-    
-    if (heatmapFile == null) return null
-    
-    return try {
-        if (ArchiveFileFactory.isFileExtensionRegistered("mbtiles")) {
-            val tileProvider = OfflineTileProvider(SimpleRegisterReceiver(context), arrayOf(heatmapFile))
-            val overlay = TilesOverlay(tileProvider, context)
-            overlay.loadingBackgroundColor = Color.TRANSPARENT
-            overlay.loadingLineColor = Color.TRANSPARENT
-            // Set 100% alpha (fully visible)
-            setAlphaForLayer(overlay, 1f)
-            mapView.overlays.add(overlay)
-            mapView.invalidate()
-            Log.i(TAG, "Heatmap overlay added: ${heatmapFile.name}")
-            overlay
-        } else {
-            null
-        }
-    } catch (ex: Exception) {
-        Log.e(TAG, "Failed to add heatmap overlay: ${ex.message}")
-        null
-    }
-}
-
-private fun removeHeatmapOverlay(
-    mapView: CustomMapViewToAllowScrolling?,
-    overlay: TilesOverlay?
-): TilesOverlay? {
-    if (mapView != null && overlay != null) {
-        mapView.overlays.remove(overlay)
-        mapView.invalidate()
-        Log.i(TAG, "Heatmap overlay removed")
-    }
-    return null
 }
 
 private fun updateSelectedParameters(
@@ -1663,9 +1677,6 @@ fun MapControlButtons(
     hasOverlayLayers: Boolean,
     onToggleOverlaySliders: () -> Unit,
     modifier: Modifier = Modifier,
-    heatmapEnabled: Boolean = false,
-    hasHeatmap: Boolean = false,
-    onToggleHeatmap: () -> Unit = {},
     showSavedLocations: Boolean = false,
     onShowSavedLocationsToggle: () -> Unit = {}
 ) {
@@ -1822,22 +1833,6 @@ fun MapControlButtons(
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_map_black_24dp),
                             contentDescription = stringResource(R.string.cd_toggle_overlay_sliders)
-                        )
-                    }
-                }
-
-                // Toggle heatmap button (only shown if heatmap exists)
-                if (hasHeatmap) {
-                    FloatingActionButton(
-                        onClick = onToggleHeatmap,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .padding(bottom = 8.dp),
-                        containerColor = if (heatmapEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_heatmap_24),
-                            contentDescription = stringResource(R.string.cd_toggle_heatmap)
                         )
                     }
                 }

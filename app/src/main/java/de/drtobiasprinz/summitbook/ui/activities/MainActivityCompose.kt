@@ -1340,6 +1340,11 @@ class MainActivityCompose : ComponentActivity(),
                 }
                 if (finalSummits.isNotEmpty()) {
                     viewModel.saveSummits(finalSummits).join()
+                    // Dismiss the loading panel before showing the snackbar:
+                    // showSnackbar suspends until the snackbar is dismissed/timed
+                    // out, which would otherwise keep the panel up for the whole
+                    // snackbar duration.
+                    resetLoadingState()
                     withContext(Dispatchers.Main) {
                         snackbarHostState?.showSnackbar(
                             getString(R.string.add_new_summit_successful),
@@ -1348,6 +1353,7 @@ class MainActivityCompose : ComponentActivity(),
                     }
                 }
             } catch (e: CancellationException) {
+                resetLoadingState()
                 withContext(NonCancellable) {
                     snackbarHostState?.showSnackbar(
                         getString(R.string.loading_canceled),

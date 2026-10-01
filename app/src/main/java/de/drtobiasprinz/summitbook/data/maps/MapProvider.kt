@@ -3,7 +3,6 @@ package de.drtobiasprinz.summitbook.data.maps
 import android.content.Context
 import de.drtobiasprinz.summitbook.R
 import de.drtobiasprinz.summitbook.core.preferences.PreferencesHelper
-import de.drtobiasprinz.summitbook.data.db.entities.GroupForHeatmap
 import de.drtobiasprinz.summitbook.data.db.entities.SportType
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -14,8 +13,7 @@ enum class MapProvider(
     var offlineStyle: String?,
     var isOffline: Boolean = false,
     var exists: (Context) -> Boolean = { true },
-    var relevantSportTypes: List<SportType> = listOf(),
-    val heatmap: GroupForHeatmap = GroupForHeatmap.All
+    var relevantSportTypes: List<SportType> = listOf()
 ) {
     OPENTOPO(
         R.string.open_topo_map_type, TileSourceFactory.OpenTopo, null
@@ -28,8 +26,7 @@ enum class MapProvider(
         null,
         null,
         true,
-        { context -> FileHelper.getOnDeviceMbtilesFiles(context).isNotEmpty() },
-        heatmap = GroupForHeatmap.Winter
+        { context -> FileHelper.getOnDeviceMbtilesFiles(context).isNotEmpty() }
     ),
     HIKING(
         R.string.hiking_map_type, null, "elv-hiking", true, { context ->
@@ -37,8 +34,7 @@ enum class MapProvider(
                 .isNotEmpty()
         }, relevantSportTypes = listOf(
             SportType.Hike, SportType.Climb, SportType.BikeAndHike, SportType.Skitour
-        ),
-        heatmap = GroupForHeatmap.Walking
+        )
     ),
     CITY(
         R.string.city_map_type, null, "elv-city", true, { context ->
@@ -50,14 +46,12 @@ enum class MapProvider(
         R.string.cycling_map_type, null, "elv-cycling", true, { context ->
             PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
                 .isNotEmpty()
-        }, relevantSportTypes = listOf(SportType.Bicycle, SportType.Racer),
-        heatmap = GroupForHeatmap.Bicycle
+        }, relevantSportTypes = listOf(SportType.Bicycle, SportType.Racer)
     ),
     MTB(
         R.string.mtb_map_type, null, "elv-mtb", true, { context ->
             PreferencesHelper.loadOnDeviceMaps() && FileHelper.getOnDeviceMapFiles(context)
                 .isNotEmpty()
-        }, relevantSportTypes = listOf(SportType.Mountainbike),
-        heatmap = GroupForHeatmap.Bicycle
+        }, relevantSportTypes = listOf(SportType.Mountainbike)
     ),
 }

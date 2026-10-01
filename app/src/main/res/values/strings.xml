@@ -793,7 +793,7 @@
     <string name="cd_show_summits">Show summits</string>
     <string name="cd_follow_location">Follow location</string>
     <string name="cd_toggle_overlay_sliders">Toggle overlay sliders</string>
-    <string name="cd_toggle_heatmap">Toggle heatmap</string>
+    <string name="no_map_overlay_layers">No overlay layers found</string>
     <string name="cd_toggle_map_controls">Show or hide map controls</string>
     <string name="cd_select_date">Select date</string>
     <string name="cd_close_search">Close search</string>

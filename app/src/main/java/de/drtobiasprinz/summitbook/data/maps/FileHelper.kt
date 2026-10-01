@@ -3,6 +3,7 @@ package de.drtobiasprinz.summitbook.data.maps
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import java.io.File
@@ -11,6 +12,7 @@ import de.drtobiasprinz.summitbook.core.preferences.PreferencesHelper
 
 
 object FileHelper {
+    private const val TAG = "FileHelper"
 
     fun getOnDeviceMapFileInputStreams(
         context: Context,
@@ -65,6 +67,66 @@ object FileHelper {
         return emptyList()
     }
 
+    /**
+     * Resolves the overlays from the maps folder to directly readable files.
+     *
+     * mbtiles archives are SQLite databases and must be opened through a
+     * real [File], but the maps folder is reached via the storage access
+     * framework. When the osmdroid tiles folder guess happens to point at
+     * the same physical file, that path is used directly; otherwise the
+     * overlay is copied into an internal cache. The cache mirrors the maps
+     * folder: copies whose source disappeared are removed again.
+     *
+     * Does disk I/O and copies potentially large files; call it from a
+     * background dispatcher.
+     */
+    fun getOverlayMbtilesFiles(context: Context): List<File> {
+        val safOverlays = getOnDeviceOverlayMbtilesFiles(context)
+        val cacheDir = File(context.filesDir, "overlays")
+        if (safOverlays.isEmpty()) {
+            cacheDir.listFiles()?.forEach { it.delete() }
+            return emptyList()
+        }
+        // When the maps folder maps onto external storage, the osmdroid
+        // tiles folder guess already points at the same physical files; use
+        // them directly instead of copying.
+        val guessedOverlayFolder = File(MapTilesHelper.getOsmdroidTilesFolder(), "overlays")
+        val sourceNames = safOverlays.mapNotNull { it.name }.toSet()
+        val results = mutableListOf<File>()
+        val toCopy = mutableListOf<Pair<DocumentFile, String>>()
+        safOverlays.forEach { overlay ->
+            val name = overlay.name ?: return@forEach
+            val guessedFile = File(guessedOverlayFolder, name)
+            if (guessedFile.exists() && guessedFile.length() == overlay.length()) {
+                results.add(guessedFile)
+            } else {
+                toCopy.add(overlay to name)
+            }
+        }
+        if (cacheDir.exists()) {
+            cacheDir.listFiles()?.forEach { cached ->
+                if (cached.name !in sourceNames) cached.delete()
+            }
+        }
+        if (toCopy.isNotEmpty()) {
+            if (!cacheDir.exists()) cacheDir.mkdirs()
+            toCopy.forEach { (overlay, name) ->
+                val target = File(cacheDir, name)
+                if (!target.exists() || target.length() != overlay.length()) {
+                    try {
+                        context.contentResolver.openInputStream(overlay.uri)?.use { input ->
+                            target.outputStream().use { output -> input.copyTo(output) }
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to copy overlay $name into the internal cache", e)
+                    }
+                }
+                if (target.exists()) results.add(target)
+            }
+        }
+        return results
+    }
+
     fun getHeatmapMbtilesFiles(context: Context): List<File> {
         val heatmapDir = File(context.filesDir, "heatmaps")
         if (heatmapDir.exists() && heatmapDir.isDirectory) {
@@ -82,25 +144,6 @@ object FileHelper {
         } else {
             return String()
         }
-    }
-
-    /**
-     * Get HGT files from the DEM subfolder within the maps folder
-     * Uses DocumentFile for Android 11+ scoped storage compatibility
-     */
-    fun getHgtFiles(context: Context): List<DocumentFile> {
-        val onDeviceMapsFolder: String = PreferencesHelper.loadOnDeviceMapsFolder()
-        if (onDeviceMapsFolder.isNotEmpty()) {
-            val folder: DocumentFile? =
-                DocumentFile.fromTreeUri(context, onDeviceMapsFolder.toUri())
-            val demFolder = folder?.listFiles()?.find { it.name?.lowercase() == "dem" }
-            return demFolder?.listFiles()?.filter { file ->
-                // HGT files can have .hgt extension or no extension (SRTM naming pattern)
-                file.name?.lowercase()?.endsWith(".hgt") == true ||
-                file.name?.matches(Regex("^[NS]\\d{2}[EW]\\d{3}$", RegexOption.IGNORE_CASE)) == true
-            } ?: emptyList()
-        }
-        return emptyList()
     }
 
 }

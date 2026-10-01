@@ -789,7 +789,7 @@
     <string name="cd_show_summits">Gipfel anzeigen</string>
     <string name="cd_follow_location">Standort folgen</string>
     <string name="cd_toggle_overlay_sliders">Overlay-Regler ein-/ausblenden</string>
-    <string name="cd_toggle_heatmap">Heatmap ein-/ausblenden</string>
+    <string name="no_map_overlay_layers">Keine Overlay-Ebenen gefunden</string>
     <string name="cd_toggle_map_controls">Kartensteuerung ein- oder ausblenden</string>
     <string name="cd_select_date">Datum auswählen</string>
     <string name="cd_close_search">Suche schließen</string>
