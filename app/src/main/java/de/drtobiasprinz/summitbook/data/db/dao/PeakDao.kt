@@ -10,9 +10,15 @@ interface PeakDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun add(peak: Peak)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun adDeprecated(peak: Peak)
+
     @Transaction
     @Query("select * from peak")
     fun getAllPeaks(): Flow<List<Peak>>
+
+    @get:Query("select * from peak")
+    val allPeaksAsList: List<Peak>
 
     @Delete
     suspend fun delete(peak: Peak)

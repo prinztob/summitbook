@@ -43,8 +43,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -146,7 +144,7 @@ fun OpenStreetMapScreen(
     onFullscreenChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
-    val snackBarHostState = remember { SnackbarHostState() }
+    val snackbarManager = remember { SnackbarManager() }
     val coroutineScope = rememberCoroutineScope()
     val showSummitDisabledMessage = stringResource(R.string.show_summit_disabled)
     val locationSavedMessage = stringResource(R.string.location_saved)
@@ -154,9 +152,7 @@ fun OpenStreetMapScreen(
     val locationRenamedMessage = stringResource(R.string.location_renamed)
 
     fun showSnackbar(message: String) {
-        coroutineScope.launch {
-            snackBarHostState.showSnackbar(message)
-        }
+        snackbarManager.show(coroutineScope, message)
     }
 
     // State variables
@@ -736,8 +732,8 @@ fun OpenStreetMapScreen(
     @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
     Scaffold(
         snackbarHost = {
-            SnackbarHost(
-                snackBarHostState,
+            DismissibleSnackbarHost(
+                snackbarManager,
                 modifier = Modifier.navigationBarsPadding()
             )
         },
@@ -817,6 +813,9 @@ fun OpenStreetMapScreen(
                                     position = p
                                     icon = getSavedLocationPinDrawable(map.context, Color.BLACK)
                                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                                    // Tapping must not open osmdroid's default
+                                    // MarkerInfoWindow (crashes on our bubble layout)
+                                    setInfoWindow(null)
                                 }
                                 pendingMarker = marker
                                 map.overlays.add(marker)
@@ -897,9 +896,7 @@ fun OpenStreetMapScreen(
                             showBookmarks
                         )
                     } else {
-                        coroutineScope.launch {
-                            snackBarHostState.showSnackbar(showSummitDisabledMessage)
-                        }
+                        snackbarManager.show(coroutineScope, showSummitDisabledMessage)
                     }
                 },
                 followLocationEnabled = followLocationEnabled,
@@ -1544,10 +1541,13 @@ private fun getMarker(
             null
         )
     }
-    // Inflate the InfoWindow lazily on first tap: one inflated bubble layout
-    // per marker would be far too heavy for large summit collections.
+    // Replace osmdroid's default MarkerInfoWindow with our custom bubble lazily
+    // on first tap: the Marker constructor eagerly attaches a default window,
+    // and its BasicInfoWindow crashes on our bonuspack_bubble layout (no
+    // bubble_subdescription view). One inflated bubble per marker would be far
+    // too heavy for large summit collections.
     marker.setOnMarkerClickListener { marker1, _ ->
-        if (marker1.infoWindow == null) {
+        if (marker1.infoWindow !is MapCustomInfoBubble) {
             marker1.infoWindow = MapCustomInfoBubble(
                 localMapView as? CustomMapViewToAllowScrolling,
                 entry,

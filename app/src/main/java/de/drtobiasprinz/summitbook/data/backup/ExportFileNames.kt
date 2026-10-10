@@ -11,4 +11,5 @@ object ExportFileNames {
     const val CSV_FILE_NAME_SEGMENTS = "de-prinz-summitbook-export-segments.csv"
     const val CSV_FILE_NAME_FORECASTS = "de-prinz-summitbook-export-forecasts.csv"
     const val CSV_FILE_NAME_ENTITY_EVENTS = "de-prinz-summitbook-export-entity-events.csv"
+    const val CSV_FILE_NAME_PEAKS = "de-prinz-summitbook-export-peaks.csv"
 }

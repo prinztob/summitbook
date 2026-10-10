@@ -18,8 +18,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -52,6 +50,8 @@ import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
 import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
 import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
 import de.drtobiasprinz.summitbook.ui.compose.AddSegmentEntryScreen
+import de.drtobiasprinz.summitbook.ui.compose.DismissibleSnackbarHost
+import de.drtobiasprinz.summitbook.ui.compose.SnackbarManager
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryDataScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryImagesScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryPowerScreen
@@ -190,7 +190,7 @@ fun SummitEntryDetailsScreen(
     onSummitLoaded: (Summit) -> Unit
 ) {
     val summitToView by pageViewModel.summitToView.observeAsState()
-    val snackBarHostState = remember { SnackbarHostState() }
+    val snackbarManager = remember { SnackbarManager() }
     val coroutineScope = rememberCoroutineScope()
 
     // Hoist state: Use stable UI state to prevent recomposition loops
@@ -212,7 +212,7 @@ fun SummitEntryDetailsScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackBarHostState) },
+        snackbarHost = { DismissibleSnackbarHost(snackbarManager) },
         topBar = {
             TopAppBar(
                 title = { Text(summitUiState?.summitName ?: "") }, navigationIcon = {
@@ -236,7 +236,7 @@ fun SummitEntryDetailsScreen(
                 pageViewModel = pageViewModel,
                 isAnalyzingTrack = isAnalyzingTrack,
                 onShowSnackbar = { message ->
-                    coroutineScope.launch { snackBarHostState.showSnackbar(message) }
+                    snackbarManager.show(coroutineScope, message)
                 },
                 modifier = Modifier.padding(paddingValues)
             )

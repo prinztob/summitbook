@@ -4,6 +4,7 @@ import android.util.Log
 import de.drtobiasprinz.summitbook.data.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.data.db.entities.Forecast
 import de.drtobiasprinz.summitbook.data.db.entities.GarminData
+import de.drtobiasprinz.summitbook.data.db.entities.Peak
 import de.drtobiasprinz.summitbook.data.db.entities.Segment
 import de.drtobiasprinz.summitbook.data.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.data.db.entities.SegmentEntry
@@ -11,6 +12,7 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_CALCULATED_DATA
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_ENTITY_EVENTS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_FORECASTS
+import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_PEAKS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_SEGMENTS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_SUMMITS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_THIRD_PARTY_DATA
@@ -39,6 +41,7 @@ class ZipFileReader(
     private val allForecasts: MutableList<Forecast> = mutableListOf(),
     private val allSegments: MutableList<Segment> = mutableListOf(),
     private val allEntityEvents: MutableList<EntityEvent> = mutableListOf(),
+    private val allPeaks: MutableList<Peak> = mutableListOf(),
 ) {
     var version = ""
     var successful = 0
@@ -50,6 +53,7 @@ class ZipFileReader(
     var saveSegmentEntry: (SegmentEntry) -> Unit = {}
     var saveForecast: (Forecast) -> Unit = {}
     var saveEntityEvent: (EntityEvent) -> Unit = {}
+    var savePeak: (Peak) -> Unit = {}
     fun cleanUp() {
         baseDirectory.deleteRecursively()
     }
@@ -112,6 +116,7 @@ class ZipFileReader(
         val inputCsvFileThirdPartyData = File(baseDirectory, CSV_FILE_NAME_THIRD_PARTY_DATA)
         val inputCsvFileCalculatedData = File(baseDirectory, CSV_FILE_NAME_CALCULATED_DATA)
         val inputCsvFileEntityEvents = File(baseDirectory, CSV_FILE_NAME_ENTITY_EVENTS)
+        val inputCsvFilePeaks = File(baseDirectory, CSV_FILE_NAME_PEAKS)
         try {
             if (inputCsvVersionFile.exists()) {
                 version = inputCsvVersionFile.readText().trim()
@@ -131,6 +136,9 @@ class ZipFileReader(
             }
             if (inputCsvFileEntityEvents.exists()) {
                 readEntityEvents(inputCsvFileEntityEvents)
+            }
+            if (inputCsvFilePeaks.exists()) {
+                readPeaks(inputCsvFilePeaks)
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -360,6 +368,32 @@ class ZipFileReader(
                     Log.w(
                         "ZipFileReader",
                         "EntityEvent line $lineLocal was not added in db. Error: ${e.printStackTrace()}"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun readPeaks(inputCsvFile: File) {
+        val iStream: InputStream = FileInputStream(inputCsvFile)
+        BufferedReader(InputStreamReader(iStream)).use { br ->
+            var line: String?
+            while (br.readLine().also { line = it } != null) {
+                val lineLocal = line
+                try {
+                    if (lineLocal != null && !lineLocal.startsWith("Name")) {
+                        val added = Peak.parseFromCsvFileLine(lineLocal, allPeaks, savePeak)
+                        if (added) {
+                            Log.d("ZipFileReader", "Peak line $lineLocal was added in db.")
+                        } else {
+                            Log.d("ZipFileReader", "Peak line $lineLocal is already db.")
+                        }
+                    }
+                } catch (e: Exception) {
+                    unsuccessful++
+                    Log.w(
+                        "ZipFileReader",
+                        "Peak line $lineLocal was not added in db. Error: ${e.printStackTrace()}"
                     )
                 }
             }

@@ -27,8 +27,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -87,7 +85,7 @@ fun AddAdditionalDataDialogCompose(
     onSaveSummit: (Boolean, Summit) -> Job
 ) {
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarManager = remember { SnackbarManager() }
     val recalculateFailedText = stringResource(R.string.recalculate_failed)
     val retryText = stringResource(R.string.retry)
 
@@ -100,7 +98,7 @@ fun AddAdditionalDataDialogCompose(
     suspend fun reloadTableEntries(forceRecalculate: Boolean) {
         var success = loadTableEntries(summitEntry, tableEntries, forceRecalculate) { isLoading = it }
         while (!success) {
-            val result = snackbarHostState.showSnackbar(
+            val result = snackbarManager.show(
                 message = recalculateFailedText,
                 actionLabel = retryText,
                 duration = SnackbarDuration.Long
@@ -215,8 +213,8 @@ fun AddAdditionalDataDialogCompose(
                     )
                 }
 
-                SnackbarHost(
-                    hostState = snackbarHostState,
+                DismissibleSnackbarHost(
+                    snackbarManager,
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
 

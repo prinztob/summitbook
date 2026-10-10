@@ -8,6 +8,7 @@ import de.drtobiasprinz.summitbook.data.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.data.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.data.db.entities.Forecast
 import de.drtobiasprinz.summitbook.data.db.entities.GarminData
+import de.drtobiasprinz.summitbook.data.db.entities.Peak
 import de.drtobiasprinz.summitbook.data.db.entities.PowerData
 import de.drtobiasprinz.summitbook.data.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.data.db.entities.SegmentEntry
@@ -89,6 +90,8 @@ class ZipFileWriterTest {
         )
         private val event1 = EntityEvent(Summit.parseDate("2023-11-13"), "TestCase1", "equipment1")
         private val event2 = EntityEvent(Summit.parseDate("2024-11-13"), "TestCase2", "equipment1")
+        private val peak1 = Peak("place1", 11)
+        private val peak2 = Peak("place3", 33)
         private val forcast = Forecast(2025, 1, 5000, 100, 5)
         private var entry1 = Summit(
             Summit.parseDate("2019-11-13"),
@@ -161,7 +164,7 @@ class ZipFileWriterTest {
     fun testExportAndImportFromZipFile() = runTest {
         // given
         // Note: This test covers backup/restore of summits, segments, forecasts, entity events,
-        // and extensions YAML files (if they exist on disk)
+        // peaks (visited places) and extensions YAML files (if they exist on disk)
         val entries = listOf(entry1, entry2, entry3, entry4)
         entries.forEach {
             db.summitsDao().addSummit(it)
@@ -173,10 +176,13 @@ class ZipFileWriterTest {
         db.segmentDao().addSegmentEntry(segmentEntry2)
         db.entityEventDao().add(event1)
         db.entityEventDao().add(event2)
+        db.peakDao().add(peak1)
+        db.peakDao().add(peak2)
         db.forecastDao().addForecastDeprecated(forcast)
         val summits = db.summitsDao().allSummit
         val segments = db.segmentDao().getAllSegmentsDeprecated()
         val events = db.entityEventDao().allEntityEventsAsList
+        val peaks = db.peakDao().allPeaksAsList
         val forecasts = db.forecastDao().allForecastsDeprecated
         val file = kotlin.io.path.createTempFile(suffix = ".zip").toFile()
 
@@ -185,6 +191,7 @@ class ZipFileWriterTest {
             segments,
             forecasts,
             events,
+            peaks,
             context,
             exportThirdPartyData = true,
             exportCalculatedData = true
@@ -212,6 +219,9 @@ class ZipFileWriterTest {
                 reader.saveEntityEvent = { entityEvent ->
                     db.entityEventDao().adDeprecated(entityEvent)
                 }
+                reader.savePeak = { peak ->
+                    db.peakDao().adDeprecated(peak)
+                }
                 reader.extractAndImport(file.inputStream())
                 Assert.assertEquals(4, reader.successful)
                 Assert.assertEquals(0, reader.unsuccessful)
@@ -220,8 +230,32 @@ class ZipFileWriterTest {
             Assert.assertEquals(4, db.summitsDao().allSummit.size)
             Assert.assertEquals(events, db.entityEventDao().allEntityEventsAsList)
             Assert.assertEquals(2, db.entityEventDao().allEntityEventsAsList.size)
+            Assert.assertEquals(peaks.size, db.peakDao().allPeaksAsList.size)
+            Assert.assertEquals(
+                peaks.map { it.name }.sorted(),
+                db.peakDao().allPeaksAsList.map { it.name }.sorted()
+            )
+            Assert.assertEquals(
+                peaks.map { it.elevation }.sorted(),
+                db.peakDao().allPeaksAsList.map { it.elevation }.sorted()
+            )
             Assert.assertEquals(forecasts, db.forecastDao().allForecastsDeprecated)
             Assert.assertEquals(1, db.forecastDao().allForecastsDeprecated.size)
+
+            // Re-import into the now populated database: existing peaks
+            // (visited places) must not be duplicated
+            withContext(Dispatchers.IO) {
+                val existingPeaks = db.peakDao().allPeaksAsList.toMutableList()
+                val duplicateReader = ZipFileReader(
+                    createTempDirectory().toFile(),
+                    allPeaks = existingPeaks
+                )
+                duplicateReader.savePeak = { peak ->
+                    db.peakDao().adDeprecated(peak)
+                }
+                duplicateReader.extractAndImport(file.inputStream())
+            }
+            Assert.assertEquals(peaks.size, db.peakDao().allPeaksAsList.size)
         }
 
     }

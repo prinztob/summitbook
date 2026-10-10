@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -24,11 +22,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import de.drtobiasprinz.summitbook.data.db.entities.SegmentDetails
 import de.drtobiasprinz.summitbook.data.db.entities.SegmentEntry
+import de.drtobiasprinz.summitbook.ui.compose.DismissibleSnackbarHost
 import de.drtobiasprinz.summitbook.ui.compose.SegmentEntryDetailsScreen
+import de.drtobiasprinz.summitbook.ui.compose.SnackbarManager
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
 import de.drtobiasprinz.summitbook.core.DataStatus
 import de.drtobiasprinz.summitbook.ui.viewmodel.DatabaseViewModel
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class SegmentEntryDetailsComposeActivity : ComponentActivity() {
@@ -46,7 +45,7 @@ class SegmentEntryDetailsComposeActivity : ComponentActivity() {
 
         setContent {
             SummitBookTheme {
-                val snackbarHostState = remember { SnackbarHostState() }
+                val snackbarManager = remember { SnackbarManager() }
                 val scope = rememberCoroutineScope()
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -55,7 +54,7 @@ class SegmentEntryDetailsComposeActivity : ComponentActivity() {
                 Scaffold(
                         containerColor = MaterialTheme.colorScheme.background,
                         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-                        snackbarHost = { SnackbarHost(snackbarHostState) }
+                        snackbarHost = { DismissibleSnackbarHost(snackbarManager) }
                     ) { innerPadding ->
                         // The screen handles its own edge-to-edge insets; the
                         // Scaffold exists only to host the snackbar. Padding is
@@ -85,7 +84,7 @@ class SegmentEntryDetailsComposeActivity : ComponentActivity() {
                                 startActivity(intent)
                             },
                             onShowSnackbar = { msg ->
-                                scope.launch { snackbarHostState.showSnackbar(msg) }
+                                snackbarManager.show(scope, msg)
                             }
                         )
                         }

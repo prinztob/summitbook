@@ -8,12 +8,14 @@ import de.drtobiasprinz.summitbook.data.db.entities.ElevationData
 import de.drtobiasprinz.summitbook.data.db.entities.EntityEvent
 import de.drtobiasprinz.summitbook.data.db.entities.Forecast
 import de.drtobiasprinz.summitbook.data.db.entities.GarminData
+import de.drtobiasprinz.summitbook.data.db.entities.Peak
 import de.drtobiasprinz.summitbook.data.db.entities.Segment
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_CALCULATED_DATA
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_ENTITY_EVENTS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_FORECASTS
+import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_PEAKS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_SEGMENTS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_SUMMITS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_THIRD_PARTY_DATA
@@ -35,6 +37,7 @@ class ZipFileWriter(
     val segments: List<Segment>?,
     private val forecasts: List<Forecast>?,
     private val entityEvents: List<EntityEvent>?,
+    private val peaks: List<Peak>?,
     val context: Context,
     private val exportThirdPartyData: Boolean,
     private val exportCalculatedData: Boolean
@@ -81,6 +84,7 @@ class ZipFileWriter(
                 segments?.let { files.add(writeSegmentsToFile(localDir, it)) }
                 forecasts?.let { files.add(writeForecastsToFile(localDir, it)) }
                 entityEvents?.let { files.add(writeEntityEventsToFile(localDir, it)) }
+                peaks?.let { files.add(writePeaksToFile(localDir, it)) }
             }
 
             ZipOutputStream(BufferedOutputStream(outputStream)).use { out ->
@@ -193,6 +197,16 @@ class ZipFileWriter(
         return sb
     }
 
+    private fun getPeaksStringBuilder(entries: List<Peak>): StringBuilder {
+        val sb = StringBuilder()
+
+        sb.append(Peak.getCsvHeadline())
+        for (entry in entries) {
+            sb.append(entry.getStringRepresentation())
+        }
+        return sb
+    }
+
     private fun writeSummitsToFile(
         downloadDirectory: File,
         resources: Resources,
@@ -277,6 +291,17 @@ class ZipFileWriter(
             FileOutputStream(file).use { stream -> stream.write(data.toByteArray()) }
         } catch (e: IOException) {
             Log.e("Exception", "Entity events file write failed: $e")
+        }
+        return file
+    }
+
+    private fun writePeaksToFile(downloadDirectory: File, entries: List<Peak>): File {
+        val data = getPeaksStringBuilder(entries).toString()
+        val file = File(downloadDirectory, CSV_FILE_NAME_PEAKS)
+        try {
+            FileOutputStream(file).use { stream -> stream.write(data.toByteArray()) }
+        } catch (e: IOException) {
+            Log.e("Exception", "Peaks file write failed: $e")
         }
         return file
     }

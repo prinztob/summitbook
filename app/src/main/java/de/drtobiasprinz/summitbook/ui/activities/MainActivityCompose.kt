@@ -42,8 +42,6 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -100,6 +98,8 @@ import de.drtobiasprinz.summitbook.data.repository.DatabaseRepository
 import de.drtobiasprinz.summitbook.ui.compose.AddSegmentEntryScreen
 import de.drtobiasprinz.summitbook.ui.compose.AddSummitDialogCompose
 import de.drtobiasprinz.summitbook.ui.compose.DatabaseErrorBanner
+import de.drtobiasprinz.summitbook.ui.compose.DismissibleSnackbarHost
+import de.drtobiasprinz.summitbook.ui.compose.SnackbarManager
 import de.drtobiasprinz.summitbook.ui.compose.BarChartScreen
 import de.drtobiasprinz.summitbook.ui.compose.ForecastScreen
 import de.drtobiasprinz.summitbook.ui.compose.LineChartScreen
@@ -183,7 +183,7 @@ class MainActivityCompose : ComponentActivity(),
     private val loadingProgressCurrent = mutableStateOf<Int?>(null)
     private val loadingProgressTotal = mutableStateOf<Int?>(null)
     private var loadingJob by mutableStateOf<Job?>(null)
-    private var snackbarHostState by mutableStateOf<SnackbarHostState?>(null)
+    private val snackbarManager = SnackbarManager()
 
     private fun resetLoadingState() {
         loadingState.value = false
@@ -322,8 +322,6 @@ class MainActivityCompose : ComponentActivity(),
     fun MainScreen() {
         val darkTheme = isSystemInDarkTheme()
         val coroutineScope = rememberCoroutineScope()
-        val snackbarHostState = remember { SnackbarHostState() }
-        this.snackbarHostState = snackbarHostState
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
         // Navigation: the NavHost owns the back stack; the activity's
@@ -578,7 +576,7 @@ class MainActivityCompose : ComponentActivity(),
                     }
                 },
                 snackbarHost = {
-                    SnackbarHost(hostState = snackbarHostState)
+                    DismissibleSnackbarHost(snackbarManager)
                 },
                 bottomBar = {
                     if (!isMapFullscreen) {
@@ -980,7 +978,7 @@ class MainActivityCompose : ComponentActivity(),
         navController: NavHostController
     ) {
         fun showSnackbar(message: String) {
-            coroutineScope.launch { snackbarHostState?.showSnackbar(message) }
+            snackbarManager.show(coroutineScope, message)
         }
 
         NavHost(
@@ -1118,11 +1116,7 @@ class MainActivityCompose : ComponentActivity(),
                     forecasts.toMutableList(),
                     { navigateTo(Destination.Summits) },
                     { isEdit, forecasts -> viewModel.saveForecasts(isEdit, forecasts) },
-                    onShowSnackbar = { message ->
-                        coroutineScope.launch {
-                            snackbarHostState?.showSnackbar(message)
-                        }
-                    })
+                    onShowSnackbar = ::showSnackbar)
             }
 
             composable(Destination.NewSummits.name) {
@@ -1159,11 +1153,7 @@ class MainActivityCompose : ComponentActivity(),
                 SettingsScreen(summitsFromDatabase, { key ->
                     onSharedPreferenceChanged(AppState.sharedPreferences, key)
                 }, onSaveSummit = { isEdit, summit -> viewModel.saveSummit(isEdit, summit) },
-                    onShowSnackbar = { message ->
-                        coroutineScope.launch {
-                            snackbarHostState?.showSnackbar(message)
-                        }
-                    })
+                    onShowSnackbar = ::showSnackbar)
             }
         }
     }
@@ -1287,13 +1277,13 @@ class MainActivityCompose : ComponentActivity(),
                             R.string.update_done
                         }
                     )
-                    snackbarHostState?.showSnackbar(
+                    snackbarManager.show(
                         message,
                         duration = SnackbarDuration.Long
                     )
                 }
                     is GarminSyncResult.Failed -> {
-                        val retry = snackbarHostState?.showSnackbar(
+                        val retry = snackbarManager.show(
                             getString(R.string.garmin_connect_failed, result.message ?: ""),
                             actionLabel = getString(R.string.retry),
                             duration = SnackbarDuration.Long
@@ -1304,7 +1294,7 @@ class MainActivityCompose : ComponentActivity(),
                     }
                 }
             } else {
-                snackbarHostState?.showSnackbar(
+                snackbarManager.show(
                     getString(R.string.set_user_pwd),
                     duration = SnackbarDuration.Long
                 )
@@ -1346,7 +1336,7 @@ class MainActivityCompose : ComponentActivity(),
                     // snackbar duration.
                     resetLoadingState()
                     withContext(Dispatchers.Main) {
-                        snackbarHostState?.showSnackbar(
+                        snackbarManager.show(
                             getString(R.string.add_new_summit_successful),
                             duration = SnackbarDuration.Long
                         )
@@ -1355,7 +1345,7 @@ class MainActivityCompose : ComponentActivity(),
             } catch (e: CancellationException) {
                 resetLoadingState()
                 withContext(NonCancellable) {
-                    snackbarHostState?.showSnackbar(
+                    snackbarManager.show(
                         getString(R.string.loading_canceled),
                         duration = SnackbarDuration.Short
                     )
@@ -1390,7 +1380,7 @@ class MainActivityCompose : ComponentActivity(),
                 e
             )
             val retry = withContext(Dispatchers.Main) {
-                snackbarHostState?.showSnackbar(
+                snackbarManager.show(
                     getString(R.string.garmin_connect_failed, e.message ?: ""),
                     actionLabel = getString(R.string.retry),
                     duration = SnackbarDuration.Long
@@ -1462,11 +1452,12 @@ class MainActivityCompose : ComponentActivity(),
             val forecastListDataStatus = viewModel.forecastList.asFlow().first()
             val segmentsListDataStatus = viewModel.segmentsList.asFlow().first()
             val entityEventsDataStatus = viewModel.entityEvents.asFlow().first()
+            val peaksDataStatus = viewModel.peaks.asFlow().first()
 
             loadingState.value = true
             loadingTooltip.value = getString(R.string.exporting_backup)
             try {
-                val allSummits = summitsListDataStatus.data ?: emptyList()
+                val allSummits = (summitsListDataStatus.data ?: emptyList()).filterNot { it.isBookmark }
                 val filteredSummits = if (useFilteredSummits) {
                     allSummits.let { sortFilterValues.applyForSummits(it) }
                 } else {
@@ -1475,12 +1466,14 @@ class MainActivityCompose : ComponentActivity(),
                 val forecasts = forecastListDataStatus.data ?: emptyList()
                 val segments = segmentsListDataStatus.data ?: emptyList()
                 val entityEvents = entityEventsDataStatus.data ?: emptyList()
+                val peaks = peaksDataStatus.data ?: emptyList()
 
                 val writer = ZipFileWriter(
                     filteredSummits,
                     segments,
                     forecasts,
                     entityEvents,
+                    peaks,
                     this@MainActivityCompose,
                     exportThirdPartyData,
                     exportCalculatedData
@@ -1537,6 +1530,7 @@ class MainActivityCompose : ComponentActivity(),
             val summitsListDataStatus = viewModel.summitsList.asFlow().first()
             val forecastListDataStatus = viewModel.forecastList.asFlow().first()
             val segmentsListDataStatus = viewModel.segmentsList.asFlow().first()
+            val peaksDataStatus = viewModel.peaks.asFlow().first()
 
             loadingState.value = true
             loadingTooltip.value = getString(R.string.importing_backup)
@@ -1547,6 +1541,7 @@ class MainActivityCompose : ComponentActivity(),
                 forecastListDataStatus.data?.toMutableList() ?: mutableListOf()
             val segments =
                 segmentsListDataStatus.data?.toMutableList() ?: mutableListOf()
+            val peaks = peaksDataStatus.data?.toMutableList() ?: mutableListOf()
 
             var successfulImports = 0
             var unsuccessfulImports = 0
@@ -1558,7 +1553,8 @@ class MainActivityCompose : ComponentActivity(),
                         File(cacheDir, "ZipFileReader_${Date().time}"),
                         summits,
                         forecasts,
-                        segments
+                        segments,
+                        allPeaks = peaks
                     )
                     // Collect summits during import so they can be saved in one
                     // batch afterward instead of triggering N flow re-emissions
@@ -1580,6 +1576,9 @@ class MainActivityCompose : ComponentActivity(),
                     }
                     reader.saveEntityEvent = { entry ->
                         viewModel.saveEntityEvent(false, entry)
+                    }
+                    reader.savePeak = { peak ->
+                        viewModel.savePeak(peak)
                     }
                     contentResolver.openInputStream(uri)?.use { inputStream ->
                         reader.extractAndImport(inputStream) { current, total ->
@@ -1612,7 +1611,7 @@ class MainActivityCompose : ComponentActivity(),
                     .setIcon(android.R.drawable.ic_dialog_info).show()
             } catch (e: CancellationException) {
                 withContext(NonCancellable) {
-                    snackbarHostState?.showSnackbar(
+                    snackbarManager.show(
                         getString(R.string.loading_canceled),
                         duration = SnackbarDuration.Short
                     )
@@ -1652,7 +1651,7 @@ class MainActivityCompose : ComponentActivity(),
                 Log.i("MainActivity", "showFullscreenImageViewer")
                 fullscreenImageViewer?.show(allImages, adjustedPosition, filteredSummits)
             } else {
-                snackbarHostState?.showSnackbar(getString(R.string.no_image_selected))
+                snackbarManager.show(getString(R.string.no_image_selected))
             }
         }
     }

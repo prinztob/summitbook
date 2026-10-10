@@ -27,9 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -102,7 +99,7 @@ fun SelectOnMapDialogCompose(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarManager = remember { SnackbarManager() }
 
     var summitEntry by rememberSaveable(stateSaver = jsonSaver<Summit>()) { mutableStateOf(summit.clone()) }
     var selectedLat by rememberSaveable { mutableDoubleStateOf(Double.NaN) }
@@ -151,11 +148,7 @@ fun SelectOnMapDialogCompose(
         onActionPerformed: () -> Unit = {}
     ) {
         scope.launch {
-            val result = snackbarHostState.showSnackbar(
-                message = message,
-                actionLabel = actionLabel,
-                duration = if (actionLabel == null) SnackbarDuration.Short else SnackbarDuration.Long
-            )
+            val result = snackbarManager.show(message, actionLabel = actionLabel)
             if (result == SnackbarResult.ActionPerformed) onActionPerformed()
         }
     }
@@ -518,8 +511,8 @@ fun SelectOnMapDialogCompose(
                     }
                 }
 
-                SnackbarHost(
-                    hostState = snackbarHostState,
+                DismissibleSnackbarHost(
+                    snackbarManager,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .safeDrawingPadding()

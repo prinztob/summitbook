@@ -71,7 +71,12 @@ fun AutoCompleteCompose(
     ExposedDropdownMenuBox(
         modifier = modifier,
         expanded = expanded,
-        onExpandedChange = { expanded = it }
+        // Only accept dismissal here; opening is handled exclusively by the
+        // trailing ^ icon button (the editable menuAnchor would otherwise
+        // toggle the menu on field taps)
+        onExpandedChange = {
+            if (!it) expanded = false
+        }
     ) {
         OutlinedTextField(
             leadingIcon = {
