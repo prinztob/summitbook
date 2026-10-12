@@ -120,8 +120,10 @@ import de.drtobiasprinz.summitbook.sync.GarminSyncResult
 import de.drtobiasprinz.summitbook.sync.GarminTrackAndDataDownloader
 import de.drtobiasprinz.summitbook.data.analytics.TimeIntervalPower
 import de.drtobiasprinz.summitbook.data.analytics.TimeIntervalVerticalVelocity
+import de.drtobiasprinz.summitbook.data.analytics.TrackSimilarity
 import de.drtobiasprinz.summitbook.data.backup.ZipFileReader
 import de.drtobiasprinz.summitbook.data.backup.ZipFileWriter
+import de.drtobiasprinz.summitbook.work.SegmentEntryCreationWorker
 import de.drtobiasprinz.summitbook.work.SummitUpdateWorker
 import de.drtobiasprinz.summitbook.core.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
 import de.drtobiasprinz.summitbook.core.DataStatus
@@ -140,6 +142,7 @@ import org.osmdroid.mapsforge.MapsForgeTileSource
 import java.io.File
 import java.time.LocalDate
 import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
@@ -1329,15 +1332,43 @@ class MainActivityCompose : ComponentActivity(),
                     }
                 }
                 if (finalSummits.isNotEmpty()) {
+                    val adoptions = withContext(Dispatchers.IO) {
+                        TrackSimilarity.adoptInfoFromSimilarEntries(
+                            finalSummits,
+                            viewModel.summitsList.value?.data.orEmpty()
+                        )
+                    }
                     viewModel.saveSummits(finalSummits).join()
+                    if (adoptions.isNotEmpty()) {
+                        // Create segment entries and mountain passes for the new
+                        // activities in the background, not during the download.
+                        SegmentEntryCreationWorker.enqueue(
+                            this@MainActivityCompose,
+                            adoptions.map { it.newEntry.activityId to it.matchedEntry.activityId }
+                        )
+                    }
                     // Dismiss the loading panel before showing the snackbar:
                     // showSnackbar suspends until the snackbar is dismissed/timed
                     // out, which would otherwise keep the panel up for the whole
                     // snackbar duration.
                     resetLoadingState()
                     withContext(Dispatchers.Main) {
+                        val message = buildString {
+                            append(getString(R.string.add_new_summit_successful))
+                            adoptions.forEach { adoption ->
+                                append("\n")
+                                append(
+                                    getString(
+                                        R.string.adopted_course_info_from,
+                                        adoption.matchedEntry.name,
+                                        adoption.matchedEntry.getDateAsString() ?: "",
+                                        String.format(Locale.US, "%.1f", adoption.score)
+                                    )
+                                )
+                            }
+                        }
                         snackbarManager.show(
-                            getString(R.string.add_new_summit_successful),
+                            message,
                             duration = SnackbarDuration.Long
                         )
                     }

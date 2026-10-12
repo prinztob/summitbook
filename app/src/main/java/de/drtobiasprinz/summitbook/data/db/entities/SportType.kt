@@ -18,7 +18,7 @@ enum class SportType(
         R.drawable.ic_filled_location_green_48,
         R.drawable.ic_outline_location_green_48,
         R.color.green_500,
-        listOf(2, 10, 21, 22)
+        listOf(10, 21, 22)
     ),
     Racer(
         R.string.racer,
@@ -27,7 +27,7 @@ enum class SportType(
         R.drawable.ic_filled_location_green_48,
         R.drawable.ic_outline_location_green_48,
         R.color.green_600,
-        listOf(19)
+        listOf(2, 19)
     ),
     IndoorTrainer(
         R.string.indoor_trainer,

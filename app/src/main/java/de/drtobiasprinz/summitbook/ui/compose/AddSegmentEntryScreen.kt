@@ -68,8 +68,7 @@ import de.drtobiasprinz.summitbook.data.model.ExtensionFromYaml
 import de.drtobiasprinz.summitbook.data.model.GpsTrack
 import de.drtobiasprinz.summitbook.data.model.TrackColor
 import de.drtobiasprinz.summitbook.data.analytics.ElevationTrackAnalyzer
-import de.drtobiasprinz.summitbook.data.analytics.GpsUtils
-import de.drtobiasprinz.summitbook.data.analytics.TrackUtils
+import de.drtobiasprinz.summitbook.data.analytics.SegmentEntryCreator
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -85,8 +84,6 @@ import org.osmdroid.views.overlay.simplefastpoint.LabelledGeoPoint
 import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlay
 import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlayOptions
 import org.osmdroid.views.overlay.simplefastpoint.SimplePointTheme
-
-import kotlin.math.abs
 
 /**
  * Main composable screen for adding/editing segment entries
@@ -313,8 +310,8 @@ fun AddSegmentEntryScreen(
                         // Update the UI state with the new track points
                         uiState = uiState.copy(trackPoints = trackPoints, isLoading = false)
 
-                        val guessedIds =
-                            guessStartAndEndPoint(uiState.segment?.segmentEntries, trackPoints)
+                        val guessedIds = uiState.segment?.segmentEntries?.firstOrNull()
+                            ?.let { SegmentEntryCreator.findSliceIndices(trackPoints, it) }
                         if (guessedIds != null) {
                             saveableStartPointId = guessedIds.first
                             saveableEndPointId = guessedIds.second
@@ -410,63 +407,12 @@ fun AddSegmentEntryContent(
         windowDistance,
         isMountainPassMode
     ) {
-        val summitTrackPoints = uiState.currentSummit?.gpsTrack?.trackPoints
-        if (!summitTrackPoints.isNullOrEmpty() &&
-            uiState.startPointId < summitTrackPoints.size && uiState.endPointId < summitTrackPoints.size
-        ) {
-            val startTrackPoint = summitTrackPoints[uiState.startPointId]
-            val endTrackPoint = summitTrackPoints[uiState.endPointId]
-            val selectedTrackPoints = summitTrackPoints.subList(
-                uiState.startPointId.coerceAtMost(uiState.endPointId),
-                (uiState.endPointId.coerceAtLeast(uiState.startPointId)) + 1
-            )
-
-            val averageHeartRate = if (selectedTrackPoints.isNotEmpty()) {
-                selectedTrackPoints.sumOf { it.second.hr ?: 0 } / selectedTrackPoints.size
-            } else 0
-
-            val averagePower = if (selectedTrackPoints.isNotEmpty()) {
-                selectedTrackPoints.sumOf { it.second.power ?: 0 } / selectedTrackPoints.size
-            } else 0
-
-            val pointsOnlyWithMaximalValues =
-                TrackUtils.keepOnlyMaximalValues(selectedTrackPoints)
-            val heightMeterResult =
-                TrackUtils.removeDeltasSmallerAs(10, pointsOnlyWithMaximalValues)
-
-            val duration =
-                ((endTrackPoint.first.time.millis - startTrackPoint.first.time.millis).toDouble() / 60000.0).coerceAtLeast(
-                    0.0
-                )
-            val distance =
-                (((endTrackPoint.second.distance ?: 0.0) - (startTrackPoint.second.distance
-                    ?: 0.0)) / 1000.0).coerceAtLeast(0.0)
-
-            val elevationWindowResult = if (isMountainPassMode) {
-                try {
-                    ElevationTrackAnalyzer.analyzeWindow(
-                        summitTrackPoints,
-                        uiState.startPointId.coerceAtMost(uiState.endPointId),
-                        uiState.endPointId.coerceAtLeast(uiState.startPointId),
-                        windowDistance.toDoubleOrNull() ?: 500.0
-                    )
-                } catch (_: Exception) {
-                    null
-                }
-            } else null
-
-            SegmentStats(
-                averageHeartRate = averageHeartRate,
-                averagePower = averagePower,
-                heightMetersUp = heightMeterResult.second,
-                heightMetersDown = heightMeterResult.third,
-                duration = duration,
-                kilometers = distance,
-                elevationWindowResult = elevationWindowResult
-            )
-        } else {
-            null
-        }
+        SegmentEntryCreator.computeStats(
+            uiState.currentSummit?.gpsTrack?.trackPoints,
+            uiState.startPointId,
+            uiState.endPointId,
+            if (isMountainPassMode) windowDistance.toDoubleOrNull() ?: 500.0 else null
+        )
     }
 
     val summitSuggestions = uiState.relevantSummits.map { summit ->
@@ -1295,64 +1241,6 @@ private fun addColorToTrack(
     }
 }
 
-private fun guessStartAndEndPoint(
-    entries: List<SegmentEntry>?,
-    trackPoints: List<Pair<TrackPoint, ExtensionFromYaml>>,
-): Pair<Int, Int>? {
-    if (!entries.isNullOrEmpty()) {
-        val firstStartPoint = GeoPoint(
-            entries.first().startPositionLatitude,
-            entries.first().startPositionLongitude
-        )
-        val firstEndPoint =
-            GeoPoint(
-                entries.first().endPositionLatitude,
-                entries.first().endPositionLongitude
-            )
-        val startPoint = trackPoints.firstOrNull {
-            abs(
-                GpsUtils.getDistance(
-                    GeoPoint(it.first.latitude, it.first.longitude),
-                    firstStartPoint
-                )
-            ) < 10
-        }
-        val endPoint = trackPoints.lastOrNull {
-            abs(
-                GpsUtils.getDistance(
-                    GeoPoint(it.first.latitude, it.first.longitude),
-                    firstEndPoint
-                )
-            ) < 10
-        }
-        if (startPoint != null && endPoint != null) {
-            val startPointId = trackPoints.indexOfFirst {
-                abs(
-                    GpsUtils.getDistance(
-                        GeoPoint(it.first.latitude, it.first.longitude),
-                        firstStartPoint
-                    )
-                ) < 10
-            }
-            val endPointId = trackPoints.indexOfLast {
-                abs(
-                    GpsUtils.getDistance(
-                        GeoPoint(it.first.latitude, it.first.longitude),
-                        firstEndPoint
-                    )
-                ) < 10
-            }
-            Log.i(
-                "AddSegmentEntryScreen",
-                "Update startPointId: $startPointId and endPointId: $endPointId"
-            )
-            return Pair(startPointId, endPointId)
-        }
-
-    }
-    return null
-}
-
 /**
  * Add point overlay for interactive point selection
  */
@@ -1520,16 +1408,6 @@ fun AddSegmentChartSection(
     )
 }
 
-
-private data class SegmentStats(
-    val averageHeartRate: Int,
-    val averagePower: Int,
-    val heightMetersUp: Double,
-    val heightMetersDown: Double,
-    val duration: Double,
-    val kilometers: Double,
-    val elevationWindowResult: ElevationTrackAnalyzer.ElevationWindowResult? = null
-)
 
 /**
  * UI state for the add segment entry screen

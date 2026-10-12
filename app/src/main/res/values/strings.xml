@@ -207,6 +207,7 @@
     <string name="update_summit_cancel">"Updating an existing summit was canceled."</string>
     <string name="add_new_summit_cancel">"Adding a new summit was canceled."</string>
     <string name="add_new_summit_successful">"Adding a new summit was successful."</string>
+    <string name="adopted_course_info_from">"Name and info adopted from %1$s (%2$s, score %3$s)."</string>
     <string name="heart_rate_profile_label">"Heart rate profile"</string>
     <string name="slope_profile_label">"Slope profile"</string>
     <string name="cadence_profile_label">"Cadence profile"</string>
