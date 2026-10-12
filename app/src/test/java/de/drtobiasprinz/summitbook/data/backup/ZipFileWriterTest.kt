@@ -16,7 +16,9 @@ import de.drtobiasprinz.summitbook.data.db.entities.SportType
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.db.entities.VelocityData
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.joda.time.DateTimeZone
@@ -93,6 +95,30 @@ class ZipFileWriterTest {
         private val peak1 = Peak("place1", 11)
         private val peak2 = Peak("place3", 33)
         private val forcast = Forecast(2025, 1, 5000, 100, 5)
+        private val mountainPass1 = SegmentEntry(
+            entryId = 0,
+            segmentId = 0,
+            date = Summit.parseDate("2019-11-13"),
+            activityId = 1L,
+            startPositionInTrack = 3,
+            startPositionLatitude = 44.44,
+            startPositionLongitude = 33.33,
+            endPositionInTrack = 9,
+            endPositionLatitude = 44.94,
+            endPositionLongitude = 33.94,
+            duration = 18.1,
+            kilometers = 2.9,
+            heightMetersUp = 220.0,
+            heightMetersDown = 0.0,
+            averageHeartRate = 157,
+            averagePower = 1,
+            isMountainPass = true,
+            name = "pass1",
+            avgGradient = 7.5,
+            maxGradeInWindow = 12.3,
+            windowDistanceMeters = 500.0,
+            durationInMotion = 15.0
+        )
         private var entry1 = Summit(
             Summit.parseDate("2019-11-13"),
             "summit1",
@@ -174,6 +200,7 @@ class ZipFileWriterTest {
         segmentEntry2.segmentId = id
         db.segmentDao().addSegmentEntry(segmentEntry1)
         db.segmentDao().addSegmentEntry(segmentEntry2)
+        db.segmentDao().addSegmentEntry(mountainPass1)
         db.entityEventDao().add(event1)
         db.entityEventDao().add(event2)
         db.peakDao().add(peak1)
@@ -181,6 +208,7 @@ class ZipFileWriterTest {
         db.forecastDao().addForecastDeprecated(forcast)
         val summits = db.summitsDao().allSummit
         val segments = db.segmentDao().getAllSegmentsDeprecated()
+        val mountainPasses = db.segmentDao().getAllMountainPasses().first()
         val events = db.entityEventDao().allEntityEventsAsList
         val peaks = db.peakDao().allPeaksAsList
         val forecasts = db.forecastDao().allForecastsDeprecated
@@ -189,6 +217,7 @@ class ZipFileWriterTest {
         val writer = ZipFileWriter(
             summits,
             segments,
+            mountainPasses,
             forecasts,
             events,
             peaks,
@@ -213,6 +242,9 @@ class ZipFileWriterTest {
                         db.summitsDao().addSummit(summit)
                     }
                 }
+                reader.saveMountainPass = { mountainPass ->
+                    runBlocking { db.segmentDao().addSegmentEntry(mountainPass) }
+                }
                 reader.saveForecast = { forecast ->
                     db.forecastDao().addForecastDeprecated(forecast)
                 }
@@ -230,6 +262,37 @@ class ZipFileWriterTest {
             Assert.assertEquals(4, db.summitsDao().allSummit.size)
             Assert.assertEquals(events, db.entityEventDao().allEntityEventsAsList)
             Assert.assertEquals(2, db.entityEventDao().allEntityEventsAsList.size)
+            val importedMountainPasses = db.segmentDao().getAllMountainPasses().first()
+            Assert.assertEquals(1, importedMountainPasses.size)
+            val importedMountainPass = importedMountainPasses.first()
+            Assert.assertEquals(mountainPass1.name, importedMountainPass.name)
+            Assert.assertTrue(importedMountainPass.isMountainPass)
+            Assert.assertEquals(mountainPass1.avgGradient, importedMountainPass.avgGradient, 0.0001)
+            Assert.assertEquals(
+                mountainPass1.maxGradeInWindow,
+                importedMountainPass.maxGradeInWindow,
+                0.0001
+            )
+            Assert.assertEquals(
+                mountainPass1.windowDistanceMeters,
+                importedMountainPass.windowDistanceMeters,
+                0.0001
+            )
+            Assert.assertEquals(
+                mountainPass1.durationInMotion,
+                importedMountainPass.durationInMotion,
+                0.0001
+            )
+            Assert.assertEquals(mountainPass1.kilometers, importedMountainPass.kilometers, 0.0001)
+            Assert.assertEquals(
+                mountainPass1.startPositionInTrack,
+                importedMountainPass.startPositionInTrack
+            )
+            Assert.assertEquals(
+                mountainPass1.endPositionInTrack,
+                importedMountainPass.endPositionInTrack
+            )
+            Assert.assertEquals(mountainPass1.activityId, importedMountainPass.activityId)
             Assert.assertEquals(peaks.size, db.peakDao().allPeaksAsList.size)
             Assert.assertEquals(
                 peaks.map { it.name }.sorted(),
@@ -246,16 +309,26 @@ class ZipFileWriterTest {
             // (visited places) must not be duplicated
             withContext(Dispatchers.IO) {
                 val existingPeaks = db.peakDao().allPeaksAsList.toMutableList()
+                val existingMountainPasses = db.segmentDao().getAllMountainPasses()
+                    .first().toMutableList()
                 val duplicateReader = ZipFileReader(
                     createTempDirectory().toFile(),
-                    allPeaks = existingPeaks
+                    allPeaks = existingPeaks,
+                    allMountainPasses = existingMountainPasses
                 )
                 duplicateReader.savePeak = { peak ->
                     db.peakDao().adDeprecated(peak)
                 }
+                duplicateReader.saveMountainPass = { mountainPass ->
+                    runBlocking { db.segmentDao().addSegmentEntry(mountainPass) }
+                }
                 duplicateReader.extractAndImport(file.inputStream())
             }
             Assert.assertEquals(peaks.size, db.peakDao().allPeaksAsList.size)
+            Assert.assertEquals(
+                1,
+                db.segmentDao().getAllMountainPasses().first().size
+            )
         }
 
     }

@@ -255,6 +255,10 @@ class DatabaseViewModel @Inject constructor(
         repository.saveSegmentEntry(mountainPass)
     }
 
+    fun updateMountainPass(mountainPass: SegmentEntry) = viewModelScope.launch {
+        repository.updateSegmentEntry(mountainPass)
+    }
+
 
     fun deleteMountainPass(mountainPass: SegmentEntry) = viewModelScope.launch {
         repository.deleteSegmentEntry(mountainPass)

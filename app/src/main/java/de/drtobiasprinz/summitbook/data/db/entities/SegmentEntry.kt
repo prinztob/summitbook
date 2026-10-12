@@ -101,6 +101,63 @@ data class SegmentEntry(
                     "endPositionLongitude;duration;kilometers;heightMetersUp;" +
                     "heightMetersDown;averageHeartRate};averagePower"
         }
+
+        const val MOUNTAIN_PASS_NUMBER_OF_ELEMENTS = 20
+
+        fun getMountainPassCsvHeadline(): String {
+            return "Date;activityId;startPositionInTrack;startPositionLatitude;" +
+                    "startPositionLongitude;endPositionInTrack;endPositionLatitude;" +
+                    "endPositionLongitude;duration;kilometers;heightMetersUp;" +
+                    "heightMetersDown;averageHeartRate;averagePower;isMountainPass;" +
+                    "avgGradient;maxGradeInWindow;windowDistanceMeters;durationInMotion;name"
+        }
+
+        fun parseMountainPassFromCsvFileLine(line: String): SegmentEntry {
+            val splitLine = line.split(";", limit = MOUNTAIN_PASS_NUMBER_OF_ELEMENTS)
+            if (splitLine.size != MOUNTAIN_PASS_NUMBER_OF_ELEMENTS) {
+                throw Exception(
+                    "Line ${splitLine.joinToString { ";" }} has ${splitLine.size} number " +
+                            "of elements. Expected are $MOUNTAIN_PASS_NUMBER_OF_ELEMENTS"
+                )
+            }
+            return SegmentEntry(
+                entryId = 0,
+                segmentId = 0,
+                date = Summit.parseDate(splitLine[0]),
+                activityId = splitLine[1].toLong(),
+                startPositionInTrack = splitLine[2].toInt(),
+                startPositionLatitude = splitLine[3].toDouble(),
+                startPositionLongitude = splitLine[4].toDouble(),
+                endPositionInTrack = splitLine[5].toInt(),
+                endPositionLatitude = splitLine[6].toDouble(),
+                endPositionLongitude = splitLine[7].toDouble(),
+                duration = splitLine[8].toDouble(),
+                kilometers = splitLine[9].toDouble(),
+                heightMetersUp = splitLine[10].toDouble(),
+                heightMetersDown = splitLine[11].toDouble(),
+                averageHeartRate = splitLine[12].toInt(),
+                averagePower = splitLine[13].toInt(),
+                isMountainPass = splitLine[14].toBoolean(),
+                name = splitLine[19],
+                avgGradient = splitLine[15].toDouble(),
+                maxGradeInWindow = splitLine[16].toDouble(),
+                windowDistanceMeters = splitLine[17].toDouble(),
+                durationInMotion = splitLine[18].toDouble()
+            )
+        }
+
+    }
+
+    fun getMountainPassStringRepresentation(): String {
+        val sanitizedName = name
+            .replace("\n", " ")
+            .replace("\r", " ")
+        return "${getDateAsString()};${activityId};${startPositionInTrack};${startPositionLatitude};" +
+                "${startPositionLongitude};${endPositionInTrack};${endPositionLatitude};" +
+                "${endPositionLongitude};${duration};${kilometers};${heightMetersUp};" +
+                "${heightMetersDown};${averageHeartRate};${averagePower};${isMountainPass};" +
+                "${avgGradient};${maxGradeInWindow};${windowDistanceMeters};${durationInMotion};" +
+                sanitizedName
     }
 
 }

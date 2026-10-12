@@ -12,6 +12,7 @@ import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_CALCULATED_DATA
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_ENTITY_EVENTS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_FORECASTS
+import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_MOUNTAIN_PASSES
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_PEAKS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_SEGMENTS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_SUMMITS
@@ -40,6 +41,7 @@ class ZipFileReader(
     private val allSummits: MutableList<Summit> = mutableListOf(),
     private val allForecasts: MutableList<Forecast> = mutableListOf(),
     private val allSegments: MutableList<Segment> = mutableListOf(),
+    private val allMountainPasses: MutableList<SegmentEntry> = mutableListOf(),
     private val allEntityEvents: MutableList<EntityEvent> = mutableListOf(),
     private val allPeaks: MutableList<Peak> = mutableListOf(),
 ) {
@@ -51,6 +53,7 @@ class ZipFileReader(
     var saveSummit: (Boolean, Summit) -> Unit = { _, _ -> }
     var saveSegmentDetails: (SegmentDetails) -> Job? = { null }
     var saveSegmentEntry: (SegmentEntry) -> Unit = {}
+    var saveMountainPass: (SegmentEntry) -> Unit = {}
     var saveForecast: (Forecast) -> Unit = {}
     var saveEntityEvent: (EntityEvent) -> Unit = {}
     var savePeak: (Peak) -> Unit = {}
@@ -112,6 +115,7 @@ class ZipFileReader(
         val inputCsvFile = File(baseDirectory, CSV_FILE_NAME_SUMMITS)
         val inputCsvVersionFile = File(baseDirectory, CSV_FILE_NAME_VERSION)
         val inputCsvFileSegments = File(baseDirectory, CSV_FILE_NAME_SEGMENTS)
+        val inputCsvFileMountainPasses = File(baseDirectory, CSV_FILE_NAME_MOUNTAIN_PASSES)
         val inputCsvFileForecasts = File(baseDirectory, CSV_FILE_NAME_FORECASTS)
         val inputCsvFileThirdPartyData = File(baseDirectory, CSV_FILE_NAME_THIRD_PARTY_DATA)
         val inputCsvFileCalculatedData = File(baseDirectory, CSV_FILE_NAME_CALCULATED_DATA)
@@ -124,6 +128,9 @@ class ZipFileReader(
             readSummits(inputCsvFile)
             if (inputCsvFileSegments.exists()) {
                 readSegments(inputCsvFileSegments)
+            }
+            if (inputCsvFileMountainPasses.exists()) {
+                readMountainPasses(inputCsvFileMountainPasses)
             }
             if (inputCsvFileForecasts.exists()) {
                 readForecasts(inputCsvFileForecasts)
@@ -235,6 +242,34 @@ class ZipFileReader(
             if (entry !in allSegmentEntries) {
                 allSegmentEntries.add(entry)
                 saveSegmentEntry(entry)
+            }
+        }
+    }
+
+    private fun readMountainPasses(inputCsvFile: File) {
+        val iStream: InputStream = FileInputStream(inputCsvFile)
+        BufferedReader(InputStreamReader(iStream)).use { br ->
+            var line: String?
+            while (br.readLine().also { line = it } != null) {
+                val lineLocal = line
+                try {
+                    if (lineLocal != null && !lineLocal.startsWith("Date")) {
+                        val mountainPass = SegmentEntry.parseMountainPassFromCsvFileLine(lineLocal)
+                        if (mountainPass !in allMountainPasses) {
+                            allMountainPasses.add(mountainPass)
+                            saveMountainPass(mountainPass)
+                            Log.d("ZipFileReader", "MountainPass line '$lineLocal' was added in db.")
+                        } else {
+                            Log.d("ZipFileReader", "MountainPass line '$lineLocal' is already db.")
+                        }
+                    }
+                } catch (e: Exception) {
+                    unsuccessful++
+                    Log.w(
+                        "ZipFileReader",
+                        "MountainPass line '$lineLocal' was not added in db. Error: ${e.message}"
+                    )
+                }
             }
         }
     }

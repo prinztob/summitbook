@@ -1113,7 +1113,7 @@ class MainActivityCompose : ComponentActivity(),
             composable(Destination.Forecast.name) {
                 ForecastScreen(
                     summitsFromDatabase,
-                    forecasts.toMutableList(),
+                    forecasts,
                     { navigateTo(Destination.Summits) },
                     { isEdit, forecasts -> viewModel.saveForecasts(isEdit, forecasts) },
                     onShowSnackbar = ::showSnackbar)
@@ -1451,6 +1451,7 @@ class MainActivityCompose : ComponentActivity(),
             val summitsListDataStatus = viewModel.summitsList.asFlow().first()
             val forecastListDataStatus = viewModel.forecastList.asFlow().first()
             val segmentsListDataStatus = viewModel.segmentsList.asFlow().first()
+            val mountainPassesDataStatus = viewModel.mountainPasses.asFlow().first()
             val entityEventsDataStatus = viewModel.entityEvents.asFlow().first()
             val peaksDataStatus = viewModel.peaks.asFlow().first()
 
@@ -1465,12 +1466,14 @@ class MainActivityCompose : ComponentActivity(),
                 }
                 val forecasts = forecastListDataStatus.data ?: emptyList()
                 val segments = segmentsListDataStatus.data ?: emptyList()
+                val mountainPasses = mountainPassesDataStatus.data ?: emptyList()
                 val entityEvents = entityEventsDataStatus.data ?: emptyList()
                 val peaks = peaksDataStatus.data ?: emptyList()
 
                 val writer = ZipFileWriter(
                     filteredSummits,
                     segments,
+                    mountainPasses,
                     forecasts,
                     entityEvents,
                     peaks,
@@ -1530,6 +1533,7 @@ class MainActivityCompose : ComponentActivity(),
             val summitsListDataStatus = viewModel.summitsList.asFlow().first()
             val forecastListDataStatus = viewModel.forecastList.asFlow().first()
             val segmentsListDataStatus = viewModel.segmentsList.asFlow().first()
+            val mountainPassesDataStatus = viewModel.mountainPasses.asFlow().first()
             val peaksDataStatus = viewModel.peaks.asFlow().first()
 
             loadingState.value = true
@@ -1541,6 +1545,8 @@ class MainActivityCompose : ComponentActivity(),
                 forecastListDataStatus.data?.toMutableList() ?: mutableListOf()
             val segments =
                 segmentsListDataStatus.data?.toMutableList() ?: mutableListOf()
+            val mountainPasses =
+                mountainPassesDataStatus.data?.toMutableList() ?: mutableListOf()
             val peaks = peaksDataStatus.data?.toMutableList() ?: mutableListOf()
 
             var successfulImports = 0
@@ -1554,6 +1560,7 @@ class MainActivityCompose : ComponentActivity(),
                         summits,
                         forecasts,
                         segments,
+                        mountainPasses,
                         allPeaks = peaks
                     )
                     // Collect summits during import so they can be saved in one
@@ -1573,6 +1580,9 @@ class MainActivityCompose : ComponentActivity(),
                     }
                     reader.saveSegmentEntry = { entry ->
                         viewModel.saveSegmentEntry(false, entry)
+                    }
+                    reader.saveMountainPass = { mountainPass ->
+                        viewModel.saveMountainPass(mountainPass)
                     }
                     reader.saveEntityEvent = { entry ->
                         viewModel.saveEntityEvent(false, entry)

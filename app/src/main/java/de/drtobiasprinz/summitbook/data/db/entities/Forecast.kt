@@ -33,18 +33,21 @@ data class Forecast(
 
     fun setActual(summits: List<Summit>, indoorHeightMeterPercent: Int = 0) {
         val cal: Calendar = Calendar.getInstance()
+        // Bookmarks are dated at their creation moment and are not
+        // activities; they must not contribute to the actual values
         val summitsInMonth = summits.filter {
             cal.time = it.date
-            cal.get(Calendar.MONTH) + 1 == month && cal.get(Calendar.YEAR) == year
+            !it.isBookmark &&
+                    cal.get(Calendar.MONTH) + 1 == month && cal.get(Calendar.YEAR) == year
         }
         actualHeightMeter = summitsInMonth.sumOf {
             if (it.sportType != SportType.IndoorTrainer) {
-                it.elevationData.elevationGain
+                it.elevationData.elevationGain.toDouble()
             } else {
-                it.elevationData.elevationGain * indoorHeightMeterPercent / 100
+                it.elevationData.elevationGain * indoorHeightMeterPercent / 100.0
             }
-        }
-        actualDistance = summitsInMonth.sumOf { it.kilometers.roundToInt() }
+        }.roundToInt()
+        actualDistance = summitsInMonth.sumOf { it.kilometers }.roundToInt()
         actualNumberActivities = summitsInMonth.size
     }
 

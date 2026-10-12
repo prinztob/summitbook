@@ -18,14 +18,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +51,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -63,6 +68,7 @@ import de.drtobiasprinz.summitbook.ui.viewmodel.DatabaseViewModel
 import kotlin.math.roundToInt
 import de.drtobiasprinz.summitbook.ui.theme.Scrim
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
 
 /**
@@ -93,6 +99,8 @@ fun SegmentsListScreen(
     var showAddSegmentDetailsDialog by rememberSaveable { mutableStateOf(false) }
     var showEditSegmentDetailsDialog by rememberSaveable { mutableStateOf(false) }
     var selectedSegmentDetails by remember { mutableStateOf<SegmentDetails?>(null) }
+    var editingMountainPass by remember { mutableStateOf<SegmentEntry?>(null) }
+    var showEditMountainPassDialog by remember { mutableStateOf(false) }
 
     var segmentsWithScreenshots by remember { mutableStateOf<Set<Long>>(emptySet()) }
     LaunchedEffect(segments) {
@@ -155,6 +163,10 @@ fun SegmentsListScreen(
             ) { pass ->
                 MountainPassCard(
                     pass = pass,
+                    onEdit = {
+                        editingMountainPass = it
+                        showEditMountainPassDialog = true
+                    },
                     onDelete = { viewModel.deleteMountainPass(it) },
                     onShowSnackbar = onShowSnackbar
                 )
@@ -230,6 +242,51 @@ fun SegmentsListScreen(
             },
             onShowSnackbar = onShowSnackbar
         )
+    }
+
+    // Show Edit Mountain Pass Dialog
+    if (showEditMountainPassDialog && editingMountainPass != null) {
+        val pass = editingMountainPass!!
+        Dialog(
+            onDismissRequest = {
+                showEditMountainPassDialog = false
+                editingMountainPass = null
+            },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false
+            )
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                AddSegmentEntryScreen(
+                    segmentId = -1L,
+                    segmentEntryId = null,
+                    segments = segments,
+                    summits = summits,
+                    onSaveSegmentEntry = { _, _ -> Job() },
+                    onCancel = {
+                        showEditMountainPassDialog = false
+                        editingMountainPass = null
+                    },
+                    initialStartPointId = pass.startPositionInTrack,
+                    initialEndPointId = pass.endPositionInTrack,
+                    existingMountainPass = pass,
+                    onSaveMountainPass = { mountainPass ->
+                        if (mountainPass.entryId > 0) {
+                            viewModel.updateMountainPass(mountainPass)
+                        } else {
+                            viewModel.saveMountainPass(mountainPass)
+                        }
+                        showEditMountainPassDialog = false
+                        editingMountainPass = null
+                    }
+                )
+            }
+        }
     }
 }
 
@@ -472,10 +529,10 @@ fun SegmentCard(
 @Composable
 fun MountainPassCard(
     pass: SegmentEntry,
+    onEdit: (SegmentEntry) -> Unit = {},
     onDelete: (SegmentEntry) -> Unit,
     onShowSnackbar: (String) -> Unit = {}
 ) {
-    val context = LocalContext.current
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     val deleteCancelMessage = stringResource(R.string.delete_cancel)
 
@@ -491,40 +548,45 @@ fun MountainPassCard(
     ) {
         Column {
             // Title section
-            Box(
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(8.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.baseline_add_mountain_pass_24),
-                        contentDescription = stringResource(R.string.mountain_passes),
-                        modifier = Modifier.size(40.dp),
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_add_mountain_pass_24),
+                    contentDescription = stringResource(R.string.mountain_passes),
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = CircleShape
+                        )
+                        .padding(8.dp),
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
 
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = pass.getDisplayName(),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = pass.getDateAsString() ?: "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                        )
-                    }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = pass.getDisplayName(),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = pass.getDateAsString() ?: "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
 
             // Stats section
             Row(
@@ -564,6 +626,17 @@ fun MountainPassCard(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.Top
             ) {
+                // Edit button
+                IconButton(
+                    onClick = { onEdit(pass) }
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_mode_edit_black_24dp),
+                        contentDescription = stringResource(R.string.edit_icon),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+
                 // Delete button
                 IconButton(
                     onClick = { showDeleteDialog = true }

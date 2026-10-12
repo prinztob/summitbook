@@ -9,6 +9,7 @@ object ExportFileNames {
         "de-prinz-summitbook-export-third-party-data.csv"
     const val CSV_FILE_NAME_CALCULATED_DATA = "de-prinz-summitbook-export-calculated-data.csv"
     const val CSV_FILE_NAME_SEGMENTS = "de-prinz-summitbook-export-segments.csv"
+    const val CSV_FILE_NAME_MOUNTAIN_PASSES = "de-prinz-summitbook-export-mountain-passes.csv"
     const val CSV_FILE_NAME_FORECASTS = "de-prinz-summitbook-export-forecasts.csv"
     const val CSV_FILE_NAME_ENTITY_EVENTS = "de-prinz-summitbook-export-entity-events.csv"
     const val CSV_FILE_NAME_PEAKS = "de-prinz-summitbook-export-peaks.csv"

@@ -565,6 +565,8 @@
     <string name="hiking_map_type">Offline map (hiking)</string>
     <string name="cycling_map_type">Offline map (cycling)</string>
     <string name="recalculate">Recalculate</string>
+    <string name="increase_value">Increase value</string>
+    <string name="decrease_value">Decrease value</string>
     <string name="not_recalculate_current_year">Recalculate only possible for next year</string>
     <string name="ignored">ignored</string>
     <string name="screenshot_taken">Screenshot was taken</string>

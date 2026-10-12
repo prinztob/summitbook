@@ -10,11 +10,13 @@ import de.drtobiasprinz.summitbook.data.db.entities.Forecast
 import de.drtobiasprinz.summitbook.data.db.entities.GarminData
 import de.drtobiasprinz.summitbook.data.db.entities.Peak
 import de.drtobiasprinz.summitbook.data.db.entities.Segment
+import de.drtobiasprinz.summitbook.data.db.entities.SegmentEntry
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.db.entities.VelocityData
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_CALCULATED_DATA
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_ENTITY_EVENTS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_FORECASTS
+import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_MOUNTAIN_PASSES
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_PEAKS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_SEGMENTS
 import de.drtobiasprinz.summitbook.data.backup.ExportFileNames.CSV_FILE_NAME_SUMMITS
@@ -35,6 +37,7 @@ import de.drtobiasprinz.summitbook.data.appstate.AppState
 class ZipFileWriter(
     val entries: List<Summit>,
     val segments: List<Segment>?,
+    private val mountainPasses: List<SegmentEntry>?,
     private val forecasts: List<Forecast>?,
     private val entityEvents: List<EntityEvent>?,
     private val peaks: List<Peak>?,
@@ -82,6 +85,7 @@ class ZipFileWriter(
                     )
                 }
                 segments?.let { files.add(writeSegmentsToFile(localDir, it)) }
+                mountainPasses?.let { files.add(writeMountainPassesToFile(localDir, it)) }
                 forecasts?.let { files.add(writeForecastsToFile(localDir, it)) }
                 entityEvents?.let { files.add(writeEntityEventsToFile(localDir, it)) }
                 peaks?.let { files.add(writePeaksToFile(localDir, it)) }
@@ -173,6 +177,16 @@ class ZipFileWriter(
         sb.append(Segment.getCsvHeadline())
         for (entry in entries) {
             sb.append(entry.getStringRepresentation())
+        }
+        return sb
+    }
+
+    private fun getMountainPassesStringBuilder(entries: List<SegmentEntry>): StringBuilder {
+        val sb = StringBuilder()
+
+        sb.append(SegmentEntry.getMountainPassCsvHeadline() + "\n")
+        for (entry in entries) {
+            sb.append(entry.getMountainPassStringRepresentation() + "\n")
         }
         return sb
     }
@@ -269,6 +283,17 @@ class ZipFileWriter(
             FileOutputStream(file).use { stream -> stream.write(data.toByteArray()) }
         } catch (e: IOException) {
             Log.e("Exception", "Segment file write failed: $e")
+        }
+        return file
+    }
+
+    private fun writeMountainPassesToFile(downloadDirectory: File, entries: List<SegmentEntry>): File {
+        val data = getMountainPassesStringBuilder(entries).toString()
+        val file = File(downloadDirectory, CSV_FILE_NAME_MOUNTAIN_PASSES)
+        try {
+            FileOutputStream(file).use { stream -> stream.write(data.toByteArray()) }
+        } catch (e: IOException) {
+            Log.e("Exception", "Mountain passes file write failed: $e")
         }
         return file
     }
