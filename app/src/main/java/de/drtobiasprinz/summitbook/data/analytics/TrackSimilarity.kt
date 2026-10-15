@@ -45,6 +45,13 @@ class TrackSimilarity {
         /** How many existing entries are compared geometrically at most (newest first). */
         private const val MAX_CANDIDATES = 50
 
+        /**
+         * Candidate cap for [rankSimilarSummits]: higher than [MAX_CANDIDATES]
+         * so no same-course ride is missed when ranking all of them for the
+         * Times tab comparison, where every same-course activity counts.
+         */
+        private const val MAX_RANKED_CANDIDATES = 200
+
         fun isSameCourse(score: Double): Boolean = score >= SAME_COURSE_THRESHOLD
 
         /**
@@ -147,7 +154,7 @@ class TrackSimilarity {
                 .filter { it !== summit && it.activityId != summit.activityId }
                 .filter { isPotentialSameCourse(summit, it) }
                 .sortedByDescending { it.date }
-                .take(MAX_CANDIDATES)
+                .take(MAX_RANKED_CANDIDATES)
             if (filteredCandidates.isEmpty()) {
                 Log.i(
                     TAG,

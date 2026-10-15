@@ -56,6 +56,30 @@ class GpxPyExecutor(private var pythonInstance: Python) {
         checkOutput(result)
     }
 
+    /**
+     * Computes the interval data (km splits, best efforts, ascent/descent
+     * sections) and merges it into the existing gpxpy.json file without
+     * redoing the full power/velocity analysis.
+     */
+    fun computeIntervalData(summit: Summit) {
+        val targetFolder = File(
+            storage,
+            if (!summit.isBookmark) subDirForGpsTrackExtensions else subDirForGpsTracksBookmarkExtensions
+        )
+        if (!targetFolder.exists()) {
+            targetFolder.mkdirs()
+        }
+        pythonModule = pythonInstance.getModule("entry_point")
+        val result =
+            pythonModule.callAttr(
+                "compute_interval_data",
+                summit.getGpsTrackPath().toFile().absolutePath,
+                summit.getYamlExtensionsFile().absolutePath,
+                targetFolder.absolutePath
+            )
+        checkOutput(result)
+    }
+
     fun mergeGpxTracks(
         tracksToMerge: List<File>,
         yamlExtensionsToMerge: List<File>,

@@ -57,6 +57,7 @@ import de.drtobiasprinz.summitbook.ui.compose.SummitEntryDataScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryImagesScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryPowerScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryThirdPartyScreen
+import de.drtobiasprinz.summitbook.ui.compose.SummitEntryTimesScreen
 import de.drtobiasprinz.summitbook.ui.compose.SummitEntryTrackScreen
 import de.drtobiasprinz.summitbook.ui.theme.SummitBookTheme
 import de.drtobiasprinz.summitbook.core.Constants.SUMMIT_ID_EXTRA_IDENTIFIER
@@ -396,6 +397,14 @@ fun SummitEntryDetailsTabs(
                     )
                 }
 
+                SummitTab.TIMES -> {
+                    SummitEntryTimesScreen(
+                        summit = summit,
+                        summitsToCompare = summitsToCompare,
+                        similarityScores = similarityScores
+                    )
+                }
+
                 SummitTab.POWER -> {
                     SummitEntryPowerScreen(
                         summit = summit,
@@ -467,7 +476,8 @@ enum class SummitTab(val titleResId: Int) {
     DATA(R.string.tab_text_0), THIRD_PARTY(R.string.tab_text_1), IMAGES(R.string.tab_text_2), TRACK(
         R.string.tab_text_3
     ),
-    POWER(R.string.tab_text_4)
+    POWER(R.string.tab_text_4),
+    TIMES(R.string.tab_text_5)
 }
 
 fun getTabsForSummit(summit: Summit): List<SummitTab> {
@@ -481,6 +491,7 @@ fun getTabsForSummit(summit: Summit): List<SummitTab> {
     }
     if (summit.hasGpsTrack()) {
         tabs.add(SummitTab.TRACK)
+        tabs.add(SummitTab.TIMES)
     }
     if (summit.garminData?.power != null && summit.garminData?.power?.hasPowerData() == true) {
         tabs.add(SummitTab.POWER)

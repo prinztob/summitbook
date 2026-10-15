@@ -10,6 +10,7 @@ from gpxpy.gpx import GPXTrackPoint, GPX
 
 from Extension import Extension
 from elevation_track_analyzer import ElevationTrackAnalyzer
+from interval_analyzer import IntervalAnalyzer
 from power_track_analyzer import PowerTrackAnalyzer
 from utils import (
     prefix_filename,
@@ -95,8 +96,12 @@ class TrackAnalyzer(object):
                 [p[1] for p in self.all_points_with_extension],
                 yaml_file,
             )
-        with open(gpx_file_gpxpy, "w") as fp:
+        # Write atomically so a failing write cannot leave a partially
+        # written file behind that no data can be read from anymore.
+        tmp_file = gpx_file_gpxpy.with_suffix(gpx_file_gpxpy.suffix + ".tmp")
+        with open(tmp_file, "w") as fp:
             json.dump(self.data, fp, indent=4)
+        os.replace(tmp_file, gpx_file_gpxpy)
         print(f"Written data of track to {gpx_file_gpxpy}")
 
     def analyze(self) -> bool:
@@ -128,6 +133,13 @@ class TrackAnalyzer(object):
             if err.args[0] == "index values must be monotonic":
                 return False
             print(f"VelocityTrackAnalyzer failed with {err}")
+        try:
+            self.data.update(
+                IntervalAnalyzer(self.all_points_with_extension).analyze()
+            )
+            print("IntervalAnalyzer successful")
+        except Exception as err:
+            print(f"IntervalAnalyzer failed with {err}")
         self.duration = (datetime.datetime.now() - start_time).total_seconds()
         return True
 

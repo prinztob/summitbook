@@ -13,6 +13,7 @@ import de.drtobiasprinz.summitbook.data.db.entities.Peak
 import de.drtobiasprinz.summitbook.data.db.entities.SportType
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.repository.DatabaseRepository
+import de.drtobiasprinz.summitbook.data.model.readTrackIntervalData
 import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
 import de.drtobiasprinz.summitbook.data.appstate.AppState.peaks
 import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
@@ -68,6 +69,7 @@ class SummitUpdateWorker @AssistedInject constructor(
             updateBoundingBox(summits, 10, excludedBoundingBoxIds)
             updateTracks(summits, 10)
             updateDistances(summits, 10)
+            updateIntervalData(summits, 10)
             convertPeaks(summits)
             Log.i(TAG, "Update done.")
         }
@@ -212,6 +214,45 @@ class SummitUpdateWorker @AssistedInject constructor(
         }
     }
 
+
+    private suspend fun updateIntervalData(summits: List<Summit>, takeNumberOfSummits: Int) {
+        // Only for already fully analyzed activities: a missing gpxpy.json is
+        // filled by the regular analysis flow, which includes the interval keys
+        val summitsWithoutIntervalData = summits.filter {
+            it.hasTrackData() && !it.ignoreSimplifyingTrack &&
+                    it.sportType != SportType.IndoorTrainer &&
+                    readTrackIntervalData(it) == null
+        }.sortedByDescending { it.date }.take(takeNumberOfSummits)
+        Log.i(
+            TAG,
+            "${summitsWithoutIntervalData.size} of ${summits.size} summits in this batch lack interval data."
+        )
+        pythonInstance?.let { python ->
+            summitsWithoutIntervalData.forEach { summit ->
+                try {
+                    GpxPyExecutor(python).computeIntervalData(summit)
+                    Log.i(
+                        TAG,
+                        "updateIntervalData - computed interval data for ${summit.getDateAsString()}_${summit.name}."
+                    )
+                } catch (ex: OutOfMemoryError) {
+                    Log.e(
+                        TAG,
+                        "updateIntervalData - OOM for ${summit.getDateAsString()}_${summit.name}: ${ex.message}"
+                    )
+                    summit.ignoreSimplifyingTrack = true
+                    repository.updateIgnoreSimplifyingTrack(summit.id, true)
+                } catch (ex: RuntimeException) {
+                    Log.e(
+                        TAG,
+                        "updateIntervalData - error for ${summit.getDateAsString()}_${summit.name}: ${ex.message}"
+                    )
+                    summit.ignoreSimplifyingTrack = true
+                    repository.updateIgnoreSimplifyingTrack(summit.id, true)
+                }
+            }
+        }
+    }
 
     private suspend fun convertPeaks(data: List<Summit>?) {
         Log.d(TAG, "Start converting peaks")

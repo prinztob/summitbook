@@ -28,6 +28,7 @@ from tcx_to_gpx import convert_tcx_to_gpx
 from Extension import Extension
 from elevation_track_analyzer import ElevationTrackAnalyzer
 from gpx_track_analyzer import TrackAnalyzer
+from interval_analyzer import IntervalAnalyzer
 
 cycling_ids = [2, 5, 10, 19, 20, 21, 22, 25, 89, 143]
 
@@ -551,6 +552,53 @@ def analyze_gpx_track(
         print(
             f"Analyzing of {gpx_path} took {(datetime.now() - start_time).total_seconds()}"
         )
+        return "return code: 0"
+    except Exception as err:  # pylint: disable=broad-except
+        return f"return code: 1Unknown error occurred {err}"
+
+
+def compute_interval_data(
+    gpx_path: str,
+    yaml_extensions_path: str | None = None,
+    additional_data_folder: str | None = None,
+) -> str:
+    """Compute km splits, best efforts and ascent/descent sections and merge
+    them into the track's *_gpxpy.json file (created if missing), without
+    redoing the full power/velocity analysis.
+
+    Args:
+        gpx_path: Path to the GPX track file.
+        yaml_extensions_path: Optional path to the YAML extensions file.
+        additional_data_folder: Optional folder holding the gpxpy.json file.
+
+    Returns:
+        "return code: 0" on success, "return code: 1..." on failure.
+    """
+    try:
+        analyzer = TrackAnalyzer(
+            Path(gpx_path),
+            Path(additional_data_folder) if additional_data_folder else Path(gpx_path).parent,
+            yaml_file=Path(yaml_extensions_path) if yaml_extensions_path else None,
+        )
+        analyzer.set_all_points_with_distance()
+        interval_data = IntervalAnalyzer(analyzer.all_points_with_extension).analyze()
+        gpxpy_file = analyzer.gpx_file_gpxpy
+        data: dict[str, Any] = {}
+        if gpxpy_file.exists():
+            try:
+                with open(gpxpy_file, "r") as f:
+                    data = json.load(f)
+            except Exception as err:  # pylint: disable=broad-except
+                print(f"Could not read existing {gpxpy_file}, recreating it: {err}")
+                data = {}
+        data.update(interval_data)
+        # Write atomically so a failing write cannot leave a partially
+        # written file behind that no data can be read from anymore.
+        tmp_file = gpxpy_file.with_suffix(gpxpy_file.suffix + ".tmp")
+        with open(tmp_file, "w") as f:
+            json.dump(data, f, indent=4)
+        os.replace(tmp_file, gpxpy_file)
+        print(f"Written interval data to {gpxpy_file}")
         return "return code: 0"
     except Exception as err:  # pylint: disable=broad-except
         return f"return code: 1Unknown error occurred {err}"
