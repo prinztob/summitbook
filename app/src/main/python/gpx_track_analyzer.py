@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 from pathlib import Path
 from typing import Any, Tuple
 
@@ -68,8 +69,14 @@ class TrackAnalyzer(object):
             else:
                 gpx_file_simplified = Path(gpx_file_simplified)
             self.gpx.simplify()
-            with open(gpx_file_simplified, "w") as f:
+            # Write atomically so a failing write cannot leave a partially
+            # written file behind that no track can be parsed from anymore.
+            tmp_file = gpx_file_simplified.with_suffix(
+                gpx_file_simplified.suffix + ".tmp"
+            )
+            with open(tmp_file, "w") as f:
                 f.write(self.gpx.to_xml())
+            os.replace(tmp_file, gpx_file_simplified)
             print(f"Written simplified track to {gpx_file_simplified}")
 
     def write_data_and_extension_to_file(

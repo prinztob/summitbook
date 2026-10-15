@@ -62,6 +62,7 @@ fun SummitEntryPowerScreen(
     extrema: ExtremaValuesSummits?,
     onGetSummitToCompare: (Long) -> Unit,
     onSetSummitToCompareToNull: () -> Unit,
+    similarityScores: Map<Long, Double> = emptyMap(),
     modifier: Modifier = Modifier
 ) {
 
@@ -112,6 +113,7 @@ fun SummitEntryPowerScreen(
                 CompareDropdown(
                     summitsToCompare = summitsToCompare,
                     currentCompare = compareSummit,
+                    similarityScores = similarityScores,
                     onSummitSelected = { selectedSummit ->
                         if (selectedSummit == null) {
                             onSetSummitToCompareToNull()

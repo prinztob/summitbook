@@ -208,6 +208,10 @@
     <string name="add_new_summit_cancel">"Adding a new summit was canceled."</string>
     <string name="add_new_summit_successful">"Adding a new summit was successful."</string>
     <string name="adopted_course_info_from">"Name and info adopted from %1$s (%2$s, score %3$s)."</string>
+    <string name="similarity_score_suffix">" · %1$s %% same course"</string>
+    <string name="compare_search_hint">"Search by date or name"</string>
+    <string name="compare_truncated_unfiltered">"Only the first %1$d of %2$d activities are shown. Use the search to find older ones."</string>
+    <string name="compare_truncated_search">"%1$d of %2$d matches are shown"</string>
     <string name="heart_rate_profile_label">"Heart rate profile"</string>
     <string name="slope_profile_label">"Slope profile"</string>
     <string name="cadence_profile_label">"Cadence profile"</string>

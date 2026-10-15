@@ -54,6 +54,7 @@ fun SummitEntryThirdPartyScreen(
     extrema: ExtremaValuesSummits?,
     onGetSummitToCompare: (Long) -> Unit,
     onSetSummitToCompareToNull: () -> Unit,
+    similarityScores: Map<Long, Double> = emptyMap(),
     modifier: Modifier = Modifier
 ) {
 
@@ -106,6 +107,7 @@ fun SummitEntryThirdPartyScreen(
                 CompareDropdown(
                     summitsToCompare = summitsToCompare,
                     currentCompare = compareSummit,
+                    similarityScores = similarityScores,
                     onSummitSelected = { selectedSummit ->
                         if (selectedSummit == null) {
                             onSetSummitToCompareToNull()

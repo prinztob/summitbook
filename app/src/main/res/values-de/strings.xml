@@ -212,6 +212,10 @@
     <string name="add_new_summit_cancel">"Das Hinzufügen eines neuen Gipfels wurde abgebrochen."</string>
     <string name="add_new_summit_successful">"Das Hinzufügen eines neuen Gipfels war erfolgreich."</string>
     <string name="adopted_course_info_from">"Name und Infos wurden von %1$s (%2$s, Score %3$s) übernommen."</string>
+    <string name="similarity_score_suffix">" · %1$s %% gleiche Strecke"</string>
+    <string name="compare_search_hint">"Nach Datum oder Name suchen"</string>
+    <string name="compare_truncated_unfiltered">"Es werden nur die ersten %1$d von %2$d Aktivitäten angezeigt. Ältere findest du über die Suche."</string>
+    <string name="compare_truncated_search">"%1$d von %2$d Treffern werden angezeigt"</string>
     <string name="heart_rate_profile_label">"Herzfrequenzprofil"</string>
     <string name="slope_profile_label">"Neigung"</string>
     <string name="cadence_profile_label">"Kadenceprofil"</string>

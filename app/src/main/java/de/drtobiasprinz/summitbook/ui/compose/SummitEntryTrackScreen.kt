@@ -87,6 +87,7 @@ fun SummitEntryTrackScreen(
     modifier: Modifier = Modifier,
     isAnalyzingTrack: Boolean = false,
     onShowSnackbar: (String) -> Unit = {},
+    similarityScores: Map<Long, Double> = emptyMap(),
     onGetSummitToCompare: (Long) -> Unit,
     onSetSummitToCompareToNull: () -> Unit
 ) {
@@ -223,6 +224,7 @@ fun SummitEntryTrackScreen(
                 CompareDropdown(
                     summitsToCompare = summitsToCompare,
                     currentCompare = compareSummit,
+                    similarityScores = similarityScores,
                     onSummitSelected = { selectedSummit ->
                         if (selectedSummit == null) {
                             onSetSummitToCompareToNull()

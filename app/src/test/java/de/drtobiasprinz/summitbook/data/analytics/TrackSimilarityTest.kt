@@ -158,6 +158,125 @@ class TrackSimilarityTest {
     }
 
     @Test
+    fun testRankSimilarSummits() {
+        val loop = listOf(
+            47.50 to 11.50, 47.51 to 11.50, 47.51 to 11.51, 47.50 to 11.51, 47.50 to 11.50
+        )
+        val summit = Summit(
+            Summit.parseDate("2024-06-01"), "Egmating", SportType.Bicycle,
+            kilometers = 3.7, activityId = 3000, hasTrack = true
+        )
+        writeGpxFile(summit, loop)
+
+        val jitteredLoop = loop.mapIndexed { index, (lat, lon) ->
+            (lat + (index % 3 - 1) * 0.0001) to (lon + (index % 2) * 0.0001)
+        }
+        val sameCourse = Summit(
+            Summit.parseDate("2024-07-01"), "Egmating", SportType.Bicycle,
+            kilometers = 3.7, activityId = 1000, hasTrack = true
+        )
+        writeGpxFile(sameCourse, jitteredLoop)
+
+        // Overlapping bounding box, but every point is about 700 m off the
+        // original course, so it gets scored but is not the same course.
+        val shiftedLoop = loop.map { (lat, lon) -> (lat + 0.005) to (lon + 0.005) }
+        val differentCourse = Summit(
+            Summit.parseDate("2024-08-01"), "München", SportType.Bicycle,
+            kilometers = 3.7, activityId = 2000, hasTrack = true
+        )
+        writeGpxFile(differentCourse, shiftedLoop)
+
+        val withoutTrack = Summit(
+            Summit.parseDate("2024-09-01"), "Kein Track", SportType.Bicycle,
+            kilometers = 3.7, activityId = 4000
+        )
+
+        // The pre-filter needs bounding boxes, as for entries from the DB
+        listOf(summit, sameCourse, differentCourse).forEach { it.setBoundingBoxFromTrack() }
+
+        val ranked = TrackSimilarity.rankSimilarSummits(
+            summit, listOf(summit, sameCourse, differentCourse, withoutTrack)
+        )
+
+        // The summit itself and the entry without a track are never ranked
+        Assert.assertEquals(listOf(1000L, 2000L), ranked.map { it.first.activityId })
+        val sameCourseScore = ranked.first { it.first.activityId == 1000L }.second
+        val differentCourseScore = ranked.first { it.first.activityId == 2000L }.second
+        Assert.assertTrue("score was $sameCourseScore", TrackSimilarity.isSameCourse(sameCourseScore))
+        Assert.assertTrue(
+            "expected $differentCourseScore < $sameCourseScore",
+            differentCourseScore < sameCourseScore
+        )
+    }
+
+    @Test
+    fun testRankSimilarSummitsWithFixtures() {
+        val summit = summitWithFixtureTrack(3000, "2026-10-02_Kleinhelfendorf.gpx")
+        val sameCourse = summitWithFixtureTrack(1000, "2026-10-07_Kleinhelfendorf.gpx")
+        val differentCourse = summitWithFixtureTrack(2000, "2026-10-04_Piusheim.gpx")
+
+        val ranked = TrackSimilarity.rankSimilarSummits(
+            summit, listOf(sameCourse, differentCourse)
+        )
+
+        Assert.assertTrue(ranked.isNotEmpty())
+        Assert.assertEquals(1000L, ranked.first().first.activityId)
+        Assert.assertTrue(
+            "score was ${ranked.first().second}",
+            TrackSimilarity.isSameCourse(ranked.first().second)
+        )
+        Assert.assertTrue(
+            ranked.map { it.second }.zipWithNext().all { it.first >= it.second }
+        )
+        ranked.filter { it.first.activityId == 2000L }.forEach {
+            Assert.assertFalse(
+                "score was ${it.second}",
+                TrackSimilarity.isSameCourse(it.second)
+            )
+        }
+    }
+
+    @Test
+    fun testRankSimilarSummitsFallsBackFromUnparsableSimplifiedTrack() {
+        val loop = listOf(
+            47.50 to 11.50, 47.51 to 11.50, 47.51 to 11.51, 47.50 to 11.51, 47.50 to 11.50
+        )
+        val summit = Summit(
+            Summit.parseDate("2024-06-01"), "Egmating", SportType.Bicycle,
+            kilometers = 3.7, activityId = 3000, hasTrack = true
+        )
+        writeGpxFile(summit, loop)
+        summit.setBoundingBoxFromTrack()
+
+        val jitteredLoop = loop.mapIndexed { index, (lat, lon) ->
+            (lat + (index % 3 - 1) * 0.0001) to (lon + (index % 2) * 0.0001)
+        }
+        val sameCourse = Summit(
+            Summit.parseDate("2024-07-01"), "Egmating", SportType.Bicycle,
+            kilometers = 3.7, activityId = 1000, hasTrack = true
+        )
+        writeGpxFile(sameCourse, jitteredLoop)
+
+        // A simplified file that exists but cannot be parsed (e.g. partially
+        // written when the app was killed) must not exclude the activity
+        // from the ranking: the full track is used instead, and even the
+        // bounding box calculation falls back.
+        val simplifiedFile = sameCourse.getGpsTrackPath(simplified = true).toFile()
+        simplifiedFile.parentFile?.mkdirs()
+        simplifiedFile.writeText("")
+        sameCourse.setBoundingBoxFromTrack()
+        Assert.assertNotNull(sameCourse.trackBoundingBox)
+
+        val ranked = TrackSimilarity.rankSimilarSummits(summit, listOf(sameCourse))
+
+        Assert.assertEquals(listOf(1000L), ranked.map { it.first.activityId })
+        Assert.assertTrue(
+            "score was ${ranked.first().second}",
+            TrackSimilarity.isSameCourse(ranked.first().second)
+        )
+    }
+
+    @Test
     fun testApplyCourseInfoFromMatch() {
         val newEntry = Summit(
             Summit.parseDate("2024-06-01"), "München Fahrt", SportType.Bicycle,
@@ -248,6 +367,20 @@ class TrackSimilarityTest {
             kilometers = kilometers, activityId = activityId, hasTrack = true
         )
         summit.trackBoundingBox = boundingBox
+        return summit
+    }
+
+    private fun summitWithFixtureTrack(activityId: Long, resource: String): Summit {
+        val summit = Summit(
+            Summit.parseDate("2026-10-02"), "entry", SportType.Bicycle,
+            kilometers = 60.0, activityId = activityId, hasTrack = true
+        )
+        val resourceUrl = javaClass.classLoader?.getResource(resource)
+            ?: throw IllegalStateException("Missing test resource $resource")
+        val file = summit.getGpsTrackPath().toFile()
+        file.parentFile?.mkdirs()
+        File(resourceUrl.path).copyTo(file, overwrite = true)
+        summit.setBoundingBoxFromTrack()
         return summit
     }
 

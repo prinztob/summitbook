@@ -85,6 +85,7 @@ fun SummitEntryDataScreen(
     extrema: ExtremaValuesSummits?,
     onGetSummitToCompare: (Long) -> Unit,
     onSetSummitToCompareToNull: () -> Unit,
+    similarityScores: Map<Long, Double> = emptyMap(),
     modifier: Modifier = Modifier,
     peaks: List<Peak> = emptyList(),
     mountainPasses: List<SegmentEntry> = emptyList(),
@@ -150,6 +151,7 @@ fun SummitEntryDataScreen(
                 CompareDropdown(
                     summitsToCompare = summitsToCompare,
                     currentCompare = compareSummit,
+                    similarityScores = similarityScores,
                     onSummitSelected = { selectedSummit ->
                         if (selectedSummit == null) {
                             onSetSummitToCompareToNull()
@@ -432,34 +434,79 @@ fun SummitHeader(summit: Summit) {
     }
 }
 
+/**
+ * How many entries the compare dropdown shows without a search query: the
+ * same-course and same-name ones plus the newest remaining ones come first,
+ * older activities are reachable via the search field.
+ */
+private const val COMPARE_UNFILTERED_LIMIT = 100
+
+/**
+ * How many search matches the compare dropdown shows at most: every menu row
+ * is composed, so an uncapped query would make the menu janky.
+ */
+private const val COMPARE_SEARCH_RESULT_LIMIT = 50
+
+private fun summitSearchText(summit: Summit): String =
+    "${summit.getDateAsString()} ${summit.name}"
+
+fun filterSummitsForDropdown(summits: List<Summit>, searchQuery: String): List<Summit> {
+    val query = searchQuery.trim()
+    if (query.isEmpty()) {
+        return summits.take(COMPARE_UNFILTERED_LIMIT)
+    }
+    return summits
+        .filter { summitSearchText(it).contains(query, ignoreCase = true) }
+        .take(COMPARE_SEARCH_RESULT_LIMIT)
+}
+
+fun countSummitsMatchingSearchQuery(summits: List<Summit>, searchQuery: String): Int {
+    val query = searchQuery.trim()
+    if (query.isEmpty()) {
+        return summits.size
+    }
+    return summits.count { summitSearchText(it).contains(query, ignoreCase = true) }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompareDropdown(
     summitsToCompare: List<Summit>,
     currentCompare: Summit?,
-    onSummitSelected: (Summit?) -> Unit
+    onSummitSelected: (Summit?) -> Unit,
+    similarityScores: Map<Long, Double> = emptyMap()
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val items = summitsToCompare
+    val locale = LocalConfiguration.current.locales[0]
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+
+    val filteredItems = remember(items, searchQuery) {
+        filterSummitsForDropdown(items, searchQuery)
+    }
+    val totalItemCount = remember(items, searchQuery) {
+        countSummitsMatchingSearchQuery(items, searchQuery)
+    }
 
     // Pagination state
     val pageSize = 50
-    val totalPages = remember(items.size) {
-        (items.size + pageSize - 1) / pageSize
+    val totalPages = remember(filteredItems.size) {
+        (filteredItems.size + pageSize - 1) / pageSize
     }
     var currentPage by rememberSaveable { mutableIntStateOf(0) }
 
     // Get paginated items
-    val paginatedItems = remember(items, currentPage, pageSize) {
+    val paginatedItems = remember(filteredItems, currentPage, pageSize) {
         val start = currentPage * pageSize
-        val end = minOf(start + pageSize, items.size)
-        if (start >= items.size) emptyList() else items.subList(start, end)
+        val end = minOf(start + pageSize, filteredItems.size)
+        if (start >= filteredItems.size) emptyList() else filteredItems.subList(start, end)
     }
 
-    // Reset page when dropdown closes
+    // Reset page and search when dropdown closes
     LaunchedEffect(expanded) {
         if (!expanded) {
             currentPage = 0
+            searchQuery = ""
         }
     }
 
@@ -467,16 +514,27 @@ fun CompareDropdown(
         expanded = expanded,
         onExpandedChange = { expanded = it }
     ) {
+        // While expanded, the anchor doubles as the search box for the list
+        // below (an editable anchor makes the popup window focusable, so the
+        // keyboard works); while collapsed, it shows the selected entry
         OutlinedTextField(
-            value = currentCompare?.let { "${it.getDateAsString()} ${it.name}" }
-                ?: stringResource(R.string.none),
-            onValueChange = {},
-            readOnly = true,
+            value = if (expanded) {
+                searchQuery
+            } else {
+                currentCompare?.let { "${it.getDateAsString()} ${it.name}" }
+                    ?: stringResource(R.string.none)
+            },
+            onValueChange = {
+                searchQuery = it
+                currentPage = 0
+            },
+            singleLine = true,
+            placeholder = { Text(stringResource(R.string.compare_search_hint)) },
             label = { Text(stringResource(R.string.summit_name_compare_hint)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
         )
 
         ExposedDropdownMenu(
@@ -501,16 +559,46 @@ fun CompareDropdown(
 
             // Paginated items
             paginatedItems.forEach { summit ->
+                val similarityScore = similarityScores[summit.activityId]
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = "${summit.getDateAsString()} ${summit.name}"
+                            text = "${summit.getDateAsString()} ${summit.name}" +
+                                    (similarityScore?.let {
+                                        stringResource(
+                                            R.string.similarity_score_suffix,
+                                            String.format(locale, "%.0f", it)
+                                        )
+                                    } ?: "")
                         )
                     },
                     onClick = {
                         onSummitSelected(summit)
                         expanded = false
                     }
+                )
+            }
+
+            // Hint when the shown entries are a subset of all available ones
+            if (totalItemCount > filteredItems.size) {
+                Text(
+                    text = if (searchQuery.isBlank()) {
+                        stringResource(
+                            R.string.compare_truncated_unfiltered,
+                            filteredItems.size,
+                            totalItemCount
+                        )
+                    } else {
+                        stringResource(
+                            R.string.compare_truncated_search,
+                            filteredItems.size,
+                            totalItemCount
+                        )
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
 

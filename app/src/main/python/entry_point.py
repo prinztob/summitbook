@@ -616,8 +616,12 @@ def merge_tracks(
             ):
                 raise Exception("Extension points do not match gpx tracks")
             analyzer_for_all_tracks.gpx.name = name
-            with open(output_file, "w") as f:
+            # Write atomically so a failing write cannot leave a partially
+            # written file behind that no track can be parsed from anymore.
+            output_file_tmp = output_file + ".tmp"
+            with open(output_file_tmp, "w") as f:
                 f.write(analyzer_for_all_tracks.gpx.to_xml())
+            os.replace(output_file_tmp, output_file)
             output_file_yaml = (
                 extensions_yaml_file
                 if extensions_yaml_file
@@ -626,7 +630,9 @@ def merge_tracks(
                     os.path.basename(output_file.replace(".gpx", "_extensions.yaml")),
                 )
             )
-            with open(output_file_yaml, "w") as f:
+            # Write atomically so a failing write cannot leave a partial file
+            tmp_file = output_file_yaml + ".tmp"
+            with open(tmp_file, "w") as f:
                 yaml.dump(
                     {
                         "extensions": [
@@ -637,6 +643,7 @@ def merge_tracks(
                     f,
                     default_flow_style=False,
                 )
+            os.replace(tmp_file, output_file_yaml)
             print(
                 f"Wrote gpx to file {output_file} and extensions to {output_file_yaml}"
             )

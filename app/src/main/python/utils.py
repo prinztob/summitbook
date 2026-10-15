@@ -1,5 +1,6 @@
 import datetime
 import math
+import os
 import re
 from pathlib import Path
 from typing import Tuple, List, Any, Sequence
@@ -219,11 +220,16 @@ def prefix_filename(fn: str) -> str:
 
 
 def write_extensions_to_yaml(extensions: List[Extension], yaml_file: Path) -> None:
-    yaml.dump(
-        {"extensions": [e.to_dict() for e in extensions]},
-        yaml_file.open("w", encoding="utf-8"),
-        default_flow_style=False,
-    )
+    # Write atomically: a killed or failing write must never leave a
+    # partially written file behind, or the app cannot decode it anymore.
+    tmp_file = yaml_file.with_suffix(yaml_file.suffix + ".tmp")
+    with tmp_file.open("w", encoding="utf-8") as f:
+        yaml.dump(
+            {"extensions": [e.to_dict() for e in extensions]},
+            f,
+            default_flow_style=False,
+        )
+    os.replace(tmp_file, yaml_file)
     print(f"Written extensions to {yaml_file}")
 
 

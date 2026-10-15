@@ -23,6 +23,9 @@ import org.mapsforge.map.datastore.MapReadResult
 import org.mapsforge.map.datastore.Way
 import org.mapsforge.map.reader.MapFile
 import org.osmdroid.util.GeoPoint
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.ln
@@ -688,7 +691,10 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
                         val extensionsFromYaml = ExtensionsFromYaml(extensions)
                         try {
                             val yamlString = Yaml.encodeToString(extensionsFromYaml)
-                            summit.getYamlExtensionsFile().writeText(yamlString)
+                            writeYamlExtensionsFileAtomically(
+                                summit.getYamlExtensionsFile(),
+                                yamlString
+                            )
                             Log.i(
                                 TAG,
                                 "Successfully wrote extensions to ${summit.getYamlExtensionsFile().absolutePath}"
@@ -704,6 +710,32 @@ class OfflineMapAnalyzer(var mapFiles: List<MapFile>, var searchRadiusMeters: Do
                     Log.e(TAG, "No road information found in map")
                     return false
                 }
+            }
+        }
+
+        /**
+         * Writes the YAML extensions atomically: a killed or failing write
+         * must never leave a partially written file behind, because the
+         * reader would then fail to decode the whole file (or worse, see a
+         * mix of an old and a new write) and the activity's extension data
+         * would be lost until the file is analyzed again.
+         */
+        private fun writeYamlExtensionsFileAtomically(yamlFile: File, content: String) {
+            val tempFile = File(yamlFile.parentFile, yamlFile.name + ".tmp")
+            tempFile.writeText(content)
+            try {
+                Files.move(
+                    tempFile.toPath(),
+                    yamlFile.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE
+                )
+            } catch (e: java.nio.file.AtomicMoveNotSupportedException) {
+                Files.move(
+                    tempFile.toPath(),
+                    yamlFile.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING
+                )
             }
         }
 

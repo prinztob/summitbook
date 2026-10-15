@@ -4,6 +4,7 @@ import android.util.Log
 import de.drtobiasprinz.summitbook.data.db.entities.SportGroup
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.data.db.entities.TrackBoundingBox
+import de.drtobiasprinz.summitbook.data.model.GpsTrack
 import io.ticofab.androidgpxparser.parser.domain.TrackPoint
 import kotlin.math.abs
 import kotlin.math.cos
@@ -125,6 +126,70 @@ class TrackSimilarity {
         }
 
         /**
+         * Ranks the given summits by track similarity to the given summit.
+         * Only candidates that pass the cheap pre-filter ([isPotentialSameCourse])
+         * are scored geometrically (at most [MAX_CANDIDATES] newest ones), so
+         * this is fast enough to run when a single activity is shown. The
+         * result contains every scored candidate, sorted by score descending.
+         */
+        fun rankSimilarSummits(
+            summit: Summit,
+            candidates: List<Summit>
+        ): List<Pair<Summit, Double>> {
+            if (!summit.hasGpsTrack()) {
+                Log.i(TAG, "Not ranking similar tracks for ${summit.getDateAsString()}_${summit.name}: no GPS track")
+                return emptyList()
+            }
+            if (summit.trackBoundingBox == null) {
+                summit.setBoundingBoxFromTrack()
+            }
+            val filteredCandidates = candidates
+                .filter { it !== summit && it.activityId != summit.activityId }
+                .filter { isPotentialSameCourse(summit, it) }
+                .sortedByDescending { it.date }
+                .take(MAX_CANDIDATES)
+            if (filteredCandidates.isEmpty()) {
+                Log.i(
+                    TAG,
+                    "No candidate passed the pre-filter for ${summit.getDateAsString()}_${summit.name} " +
+                            "(${candidates.size} candidates in total)"
+                )
+                return emptyList()
+            }
+            val trackPointsSummit = getTrackPoints(summit)
+            if (trackPointsSummit == null) {
+                Log.i(
+                    TAG,
+                    "Could not parse the track of ${summit.getDateAsString()}_${summit.name}, " +
+                            "so no similar tracks could be ranked"
+                )
+                return emptyList()
+            }
+            val ranked = filteredCandidates
+                .mapNotNull { candidate ->
+                    val trackPointsCandidate = getTrackPoints(candidate)
+                        ?: return@mapNotNull null
+                    candidate to similarityScore(trackPointsSummit, trackPointsCandidate)
+                }
+                .sortedByDescending { it.second }
+            val skippedCount = filteredCandidates.size - ranked.size
+            Log.i(
+                TAG,
+                "Ranked ${ranked.size} of ${filteredCandidates.size} pre-filtered candidates " +
+                        "(${candidates.size} in total) for ${summit.getDateAsString()}_${summit.name}" +
+                        (if (skippedCount > 0) {
+                            ", $skippedCount had no parsable track"
+                        } else {
+                            ""
+                        }) + ": " +
+                        ranked.take(3).joinToString {
+                            "${it.first.getDateAsString()}_${it.first.name} (score %.1f)".format(it.second)
+                        }
+            )
+            return ranked
+        }
+
+        /**
          * Adopts name, places and countries on new entries from an earlier
          * entry that was done on the same course (score at least
          * [SAME_COURSE_THRESHOLD]). Entries that already got info adopted are
@@ -164,9 +229,20 @@ class TrackSimilarity {
         }
 
         private fun getTrackPoints(summit: Summit): List<TrackPoint>? {
-            summit.setGpsTrack()
-            val trackPoints = summit.gpsTrack?.trackPoints?.map { it.first }
-            return if ((trackPoints?.size ?: 0) >= 2) {
+            // Parse a throwaway copy of the track: only lat/lon/elevation are
+            // needed, so no YAML extensions file is passed. The track is
+            // never attached to the Summit — candidates are shared,
+            // long-lived objects and keeping their parsed tracks around
+            // would bloat the heap. parseTrack prefers the simplified file
+            // (much smaller) and falls back to the full one if that does not
+            // yield any points.
+            val track = GpsTrack(
+                summit.getGpsTrackPath(),
+                summit.getGpsTrackPath(simplified = true)
+            )
+            track.parseTrack()
+            val trackPoints = track.trackPoints.map { it.first }
+            return if (trackPoints.size >= 2) {
                 trackPoints
             } else {
                 null

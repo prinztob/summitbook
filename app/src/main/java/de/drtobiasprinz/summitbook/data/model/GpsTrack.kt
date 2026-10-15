@@ -150,6 +150,14 @@ class GpsTrack(
             gpxTrack = getTrack(fileToUse, gpsTrackPath.toFile())
         }
         trackPoints = calculateTrackPoints(useOriginalTrack)
+        // A simplified file that exists but yields no track points (e.g.
+        // partially written when the app was killed) must not break the
+        // whole track: fall back to the original track instead.
+        if (trackPoints.isEmpty() && fileToUse != gpsTrackPath.toFile()) {
+            useOriginalTrack = true
+            gpxTrack = getTrack(gpsTrackPath.toFile())
+            trackPoints = calculateTrackPoints(useOriginalTrack)
+        }
         Log.i("GpxTrack", "Parsing took $time")
 
         val isDistancesIncorrect = trackPoints.isEmpty() || run {

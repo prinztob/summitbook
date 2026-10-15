@@ -46,6 +46,7 @@ import de.drtobiasprinz.summitbook.data.db.entities.SportGroup
 import de.drtobiasprinz.summitbook.data.db.entities.SportType
 import de.drtobiasprinz.summitbook.data.db.entities.Summit
 import de.drtobiasprinz.summitbook.ui.view.CustomMapViewToAllowScrolling
+import de.drtobiasprinz.summitbook.data.analytics.TrackSimilarity
 import de.drtobiasprinz.summitbook.sync.GpxPyExecutor
 import de.drtobiasprinz.summitbook.data.appstate.AppState.pythonInstance
 import de.drtobiasprinz.summitbook.data.appstate.AppState.sharedPreferences
@@ -280,9 +281,22 @@ fun SummitEntryDetailsTabs(
     val allSummits = remember(summitsListData) { summitsListData?.data }
     // Compute summitsToCompare asynchronously to avoid disk I/O on main thread
     var summitsToCompare by remember { mutableStateOf<List<Summit>>(emptyList()) }
+    var similarityScores by remember { mutableStateOf<Map<Long, Double>>(emptyMap()) }
     LaunchedEffect(allSummits, summit) {
         withContext(Dispatchers.IO) {
-            summitsToCompare = getSummitsToCompare(allSummits, summit)
+            // Show the list immediately; the same-course reordering follows
+            // once the track-similarity scores have been computed.
+            summitsToCompare = getSummitsToCompare(allSummits, summit).summits
+            similarityScores = emptyMap()
+            if (summit != null) {
+                val scores = TrackSimilarity.rankSimilarSummits(
+                    summit,
+                    allSummits.orEmpty()
+                ).associate { it.first.activityId to it.second }
+                val result = getSummitsToCompare(allSummits, summit, scores)
+                summitsToCompare = result.summits
+                similarityScores = result.similarityScores
+            }
         }
     }
     val compareSummit = remember(summitToCompareData) { summitToCompareData?.data }
@@ -332,6 +346,7 @@ fun SummitEntryDetailsTabs(
                         summit = summit,
                         allSummits = allSummits,
                         summitsToCompare = summitsToCompare,
+                        similarityScores = similarityScores,
                         compareSummit = compareSummit,
                         segments = segments,
                         extrema = extremaValuesSummits,
@@ -353,6 +368,7 @@ fun SummitEntryDetailsTabs(
                     SummitEntryThirdPartyScreen(
                         summit = summit,
                         summitsToCompare = summitsToCompare,
+                        similarityScores = similarityScores,
                         compareSummit = compareSummit,
                         extrema = extremaValuesSummits,
                         onGetSummitToCompare = onGetSummitToCompare,
@@ -371,6 +387,7 @@ fun SummitEntryDetailsTabs(
                         summit = summit,
                         allSummits = allSummits,
                         summitsToCompare = summitsToCompare,
+                        similarityScores = similarityScores,
                         compareSummit = compareSummit,
                         isAnalyzingTrack = isAnalyzingTrack,
                         onShowSnackbar = onShowSnackbar,
@@ -384,6 +401,7 @@ fun SummitEntryDetailsTabs(
                         summit = summit,
                         allSummits = allSummits,
                         summitsToCompare = summitsToCompare,
+                        similarityScores = similarityScores,
                         compareSummit = compareSummit,
                         extrema = extremaValuesSummits,
                         onGetSummitToCompare = onGetSummitToCompare,
@@ -471,12 +489,23 @@ fun getTabsForSummit(summit: Summit): List<SummitTab> {
     return tabs
 }
 
+/**
+ * Summits offered for comparison, ordered with the most similar ones first,
+ * plus the track-similarity scores (activityId to score, same course only)
+ * used for the ordering and shown in the compare dropdown.
+ */
+data class SummitsToCompare(
+    val summits: List<Summit>,
+    val similarityScores: Map<Long, Double> = emptyMap()
+)
+
 fun getSummitsToCompare(
     summits: List<Summit>?,
     summitEntry: Summit?,
+    similarityScores: Map<Long, Double> = emptyMap(),
     onlyWithGpxTrack: Boolean = false,
     onlyWithPowerData: Boolean = false,
-): List<Summit> {
+): SummitsToCompare {
     if (!summits.isNullOrEmpty() && summitEntry != null) {
         val sportGroup =
             SportGroup.entries
@@ -494,13 +523,31 @@ fun getSummitsToCompare(
                         it.sportType == summitEntry.sportType
             }
         }
-        val similarSummits =
-            filtered.filter { it.name == summitEntry.name }
-                .sortedByDescending { it.date }
-        val otherSummits =
-            filtered.filter { it.name != summitEntry.name }
-                .sortedByDescending { it.date }
-        return similarSummits + otherSummits
+        val sameCourseScores = similarityScores
+            .filterValues { TrackSimilarity.isSameCourse(it) }
+        val similarByTrack = filtered
+            .filter { sameCourseScores[it.activityId] != null }
+            .sortedWith(
+                compareByDescending<Summit> { roundedScore(sameCourseScores[it.activityId] ?: 0.0) }
+                    .thenByDescending { it.date }
+            )
+        val similarByIds = similarByTrack.map { it.activityId }.toSet()
+        val similarByName = filtered
+            .filter { it.activityId !in similarByIds && it.name == summitEntry.name }
+            .sortedByDescending { it.date }
+        val otherSummits = filtered
+            .filter { it.activityId !in similarByIds && it.name != summitEntry.name }
+            .sortedByDescending { it.date }
+        return SummitsToCompare(
+            summits = similarByTrack + similarByName + otherSummits,
+            similarityScores = sameCourseScores
+        )
     }
-    return emptyList()
+    return SummitsToCompare(emptyList())
 }
+
+/**
+ * Scores rounded to whole numbers, the precision the scores are displayed
+ * with: activities with the same displayed score keep their date ordering.
+ */
+private fun roundedScore(score: Double): Long = Math.round(score)
